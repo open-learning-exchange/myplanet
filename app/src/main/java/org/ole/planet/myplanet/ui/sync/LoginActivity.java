@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.ui.sync;
 
+import static org.ole.planet.myplanet.ui.dashboard.DashboardActivity.MESSAGE_PROGRESS;
+
 import android.Manifest;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -11,8 +13,10 @@ import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
 import android.webkit.URLUtil;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -60,10 +64,6 @@ import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 import io.realm.Sort;
-import uk.co.deanwild.materialshowcaseview.MaterialShowcaseSequence;
-import uk.co.deanwild.materialshowcaseview.ShowcaseConfig;
-
-import static org.ole.planet.myplanet.ui.dashboard.DashboardActivity.MESSAGE_PROGRESS;
 
 public class LoginActivity extends SyncActivity implements Service.CheckVersionCallback, AdapterTeam.OnUserSelectedListener {
     public static Calendar cal_today, cal_last_Sync;
@@ -83,16 +83,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private Service service;
     private Spinner spnCloud;
     private TextView tvAvailableSpace;
-
-    private void showShowCaseView() {
-        ShowcaseConfig config = new ShowcaseConfig();
-        config.setDelay(500);
-        MaterialShowcaseSequence sequence = new MaterialShowcaseSequence(this, "1");
-        sequence.setConfig(config);
-        sequence.addSequenceItem(syncIcon, getString(R.string.press_the_sync_button_to_sync_your_planet_account_data_with_your_myplanet_application_data), getString(R.string.got_it));
-        sequence.addSequenceItem(imgBtnSetting, getString(R.string.press_the_settings_button_to_access_your_myplanet_planet_account_server_settings_to_properly_set_up_your_syncing_process), getString(R.string.got_it));
-        sequence.start();
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -138,7 +128,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         }
         findViewById(R.id.btn_feedback).setOnClickListener(view -> new FeedbackFragment().show(getSupportFragmentManager(), ""));
 
-        if (settings.getBoolean("firstRun", true)) showShowCaseView();
+        if (settings.getBoolean("firstRun", true));
     }
 
     private boolean forceSyncTrigger() {
@@ -274,6 +264,14 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         inputPassword = findViewById(R.id.input_password);
         inputName.addTextChangedListener(new MyTextWatcher(inputName));
         inputPassword.addTextChangedListener(new MyTextWatcher(inputPassword));
+        inputPassword.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE ||
+                    (event != null && event.getAction() == KeyEvent.ACTION_DOWN && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
+                btnSignIn.performClick();
+                return true;
+            }
+            return false;
+        });
         setUplanguageButton();
         if (defaultPref.getBoolean("saveUsernameAndPassword", false)) {
             inputName.setText(settings.getString(getString(R.string.login_user), ""));

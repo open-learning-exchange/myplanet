@@ -11,11 +11,8 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import io.realm.Case
 import io.realm.Sort
-import kotlinx.android.synthetic.main.fragment_community.btn_library
-import kotlinx.android.synthetic.main.fragment_community.ll_edit_delete
-import kotlinx.android.synthetic.main.fragment_community.rv_community
-import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
+import org.ole.planet.myplanet.databinding.FragmentCommunityBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -26,12 +23,13 @@ import org.ole.planet.myplanet.ui.news.ReplyActivity
 import org.ole.planet.myplanet.utilities.Utilities
 
 class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickListener {
+    private lateinit var fragmentCommunityBinding: FragmentCommunityBinding
     override fun addImage(llImage: LinearLayout?) {
     }
 
     override fun showReply(news: RealmNews, fromLogin: Boolean) {
         startActivity(
-            Intent(activity, ReplyActivity::class.java).putExtra("id", news?.id)
+            Intent(activity, ReplyActivity::class.java).putExtra("id", news.id)
                 .putExtra("fromLogin", fromLogin)
         )
     }
@@ -40,14 +38,15 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View? {
-        return inflater.inflate(R.layout.fragment_community, container, false)
+        fragmentCommunityBinding = FragmentCommunityBinding.inflate(inflater, container, false)
+        return fragmentCommunityBinding.root
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
         mRealm = DatabaseService(requireActivity()).realmInstance
         user = UserProfileDbHandler(requireActivity()).userModel
-        btn_library.setOnClickListener {
+        fragmentCommunityBinding.btnLibrary.setOnClickListener {
             homeItemClickListener.openCallFragment(LibraryFragment())
         }
         val list =
@@ -63,8 +62,8 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
         adapter.setListener(this)
         adapter.setFromLogin(requireArguments().getBoolean("fromLogin", false))
         adapter.setmRealm(mRealm)
-        rv_community.adapter = adapter
-        ll_edit_delete.visibility = if (user!!.isManager()) View.VISIBLE else View.GONE
+        fragmentCommunityBinding.rvCommunity.adapter = adapter
+        fragmentCommunityBinding.llEditDelete.visibility = if (user!!.isManager()) View.VISIBLE else View.GONE
 
     }
 
@@ -76,9 +75,9 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
 
     private fun changeLayoutManager(orientation: Int) {
         if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            rv_community.layoutManager = GridLayoutManager(activity, 2)
+            fragmentCommunityBinding.rvCommunity.layoutManager = GridLayoutManager(activity, 2)
         } else {
-            rv_community.layoutManager = LinearLayoutManager(activity)
+            fragmentCommunityBinding.rvCommunity.layoutManager = LinearLayoutManager(activity)
         }
     }
 }

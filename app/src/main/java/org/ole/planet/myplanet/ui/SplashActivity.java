@@ -3,42 +3,27 @@ package org.ole.planet.myplanet.ui;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.widget.Button;
-import android.widget.RadioButton;
-import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.databinding.ActivitySplashBinding;
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity;
 import org.ole.planet.myplanet.ui.sync.LoginActivity;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.FileUtils;
 
-import java.util.concurrent.Executor;
-
-import javax.inject.Inject;
-
-import dagger.hilt.android.AndroidEntryPoint;
-
 public class SplashActivity extends AppCompatActivity {
-
-    RadioButton rbChild, rbNormal;
-    Button getStarted;
-    TextView tvAvailableSpace;
+    private ActivitySplashBinding binding;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_splash);
-        rbChild = findViewById(R.id.child_login);
-        rbNormal = findViewById(R.id.normal_login);
-        getStarted = findViewById(R.id.get_started);
+        binding = ActivitySplashBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
 
         // Find and show space available on the device
-        tvAvailableSpace = findViewById(R.id.tv_available_space);
-        tvAvailableSpace.setText(FileUtils.getAvailableOverTotalMemoryFormattedString());
+        binding.tvAvailableSpace.setText(FileUtils.getAvailableOverTotalMemoryFormattedString());
 
         FileUtils.copyAssets(this);
         SharedPreferences settings = getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE);
@@ -52,8 +37,8 @@ public class SplashActivity extends AppCompatActivity {
             startActivity(new Intent(SplashActivity.this, LoginActivity.class));
             finish();
         }
-        getStarted.setOnClickListener(view -> {
-            settings.edit().putBoolean("isChild", rbChild.isChecked()).commit();
+        binding.getStarted.setOnClickListener(view -> {
+            settings.edit().putBoolean("isChild", binding.childLogin.isChecked()).commit();
             startActivity(new Intent(SplashActivity.this, LoginActivity.class));
         });
     }

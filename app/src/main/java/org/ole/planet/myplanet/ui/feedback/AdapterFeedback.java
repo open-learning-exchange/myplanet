@@ -17,6 +17,8 @@ import org.ole.planet.myplanet.utilities.TimeUtils;
 
 import java.util.List;
 
+import io.realm.RealmResults;
+
 public class AdapterFeedback extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private Context context;
     private List<RealmFeedback> list;
@@ -24,6 +26,11 @@ public class AdapterFeedback extends RecyclerView.Adapter<RecyclerView.ViewHolde
     public AdapterFeedback(Context context, List<RealmFeedback> list) {
         this.context = context;
         this.list = list;
+    }
+
+    public void updateData(RealmResults<RealmFeedback> newData) {
+        list = newData;
+        notifyDataSetChanged();
     }
 
     @NonNull

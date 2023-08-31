@@ -22,7 +22,6 @@ import java.util.ArrayList;
 
 public abstract class PermissionActivity extends AppCompatActivity {
     private static final int PERMISSION_REQUEST_CODE_FILE = 111;
-    private static final int PERMISSION_REQUEST_CODE_CAMERA = 112;
 
     public boolean checkPermission(String strPermission) {
         int result = ContextCompat.checkSelfPermission(this, strPermission);
@@ -101,7 +100,7 @@ public abstract class PermissionActivity extends AppCompatActivity {
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == PERMISSION_REQUEST_CODE_FILE || requestCode == PERMISSION_REQUEST_CODE_CAMERA) {
+        if (requestCode == PERMISSION_REQUEST_CODE_FILE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 Toast.makeText(this, R.string.permissions_granted, Toast.LENGTH_SHORT).show();
             } else {

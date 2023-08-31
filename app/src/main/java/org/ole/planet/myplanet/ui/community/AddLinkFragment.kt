@@ -12,11 +12,8 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import io.realm.Realm
-import kotlinx.android.synthetic.main.fragment_add_link.btn_save
-import kotlinx.android.synthetic.main.fragment_add_link.et_name
-import kotlinx.android.synthetic.main.fragment_add_link.rv_list
-import kotlinx.android.synthetic.main.fragment_add_link.spn_link
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.databinding.FragmentAddLinkBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.ui.team.AdapterTeam
@@ -25,6 +22,7 @@ import java.util.Locale
 import java.util.UUID
 
 class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedListener {
+    private lateinit var fragmentAddLinkBinding: FragmentAddLinkBinding
     override fun onNothingSelected(p0: AdapterView<*>?) {
     }
 
@@ -36,16 +34,16 @@ class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedL
         val query =
             mRealm.where(RealmMyTeam::class.java).isEmpty("teamId").isNotEmpty("name").equalTo(
                 "type",
-                if (spn_link.selectedItem.toString().equals("Enterprises")) "enterprise" else ""
+                if (fragmentAddLinkBinding.spnLink.selectedItem.toString().equals("Enterprises")) "enterprise" else ""
             ).notEqualTo("status", "archived").findAll()
-        rv_list.layoutManager = LinearLayoutManager(requireActivity())
+        fragmentAddLinkBinding.rvList.layoutManager = LinearLayoutManager(requireActivity())
         Utilities.log("SIZE ${query}")
         val adapter = AdapterTeam(requireActivity(), query, mRealm)
         adapter.setTeamSelectedListener { team ->
             this.selectedTeam = team;
             Utilities.toast(requireActivity(), """Selected ${team.name}""")
         }
-        rv_list.adapter = adapter
+        fragmentAddLinkBinding.rvList.adapter = adapter
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
@@ -64,16 +62,17 @@ class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedL
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View? {
-        return inflater.inflate(R.layout.fragment_add_link, container, false)
+        fragmentAddLinkBinding = FragmentAddLinkBinding.inflate(inflater, container, false)
+        return fragmentAddLinkBinding.root
     }
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         mRealm = DatabaseService(requireActivity()).realmInstance
-        spn_link.onItemSelectedListener = this
-        btn_save.setOnClickListener {
-            var type = spn_link?.selectedItem.toString()
-            var title = et_name?.text.toString()
+        fragmentAddLinkBinding.spnLink.onItemSelectedListener = this
+        fragmentAddLinkBinding.btnSave.setOnClickListener {
+            var type = fragmentAddLinkBinding.spnLink?.selectedItem.toString()
+            var title = fragmentAddLinkBinding.etName?.text.toString()
             if (title.isNullOrEmpty()) {
                 Utilities.toast(requireActivity(), getString(R.string.title_is_required))
                 return@setOnClickListener
@@ -88,7 +87,7 @@ class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedL
                 team.docType = "link"
                 team.isUpdated = true
                 team.title = title
-                team.route = """/${type.toLowerCase(Locale.ROOT)}/view/${selectedTeam!!._id}"""
+                team.route = """/${type.lowercase(Locale.ROOT)}/view/${selectedTeam!!._id}"""
                 dismiss()
 
             }

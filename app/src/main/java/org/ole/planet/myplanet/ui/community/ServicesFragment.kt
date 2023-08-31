@@ -9,10 +9,9 @@ import android.widget.TextView
 import androidx.fragment.app.Fragment
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import io.realm.Realm
-import kotlinx.android.synthetic.main.fragment_services.fab
-import kotlinx.android.synthetic.main.fragment_services.ll_services
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
+import org.ole.planet.myplanet.databinding.FragmentServicesBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -20,19 +19,21 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 
 class ServicesFragment : Fragment() {
+    private lateinit var fragmentServicesBinding: FragmentServicesBinding
     var mRealm: Realm? = null;
     var user: RealmUserModel? = null;
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View? {
-        return inflater.inflate(R.layout.fragment_services, container, false)
+        fragmentServicesBinding = FragmentServicesBinding.inflate(inflater, container, false)
+        return fragmentServicesBinding.root
     }
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         mRealm = DatabaseService(requireActivity()).realmInstance
         user = UserProfileDbHandler(requireActivity()).userModel
-        fab.setOnClickListener {
+        fragmentServicesBinding.fab.setOnClickListener {
             var bottomSheetDialog: BottomSheetDialogFragment = AddLinkFragment()
             bottomSheetDialog.show(childFragmentManager, "")
             Handler().postDelayed({
@@ -44,15 +45,15 @@ class ServicesFragment : Fragment() {
         setRecyclerView()
 
         if (user?.isManager == true || user?.isLeader == true) {
-            fab.show()
+            fragmentServicesBinding.fab.show()
         } else {
-            fab.hide()
+            fragmentServicesBinding.fab.hide()
         }
     }
 
     private fun setRecyclerView() {
         val links = mRealm!!.where(RealmMyTeam::class.java).equalTo("docType", "link").findAll()
-        ll_services.removeAllViews()
+        fragmentServicesBinding.llServices.removeAllViews()
         links.forEach { team ->
             var b: TextView =
                 LayoutInflater.from(activity).inflate(R.layout.button_single, null) as TextView;
@@ -62,17 +63,16 @@ class ServicesFragment : Fragment() {
                 val route = team.route.split("/")
                 if (route.size >= 3) {
                     val f = TeamDetailFragment()
-                    val b = Bundle()
+                    val c = Bundle()
                     var teamObject =
                         mRealm!!.where(RealmMyTeam::class.java).equalTo("_id", route[3]).findFirst()
-                    b.putString("id", route[3])
-                    b.putBoolean("isMyTeam", teamObject!!.isMyTeam(user?.id, mRealm))
-                    f.arguments = b
+                    c.putString("id", route[3])
+                    c.putBoolean("isMyTeam", teamObject!!.isMyTeam(user?.id, mRealm))
+                    f.arguments = c
                     (context as OnHomeItemClickListener).openCallFragment(f)
                 }
             }
-            ll_services.addView(b)
+            fragmentServicesBinding.llServices.addView(b)
         }
     }
-
 }

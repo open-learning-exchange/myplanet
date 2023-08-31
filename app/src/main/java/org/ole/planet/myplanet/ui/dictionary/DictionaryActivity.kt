@@ -1,44 +1,36 @@
 package org.ole.planet.myplanet.ui.dictionary
 
 import android.os.Bundle
-import android.os.PersistableBundle
-import android.text.Html
-import androidx.fragment.app.Fragment
-import android.view.LayoutInflater
-import android.view.MenuItem
-import android.view.View
-import android.view.ViewGroup
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.text.HtmlCompat
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmResults
-import kotlinx.android.synthetic.main.fragment_dictionary.*
-
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
+import org.ole.planet.myplanet.databinding.FragmentDictionaryBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmDictionary
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.Utilities
-import java.util.*
-import java.util.concurrent.Executors
+import java.util.UUID
 
 class DictionaryActivity : BaseActivity() {
+    lateinit var fragmentDictionaryBinding: FragmentDictionaryBinding
     lateinit var mRealm: Realm;
     var list: RealmResults<RealmDictionary>? = null;
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.fragment_dictionary)
+        fragmentDictionaryBinding = FragmentDictionaryBinding.inflate(layoutInflater)
+        setContentView(fragmentDictionaryBinding.root)
         initActionBar()
         title = getString(R.string.dictionary)
         mRealm = DatabaseService(this).realmInstance;
-        list = mRealm?.where(RealmDictionary::class.java)?.findAll()
-        tv_result.text = "${getString(R.string.list_size)} ${list?.size}"
+        list = mRealm.where(RealmDictionary::class.java)?.findAll()
+        fragmentDictionaryBinding.tvResult.text = "${getString(R.string.list_size)} ${list?.size}"
         Utilities.log("${FileUtils.checkFileExist(Constants.DICTIONARY_URL)} file")
         if (FileUtils.checkFileExist(Constants.DICTIONARY_URL)) {
             Utilities.log("List " + list?.size)
@@ -56,7 +48,7 @@ class DictionaryActivity : BaseActivity() {
             var data =
                 FileUtils.getStringFromFile(FileUtils.getSDPathFromUrl(Constants.DICTIONARY_URL))
             var json = Gson().fromJson(data, JsonArray::class.java)
-            mRealm?.executeTransactionAsync { it ->
+            mRealm.executeTransactionAsync { it ->
                 json.forEach { js ->
                     var doc = js.asJsonObject
                     var dict = it.where(RealmDictionary::class.java)
@@ -82,12 +74,12 @@ class DictionaryActivity : BaseActivity() {
     }
 
     private fun setClickListener() {
-        btn_search.setOnClickListener {
+        fragmentDictionaryBinding.btnSearch.setOnClickListener {
             var dict = mRealm.where(RealmDictionary::class.java)
-                ?.equalTo("word", et_search.text.toString(), Case.INSENSITIVE)?.findFirst()
+                ?.equalTo("word", fragmentDictionaryBinding.etSearch.text.toString(), Case.INSENSITIVE)?.findFirst()
             if (dict != null) {
-                tv_result.text = HtmlCompat.fromHtml(
-                    "Definition of '<b>" + dict?.word + "</b>'<br/><br/>\n " + "<b>" + dict?.definition + "\n</b><br/><br/><br/>" + "<b>Synonym : </b>" + dict?.synonym + "\n<br/><br/>" + "<b>Antonoym : </b>" + dict?.antonoym + "\n<br/>",
+                fragmentDictionaryBinding.tvResult.text = HtmlCompat.fromHtml(
+                    "Definition of '<b>" + dict.word + "</b>'<br/><br/>\n " + "<b>" + dict.definition + "\n</b><br/><br/><br/>" + "<b>Synonym : </b>" + dict.synonym + "\n<br/><br/>" + "<b>Antonoym : </b>" + dict.antonoym + "\n<br/>",
                     HtmlCompat.FROM_HTML_MODE_LEGACY
                 )
             } else {

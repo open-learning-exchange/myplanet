@@ -5,14 +5,13 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseContainerFragment;
+import org.ole.planet.myplanet.databinding.FragmentCourseStepBinding;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmCourseProgress;
 import org.ole.planet.myplanet.model.RealmCourseStep;
@@ -31,16 +30,13 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
-import br.tiagohm.markdownview.MarkdownView;
 import io.realm.Case;
 import io.realm.Realm;
 import io.realm.RealmResults;
 
 public class CourseStepFragment extends BaseContainerFragment implements CameraUtils.ImageCaptureCallback {
-    TextView tvTitle;
-    MarkdownView description;
+    private FragmentCourseStepBinding fragmentCourseStepBinding;
     String stepId;
-    Button btnResource, btnExam, btnOpen;
     DatabaseService dbService;
     Realm mRealm;
     RealmCourseStep step;
@@ -68,17 +64,12 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View v = inflater.inflate(R.layout.fragment_course_step, container, false);
-        tvTitle = v.findViewById(R.id.tv_title);
-        description = v.findViewById(R.id.description);
-        btnExam = v.findViewById(R.id.btn_take_test);
-        btnOpen = v.findViewById(R.id.btn_open);
-        btnResource = v.findViewById(R.id.btn_resources);
+        fragmentCourseStepBinding = FragmentCourseStepBinding.inflate(inflater, container, false);
         dbService = new DatabaseService(getActivity());
         mRealm = dbService.getRealmInstance();
         user = new UserProfileDbHandler(getActivity()).getUserModel();
-        btnExam.setVisibility(Constants.showBetaFeature(Constants.KEY_EXAM, getActivity()) ? View.VISIBLE : View.GONE);
-        return v;
+        fragmentCourseStepBinding.btnTakeTest.setVisibility(Constants.showBetaFeature(Constants.KEY_EXAM, getActivity()) ? View.VISIBLE : View.GONE);
+        return fragmentCourseStepBinding.getRoot();
     }
 
     public void saveCourseProgress() {
@@ -113,26 +104,26 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
         step = mRealm.where(RealmCourseStep.class).equalTo("id", stepId).findFirst();
         resources = mRealm.where(RealmMyLibrary.class).equalTo("stepId", stepId).findAll();
         stepExams = mRealm.where(RealmStepExam.class).equalTo("stepId", stepId).findAll();
-        if (resources != null) btnResource.setText(getString(R.string.resources) + " ["+ resources.size() + "]");
+        if (resources != null) fragmentCourseStepBinding.btnResources.setText(getString(R.string.resources) + " ["+ resources.size() + "]");
         hideTestIfNoQuestion();
-        tvTitle.setText(step.getStepTitle());
-        description.loadMarkdown(step.getDescription());
+        fragmentCourseStepBinding.tvTitle.setText(step.getStepTitle());
+        fragmentCourseStepBinding.description.loadMarkdown(step.getDescription());
         if (!RealmMyCourse.isMyCourse(user.getId(), step.getCourseId(), mRealm)) {
-            btnExam.setVisibility(View.INVISIBLE);
+            fragmentCourseStepBinding.btnTakeTest.setVisibility(View.INVISIBLE);
         }
         setListeners();
     }
 
     private void hideTestIfNoQuestion() {
-        btnExam.setVisibility(View.INVISIBLE);
+        fragmentCourseStepBinding.btnTakeTest.setVisibility(View.INVISIBLE);
         if (stepExams != null && stepExams.size() > 0) {
             String first_step_id = stepExams.get(0).getId();
             RealmResults<RealmExamQuestion> questions = mRealm.where(RealmExamQuestion.class).equalTo("examId", first_step_id).findAll();
             long submissionsCount = mRealm.where(RealmSubmission.class).contains("parentId", step.getCourseId()).notEqualTo("status", "pending", Case.INSENSITIVE).count();
 
             if (questions != null && questions.size() > 0) {
-                btnExam.setText((submissionsCount > 0 ? getString(R.string.retake_test) : getString(R.string.take_test)) + " [" + stepExams.size() + "]");
-                btnExam.setVisibility(View.VISIBLE);
+                fragmentCourseStepBinding.btnTakeTest.setText((submissionsCount > 0 ? getString(R.string.retake_test) : getString(R.string.take_test)) + " [" + stepExams.size() + "]");
+                fragmentCourseStepBinding.btnTakeTest.setVisibility(View.VISIBLE);
             }
         }
     }
@@ -151,9 +142,9 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
 
     private void setListeners() {
         final RealmResults notDownloadedResources = mRealm.where(RealmMyLibrary.class).equalTo("stepId", stepId).equalTo("resourceOffline", false).isNotNull("resourceLocalAddress").findAll();
-        setResourceButton(notDownloadedResources, btnResource);
+        setResourceButton(notDownloadedResources, fragmentCourseStepBinding.btnResources);
 
-        btnExam.setOnClickListener(view -> {
+        fragmentCourseStepBinding.btnTakeTest.setOnClickListener(view -> {
             if (stepExams.size() > 0) {
                 Fragment takeExam = new TakeExamFragment();
                 Bundle b = new Bundle();
@@ -166,7 +157,7 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
         });
         final List<RealmMyLibrary> downloadedResources = mRealm.where(RealmMyLibrary.class).equalTo("stepId", stepId).equalTo("resourceOffline", true).isNotNull("resourceLocalAddress").findAll();
 
-        setOpenResourceButton(downloadedResources, btnOpen);
+        setOpenResourceButton(downloadedResources, fragmentCourseStepBinding.btnOpen);
 
     }
 

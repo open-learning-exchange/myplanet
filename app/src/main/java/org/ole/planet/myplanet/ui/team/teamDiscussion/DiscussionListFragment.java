@@ -122,6 +122,7 @@ public class DiscussionListFragment extends BaseTeamFragment {
             RealmNews.createNews(map, mRealm, user, imageList);
             Utilities.log("discussion created");
             rvDiscussion.getAdapter().notifyDataSetChanged();
+            setData(getNews());
         }).setNegativeButton(getString(R.string.cancel), null).show();
     }
 
