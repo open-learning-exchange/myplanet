@@ -22,8 +22,9 @@ public class AdapterSteps extends RecyclerView.Adapter<AdapterSteps.ViewHolder> 
     private Context context;
     private List<RealmCourseStep> list;
     private Realm realm;
-    private List<Boolean> descriptionVisibilityList = new ArrayList<>();
+    private final List<Boolean> descriptionVisibilityList = new ArrayList<>();
     private int currentlyVisiblePosition = RecyclerView.NO_POSITION;
+
     public AdapterSteps(Context context, List<RealmCourseStep> list, Realm realm) {
         this.context = context;
         this.list = list;
@@ -85,12 +86,14 @@ public class AdapterSteps extends RecyclerView.Adapter<AdapterSteps.ViewHolder> 
     }
 
     private void toggleDescriptionVisibility(int position) {
-        if (position == currentlyVisiblePosition) {
-            currentlyVisiblePosition = RecyclerView.NO_POSITION;
-        } else {
-            currentlyVisiblePosition = position;
+        if (currentlyVisiblePosition != RecyclerView.NO_POSITION) {
+            descriptionVisibilityList.set(currentlyVisiblePosition, false);
+            notifyItemChanged(currentlyVisiblePosition);
         }
-        notifyDataSetChanged();
+
+        descriptionVisibilityList.set(position, !descriptionVisibilityList.get(position));
+        notifyItemChanged(position);
+
+        currentlyVisiblePosition = descriptionVisibilityList.get(position) ? position : RecyclerView.NO_POSITION;
     }
 }
-
