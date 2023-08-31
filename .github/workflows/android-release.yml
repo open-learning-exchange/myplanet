@@ -19,7 +19,7 @@ jobs:
       - name: checkout repository code
         uses: actions/checkout@v3
 
-      - name: set output
+      - name: set more env
         run: echo "BRANCHNAME="${GITHUB_REF##*/} >> $GITHUB_ENV
 
       - name: expose version from build.gradle
@@ -80,10 +80,10 @@ jobs:
       - name: rename APK/AAB with version and branch for artifact
         if: github.ref != 'refs/heads/master'
         run: |
-          mv output/myPlanet.apk output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${GITHUB_REF##*/}.apk
-          mv output/myPlanet.apk.sha256 output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${GITHUB_REF##*/}.apk.sha256
-          mv output/myPlanet.aab output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${GITHUB_REF##*/}.aab
-          mv output/myPlanet.aab.sha256 output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${GITHUB_REF##*/}.aab.sha256
+          mv output/myPlanet.apk output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}.apk
+          mv output/myPlanet.apk.sha256 output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}.apk.sha256
+          mv output/myPlanet.aab output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}.aab
+          mv output/myPlanet.aab.sha256 output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}.aab.sha256
           ls -alR output
 
       - name: upload APK/AAB as build artifact
@@ -91,7 +91,6 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}
-          #name: myPlanet-${{ env.ANDROID_VERSION_NAME }}
           path: output/*
           retention-days: 9
 
