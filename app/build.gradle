@@ -23,7 +23,7 @@ android {
         }
     }
     configurations.all {
-        resolutionStrategy.force 'com.google.android.material:material:1.0.0'
+        resolutionStrategy.force 'com.google.android.material:material:1.9.0'
     }
     buildTypes {
         release {
