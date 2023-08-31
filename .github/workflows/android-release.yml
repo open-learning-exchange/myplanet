@@ -50,24 +50,22 @@ jobs:
           cp app/build/outputs/apk/debug/myPlanet-build.apk output/
 
       - name: sign release APK
-        uses: kevin-david/zipalign-sign-android-release@v1
+        uses: noriban/sign-android-release@v3
         with:
           releaseDirectory: app/build/outputs/apk/release
           signingKeyBase64: ${{ secrets.SIGNING_KEY }}
           alias: ${{ secrets.ALIAS }}
           keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
-          zipAlign: true
 
       - name: sign release AAB
-        uses: kevin-david/zipalign-sign-android-release@v1
+        uses: noriban/sign-android-release@v3
         with:
           releaseDirectory: app/build/outputs/bundle/release
           signingKeyBase64: ${{ secrets.SIGNING_KEY }}
           alias: ${{ secrets.ALIAS }}
           keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
-          zipAlign: true
 
       - name: copy builds to directory and generate sha256
         run: |
