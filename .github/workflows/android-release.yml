@@ -42,7 +42,7 @@ jobs:
 
       - name: build release APK and AAB
         run: |
-          ./gradlew build bundleRelease
+          ./gradlew assembleRelease bundleRelease
           ls -alR app/build/outputs
           mkdir -p output
           cp app/build/outputs/bundle/release/app-release.aab output/myPlanet.aab
@@ -67,7 +67,7 @@ jobs:
           ls -alR output
 
       - name: publish to playstore
-        if: github.ref == 'refs/heads/master'
+        #if: github.ref == 'refs/heads/master'
         uses: r0adkll/upload-google-play@v1.1.1
         with:
           serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
