@@ -3,9 +3,12 @@ package org.ole.planet.myplanet.ui.library;
 import static android.app.Activity.RESULT_OK;
 
 import android.app.Dialog;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
@@ -52,6 +55,7 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
     FloatingActionButton floatingActionButton;
     AudioRecorderService audioRecorderService;
     File output;
+    private Uri photoURI;
 
     public AddResourceFragment() {
     }
@@ -151,7 +155,7 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
             public void onRecordStopped(String outputFile) {
                 tvTime.setText("");
                 dialog.dismiss();
-                startIntent(outputFile);
+//                startIntent(outputFile);
                 floatingActionButton.setImageResource(R.drawable.ic_mic);
             }
 
@@ -181,48 +185,67 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
     }
 
     public void takePhoto() {
+        ContentValues values = new ContentValues();
+        values.put(MediaStore.Images.Media.TITLE, "Photo_" + UUID.randomUUID().toString());
+        values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpgg");
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            values.put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/ole/photo");
+        }
+
+        photoURI = requireActivity().getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+
         Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM);
-        output = new File(dir, UUID.randomUUID().toString() + ".jpg");
-
-        // Generate a content URI using FileProvider
-        Uri photoURI = FileProvider.getUriForFile(requireContext(), "org.ole.planet.myplanet.fileprovider", output);
-
-        // Grant temporary permission to the camera app to access the file
-        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-
-        // Set the output URI
         intent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
-        startActivityForResult(intent, REQUEST_CAPTURE_PICTURE);
+
+        if (intent.resolveActivity(requireActivity().getPackageManager()) != null) {
+            startActivityForResult(intent, REQUEST_CAPTURE_PICTURE);
+        }
     }
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (resultCode == RESULT_OK) {
-            Uri url = null;
-            String path = "";
+            Uri uri = null;
+//            String path = "";
             if (requestCode == REQUEST_CAPTURE_PICTURE) {
-                if (output != null) {
-                    url = Uri.fromFile(output);
-                    path = url.getPath();
-                }
+                uri = photoURI;
             } else {
-                url = data.getData();
-                path = FileUtils.getRealPathFromURI(getActivity(), url);
-                if (TextUtils.isEmpty(path)) {
-                    path = FileUtils.getImagePath(getActivity(), url);
-                }
+//                url = data.getData();
+//                path = FileUtils.getRealPathFromURI(getActivity(), url);
+//                if (TextUtils.isEmpty(path)) {
+//                    path = FileUtils.getImagePath(getActivity(), url);
+//                }
             }
-            startIntent(path);
+            startIntent(uri, requestCode);
         }
     }
 
-    private void startIntent(String path) {
-        if (!TextUtils.isEmpty(path)) {
+    private void startIntent(Uri uri, int requestCode) {
+        String path = null;
+
+        if (requestCode == REQUEST_CAPTURE_PICTURE || requestCode == REQUEST_VIDEO_CAPTURE) {
+            path = getRealPathFromUri(uri);
+        }
+
+        if (path != null && !path.isEmpty()) {
             addResource(path);
         } else {
             Utilities.toast(getActivity(), getString(R.string.invalid_resource_url));
         }
+    }
+
+    private String getRealPathFromUri(Uri uri) {
+        String[] projection = {MediaStore.Images.Media.DATA};
+
+        try (Cursor cursor = requireActivity().getContentResolver().query(uri, projection, null, null, null)) {
+            if (cursor != null && cursor.moveToFirst()) {
+                int columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
+                return cursor.getString(columnIndex);
+            }
+        }
+
+        return "";
     }
 
     private void addResource(String path) {
