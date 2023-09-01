@@ -187,7 +187,7 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
     public void takePhoto() {
         ContentValues values = new ContentValues();
         values.put(MediaStore.Images.Media.TITLE, "Photo_" + UUID.randomUUID().toString());
-        values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpgg");
+        values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             values.put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/ole/photo");
