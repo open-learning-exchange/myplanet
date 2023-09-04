@@ -1,21 +1,19 @@
 package org.ole.planet.myplanet.ui.rating;
 
+import static android.content.Context.MODE_PRIVATE;
+
 import android.content.SharedPreferences;
 import android.os.Bundle;
-
-import androidx.annotation.Nullable;
-import androidx.appcompat.widget.AppCompatRatingBar;
-import androidx.fragment.app.DialogFragment;
-
-import android.text.TextUtils;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
-import android.widget.Toast;
+
+import androidx.annotation.Nullable;
+import androidx.appcompat.widget.AppCompatRatingBar;
+import androidx.fragment.app.DialogFragment;
 
 import com.google.gson.Gson;
 
@@ -32,8 +30,6 @@ import java.util.UUID;
 
 import io.realm.Realm;
 
-import static android.content.Context.MODE_PRIVATE;
-
 public class RatingFragment extends DialogFragment {
     DatabaseService databaseService;
     RealmUserModel model;
@@ -42,6 +38,7 @@ public class RatingFragment extends DialogFragment {
     Button submit, cancel;
     AppCompatRatingBar ratingBar;
     EditText etComment;
+    TextView ratingError;
     SharedPreferences settings;
     OnRatingChangeListener listener;
     RealmRating previousRating;
@@ -81,6 +78,7 @@ public class RatingFragment extends DialogFragment {
         cancel = v.findViewById(R.id.btn_cancel);
         etComment = v.findViewById(R.id.et_comment);
         ratingBar = v.findViewById(R.id.rating_bar);
+        ratingError = v.findViewById(R.id.ratingError);
         databaseService = new DatabaseService(getActivity());
         mRealm = databaseService.getRealmInstance();
 
@@ -98,15 +96,18 @@ public class RatingFragment extends DialogFragment {
             etComment.setText(previousRating.getComment());
         }
 
+        ratingBar.setOnRatingBarChangeListener((ratingBar, rating, fromUser) -> {
+            if (fromUser) {
+                ratingError.setVisibility(View.GONE);
+            }
+        });
+
         cancel.setOnClickListener(view -> dismiss());
         submit.setOnClickListener(view -> {
-            if (TextUtils.isEmpty(etComment.getText().toString().trim())) {
-                etComment.setError(getString(R.string.kindly_enter_comment));
-                Log.d("rating", ""+ ratingBar.getRating());
-            } else if(ratingBar.getRating() == 0.0){
-                Toast.makeText(requireContext(), R.string.kindly_give_a_rating, Toast.LENGTH_LONG).show();
-            }
-            else {
+            if(ratingBar.getRating() == 0.0){
+                ratingError.setVisibility(View.VISIBLE);
+                ratingError.setText(getString(R.string.kindly_give_a_rating));
+            } else {
                 saveRating();
             }
         }
@@ -116,7 +117,6 @@ public class RatingFragment extends DialogFragment {
     private void saveRating() {
         final String comment = etComment.getText().toString();
         float rating = ratingBar.getRating();
-        Log.d("rating", ""+ ratingBar.getRating());
         mRealm.executeTransactionAsync(realm -> {
             RealmRating ratingObject = realm.where(RealmRating.class).equalTo("type", type).equalTo("userId", settings.getString("userId", "")).equalTo("item", id).findFirst();
             if (ratingObject == null)
