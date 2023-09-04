@@ -55,10 +55,6 @@ class OnBoardingActivity : AppCompatActivity() {
             override fun onPageScrollStateChanged(state: Int) {}
         })
 
-        binding.getStarted.setOnClickListener {
-            finishTutorial()
-        }
-
         binding.skip.setOnClickListener{
             finishTutorial()
         }
