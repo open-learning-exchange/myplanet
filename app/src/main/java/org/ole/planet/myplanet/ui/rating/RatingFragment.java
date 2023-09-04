@@ -13,6 +13,7 @@ import androidx.fragment.app.DialogFragment;
 
 import com.google.gson.Gson;
 
+import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.databinding.FragmentRatingBinding;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
@@ -83,7 +84,7 @@ public class RatingFragment extends DialogFragment {
             fragmentRatingBinding.ratingBar.setRating(previousRating.getRate());
             fragmentRatingBinding.etComment.setText(previousRating.getComment());
         }
-        fragmentRatingBinding.ratingBar.setOnRatingBarChangeListener((fragmentRatingBinding.ratingBar, rating, fromUser) -> {
+        fragmentRatingBinding.ratingBar.setOnRatingBarChangeListener((ratingBar, rating, fromUser) -> {
             if (fromUser) {
                 fragmentRatingBinding.ratingError.setVisibility(View.GONE);
             }
