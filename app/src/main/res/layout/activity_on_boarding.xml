@@ -25,31 +25,11 @@
         android:id="@+id/viewPagerCountDots"
         android:layout_width="match_parent"
         android:layout_height="16dp"
-        android:layout_above="@+id/ll_footer"
+        android:layout_above="@+id/next"
         android:layout_alignParentStart="true"
         android:layout_margin="10dp"
         android:gravity="center"
         android:orientation="horizontal" />
-
-    <LinearLayout
-        android:id="@+id/ll_footer"
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentBottom="true"
-        android:orientation="vertical">
-
-        <Button
-            android:id="@+id/getStarted"
-            style="?android:attr/borderlessButtonStyle"
-            android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:background="@color/colorPrimary"
-            android:text="Get Started"
-            android:textAllCaps="false"
-            android:textColor="@color/md_white_1000"
-            android:textSize="18sp"
-            android:visibility="gone" />
 
         <Button
             android:id="@+id/next"
@@ -61,6 +41,7 @@
             android:textAllCaps="false"
             android:textColor="@color/md_white_1000"
             android:textSize="18sp"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentBottom="true"
             android:visibility="visible" />
-    </LinearLayout>
 </RelativeLayout>

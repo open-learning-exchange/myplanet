@@ -4,9 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
-import android.view.View
-import android.view.animation.Animation
-import android.view.animation.AnimationUtils
 import android.widget.ImageView
 import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
@@ -21,7 +18,6 @@ class OnBoardingActivity : AppCompatActivity() {
     private lateinit var mAdapter: OnBoardingAdapter
     private val onBoardItems = ArrayList<OnBoardItem>()
     private var dotsCount = 0
-    private var previousPos = 0
     private lateinit var dots: Array<ImageView?>
 
     companion object {
@@ -53,18 +49,7 @@ class OnBoardingActivity : AppCompatActivity() {
                 for (i in 0 until dotsCount) {
                     dots[i]?.setImageDrawable(ContextCompat.getDrawable(this@OnBoardingActivity, R.drawable.non_selected_item_dot))
                 }
-
                 dots[position]?.setImageDrawable(ContextCompat.getDrawable(this@OnBoardingActivity, R.drawable.selected_item_dot))
-                val pos = position + 1
-                if (pos == dotsCount && previousPos == dotsCount - 1) {
-                    showAnimation()
-                    binding.next.visibility =View.GONE
-                } else if (pos == dotsCount - 1 && previousPos == dotsCount) {
-                    hideAnimation()
-                    binding.next.visibility =View.VISIBLE
-                }
-
-                previousPos = pos
             }
 
             override fun onPageScrollStateChanged(state: Int) {}
@@ -82,6 +67,8 @@ class OnBoardingActivity : AppCompatActivity() {
             val currentPosition = binding.pagerIntroduction.currentItem
             if (currentPosition < mAdapter.count - 1) {
                 binding.pagerIntroduction.setCurrentItem(currentPosition + 1, true)
+            } else {
+                finishTutorial()
             }
         }
 
@@ -89,49 +76,35 @@ class OnBoardingActivity : AppCompatActivity() {
     }
 
     private fun loadData() {
-        val header = intArrayOf(R.string.app_project_name, R.string.app_project_name, R.string.app_project_name)
-        val desc = intArrayOf(R.string.ob_desc1, R.string.ob_desc2, R.string.ob_desc3)
-        val imageId = intArrayOf(R.drawable.ole_logo, R.drawable.ole_logo, R.drawable.ole_logo)
+        val descArrayPage1 = intArrayOf(R.string.ob_desc1)
+        val descArrayPage2 = intArrayOf(R.string.ob_desc2_1, R.string.ob_desc2_2)
+        val descArrayPage3 = intArrayOf(R.string.ob_desc3_1, R.string.ob_desc3_2)
+        val descArrayPage4 = intArrayOf(R.string.ob_desc4_1, R.string.ob_desc4_2, R.string.ob_desc4_3, R.string.ob_desc4_4, R.string.ob_desc4_5)
+        val header = intArrayOf(R.string.welcome_to_myPlanet, R.string.learn_offline, R.string.open_learning, R.string.unleash_learning_power)
+        val imageId = intArrayOf(R.drawable.ole_logo, R.drawable.ole_logo, R.drawable.ole_logo, R.drawable.ole_logo);
 
         for (i in imageId.indices) {
+            val descResourceArray = when (i) {
+                0 -> descArrayPage1
+                1 -> descArrayPage2
+                2 -> descArrayPage3
+                3 -> descArrayPage4
+                else -> intArrayOf()
+            }
+
+            val stringBuilder = StringBuilder()
+
+            for (descResId in descResourceArray) {
+                stringBuilder.append(resources.getString(descResId)).append("\n")
+            }
+
             val item = OnBoardItem().apply {
                 imageID = imageId[i]
                 title = resources.getString(header[i])
-                description = resources.getString(desc[i])
+                description = stringBuilder.toString()
             }
             onBoardItems.add(item)
         }
-    }
-
-    private fun showAnimation() {
-        val show: Animation = AnimationUtils.loadAnimation(this, R.anim.slide_up_anim)
-        binding.getStarted.startAnimation(show)
-        show.setAnimationListener(object : Animation.AnimationListener {
-            override fun onAnimationStart(animation: Animation) {
-                binding.getStarted.visibility = View.VISIBLE
-            }
-
-            override fun onAnimationRepeat(animation: Animation) {}
-
-            override fun onAnimationEnd(animation: Animation) {
-                binding.getStarted.clearAnimation()
-            }
-        })
-    }
-
-    private fun hideAnimation() {
-        val hide: Animation = AnimationUtils.loadAnimation(this, R.anim.slide_down_anim)
-        binding.getStarted.startAnimation(hide)
-        hide.setAnimationListener(object : Animation.AnimationListener {
-            override fun onAnimationStart(animation: Animation) {}
-
-            override fun onAnimationRepeat(animation: Animation) {}
-
-            override fun onAnimationEnd(animation: Animation) {
-                binding.getStarted.clearAnimation()
-                binding.getStarted.visibility = View.GONE
-            }
-        })
     }
 
     private fun setUiPageViewController() {
@@ -140,7 +113,7 @@ class OnBoardingActivity : AppCompatActivity() {
 
         for (i in 0 until dotsCount) {
             dots[i] = ImageView(this)
-            dots[i]?.setImageDrawable(ContextCompat.getDrawable(this@OnBoardingActivity, R.drawable.non_selected_item_dot))
+            dots[i]?.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.non_selected_item_dot))
 
             val params = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
@@ -150,7 +123,7 @@ class OnBoardingActivity : AppCompatActivity() {
             params.setMargins(6, 0, 6, 0)
             binding.viewPagerCountDots.addView(dots[i], params)
         }
-        dots[0]?.setImageDrawable(ContextCompat.getDrawable(this@OnBoardingActivity, R.drawable.selected_item_dot))
+        dots[0]?.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.selected_item_dot))
     }
 
     private fun finishTutorial() {
