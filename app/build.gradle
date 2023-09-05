@@ -10,8 +10,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdkVersion 19
         targetSdkVersion 33
-        versionCode 1003
-        versionName "0.10.3"
+        versionCode 1004
+        versionName "0.10.4"
         ndkVersion '21.3.6528147'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -23,7 +23,7 @@ android {
         }
     }
     configurations.all {
-        resolutionStrategy.force 'com.google.android.material:material:1.0.0'
+        resolutionStrategy.force 'com.google.android.material:material:1.9.0'
     }
     buildTypes {
         release {
