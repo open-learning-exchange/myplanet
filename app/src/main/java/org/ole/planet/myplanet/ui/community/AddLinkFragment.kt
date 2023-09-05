@@ -66,8 +66,8 @@ class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedL
         return fragmentAddLinkBinding.root
     }
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         mRealm = DatabaseService(requireActivity()).realmInstance
         fragmentAddLinkBinding.spnLink.onItemSelectedListener = this
         fragmentAddLinkBinding.btnSave.setOnClickListener {
@@ -87,7 +87,7 @@ class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedL
                 team.docType = "link"
                 team.isUpdated = true
                 team.title = title
-                team.route = """/${type.toLowerCase(Locale.ROOT)}/view/${selectedTeam!!._id}"""
+                team.route = """/${type.lowercase(Locale.ROOT)}/view/${selectedTeam!!._id}"""
                 dismiss()
 
             }

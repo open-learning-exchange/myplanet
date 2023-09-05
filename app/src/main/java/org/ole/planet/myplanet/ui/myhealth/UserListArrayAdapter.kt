@@ -18,8 +18,7 @@ import java.io.File
 class UserListArrayAdapter(activity: Activity, val view: Int, var list: List<RealmUserModel>) :
     ArrayAdapter<RealmUserModel>(activity, view, list) {
     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-        var v = convertView
-        v = LayoutInflater.from(context).inflate(R.layout.item_user, parent, false)
+        var v: View? = LayoutInflater.from(context).inflate(R.layout.item_user, parent, false)
         val tvName = v?.findViewById<TextView>(R.id.txt_name)
         val joined = v?.findViewById<TextView>(R.id.txt_joined)
         val image = v?.findViewById<ImageView>(R.id.iv_user)
@@ -27,12 +26,12 @@ class UserListArrayAdapter(activity: Activity, val view: Int, var list: List<Rea
         tvName?.text = """${um?.fullName} (${um?.name})"""
         joined?.text = "${context.getString(R.string.joined_colon)} ${TimeUtils.formatDate(um!!.joinDate)}"
 
-        if (!TextUtils.isEmpty(um?.userImage)) Picasso.get().load(um?.userImage)
+        if (!TextUtils.isEmpty(um.userImage)) Picasso.get().load(um.userImage)
             .placeholder(R.drawable.profile).into(image, object : Callback {
                 override fun onSuccess() {}
                 override fun onError(e: Exception) {
                     e.printStackTrace()
-                    val f = File(um?.userImage)
+                    val f = File(um.userImage)
                     Picasso.get().load(f).placeholder(R.drawable.profile).error(R.drawable.profile)
                         .into(image)
                 }

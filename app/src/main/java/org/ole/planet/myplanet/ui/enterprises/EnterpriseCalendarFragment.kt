@@ -11,6 +11,7 @@ import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -51,7 +52,7 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
         end = Calendar.getInstance()
         var fab = v.findViewById<View>(R.id.add_event)
         showHideFab(fab)
-        v.findViewById<View>(R.id.add_event).setOnClickListener { view -> showMeetupAlert() }
+        v.findViewById<View>(R.id.add_event).setOnClickListener { showMeetupAlert() }
         rvCalendar = v.findViewById(R.id.rv_calendar)
         return v
     }
@@ -83,7 +84,7 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
         setTimePicker(endTime)
 
         AlertDialog.Builder(requireActivity()).setView(v)
-            .setPositiveButton("Save") { dialogInterface, i ->
+            .setPositiveButton("Save") { _, _ ->
                 val ttl = title.text.toString()
                 val desc = description.text.toString()
                 val loc = location.text.toString()
@@ -101,8 +102,8 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
                     meetup.description = desc
                     meetup.meetupLocation = loc
                     meetup.creator = user.id
-                    meetup.startDate = start!!.timeInMillis
-                    if (end != null) meetup.endDate = end!!.timeInMillis
+                    meetup.startDate = start.timeInMillis
+                    if (end != null) meetup.endDate = end.timeInMillis
                     meetup.endTime = endTime.text.toString()
                     meetup.startTime = startTime.text.toString()
                     val rb = v.findViewById<RadioButton>(radioGroup.checkedRadioButtonId)
@@ -123,9 +124,9 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
 
     private fun setDatePickerListener(view: TextView, date: Calendar?) {
         val c = Calendar.getInstance()
-        view.setOnClickListener { v ->
+        view.setOnClickListener {
 
-            DatePickerDialog(requireActivity(), { vi, year, monthOfYear, dayOfMonth ->
+            DatePickerDialog(requireActivity(), { _, year, monthOfYear, dayOfMonth ->
                 date!!.set(Calendar.YEAR, year)
                 date.set(Calendar.MONTH, monthOfYear)
                 date.set(Calendar.DAY_OF_MONTH, dayOfMonth)
@@ -137,9 +138,9 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
 
     private fun setTimePicker(time: TextView) {
         val c = Calendar.getInstance()
-        time.setOnClickListener { v ->
+        time.setOnClickListener {
             val timePickerDialog = TimePickerDialog(
-                activity, { view, hourOfDay, minute ->
+                activity, { _, hourOfDay, minute ->
                     time.text = String.format("%02d:%02d", hourOfDay, minute)
                 }, c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), true
             )
@@ -148,8 +149,8 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
 
     }
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         Utilities.log(teamId)
         list = mRealm.where(RealmMeetup::class.java).equalTo("teamId", teamId)
             .greaterThanOrEqualTo("endDate", TimeUtils.currentDateLong()).findAll()
@@ -168,9 +169,10 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
         calendarView.monthHeaderBinder = object : MonthHeaderFooterBinder<MonthViewContainer> {
             override fun create(view: View) = MonthViewContainer(view)
             override fun bind(container: MonthViewContainer, month: CalendarMonth) {
-                container.textView.setTextColor(activity!!.resources.getColor(R.color.colorPrimaryDark))
+                container.textView.setTextColor(ContextCompat.getColor(requireContext(), R.color.colorPrimaryDark))
                 container.textView.text =
-                    "${month.yearMonth.month.name.toLowerCase().capitalize()} ${month.year}"
+                    "${month.yearMonth.month.name.lowercase(Locale.ROOT)
+                        .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() }} ${month.year}"
             }
         }
     }
@@ -197,8 +199,8 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
                             activity!!, event.title, event.description
                         )
                     }
-                    container.textView.setBackgroundColor(resources.getColor(R.color.colorPrimaryDark))
-                    container.textView.setTextColor(resources.getColor(R.color.md_white_1000))
+                    container.textView.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.colorPrimaryDark))
+                    container.textView.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
                 }
             }
         }

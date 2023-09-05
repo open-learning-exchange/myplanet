@@ -19,12 +19,14 @@ jobs:
       - name: checkout repository code
         uses: actions/checkout@v3
 
-      - name: extract version from xml
-        id: getVersion
-        uses: mavrosxristoforos/get-xml-info@1.0
+      - name: set more env
+        run: echo "BRANCHNAME="${GITHUB_REF##*/} >> $GITHUB_ENV
+
+      - name: expose version from build.gradle
+        uses: dogi/expose-android-build.gradle-version-code-and-name@v1.0.1
         with:
-          xml-file: 'app/src/main/res/values/versions.xml'
-          xpath: '//string'
+          expose-version-name: 'true'
+          expose-version-code: 'true'
 
       - name: setup JDK 17
         uses: actions/setup-java@v3
@@ -38,30 +40,18 @@ jobs:
           echo "y" | sudo ${ANDROID_HOME}/tools/bin/sdkmanager --install "ndk;${ANDROID_NDK_VERSION}" --sdk_root=${ANDROID_SDK_ROOT}
           chmod +x ./gradlew
 
-      - name: build debug and release APK
+      - name: build release APK and AAB
         run: |
-          ./gradlew build
-          ls -alR app/build/outputs/apk
+          ./gradlew assembleRelease bundleRelease
+          ls -alR app/build/outputs
+          mkdir -p sign
+          cp app/build/outputs/bundle/release/app-release.aab sign/myPlanet.aab
+          cp app/build/outputs/apk/release/myPlanet-build.apk sign/myPlanet.apk
 
-      - name: build release AAB
-        run: |
-          ./gradlew bundleRelease
-          ls -alR app/build/outputs/bundle
-
-      - name: sign release APK
-        uses: Tlaster/android-sign@v1.2.2
+      - name: sign release APK and AAB
+        uses: dogi/sign-android-release@v3.0.1
         with:
-          releaseDirectory: app/build/outputs/apk/release
-          signingKeyBase64: ${{ secrets.SIGNING_KEY }}
-          output: build/release/signed
-          alias: ${{ secrets.ALIAS }}
-          keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
-          keyPassword: ${{ secrets.KEY_PASSWORD }}
-
-      - name: sign release AAB
-        uses: r0adkll/sign-android-release@v1
-        with:
-          releaseDirectory: app/build/outputs/bundle/release
+          releaseDirectory: sign
           signingKeyBase64: ${{ secrets.SIGNING_KEY }}
           alias: ${{ secrets.ALIAS }}
           keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
@@ -69,37 +59,49 @@ jobs:
 
       - name: copy builds to directory and generate sha256
         run: |
-          cp app/build/outputs/apk/debug/m* build/release/signed/
-          cp app/build/outputs/bundle/release/app-release.aab build/release/signed/myPlanet.aab
-          mv build/release/signed/myPlanet-build-signed.apk build/release/signed/myPlanet.apk
-          cd build/release/signed/
+          mkdir -p output
+          cd output
+          cp ../sign/myPlanet.* .
+          cp ../app/build/outputs/apk/release/myPlanet-build.apk .
           sha256sum myPlanet.apk > myPlanet.apk.sha256
           sha256sum myPlanet.aab > myPlanet.aab.sha256
           cd -
-          ls -alR build/release/signed
+          ls -alR output
+
+      - name: publish to playstore
+        if: github.ref == 'refs/heads/master'
+        uses: r0adkll/upload-google-play@v1.1.1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
+          packageName: org.ole.planet.myplanet
+          releaseFiles: output/myPlanet.aab
+          track: internal
+          releaseName: "${{ env.ANDROID_VERSION_CODE }} (${{ env.ANDROID_VERSION_NAME }})"
+          status: completed
 
       - name: rename APK/AAB with version and branch for artifact
         if: github.ref != 'refs/heads/master'
         run: |
-          mv build/release/signed/myPlanet.apk build/release/signed/myPlanet-${{ steps.getVersion.outputs.info }}-${GITHUB_REF##*/}.apk
-          mv build/release/signed/myPlanet.apk.sha256 build/release/signed/myPlanet-${{ steps.getVersion.outputs.info }}-${GITHUB_REF##*/}.apk.sha256
-          mv build/release/signed/myPlanet.aab build/release/signed/myPlanet-${{ steps.getVersion.outputs.info }}-${GITHUB_REF##*/}.aab
-          mv build/release/signed/myPlanet.aab.sha256 build/release/signed/myPlanet-${{ steps.getVersion.outputs.info }}-${GITHUB_REF##*/}.aab.sha256
-          ls -alR build/release/signed
+          mv output/myPlanet.apk output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}.apk
+          mv output/myPlanet.apk.sha256 output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}.apk.sha256
+          mv output/myPlanet.aab output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}.aab
+          mv output/myPlanet.aab.sha256 output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}.aab.sha256
+          ls -alR output
 
       - name: upload APK/AAB as build artifact
         if: github.ref != 'refs/heads/master'
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
-          name: APK
-          path: build/release/signed/*
+          name: myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}
+          path: output/*
+          retention-days: 9
 
       - name: release signed APK and AAB on GitHub
         if: github.ref == 'refs/heads/master'
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: build/release/signed/*
-          tag: v${{ steps.getVersion.outputs.info }}
-          overwrite: true
-          file_glob: true
+          file: output/*
+          tag: v${{ env.ANDROID_VERSION_NAME }}
+          overwrite: 'true'
+          file_glob: 'true'
