@@ -151,7 +151,7 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
             public void onRecordStopped(String outputFile) {
                 tvTime.setText("");
                 dialog.dismiss();
-                startIntent(outputFile);
+                audioStartIntent(outputFile);
                 floatingActionButton.setImageResource(R.drawable.ic_mic);
             }
 
@@ -218,6 +218,14 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
     }
 
     private void startIntent(String path) {
+        if (!TextUtils.isEmpty(path)) {
+            addResource(path);
+        } else {
+            Utilities.toast(getActivity(), getString(R.string.invalid_resource_url));
+        }
+    }
+
+    private void audioStartIntent(String path) {
         if (!TextUtils.isEmpty(path)) {
             addResource(path);
         } else {
