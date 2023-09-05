@@ -115,7 +115,7 @@ dependencies {
     kapt 'com.github.bumptech.glide:compiler:4.13.0'
     implementation 'com.github.tiagohm.MarkdownView:library:0.19.0'
     implementation 'com.github.tiagohm.MarkdownView:emoji:0.19.0'
-    implementation 'com.opencsv:opencsv:3.9'
+    implementation 'com.opencsv:opencsv:5.8'
     implementation 'com.google.android.exoplayer:exoplayer:2.7.2'
     implementation 'de.hdodenhof:circleimageview:3.1.0'
     implementation 'org.osmdroid:osmdroid-android:6.1.16'
