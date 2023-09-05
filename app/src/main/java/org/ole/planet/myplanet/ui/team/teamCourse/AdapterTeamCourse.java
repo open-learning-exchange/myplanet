@@ -3,26 +3,26 @@ package org.ole.planet.myplanet.ui.team.teamCourse;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-
-import androidx.annotation.NonNull;
-import androidx.recyclerview.widget.RecyclerView;
-
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
+
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
+import org.ole.planet.myplanet.databinding.RowTeamResourceBinding;
 import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.ui.course.TakeCourseFragment;
-import org.ole.planet.myplanet.ui.userprofile.AdapterOtherInfo;
 
 import java.util.List;
 
 import io.realm.Realm;
 
-public class AdapterTeamCourse extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+public class AdapterTeamCourse extends RecyclerView.Adapter<AdapterTeamCourse.ViewHolderTeamCourse> {
+    private RowTeamResourceBinding rowTeamResourceBinding;
     private Context context;
     private List<RealmMyCourse> list;
     private OnHomeItemClickListener listener;
@@ -41,26 +41,24 @@ public class AdapterTeamCourse extends RecyclerView.Adapter<RecyclerView.ViewHol
 
     @NonNull
     @Override
-    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View v = LayoutInflater.from(context).inflate(R.layout.row_team_resource, parent, false);
-        return new AdapterOtherInfo.ViewHolderOtherInfo(v);
+    public ViewHolderTeamCourse onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        rowTeamResourceBinding = RowTeamResourceBinding.inflate(LayoutInflater.from(context), parent, false);
+        return new ViewHolderTeamCourse(rowTeamResourceBinding);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-        if (holder instanceof AdapterOtherInfo.ViewHolderOtherInfo) {
-            ((AdapterOtherInfo.ViewHolderOtherInfo) holder).tvTitle.setText(list.get(position).getCourseTitle());
-            ((AdapterOtherInfo.ViewHolderOtherInfo) holder).tvDescription.setText(list.get(position).getDescription());
-            holder.itemView.setOnClickListener(v -> {
-                if (listener != null) {
-                    Bundle b = new Bundle();
-                    b.putString("id", list.get(position).getCourseId());
-                    listener.openCallFragment(TakeCourseFragment.newInstance(b));
-                }
-            });
-            if (!settings.getString("userId", "--").equalsIgnoreCase(teamCreator)) {
-                holder.itemView.findViewById(R.id.iv_remove).setVisibility(View.GONE);
+    public void onBindViewHolder(@NonNull ViewHolderTeamCourse holder, int position) {
+        rowTeamResourceBinding.tvTitle.setText(list.get(position).getCourseTitle());
+        rowTeamResourceBinding.tvDescription.setText(list.get(position).getDescription());
+        holder.itemView.setOnClickListener(v -> {
+            if (listener != null) {
+                Bundle b = new Bundle();
+                b.putString("id", list.get(position).getCourseId());
+                listener.openCallFragment(TakeCourseFragment.newInstance(b));
             }
+        });
+        if (!settings.getString("userId", "--").equalsIgnoreCase(teamCreator)) {
+            holder.itemView.findViewById(R.id.iv_remove).setVisibility(View.GONE);
         }
     }
 
@@ -69,4 +67,12 @@ public class AdapterTeamCourse extends RecyclerView.Adapter<RecyclerView.ViewHol
         return list.size();
     }
 
+    public static class ViewHolderTeamCourse extends RecyclerView.ViewHolder {
+        public RowTeamResourceBinding rowTeamResourceBinding;
+
+        public ViewHolderTeamCourse(RowTeamResourceBinding rowTeamResourceBinding) {
+            super(rowTeamResourceBinding.getRoot());
+            this.rowTeamResourceBinding = rowTeamResourceBinding;
+        }
+    }
 }
