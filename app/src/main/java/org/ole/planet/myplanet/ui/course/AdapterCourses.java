@@ -56,6 +56,8 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private Markwon markwon;
     private boolean isAscending = true;
     private boolean isTitleAscending = true;
+    private boolean areAllSelected = true;
+
     public AdapterCourses(Context context, List<RealmMyCourse> courseList, HashMap<String, JsonObject> map) {
         this.map = map;
         this.context = context;
@@ -176,6 +178,13 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
             });
             showProgressAndRating(position, holder);
         }
+    }
+
+    public boolean areAllSelected(){
+        if (selectedItems.size() != courseList.size()) {
+            areAllSelected = false;
+        }
+        return areAllSelected;
     }
 
     public void selectAllItems(boolean selectAll) {

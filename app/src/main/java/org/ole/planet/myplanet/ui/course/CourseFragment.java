@@ -170,11 +170,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         selectAll.setOnClickListener(view -> {
             boolean allSelected = selectedItems.size() == adapterCourses.getCourseList().size();
             adapterCourses.selectAllItems(!allSelected);
-            if (!allSelected) {
-                selectAll.setText(getString(R.string.unselect_all) );
-            } else {
-                selectAll.setText(getString(R.string.select_all));
-            }
+            selectAll.setText(allSelected ? getString(R.string.select_all) : getString(R.string.unselect_all));
         });
     }
 
@@ -241,6 +237,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
 
     private void changeButtonStatus() {
         tvAddToLib.setEnabled(selectedItems.size() > 0);
+        selectAll.setText(adapterCourses.areAllSelected() ? getString(R.string.unselect_all) : getString(R.string.select_all));
     }
 
     @Override
