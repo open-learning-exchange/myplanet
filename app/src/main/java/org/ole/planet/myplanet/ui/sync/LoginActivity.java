@@ -44,6 +44,7 @@ import org.ole.planet.myplanet.datamanager.Service;
 import org.ole.planet.myplanet.model.MyPlanet;
 import org.ole.planet.myplanet.model.RealmCommunity;
 import org.ole.planet.myplanet.model.RealmUserModel;
+import org.ole.planet.myplanet.model.User;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment;
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment;
@@ -54,8 +55,10 @@ import org.ole.planet.myplanet.utilities.DialogUtils;
 import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.LocaleHelper;
 import org.ole.planet.myplanet.utilities.NetworkUtils;
+import org.ole.planet.myplanet.utilities.SharedPrefManager;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
@@ -83,11 +86,14 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private Service service;
     private Spinner spnCloud;
     private TextView tvAvailableSpace;
+    SharedPrefManager prefData;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(settings.getBoolean("isChild", false) ? R.layout.activity_child_login : R.layout.activity_login);
+        prefData = new SharedPrefManager(this);
+        Log.d("prefData" , " "+ prefData.getSAVEDUSERS1());
 
         // Find and show space available on the device
         tvAvailableSpace = findViewById(R.id.tv_available_space);
@@ -316,6 +322,28 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         }
         editor.putString("loginUserName", inputName.getText().toString());
         editor.putString("loginUserPassword", inputPassword.getText().toString());
+
+        User newUser = new User(inputName.getText().toString(), inputPassword.getText().toString(), "New Image");
+        List<User> existingUsers = new ArrayList<>(prefData.getSAVEDUSERS1());
+        boolean newUserExists = false;
+        for (User user : existingUsers) {
+            if (user.getName().equals(newUser.getName()) &&
+                    user.getPassword().equals(user.getPassword()) &&
+                    user.getImage().equals(user.getImage())) {
+                newUserExists = true;
+                break;
+            }
+        }
+
+        if (!newUserExists) {
+            existingUsers.add(newUser);
+            prefData.setSAVEDUSERS1(existingUsers);
+        }
+//        else {
+//            // Handle the case where the new item is a duplicate
+//            // You can display an error message or take other appropriate actions
+//        }
+
         boolean isLoggedIn = authenticateUser(settings, inputName.getText().toString(), inputPassword.getText().toString(), false);
         if (isLoggedIn) {
             Toast.makeText(getApplicationContext(), getString(R.string.thank_you), Toast.LENGTH_SHORT).show();
