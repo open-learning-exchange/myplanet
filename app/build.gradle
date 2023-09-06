@@ -10,8 +10,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdkVersion 19
         targetSdkVersion 33
-        versionCode 1008
-        versionName "0.10.8"
+        versionCode 1009
+        versionName "0.10.9"
         ndkVersion '21.3.6528147'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -64,6 +64,18 @@ android {
         viewBinding = true
     }
 }
+
+task generateVersionsXml {
+    def versionName = android.defaultConfig.versionName
+    doLast {
+        def versionsXmlFile = file('src/main/res/values/versions.xml')
+        versionsXmlFile.text = """<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_version">$versionName</string>
+</resources>"""
+    }
+}
+preBuild.dependsOn generateVersionsXml
 
 repositories {
     mavenCentral()
