@@ -68,7 +68,7 @@ android {
 task generateVersionsXml {
     def versionName = android.defaultConfig.versionName
     doLast {
-        def versionsXmlFile = file('app/src/main/res/values/versions.xml')
+        def versionsXmlFile = file('src/main/res/values/versions.xml')
         versionsXmlFile.text = """<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_version">$versionName</string>
