@@ -89,9 +89,15 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
             KeyboardUtils.hideSoftKeyboard(getActivity());
         });
 
-        btnRemove.setOnClickListener(V -> new AlertDialog.Builder(this.getContext()).setMessage(R.string.are_you_sure_you_want_to_delete_these_courses).setPositiveButton(R.string.yes, (dialogInterface, i) -> {
-            deleteSelected(true);
-        }).setNegativeButton(R.string.no, null).show());
+        btnRemove.setOnClickListener(V -> new AlertDialog.Builder(this.getContext())
+                .setMessage(R.string.are_you_sure_you_want_to_delete_these_courses)
+                .setPositiveButton(R.string.yes, (dialogInterface, i) -> {
+                    deleteSelected(true);
+                    if (adapterCourses.getCourseList().size() == 0) {
+                        selectAll.setVisibility(View.GONE);
+                    }
+                })
+                .setNegativeButton(R.string.no, null).show());
         getView().findViewById(R.id.btn_collections).setOnClickListener(view -> {
             CollectionsFragment f = CollectionsFragment.getInstance(searchTags, "courses");
             f.setListener(this);
@@ -141,6 +147,9 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
                 addToMyList();
                 selectedItems.clear();
                 tvAddToLib.setEnabled(false);  // selectedItems will always have a size of 0
+                if (adapterCourses.getCourseList().size() == 0) {
+                    selectAll.setVisibility(View.GONE);
+                }
             }
         });
         etSearch = getView().findViewById(R.id.et_search);
@@ -155,6 +164,9 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         spnGrade.setOnItemSelectedListener(itemSelectedListener);
         spnSubject.setOnItemSelectedListener(itemSelectedListener);
         selectAll = getView().findViewById(R.id.selectAll);
+        if (adapterCourses.getCourseList().size() == 0) {
+            selectAll.setVisibility(View.GONE);
+        }
         selectAll.setOnClickListener(view -> {
             boolean allSelected = selectedItems.size() == adapterCourses.getCourseList().size();
             adapterCourses.selectAllItems(!allSelected);
