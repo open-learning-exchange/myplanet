@@ -10,8 +10,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdkVersion 19
         targetSdkVersion 33
-        versionCode 1015
-        versionName "0.10.15"
+        versionCode 1016
+        versionName "0.10.16"
         ndkVersion '21.3.6528147'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -116,7 +116,7 @@ dependencies {
     implementation 'pl.droidsonroids.gif:android-gif-drawable:1.2.12'
     implementation 'com.google.android:flexbox:1.0.0'
     implementation 'com.squareup.picasso:picasso:2.71828'
-    implementation 'com.firebase:firebase-jobdispatcher:0.8.5'
+    implementation 'com.firebase:firebase-jobdispatcher:0.8.6'
     implementation 'androidx.cardview:cardview:1.0.0'
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'
     implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
