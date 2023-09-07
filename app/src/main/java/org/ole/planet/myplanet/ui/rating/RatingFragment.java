@@ -13,6 +13,7 @@ import androidx.fragment.app.DialogFragment;
 
 import com.google.gson.Gson;
 
+import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.databinding.FragmentRatingBinding;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
@@ -83,8 +84,21 @@ public class RatingFragment extends DialogFragment {
             fragmentRatingBinding.ratingBar.setRating(previousRating.getRate());
             fragmentRatingBinding.etComment.setText(previousRating.getComment());
         }
+        fragmentRatingBinding.ratingBar.setOnRatingBarChangeListener((ratingBar, rating, fromUser) -> {
+            if (fromUser) {
+                fragmentRatingBinding.ratingError.setVisibility(View.GONE);
+            }
+        });
+      
         fragmentRatingBinding.btnCancel.setOnClickListener(view -> dismiss());
-        fragmentRatingBinding.btnSubmit.setOnClickListener(view -> saveRating());
+        fragmentRatingBinding.btnSubmit.setOnClickListener(view -> {
+            if(fragmentRatingBinding.ratingBar.getRating() == 0.0){
+                fragmentRatingBinding.ratingError.setVisibility(View.VISIBLE);
+                fragmentRatingBinding.ratingError.setText(getString(R.string.kindly_give_a_rating));
+            } else {
+                saveRating();
+            }
+        });
     }
 
     private void saveRating() {

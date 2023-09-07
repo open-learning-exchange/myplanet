@@ -1032,5 +1032,6 @@
     <string name="times">times</string>
     <string name="time">time</string>
     <string name="ai_chat">AI Chat</string>
+    <string name="kindly_give_a_rating">Kindly give a rating</string>
 
 </resources>
