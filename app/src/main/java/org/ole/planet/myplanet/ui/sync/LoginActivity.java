@@ -23,12 +23,14 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ListView;
 import android.widget.RadioGroup;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.SwitchCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
@@ -85,14 +87,16 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private SharedPreferences defaultPref;
     private Service service;
     private Spinner spnCloud;
-    private TextView tvAvailableSpace;
+    private TextView tvAvailableSpace, previouslyLoggedIn;
     SharedPrefManager prefData;
+    private UserProfileDbHandler profileDbHandler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(settings.getBoolean("isChild", false) ? R.layout.activity_child_login : R.layout.activity_login);
         prefData = new SharedPrefManager(this);
+        profileDbHandler = new UserProfileDbHandler(this);
         Log.d("prefData" , " "+ prefData.getSAVEDUSERS1());
 
         // Find and show space available on the device
@@ -135,6 +139,52 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         findViewById(R.id.btn_feedback).setOnClickListener(view -> new FeedbackFragment().show(getSupportFragmentManager(), ""));
 
         if (settings.getBoolean("firstRun", true));
+
+        previouslyLoggedIn = findViewById(R.id.previouslyLoggedIn);
+        previouslyLoggedIn.setOnClickListener(view -> {
+            showUserList();
+        });
+
+    }
+
+    private void showUserList(){
+        View view = LayoutInflater.from(this).inflate(R.layout.layout_user_list, null);
+        AlertDialog.Builder builder = new AlertDialog.Builder(LoginActivity.this);
+        builder.setTitle(R.string.select_user_to_login).setView(view).setNegativeButton(R.string.dismiss, null);
+
+        EditText etSearch = view.findViewById(R.id.et_search);
+        ListView lv = view.findViewById(R.id.list_user);
+
+        List<User> existingUsers = prefData.getSAVEDUSERS1();
+
+        UserListAdapter adapter = new UserListAdapter(LoginActivity.this, existingUsers);
+        adapter.setOnItemClickListener(new UserListAdapter.OnItemClickListener() {
+            @Override
+            public void onItemClick(String name, String password) {
+                submitForm(name, password);
+                Toast.makeText(LoginActivity.this, "Name: " + name + ", Password: " + password, Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        lv.setAdapter(adapter);
+
+        etSearch.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+                adapter.getFilter().filter(charSequence);
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+            }
+        });
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
     }
 
     private boolean forceSyncTrigger() {
@@ -184,7 +234,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         TextView customDeviceName = findViewById(R.id.customDeviceName);
         customDeviceName.setText(getCustomDeviceName());
         btnSignIn = findViewById(R.id.btn_signin);
-        btnSignIn.setOnClickListener(view -> submitForm());
+        btnSignIn.setOnClickListener(view -> submitForm(inputName.getText().toString(), inputPassword.getText().toString()));
         if (!settings.contains("serverProtocol"))
             settings.edit().putString("serverProtocol", "http://").commit();
         findViewById(R.id.become_member).setOnClickListener(v -> becomeAMember());
@@ -309,10 +359,11 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     /**
      * Form  Validation
      */
-    private void submitForm() {
+    private void submitForm(String name, String password) {
         if (forceSyncTrigger()) {
             return;
         }
+
         SharedPreferences.Editor editor = settings.edit();
         if (!validateEditText(inputName, inputLayoutName, getString(R.string.err_msg_name))) {
             return;
@@ -320,36 +371,15 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         if (!validateEditText(inputPassword, inputLayoutPassword, getString(R.string.err_msg_password))) {
             return;
         }
-        editor.putString("loginUserName", inputName.getText().toString());
-        editor.putString("loginUserPassword", inputPassword.getText().toString());
+        editor.putString("loginUserName", name);
+        editor.putString("loginUserPassword", password);
 
-        User newUser = new User(inputName.getText().toString(), inputPassword.getText().toString(), "New Image");
-        List<User> existingUsers = new ArrayList<>(prefData.getSAVEDUSERS1());
-        boolean newUserExists = false;
-        for (User user : existingUsers) {
-            if (user.getName().equals(newUser.getName()) &&
-                    user.getPassword().equals(user.getPassword()) &&
-                    user.getImage().equals(user.getImage())) {
-                newUserExists = true;
-                break;
-            }
-        }
-
-        if (!newUserExists) {
-            existingUsers.add(newUser);
-            prefData.setSAVEDUSERS1(existingUsers);
-        }
-//        else {
-//            // Handle the case where the new item is a duplicate
-//            // You can display an error message or take other appropriate actions
-//        }
-
-        boolean isLoggedIn = authenticateUser(settings, inputName.getText().toString(), inputPassword.getText().toString(), false);
+        boolean isLoggedIn = authenticateUser(settings, name, password, false);
         if (isLoggedIn) {
             Toast.makeText(getApplicationContext(), getString(R.string.thank_you), Toast.LENGTH_SHORT).show();
             onLogin();
         } else {
-            ManagerSync.getInstance().login(inputName.getText().toString(), inputPassword.getText().toString(), new SyncListener() {
+            ManagerSync.getInstance().login(name, password, new SyncListener() {
                 @Override
                 public void onSyncStarted() {
                     progressDialog.setMessage(getString(R.string.please_wait));
@@ -360,7 +390,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                 public void onSyncComplete() {
                     progressDialog.dismiss();
                     Utilities.log("on complete");
-                    boolean log = authenticateUser(settings, inputName.getText().toString(), inputPassword.getText().toString(), true);
+                    boolean log = authenticateUser(settings, name, password, true);
                     if (log) {
                         Toast.makeText(getApplicationContext(), getString(R.string.thank_you), Toast.LENGTH_SHORT).show();
                         onLogin();
@@ -378,13 +408,42 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                     syncIconDrawable.stop();
                     syncIconDrawable.selectDrawable(0);
                 }
-
             });
         }
         editor.commit();
     }
 
+    private void saveUsers(String name, String password) {
+        String userProfile = profileDbHandler.getUserModel().getUserImage();
+        String fullName = profileDbHandler.getUserModel().getFullName();
+        if (userProfile == null){
+            userProfile = "";
+        }
+        if (fullName.trim().length() == 0) {
+            fullName = profileDbHandler.getUserModel().getName();
+        }
+
+        User newUser = new User(fullName, name, password, userProfile);
+        List<User> existingUsers = new ArrayList<>(prefData.getSAVEDUSERS1());
+        boolean newUserExists = false;
+        for (User user : existingUsers) {
+            if (user.getFullName().equals(newUser.getFullName()) &&
+                    user.getName().equals(newUser.getName()) &&
+                    user.getPassword().equals(user.getPassword()) &&
+                    user.getImage().equals(user.getImage())) {
+                newUserExists = true;
+                break;
+            }
+        }
+
+        if (!newUserExists) {
+            existingUsers.add(newUser);
+            prefData.setSAVEDUSERS1(existingUsers);
+        }
+    }
+
     private void onLogin() {
+        saveUsers(inputName.getText().toString(), inputPassword.getText().toString());
         UserProfileDbHandler handler = new UserProfileDbHandler(this);
         handler.onLogin();
         handler.onDestory();
@@ -603,3 +662,5 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         return settings.getString("customDeviceName", NetworkUtils.getDeviceName());
     }
 }
+
+

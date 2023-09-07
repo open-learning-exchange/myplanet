@@ -243,10 +243,11 @@ class SharedPrefManager(var _context: Context) {
                 val userList = mutableListOf<User>()
                 for (i in 0 until jsonArray.length()) {
                     val userJson = jsonArray.getJSONObject(i)
+                    val fullName = userJson.getString("fullName")
                     val name = userJson.getString("name")
                     val password = userJson.getString("password")
                     val image = userJson.getString("image")
-                    val user = User(name, password, image)
+                    val user = User(fullName, name, password, image)
                     userList.add(user)
                 }
                 userList
@@ -263,6 +264,7 @@ class SharedPrefManager(var _context: Context) {
         val jsonArray = JSONArray()
         for (user in users) {
             val userJson = JSONObject()
+            userJson.put("fullName", user.fullName)
             userJson.put("name", user.name)
             userJson.put("password", user.password)
             userJson.put("image", user.image)
