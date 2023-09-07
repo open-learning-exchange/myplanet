@@ -158,12 +158,9 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         List<User> existingUsers = prefData.getSAVEDUSERS1();
 
         UserListAdapter adapter = new UserListAdapter(LoginActivity.this, existingUsers);
-        adapter.setOnItemClickListener(new UserListAdapter.OnItemClickListener() {
-            @Override
-            public void onItemClick(String name, String password) {
-                submitForm(name, password);
-                Toast.makeText(LoginActivity.this, "Name: " + name + ", Password: " + password, Toast.LENGTH_SHORT).show();
-            }
+        adapter.setOnItemClickListener((name, password) -> {
+            submitForm(name, password);
+            Toast.makeText(LoginActivity.this, "Name: " + name + ", Password: " + password, Toast.LENGTH_SHORT).show();
         });
 
         lv.setAdapter(adapter);
@@ -416,9 +413,11 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private void saveUsers(String name, String password) {
         String userProfile = profileDbHandler.getUserModel().getUserImage();
         String fullName = profileDbHandler.getUserModel().getFullName();
-        if (userProfile == null){
+
+        if (userProfile == null) {
             userProfile = "";
         }
+
         if (fullName.trim().length() == 0) {
             fullName = profileDbHandler.getUserModel().getName();
         }
@@ -426,11 +425,9 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         User newUser = new User(fullName, name, password, userProfile);
         List<User> existingUsers = new ArrayList<>(prefData.getSAVEDUSERS1());
         boolean newUserExists = false;
+
         for (User user : existingUsers) {
-            if (user.getFullName().equals(newUser.getFullName()) &&
-                    user.getName().equals(newUser.getName()) &&
-                    user.getPassword().equals(user.getPassword()) &&
-                    user.getImage().equals(user.getImage())) {
+            if (user.getName().equals(newUser.getName())) {
                 newUserExists = true;
                 break;
             }
@@ -441,6 +438,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             prefData.setSAVEDUSERS1(existingUsers);
         }
     }
+
 
     private void onLogin() {
         saveUsers(inputName.getText().toString(), inputPassword.getText().toString());
