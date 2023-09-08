@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.library;
 
 import static android.app.Activity.RESULT_OK;
 
+import android.app.Activity;
 import android.app.Dialog;
 import android.content.ContentValues;
 import android.content.Context;
@@ -56,6 +57,7 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
     AudioRecorderService audioRecorderService;
     File output;
     private Uri photoURI;
+    private Uri videoUri;
 
     public AddResourceFragment() {
     }
@@ -168,22 +170,26 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
 
     private void dispatchTakeVideoIntent() {
         Intent takeVideoIntent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
-        Uri videoUri = FileProvider.getUriForFile(getActivity(), "org.ole.planet.myplanet.fileprovider", createVideoFile());
+        videoUri = createVideoFileUri(); // Assign the Uri to videoURI
         takeVideoIntent.putExtra(MediaStore.EXTRA_OUTPUT, videoUri);
-        takeVideoIntent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
 
-        if (takeVideoIntent.resolveActivity(getActivity().getPackageManager()) != null) {
+        if (takeVideoIntent.resolveActivity(requireActivity().getPackageManager()) != null) {
             startActivityForResult(takeVideoIntent, REQUEST_VIDEO_CAPTURE);
         }
     }
+    private Uri createVideoFileUri() {
+        ContentValues values = new ContentValues();
+        values.put(MediaStore.Video.Media.TITLE, "Video_" + UUID.randomUUID().toString());
+        values.put(MediaStore.Video.Media.MIME_TYPE, "video/mp4");
 
-    private File createVideoFile() {
-        File videoDir = new File(Utilities.SD_PATH + "/video/");
-        videoDir.mkdirs();
-        File videoFile = new File(videoDir, UUID.randomUUID().toString() + ".mp4");
-        return videoFile;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            values.put(MediaStore.Video.Media.RELATIVE_PATH, Environment.DIRECTORY_MOVIES + "/ole/video");
+        }
+
+        videoUri = requireActivity().getContentResolver().insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values);
+
+        return videoUri;
     }
-
     public void takePhoto() {
         ContentValues values = new ContentValues();
         values.put(MediaStore.Images.Media.TITLE, "Photo_" + UUID.randomUUID().toString());
@@ -207,15 +213,10 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (resultCode == RESULT_OK) {
             Uri uri = null;
-//            String path = "";
             if (requestCode == REQUEST_CAPTURE_PICTURE) {
                 uri = photoURI;
-            } else {
-//                url = data.getData();
-//                path = FileUtils.getRealPathFromURI(getActivity(), url);
-//                if (TextUtils.isEmpty(path)) {
-//                    path = FileUtils.getImagePath(getActivity(), url);
-//                }
+            } else if (requestCode == REQUEST_VIDEO_CAPTURE) {
+                uri = videoUri;
             }
             startIntent(uri, requestCode);
         }

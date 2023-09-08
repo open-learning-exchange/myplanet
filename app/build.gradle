@@ -10,8 +10,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdkVersion 19
         targetSdkVersion 33
-        versionCode 1001
-        versionName "0.10.1"
+        versionCode 1016
+        versionName "0.10.16"
         ndkVersion '21.3.6528147'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -23,7 +23,7 @@ android {
         }
     }
     configurations.all {
-        resolutionStrategy.force 'com.google.android.material:material:1.0.0'
+        resolutionStrategy.force 'com.google.android.material:material:1.9.0'
     }
     buildTypes {
         release {
@@ -65,6 +65,18 @@ android {
     }
 }
 
+task generateVersionsXml {
+    def versionName = android.defaultConfig.versionName
+    doLast {
+        def versionsXmlFile = file('src/main/res/values/versions.xml')
+        versionsXmlFile.text = """<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_version">$versionName</string>
+</resources>"""
+    }
+}
+preBuild.dependsOn generateVersionsXml
+
 repositories {
     mavenCentral()
     jcenter()
@@ -104,21 +116,21 @@ dependencies {
     implementation 'pl.droidsonroids.gif:android-gif-drawable:1.2.12'
     implementation 'com.google.android:flexbox:1.0.0'
     implementation 'com.squareup.picasso:picasso:2.71828'
-    implementation 'com.firebase:firebase-jobdispatcher:0.8.5'
+    implementation 'com.firebase:firebase-jobdispatcher:0.8.6'
     implementation 'androidx.cardview:cardview:1.0.0'
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'
     implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
-    implementation 'de.rtner:PBKDF2:1.1.2'
+    implementation 'de.rtner:PBKDF2:1.1.4'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     testImplementation 'junit:junit:4.13.2'
-    implementation 'com.github.bumptech.glide:glide:4.13.0'
-    kapt 'com.github.bumptech.glide:compiler:4.13.0'
+    implementation 'com.github.bumptech.glide:glide:4.16.0'
+    kapt 'com.github.bumptech.glide:compiler:4.16.0'
     implementation 'com.github.tiagohm.MarkdownView:library:0.19.0'
     implementation 'com.github.tiagohm.MarkdownView:emoji:0.19.0'
-    implementation 'com.opencsv:opencsv:3.9'
+    implementation 'com.opencsv:opencsv:5.8'
     implementation 'com.google.android.exoplayer:exoplayer:2.7.2'
     implementation 'de.hdodenhof:circleimageview:3.1.0'
-    implementation 'org.osmdroid:osmdroid-android:6.1.0'
+    implementation 'org.osmdroid:osmdroid-android:6.1.16'
     implementation 'com.github.clans:fab:1.6.4'
     implementation 'com.borax12.materialdaterangepicker:library:2.0'
     implementation 'com.nex3z:toggle-button-group:1.1.9'
@@ -130,7 +142,7 @@ dependencies {
     implementation "androidx.core:core-ktx:1.10.1"
     implementation "com.github.VaibhavLakhera:Circular-Progress-View:0.1.2"
     implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
-    implementation 'com.applandeo:material-calendar-view:1.4.0'
+    implementation 'com.applandeo:material-calendar-view:1.7.0'
     implementation "androidx.work:work-runtime:2.8.1"
     implementation(platform("org.jetbrains.kotlin:kotlin-bom:1.8.0"))
 }
