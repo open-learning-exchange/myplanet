@@ -10,8 +10,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdkVersion 19
         targetSdkVersion 33
-        versionCode 1018
-        versionName "0.10.18"
+        versionCode 1019
+        versionName "0.10.19"
         ndkVersion '21.3.6528147'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -96,7 +96,7 @@ dependencies {
     }
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'androidx.recyclerview:recyclerview:1.3.0'
-    implementation 'androidx.annotation:annotation:1.6.0'
+    implementation 'androidx.annotation:annotation:1.7.0'
     implementation 'com.google.android.material:material:1.9.0'
     implementation 'androidx.exifinterface:exifinterface:1.3.6'
     implementation 'com.mikepenz:google-material-typeface:3.0.1.1.original@aar'
