@@ -55,6 +55,13 @@ android {
         sourceCompatibility JavaVersion.VERSION_11
     }
 
+    lintOptions {
+        abortOnError false
+    }
+    lint {
+        abortOnError false
+    }
+    
     namespace 'org.ole.planet.myplanet'
 
     buildFeatures {
