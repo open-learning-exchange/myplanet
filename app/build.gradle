@@ -10,8 +10,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdkVersion 19
         targetSdkVersion 33
-        versionCode 1019
-        versionName "0.10.19"
+        versionCode 1020
+        versionName "0.10.20"
         ndkVersion '21.3.6528147'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -90,7 +90,7 @@ dependencies {
     implementation 'androidx.multidex:multidex:2.0.1'
     implementation 'com.afollestad.material-dialogs:commons:0.9.6.0'
     implementation 'com.google.code.gson:gson:2.10.1'
-    implementation 'org.codehaus.jackson:jackson-mapper-asl:1.5.0'
+    implementation 'org.codehaus.jackson:jackson-mapper-asl:1.9.13-atlassian-2'
     implementation('com.mikepenz:materialdrawer:6.1.1@aar') {
         transitive = true
     }
