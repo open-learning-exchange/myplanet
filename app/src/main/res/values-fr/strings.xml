@@ -943,5 +943,6 @@
     <string name="times">fois</string>
     <string name="time">temps</string>
     <string name="ai_chat">AI Chat</string>
+    <string name="kindly_give_a_rating">Veuillez donner une note</string>
 
 </resources>
