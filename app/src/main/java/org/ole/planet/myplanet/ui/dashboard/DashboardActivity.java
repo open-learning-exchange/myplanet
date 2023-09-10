@@ -1,7 +1,10 @@
 package org.ole.planet.myplanet.ui.dashboard;
 
+import static org.ole.planet.myplanet.ui.sync.SyncActivity.PREFS_NAME;
+
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
@@ -50,8 +53,10 @@ import org.ole.planet.myplanet.ui.sync.DashboardElementActivity;
 import org.ole.planet.myplanet.ui.team.TeamFragment;
 import org.ole.planet.myplanet.utilities.BottomNavigationViewHelper;
 import org.ole.planet.myplanet.utilities.Constants;
+import org.ole.planet.myplanet.utilities.TutorialsReferenceHolder;
 import org.ole.planet.myplanet.utilities.KeyboardUtils;
 import org.ole.planet.myplanet.utilities.LocaleHelper;
+import org.ole.planet.myplanet.utilities.Tutorials;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
@@ -183,7 +188,35 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         menue = tl.getTabAt(4);
         menuco = tl.getTabAt(5);
 
+        SharedPreferences sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        boolean tutorialsShown = sharedPreferences.getBoolean("tutorials_shown", false);
+
+        if (!tutorialsShown) {
+            setupTutorials();
+            Tutorials.INSTANCE.dashboardTutorials(this);
+
+            // Update the preference to mark tutorials as shown
+            SharedPreferences.Editor editor = sharedPreferences.edit();
+            editor.putBoolean("tutorials_shown", true);
+            editor.apply();
+        }
+
         hideWifi();
+    }
+
+    private void setupTutorials() {
+        TutorialsReferenceHolder referenceHolder = new TutorialsReferenceHolder();
+        referenceHolder.begin = findViewById(R.id.menu_library);
+        referenceHolder.img = findViewById(R.id.img_logo);
+        referenceHolder.menuh = tl.getTabAt(0);
+        referenceHolder.menul = tl.getTabAt(1);
+        referenceHolder.menuc = tl.getTabAt(2);
+        referenceHolder.menut = tl.getTabAt(3);
+        referenceHolder.menue = tl.getTabAt(4);
+        referenceHolder.menuco = tl.getTabAt(5);
+
+        Tutorials.INSTANCE.setTutorialsReferenceHolder(referenceHolder);
+
     }
 
     private void hideWifi() {
