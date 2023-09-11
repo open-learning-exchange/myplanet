@@ -133,7 +133,7 @@ dependencies {
     implementation 'org.osmdroid:osmdroid-android:6.1.16'
     implementation 'com.github.clans:fab:1.6.4'
     implementation 'com.borax12.materialdaterangepicker:library:2.0'
-    implementation 'com.nex3z:toggle-button-group:1.1.9'
+    implementation 'com.nex3z:toggle-button-group:1.2.3'
     implementation 'com.sa90.materialarcmenu:library:2.0.0'
     implementation project(':library')
     implementation 'org.jetbrains:annotations:24.0.1'
