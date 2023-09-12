@@ -16,11 +16,6 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
         multiDexEnabled true
-        applicationVariants.all { variant ->
-            variant.outputs.all { output ->
-                outputFileName = new File("myPlanet-build.apk")
-            }
-        }
     }
     configurations.all {
         resolutionStrategy.force 'com.google.android.material:material:1.9.0'
