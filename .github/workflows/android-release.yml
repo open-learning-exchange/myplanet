@@ -48,8 +48,6 @@ jobs:
           mkdir -p sign
           cp app/build/outputs/bundle/release/app-release.aab sign/.
           cp app/build/outputs/apk/release/app-release-unsigned.apk sign/.
-          ls -alR sign
-          
 
       - name: sign release APK and AAB
         uses: dogi/sign-android-release@v3.0.1
@@ -62,12 +60,12 @@ jobs:
 
       - name: copy builds to directory and generate sha256
         run: |
-          ls -alR sign
-          cd build/release/signed/
-          sha256sum myPlanet.apk > myPlanet.apk.sha256
-          sha256sum myPlanet.aab > myPlanet.aab.sha256
-          cd -
-          ls -alR build/release/signed
+          mkdir -p output
+          cp sign/app-release-unsigned-signed.apk output/myPlanet.apk
+          cp sign/app-release.aab output/myPlanet.aab
+          sha256sum output/myPlanet.apk > output/myPlanet.apk.sha256
+          sha256sum output/myPlanet.aab > output/myPlanet.aab.sha256
+          ls -alR output
 
       - name: publish to playstore
         if: github.ref == 'refs/heads/master'
@@ -75,7 +73,7 @@ jobs:
         with:
           serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
           packageName: org.ole.planet.myplanet
-          releaseFiles: build/release/signed/myPlanet.aab
+          releaseFiles: output/myPlanet.aab
           track: internal
           releaseName: "${{ env.ANDROID_VERSION_CODE }} (${{ env.ANDROID_VERSION_NAME }})"
           status: completed
@@ -83,18 +81,18 @@ jobs:
       - name: rename APK/AAB with version and branch for artifact
         if: github.ref != 'refs/heads/master'
         run: |
-          mv build/release/signed/myPlanet.apk build/release/signed/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}.apk
-          mv build/release/signed/myPlanet.apk.sha256 build/release/signed/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}.apk.sha256
-          mv build/release/signed/myPlanet.aab build/release/signed/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}.aab
-          mv build/release/signed/myPlanet.aab.sha256 build/release/signed/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}.aab.sha256
-          ls -alR build/release/signed
+          mv output/myPlanet.apk output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}.apk
+          mv output/myPlanet.apk.sha256 boutput/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}.apk.sha256
+          mv output/myPlanet.aab output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}.aab
+          mv output/myPlanet.aab.sha256 output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}.aab.sha256
+          ls -alR output
 
       - name: upload APK/AAB as build artifact
         if: github.ref != 'refs/heads/master'
         uses: actions/upload-artifact@v3
         with:
           name: myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}
-          path: build/release/signed/*
+          path: output/*
           retention-days: 9
 
       - name: release signed APK and AAB on GitHub
@@ -102,7 +100,7 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: build/release/signed/*
+          file: output/*
           tag: v${{ env.ANDROID_VERSION_NAME }}
           overwrite: 'true'
           file_glob: 'true'
