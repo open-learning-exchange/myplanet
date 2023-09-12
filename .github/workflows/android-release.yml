@@ -40,13 +40,10 @@ jobs:
           echo "y" | sudo ${ANDROID_HOME}/tools/bin/sdkmanager --install "ndk;${ANDROID_NDK_VERSION}" --sdk_root=${ANDROID_SDK_ROOT}
           chmod +x ./gradlew
 
-      - name: build debug and release APK
+      - name: build release AAB and APK
         run: |
           ./gradlew assembleRelease
           ls -alR app/build/outputs/apk
-
-      - name: build release AAB
-        run: |
           ./gradlew bundleRelease
           ls -alR app/build/outputs/bundle
 
