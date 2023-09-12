@@ -40,11 +40,10 @@ jobs:
           echo "y" | sudo ${ANDROID_HOME}/tools/bin/sdkmanager --install "ndk;${ANDROID_NDK_VERSION}" --sdk_root=${ANDROID_SDK_ROOT}
           chmod +x ./gradlew
 
-      - name: build release AAB and APK
+      - name: build release APK and AAB
         run: |
           ./gradlew assembleRelease bundleRelease
-          ls -alR app/build/outputs/apk
-          ls -alR app/build/outputs/bundle
+          ls -alR app/build/outputs
           mkdir -p sign
           cp app/build/outputs/bundle/release/app-release.aab sign/.
           cp app/build/outputs/apk/release/app-release-unsigned.apk sign/.
@@ -58,7 +57,7 @@ jobs:
           keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
 
-      - name: copy builds to directory and generate sha256
+      - name: copy builds to output and generate sha256
         run: |
           mkdir -p output
           cp sign/app-release-unsigned-signed.apk output/myPlanet.apk
