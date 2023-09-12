@@ -58,7 +58,7 @@ jobs:
           keyPassword: ${{ secrets.KEY_PASSWORD }}
 
       - name: sign release AAB
-        uses: r0adkll/sign-android-release@v1
+        uses: dogi/sign-android-release@v3.0.1
         with:
           releaseDirectory: app/build/outputs/bundle/release
           signingKeyBase64: ${{ secrets.SIGNING_KEY }}
