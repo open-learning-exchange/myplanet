@@ -67,7 +67,7 @@ jobs:
           sha256sum output/myPlanet.aab > output/myPlanet.aab.sha256
           ls -alR output
 
-      - name: publish to playstore
+      - name: publish AAB to playstore
         if: github.ref == 'refs/heads/master'
         uses: r0adkll/upload-google-play@v1.1.1
         with:
@@ -78,16 +78,16 @@ jobs:
           releaseName: "${{ env.ANDROID_VERSION_CODE }} (${{ env.ANDROID_VERSION_NAME }})"
           status: completed
 
-      - name: rename APK/AAB with version and branch for artifact
+      - name: rename APK and AAB with version and branch for artifact
         if: github.ref != 'refs/heads/master'
         run: |
           mv output/myPlanet.apk output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}.apk
-          mv output/myPlanet.apk.sha256 boutput/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}.apk.sha256
+          mv output/myPlanet.apk.sha256 output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}.apk.sha256
           mv output/myPlanet.aab output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}.aab
           mv output/myPlanet.aab.sha256 output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}.aab.sha256
           ls -alR output
 
-      - name: upload APK/AAB as build artifact
+      - name: upload APK and AAB as build artifact
         if: github.ref != 'refs/heads/master'
         uses: actions/upload-artifact@v3
         with:
@@ -95,7 +95,7 @@ jobs:
           path: output/*
           retention-days: 9
 
-      - name: release signed APK and AAB on GitHub
+      - name: release APK and AAB on GitHub
         if: github.ref == 'refs/heads/master'
         uses: svenstaro/upload-release-action@v2
         with:
