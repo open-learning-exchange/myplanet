@@ -42,7 +42,7 @@ jobs:
 
       - name: build debug and release APK
         run: |
-          ./gradlew build
+          ./gradlew assembleRelease
           ls -alR app/build/outputs/apk
 
       - name: build release AAB
