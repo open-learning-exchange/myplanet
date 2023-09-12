@@ -47,7 +47,7 @@ jobs:
           ls -alR app/build/outputs/bundle
           mkdir -p sign
           cp app/build/outputs/bundle/release/app-release.aab sign/myPlanet.aab
-          cp app/build/outputs/apk/release/myPlanet-build-signed.apk sign/myPlanet.apk
+          cp app/build/outputs/apk/release/app-release.apk sign/myPlanet.apk
           ls -alR sign
           
 
