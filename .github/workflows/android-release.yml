@@ -46,7 +46,6 @@ jobs:
           ls -alR app/build/outputs/apk
           ls -alR app/build/outputs/bundle
           mkdir -p build/release/signed
-          cp app/build/outputs/apk/release/myPlanet-build-aligned.apk build/release/signed/myPlanet-build.apk
 
       - name: sign release APK
         uses: dogi/sign-android-release@v3.0.1
@@ -70,6 +69,7 @@ jobs:
         run: |
           ls -alR app/build/outputs/apk
           ls -alR app/build/outputs/bundle
+          cp app/build/outputs/apk/release/myPlanet-build-aligned.apk build/release/signed/myPlanet-build.apk
           cp app/build/outputs/bundle/release/app-release.aab build/release/signed/myPlanet.aab
           cp app/build/outputs/apk/release/myPlanet-build-signed.apk build/release/signed/myPlanet.apk
           cd build/release/signed/
