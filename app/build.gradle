@@ -8,7 +8,7 @@ android {
     compileSdkVersion 34
     defaultConfig {
         applicationId "org.ole.planet.myplanet"
-        minSdkVersion 19
+        minSdkVersion 21
         targetSdkVersion 33
         versionCode 1028
         versionName "0.10.28"
