@@ -77,7 +77,7 @@ class OnBoardingActivity : AppCompatActivity() {
         val descArrayPage3 = intArrayOf(R.string.ob_desc3_1, R.string.ob_desc3_2)
         val descArrayPage4 = intArrayOf(R.string.ob_desc4_1, R.string.ob_desc4_2, R.string.ob_desc4_3, R.string.ob_desc4_4, R.string.ob_desc4_5)
         val header = intArrayOf(R.string.welcome_to_myPlanet, R.string.learn_offline, R.string.open_learning, R.string.unleash_learning_power)
-        val imageId = intArrayOf(R.drawable.ole_logo, R.drawable.offline, R.drawable.book, R.drawable.energy);
+        val imageId = intArrayOf(R.drawable.ole_logo, R.drawable.o_a, R.drawable.b_b, R.drawable.c_c);
 
         for (i in imageId.indices) {
             val descResourceArray = when (i) {
