@@ -2,17 +2,15 @@ package org.ole.planet.myplanet.ui.feedback;
 
 
 import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
-import android.util.Log;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.TextView;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
@@ -68,12 +66,12 @@ public class FeedbackListFragment extends Fragment implements FeedbackFragment.O
 
     @Override
     public void onFeedbackSubmitted() {
-        rvFeedbacks.setLayoutManager(new LinearLayoutManager(getActivity()));
-        RealmResults<RealmFeedback> updatedList = mRealm.where(RealmFeedback.class).equalTo("owner", userModel.getName()).findAll();
-        if (userModel.isManager()) updatedList = mRealm.where(RealmFeedback.class).findAll();
-        AdapterFeedback adapterFeedback = new AdapterFeedback(getActivity(), updatedList);
-        adapterFeedback.updateData(updatedList);
-        rvFeedbacks.setAdapter(adapterFeedback);
-        adapterFeedback.notifyDataSetChanged();
+        mRealm.executeTransactionAsync(realm -> {}, () -> {
+            RealmResults<RealmFeedback> updatedList = mRealm.where(RealmFeedback.class).equalTo("owner", userModel.getName()).findAll();
+            if (userModel.isManager()) updatedList = mRealm.where(RealmFeedback.class).findAll();
+            AdapterFeedback adapterFeedback = new AdapterFeedback(getActivity(), updatedList);
+            rvFeedbacks.setAdapter(adapterFeedback);
+            adapterFeedback.notifyDataSetChanged();
+        });
     }
 }
