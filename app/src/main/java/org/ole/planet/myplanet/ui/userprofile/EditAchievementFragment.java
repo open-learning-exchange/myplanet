@@ -7,7 +7,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.DatePicker;
 import android.widget.EditText;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
@@ -198,18 +197,6 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
             resourceArray = object.getAsJsonArray("resources");
         }
         return prevList;
-    }
-
-    private void initAchievementDatePicker(TextView tvDate) {
-        tvDate.setOnClickListener(view -> {
-            Calendar now = Calendar.getInstance();
-            DatePickerDialog dpd = new DatePickerDialog(getActivity(), (datePicker, i, i1, i2) -> {
-                date = String.format(Locale.US, "%04d-%02d-%02d", i, i1 + 1, i2);
-                tvDate.setText(date);
-            }, now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH));
-            dpd.getDatePicker().setMaxDate(now.getTimeInMillis());
-            dpd.show();
-        });
     }
 
     private void saveAchievement(String desc, String title) {

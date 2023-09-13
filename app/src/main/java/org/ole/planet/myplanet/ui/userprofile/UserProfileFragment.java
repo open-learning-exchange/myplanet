@@ -45,15 +45,11 @@ import io.realm.Realm;
 public class UserProfileFragment extends Fragment {
     private FragmentUserProfileBinding fragmentUserProfileBinding;
     private RowStatBinding rowStatBinding;
-
     UserProfileDbHandler handler;
     DatabaseService realmService;
     Realm mRealm;
-//    RecyclerView rvStat;
-//    Button addPicture;
     RealmUserModel model;
     File output;
-//    ImageView imageView;
 
     static final int IMAGE_TO_USE = 100;
     static String imageUrl = "";
@@ -72,18 +68,13 @@ public class UserProfileFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         fragmentUserProfileBinding = FragmentUserProfileBinding.inflate(inflater, container, false);
-//        View v = inflater.inflate(R.layout.fragment_user_profile, container, false);
         handler = new UserProfileDbHandler(getActivity());
         realmService = new DatabaseService(getActivity());
         mRealm = realmService.getRealmInstance();
-//        rvStat = v.findViewById(R.id.rv_stat);
         fragmentUserProfileBinding.rvStat.setLayoutManager(new LinearLayoutManager(getActivity()));
         fragmentUserProfileBinding.rvStat.setNestedScrollingEnabled(false);
-//        addPicture = (Button) v.findViewById(R.id.bt_profile_pic);
-//        imageView = (ImageView) v.findViewById(R.id.image);
 
         fragmentUserProfileBinding.btProfilePic.setOnClickListener(v1 -> searchForPhoto());
-//        populateUserData(v);
         model = handler.getUserModel();
         fragmentUserProfileBinding.txtName.setText(String.format("%s %s %s", model.getFirstName(), model.getMiddleName(), model.getLastName()));
         fragmentUserProfileBinding.txtEmail.setText(getString(R.string.email_colon)
@@ -110,15 +101,12 @@ public class UserProfileFragment extends Fragment {
         map.put("Total Visits : ", handler.getOfflineVisits() + "");
         map.put("Most Opened Resource : ", Utilities.checkNA(handler.getMaxOpenedResource()));
         map.put("Number of Resources Opened : ", Utilities.checkNA(handler.getNumberOfResourceOpen()));
-//        setUpRecyclerView(map, v);
 
         final LinkedList<String> keys = new LinkedList<>(map.keySet());
         fragmentUserProfileBinding.rvStat.setAdapter(new RecyclerView.Adapter() {
             @NonNull
             @Override
             public ViewHolderRowStat onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-//                View v = getLayoutInflater().inflate(R.layout.row_stat, parent, false);
-//                return new AdapterOtherInfo.ViewHolderOtherInfo(v);
                 rowStatBinding = RowStatBinding.inflate(LayoutInflater.from(getActivity()), parent, false);
                 return new ViewHolderRowStat(rowStatBinding);
             }
@@ -212,15 +200,12 @@ public class UserProfileFragment extends Fragment {
         map.put("Total Visits : ", handler.getOfflineVisits() + "");
         map.put("Most Opened Resource : ", Utilities.checkNA(handler.getMaxOpenedResource()));
         map.put("Number of Resources Opened : ", Utilities.checkNA(handler.getNumberOfResourceOpen()));
-//        setUpRecyclerView(map, v);
 
         final LinkedList<String> keys = new LinkedList<>(map.keySet());
         fragmentUserProfileBinding.rvStat.setAdapter(new RecyclerView.Adapter() {
             @NonNull
             @Override
             public ViewHolderRowStat onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-//                View v = getLayoutInflater().inflate(R.layout.row_stat, parent, false);
-//                return new AdapterOtherInfo.ViewHolderOtherInfo(v);
                 rowStatBinding = RowStatBinding.inflate(LayoutInflater.from(getActivity()), parent, false);
                 return new ViewHolderRowStat(rowStatBinding);
             }
@@ -253,34 +238,4 @@ public class UserProfileFragment extends Fragment {
             }
         });
     }
-
-//    public void setUpRecyclerView(final HashMap<String, String> map, View v) {
-//        final LinkedList<String> keys = new LinkedList<>(map.keySet());
-//        fragmentUserProfileBinding.rvStat.setAdapter(new RecyclerView.Adapter() {
-//            @NonNull
-//            @Override
-//            public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-//                View v = getLayoutInflater().inflate(R.layout.row_stat, parent, false);
-//                return new AdapterOtherInfo.ViewHolderOtherInfo(v);
-//            }
-//
-//            @Override
-//            public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-//                if (holder instanceof AdapterOtherInfo.ViewHolderOtherInfo) {
-//                    ((AdapterOtherInfo.ViewHolderOtherInfo) holder).tvTitle.setText(keys.get(position));
-//                    ((AdapterOtherInfo.ViewHolderOtherInfo) holder).tvTitle.setVisibility(View.VISIBLE);
-//                    ((AdapterOtherInfo.ViewHolderOtherInfo) holder).tvDescription.setText(map.get(keys.get(position)));
-//                    if (position % 2 == 0) {
-//                        holder.itemView.setBackgroundColor(getResources().getColor(R.color.bg_white));
-//                        holder.itemView.setBackgroundColor(getResources().getColor(R.color.md_grey_300));
-//                    }
-//                }
-//            }
-//
-//            @Override
-//            public int getItemCount() {
-//                return keys.size();
-//            }
-//        });
-//    }
 }
