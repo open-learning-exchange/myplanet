@@ -8,19 +8,14 @@ android {
     compileSdkVersion 34
     defaultConfig {
         applicationId "org.ole.planet.myplanet"
-        minSdkVersion 19
-        targetSdkVersion 33
+        minSdkVersion 21
+        targetSdkVersion 34
         versionCode 1032
         versionName "0.10.32"
         ndkVersion '21.3.6528147'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
         multiDexEnabled true
-        applicationVariants.all { variant ->
-            variant.outputs.all { output ->
-                outputFileName = new File("myPlanet-build.apk")
-            }
-        }
     }
     configurations.all {
         resolutionStrategy.force 'com.google.android.material:material:1.9.0'
@@ -100,8 +95,8 @@ dependencies {
     implementation 'androidx.annotation:annotation:1.7.0'
     implementation 'com.google.android.material:material:1.9.0'
     implementation 'androidx.exifinterface:exifinterface:1.3.6'
-    implementation 'com.mikepenz:google-material-typeface:4.0.0.2-kotlin@aar'
-    implementation 'com.mikepenz:fontawesome-typeface:5.13.3.0-kotlin@aar'
+    implementation 'com.mikepenz:google-material-typeface:3.0.1.1.original@aar'
+    implementation 'com.mikepenz:fontawesome-typeface:5.3.1.1@aar'
     implementation 'com.mikepenz:octicons-typeface:3.2.0.5@aar'
 
     implementation 'com.mikepenz:itemanimators:1.1.0@aar'
@@ -109,7 +104,7 @@ dependencies {
     implementation 'com.github.jeancsanchez:jcplayer:2.7.2'
 
     implementation "com.google.dagger:hilt-android:2.44"
-    kapt "com.google.dagger:hilt-android-compiler:2.44"
+    kapt "com.google.dagger:hilt-android-compiler:2.48"
 
     implementation 'com.mikepenz:crossfader:1.5.1@aar'
     implementation 'com.mikepenz:crossfadedrawerlayout:1.0.1@aar'
