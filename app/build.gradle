@@ -9,7 +9,7 @@ android {
     defaultConfig {
         applicationId "org.ole.planet.myplanet"
         minSdkVersion 21
-        targetSdkVersion 33
+        targetSdkVersion 34
         versionCode 1028
         versionName "0.10.28"
         ndkVersion '21.3.6528147'
