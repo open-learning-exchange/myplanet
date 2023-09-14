@@ -24,6 +24,14 @@
         android:stepSize="1"
         android:theme="@style/RatingBar" />
 
+    <TextView
+        android:id="@+id/ratingError"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="@dimen/padding_normal"
+        android:visibility="gone"
+        android:textColor="@color/colorAccent"
+        android:textSize="@dimen/text_size_large" />
 
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"

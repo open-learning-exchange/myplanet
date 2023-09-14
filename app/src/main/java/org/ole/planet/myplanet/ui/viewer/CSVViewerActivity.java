@@ -6,7 +6,9 @@ import android.view.View;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
+import com.opencsv.CSVReaderBuilder;
 
 import org.ole.planet.myplanet.databinding.ActivityCsvviewerBinding;
 
@@ -35,6 +37,7 @@ public class CSVViewerActivity extends AppCompatActivity {
             activityCsvviewerBinding.csvFileName.setVisibility(View.VISIBLE);
         }
 
+
         try {
             File csvFile;
             if (fileName.startsWith("/")) {
@@ -44,7 +47,12 @@ public class CSVViewerActivity extends AppCompatActivity {
                 csvFile = new File(basePath, "ole/" + fileName);
             }
 
-            CSVReader reader = new CSVReader(new FileReader(csvFile), ',', '"');
+            CSVReader reader = new CSVReaderBuilder(new FileReader(csvFile))
+                    .withCSVParser(new CSVParserBuilder()
+                            .withSeparator(',')
+                            .withQuoteChar('"')
+                            .build())
+                    .build();
 
             List<String[]> allRows = reader.readAll();
 

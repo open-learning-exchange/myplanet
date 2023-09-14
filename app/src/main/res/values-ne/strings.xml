@@ -943,5 +943,8 @@
     <string name="times">पल्टीहरू</string>
     <string name="time">समय</string>
     <string name="ai_chat">AI Chat</string>
+    <string name="kindly_give_a_rating">कृपया मूल्याङ्कन दिनुहोस्</string>
+    <string name="must_start_with_letter_or_number">पात्र वा नम्बरसँग सुरु गर्नु पर्दछ</string>
+    <string name="only_letters_numbers_and_are_allowed">केवल अक्षर, नम्बर, "_" , ".", र "-" पाएको छ</string>
 
 </resources>

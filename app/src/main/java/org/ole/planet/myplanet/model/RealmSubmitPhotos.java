@@ -9,53 +9,52 @@ public class RealmSubmitPhotos extends RealmObject {
     private String id;
     private String _id;
     private String _rev;
-    private String submission_id;
-    private String course_id;
-    private String Exam_id;
-    private String member_id;
+    private String submissionId;
+    private String courseId;
+    private String ExamId;
+    private String memberId;
     private String date;
-    private String unique_id;
-    private String photo_location;
+    private String uniqueId;
+    private String photoLocation;
     private boolean uploaded;
 
     public void setId(String id) {
         this.id = id;
     }
-
     public String getId() {
         return id;
     }
 
-    public void setSubmission_id(String submission_id) {
-        this.submission_id = submission_id;
+    public void setSubmissionId(String submissionId) {
+        this.submissionId = submissionId;
     }
 
-    public String getSubmission_id() {
-        return submission_id;
+    public String getSubmissionId() {
+        return submissionId;
     }
 
-    public void setCourse_id(String course_id) {
-        this.course_id = course_id;
+    public void setCourseId(String courseId) {
+        this.courseId = courseId;
     }
 
-    public String getCourse_id() {
-        return course_id;
+    public String getCourseId() {
+        return courseId;
     }
 
-    public void setExam_id(String exam_id) {
-        Exam_id = exam_id;
+    public void setExamId(String examId) {
+        ExamId = examId;
     }
 
-    public String getExam_id() {
-        return Exam_id;
+    public String getExamId() {
+        return ExamId;
     }
 
-    public void setMember_id(String member_id) {
-        this.member_id = member_id;
+    public void setMemberId(String memberId) {
+        this.memberId = memberId;
     }
 
-    public String getMember_id() {
-        return member_id;
+    public String getMemberId() {
+        return memberId;
     }
 
     public void setDate(String date) {
@@ -66,20 +65,20 @@ public class RealmSubmitPhotos extends RealmObject {
         return date;
     }
 
-    public void setUnique_id(String unique_id) {
-        this.unique_id = unique_id;
+    public void setUniqueId(String uniqueId) {
+        this.uniqueId = uniqueId;
     }
 
-    public String getUnique_id() {
-        return unique_id;
+    public String getUniqueId() {
+        return uniqueId;
     }
 
-    public void setPhoto_location(String photo_location) {
-        this.photo_location = photo_location;
+    public void setPhotoLocation(String photo_location) {
+        this.photoLocation = photoLocation;
     }
 
-    public String getPhoto_location() {
-        return photo_location;
+    public String getPhotoLocation() {
+        return photoLocation;
     }
 
     public void set_id(String _id) {
@@ -122,14 +121,14 @@ public class RealmSubmitPhotos extends RealmObject {
     public static JsonObject serializeRealmSubmitPhotos(RealmSubmitPhotos submit) {
         JsonObject obj = new JsonObject();
         obj.addProperty("id", submit.getId());
-        obj.addProperty("submission_id", submit.getSubmission_id());
+        obj.addProperty("submissionId", submit.getSubmissionId());
         obj.addProperty("type", "photo");
-        obj.addProperty("course_id", submit.getCourse_id());
-        obj.addProperty("exam_id", submit.getExam_id());
-        obj.addProperty("member_id", submit.getMember_id());
+        obj.addProperty("courseId", submit.getCourseId());
+        obj.addProperty("examId", submit.getExamId());
+        obj.addProperty("memberId", submit.getMemberId());
         obj.addProperty("date", submit.getDate());
-        obj.addProperty("mac_address", submit.getUnique_id());
-        obj.addProperty("photo_location", submit.getPhoto_location());
+        obj.addProperty("macAddress", submit.getUniqueId());
+        obj.addProperty("photoLocation", submit.getPhotoLocation());
 
         return obj;
     }
