@@ -1,10 +1,10 @@
 package org.ole.planet.myplanet.ui.viewer;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.os.Bundle;
 import android.view.MenuItem;
 import android.view.View;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.jean.jcplayer.JcPlayerManagerListener;
 import com.example.jean.jcplayer.general.JcStatus;
@@ -17,22 +17,32 @@ import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class AudioPlayerActivity extends AppCompatActivity implements JcPlayerManagerListener {
     JcPlayerView jcplayer;
     ArrayList<JcAudio> jcAudios;
     boolean isFullPath;
+    String filePath;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_audio_player);
         jcplayer = findViewById(R.id.jcplayer);
-        String filePath = getIntent().getStringExtra("TOUCHED_FILE");
+        filePath = getIntent().getStringExtra("TOUCHED_FILE");
         jcAudios = new ArrayList<>();
         isFullPath = getIntent().getBooleanExtra("isFullPath", false);
-        String fullPath;
+        if (filePath.matches(".*[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}//.*")) {
+            playRecordedAudio();
+        } else {
+            playDownloadedAudio();
+        }
+    }
 
+    private void playDownloadedAudio() {
+        String fullPath;
         if (isFullPath) {
             fullPath = filePath;
         } else {
@@ -41,10 +51,26 @@ public class AudioPlayerActivity extends AppCompatActivity implements JcPlayerMa
         }
 
         jcAudios.add(JcAudio.createFromFilePath(fullPath));
+        initializeJCPlayer();
+    }
+
+    private void playRecordedAudio() {
+        Pattern uuidPattern = Pattern.compile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/");
+        Matcher matcher = uuidPattern.matcher(filePath);
+
+        if (matcher.find()) {
+            filePath = filePath.substring(matcher.group().length());
+        }
+        jcAudios.add(JcAudio.createFromFilePath(filePath));
+        initializeJCPlayer();
+    }
+
+    private void initializeJCPlayer() {
         jcplayer.initPlaylist(jcAudios, null);
-        jcplayer.getRootView().findViewById(R.id.btnNext).setVisibility(View.GONE);
-        jcplayer.getRootView().findViewById(R.id.btnPrev).setVisibility(View.GONE);
-        jcplayer.getRootView().findViewById(R.id.btnRepeatOne).setVisibility(View.GONE);
+        View rootView = jcplayer.getRootView();
+        rootView.findViewById(R.id.btnNext).setVisibility(View.GONE);
+        rootView.findViewById(R.id.btnPrev).setVisibility(View.GONE);
+        rootView.findViewById(R.id.btnRepeatOne).setVisibility(View.GONE);
     }
 
     @Override
