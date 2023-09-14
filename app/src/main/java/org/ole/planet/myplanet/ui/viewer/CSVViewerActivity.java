@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.ui.viewer;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -11,7 +10,7 @@ import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 
-import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.databinding.ActivityCsvviewerBinding;
 
 import java.io.File;
 import java.io.FileReader;
@@ -19,21 +18,14 @@ import java.util.Arrays;
 import java.util.List;
 
 public class CSVViewerActivity extends AppCompatActivity {
-
-    private TextView mCSVNameTitle;
-    private TextView mCSVContent;
+    private ActivityCsvviewerBinding activityCsvviewerBinding;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_csvviewer);
-        declareElements();
+        activityCsvviewerBinding = ActivityCsvviewerBinding.inflate(getLayoutInflater());
+        setContentView(activityCsvviewerBinding.getRoot());
         renderCSVFile();
-    }
-
-    private void declareElements() {
-        mCSVNameTitle = (TextView) findViewById(R.id.csvFileName);
-        mCSVContent = (TextView) findViewById(R.id.csvFileContent);
     }
 
     private void renderCSVFile() {
@@ -41,8 +33,8 @@ public class CSVViewerActivity extends AppCompatActivity {
         String fileName = csvFileOpenIntent.getStringExtra("TOUCHED_FILE");
 
         if (fileName != null && !fileName.isEmpty()) {
-            mCSVNameTitle.setText(fileName);
-            mCSVNameTitle.setVisibility(View.VISIBLE);
+            activityCsvviewerBinding.csvFileName.setText(fileName);
+            activityCsvviewerBinding.csvFileName.setVisibility(View.VISIBLE);
         }
 
 
@@ -65,8 +57,8 @@ public class CSVViewerActivity extends AppCompatActivity {
             List<String[]> allRows = reader.readAll();
 
             for (String[] row : allRows) {
-                mCSVContent.append(Arrays.toString(row));
-                mCSVContent.append("\n");
+                activityCsvviewerBinding.csvFileContent.append(Arrays.toString(row));
+                activityCsvviewerBinding.csvFileContent.append("\n");
             }
         } catch (Exception e) {
             e.printStackTrace();
