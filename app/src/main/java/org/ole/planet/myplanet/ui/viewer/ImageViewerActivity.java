@@ -49,7 +49,7 @@ public class ImageViewerActivity extends AppCompatActivity {
                     File basePath = getExternalFilesDir(null);
                     imageFile = new File(basePath, "ole/" + fileName);
                 }
-                Glide.with(getApplicationContext()).load(imageFile).into(mImageViewer);
+                Glide.with(getApplicationContext()).load(imageFile).into(activityImageViewerBinding.imageViewer);
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -72,6 +72,6 @@ public class ImageViewerActivity extends AppCompatActivity {
         Glide.with(this)
                 .load(fileName)
                 .apply(requestOptions)
-                .into(mImageViewer);
+                .into(activityImageViewerBinding.imageViewer);
     }
 }
