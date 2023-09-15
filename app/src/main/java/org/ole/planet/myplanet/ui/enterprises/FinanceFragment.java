@@ -5,20 +5,14 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.Spinner;
-import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
-import com.github.clans.fab.FloatingActionButton;
-import com.google.android.material.textfield.TextInputLayout;
 
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.databinding.AddTransactionBinding;
+import org.ole.planet.myplanet.databinding.FragmentFinanceBinding;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment;
@@ -34,18 +28,11 @@ import io.realm.RealmResults;
 import io.realm.Sort;
 
 public class FinanceFragment extends BaseTeamFragment {
-    RecyclerView rvFinance;
-    FloatingActionButton fab;
-    TextView nodata;
+    private FragmentFinanceBinding fragmentFinanceBinding;
+    private AddTransactionBinding addTransactionBinding;
     Realm mRealm;
-    ImageView imgDate;
     AdapterFinance adapterFinance;
-    TextInputLayout tlNote;
-    Spinner spnType;
-    TextInputLayout tlAmount;
-    LinearLayout llDate;
     Calendar date;
-    TextView tvSelectDate;
     RealmResults<RealmMyTeam> list;
     boolean isAsc = false;
 
@@ -54,7 +41,7 @@ public class FinanceFragment extends BaseTeamFragment {
         date.set(Calendar.YEAR, year);
         date.set(Calendar.MONTH, monthOfYear);
         date.set(Calendar.DAY_OF_MONTH, dayOfMonth);
-        if (date != null) tvSelectDate.setText(TimeUtils.formatDateTZ(date.getTimeInMillis()));
+        if (date != null) addTransactionBinding.tvSelectDate.setText(TimeUtils.formatDateTZ(date.getTimeInMillis()));
     };
 
     public FinanceFragment() {
@@ -62,25 +49,20 @@ public class FinanceFragment extends BaseTeamFragment {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View v = inflater.inflate(R.layout.fragment_finance, container, false);
+        fragmentFinanceBinding = FragmentFinanceBinding.inflate(inflater, container, false);
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
-        rvFinance = v.findViewById(R.id.rv_finance);
-        fab = v.findViewById(R.id.add_transaction);
-        nodata = v.findViewById(R.id.tv_nodata);
-        imgDate = v.findViewById(R.id.img_date);
-        llDate = v.findViewById(R.id.ll_date);
         date = Calendar.getInstance();
-        v.findViewById(R.id.btn_filter).setOnClickListener(view -> {
+        fragmentFinanceBinding.btnFilter.setOnClickListener(view -> {
             showDatePickerDialog();
         });
-        llDate.setOnClickListener(view -> {
-            imgDate.setRotation(imgDate.getRotation() + 180);
+        fragmentFinanceBinding.llDate.setOnClickListener(view -> {
+            fragmentFinanceBinding.imgDate.setRotation(fragmentFinanceBinding.imgDate.getRotation() + 180);
             list = mRealm.where(RealmMyTeam.class).notEqualTo("status", "archived").equalTo("teamId", teamId).equalTo("docType", "transaction").sort("date", isAsc ? Sort.DESCENDING : Sort.ASCENDING).findAll();
             adapterFinance = new AdapterFinance(getActivity(), list);
-            rvFinance.setAdapter(adapterFinance);
+            fragmentFinanceBinding.rvFinance.setAdapter(adapterFinance);
             isAsc = !isAsc;
         });
-        return v;
+        return fragmentFinanceBinding.getRoot();
     }
 
     private void showDatePickerDialog() {
@@ -93,7 +75,7 @@ public class FinanceFragment extends BaseTeamFragment {
             Utilities.log("" + start.getTimeInMillis() + " " + end.getTimeInMillis());
             list = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("docType", "transaction").between("date", start.getTimeInMillis(), end.getTimeInMillis()).sort("date", Sort.DESCENDING).findAll();
             adapterFinance = new AdapterFinance(getActivity(), list);
-            rvFinance.setAdapter(adapterFinance);
+            fragmentFinanceBinding.rvFinance.setAdapter(adapterFinance);
             calculateTotal(list);
         }, now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH)).show(getActivity().getFragmentManager(), "");
     }
@@ -102,17 +84,17 @@ public class FinanceFragment extends BaseTeamFragment {
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         if (user.isManager() || user.isLeader()) {
-            fab.setVisibility(View.VISIBLE);
+            fragmentFinanceBinding.addTransaction.setVisibility(View.VISIBLE);
         } else {
-            fab.setVisibility(View.GONE);
+            fragmentFinanceBinding.addTransaction.setVisibility(View.GONE);
         }
-        fab.setOnClickListener(view -> addTransaction());
+        fragmentFinanceBinding.addTransaction.setOnClickListener(view -> addTransaction());
         list = mRealm.where(RealmMyTeam.class).notEqualTo("status", "archived").equalTo("teamId", teamId).equalTo("docType", "transaction").sort("date", Sort.DESCENDING).findAll();
         adapterFinance = new AdapterFinance(getActivity(), list);
-        rvFinance.setLayoutManager(new LinearLayoutManager(getActivity()));
-        rvFinance.setAdapter(adapterFinance);
+        fragmentFinanceBinding.rvFinance.setLayoutManager(new LinearLayoutManager(getActivity()));
+        fragmentFinanceBinding.rvFinance.setAdapter(adapterFinance);
         calculateTotal(list);
-        showNoData(nodata, list.size());
+        showNoData(fragmentFinanceBinding.tvNodata, list.size());
     }
 
     private void calculateTotal(List<RealmMyTeam> list) {
@@ -126,20 +108,20 @@ public class FinanceFragment extends BaseTeamFragment {
             }
         }
         int total = credit - debit;
-        ((TextView) getView().findViewById(R.id.tv_debit)).setText(debit + "");
-        ((TextView) getView().findViewById(R.id.tv_credit)).setText(credit + "");
-        ((TextView) getView().findViewById(R.id.tv_balance)).setText(total + "");
+        fragmentFinanceBinding.tvDebit.setText(debit + "");
+        fragmentFinanceBinding.tvCredit.setText(credit + "");
+        fragmentFinanceBinding.tvBalance.setText(total + "");
         if (total >= 0)
-            ((TextView) getView().findViewById(R.id.balance_caution)).setVisibility(View.GONE);
+            fragmentFinanceBinding.balanceCaution.setVisibility(View.GONE);
 
     }
 
     private void addTransaction() {
         new AlertDialog.Builder(getActivity()).setView(setUpAlertUi()).setTitle(R.string.add_transaction).setPositiveButton("Submit", (dialogInterface, i) -> {
-            String type = spnType.getSelectedItem().toString();
+            String type = addTransactionBinding.spnType.getSelectedItem().toString();
             Utilities.log(type + " type");
-            String note = tlNote.getEditText().getText().toString().trim();
-            String amount = tlAmount.getEditText().getText().toString().trim();
+            String note = addTransactionBinding.tlNote.getEditText().getText().toString().trim();
+            String amount = addTransactionBinding.tlAmount.getEditText().getText().toString().trim();
 
             if (note.isEmpty()) {
                 Utilities.toast(getActivity(), getString(R.string.note_is_required));
@@ -153,7 +135,7 @@ public class FinanceFragment extends BaseTeamFragment {
                 }, () -> {
                     Utilities.toast(getActivity(), getString(R.string.transaction_added));
                     adapterFinance.notifyDataSetChanged();
-                    showNoData(nodata, adapterFinance.getItemCount());
+                    showNoData(fragmentFinanceBinding.tvNodata, adapterFinance.getItemCount());
                     calculateTotal(list);
                 });
             }
@@ -177,13 +159,9 @@ public class FinanceFragment extends BaseTeamFragment {
     }
 
     private View setUpAlertUi() {
-        View v = LayoutInflater.from(getActivity()).inflate(R.layout.add_transaction, null);
-        spnType = v.findViewById(R.id.spn_type);
-        tlNote = v.findViewById(R.id.tl_note);
-        tlAmount = v.findViewById(R.id.tl_amount);
-        tvSelectDate = v.findViewById(R.id.tv_select_date);
-        tvSelectDate.setOnClickListener(view -> new DatePickerDialog(getActivity(), listener, date.get(Calendar.YEAR), date.get(Calendar.MONTH), date.get(Calendar.DAY_OF_MONTH)).show());
+        addTransactionBinding = AddTransactionBinding.inflate(LayoutInflater.from(getActivity())); // Replace with your actual binding class name
+        addTransactionBinding.tvSelectDate.setOnClickListener(view -> new DatePickerDialog(getActivity(), listener, date.get(Calendar.YEAR), date.get(Calendar.MONTH), date.get(Calendar.DAY_OF_MONTH)).show());
 
-        return v;
+        return addTransactionBinding.getRoot();
     }
 }

@@ -8,11 +8,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.RadioButton
-import android.widget.RadioGroup
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
-import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.Gson
@@ -25,6 +23,8 @@ import kotlinx.android.synthetic.main.calendar_day.view.*
 import kotlinx.android.synthetic.main.calendar_month.view.*
 import kotlinx.android.synthetic.main.fragment_enterprise_calendar.*
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.databinding.AddMeetupBinding
+import org.ole.planet.myplanet.databinding.FragmentEnterpriseCalendarBinding
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.DialogUtils
@@ -35,59 +35,45 @@ import org.threeten.bp.temporal.WeekFields
 import java.util.*
 
 class EnterpriseCalendarFragment : BaseTeamFragment() {
+    private lateinit var fragmentEnterpriseCalendarBinding: FragmentEnterpriseCalendarBinding
     lateinit var list: List<RealmMeetup>
-    lateinit var startDate: TextView
-    lateinit var startTime: TextView
-    lateinit var endDate: TextView
-    lateinit var endTime: TextView
     lateinit var start: Calendar
     lateinit var end: Calendar
-    lateinit var rvCalendar: RecyclerView
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View? {
-        val v = inflater.inflate(R.layout.fragment_enterprise_calendar, container, false)
+        fragmentEnterpriseCalendarBinding = FragmentEnterpriseCalendarBinding.inflate(inflater, container, false)
         start = Calendar.getInstance()
         end = Calendar.getInstance()
-        var fab = v.findViewById<View>(R.id.add_event)
-        showHideFab(fab)
-        v.findViewById<View>(R.id.add_event).setOnClickListener { showMeetupAlert() }
-        rvCalendar = v.findViewById(R.id.rv_calendar)
-        return v
+        showHideFab()
+        fragmentEnterpriseCalendarBinding.addEvent.setOnClickListener { showMeetupAlert() }
+        return fragmentEnterpriseCalendarBinding.root
     }
 
-    private fun showHideFab(fab: View) {
+    private fun showHideFab() {
         if (arguments!!.getBoolean("fromLogin", false)) {
-            fab.visibility = View.GONE
+            fragmentEnterpriseCalendarBinding.addEvent.visibility = View.GONE
         } else if (user != null) {
-            if (user.isManager || user.isLeader) fab.visibility = View.VISIBLE
-            else fab.visibility = View.GONE
+            if (user.isManager || user.isLeader) fragmentEnterpriseCalendarBinding.addEvent.visibility = View.VISIBLE
+            else fragmentEnterpriseCalendarBinding.addEvent.visibility = View.GONE
         } else {
-            fab.visibility = View.GONE
+            fragmentEnterpriseCalendarBinding.addEvent.visibility = View.GONE
         }
     }
 
     private fun showMeetupAlert() {
-        val v = LayoutInflater.from(activity).inflate(R.layout.add_meetup, null)
-        val title = v.findViewById<TextView>(R.id.et_title)
-        val location = v.findViewById<TextView>(R.id.et_location)
-        val description = v.findViewById<TextView>(R.id.et_description)
-        val radioGroup = v.findViewById<RadioGroup>(R.id.rg_recuring)
-        startDate = v.findViewById(R.id.tv_start_date)
-        startTime = v.findViewById(R.id.tv_start_time)
-        endDate = v.findViewById(R.id.tv_end_date)
-        endTime = v.findViewById(R.id.tv_end_time)
-        setDatePickerListener(startDate, start)
-        setDatePickerListener(endDate, end)
-        setTimePicker(startTime)
-        setTimePicker(endTime)
+        val addMeetupBinding = AddMeetupBinding.inflate(layoutInflater)
+        setDatePickerListener(addMeetupBinding.tvStartDate, start)
+        setDatePickerListener(addMeetupBinding.tvEndDate, end)
+        setTimePicker(addMeetupBinding.tvStartTime)
+        setTimePicker(addMeetupBinding.tvEndTime)
 
-        AlertDialog.Builder(requireActivity()).setView(v)
+        AlertDialog.Builder(requireActivity()).setView(addMeetupBinding.root)
             .setPositiveButton("Save") { _, _ ->
-                val ttl = title.text.toString()
-                val desc = description.text.toString()
-                val loc = location.text.toString()
+                val ttl = addMeetupBinding.etTitle.text.toString()
+                val desc = addMeetupBinding.etDescription.text.toString()
+                val loc = addMeetupBinding.etLocation.text.toString()
                 if (ttl.isEmpty()) {
                     Utilities.toast(activity, getString(R.string.title_is_required))
                 } else if (desc.isEmpty()) {
@@ -104,9 +90,9 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
                     meetup.creator = user.id
                     meetup.startDate = start.timeInMillis
                     if (end != null) meetup.endDate = end.timeInMillis
-                    meetup.endTime = endTime.text.toString()
-                    meetup.startTime = startTime.text.toString()
-                    val rb = v.findViewById<RadioButton>(radioGroup.checkedRadioButtonId)
+                    meetup.endTime = addMeetupBinding.tvEndTime.text.toString()
+                    meetup.startTime = addMeetupBinding.tvStartTime.text.toString()
+                    val rb = addMeetupBinding.rgRecuring.findViewById<RadioButton>(addMeetupBinding.rgRecuring.checkedRadioButtonId)
                     if (rb != null) {
                         meetup.recurring = rb.text.toString()
                     }
@@ -116,7 +102,7 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
                     meetup.teamId = teamId
                     mRealm.commitTransaction()
                     Utilities.toast(activity, getString(R.string.meetup_added))
-                    rvCalendar.adapter?.notifyDataSetChanged()
+                    fragmentEnterpriseCalendarBinding.rvCalendar.adapter?.notifyDataSetChanged()
                     calendarView.notifyCalendarChanged()
                 }
             }.setNegativeButton("Cancel", null).show()
@@ -154,8 +140,8 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
         Utilities.log(teamId)
         list = mRealm.where(RealmMeetup::class.java).equalTo("teamId", teamId)
             .greaterThanOrEqualTo("endDate", TimeUtils.currentDateLong()).findAll()
-        rvCalendar.layoutManager = LinearLayoutManager(activity)
-        rvCalendar.adapter = AdapterCalendar(activity, list)
+        fragmentEnterpriseCalendarBinding.rvCalendar.layoutManager = LinearLayoutManager(activity)
+        fragmentEnterpriseCalendarBinding.rvCalendar.adapter = AdapterCalendar(activity, list)
         calendarView.inDateStyle = InDateStyle.ALL_MONTHS
         calendarView.outDateStyle = OutDateStyle.END_OF_ROW
         calendarView.hasBoundaries = true
