@@ -56,6 +56,7 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
     FloatingActionButton floatingActionButton;
     AudioRecorderService audioRecorderService;
     File output;
+    private Uri photoURI;
     private Uri videoUri;
 
     public AddResourceFragment() {
@@ -190,31 +191,30 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
         return videoUri;
     }
     public void takePhoto() {
+        ContentValues values = new ContentValues();
+        values.put(MediaStore.Images.Media.TITLE, "Photo_" + UUID.randomUUID().toString());
+        values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            values.put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/ole/photo");
+        }
+
+        photoURI = requireActivity().getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+
         Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM);
-        output = new File(dir, UUID.randomUUID().toString() + ".jpg");
-
-        // Generate a content URI using FileProvider
-        Uri photoURI = FileProvider.getUriForFile(requireContext(), "org.ole.planet.myplanet.fileprovider", output);
-
-        // Grant temporary permission to the camera app to access the file
-        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-
-        // Set the output URI
         intent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
-        startActivityForResult(intent, REQUEST_CAPTURE_PICTURE);
+
+        if (intent.resolveActivity(requireActivity().getPackageManager()) != null) {
+            startActivityForResult(intent, REQUEST_CAPTURE_PICTURE);
+        }
     }
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (resultCode == RESULT_OK) {
             Uri uri = null;
-//            String path = "";
             if (requestCode == REQUEST_CAPTURE_PICTURE) {
-//                if (output != null) {
-//                    url = Uri.fromFile(output);
-//                    path = url.getPath();
-//                }
+                uri = photoURI;
             } else if (requestCode == REQUEST_VIDEO_CAPTURE) {
                 uri = videoUri;
             }
