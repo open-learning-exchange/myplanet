@@ -101,7 +101,8 @@ class ChatActivity : AppCompatActivity() {
 
         call.enqueue(object : Callback<ChatModel> {
             override fun onResponse(call: Call<ChatModel>, response: Response<ChatModel>) {
-                if (response.body()!!.status == "Success") {
+                val responseBody = response.body()
+                if (responseBody != null && responseBody.status == "Success") {
                     val chatModel = response.body()
                     val history: ArrayList<History> = chatModel?.history ?: ArrayList()
 
