@@ -157,7 +157,7 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
             public void onRecordStopped(String outputFile) {
                 tvTime.setText("");
                 dialog.dismiss();
-//                startIntent(outputFile);
+                audioStartIntent(outputFile);
                 floatingActionButton.setImageResource(R.drawable.ic_mic);
             }
 
@@ -236,6 +236,14 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
         }
     }
 
+    private void audioStartIntent(String path) {
+        if (!TextUtils.isEmpty(path)) {
+            addResource(path);
+        } else {
+            Utilities.toast(getActivity(), getString(R.string.invalid_resource_url));
+        }
+    }
+  
     private String getRealPathFromUri(Uri uri) {
         String[] projection = {MediaStore.Images.Media.DATA};
 
@@ -247,6 +255,7 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
         }
 
         return "";
+
     }
 
     private void addResource(String path) {
