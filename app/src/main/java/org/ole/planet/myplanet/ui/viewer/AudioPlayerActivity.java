@@ -66,8 +66,8 @@ public class AudioPlayerActivity extends AppCompatActivity implements JcPlayerMa
     }
 
     private void initializeJCPlayer() {
-        jcplayer.initPlaylist(jcAudios, null);
-        View rootView = jcplayer.getRootView();
+        activityAudioPlayerBinding.jcplayer.initPlaylist(jcAudios, null);
+        View rootView = activityAudioPlayerBinding.jcplayer.getRootView();
         rootView.findViewById(R.id.btnNext).setVisibility(View.GONE);
         rootView.findViewById(R.id.btnPrev).setVisibility(View.GONE);
         rootView.findViewById(R.id.btnRepeatOne).setVisibility(View.GONE);
