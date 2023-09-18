@@ -52,6 +52,7 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
     public UserProfileDbHandler profileDbHandler;
     boolean doubleBackToExitPressedOnce;
     private SharedPreferences settings;
+    private MenuItem goOnline;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -86,6 +87,7 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_dashboard, menu);
+        goOnline = menu.findItem(R.id.menu_goOnline);
         return true;
     }
 
@@ -99,7 +101,7 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
-        menu.findItem(R.id.menu_goOnline).setVisible(Constants.showBetaFeature(Constants.KEY_SYNC, this));
+        goOnline.setVisible(Constants.showBetaFeature(Constants.KEY_SYNC, this));
         return super.onPrepareOptionsMenu(menu);
     }
 
@@ -108,6 +110,7 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
         int id = item.getItemId();
         if (id == R.id.menu_goOnline) {
             wifiStatusSwitch();
+            return true;
         } else if (id == R.id.menu_logout) {
             logout();
         } else if (id == R.id.action_feedback) {
@@ -129,26 +132,27 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
 
     @SuppressLint("RestrictedApi")
     public void wifiStatusSwitch() {
-        ActionMenuItemView goOnline = findViewById(R.id.menu_goOnline);
-        Drawable resIcon = getResources().getDrawable(R.drawable.goonline);
-        ConnectivityManager connManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-        WifiManager wifi = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-        NetworkInfo mWifi = connManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
+        if (goOnline != null) {
+            Drawable resIcon = getResources().getDrawable(R.drawable.goonline);
+            ConnectivityManager connManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+            WifiManager wifi = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+            NetworkInfo mWifi = connManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
 
-        Intent intent = new Intent(Settings.ACTION_WIFI_SETTINGS);
-        startActivity(intent);
+            Intent intent = new Intent(Settings.ACTION_WIFI_SETTINGS);
+            startActivity(intent);
 
-        if (mWifi.isConnected()) {
-            wifi.setWifiEnabled(false);
-            resIcon.mutate().setColorFilter(getApplicationContext().getResources().getColor(R.color.green), PorterDuff.Mode.SRC_ATOP);
-            goOnline.setIcon(resIcon);
-            Toast.makeText(this, getString(R.string.wifi_is_turned_off_saving_battery_power), Toast.LENGTH_LONG).show();
-        } else {
-            wifi.setWifiEnabled(true);
-            Toast.makeText(this, getString(R.string.turning_on_wifi_please_wait), Toast.LENGTH_LONG).show();
-            (new Handler()).postDelayed(this::connectToWifi, 5000);
-            resIcon.mutate().setColorFilter(getApplicationContext().getResources().getColor(R.color.accent), PorterDuff.Mode.SRC_ATOP);
-            goOnline.setIcon(resIcon);
+            if (mWifi.isConnected()) {
+                wifi.setWifiEnabled(false);
+                resIcon.mutate().setColorFilter(getApplicationContext().getResources().getColor(R.color.green), PorterDuff.Mode.SRC_ATOP);
+                goOnline.setIcon(resIcon);
+                Toast.makeText(this, getString(R.string.wifi_is_turned_off_saving_battery_power), Toast.LENGTH_LONG).show();
+            } else {
+                wifi.setWifiEnabled(true);
+                Toast.makeText(this, getString(R.string.turning_on_wifi_please_wait), Toast.LENGTH_LONG).show();
+                (new Handler()).postDelayed(this::connectToWifi, 5000);
+                resIcon.mutate().setColorFilter(getApplicationContext().getResources().getColor(R.color.accent), PorterDuff.Mode.SRC_ATOP);
+                goOnline.setIcon(resIcon);
+            }
         }
     }
 
