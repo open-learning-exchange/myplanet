@@ -37,7 +37,7 @@
         <include
             layout="@layout/bell_actionbar_items"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+            android:layout_height="?android:attr/actionBarSize" />
 
         <ImageView
             android:id="@+id/iv_sync"

@@ -19,7 +19,6 @@ import com.firebase.jobdispatcher.Job;
 import com.firebase.jobdispatcher.Lifetime;
 import com.firebase.jobdispatcher.RetryStrategy;
 import com.firebase.jobdispatcher.Trigger;
-import com.jakewharton.threetenabp.AndroidThreeTen;
 
 import org.ole.planet.myplanet.callback.TeamPageListener;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
@@ -65,7 +64,6 @@ public class MainApplication extends Application {
         StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
         StrictMode.setVmPolicy(builder.build());
         builder.detectFileUriExposure();
-        AndroidThreeTen.init(this);
 
         // Set up auto-sync using WorkManager
         if (preferences.getBoolean("autoSync", false) && preferences.contains("autoSyncInterval")) {

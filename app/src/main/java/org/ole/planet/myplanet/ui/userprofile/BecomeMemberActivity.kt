@@ -61,6 +61,36 @@ class BecomeMemberActivity : BaseActivity() {
         settings = getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE)
         textChangedListener(mRealm)
 
+        activityBecomeMemberBinding.etUsername.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                s?.let {
+                    val firstChar = if (it.isNotEmpty()) it[0] else null
+
+                    val hasInvalidCharacters = it.any { char ->
+                        char != '_' && char != '.' && char != '-' &&
+                                !Character.isDigit(char) && !Character.isLetter(char)
+                    }
+
+                    if (firstChar != null && !Character.isDigit(firstChar) && !Character.isLetter(firstChar)) {
+                        activityBecomeMemberBinding.etUsername.error = getString(R.string.must_start_with_letter_or_number)
+                    } else if (hasInvalidCharacters) {
+                        activityBecomeMemberBinding.etUsername.error = getString(R.string.only_letters_numbers_and_are_allowed)
+                    } else {
+                        val lowercaseText = it.toString().toLowerCase(Locale.ROOT)
+                        if (it.toString() != lowercaseText) {
+                            activityBecomeMemberBinding.etUsername.setText(lowercaseText)
+                            activityBecomeMemberBinding.etUsername.setSelection(lowercaseText.length)
+                        }
+                        activityBecomeMemberBinding.etUsername.error = null
+                    }
+                }
+            }
+
+            override fun afterTextChanged(s: Editable?) {}
+        })
+
         activityBecomeMemberBinding.btnCancel.setOnClickListener {
             finish()
         }
@@ -84,11 +114,23 @@ class BecomeMemberActivity : BaseActivity() {
             else {
                 Utilities.toast(this, getString(R.string.please_select_gender))
             }
-            if (username!!.isEmpty()) {
+
+            val firstChar = if (username!!.isNotEmpty()) username[0] else null
+            val hasInvalidCharacters = username.any { char ->
+                char != '_' && char != '.' && char != '-' &&
+                        !Character.isDigit(char) && !Character.isLetter(char)
+            }
+
+            if (username.isEmpty()) {
                 activityBecomeMemberBinding.etUsername.error = getString(R.string.please_enter_a_username)
             } else if (username.contains(" ")) {
                 activityBecomeMemberBinding.etUsername.error = getString(R.string.invalid_username)
+            } else if (firstChar != null && !Character.isDigit(firstChar) && !Character.isLetter(firstChar)) {
+                activityBecomeMemberBinding.etUsername.error = getString(R.string.must_start_with_letter_or_number)
+            } else if (hasInvalidCharacters) {
+                activityBecomeMemberBinding.etUsername.error = getString(R.string.only_letters_numbers_and_are_allowed)
             }
+
             if (password!!.isEmpty()) {
                 activityBecomeMemberBinding.etPassword.error = getString(R.string.please_enter_a_password)
             } else if (password != repassword) {

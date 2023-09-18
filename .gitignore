@@ -48,3 +48,6 @@ assets
 
 # Android Studio captures folder
 captures
+
+# version.xml out of build.gradle
+app/src/main/res/values/versions.xml
