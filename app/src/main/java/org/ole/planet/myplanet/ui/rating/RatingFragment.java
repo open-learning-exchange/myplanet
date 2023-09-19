@@ -1,22 +1,21 @@
 package org.ole.planet.myplanet.ui.rating;
 
+import static android.content.Context.MODE_PRIVATE;
+
 import android.content.SharedPreferences;
 import android.os.Bundle;
-
-import androidx.annotation.Nullable;
-import androidx.appcompat.widget.AppCompatRatingBar;
-import androidx.fragment.app.DialogFragment;
-
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.EditText;
+
+import androidx.annotation.Nullable;
+import androidx.fragment.app.DialogFragment;
 
 import com.google.gson.Gson;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnRatingChangeListener;
+import org.ole.planet.myplanet.databinding.FragmentRatingBinding;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmRating;
 import org.ole.planet.myplanet.model.RealmUserModel;
@@ -28,16 +27,12 @@ import java.util.UUID;
 
 import io.realm.Realm;
 
-import static android.content.Context.MODE_PRIVATE;
-
 public class RatingFragment extends DialogFragment {
+    private FragmentRatingBinding fragmentRatingBinding;
     DatabaseService databaseService;
     RealmUserModel model;
     String id = "", type = "", title = "";
     Realm mRealm;
-    Button submit, cancel;
-    AppCompatRatingBar ratingBar;
-    EditText etComment;
     SharedPreferences settings;
     OnRatingChangeListener listener;
     RealmRating previousRating;
@@ -72,16 +67,12 @@ public class RatingFragment extends DialogFragment {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View v = inflater.inflate(R.layout.fragment_rating, container, false);
-        submit = v.findViewById(R.id.btn_submit);
-        cancel = v.findViewById(R.id.btn_cancel);
-        etComment = v.findViewById(R.id.et_comment);
-        ratingBar = v.findViewById(R.id.rating_bar);
+        fragmentRatingBinding = FragmentRatingBinding.inflate(inflater, container, false);
         databaseService = new DatabaseService(getActivity());
         mRealm = databaseService.getRealmInstance();
 
         settings = getActivity().getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE);
-        return v;
+        return fragmentRatingBinding.getRoot();
     }
 
     @Override
@@ -90,16 +81,29 @@ public class RatingFragment extends DialogFragment {
         model = mRealm.where(RealmUserModel.class).equalTo("id", settings.getString("userId", "")).findFirst();
         previousRating = mRealm.where(RealmRating.class).equalTo("type", type).equalTo("userId", settings.getString("userId", "")).equalTo("item", id).findFirst();
         if (previousRating != null) {
-            ratingBar.setRating(previousRating.getRate());
-            etComment.setText(previousRating.getComment());
+            fragmentRatingBinding.ratingBar.setRating(previousRating.getRate());
+            fragmentRatingBinding.etComment.setText(previousRating.getComment());
         }
-        cancel.setOnClickListener(view -> dismiss());
-        submit.setOnClickListener(view -> saveRating());
+        fragmentRatingBinding.ratingBar.setOnRatingBarChangeListener((ratingBar, rating, fromUser) -> {
+            if (fromUser) {
+                fragmentRatingBinding.ratingError.setVisibility(View.GONE);
+            }
+        });
+      
+        fragmentRatingBinding.btnCancel.setOnClickListener(view -> dismiss());
+        fragmentRatingBinding.btnSubmit.setOnClickListener(view -> {
+            if(fragmentRatingBinding.ratingBar.getRating() == 0.0){
+                fragmentRatingBinding.ratingError.setVisibility(View.VISIBLE);
+                fragmentRatingBinding.ratingError.setText(getString(R.string.kindly_give_a_rating));
+            } else {
+                saveRating();
+            }
+        });
     }
 
     private void saveRating() {
-        final String comment = etComment.getText().toString();
-        float rating = ratingBar.getRating();
+        final String comment = fragmentRatingBinding.etComment.getText().toString();
+        float rating = fragmentRatingBinding.ratingBar.getRating();
         mRealm.executeTransactionAsync(realm -> {
             RealmRating ratingObject = realm.where(RealmRating.class).equalTo("type", type).equalTo("userId", settings.getString("userId", "")).equalTo("item", id).findFirst();
             if (ratingObject == null)

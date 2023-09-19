@@ -127,8 +127,15 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             result.getDrawerLayout().setFitsSystemWindows(false);
         }
         topbarSetting();
-        openCallFragment(new BellDashboardFragment());
-        bellToolbar.setVisibility(View.VISIBLE);
+        if (getIntent() != null && getIntent().hasExtra("fragmentToOpen")) {
+            String fragmentToOpen = getIntent().getStringExtra("fragmentToOpen");
+            if ("feedbackList".equals(fragmentToOpen)) {
+                openMyFragment(new FeedbackListFragment());
+            }
+        } else {
+            openCallFragment(new BellDashboardFragment());
+            bellToolbar.setVisibility(View.VISIBLE);
+        }
 
         findViewById(R.id.iv_sync).setOnClickListener(view -> syncNow());
         findViewById(R.id.img_logo).setOnClickListener(view -> result.openDrawer());
