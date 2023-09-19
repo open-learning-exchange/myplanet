@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Spinner;
@@ -46,7 +47,8 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
     EditText etSearch;
     ImageView imgSearch;
     AdapterCourses adapterCourses;
-    Button btnRemove, orderByDate, orderByTitle, selectAll;
+    Button btnRemove, orderByDate, orderByTitle;
+    CheckBox selectAll;
     Spinner spnGrade, spnSubject;
     List<RealmTag> searchTags;
     Spinner spn;
