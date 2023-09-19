@@ -21,7 +21,7 @@
         <item name="colorControlActivated">@color/md_yellow_700</item>
     </style>
 
-    <style name="FullscreenTheme" parent="MaterialDrawerTheme.Light.DarkToolbar.TranslucentStatus">
+    <style name="FullscreenTheme" parent="Theme.Material3.Light.NoActionBar">
         <item name="android:actionBarStyle">@style/FullscreenActionBarStyle</item>
         <item name="android:windowActionBarOverlay">false</item>
         <item name="metaButtonBarStyle">?android:attr/buttonBarStyle</item>
@@ -47,23 +47,23 @@
         <item name="android:textSize">12sp</item>
     </style>
 
-    <style name="CustomTheme" parent="MaterialDrawerTheme.TranslucentStatus">
+    <style name="CustomTheme" parent="Widget.MaterialDrawerStyle">
         <!-- ...and here we setting appcompat’s color theme attrs -->
         <item name="colorPrimary">#F1433C</item>
         <item name="colorPrimaryDark">#D03033</item>
         <item name="colorAccent">#02A8F3</item>
         <!-- MaterialDrawer specific values -->
-        <item name="material_drawer_background">@color/material_drawer_dark_background</item>
-        <item name="material_drawer_primary_text">@color/material_drawer_dark_primary_text</item>
-        <item name="material_drawer_secondary_text">@color/material_drawer_dark_secondary_text
+        <item name="materialDrawerBackground">@color/material_drawer_dark_selected_text</item>
+        <item name="materialDrawerPrimaryText">@color/material_drawer_selected_text</item>
+        <item name="materialDrawerSecondaryText">@color/material_drawer_selected_text
         </item>
-        <item name="material_drawer_hint_text">@color/material_drawer_dark_hint_text</item>
-        <item name="material_drawer_divider">@color/material_drawer_dark_divider</item>
-        <item name="material_drawer_selected">@color/material_drawer_dark_selected</item>
-        <item name="material_drawer_selected_text">#F1433C</item>
-        <item name="material_drawer_header_selection_text">
-            @color/material_drawer_dark_primary_text
-        </item>
+<!--        <item name="material_drawer_hint_text">@color/material_drawer_dark_hint_text</item>-->
+        <item name="materialDrawerDividerColor">@color/material_drawer_divider</item>
+<!--        <item name="material_drawer_selected">@color/material_drawer_dark_selected</item>-->
+<!--        <item name="material_drawer_selected_text">#F1433C</item>-->
+<!--        <item name="material_drawer_header_selection_text">-->
+<!--            @color/material_drawer_dark_primary_text-->
+<!--        </item>-->
 
         <!-- CAB :D -->
         <item name="windowActionModeOverlay">false</item>

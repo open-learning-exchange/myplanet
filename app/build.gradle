@@ -88,7 +88,7 @@ dependencies {
     implementation 'com.afollestad.material-dialogs:commons:0.9.6.0'
     implementation 'com.google.code.gson:gson:2.10.1'
     implementation 'org.codehaus.jackson:jackson-mapper-asl:1.9.13-atlassian-2'
-    implementation('com.mikepenz:materialdrawer:6.1.1@aar') {
+    implementation('com.mikepenz:materialdrawer:9.0.2@aar') {
         transitive = true
     }
     implementation 'androidx.appcompat:appcompat:1.6.1'
