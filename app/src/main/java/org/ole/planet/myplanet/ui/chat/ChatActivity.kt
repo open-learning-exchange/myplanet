@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import okhttp3.MediaType
 import okhttp3.RequestBody
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityChatBinding
 import org.ole.planet.myplanet.datamanager.ApiClient
 import org.ole.planet.myplanet.datamanager.ApiInterface
@@ -102,23 +103,29 @@ class ChatActivity : AppCompatActivity() {
         call.enqueue(object : Callback<ChatModel> {
             override fun onResponse(call: Call<ChatModel>, response: Response<ChatModel>) {
                 val responseBody = response.body()
-                if (responseBody != null && responseBody.status == "Success") {
-                    val chatModel = response.body()
-                    val history: ArrayList<History> = chatModel?.history ?: ArrayList()
+                if (responseBody != null) {
+                    if (responseBody.status == "Success") {
+                        val chatModel = response.body()
+                        val history: ArrayList<History> = chatModel?.history ?: ArrayList()
 
-                    val lastItem = history.lastOrNull()
-                    if (lastItem != null) {
-                        if (lastItem.response != null) {
-                            val responseBody = lastItem.response
-                            val chatResponse = response.body()?.chat
-                            if (chatResponse != null) {
-                                mAdapter.addResponse(chatResponse)
+                        val lastItem = history.lastOrNull()
+                        if (lastItem != null) {
+                            if (lastItem.response != null) {
+                                val responseBody = lastItem.response
+                                val chatResponse = response.body()?.chat
+                                if (chatResponse != null) {
+                                    mAdapter.addResponse(chatResponse)
+                                }
                             }
                         }
+                    } else {
+                        activityChatBinding.textGchatIndicator.visibility = View.VISIBLE
+                        activityChatBinding.textGchatIndicator.text = "${response.body()!!.message}"
                     }
                 } else {
                     activityChatBinding.textGchatIndicator.visibility = View.VISIBLE
-                    activityChatBinding.textGchatIndicator.text = "${response.body()!!.message}"
+                    activityChatBinding.textGchatIndicator.text =
+                        getString(R.string.request_failed_please_retry)
                 }
 
                 activityChatBinding.buttonGchatSend.isEnabled = true
