@@ -25,14 +25,16 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:background="@color/colorPrimary"
                 android:orientation="horizontal"
                 android:padding="@dimen/padding_normal">
 
                 <TextView
                     android:id="@+id/tv_fragment_info"
-                    android:layout_width="0dp"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_vertical"
+                    android:layout_margin="@dimen/_10dp"
                     android:layout_weight="1"
                     android:gravity="center_vertical"
                     android:padding="@dimen/padding_normal"
@@ -125,12 +127,15 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal">
 
-
-
-            <TextView
+            <CheckBox
+                android:id="@+id/selectAll"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1" />
+                android:layout_margin="@dimen/_10dp"
+                android:padding="8dp"
+                android:layout_weight="1"
+                android:text="@string/select_all"
+                android:textSize="@dimen/text_size_mid" />
 
             <include
                 layout="@layout/layout_search"
@@ -139,14 +144,7 @@
                 android:layout_weight="1" /> <!-- Set layout_width to 0dp and layout_weight to 1 for equal distribution -->
         </LinearLayout>
 
-        <CheckBox
-            android:id="@+id/selectAll"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_margin="@dimen/_10dp"
-            android:padding="8dp"
-            android:text="Select all"
-            android:textSize="@dimen/text_size_mid" />
+
 
         <FrameLayout
             android:layout_width="match_parent"
