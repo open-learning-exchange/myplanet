@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.dashboard;
 
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
@@ -8,11 +9,13 @@ import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -48,6 +51,7 @@ import org.ole.planet.myplanet.ui.survey.SendSurveyFragment;
 import org.ole.planet.myplanet.ui.survey.SurveyFragment;
 import org.ole.planet.myplanet.ui.sync.DashboardElementActivity;
 import org.ole.planet.myplanet.ui.team.TeamFragment;
+import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity;
 import org.ole.planet.myplanet.utilities.BottomNavigationViewHelper;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.KeyboardUtils;
@@ -198,8 +202,29 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             logout();
             return;
         }
-        if (user.getId().startsWith("guest")) {
-            getTheme().applyStyle(R.style.GuestStyle, true);
+//        if (user.getId().startsWith("guest")) {
+//            getTheme().applyStyle(R.style.GuestStyle, true);
+//        }
+        if(user.getId().startsWith("guest") && profileDbHandler.getOfflineVisits() >= 3 ){
+            Log.d("Gideon", "user should sign up");
+
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("Become a member");
+            builder.setMessage("Trial period ended! Kindly complete registration to continue");
+            builder.setCancelable(false);
+            builder.setPositiveButton("Become a member", null);
+            builder.setNegativeButton("Logout", null);
+            AlertDialog dialog = builder.create();
+            dialog.show();
+            Button becomeMember = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            Button logout = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
+            becomeMember.setOnClickListener(view -> {
+                startActivity(new Intent(this, BecomeMemberActivity.class));
+            });
+            logout.setOnClickListener(view -> {
+                dialog.dismiss();
+                logout();
+            });
         }
     }
 
