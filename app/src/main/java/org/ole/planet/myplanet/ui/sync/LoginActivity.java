@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.sync;
 
+import static org.ole.planet.myplanet.MainApplication.context;
 import static org.ole.planet.myplanet.ui.dashboard.DashboardActivity.MESSAGE_PROGRESS;
 
 import android.Manifest;
@@ -36,6 +37,8 @@ import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.SyncListener;
@@ -55,6 +58,7 @@ import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.LocaleHelper;
 import org.ole.planet.myplanet.utilities.NetworkUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
+import org.ole.planet.myplanet.utilities.VersionUtils;
 
 import java.util.Arrays;
 import java.util.Calendar;
@@ -288,10 +292,11 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                 if (hasInvalidCharacters) {
                     etUserName.setError(getString(R.string.only_letters_numbers_and_are_allowed));
                     isValid = false;
-                } else if (RealmUserModel.isUserExists(mRealm, username)) {
-                    etUserName.setError(getString(R.string.username_taken));
-                    isValid = false;
                 }
+//                else if (RealmUserModel.isUserExists(mRealm, username)) {
+//                    etUserName.setError(getString(R.string.username_taken));
+//                    isValid = false;
+//                }
             }
 
             if (isValid) {
@@ -302,6 +307,43 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                 } else {
                     saveUserInfoPref(settings, "", model);
                     onLogin();
+                    if (!RealmUserModel.isUserExists(mRealm, username)) {
+                        JsonObject obj = new JsonObject();
+                        obj.addProperty("name", username);
+                        obj.addProperty("firstName", "");
+                        obj.addProperty("lastName", "");
+                        obj.addProperty("middleName", "");
+                        obj.addProperty("password", "");
+                        obj.addProperty("isUserAdmin", false);
+                        obj.addProperty("joinDate", Calendar.getInstance().getTimeInMillis());
+                        obj.addProperty("email", "");
+                        obj.addProperty("planetCode", settings.getString("planetCode", ""));
+                        obj.addProperty("parentCode", settings.getString("parentCode", ""));
+                        obj.addProperty("language", "");
+                        obj.addProperty("level", "");
+                        obj.addProperty("phoneNumber", "");
+                        obj.addProperty("birthDate", "");
+                        obj.addProperty("gender", "");
+                        obj.addProperty("type", "user");
+                        obj.addProperty("betaEnabled", false);
+                        obj.addProperty("androidId", NetworkUtils.getUniqueIdentifier());
+                        obj.addProperty("uniqueAndroidId", VersionUtils.getAndroidId(context));
+                        obj.addProperty(
+                                "customDeviceName", NetworkUtils.getCustomDeviceName(context)
+                        );
+
+                        JsonArray roles = new JsonArray();
+                        roles.add("learner");
+                        obj.add("roles", roles);
+
+                        service.becomeMember(mRealm, obj, new Service.CreateUserCallback() {
+                            @Override
+                            public void onSuccess(String message) {
+                                // Handle the success or failure of `becomeMember` here
+                                Utilities.toast(LoginActivity.this, message);
+                            }
+                        });
+                    }
                 }
             }
         });
