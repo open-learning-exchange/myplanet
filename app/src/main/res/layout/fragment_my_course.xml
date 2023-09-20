@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -5,7 +6,6 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".ui.library.LibraryFragment">
-
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -16,12 +16,11 @@
             android:id="@+id/ll_actions"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="right"
+            android:layout_gravity="end"
             android:background="@color/colorPrimary"
-            android:gravity="right"
+            android:gravity="end"
             android:orientation="vertical"
             android:padding="@dimen/padding_large">
-
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -42,6 +41,19 @@
                     android:textSize="@dimen/text_size_large"
                     android:textStyle="bold" />
 
+                <Button
+                    android:id="@+id/btn_remove"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_margin="@dimen/padding_small"
+                    android:background="@drawable/buttonblue"
+                    android:padding="8dp"
+                    android:text="@string/leave"
+                    android:textColor="@color/md_white_1000"
+                    android:textSize="@dimen/text_size_mid"
+                    android:visibility="gone" />
+
                 <TextView
                     android:id="@+id/tv_add"
                     style="@style/Widget.AppCompat.Button.Borderless.Colored"
@@ -56,85 +68,59 @@
                     android:textSize="@dimen/text_size_mid"
                     app:drawableLeftCompat="@drawable/ic_add_library" />
 
-
-                <Button
-                    android:id="@+id/btn_remove"
+                <Spinner
+                    android:id="@+id/spn_sort"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
-                    android:layout_margin="@dimen/padding_small"
-                    android:background="@drawable/buttonblue"
-                    android:padding="8dp"
-                    android:text="@string/leave"
-                    android:textColor="@color/md_white_1000"
-                    android:textSize="@dimen/text_size_mid"
-                    android:visibility="gone" />
+                    android:entries="@array/sort_by_date"
+                    android:padding="@dimen/padding_normal" />
 
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:padding="@dimen/padding_normal">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
+                <TextView
+                    android:id="@+id/tv_selected"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:gravity="end"
-                    android:padding="@dimen/padding_small">
+                    android:layout_gravity="center"
+                    android:layout_margin="@dimen/_10dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:gravity="start|center_vertical"
+                    android:text="@string/remove_selected"
+                    android:textColor="@drawable/tv_color"
+                    android:textSize="@dimen/text_size_mid"
+                    android:visibility="gone"
+                    app:drawableLeftCompat="@drawable/ic_delete" />
 
-                    <TextView
-                        android:id="@+id/tv_selected"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        android:gravity="center"
-                        android:padding="@dimen/padding_normal"
-                        android:textColor="@color/md_white_1000"
-                        android:textSize="@dimen/text_size_mid" />
+                <TextView
+                    android:id="@+id/tv_delete"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_margin="@dimen/_10dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:gravity="start|center_vertical"
+                    android:text="@string/remove_selected"
+                    android:textColor="@drawable/tv_color"
+                    android:textSize="@dimen/text_size_mid"
+                    android:visibility="gone"
+                    app:drawableLeftCompat="@drawable/ic_delete" />
 
-                    <Spinner
-                        android:id="@+id/spn_sort"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        android:entries="@array/sort_by_date"
-                        android:padding="@dimen/padding_normal" />
+                <ImageButton
+                    android:id="@+id/filter"
+                    style="@style/YellowButtons"
+                    android:layout_width="@dimen/_50dp"
+                    android:layout_height="@dimen/_50dp"
+                    android:layout_margin="@dimen/padding_normal"
+                    android:background="@drawable/buttonyellow"
+                    android:padding="@dimen/padding_normal"
+                    android:text="@string/more_action"
+                    android:textColor="@color/md_white_1000"
+                    app:srcCompat="@drawable/ic_filter" />
 
-                    <TextView
-                        android:id="@+id/tv_delete"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        android:layout_margin="@dimen/_10dp"
-                        android:background="?attr/selectableItemBackground"
-                        android:gravity="start|center_vertical"
-                        android:text="@string/remove_selected"
-                        android:textColor="@drawable/tv_color"
-                        android:textSize="@dimen/text_size_mid"
-                        android:visibility="gone"
-                        app:drawableLeftCompat="@drawable/ic_delete" />
-
-
-                    <ImageButton
-                        android:id="@+id/filter"
-                        style="@style/YellowButtons"
-                        android:layout_width="@dimen/_50dp"
-                        android:layout_height="@dimen/_50dp"
-                        android:layout_margin="@dimen/padding_normal"
-                        android:background="@drawable/buttonyellow"
-                        android:padding="@dimen/padding_normal"
-                        android:text="@string/more_action"
-                        android:textColor="@color/md_white_1000"
-                        app:srcCompat="@drawable/ic_filter" />
-
-                </LinearLayout>
             </LinearLayout>
 
+            <include layout="@layout/layout_search" />
 
         </LinearLayout>
-
-        <include layout="@layout/layout_search" />
 
         <CheckBox
             android:id="@+id/selectAll"
@@ -150,7 +136,6 @@
             android:layout_height="0dp"
             android:layout_weight="1">
 
-
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/recycler"
                 android:layout_width="match_parent"
@@ -164,7 +149,6 @@
         </FrameLayout>
 
     </LinearLayout>
-
 
     <androidx.cardview.widget.CardView
         android:id="@+id/card_filter"
@@ -294,7 +278,6 @@
                     android:text="@string/clear_tags"
                     android:textColor="@color/md_white_1000" />
             </LinearLayout>
-
 
         </LinearLayout>
     </androidx.cardview.widget.CardView>
