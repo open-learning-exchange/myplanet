@@ -131,7 +131,7 @@
                 android:id="@+id/selectAll"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_margin="@dimen/_10dp"
+                android:layout_margin="10.5dp"
                 android:padding="8dp"
                 android:layout_weight="1"
                 android:text="@string/select_all"
