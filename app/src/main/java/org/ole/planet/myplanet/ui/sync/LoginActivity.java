@@ -205,24 +205,108 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         editor = settings.edit();
         View v = LayoutInflater.from(this).inflate(R.layout.alert_guest_login, null);
         TextInputEditText etUserName = v.findViewById(R.id.et_user_name);
-        new AlertDialog.Builder(this).setTitle("Login As Guest").setView(v).setPositiveButton("Login", (dialogInterface, i) -> {
+        etUserName.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                String username = s.toString().toLowerCase().trim(); // Get the current username
+
+                char firstChar = s.length() > 0 ? s.charAt(0) : '\0';
+                boolean hasInvalidCharacters = false;
+                for (int i = 0; i < s.length(); i++) {
+                    char c = s.charAt(i);
+                    if (c != '_' && c != '.' && c != '-' && !Character.isDigit(c) && !Character.isLetter(c)) {
+                        hasInvalidCharacters = true;
+                        break;
+                    }
+                }
+
+                if (!Character.isDigit(firstChar) && !Character.isLetter(firstChar)) {
+                    etUserName.setError(getString(R.string.must_start_with_letter_or_number));
+                } else if (hasInvalidCharacters) {
+                    etUserName.setError(getString(R.string.only_letters_numbers_and_are_allowed));
+                } else {
+                    String lowercaseText = s.toString().toLowerCase(Locale.ROOT);
+                    if (!s.toString().equals(lowercaseText)) {
+                        etUserName.setText(lowercaseText);
+                        etUserName.setSelection(lowercaseText.length());
+                    }
+                    etUserName.setError(null);
+
+                    // Check if the username is taken
+                    if (RealmUserModel.isUserExists(mRealm, username)) {
+                        etUserName.setError(getString(R.string.username_taken));
+                    } else {
+                        etUserName.setError(null);
+                    }
+                }
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {}
+        });
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Login As Guest");
+        builder.setView(v);
+        builder.setPositiveButton("Login", null);
+        builder.setNegativeButton("Cancel", null);
+        AlertDialog dialog = builder.create();
+        dialog.show();
+        Button login = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+        Button cancel = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
+
+        login.setOnClickListener(view -> {
             if (mRealm.isEmpty()) {
                 alertDialogOkay(getString(R.string.this_device_not_configured_properly_please_check_and_sync));
                 return;
             }
-            String username = etUserName.getText().toString().toLowerCase().trim();
-            if (username.isEmpty()) {
-                Utilities.toast(this, getString(R.string.username_cannot_be_empty));
-                return;
+            String username = etUserName.getText().toString().trim();
+            Character firstChar = username.isEmpty() ? null : username.charAt(0);
+            boolean hasInvalidCharacters = false;
+
+            boolean isValid = true;
+
+            if (TextUtils.isEmpty(username)) {
+                etUserName.setError(getString(R.string.username_cannot_be_empty));
+                isValid = false;
             }
-            RealmUserModel model = mRealm.copyFromRealm(RealmUserModel.createGuestUser(username, mRealm, settings));
-            if (model == null) {
-                Utilities.toast(this, getString(R.string.unable_to_login));
+
+            if (firstChar != null && !Character.isDigit(firstChar) && !Character.isLetter(firstChar)) {
+                etUserName.setError(getString(R.string.must_start_with_letter_or_number));
+                isValid = false;
             } else {
-                saveUserInfoPref(settings, "", model);
-                onLogin();
+                for (char c : username.toCharArray()) {
+                    if (c != '_' && c != '.' && c != '-' && !Character.isDigit(c) && !Character.isLetter(c)) {
+                        hasInvalidCharacters = true;
+                        break;
+                    }
+                }
+
+                if (hasInvalidCharacters) {
+                    etUserName.setError(getString(R.string.only_letters_numbers_and_are_allowed));
+                    isValid = false;
+                } else if (RealmUserModel.isUserExists(mRealm, username)) {
+                    etUserName.setError(getString(R.string.username_taken));
+                    isValid = false;
+                }
             }
-        }).setNegativeButton("Cancel", null).show();
+
+            if (isValid) {
+                dialog.dismiss();
+                RealmUserModel model = mRealm.copyFromRealm(RealmUserModel.createGuestUser(username, mRealm, settings));
+                if (model == null) {
+                    Utilities.toast(LoginActivity.this, getString(R.string.unable_to_login));
+                } else {
+                    saveUserInfoPref(settings, "", model);
+                    onLogin();
+                }
+            }
+        });
+
+        cancel.setOnClickListener(view -> dialog.dismiss());
     }
 
     private void continueSync(MaterialDialog dialog) {
