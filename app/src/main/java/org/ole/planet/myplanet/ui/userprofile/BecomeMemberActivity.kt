@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.text.Editable
+import android.text.TextUtils
 import android.text.TextWatcher
 import android.view.View
 import android.widget.ArrayAdapter
@@ -28,6 +29,8 @@ import kotlinx.android.synthetic.main.activity_become_member.rb_gender
 import kotlinx.android.synthetic.main.activity_become_member.spn_lang
 import kotlinx.android.synthetic.main.activity_become_member.spn_level
 import kotlinx.android.synthetic.main.activity_become_member.txt_dob
+import kotlinx.android.synthetic.main.activity_become_member.view.female
+import kotlinx.android.synthetic.main.activity_become_member.view.male
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
@@ -116,31 +119,31 @@ class BecomeMemberActivity : BaseActivity() {
         }
         btn_submit.setOnClickListener {
             var username: String? = et_username.text.toString()
-            var password: String? = et_password.text.toString()
+            var password: String = et_password.text.toString()
             var repassword: String? = et_re_password.text.toString()
             var fname: String? = et_fname.text.toString()
             var lname: String? = et_lname.text.toString()
             var mname: String? = et_mname.text.toString()
             var email: String? = et_email.text.toString()
             var language: String? = spn_lang.selectedItem.toString()
-            var phoneNumber: String? = et_phone.text.toString()
+            var phoneNumber: String = et_phone.text.toString()
             var birthDate: String? = dob
             var level: String? = spn_level.selectedItem.toString()
 
-            var rb: RadioButton? =
-                findViewById<View>(rb_gender.checkedRadioButtonId) as RadioButton?
-            var gender: String? = ""
-            if (rb != null) gender = rb.text.toString()
-            else {
-                Utilities.toast(this, getString(R.string.please_select_gender))
-            }
+//            var rb: RadioButton? =
+//                findViewById<View>(rb_gender.checkedRadioButtonId) as RadioButton?
+            var gender: String? = null
+//            if (rb != null) gender = rb.text.toString()
+//            else {
+//                Utilities.toast(this, getString(R.string.please_select_gender))
+//            }
             val firstChar = if (username!!.isNotEmpty()) username[0] else null
             val hasInvalidCharacters = username.any { char ->
                 char != '_' && char != '.' && char != '-' &&
                         !Character.isDigit(char) && !Character.isLetter(char)
             }
 
-            if (username.isEmpty()) {
+            if (TextUtils.isEmpty(username)) {
                 et_username.error = getString(R.string.please_enter_a_username)
             } else if (username.contains(" ")) {
                 et_username.error = getString(R.string.invalid_username)
@@ -148,40 +151,45 @@ class BecomeMemberActivity : BaseActivity() {
                 et_username.error = getString(R.string.must_start_with_letter_or_number)
             } else if (hasInvalidCharacters) {
                 et_username.error = getString(R.string.only_letters_numbers_and_are_allowed)
-            }
-
-            if (password!!.isEmpty()) {
+            } else if (TextUtils.isEmpty(password)) {
                 et_password.error = getString(R.string.please_enter_a_password)
             } else if (password != repassword) {
                 et_re_password.error = getString(R.string.password_doesn_t_match)
-            }
-            if (email!!.isNotEmpty() && !Utilities.isValidEmail(email)) {
+            } else if (!TextUtils.isEmpty(email) && !Utilities.isValidEmail(email)) {
                 et_email.error = getString(R.string.invalid_email)
-            }
-            if (level == null) {
+            } else if (rb_gender.checkedRadioButtonId == -1) {
+                Utilities.toast(this, getString(R.string.please_select_gender))
+            } else if (level == null) {
                 Utilities.toast(this, getString(R.string.level_is_required));
-            }
-            if (password.isEmpty() && phoneNumber!!.isNotEmpty()) {
-                et_re_password.setText(phoneNumber)
-                password = phoneNumber
-                ///Add dialog that using phone as password , Agree / disagree
-            }
+            } else {
+                if (rb_gender.male.isChecked) {
+                    gender = "male"
+                } else if (rb_gender.female.isChecked) {
+                    gender = "female"
+                }
 
-            checkMandatoryFieldsAndAddMember(
-                username,
-                password,
-                repassword,
-                fname,
-                lname,
-                mname,
-                email,
-                language,
-                level,
-                phoneNumber,
-                birthDate,
-                gender,
-                mRealm
-            )
+                if (TextUtils.isEmpty(password) && !TextUtils.isEmpty(phoneNumber)) {
+                    et_re_password.setText(phoneNumber)
+                    password = phoneNumber
+                    ///Add dialog that using phone as password , Agree / disagree
+                }
+
+                checkMandatoryFieldsAndAddMember(
+                    username,
+                    password,
+                    repassword,
+                    fname,
+                    lname,
+                    mname,
+                    email,
+                    language,
+                    level,
+                    phoneNumber,
+                    birthDate,
+                    gender,
+                    mRealm
+                )
+            }
         }
     }
 
