@@ -97,6 +97,8 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
                     deleteSelected(true);
                     if (adapterCourses.getCourseList().size() == 0) {
                         selectAll.setVisibility(View.GONE);
+                        etSearch.setVisibility(View.GONE);
+                        imgSearch.setVisibility(View.GONE);
                     }
                 })
                 .setNegativeButton(R.string.no, null).show());
@@ -151,6 +153,8 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
                 tvAddToLib.setEnabled(false);  // selectedItems will always have a size of 0
                 if (adapterCourses.getCourseList().size() == 0) {
                     selectAll.setVisibility(View.GONE);
+                    etSearch.setVisibility(View.GONE);
+                    imgSearch.setVisibility(View.GONE);
                 }
             }
         });
@@ -168,6 +172,8 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         selectAll = getView().findViewById(R.id.selectAll);
         if (adapterCourses.getCourseList().size() == 0) {
             selectAll.setVisibility(View.GONE);
+            etSearch.setVisibility(View.GONE);
+            imgSearch.setVisibility(View.GONE);
         }
         selectAll.setOnClickListener(view -> {
             boolean allSelected = selectedItems.size() == adapterCourses.getCourseList().size();
