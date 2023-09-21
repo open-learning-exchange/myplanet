@@ -221,8 +221,10 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             Button logout = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
             becomeMember.setOnClickListener(view -> {
 //                startActivity(new Intent(this, BecomeMemberActivity.class));
+                boolean guest = true;
                 Intent intent = new Intent(this, BecomeMemberActivity.class);
                 intent.putExtra("username", profileDbHandler.getUserModel().getName());
+                intent.putExtra("guest", guest);
                 setResult(Activity.RESULT_OK, intent);
                 startActivity(intent);
             });

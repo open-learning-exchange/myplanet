@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.userprofile
 
 import android.app.DatePickerDialog
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.text.Editable
@@ -9,7 +10,6 @@ import android.text.TextUtils
 import android.text.TextWatcher
 import android.view.View
 import android.widget.ArrayAdapter
-import android.widget.RadioButton
 import android.widget.Spinner
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -38,6 +38,7 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.Utilities
@@ -49,6 +50,7 @@ class BecomeMemberActivity : BaseActivity() {
 
     var dob: String = "";
     lateinit var settings: SharedPreferences
+    var guest: Boolean = false
     private fun showDatePickerDialog() {
         val now = Calendar.getInstance()
         val dpd = DatePickerDialog(
@@ -77,6 +79,7 @@ class BecomeMemberActivity : BaseActivity() {
         }
 
         val username = intent.getStringExtra("username");
+        guest = intent.getBooleanExtra("guest", false);
 
         settings = getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE)
         textChangedListener(mRealm)
@@ -130,13 +133,7 @@ class BecomeMemberActivity : BaseActivity() {
             var birthDate: String? = dob
             var level: String? = spn_level.selectedItem.toString()
 
-//            var rb: RadioButton? =
-//                findViewById<View>(rb_gender.checkedRadioButtonId) as RadioButton?
             var gender: String? = null
-//            if (rb != null) gender = rb.text.toString()
-//            else {
-//                Utilities.toast(this, getString(R.string.please_select_gender))
-//            }
             val firstChar = if (username!!.isNotEmpty()) username[0] else null
             val hasInvalidCharacters = username.any { char ->
                 char != '_' && char != '.' && char != '-' &&
@@ -245,6 +242,13 @@ class BecomeMemberActivity : BaseActivity() {
                     pbar.visibility = View.GONE
                     Utilities.toast(this, res)
                 }
+                finish()
+            }
+
+            if (guest){
+                val intent = Intent(this, LoginActivity::class.java)
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                startActivity(intent)
                 finish()
             }
         }
