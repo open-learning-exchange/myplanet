@@ -73,9 +73,14 @@ class BecomeMemberActivity : BaseActivity() {
             showDatePickerDialog()
         }
 
+        val username = intent.getStringExtra("username");
+
         settings = getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE)
         textChangedListener(mRealm)
 
+        if (username != null) {
+            et_username.setText(username)
+        }
         et_username.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
 

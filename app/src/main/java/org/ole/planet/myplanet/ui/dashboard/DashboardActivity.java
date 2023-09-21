@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.dashboard;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
@@ -219,7 +220,11 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             Button becomeMember = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
             Button logout = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
             becomeMember.setOnClickListener(view -> {
-                startActivity(new Intent(this, BecomeMemberActivity.class));
+//                startActivity(new Intent(this, BecomeMemberActivity.class));
+                Intent intent = new Intent(this, BecomeMemberActivity.class);
+                intent.putExtra("username", profileDbHandler.getUserModel().getName());
+                setResult(Activity.RESULT_OK, intent);
+                startActivity(intent);
             });
             logout.setOnClickListener(view -> {
                 dialog.dismiss();

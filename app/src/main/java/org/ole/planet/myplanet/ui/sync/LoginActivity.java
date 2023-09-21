@@ -229,7 +229,8 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
                 if (!Character.isDigit(firstChar) && !Character.isLetter(firstChar)) {
                     etUserName.setError(getString(R.string.must_start_with_letter_or_number));
-                } else if (hasInvalidCharacters) {
+                }
+                else if (hasInvalidCharacters) {
                     etUserName.setError(getString(R.string.only_letters_numbers_and_are_allowed));
                 } else {
                     String lowercaseText = s.toString().toLowerCase(Locale.ROOT);
@@ -307,43 +308,43 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                 } else {
                     saveUserInfoPref(settings, "", model);
                     onLogin();
-                    if (!RealmUserModel.isUserExists(mRealm, username)) {
-                        JsonObject obj = new JsonObject();
-                        obj.addProperty("name", username);
-                        obj.addProperty("firstName", "");
-                        obj.addProperty("lastName", "");
-                        obj.addProperty("middleName", "");
-                        obj.addProperty("password", "");
-                        obj.addProperty("isUserAdmin", false);
-                        obj.addProperty("joinDate", Calendar.getInstance().getTimeInMillis());
-                        obj.addProperty("email", "");
-                        obj.addProperty("planetCode", settings.getString("planetCode", ""));
-                        obj.addProperty("parentCode", settings.getString("parentCode", ""));
-                        obj.addProperty("language", "");
-                        obj.addProperty("level", "");
-                        obj.addProperty("phoneNumber", "");
-                        obj.addProperty("birthDate", "");
-                        obj.addProperty("gender", "");
-                        obj.addProperty("type", "user");
-                        obj.addProperty("betaEnabled", false);
-                        obj.addProperty("androidId", NetworkUtils.getUniqueIdentifier());
-                        obj.addProperty("uniqueAndroidId", VersionUtils.getAndroidId(context));
-                        obj.addProperty(
-                                "customDeviceName", NetworkUtils.getCustomDeviceName(context)
-                        );
-
-                        JsonArray roles = new JsonArray();
-                        roles.add("learner");
-                        obj.add("roles", roles);
-
-                        service.becomeMember(mRealm, obj, new Service.CreateUserCallback() {
-                            @Override
-                            public void onSuccess(String message) {
-                                // Handle the success or failure of `becomeMember` here
-                                Utilities.toast(LoginActivity.this, message);
-                            }
-                        });
-                    }
+//                    if (!RealmUserModel.isUserExists(mRealm, username)) {
+//                        JsonObject obj = new JsonObject();
+//                        obj.addProperty("name", username);
+//                        obj.addProperty("firstName", "");
+//                        obj.addProperty("lastName", "");
+//                        obj.addProperty("middleName", "");
+//                        obj.addProperty("password", "");
+//                        obj.addProperty("isUserAdmin", false);
+//                        obj.addProperty("joinDate", Calendar.getInstance().getTimeInMillis());
+//                        obj.addProperty("email", "");
+//                        obj.addProperty("planetCode", settings.getString("planetCode", ""));
+//                        obj.addProperty("parentCode", settings.getString("parentCode", ""));
+//                        obj.addProperty("language", "");
+//                        obj.addProperty("level", "");
+//                        obj.addProperty("phoneNumber", "");
+//                        obj.addProperty("birthDate", "");
+//                        obj.addProperty("gender", "");
+//                        obj.addProperty("type", "user");
+//                        obj.addProperty("betaEnabled", false);
+//                        obj.addProperty("androidId", NetworkUtils.getUniqueIdentifier());
+//                        obj.addProperty("uniqueAndroidId", VersionUtils.getAndroidId(context));
+//                        obj.addProperty(
+//                                "customDeviceName", NetworkUtils.getCustomDeviceName(context)
+//                        );
+//
+//                        JsonArray roles = new JsonArray();
+//                        roles.add("learner");
+//                        obj.add("roles", roles);
+//
+//                        service.becomeMember(mRealm, obj, new Service.CreateUserCallback() {
+//                            @Override
+//                            public void onSuccess(String message) {
+//                                // Handle the success or failure of `becomeMember` here
+//                                Utilities.toast(LoginActivity.this, message);
+//                            }
+//                        });
+//                    }
                 }
             }
         });
