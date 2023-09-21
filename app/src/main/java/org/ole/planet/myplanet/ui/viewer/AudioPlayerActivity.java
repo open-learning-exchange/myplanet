@@ -17,22 +17,32 @@ import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class AudioPlayerActivity extends AppCompatActivity implements JcPlayerManagerListener {
     private ActivityAudioPlayerBinding activityAudioPlayerBinding;
     ArrayList<JcAudio> jcAudios;
     boolean isFullPath;
+    String filePath;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         activityAudioPlayerBinding = ActivityAudioPlayerBinding.inflate(getLayoutInflater());
         setContentView(activityAudioPlayerBinding.getRoot());
-        String filePath = getIntent().getStringExtra("TOUCHED_FILE");
+        filePath = getIntent().getStringExtra("TOUCHED_FILE");
         jcAudios = new ArrayList<>();
         isFullPath = getIntent().getBooleanExtra("isFullPath", false);
-        String fullPath;
+        if (filePath.matches(".*[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}//.*")) {
+            playRecordedAudio();
+        } else {
+            playDownloadedAudio();
+        }
+    }
 
+    private void playDownloadedAudio() {
+        String fullPath;
         if (isFullPath) {
             fullPath = filePath;
         } else {
@@ -41,10 +51,26 @@ public class AudioPlayerActivity extends AppCompatActivity implements JcPlayerMa
         }
 
         jcAudios.add(JcAudio.createFromFilePath(fullPath));
+        initializeJCPlayer();
+    }
+
+    private void playRecordedAudio() {
+        Pattern uuidPattern = Pattern.compile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/");
+        Matcher matcher = uuidPattern.matcher(filePath);
+
+        if (matcher.find()) {
+            filePath = filePath.substring(matcher.group().length());
+        }
+        jcAudios.add(JcAudio.createFromFilePath(filePath));
+        initializeJCPlayer();
+    }
+
+    private void initializeJCPlayer() {
         activityAudioPlayerBinding.jcplayer.initPlaylist(jcAudios, null);
-        activityAudioPlayerBinding.jcplayer.getRootView().findViewById(R.id.btnNext).setVisibility(View.GONE);
-        activityAudioPlayerBinding.jcplayer.getRootView().findViewById(R.id.btnPrev).setVisibility(View.GONE);
-        activityAudioPlayerBinding.jcplayer.getRootView().findViewById(R.id.btnRepeatOne).setVisibility(View.GONE);
+        View rootView = activityAudioPlayerBinding.jcplayer.getRootView();
+        rootView.findViewById(R.id.btnNext).setVisibility(View.GONE);
+        rootView.findViewById(R.id.btnPrev).setVisibility(View.GONE);
+        rootView.findViewById(R.id.btnRepeatOne).setVisibility(View.GONE);
     }
 
     @Override

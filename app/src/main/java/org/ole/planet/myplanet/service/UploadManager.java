@@ -6,6 +6,7 @@ import android.text.TextUtils;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.MainApplication;
@@ -232,14 +233,21 @@ public class UploadManager extends FileUploadService {
                 try {
                     Response res;
                     res = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/feedback", RealmFeedback.serializeFeedback(feedback)).execute();
-                    if (res.body() != null) {
-                        Utilities.log(new Gson().toJson(res.body()));
-                        JsonObject r = (JsonObject) res.body();
-                        feedback.set_rev(r.get("rev").getAsString());
-                        feedback.set_id(r.get("id").getAsString());
+                    JsonObject r = (JsonObject) res.body();
+                    if (r != null) {
+                        JsonElement revElement = r.get("rev");
+                        JsonElement idElement = r.get("id");
+
+                        if (revElement != null && idElement != null) {
+                            feedback.set_rev(revElement.getAsString());
+                            feedback.set_id(idElement.getAsString());
+                        } else {
+                            Utilities.log("Missing 'rev' or 'id' elements in the JSON response");
+                        }
                     } else {
                         Utilities.log("ERRRRRRRR " + res.errorBody().string());
                     }
+
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
