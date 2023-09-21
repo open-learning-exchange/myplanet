@@ -948,5 +948,6 @@
     <string name="only_letters_numbers_and_are_allowed">केवल अक्षर, नम्बर, "_" , ".", र "-" पाएको छ</string>
     <string name="unselect_all">सबै चयन गर्दिन</string>
     <string name="select_all">सबै चयन गर्नुहोस्</string>
+    <string name="request_failed_please_retry">अनुरोध असफल भयो, कृपया पुन: प्रयास गर्नुहोस्</string>
 
 </resources>

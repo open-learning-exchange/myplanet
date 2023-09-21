@@ -1038,5 +1038,6 @@
     <string name="config_not_available" translatable="false">Config not available.</string>
     <string name="unselect_all">Unselect All</string>
     <string name="select_all">Select All</string>
+    <string name="request_failed_please_retry">Request failed, please retry</string>
 
 </resources>

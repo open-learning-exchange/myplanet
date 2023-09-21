@@ -943,5 +943,6 @@
     <string name="only_letters_numbers_and_are_allowed">يُسمح فقط بالحروف والأرقام و "_" و "." و "-"</string>
     <string name="unselect_all">إلغاء تحديد الكل</string>
     <string name="select_all">تحديد الكل</string>
+    <string name="request_failed_please_retry">الطلب فشل، يرجى إعادة المحاولة</string>
 
 </resources>
