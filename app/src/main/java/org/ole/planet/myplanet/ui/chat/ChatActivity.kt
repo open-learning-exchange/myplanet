@@ -5,7 +5,6 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
-import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import androidx.activity.OnBackPressedCallback
@@ -14,6 +13,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import okhttp3.MediaType
 import okhttp3.RequestBody
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityChatBinding
 import org.ole.planet.myplanet.datamanager.ApiClient
 import org.ole.planet.myplanet.datamanager.ApiInterface
@@ -100,28 +100,32 @@ class ChatActivity : AppCompatActivity() {
         val apiInterface = ApiClient.getClient().create(ApiInterface::class.java)
         val call = apiInterface.chatGpt(Utilities.getHostUrl(), content)
 
-        Log.d("content", "$content")
         call.enqueue(object : Callback<ChatModel> {
             override fun onResponse(call: Call<ChatModel>, response: Response<ChatModel>) {
-                Log.d("response", "${response.body()}")
-                if (response.body()!!.status == "Success") {
-                    val chatModel = response.body()
-                    val history: ArrayList<History> = chatModel?.history ?: ArrayList()
+                val responseBody = response.body()
+                if (responseBody != null) {
+                    if (responseBody.status == "Success") {
+                        val chatModel = response.body()
+                        val history: ArrayList<History> = chatModel?.history ?: ArrayList()
 
-                    val lastItem = history.lastOrNull()
-                    if (lastItem != null) {
-                        if (lastItem.response != null) {
-                            val responseBody = lastItem.response
-                            val chatResponse = response.body()?.chat
-                            if (chatResponse != null) {
-                                mAdapter.addResponse(chatResponse)
+                        val lastItem = history.lastOrNull()
+                        if (lastItem != null) {
+                            if (lastItem.response != null) {
+                                val responseBody = lastItem.response
+                                val chatResponse = response.body()?.chat
+                                if (chatResponse != null) {
+                                    mAdapter.addResponse(chatResponse)
+                                }
                             }
                         }
+                    } else {
+                        activityChatBinding.textGchatIndicator.visibility = View.VISIBLE
+                        activityChatBinding.textGchatIndicator.text = "${response.body()!!.message}"
                     }
                 } else {
                     activityChatBinding.textGchatIndicator.visibility = View.VISIBLE
-                    activityChatBinding.textGchatIndicator.text = "${response.body()!!.message}"
-                    Log.d("failed chat message", "${response.body()!!.message}")
+                    activityChatBinding.textGchatIndicator.text =
+                        getString(R.string.request_failed_please_retry)
                 }
 
                 activityChatBinding.buttonGchatSend.isEnabled = true
@@ -130,7 +134,6 @@ class ChatActivity : AppCompatActivity() {
             }
 
             override fun onFailure(call: Call<ChatModel>, t: Throwable) {
-                Log.d("onFailure chat message", "${t.message}")
                 activityChatBinding.textGchatIndicator.visibility = View.VISIBLE
                 activityChatBinding.textGchatIndicator.text = "${t.message}"
                 activityChatBinding.buttonGchatSend.isEnabled = true
