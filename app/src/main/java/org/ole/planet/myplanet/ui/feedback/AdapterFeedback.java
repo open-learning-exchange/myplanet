@@ -2,16 +2,14 @@ package org.ole.planet.myplanet.ui.feedback;
 
 import android.content.Context;
 import android.content.Intent;
+import android.view.LayoutInflater;
+import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.TextView;
-
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.databinding.RowFeedbackBinding;
 import org.ole.planet.myplanet.model.RealmFeedback;
 import org.ole.planet.myplanet.utilities.TimeUtils;
 
@@ -19,7 +17,8 @@ import java.util.List;
 
 import io.realm.RealmResults;
 
-public class AdapterFeedback extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+public class AdapterFeedback extends RecyclerView.Adapter<AdapterFeedback.ViewHolderFeedback> {
+    private RowFeedbackBinding rowFeedbackBinding;
     private Context context;
     private List<RealmFeedback> list;
 
@@ -35,26 +34,24 @@ public class AdapterFeedback extends RecyclerView.Adapter<RecyclerView.ViewHolde
 
     @NonNull
     @Override
-    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View v = LayoutInflater.from(context).inflate(R.layout.row_feedback, parent, false);
-        return new ViewHolderFeedback(v);
+    public ViewHolderFeedback onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        rowFeedbackBinding = RowFeedbackBinding.inflate(LayoutInflater.from(context), parent, false);
+        return new ViewHolderFeedback(rowFeedbackBinding);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-        if (holder instanceof ViewHolderFeedback) {
-            ((ViewHolderFeedback) holder).tvTitle.setText(list.get(position).getTitle());
-            ((ViewHolderFeedback) holder).tvType.setText(list.get(position).getType());
-            ((ViewHolderFeedback) holder).tvPriority.setText(list.get(position).getPriority());
-            ((ViewHolderFeedback) holder).tvStatus.setText(list.get(position).getStatus());
-            if ("yes".equalsIgnoreCase(list.get(position).getPriority()))
-                ((ViewHolderFeedback) holder).tvPriority.setBackground(context.getResources().getDrawable(R.drawable.bg_primary));
-            else
-                ((ViewHolderFeedback) holder).tvPriority.setBackground(context.getResources().getDrawable(R.drawable.bg_grey));
-            ((ViewHolderFeedback) holder).tvStatus.setBackground(context.getResources().getDrawable("open".equalsIgnoreCase(list.get(position).getStatus()) ? R.drawable.bg_primary : R.drawable.bg_grey));
-            ((ViewHolderFeedback) holder).tvOpenDate.setText(TimeUtils.getFormatedDate(Long.parseLong(list.get(position).getOpenTime())));
-            holder.itemView.setOnClickListener(v -> context.startActivity(new Intent(context, FeedbackDetailActivity.class).putExtra("id", list.get(position).getId())));
-        }
+    public void onBindViewHolder(@NonNull ViewHolderFeedback holder, int position) {
+        rowFeedbackBinding.tvTitle.setText(list.get(position).getTitle());
+        rowFeedbackBinding.tvType.setText(list.get(position).getType());
+        rowFeedbackBinding.tvPriority.setText(list.get(position).getPriority());
+        rowFeedbackBinding.tvStatus.setText(list.get(position).getStatus());
+        if ("yes".equalsIgnoreCase(list.get(position).getPriority()))
+            rowFeedbackBinding.tvPriority.setBackground(context.getResources().getDrawable(R.drawable.bg_primary));
+        else
+            rowFeedbackBinding.tvPriority.setBackground(context.getResources().getDrawable(R.drawable.bg_grey));
+        rowFeedbackBinding.tvStatus.setBackground(context.getResources().getDrawable("open".equalsIgnoreCase(list.get(position).getStatus()) ? R.drawable.bg_primary : R.drawable.bg_grey));
+        rowFeedbackBinding.tvOpenDate.setText(TimeUtils.getFormatedDate(Long.parseLong(list.get(position).getOpenTime())));
+        rowFeedbackBinding.getRoot().setOnClickListener(v -> context.startActivity(new Intent(context, FeedbackDetailActivity.class).putExtra("id", list.get(position).getId())));
     }
 
     @Override
@@ -62,16 +59,12 @@ public class AdapterFeedback extends RecyclerView.Adapter<RecyclerView.ViewHolde
         return list.size();
     }
 
-    class ViewHolderFeedback extends RecyclerView.ViewHolder {
-        TextView tvTitle, tvType, tvPriority, tvStatus, tvOpenDate;
+    public static class ViewHolderFeedback extends RecyclerView.ViewHolder {
+        RowFeedbackBinding rowFeedbackBinding;
 
-        public ViewHolderFeedback(View itemView) {
-            super(itemView);
-            tvPriority = itemView.findViewById(R.id.tv_priority);
-            tvStatus = itemView.findViewById(R.id.tv_status);
-            tvType = itemView.findViewById(R.id.tv_type);
-            tvTitle = itemView.findViewById(R.id.tv_title);
-            tvOpenDate = itemView.findViewById(R.id.tv_open_date);
+        public ViewHolderFeedback(RowFeedbackBinding rowFeedbackBinding) {
+            super(rowFeedbackBinding.getRoot());
+            this.rowFeedbackBinding = rowFeedbackBinding;
         }
     }
 }
