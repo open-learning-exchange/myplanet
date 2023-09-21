@@ -7,7 +7,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
-import android.os.Environment;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
 import android.util.Base64;
@@ -17,7 +16,7 @@ import android.webkit.MimeTypeMap;
 import android.widget.ImageView;
 import android.widget.Toast;
 
-import com.squareup.picasso.Picasso;
+import com.bumptech.glide.Glide;
 
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
@@ -106,7 +105,11 @@ public class Utilities {
     public static void loadImage(String userImage, ImageView imageView) {
         Utilities.log("User image " + userImage);
         if (!TextUtils.isEmpty(userImage)) {
-            Picasso.get().load(userImage).placeholder(R.drawable.profile).error(R.drawable.profile).into(imageView);
+            Glide.with(context)
+                    .load(userImage)
+                    .placeholder(R.drawable.profile)
+                    .error(R.drawable.profile)
+                    .into(imageView);
         } else {
             imageView.setImageResource(R.drawable.ole_logo);
         }
