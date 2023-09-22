@@ -105,7 +105,7 @@ public class Utilities {
     public static void loadImage(String userImage, ImageView imageView) {
         Utilities.log("User image " + userImage);
         if (!TextUtils.isEmpty(userImage)) {
-            Glide.with(context)
+            Glide.with(MainApplication.context)
                     .load(userImage)
                     .placeholder(R.drawable.profile)
                     .error(R.drawable.profile)
