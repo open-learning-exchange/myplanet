@@ -948,5 +948,6 @@
     <string name="only_letters_numbers_and_are_allowed">Seules les lettres, les chiffres, "_" , ".", et "-" sont autorisés</string>
     <string name="unselect_all">Désélectionner tout</string>
     <string name="select_all">Sélectionner tout</string>
+    <string name="request_failed_please_retry">La demande a échoué, veuillez réessayer</string>
 
 </resources>
