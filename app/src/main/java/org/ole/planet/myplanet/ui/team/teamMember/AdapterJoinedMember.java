@@ -64,7 +64,11 @@ public class AdapterJoinedMember extends RecyclerView.Adapter<RecyclerView.ViewH
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (holder instanceof ViewHolderUser) {
             String[] overflowMenuOptions;
-            rowJoinedUserBinding.tvTitle.setText(list.get(position).toString());
+            if (list.get(position).toString().equals(" ")) {
+                rowJoinedUserBinding.tvTitle.setText(list.get(position).getName());
+            } else {
+                rowJoinedUserBinding.tvTitle.setText(list.get(position).toString());
+            }
             rowJoinedUserBinding.tvDescription.setText(list.get(position).getRoleAsString() + " (" + RealmTeamLog.getVisitCount(mRealm, list.get(position).getName(), teamId) + " " + context.getString(R.string.visits) + " )");
             Picasso.get()
                     .load(list.get(position).getUserImage())
