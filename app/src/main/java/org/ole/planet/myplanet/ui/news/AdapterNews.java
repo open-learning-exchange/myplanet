@@ -110,7 +110,9 @@ public class AdapterNews extends BaseNewsAdapter {
                 ((ViewHolderNews) holder).btnReply.setVisibility(fromLogin ? View.GONE : View.VISIBLE);
                 loadImage(holder, news);
                 showReplyButton(holder, news, position);
-                holder.itemView.setOnClickListener(v -> context.startActivity(new Intent(context, NewsDetailActivity.class).putExtra("newsId", list.get(position).getId())));
+                if(news.isCommunityNews()) {
+                    holder.itemView.setOnClickListener(v -> context.startActivity(new Intent(context, NewsDetailActivity.class).putExtra("newsId", list.get(position).getId())));
+                }
                 addLabels(holder, news);
                 showChips(holder, news);
             }

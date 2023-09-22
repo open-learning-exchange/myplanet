@@ -1,13 +1,6 @@
 package org.ole.planet.myplanet.ui.feedback;
 
 import android.content.Context;
-
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -16,15 +9,19 @@ import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.TextView;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.databinding.ActivityFeedbackDetailBinding;
+import org.ole.planet.myplanet.databinding.RowFeedbackReplyBinding;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.FeedbackReply;
 import org.ole.planet.myplanet.model.RealmFeedback;
@@ -37,44 +34,36 @@ import java.util.List;
 import io.realm.Realm;
 
 public class FeedbackDetailActivity extends AppCompatActivity {
-
-    private RecyclerView rv_feedback_reply;
+    private ActivityFeedbackDetailBinding activityFeedbackDetailBinding;
     private RecyclerView.Adapter mAdapter;
     private RecyclerView.LayoutManager layoutManager;
-    Button closeButton, replyButton;
-    EditText editText;
     RealmFeedback feedback;
     Realm realm;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_feedback_detail);
+        activityFeedbackDetailBinding = ActivityFeedbackDetailBinding.inflate(getLayoutInflater());
+        setContentView(activityFeedbackDetailBinding.getRoot());
         getSupportActionBar().setHomeButtonEnabled(true);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         setTitle(R.string.feedback);
         realm = new DatabaseService(this).getRealmInstance();
         feedback = realm.where(RealmFeedback.class).equalTo("id", getIntent().getStringExtra("id")).findFirst();
-        TextView tvMessage = findViewById(R.id.tv_message);
-        TextView tvDate = findViewById(R.id.tv_date);
         if (!TextUtils.isEmpty(feedback.getOpenTime()))
-            tvDate.setText(TimeUtils.getFormatedDateWithTime(Long.parseLong(feedback.getOpenTime())));
-        else tvDate.setText(R.string.date_n_a);
-        tvMessage.setText(TextUtils.isEmpty(feedback.getMessage()) ? "N/A" : feedback.getMessage());
-        closeButton = findViewById(R.id.close_feedback);
-        replyButton = findViewById(R.id.reply_feedback);
-        editText = findViewById(R.id.feedback_reply_edit_text);
+            activityFeedbackDetailBinding.tvDate.setText(TimeUtils.getFormatedDateWithTime(Long.parseLong(feedback.getOpenTime())));
+        else activityFeedbackDetailBinding.tvDate.setText(R.string.date_n_a);
+        activityFeedbackDetailBinding.tvMessage.setText(TextUtils.isEmpty(feedback.getMessage()) ? "N/A" : feedback.getMessage());
         setUpReplies();
     }
 
     public void setUpReplies() {
-        rv_feedback_reply = (RecyclerView) findViewById(R.id.rv_feedback_reply);
-        rv_feedback_reply.setHasFixedSize(true);
+        activityFeedbackDetailBinding.rvFeedbackReply.setHasFixedSize(true);
         layoutManager = new LinearLayoutManager(this);
-        rv_feedback_reply.setLayoutManager(layoutManager);
+        activityFeedbackDetailBinding.rvFeedbackReply.setLayoutManager(layoutManager);
         mAdapter = new RvFeedbackAdapter(feedback.getMessageList(), getApplicationContext());
-        rv_feedback_reply.setAdapter(mAdapter);
-        closeButton.setOnClickListener(view -> {
+        activityFeedbackDetailBinding.rvFeedbackReply.setAdapter(mAdapter);
+        activityFeedbackDetailBinding.closeFeedback.setOnClickListener(view -> {
             realm.executeTransactionAsync(realm1 -> {
                 RealmFeedback feedback1 = realm1.where(RealmFeedback.class).equalTo("id", getIntent().getStringExtra("id")).findFirst();
                 feedback1.setStatus("Closed");
@@ -83,11 +72,11 @@ public class FeedbackDetailActivity extends AppCompatActivity {
             });
         });
 
-        replyButton.setOnClickListener(r -> {
-            if (TextUtils.isEmpty(editText.getText().toString().trim())) {
-                editText.setError("Kindly enter reply message");
+        activityFeedbackDetailBinding.replyFeedback.setOnClickListener(r -> {
+            if (TextUtils.isEmpty(activityFeedbackDetailBinding.feedbackReplyEditText.getText().toString().trim())) {
+                activityFeedbackDetailBinding.feedbackReplyEditText.setError("Kindly enter reply message");
             } else {
-                String message = editText.getText().toString().trim();
+                String message = activityFeedbackDetailBinding.feedbackReplyEditText.getText().toString().trim();
                 JsonObject object = new JsonObject();
                 object.addProperty("message", message);
                 object.addProperty("time", new Date().getTime() + "");
@@ -95,18 +84,18 @@ public class FeedbackDetailActivity extends AppCompatActivity {
                 String id = feedback.getId();
                 addReply(object, id);
                 mAdapter = new RvFeedbackAdapter(feedback.getMessageList(), getApplicationContext());
-                rv_feedback_reply.setAdapter(mAdapter);
-                editText.setText("");
-                editText.clearFocus();
+                activityFeedbackDetailBinding.rvFeedbackReply.setAdapter(mAdapter);
+                activityFeedbackDetailBinding.feedbackReplyEditText.setText("");
+                activityFeedbackDetailBinding.feedbackReplyEditText.clearFocus();
             }
         });
     }
 
     public void updateForClosed() {
         if (feedback.getStatus().equalsIgnoreCase("Closed")) {
-            closeButton.setEnabled(false);
-            replyButton.setEnabled(false);
-            editText.setVisibility(View.INVISIBLE);
+            activityFeedbackDetailBinding.closeFeedback.setEnabled(false);
+            activityFeedbackDetailBinding.replyFeedback.setEnabled(false);
+            activityFeedbackDetailBinding.feedbackReplyEditText.setVisibility(View.INVISIBLE);
             navigateToFeedbackListFragment();
         }
     }
@@ -131,7 +120,7 @@ public class FeedbackDetailActivity extends AppCompatActivity {
         }, () -> {
             updateForClosed();
             mAdapter = new RvFeedbackAdapter(feedback.getMessageList(), getApplicationContext());
-            rv_feedback_reply.setAdapter(mAdapter);
+            activityFeedbackDetailBinding.rvFeedbackReply.setAdapter(mAdapter);
         });
     }
 
@@ -142,41 +131,41 @@ public class FeedbackDetailActivity extends AppCompatActivity {
     }
 
     public class RvFeedbackAdapter extends RecyclerView.Adapter<RvFeedbackAdapter.ReplyViewHolder> {
+        private RowFeedbackReplyBinding rowFeedbackReplyBinding;
         private List<FeedbackReply> replyList;
         Context context;
-
-        public class ReplyViewHolder extends RecyclerView.ViewHolder {
-            public TextView tv_message, tv_date, tv_user;
-
-            public ReplyViewHolder(View v) {
-                super(v);
-                tv_message = v.findViewById(R.id.tv_message);
-                tv_user = v.findViewById(R.id.tv_user);
-                tv_date = v.findViewById(R.id.tv_date);
-            }
-        }
 
         public RvFeedbackAdapter(List<FeedbackReply> replyList, Context context) {
             this.replyList = replyList;
             this.context = context;
         }
 
+        @NonNull
         @Override
-        public RvFeedbackAdapter.ReplyViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            View v = LayoutInflater.from(context).inflate(R.layout.row_feedback_reply, parent, false);
-            return new RvFeedbackAdapter.ReplyViewHolder(v);
+        public ReplyViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            rowFeedbackReplyBinding = RowFeedbackReplyBinding.inflate(LayoutInflater.from(context), parent, false);
+            return new ReplyViewHolder(rowFeedbackReplyBinding);
         }
 
         @Override
         public void onBindViewHolder(@NonNull ReplyViewHolder holder, int position) {
-            holder.tv_date.setText(TimeUtils.getFormatedDateWithTime(Long.parseLong(replyList.get(position).getDate())));
-            holder.tv_user.setText(replyList.get(position).getUser());
-            holder.tv_message.setText(replyList.get(position).getMessage());
+            rowFeedbackReplyBinding.tvDate.setText(TimeUtils.getFormatedDateWithTime(Long.parseLong(replyList.get(position).getDate())));
+            rowFeedbackReplyBinding.tvUser.setText(replyList.get(position).getUser());
+            rowFeedbackReplyBinding.tvMessage.setText(replyList.get(position).getMessage());
         }
 
         @Override
         public int getItemCount() {
             return replyList.size();
+        }
+
+        public class ReplyViewHolder extends RecyclerView.ViewHolder {
+            RowFeedbackReplyBinding rowFeedbackReplyBinding;
+
+            public ReplyViewHolder(RowFeedbackReplyBinding rowFeedbackReplyBinding) {
+                super(rowFeedbackReplyBinding.getRoot());
+                this.rowFeedbackReplyBinding = rowFeedbackReplyBinding;
+            }
         }
     }
 }

@@ -24,6 +24,10 @@ import com.squareup.picasso.Callback;
 import com.squareup.picasso.Picasso;
 
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.databinding.FragmentAchievementBinding;
+import org.ole.planet.myplanet.databinding.FragmentUserProfileBinding;
+import org.ole.planet.myplanet.databinding.ItemTitleDescBinding;
+import org.ole.planet.myplanet.databinding.RowStatBinding;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
@@ -39,15 +43,13 @@ import java.util.LinkedList;
 import io.realm.Realm;
 
 public class UserProfileFragment extends Fragment {
-
+    private FragmentUserProfileBinding fragmentUserProfileBinding;
+    private RowStatBinding rowStatBinding;
     UserProfileDbHandler handler;
     DatabaseService realmService;
     Realm mRealm;
-    RecyclerView rvStat;
-    Button addPicture;
     RealmUserModel model;
     File output;
-    ImageView imageView;
 
     static final int IMAGE_TO_USE = 100;
     static String imageUrl = "";
@@ -65,19 +67,78 @@ public class UserProfileFragment extends Fragment {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View v = inflater.inflate(R.layout.fragment_user_profile, container, false);
+        fragmentUserProfileBinding = FragmentUserProfileBinding.inflate(inflater, container, false);
         handler = new UserProfileDbHandler(getActivity());
         realmService = new DatabaseService(getActivity());
         mRealm = realmService.getRealmInstance();
-        rvStat = v.findViewById(R.id.rv_stat);
-        rvStat.setLayoutManager(new LinearLayoutManager(getActivity()));
-        rvStat.setNestedScrollingEnabled(false);
-        addPicture = (Button) v.findViewById(R.id.bt_profile_pic);
-        imageView = (ImageView) v.findViewById(R.id.image);
+        fragmentUserProfileBinding.rvStat.setLayoutManager(new LinearLayoutManager(getActivity()));
+        fragmentUserProfileBinding.rvStat.setNestedScrollingEnabled(false);
 
-        addPicture.setOnClickListener(v1 -> searchForPhoto());
-        populateUserData(v);
-        return v;
+        fragmentUserProfileBinding.btProfilePic.setOnClickListener(v1 -> searchForPhoto());
+        model = handler.getUserModel();
+        fragmentUserProfileBinding.txtName.setText(String.format("%s %s %s", model.getFirstName(), model.getMiddleName(), model.getLastName()));
+        fragmentUserProfileBinding.txtEmail.setText(getString(R.string.email_colon)
+                + Utilities.checkNA(model.getEmail()));
+        String dob = TextUtils.isEmpty(model.getDob()) ? "N/A" : TimeUtils.getFormatedDate(model.getDob(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+        fragmentUserProfileBinding.txtDob.setText(getString(R.string.date_of_birth) + dob);
+        if (!TextUtils.isEmpty(model.getUserImage()))
+            Picasso.get().load(model.getUserImage()).placeholder(R.drawable.profile).into(fragmentUserProfileBinding.image, new Callback() {
+                @Override
+                public void onSuccess() {
+                }
+
+                @Override
+                public void onError(Exception e) {
+                    Picasso.get().load(new File(model.getUserImage())).placeholder(R.drawable.profile).error(R.drawable.profile).into(fragmentUserProfileBinding.image);
+                }
+            });
+        else {
+            fragmentUserProfileBinding.image.setImageResource(R.drawable.profile);
+        }
+        final LinkedHashMap<String, String> map = new LinkedHashMap<String, String>();
+        map.put("Community Name", Utilities.checkNA(model.getPlanetCode()));
+        map.put("Last Login : ", Utilities.getRelativeTime(handler.getLastVisit()));
+        map.put("Total Visits : ", handler.getOfflineVisits() + "");
+        map.put("Most Opened Resource : ", Utilities.checkNA(handler.getMaxOpenedResource()));
+        map.put("Number of Resources Opened : ", Utilities.checkNA(handler.getNumberOfResourceOpen()));
+
+        final LinkedList<String> keys = new LinkedList<>(map.keySet());
+        fragmentUserProfileBinding.rvStat.setAdapter(new RecyclerView.Adapter() {
+            @NonNull
+            @Override
+            public ViewHolderRowStat onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+                rowStatBinding = RowStatBinding.inflate(LayoutInflater.from(getActivity()), parent, false);
+                return new ViewHolderRowStat(rowStatBinding);
+            }
+
+            @Override
+            public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+                if (holder instanceof ViewHolderRowStat) {
+                    rowStatBinding.tvTitle.setText(keys.get(position));
+                    rowStatBinding.tvTitle.setVisibility(View.VISIBLE);
+                    rowStatBinding.tvDescription.setText(map.get(keys.get(position)));
+                    if (position % 2 == 0) {
+                        rowStatBinding.getRoot().setBackgroundColor(getResources().getColor(R.color.bg_white));
+                        rowStatBinding.getRoot().setBackgroundColor(getResources().getColor(R.color.md_grey_300));
+                    }
+                }
+            }
+
+            @Override
+            public int getItemCount() {
+                return keys.size();
+            }
+
+            class ViewHolderRowStat extends RecyclerView.ViewHolder {
+                public RowStatBinding rowStatBinding;
+
+                public ViewHolderRowStat(RowStatBinding rowStatBinding) {
+                    super(rowStatBinding.getRoot());
+                    this.rowStatBinding = rowStatBinding;
+                }
+            }
+        });
+        return fragmentUserProfileBinding.getRoot();
     }
 
     public void searchForPhoto() {
@@ -101,7 +162,7 @@ public class UserProfileFragment extends Fragment {
             }
             model.setUserImage(path);
             mRealm.commitTransaction();
-            imageView.setImageURI(url);
+            fragmentUserProfileBinding.image.setImageURI(url);
             Utilities.log("Image Url = " + imageUrl);
         }
              /*   getRealm().executeTransactionAsync(new Realm.Transaction() {
@@ -120,18 +181,18 @@ public class UserProfileFragment extends Fragment {
         String dob = TextUtils.isEmpty(model.getDob()) ? "N/A" : TimeUtils.getFormatedDate(model.getDob(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
         ((TextView) v.findViewById(R.id.txt_dob)).setText(getString(R.string.date_of_birth) + dob);
         if (!TextUtils.isEmpty(model.getUserImage()))
-            Picasso.get().load(model.getUserImage()).placeholder(R.drawable.profile).into(imageView, new Callback() {
+            Picasso.get().load(model.getUserImage()).placeholder(R.drawable.profile).into(fragmentUserProfileBinding.image, new Callback() {
                 @Override
                 public void onSuccess() {
                 }
 
                 @Override
                 public void onError(Exception e) {
-                    Picasso.get().load(new File(model.getUserImage())).placeholder(R.drawable.profile).error(R.drawable.profile).into(imageView);
+                    Picasso.get().load(new File(model.getUserImage())).placeholder(R.drawable.profile).error(R.drawable.profile).into(fragmentUserProfileBinding.image);
                 }
             });
         else {
-            imageView.setImageResource(R.drawable.profile);
+            fragmentUserProfileBinding.image.setImageResource(R.drawable.profile);
         }
         final LinkedHashMap<String, String> map = new LinkedHashMap<String, String>();
         map.put("Community Name", Utilities.checkNA(model.getPlanetCode()));
@@ -139,28 +200,25 @@ public class UserProfileFragment extends Fragment {
         map.put("Total Visits : ", handler.getOfflineVisits() + "");
         map.put("Most Opened Resource : ", Utilities.checkNA(handler.getMaxOpenedResource()));
         map.put("Number of Resources Opened : ", Utilities.checkNA(handler.getNumberOfResourceOpen()));
-        setUpRecyclerView(map, v);
-    }
 
-    public void setUpRecyclerView(final HashMap<String, String> map, View v) {
         final LinkedList<String> keys = new LinkedList<>(map.keySet());
-        rvStat.setAdapter(new RecyclerView.Adapter() {
+        fragmentUserProfileBinding.rvStat.setAdapter(new RecyclerView.Adapter() {
             @NonNull
             @Override
-            public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-                View v = getLayoutInflater().inflate(R.layout.row_stat, parent, false);
-                return new AdapterOtherInfo.ViewHolderOtherInfo(v);
+            public ViewHolderRowStat onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+                rowStatBinding = RowStatBinding.inflate(LayoutInflater.from(getActivity()), parent, false);
+                return new ViewHolderRowStat(rowStatBinding);
             }
 
             @Override
             public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-                if (holder instanceof AdapterOtherInfo.ViewHolderOtherInfo) {
-                    ((AdapterOtherInfo.ViewHolderOtherInfo) holder).tvTitle.setText(keys.get(position));
-                    ((AdapterOtherInfo.ViewHolderOtherInfo) holder).tvTitle.setVisibility(View.VISIBLE);
-                    ((AdapterOtherInfo.ViewHolderOtherInfo) holder).tvDescription.setText(map.get(keys.get(position)));
+                if (holder instanceof ViewHolderRowStat) {
+                    rowStatBinding.tvTitle.setText(keys.get(position));
+                    rowStatBinding.tvTitle.setVisibility(View.VISIBLE);
+                    rowStatBinding.tvDescription.setText(map.get(keys.get(position)));
                     if (position % 2 == 0) {
-                        holder.itemView.setBackgroundColor(getResources().getColor(R.color.bg_white));
-                        holder.itemView.setBackgroundColor(getResources().getColor(R.color.md_grey_300));
+                        rowStatBinding.getRoot().setBackgroundColor(getResources().getColor(R.color.bg_white));
+                        rowStatBinding.getRoot().setBackgroundColor(getResources().getColor(R.color.md_grey_300));
                     }
                 }
             }
@@ -168,6 +226,15 @@ public class UserProfileFragment extends Fragment {
             @Override
             public int getItemCount() {
                 return keys.size();
+            }
+
+            class ViewHolderRowStat extends RecyclerView.ViewHolder {
+                public RowStatBinding rowStatBinding;
+
+                public ViewHolderRowStat(RowStatBinding rowStatBinding) {
+                    super(rowStatBinding.getRoot());
+                    this.rowStatBinding = rowStatBinding;
+                }
             }
         });
     }

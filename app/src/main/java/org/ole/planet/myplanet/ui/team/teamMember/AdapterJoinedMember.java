@@ -15,6 +15,9 @@ import android.widget.TextView;
 import com.squareup.picasso.Picasso;
 
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.databinding.ItemTitleDescBinding;
+import org.ole.planet.myplanet.databinding.RowJoinedUserBinding;
+import org.ole.planet.myplanet.databinding.RowOtherInfoBinding;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmTeamLog;
 import org.ole.planet.myplanet.model.RealmUserModel;
@@ -28,6 +31,7 @@ import de.hdodenhof.circleimageview.CircleImageView;
 import io.realm.Realm;
 
 public class AdapterJoinedMember extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+    private RowJoinedUserBinding rowJoinedUserBinding;
     private Context context;
     private List<RealmUserModel> list;
     private Realm mRealm;
@@ -50,29 +54,35 @@ public class AdapterJoinedMember extends RecyclerView.Adapter<RecyclerView.ViewH
     @NonNull
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View v = LayoutInflater.from(context).inflate(R.layout.row_joined_user, parent, false);
-        return new ViewHolderUser(v);
+        rowJoinedUserBinding = RowJoinedUserBinding.inflate(LayoutInflater.from(context), parent, false);
+        return new ViewHolderUser(rowJoinedUserBinding);
+//        View v = LayoutInflater.from(context).inflate(R.layout.row_joined_user, parent, false);
+//        return new ViewHolderUser(v);
     }
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (holder instanceof ViewHolderUser) {
             String[] overflowMenuOptions;
-            ((ViewHolderUser) holder).tvTitle.setText(list.get(position).toString());
-            ((ViewHolderUser) holder).tvDescription.setText(list.get(position).getRoleAsString() + " (" + RealmTeamLog.getVisitCount(mRealm, list.get(position).getName(), teamId) + " " + context.getString(R.string.visits) + " )");
+            if (list.get(position).toString().equals(" ")) {
+                rowJoinedUserBinding.tvTitle.setText(list.get(position).getName());
+            } else {
+                rowJoinedUserBinding.tvTitle.setText(list.get(position).toString());
+            }
+            rowJoinedUserBinding.tvDescription.setText(list.get(position).getRoleAsString() + " (" + RealmTeamLog.getVisitCount(mRealm, list.get(position).getName(), teamId) + " " + context.getString(R.string.visits) + " )");
             Picasso.get()
                     .load(list.get(position).getUserImage())
                     .placeholder(R.drawable.profile)
                     .error(R.drawable.profile)
-                    .into(((ViewHolderUser) holder).memberImage);
+                    .into(rowJoinedUserBinding.memberImage);
             boolean isLoggedInUserTeamLeader = this.teamLeaderId != null && this.teamLeaderId.equals(this.currentUser.getId());
 
             // If the current user card is the logged in user/team leader
             if (this.teamLeaderId.equals(list.get(position).getId())) {
-                ((ViewHolderUser) holder).isLeader.setVisibility(View.VISIBLE);
-                ((ViewHolderUser) holder).isLeader.setText("("+ R.string.team_leader +")");
+                rowJoinedUserBinding.tvIsLeader.setVisibility(View.VISIBLE);
+                rowJoinedUserBinding.tvIsLeader.setText("("+ R.string.team_leader +")");
             } else {
-                ((ViewHolderUser) holder).isLeader.setVisibility(View.GONE);
+                rowJoinedUserBinding.tvIsLeader.setVisibility(View.GONE);
                 overflowMenuOptions = new String[]{context.getString(R.string.remove), context.getString(R.string.make_leader)};
                 checkUserAndShowOverflowMenu((ViewHolderUser) holder, position, overflowMenuOptions, isLoggedInUserTeamLeader);
             }
@@ -85,8 +95,8 @@ public class AdapterJoinedMember extends RecyclerView.Adapter<RecyclerView.ViewH
          * of the team we are looking at and shows/hides the overflow menu accordingly.
          */
         if (isLoggedInUserTeamLeader) {
-            holder.icMore.setVisibility(View.VISIBLE);
-            holder.icMore.setOnClickListener(view -> {
+            rowJoinedUserBinding.icMore.setVisibility(View.VISIBLE);
+            rowJoinedUserBinding.icMore.setOnClickListener(view -> {
                 new AlertDialog.Builder(context).setItems(overflowMenuOptions, (dialogInterface, i) -> {
                     if (i == 0) {
                         reject(list.get(position), position);
@@ -96,7 +106,7 @@ public class AdapterJoinedMember extends RecyclerView.Adapter<RecyclerView.ViewH
                 }).setNegativeButton(R.string.dismiss, null).show();
             });
         } else {
-            holder.icMore.setVisibility(View.GONE);
+            rowJoinedUserBinding.icMore.setVisibility(View.GONE);
         }
     }
 
@@ -133,16 +143,12 @@ public class AdapterJoinedMember extends RecyclerView.Adapter<RecyclerView.ViewH
         return list.size();
     }
 
-    class ViewHolderUser extends AdapterOtherInfo.ViewHolderOtherInfo {
-        ImageView icMore;
-        CircleImageView memberImage;
-        TextView isLeader;
+    class ViewHolderUser extends RecyclerView.ViewHolder {
+        public RowJoinedUserBinding rowJoinedUserBinding;
 
-        public ViewHolderUser(View itemView) {
-            super(itemView);
-            icMore = itemView.findViewById(R.id.ic_more);
-            isLeader = itemView.findViewById(R.id.tv_is_leader);
-            memberImage = itemView.findViewById(R.id.memberImage);
+        public ViewHolderUser(RowJoinedUserBinding rowJoinedUserBinding) {
+            super(rowJoinedUserBinding.getRoot());
+            this.rowJoinedUserBinding = rowJoinedUserBinding;
         }
     }
 }
