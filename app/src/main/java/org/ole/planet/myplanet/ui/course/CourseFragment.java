@@ -99,6 +99,11 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
                         selectAll.setVisibility(View.GONE);
                         etSearch.setVisibility(View.GONE);
                         imgSearch.setVisibility(View.GONE);
+                        tvAddToLib.setVisibility(View.GONE);
+                        getView().findViewById(R.id.filter).setVisibility(View.GONE);
+                        spn.setVisibility(View.GONE);
+                        btnRemove.setVisibility(View.GONE);
+                        tvSelected.setVisibility(View.GONE);
                     }
                 })
                 .setNegativeButton(R.string.no, null).show());
@@ -155,6 +160,11 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
                     selectAll.setVisibility(View.GONE);
                     etSearch.setVisibility(View.GONE);
                     imgSearch.setVisibility(View.GONE);
+                    tvAddToLib.setVisibility(View.GONE);
+                    getView().findViewById(R.id.filter).setVisibility(View.GONE);
+                    spn.setVisibility(View.GONE);
+                    btnRemove.setVisibility(View.GONE);
+                    tvSelected.setVisibility(View.GONE);
                 }
             }
         });
@@ -174,6 +184,11 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
             selectAll.setVisibility(View.GONE);
             etSearch.setVisibility(View.GONE);
             imgSearch.setVisibility(View.GONE);
+            tvAddToLib.setVisibility(View.GONE);
+            getView().findViewById(R.id.filter).setVisibility(View.GONE);
+            spn.setVisibility(View.GONE);
+            btnRemove.setVisibility(View.GONE);
+            tvSelected.setVisibility(View.GONE);
         }
         selectAll.setOnClickListener(view -> {
             boolean allSelected = selectedItems.size() == adapterCourses.getCourseList().size();
