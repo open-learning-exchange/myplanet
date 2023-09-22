@@ -45,7 +45,11 @@ public class AdapterMemberRequest extends RecyclerView.Adapter<RecyclerView.View
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (holder instanceof ViewHolderUser) {
-            ((ViewHolderUser) holder).name.setText(list.get(position).toString());
+            if (list.get(position).toString().equals(" ")) {
+                ((ViewHolderUser) holder).name.setText(list.get(position).getName());
+            } else {
+                ((ViewHolderUser) holder).name.setText(list.get(position).toString());
+            }
             ((ViewHolderUser) holder).buttonAccept.setOnClickListener(view -> {
                 acceptReject(list.get(position), true, position);
 

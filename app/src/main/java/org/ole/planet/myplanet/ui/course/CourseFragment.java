@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Spinner;
@@ -47,10 +48,12 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
     ImageView imgSearch;
     AdapterCourses adapterCourses;
     Button btnRemove, orderByDate, orderByTitle;
+    CheckBox selectAll;
     Spinner spnGrade, spnSubject;
     List<RealmTag> searchTags;
     Spinner spn;
     AlertDialog confirmation;
+    private boolean allItemsSelected = false;
 
     public CourseFragment() {
     }
@@ -88,9 +91,22 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
             KeyboardUtils.hideSoftKeyboard(getActivity());
         });
 
-        btnRemove.setOnClickListener(V -> new AlertDialog.Builder(this.getContext()).setMessage(R.string.are_you_sure_you_want_to_delete_these_courses).setPositiveButton(R.string.yes, (dialogInterface, i) -> {
-            deleteSelected(true);
-        }).setNegativeButton(R.string.no, null).show());
+        btnRemove.setOnClickListener(V -> new AlertDialog.Builder(this.getContext())
+                .setMessage(R.string.are_you_sure_you_want_to_delete_these_courses)
+                .setPositiveButton(R.string.yes, (dialogInterface, i) -> {
+                    deleteSelected(true);
+                    if (adapterCourses.getCourseList().size() == 0) {
+                        selectAll.setVisibility(View.GONE);
+                        etSearch.setVisibility(View.GONE);
+                        imgSearch.setVisibility(View.GONE);
+                        tvAddToLib.setVisibility(View.GONE);
+                        getView().findViewById(R.id.filter).setVisibility(View.GONE);
+                        spn.setVisibility(View.GONE);
+                        btnRemove.setVisibility(View.GONE);
+                        tvSelected.setVisibility(View.GONE);
+                    }
+                })
+                .setNegativeButton(R.string.no, null).show());
         getView().findViewById(R.id.btn_collections).setOnClickListener(view -> {
             CollectionsFragment f = CollectionsFragment.getInstance(searchTags, "courses");
             f.setListener(this);
@@ -140,6 +156,16 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
                 addToMyList();
                 selectedItems.clear();
                 tvAddToLib.setEnabled(false);  // selectedItems will always have a size of 0
+                if (adapterCourses.getCourseList().size() == 0) {
+                    selectAll.setVisibility(View.GONE);
+                    etSearch.setVisibility(View.GONE);
+                    imgSearch.setVisibility(View.GONE);
+                    tvAddToLib.setVisibility(View.GONE);
+                    getView().findViewById(R.id.filter).setVisibility(View.GONE);
+                    spn.setVisibility(View.GONE);
+                    btnRemove.setVisibility(View.GONE);
+                    tvSelected.setVisibility(View.GONE);
+                }
             }
         });
         etSearch = getView().findViewById(R.id.et_search);
@@ -153,6 +179,22 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         tvFragmentInfo = getView().findViewById(R.id.tv_fragment_info);
         spnGrade.setOnItemSelectedListener(itemSelectedListener);
         spnSubject.setOnItemSelectedListener(itemSelectedListener);
+        selectAll = getView().findViewById(R.id.selectAll);
+        if (adapterCourses.getCourseList().size() == 0) {
+            selectAll.setVisibility(View.GONE);
+            etSearch.setVisibility(View.GONE);
+            imgSearch.setVisibility(View.GONE);
+            tvAddToLib.setVisibility(View.GONE);
+            getView().findViewById(R.id.filter).setVisibility(View.GONE);
+            spn.setVisibility(View.GONE);
+            btnRemove.setVisibility(View.GONE);
+            tvSelected.setVisibility(View.GONE);
+        }
+        selectAll.setOnClickListener(view -> {
+            boolean allSelected = selectedItems.size() == adapterCourses.getCourseList().size();
+            adapterCourses.selectAllItems(!allSelected);
+            selectAll.setText(allSelected ? getString(R.string.select_all) : getString(R.string.unselect_all));
+        });
     }
 
     private AdapterView.OnItemSelectedListener itemSelectedListener = new AdapterView.OnItemSelectedListener() {
@@ -218,6 +260,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
 
     private void changeButtonStatus() {
         tvAddToLib.setEnabled(selectedItems.size() > 0);
+        selectAll.setText(adapterCourses.areAllSelected() ? getString(R.string.unselect_all) : getString(R.string.select_all));
     }
 
     @Override
