@@ -214,7 +214,7 @@ public class UserProfileFragment extends Fragment {
                             return false;
                         }
                     })
-                    .into(imageView);
+                    .into(fragmentUserProfileBinding.image);
         } else {
             fragmentUserProfileBinding.image.setImageResource(R.drawable.profile);
         }
