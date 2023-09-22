@@ -1,18 +1,17 @@
 package org.ole.planet.myplanet.ui.team.teamMember;
 
 import android.content.Context;
-
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
-import androidx.recyclerview.widget.RecyclerView;
-
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.squareup.picasso.Picasso;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.bumptech.glide.Glide;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.databinding.ItemTitleDescBinding;
@@ -70,7 +69,7 @@ public class AdapterJoinedMember extends RecyclerView.Adapter<RecyclerView.ViewH
                 rowJoinedUserBinding.tvTitle.setText(list.get(position).toString());
             }
             rowJoinedUserBinding.tvDescription.setText(list.get(position).getRoleAsString() + " (" + RealmTeamLog.getVisitCount(mRealm, list.get(position).getName(), teamId) + " " + context.getString(R.string.visits) + " )");
-            Picasso.get()
+              Glide.with(context)
                     .load(list.get(position).getUserImage())
                     .placeholder(R.drawable.profile)
                     .error(R.drawable.profile)
