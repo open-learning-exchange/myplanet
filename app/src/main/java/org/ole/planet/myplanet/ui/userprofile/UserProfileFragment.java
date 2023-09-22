@@ -88,18 +88,26 @@ public class UserProfileFragment extends Fragment {
                 + Utilities.checkNA(model.getEmail()));
         String dob = TextUtils.isEmpty(model.getDob()) ? "N/A" : TimeUtils.getFormatedDate(model.getDob(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
         fragmentUserProfileBinding.txtDob.setText(getString(R.string.date_of_birth) + dob);
-        if (!TextUtils.isEmpty(model.getUserImage()))
-            Picasso.get().load(model.getUserImage()).placeholder(R.drawable.profile).into(fragmentUserProfileBinding.image, new Callback() {
-                @Override
-                public void onSuccess() {
-                }
+        if (!TextUtils.isEmpty(model.getUserImage())) {
+            Glide.with(context)
+                .load(model.getUserImage())
+                .apply(new RequestOptions()
+                .placeholder(R.drawable.profile)
+                .error(R.drawable.profile))
+                .listener(new RequestListener<Drawable>() {
+                    @Override
+                    public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
+                        fragmentUserProfileBinding.image.setImageResource(R.drawable.profile);
+                        return false;
+                    }
 
-                @Override
-                public void onError(Exception e) {
-                    Picasso.get().load(new File(model.getUserImage())).placeholder(R.drawable.profile).error(R.drawable.profile).into(fragmentUserProfileBinding.image);
-                }
-            });
-        else {
+                    @Override
+                    public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
+                        return false;
+                    }
+                })
+                .into(fragmentUserProfileBinding.image);
+        } else {
             fragmentUserProfileBinding.image.setImageResource(R.drawable.profile);
         }
         final LinkedHashMap<String, String> map = new LinkedHashMap<String, String>();
