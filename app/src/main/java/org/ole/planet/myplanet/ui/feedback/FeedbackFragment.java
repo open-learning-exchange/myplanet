@@ -1,25 +1,20 @@
 package org.ole.planet.myplanet.ui.feedback;
 
 import android.os.Bundle;
-
-import androidx.annotation.Nullable;
-import androidx.fragment.app.DialogFragment;
-import androidx.fragment.app.Fragment;
-
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.EditText;
 import android.widget.RadioButton;
-import android.widget.RadioGroup;
 import android.widget.Toast;
 
-import com.google.android.material.textfield.TextInputLayout;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.DialogFragment;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.databinding.FragmentFeedbackBinding;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmFeedback;
 import org.ole.planet.myplanet.model.RealmUserModel;
@@ -32,9 +27,7 @@ import java.util.UUID;
 import io.realm.Realm;
 
 public class FeedbackFragment extends DialogFragment implements View.OnClickListener {
-    EditText etMessage;
-    RadioGroup rgType, rgUrgent;
-    TextInputLayout tlMessage, tlUrgent, tlType;
+    private FragmentFeedbackBinding fragmentFeedbackBinding;
     Realm mRealm;
     DatabaseService databaseService;
     RealmUserModel model;
@@ -60,7 +53,7 @@ public class FeedbackFragment extends DialogFragment implements View.OnClickList
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View v = inflater.inflate(R.layout.fragment_feedback, container, false);
+        fragmentFeedbackBinding = FragmentFeedbackBinding.inflate(inflater, container, false);
         databaseService = new DatabaseService(getActivity());
         mRealm = databaseService.getRealmInstance();
         model = new UserProfileDbHandler(getActivity()).getUserModel();
@@ -69,15 +62,9 @@ public class FeedbackFragment extends DialogFragment implements View.OnClickList
         } else {
             user = "Anonymous";
         }
-        etMessage = v.findViewById(R.id.et_message);
-        rgUrgent = v.findViewById(R.id.rg_urgent);
-        rgType = v.findViewById(R.id.rg_type);
-        tlMessage = v.findViewById(R.id.tl_message);
-        tlUrgent = v.findViewById(R.id.tl_urgent);
-        tlType = v.findViewById(R.id.tl_type);
-        v.findViewById(R.id.btn_submit).setOnClickListener(this);
-        v.findViewById(R.id.btn_cancel).setOnClickListener(this);
-        return v;
+        fragmentFeedbackBinding.btnSubmit.setOnClickListener(this);
+        fragmentFeedbackBinding.btnCancel.setOnClickListener(this);
+        return fragmentFeedbackBinding.getRoot();
     }
 
     @Override
@@ -97,19 +84,19 @@ public class FeedbackFragment extends DialogFragment implements View.OnClickList
     }
 
     private void validateAndSaveData() {
-        final String message = etMessage.getText().toString().trim();
+        final String message = fragmentFeedbackBinding.etMessage.getText().toString().trim();
         if (message.isEmpty()) {
-            tlMessage.setError(getString(R.string.please_enter_feedback));
+            fragmentFeedbackBinding.tlMessage.setError(getString(R.string.please_enter_feedback));
             return;
         }
-        RadioButton rbUrgent = getView().findViewById(rgUrgent.getCheckedRadioButtonId());
-        RadioButton rbType = getView().findViewById(rgType.getCheckedRadioButtonId());
+        RadioButton rbUrgent = getView().findViewById(fragmentFeedbackBinding.rgUrgent.getCheckedRadioButtonId());
+        RadioButton rbType = getView().findViewById(fragmentFeedbackBinding.rgType.getCheckedRadioButtonId());
         if (rbUrgent == null) {
-            tlUrgent.setError(getString(R.string.feedback_priority_is_required));
+            fragmentFeedbackBinding.tlUrgent.setError(getString(R.string.feedback_priority_is_required));
             return;
         }
         if (rbType == null) {
-            tlType.setError(getString(R.string.feedback_type_is_required));
+            fragmentFeedbackBinding.tlType.setError(getString(R.string.feedback_type_is_required));
             return;
         }
         final String urgent = rbUrgent.getText().toString();
@@ -137,9 +124,9 @@ public class FeedbackFragment extends DialogFragment implements View.OnClickList
     }
 
     private void clearError() {
-        tlUrgent.setError("");
-        tlType.setError("");
-        tlMessage.setError("");
+        fragmentFeedbackBinding.tlUrgent.setError("");
+        fragmentFeedbackBinding.tlType.setError("");
+        fragmentFeedbackBinding.tlMessage.setError("");
     }
 
     private void saveData(Realm realm, String urgent, String type, String message) {
