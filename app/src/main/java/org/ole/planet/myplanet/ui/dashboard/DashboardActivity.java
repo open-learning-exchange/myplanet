@@ -120,9 +120,8 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         navigationView.setVisibility(new UserProfileDbHandler(this).getUserModel().getShowTopbar() ? View.VISIBLE : View.GONE);
         headerResult = getAccountHeader();
         createDrawer();
-        if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
+        if (!(user.getId().startsWith("guest") && profileDbHandler.getOfflineVisits() >= 3) && getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
             result.openDrawer();
-
         }//Opens drawer by default
         result.getStickyFooter().setPadding(0, 0, 0, 0); // moves logout button to the very bottom of the drawer. Without it, the "logout" button suspends a little.
         result.getActionBarDrawerToggle().setDrawerIndicatorEnabled(true);
