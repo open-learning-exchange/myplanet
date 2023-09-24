@@ -2,43 +2,34 @@ package org.ole.planet.myplanet.ui.viewer;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.view.View;
-import android.widget.TextView;
-
-import org.ole.planet.myplanet.R;
-import org.ole.planet.myplanet.utilities.Utilities;
+import org.ole.planet.myplanet.databinding.ActivityTextfileViewerBinding;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 
 public class TextFileViewerActivity extends AppCompatActivity {
-    private TextView mTextFileNameTitle;
-    private TextView mTextFileContent;
+    private ActivityTextfileViewerBinding activityTextfileViewerBinding;
     private String fileName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_textfile_viewer);
-        declareElements();
+        activityTextfileViewerBinding = ActivityTextfileViewerBinding.inflate(getLayoutInflater());
+        setContentView(activityTextfileViewerBinding.getRoot());
         renderTextFile();
-    }
-
-    private void declareElements() {
-        mTextFileNameTitle = (TextView) findViewById(R.id.textFileName);
-        mTextFileContent = (TextView) findViewById(R.id.textFileContent);
     }
 
     private void renderTextFile() {
         Intent textFileOpenIntent = getIntent();
         fileName = textFileOpenIntent.getStringExtra("TOUCHED_FILE");
         if (fileName != null && !fileName.isEmpty()) {
-            mTextFileNameTitle.setText(fileName);
-            mTextFileNameTitle.setVisibility(View.VISIBLE);
+            activityTextfileViewerBinding.textFileName.setText(fileName);
+            activityTextfileViewerBinding.textFileName.setVisibility(View.VISIBLE);
         }
         renderTextFileThread();
     }
@@ -59,7 +50,7 @@ public class TextFileViewerActivity extends AppCompatActivity {
                         text.append('\n');
                     }
                     reader.close();
-                    mTextFileContent.setText(text.toString());
+                    activityTextfileViewerBinding.textFileContent.setText(text.toString());
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

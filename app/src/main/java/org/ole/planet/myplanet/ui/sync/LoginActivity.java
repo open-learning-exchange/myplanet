@@ -280,6 +280,25 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         if (NetworkUtils.isNetworkConnected()) {
             service.syncPlanetServers(mRealm, success -> Utilities.toast(LoginActivity.this, success));
         }
+
+        inputName.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                String lowercaseText = s.toString().toLowerCase(Locale.ROOT);
+                if (!s.toString().equals(lowercaseText)) {
+                    inputName.setText(lowercaseText);
+                    inputName.setSelection(lowercaseText.length());
+                }
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+            }
+        });
     }
 
     private void setUplanguageButton() {

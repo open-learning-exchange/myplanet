@@ -1,6 +1,9 @@
 package org.ole.planet.myplanet.ui.userprofile;
 
 import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -8,11 +11,9 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.databinding.FragmentUserDetailBinding;
+import org.ole.planet.myplanet.databinding.ItemTitleDescBinding;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
@@ -25,7 +26,8 @@ import java.util.List;
 import io.realm.Realm;
 
 public class UserDetailFragment extends Fragment {
-    RecyclerView rvUserDetail;
+    private FragmentUserDetailBinding fragmentUserDetailBinding;
+    private ItemTitleDescBinding itemTitleDescBinding;
     String userId;
     Realm mRealm;
     RealmUserModel user;
@@ -43,14 +45,13 @@ public class UserDetailFragment extends Fragment {
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View v = inflater.inflate(R.layout.fragment_user_detail, container, false);
-        rvUserDetail = v.findViewById(R.id.rv_user_detail);
-        rvUserDetail.setLayoutManager(new GridLayoutManager(getActivity(), 2));
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        fragmentUserDetailBinding = FragmentUserDetailBinding.inflate(inflater, container, false);
+        fragmentUserDetailBinding.rvUserDetail.setLayoutManager(new GridLayoutManager(getActivity(), 2));
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
         db = new UserProfileDbHandler(getActivity());
         user = mRealm.where(RealmUserModel.class).equalTo("id", userId).findFirst();
-        return v;
+        return fragmentUserDetailBinding.getRoot();
     }
 
     class Detail {
@@ -70,24 +71,34 @@ public class UserDetailFragment extends Fragment {
             return;
         }
         List<Detail> list = getList(user, db);
-        rvUserDetail.setAdapter(new RecyclerView.Adapter() {
+        fragmentUserDetailBinding.rvUserDetail.setAdapter(new RecyclerView.Adapter() {
             @NonNull
             @Override
-            public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-                return new AdapterOtherInfo.ViewHolderOtherInfo(LayoutInflater.from(getActivity()).inflate(R.layout.item_title_desc, parent, false));
+            public ViewHolderUserDetail onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+                itemTitleDescBinding = ItemTitleDescBinding.inflate(LayoutInflater.from(getActivity()), parent, false);
+                return new ViewHolderUserDetail(itemTitleDescBinding);
             }
 
             @Override
             public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-                if (holder instanceof AdapterOtherInfo.ViewHolderOtherInfo) {
-                    ((AdapterOtherInfo.ViewHolderOtherInfo) holder).tvTitle.setText(list.get(position).title);
-                    ((AdapterOtherInfo.ViewHolderOtherInfo) holder).tvDescription.setText(list.get(position).description);
+                if (holder instanceof ViewHolderUserDetail) {
+                    itemTitleDescBinding.tvTitle.setText(list.get(position).title);
+                    itemTitleDescBinding.tvDescription.setText(list.get(position).description);
                 }
             }
 
             @Override
             public int getItemCount() {
                 return list.size();
+            }
+
+            class ViewHolderUserDetail extends RecyclerView.ViewHolder {
+                public ItemTitleDescBinding itemTitleDescBinding;
+
+                public ViewHolderUserDetail(ItemTitleDescBinding itemTitleDescBinding) {
+                    super(itemTitleDescBinding.getRoot());
+                    this.itemTitleDescBinding = itemTitleDescBinding;
+                }
             }
         });
     }
