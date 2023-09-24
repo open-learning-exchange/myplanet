@@ -5,6 +5,7 @@
     <string name="action_settings">Configuración</string>
     <string name="hint_name">Nombre</string>
     <string name="hint_password">Contraseña</string>
+    <string name="btn_back">Volver</string>
     <string name="btn_sign_in">Iniciar sesión</string>
     <string name="btn_sync">Sincronizar</string>
     <string name="btn_sync_save">Guardar</string>
