@@ -33,7 +33,7 @@ import io.realm.Realm;
 
 public class LibraryDetailFragment extends BaseContainerFragment implements OnRatingChangeListener {
     TextView author, pubishedBy, title, media, subjects, license, language, resource, type;
-    AppCompatImageButton download, remove;
+    AppCompatImageButton download, remove, back;
     String libraryId;
     DatabaseService dbService;
     Realm mRealm;
@@ -90,6 +90,7 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
         type = v.findViewById(R.id.tv_type);
         download = v.findViewById(R.id.btn_download);
         remove = v.findViewById(R.id.btn_remove);
+        back = v.findViewById(R.id.btn_back);
     }
 
     private void setLibraryData() {
@@ -139,6 +140,9 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
             Utilities.toast(getActivity(), getString(R.string.resources) + (isAdd ? getString(R.string.added_to) : getString(R.string.removed_from) + getString(R.string.my_library)));
             setLibraryData();
         });
+        back.setOnClickListener(view ->
+                getActivity().onBackPressed()
+        );
     }
 
     @Override
