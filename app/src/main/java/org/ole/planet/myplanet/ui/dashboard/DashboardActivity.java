@@ -202,11 +202,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             logout();
             return;
         }
-//        if (user.getId().startsWith("guest")) {
-//            getTheme().applyStyle(R.style.GuestStyle, true);
-//        }
         if(user.getId().startsWith("guest") && profileDbHandler.getOfflineVisits() >= 3 ){
-            Log.d("Gideon", "user should sign up");
 
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setTitle("Become a member");
@@ -219,7 +215,6 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             Button becomeMember = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
             Button logout = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
             becomeMember.setOnClickListener(view -> {
-//                startActivity(new Intent(this, BecomeMemberActivity.class));
                 boolean guest = true;
                 Intent intent = new Intent(this, BecomeMemberActivity.class);
                 intent.putExtra("username", profileDbHandler.getUserModel().getName());
