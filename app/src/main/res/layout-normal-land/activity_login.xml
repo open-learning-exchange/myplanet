@@ -237,7 +237,7 @@
                         android:alpha="0.7"
                         android:fontFamily="sans-serif"
                         android:text="@string/managerial_login"
-                        android:textColor="@color/material_drawer_dark_background"
+                        android:textColor="@color/md_grey_800"
                         android:textSize="12sp"
                         android:visibility="gone" />
 

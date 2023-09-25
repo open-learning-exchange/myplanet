@@ -10,7 +10,7 @@
         android:id="@+id/menu_goOnline"
         android:icon="@drawable/goonline"
         android:title="@string/user"
-        app:iconTint="@color/material_drawer_accent"
+        app:iconTint="@color/colorAccent"
         app:showAsAction="ifRoom" />
     <item
         android:id="@+id/action_sync"
