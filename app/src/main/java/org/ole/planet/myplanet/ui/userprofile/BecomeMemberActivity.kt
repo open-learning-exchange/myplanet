@@ -108,7 +108,7 @@ class BecomeMemberActivity : BaseActivity() {
 
         activityBecomeMemberBinding.btnSubmit.setOnClickListener {
             var username: String? = activityBecomeMemberBinding.etUsername.text.toString()
-            var password: String = activityBecomeMemberBinding.etPassword.text.toString()
+            var password: String? = activityBecomeMemberBinding.etPassword.text.toString()
             var repassword: String? = activityBecomeMemberBinding.etRePassword.text.toString()
             var fname: String? = activityBecomeMemberBinding.etFname.text.toString()
             var lname: String? = activityBecomeMemberBinding.etLname.text.toString()
@@ -160,7 +160,7 @@ class BecomeMemberActivity : BaseActivity() {
 
                 checkMandatoryFieldsAndAddMember(
                     username,
-                    password,
+                    password!!,
                     repassword,
                     fname,
                     lname,
