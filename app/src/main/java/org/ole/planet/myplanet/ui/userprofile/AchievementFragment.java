@@ -5,15 +5,10 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.LinearLayout;
-import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.flexbox.FlexboxLayout;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -23,6 +18,9 @@ import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseContainerFragment;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
+import org.ole.planet.myplanet.databinding.FragmentAchievementBinding;
+import org.ole.planet.myplanet.databinding.LayoutButtonPrimaryBinding;
+import org.ole.planet.myplanet.databinding.RowAchievementBinding;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmAchievement;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
@@ -36,10 +34,10 @@ import java.util.ArrayList;
 import io.realm.Realm;
 
 public class AchievementFragment extends BaseContainerFragment {
-    TextView tvGoal, tvAchievement, tvPurpose, tvName, tvFirstName;
-    RecyclerView rvOther;
+    private FragmentAchievementBinding fragmentAchievementBinding;
+    private RowAchievementBinding rowAchievementBinding;
+    private LayoutButtonPrimaryBinding layoutButtonPrimaryBinding;
     Realm mRealm;
-    LinearLayout llAchievement;
     RealmUserModel user;
     OnHomeItemClickListener listener;
     RealmAchievement achievement;
@@ -56,124 +54,107 @@ public class AchievementFragment extends BaseContainerFragment {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View v = inflater.inflate(R.layout.fragment_achievement, container, false);
+        fragmentAchievementBinding = FragmentAchievementBinding.inflate(inflater, container, false);
         mRealm = new DatabaseService(MainApplication.context).getRealmInstance();
         user = new UserProfileDbHandler(MainApplication.context).getUserModel();
-        rvOther = v.findViewById(R.id.rv_other_info);
-        tvGoal = v.findViewById(R.id.tv_goals);
-        tvName = v.findViewById(R.id.tv_name);
-        tvFirstName = v.findViewById(R.id.tv_first_name);
-        tvPurpose = v.findViewById(R.id.tv_purpose);
-        llAchievement = v.findViewById(R.id.ll_achievement);
-        tvAchievement = v.findViewById(R.id.tv_achievement_header);
-        v.findViewById(R.id.btn_edit).setOnClickListener(vi -> {
+        fragmentAchievementBinding.btnEdit.setOnClickListener(vi -> {
             if (listener != null) listener.openCallFragment(new EditAchievementFragment());
         });
 
-        return v;
+        return fragmentAchievementBinding.getRoot();
     }
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         achievement = mRealm.where(RealmAchievement.class).equalTo("_id", user.getId() + "@" + user.getPlanetCode()).findFirst();
-        tvFirstName.setText(user.getFirstName());
-        tvName.setText(String.format("%s %s %s", user.getFirstName(), user.getMiddleName(), user.getLastName()));
+        fragmentAchievementBinding.tvFirstName.setText(user.getFirstName());
+        fragmentAchievementBinding.tvName.setText(String.format("%s %s %s", user.getFirstName(), user.getMiddleName(), user.getLastName()));
         if (achievement != null) {
-            tvGoal.setText(achievement.getGoals());
-            tvPurpose.setText(achievement.getPurpose());
-            tvAchievement.setText(achievement.getAchievementsHeader());
-            llAchievement.removeAllViews();
+            fragmentAchievementBinding.tvGoals.setText(achievement.getGoals());
+            fragmentAchievementBinding.tvPurpose.setText(achievement.getPurpose());
+            fragmentAchievementBinding.tvAchievementHeader.setText(achievement.getAchievementsHeader());
+            fragmentAchievementBinding.llAchievement.removeAllViews();
             for (String s : achievement.getAchievements()) {
-                View v = LayoutInflater.from(MainApplication.context).inflate(R.layout.row_achievement, null);
-                createView(v, s);
-                llAchievement.addView(v);
+                rowAchievementBinding = RowAchievementBinding.inflate(LayoutInflater.from(MainApplication.context));
+                JsonElement ob = new Gson().fromJson(s, JsonElement.class);
+                if (ob instanceof JsonObject) {
+                    rowAchievementBinding.tvDescription.setText(JsonUtils.getString("description", ob.getAsJsonObject()));
+                    rowAchievementBinding.tvDate.setText(JsonUtils.getString("date", ob.getAsJsonObject()));
+                    rowAchievementBinding.tvTitle.setText(JsonUtils.getString("title", ob.getAsJsonObject()));
+                    ArrayList<RealmMyLibrary> libraries = getList(((JsonObject) ob).getAsJsonArray("resources"));
+                    if (!JsonUtils.getString("description", ob.getAsJsonObject()).isEmpty() && libraries.size() > 0) {
+                        rowAchievementBinding.llRow.setOnClickListener(view -> {
+                            rowAchievementBinding.llDesc.setVisibility(rowAchievementBinding.llDesc.getVisibility() == View.GONE ? View.VISIBLE : View.GONE);
+                            rowAchievementBinding.tvTitle.setCompoundDrawablesWithIntrinsicBounds(0, 0, (rowAchievementBinding.llDesc.getVisibility() == View.GONE ? R.drawable.ic_down : R.drawable.ic_up), 0);
+                        });
+                        for (RealmMyLibrary lib : libraries) {
+                            layoutButtonPrimaryBinding = LayoutButtonPrimaryBinding.inflate(LayoutInflater.from(MainApplication.context));
+                            layoutButtonPrimaryBinding.getRoot().setText(lib.getTitle());
+                            layoutButtonPrimaryBinding.getRoot().setCompoundDrawablesWithIntrinsicBounds(0, 0, (lib.isResourceOffline() ? R.drawable.ic_eye : R.drawable.ic_download), 0);
+                            layoutButtonPrimaryBinding.getRoot().setOnClickListener(view -> {
+                                if (lib.isResourceOffline()) {
+                                    openResource(lib);
+                                } else {
+                                    ArrayList<String> a = new ArrayList<>();
+                                    a.add(Utilities.getUrl(lib, settings));
+                                    startDownload(a);
+                                }
+                            });
+                            rowAchievementBinding.flexboxResources.addView(layoutButtonPrimaryBinding.getRoot());
+                        }
+                    } else {
+                        rowAchievementBinding.tvTitle.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
+                        createAchievementList();
+                        fragmentAchievementBinding.rvOtherInfo.setLayoutManager(new LinearLayoutManager(MainApplication.context));
+                        fragmentAchievementBinding.rvOtherInfo.setAdapter(new AdapterOtherInfo(MainApplication.context, achievement.getreferences()));
+                    }
+                    mRealm.addChangeListener(realm -> {
+                        if (fragmentAchievementBinding.llAchievement != null) fragmentAchievementBinding.llAchievement.removeAllViews();
+                        createAchievementList();
+                    });
+                } else {
+                    rowAchievementBinding.getRoot().setVisibility(View.GONE);
+                }
+                fragmentAchievementBinding.llAchievement.addView(rowAchievementBinding.getRoot());
             }
-            rvOther.setLayoutManager(new LinearLayoutManager(MainApplication.context));
-            rvOther.setAdapter(new AdapterOtherInfo(MainApplication.context, achievement.getreferences()));
+            fragmentAchievementBinding.rvOtherInfo.setLayoutManager(new LinearLayoutManager(MainApplication.context));
+            fragmentAchievementBinding.rvOtherInfo.setAdapter(new AdapterOtherInfo(MainApplication.context, achievement.getreferences()));
         }
-    }
-
-    private void createView(View v, String s) {
-        JsonElement ob = new Gson().fromJson(s, JsonElement.class);
-        if (ob instanceof JsonObject) {
-            populateAchievementList(ob, v);
-        } else {
-            v.setVisibility(View.GONE);
-        }
-    }
-
-    private void populateAchievementList(JsonElement ob, View v) {
-        TextView title = v.findViewById(R.id.tv_title);
-        TextView date = v.findViewById(R.id.tv_date);
-        TextView description = v.findViewById(R.id.tv_description);
-        LinearLayout llRow = v.findViewById(R.id.ll_row);
-        LinearLayout llDesc = v.findViewById(R.id.ll_desc);
-        FlexboxLayout flexboxLayout = v.findViewById(R.id.flexbox_resources);
-        description.setText(JsonUtils.getString("description", ob.getAsJsonObject()));
-        date.setText(JsonUtils.getString("date", ob.getAsJsonObject()));
-        title.setText(JsonUtils.getString("title", ob.getAsJsonObject()));
-        ArrayList<RealmMyLibrary> libraries = getList(((JsonObject) ob).getAsJsonArray("resources"));
-        if (!JsonUtils.getString("description", ob.getAsJsonObject()).isEmpty() && libraries.size() > 0) {
-            llRow.setOnClickListener(view -> {
-                llDesc.setVisibility(llDesc.getVisibility() == View.GONE ? View.VISIBLE : View.GONE);
-                title.setCompoundDrawablesWithIntrinsicBounds(0, 0, (llDesc.getVisibility() == View.GONE ? R.drawable.ic_down : R.drawable.ic_up), 0);
-            });
-            showResourceButtons(flexboxLayout, libraries);
-        } else {
-            title.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
-            createAchievementList();
-            rvOther.setLayoutManager(new LinearLayoutManager(MainApplication.context));
-            rvOther.setAdapter(new AdapterOtherInfo(MainApplication.context, achievement.getreferences()));
-        }
-        mRealm.addChangeListener(realm -> {
-            if (llAchievement != null) llAchievement.removeAllViews();
-            createAchievementList();
-        });
     }
 
     private void createAchievementList() {
         for (String s : achievement.getAchievements()) {
-            View v = LayoutInflater.from(MainApplication.context).inflate(R.layout.row_achievement, null);
-            TextView title = v.findViewById(R.id.tv_title);
-            TextView date = v.findViewById(R.id.tv_date);
-            TextView description = v.findViewById(R.id.tv_description);
-            LinearLayout llRow = v.findViewById(R.id.ll_row);
-            LinearLayout llDesc = v.findViewById(R.id.ll_desc);
-            FlexboxLayout flexboxLayout = v.findViewById(R.id.flexbox_resources);
+            rowAchievementBinding = RowAchievementBinding.inflate(LayoutInflater.from(MainApplication.context));
             JsonElement ob = new Gson().fromJson(s, JsonElement.class);
             if (ob instanceof JsonObject) {
-                description.setText(JsonUtils.getString("description", ob.getAsJsonObject()));
-                date.setText(JsonUtils.getString("date", ob.getAsJsonObject()));
-                title.setText(JsonUtils.getString("title", ob.getAsJsonObject()));
+                rowAchievementBinding.tvDescription.setText(JsonUtils.getString("description", ob.getAsJsonObject()));
+                rowAchievementBinding.tvDate.setText(JsonUtils.getString("date", ob.getAsJsonObject()));
+                rowAchievementBinding.tvTitle.setText(JsonUtils.getString("title", ob.getAsJsonObject()));
                 ArrayList<RealmMyLibrary> libraries = getList(((JsonObject) ob).getAsJsonArray("resources"));
-                llRow.setOnClickListener(view -> {
-                    llDesc.setVisibility(llDesc.getVisibility() == View.GONE ? View.VISIBLE : View.GONE);
-                    title.setCompoundDrawablesWithIntrinsicBounds(0, 0, (llDesc.getVisibility() == View.GONE ? R.drawable.ic_down : R.drawable.ic_up), 0);
+                rowAchievementBinding.llRow.setOnClickListener(view -> {
+                    rowAchievementBinding.llDesc.setVisibility(rowAchievementBinding.llDesc.getVisibility() == View.GONE ? View.VISIBLE : View.GONE);
+                    rowAchievementBinding.tvTitle.setCompoundDrawablesWithIntrinsicBounds(0, 0, (rowAchievementBinding.llDesc.getVisibility() == View.GONE ? R.drawable.ic_down : R.drawable.ic_up), 0);
                 });
-                showResourceButtons(flexboxLayout, libraries);
-            } else {
-                v.setVisibility(View.GONE);
-            }
-            llAchievement.addView(v);
-        }
-    }
-
-    private void showResourceButtons(FlexboxLayout flexboxLayout, ArrayList<RealmMyLibrary> libraries) {
-        for (RealmMyLibrary lib : libraries) {
-            Button b = (Button) LayoutInflater.from(MainApplication.context).inflate(R.layout.layout_button_primary, null);
-            b.setText(lib.getTitle());
-            b.setCompoundDrawablesWithIntrinsicBounds(0, 0, (lib.isResourceOffline() ? R.drawable.ic_eye : R.drawable.ic_download), 0);
-            b.setOnClickListener(view -> {
-                if (lib.isResourceOffline()) {
-                    openResource(lib);
-                } else {
-                    ArrayList<String> a = new ArrayList<>();
-                    a.add(Utilities.getUrl(lib, settings));
-                    startDownload(a);
+                for (RealmMyLibrary lib : libraries) {
+                    layoutButtonPrimaryBinding = LayoutButtonPrimaryBinding.inflate(LayoutInflater.from(MainApplication.context));
+                    layoutButtonPrimaryBinding.getRoot().setText(lib.getTitle());
+                    layoutButtonPrimaryBinding.getRoot().setCompoundDrawablesWithIntrinsicBounds(0, 0, (lib.isResourceOffline() ? R.drawable.ic_eye : R.drawable.ic_download), 0);
+                    layoutButtonPrimaryBinding.getRoot().setOnClickListener(view -> {
+                        if (lib.isResourceOffline()) {
+                            openResource(lib);
+                        } else {
+                            ArrayList<String> a = new ArrayList<>();
+                            a.add(Utilities.getUrl(lib, settings));
+                            startDownload(a);
+                        }
+                    });
+                    rowAchievementBinding.flexboxResources.addView(layoutButtonPrimaryBinding.getRoot());
                 }
-            });
-            flexboxLayout.addView(b);
+            } else {
+                rowAchievementBinding.getRoot().setVisibility(View.GONE);
+            }
+            fragmentAchievementBinding.llAchievement.addView(rowAchievementBinding.getRoot());
         }
     }
 

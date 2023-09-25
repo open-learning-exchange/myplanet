@@ -3,12 +3,14 @@ package org.ole.planet.myplanet.ui.enterprises
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.RadioButton
 import android.widget.TextView
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -30,10 +32,11 @@ import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities
-import org.threeten.bp.YearMonth
-import org.threeten.bp.temporal.WeekFields
+import java.time.YearMonth
+import java.time.temporal.WeekFields
 import java.util.*
 
+@RequiresApi(Build.VERSION_CODES.O)
 class EnterpriseCalendarFragment : BaseTeamFragment() {
     private lateinit var fragmentEnterpriseCalendarBinding: FragmentEnterpriseCalendarBinding
     lateinit var list: List<RealmMeetup>

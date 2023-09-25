@@ -8,30 +8,50 @@ import android.graphics.Typeface
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
-import android.widget.*
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
+import android.widget.DatePicker
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
+import com.bumptech.glide.Glide
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayout
-import com.squareup.picasso.Callback
-import com.squareup.picasso.Picasso
 import io.realm.Case
 import io.realm.RealmObject
 import io.realm.Sort
-import kotlinx.android.synthetic.main.alert_health_list.view.*
-import kotlinx.android.synthetic.main.card_profile_bell.view.*
-import kotlinx.android.synthetic.main.fragment_home_bell.view.*
-import kotlinx.android.synthetic.main.home_card_courses.view.*
-import kotlinx.android.synthetic.main.home_card_library.view.*
-import kotlinx.android.synthetic.main.home_card_meetups.view.*
-import kotlinx.android.synthetic.main.home_card_teams.view.*
-import kotlinx.android.synthetic.main.item_library_home.view.*
+import kotlinx.android.synthetic.main.alert_health_list.view.btn_add_member
+import kotlinx.android.synthetic.main.alert_health_list.view.et_search
+import kotlinx.android.synthetic.main.alert_health_list.view.list
+import kotlinx.android.synthetic.main.alert_health_list.view.spn_sort
+import kotlinx.android.synthetic.main.card_profile_bell.view.txtFullName
+import kotlinx.android.synthetic.main.card_profile_bell.view.txtRole
+import kotlinx.android.synthetic.main.card_profile_bell.view.txtVisits
+import kotlinx.android.synthetic.main.fragment_home_bell.view.ic_close
+import kotlinx.android.synthetic.main.fragment_home_bell.view.ll_prompt
+import kotlinx.android.synthetic.main.home_card_courses.view.count_course
+import kotlinx.android.synthetic.main.home_card_library.view.count_library
+import kotlinx.android.synthetic.main.home_card_library.view.flexboxLayout
+import kotlinx.android.synthetic.main.home_card_meetups.view.count_meetup
+import kotlinx.android.synthetic.main.home_card_teams.view.count_team
+import kotlinx.android.synthetic.main.item_library_home.view.detail
+import kotlinx.android.synthetic.main.item_library_home.view.title
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseResourceFragment
 import org.ole.planet.myplanet.callback.NotificationCallback
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.model.*
+import org.ole.planet.myplanet.model.RealmMeetup
+import org.ole.planet.myplanet.model.RealmMyCourse
+import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmMyLife
+import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.RealmTeamNotification
+import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.TransactionSyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.dashboard.notification.NotificationFragment
@@ -43,8 +63,8 @@ import org.ole.planet.myplanet.ui.userprofile.UserProfileFragment
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
-import java.io.File
-import java.util.*
+import java.util.Calendar
+import java.util.UUID
 
 open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCallback,
     SyncListener {
@@ -70,16 +90,17 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             v.ll_prompt.visibility = View.GONE
         }
         val imageView = v.findViewById<ImageView>(R.id.imageView)
-        if (!TextUtils.isEmpty(model.userImage)) Picasso.get().load(model.userImage)
-            .placeholder(R.drawable.profile).into(imageView, object : Callback {
-                override fun onSuccess() {}
-                override fun onError(e: Exception) {
-                    e.printStackTrace()
-                    val f = File(model.userImage)
-                    Picasso.get().load(f).placeholder(R.drawable.profile).error(R.drawable.profile)
-                        .into(imageView)
-                }
-            })
+        if (!TextUtils.isEmpty(model.userImage)) {
+            Glide.with(requireActivity())
+                .load(model.userImage)
+                .placeholder(R.drawable.profile)
+                .error(R.drawable.profile)
+                .into(imageView)
+        } else {
+            imageView.setImageResource(R.drawable.profile)
+        }
+
+
         v.txtVisits.text = "${profileDbHandler.offlineVisits} ${getString(R.string.visits)}"
         v.txtRole.text = "- ${model.roleAsString}"
         v.txtFullName.text = fullName
