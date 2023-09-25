@@ -282,10 +282,10 @@ public class Service {
                             community.setParentDomain(JsonUtils.getString("parentDomain", jsonDoc));
                             community.setRegistrationRequest(JsonUtils.getString("registrationRequest", jsonDoc));
                         }
-                        }, () -> {
+                    }, () -> {
                         realm.close();
                         callback.onSuccess("Server sync successfully");
-                        }, error -> {
+                    }, error -> {
                         realm.close();
                         error.printStackTrace();
                         callback.onSuccess("Unable to connect to planet earth");
