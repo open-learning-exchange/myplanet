@@ -33,6 +33,15 @@ class NotificationFragment : BottomSheetDialogFragment() {
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View? {
+        callback = object : NotificationCallback {
+            override fun showPendingSurveyDialog() {}
+            override fun showTaskListDialog() {}
+            override fun showUserResourceDialog() {}
+            override fun showResourceDownloadDialog() {}
+            override fun syncKeyId() {}
+            override fun forceDownloadNewsImages() {}
+            override fun downloadDictionary() {}
+        }
         mRealm = DatabaseService(requireActivity()).realmInstance
         resourceList = emptyList()
         return inflater.inflate(R.layout.fragment_notification, container, false)
