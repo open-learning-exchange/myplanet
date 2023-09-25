@@ -294,10 +294,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                     etUserName.setError(getString(R.string.only_letters_numbers_and_are_allowed));
                     isValid = false;
                 }
-//                else if (RealmUserModel.isUserExists(mRealm, username)) {
-//                    etUserName.setError(getString(R.string.username_taken));
-//                    isValid = false;
-//                }
             }
 
             if (isValid) {
