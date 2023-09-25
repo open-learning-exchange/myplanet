@@ -30,7 +30,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.SwitchCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
@@ -97,7 +96,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         setContentView(settings.getBoolean("isChild", false) ? R.layout.activity_child_login : R.layout.activity_login);
         prefData = new SharedPrefManager(this);
         profileDbHandler = new UserProfileDbHandler(this);
-        Log.d("prefData" , " "+ prefData.getSAVEDUSERS1());
 
         // Find and show space available on the device
         tvAvailableSpace = findViewById(R.id.tv_available_space);
@@ -158,10 +156,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         List<User> existingUsers = prefData.getSAVEDUSERS1();
 
         UserListAdapter adapter = new UserListAdapter(LoginActivity.this, existingUsers);
-        adapter.setOnItemClickListener((name, password) -> {
-            submitForm(name, password);
-            Toast.makeText(LoginActivity.this, "Name: " + name + ", Password: " + password, Toast.LENGTH_SHORT).show();
-        });
+        adapter.setOnItemClickListener(this::submitForm);
 
         lv.setAdapter(adapter);
 
