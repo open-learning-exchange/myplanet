@@ -108,7 +108,7 @@ class BecomeMemberActivity : BaseActivity() {
 
         activityBecomeMemberBinding.btnSubmit.setOnClickListener {
             var username: String? = activityBecomeMemberBinding.etUsername.text.toString()
-            var password: String? = activityBecomeMemberBinding.etPassword.text.toString()
+            var password: String = activityBecomeMemberBinding.etPassword.text.toString()
             var repassword: String? = activityBecomeMemberBinding.etRePassword.text.toString()
             var fname: String? = activityBecomeMemberBinding.etFname.text.toString()
             var lname: String? = activityBecomeMemberBinding.etLname.text.toString()
@@ -146,14 +146,14 @@ class BecomeMemberActivity : BaseActivity() {
             } else if (level == null) {
                 Utilities.toast(this, getString(R.string.level_is_required));
             } else {
-                if (activityBecomeMemberBinding.rbGender.male.isChecked) {
+                if (activityBecomeMemberBinding.male.isChecked) {
                     gender = "male"
-                } else if (activityBecomeMemberBinding.rbGender.female.isChecked) {
+                } else if (activityBecomeMemberBinding.female.isChecked) {
                     gender = "female"
                 }
 
                 if (TextUtils.isEmpty(password) && !TextUtils.isEmpty(phoneNumber)) {
-                    et_re_password.setText(phoneNumber)
+                    activityBecomeMemberBinding.etRePassword.setText(phoneNumber)
                     password = phoneNumber
                     ///Add dialog that using phone as password , Agree / disagree
                 }
