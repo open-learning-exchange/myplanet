@@ -282,15 +282,21 @@ public class Service {
                             community.setParentDomain(JsonUtils.getString("parentDomain", jsonDoc));
                             community.setRegistrationRequest(JsonUtils.getString("registrationRequest", jsonDoc));
                         }
+                        }, () -> {
+                        realm.close();
+                        callback.onSuccess("Server sync successfully");
+                        }, error -> {
+                        realm.close();
+                        error.printStackTrace();
+                        callback.onSuccess("Unable to connect to planet earth");
                     });
-                    callback.onSuccess("Server sync successfully");
                 }
             }
 
             @Override
             public void onFailure(Call<JsonObject> call, Throwable t) {
+                realm.close();
                 callback.onSuccess("Unable to connect to planet earth");
-
             }
         });
     }
