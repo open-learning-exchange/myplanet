@@ -63,6 +63,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
+import io.realm.Realm;
 import io.realm.Sort;
 
 public class LoginActivity extends SyncActivity implements Service.CheckVersionCallback, AdapterTeam.OnUserSelectedListener {
@@ -202,28 +203,44 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     }
 
     private void showGuestLoginDialog() {
-        editor = settings.edit();
-        View v = LayoutInflater.from(this).inflate(R.layout.alert_guest_login, null);
-        TextInputEditText etUserName = v.findViewById(R.id.et_user_name);
-        new AlertDialog.Builder(this).setTitle("Login As Guest").setView(v).setPositiveButton("Login", (dialogInterface, i) -> {
-            if (mRealm.isEmpty()) {
-                alertDialogOkay(getString(R.string.this_device_not_configured_properly_please_check_and_sync));
-                return;
+        try {
+            mRealm = Realm.getDefaultInstance(); // Open a new Realm instance
+
+            editor = settings.edit();
+            View v = LayoutInflater.from(this).inflate(R.layout.alert_guest_login, null);
+            TextInputEditText etUserName = v.findViewById(R.id.et_user_name);
+            new AlertDialog.Builder(this)
+                    .setTitle("Login As Guest")
+                    .setView(v)
+                    .setPositiveButton("Login", (dialogInterface, i) -> {
+                        if (mRealm != null && !mRealm.isClosed()) {
+                            if (mRealm.isEmpty()) {
+                                alertDialogOkay(getString(R.string.this_device_not_configured_properly_please_check_and_sync));
+                                return;
+                            }
+                            String username = etUserName.getText().toString().toLowerCase().trim();
+                            if (username.isEmpty()) {
+                                Utilities.toast(this, getString(R.string.username_cannot_be_empty));
+                                return;
+                            }
+                            RealmUserModel model = mRealm.copyFromRealm(RealmUserModel.createGuestUser(username, mRealm, settings));
+                            if (model == null) {
+                                Utilities.toast(this, getString(R.string.unable_to_login));
+                            } else {
+                                saveUserInfoPref(settings, "", model);
+                                onLogin();
+                            }
+                        }
+                    })
+                    .setNegativeButton("Cancel", null)
+                    .show();
+        } finally {
+            if (mRealm != null && !mRealm.isClosed()) {
+                mRealm.close();
             }
-            String username = etUserName.getText().toString().toLowerCase().trim();
-            if (username.isEmpty()) {
-                Utilities.toast(this, getString(R.string.username_cannot_be_empty));
-                return;
-            }
-            RealmUserModel model = mRealm.copyFromRealm(RealmUserModel.createGuestUser(username, mRealm, settings));
-            if (model == null) {
-                Utilities.toast(this, getString(R.string.unable_to_login));
-            } else {
-                saveUserInfoPref(settings, "", model);
-                onLogin();
-            }
-        }).setNegativeButton("Cancel", null).show();
+        }
     }
+
 
     private void continueSync(MaterialDialog dialog) {
         processedUrl = saveConfigAndContinue(dialog);
