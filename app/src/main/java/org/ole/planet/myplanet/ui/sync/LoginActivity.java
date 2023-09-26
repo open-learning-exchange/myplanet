@@ -241,7 +241,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         }
     }
 
-
     private void continueSync(MaterialDialog dialog) {
         processedUrl = saveConfigAndContinue(dialog);
         if (TextUtils.isEmpty(processedUrl)) return;
