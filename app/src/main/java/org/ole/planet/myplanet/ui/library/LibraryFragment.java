@@ -102,6 +102,8 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
                 addToMyList();
                 selectedItems.clear();
                 tvAddToLib.setEnabled(false);  // After clearing selectedItems size is always 0
+                checkList();
+
             }
         });
         imgSearch.setOnClickListener(view -> {
@@ -142,12 +144,27 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
             public void onNothingSelected(AdapterView<?> adapterView) {
             }
         });
-
+        checkList();
         selectAll.setOnClickListener(view -> {
             boolean allSelected = selectedItems.size() ==  adapterLibrary.getLibraryList().size();
             adapterLibrary.selectAllItems(!allSelected);
             selectAll.setText(allSelected ? getString(R.string.select_all) : getString(R.string.unselect_all));
         });
+    }
+
+    private void checkList() {
+        if (adapterLibrary.getLibraryList().size() == 0) {
+            selectAll.setVisibility(View.GONE);
+            etSearch.setVisibility(View.GONE);
+            imgSearch.setVisibility(View.GONE);
+            tvAddToLib.setVisibility(View.GONE);
+            spn.setVisibility(View.GONE);
+            tvSelected.setVisibility(View.GONE);
+            getView().findViewById(R.id.btn_collections).setVisibility(View.GONE);
+            getView().findViewById(R.id.show_filter).setVisibility(View.GONE);
+            clearTags.setVisibility(View.GONE);
+            tvDelete.setVisibility(View.GONE);
+        }
     }
 
     private void initArrays() {
