@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Spinner;
@@ -56,10 +57,9 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
     List<RealmTag> searchTags;
     ChipCloudConfig config;
     Button clearTags, orderByTitle;
-
+    CheckBox selectAll;
     Spinner spn;
     HashMap<String, JsonObject> map;
-
     AlertDialog confirmation;
 
     public LibraryFragment() {
@@ -92,6 +92,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         tvSelected = getView().findViewById(R.id.tv_selected);
         imgSearch = getView().findViewById(R.id.img_search);
         flexBoxTags = getView().findViewById(R.id.flexbox_tags);
+        selectAll = getView().findViewById(R.id.selectAll);
         initArrays();
 
         tvAddToLib.setOnClickListener(view -> {
@@ -140,6 +141,12 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
             @Override
             public void onNothingSelected(AdapterView<?> adapterView) {
             }
+        });
+
+        selectAll.setOnClickListener(view -> {
+            boolean allSelected = selectedItems.size() ==  adapterLibrary.getLibraryList().size();
+            adapterLibrary.selectAllItems(!allSelected);
+            selectAll.setText(allSelected ? getString(R.string.select_all) : getString(R.string.unselect_all));
         });
     }
 
@@ -229,6 +236,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
 
     private void changeButtonStatus() {
         tvAddToLib.setEnabled(selectedItems.size() > 0);
+        selectAll.setText(adapterLibrary.areAllSelected() ? getString(R.string.unselect_all) : getString(R.string.select_all));
     }
 
     @Override
