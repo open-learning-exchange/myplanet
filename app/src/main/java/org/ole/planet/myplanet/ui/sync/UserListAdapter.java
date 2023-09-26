@@ -7,14 +7,12 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.Filter;
 import android.widget.Filterable;
-import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.squareup.picasso.Picasso;
+import com.bumptech.glide.Glide;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.model.User;
-import org.ole.planet.myplanet.ui.team.teamMember.AdapterJoinedMember;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -72,7 +70,7 @@ public class UserListAdapter extends BaseAdapter implements Filterable {
         userNameTextView.setText(user.getFullName());
         user.getImage();
         if (!user.getImage().isEmpty()) {
-            Picasso.get()
+            Glide.with(context)
                     .load(user.getImage())
                     .placeholder(R.drawable.profile)
                     .error(R.drawable.profile)
