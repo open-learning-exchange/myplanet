@@ -1,21 +1,23 @@
 package org.ole.planet.myplanet.ui.submission;
 
+import static io.realm.internal.SyncObjectServerFacade.getApplicationContext;
+
 import android.content.Context;
 import android.os.Bundle;
-
-import androidx.annotation.NonNull;
-import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.RecyclerView;
-
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.RecyclerView;
+
 import org.json.JSONObject;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
+import org.ole.planet.myplanet.databinding.RowMysurveyBinding;
 import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmSubmission;
 import org.ole.planet.myplanet.model.RealmUserModel;
@@ -28,9 +30,8 @@ import java.util.List;
 
 import io.realm.Realm;
 
-import static io.realm.internal.SyncObjectServerFacade.getApplicationContext;
-
-public class AdapterMySubmission extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+public class AdapterMySubmission extends RecyclerView.Adapter<AdapterMySubmission.ViewHolderMySurvey> {
+    private RowMysurveyBinding rowMysurveyBinding;
     private OnHomeItemClickListener listener;
     private Context context;
     private List<RealmSubmission> list;
@@ -56,24 +57,22 @@ public class AdapterMySubmission extends RecyclerView.Adapter<RecyclerView.ViewH
 
     @NonNull
     @Override
-    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View v = LayoutInflater.from(context).inflate(R.layout.row_mysurvey, parent, false);
-        return new ViewHolderMySurvey(v);
+    public ViewHolderMySurvey onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        rowMysurveyBinding = RowMysurveyBinding.inflate(LayoutInflater.from(context), parent, false);
+        return new ViewHolderMySurvey(rowMysurveyBinding);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-        if (holder instanceof ViewHolderMySurvey) {
-            ((ViewHolderMySurvey) holder).status.setText(list.get(position).getStatus());
-            ((ViewHolderMySurvey) holder).date.setText(TimeUtils.getFormatedDate(list.get(position).getStartTime()));
-            showSubmittedBy(((ViewHolderMySurvey) holder).submitted_by, position);
+    public void onBindViewHolder(@NonNull ViewHolderMySurvey holder, int position) {
+        rowMysurveyBinding.status.setText(list.get(position).getStatus());
+        rowMysurveyBinding.date.setText(TimeUtils.getFormatedDate(list.get(position).getStartTime()));
+            showSubmittedBy(rowMysurveyBinding.submittedBy, position);
             if (examHashMap.containsKey(list.get(position).getParentId()))
-                ((ViewHolderMySurvey) holder).title.setText(examHashMap.get(list.get(position).getParentId()).getName());
+                rowMysurveyBinding.title.setText(examHashMap.get(list.get(position).getParentId()).getName());
             holder.itemView.setOnClickListener(view -> {
                 if (type.equals("survey")) openSurvey(listener, list.get(position).getId(), true);
                 else openSubmissionDetail(listener, list.get(position).getId());
             });
-        }
     }
 
     private void showSubmittedBy(TextView submitted_by, int position) {
@@ -114,15 +113,12 @@ public class AdapterMySubmission extends RecyclerView.Adapter<RecyclerView.ViewH
         this.type = type;
     }
 
-    class ViewHolderMySurvey extends RecyclerView.ViewHolder {
-        TextView title, status, date, submitted_by;
+    static class ViewHolderMySurvey extends RecyclerView.ViewHolder {
+        RowMysurveyBinding rowMysurveyBinding;
 
-        public ViewHolderMySurvey(View itemView) {
-            super(itemView);
-            title = itemView.findViewById(R.id.title);
-            status = itemView.findViewById(R.id.status);
-            date = itemView.findViewById(R.id.date);
-            submitted_by = itemView.findViewById(R.id.submitted_by);
+        public ViewHolderMySurvey(RowMysurveyBinding rowMysurveyBinding) {
+            super(rowMysurveyBinding.getRoot());
+            this.rowMysurveyBinding = rowMysurveyBinding;
         }
     }
 }
