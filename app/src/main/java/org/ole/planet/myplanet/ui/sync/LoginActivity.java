@@ -370,6 +370,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         if (isLoggedIn) {
             Toast.makeText(getApplicationContext(), getString(R.string.thank_you), Toast.LENGTH_SHORT).show();
             onLogin();
+            saveUsers(inputName.getText().toString(), inputPassword.getText().toString());
         } else {
             ManagerSync.getInstance().login(name, password, new SyncListener() {
                 @Override
@@ -386,6 +387,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                     if (log) {
                         Toast.makeText(getApplicationContext(), getString(R.string.thank_you), Toast.LENGTH_SHORT).show();
                         onLogin();
+                        saveUsers(inputName.getText().toString(), inputPassword.getText().toString());
                     } else {
                         alertDialogOkay(getString(R.string.err_msg_login));
                     }
@@ -436,7 +438,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
 
     private void onLogin() {
-        saveUsers(inputName.getText().toString(), inputPassword.getText().toString());
         UserProfileDbHandler handler = new UserProfileDbHandler(this);
         handler.onLogin();
         handler.onDestory();
