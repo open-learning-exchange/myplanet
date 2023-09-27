@@ -226,7 +226,15 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         TextView customDeviceName = findViewById(R.id.customDeviceName);
         customDeviceName.setText(getCustomDeviceName());
         btnSignIn = findViewById(R.id.btn_signin);
-        btnSignIn.setOnClickListener(view -> submitForm(inputName.getText().toString(), inputPassword.getText().toString()));
+        btnSignIn.setOnClickListener(view -> {
+            if(TextUtils.isEmpty(inputName.getText().toString())){
+                inputName.setError(getString(R.string.err_msg_name));
+            } else if(TextUtils.isEmpty(inputPassword.getText().toString())){
+                inputPassword.setError(getString(R.string.err_msg_password));
+            }else{
+                submitForm(inputName.getText().toString(), inputPassword.getText().toString());
+            }
+        });
         if (!settings.contains("serverProtocol"))
             settings.edit().putString("serverProtocol", "http://").commit();
         findViewById(R.id.become_member).setOnClickListener(v -> becomeAMember());
@@ -357,12 +365,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         }
 
         SharedPreferences.Editor editor = settings.edit();
-        if (!validateEditText(inputName, inputLayoutName, getString(R.string.err_msg_name))) {
-            return;
-        }
-        if (!validateEditText(inputPassword, inputLayoutPassword, getString(R.string.err_msg_password))) {
-            return;
-        }
         editor.putString("loginUserName", name);
         editor.putString("loginUserPassword", password);
 
