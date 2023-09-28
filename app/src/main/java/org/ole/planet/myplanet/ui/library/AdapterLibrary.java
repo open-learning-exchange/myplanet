@@ -50,6 +50,7 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private OnRatingChangeListener ratingChangeListener;
     private Markwon markwon;
     private Realm realm;
+    private boolean areAllSelected = true;
 
     public AdapterLibrary(Context context, List<RealmMyLibrary> libraryList, HashMap<String, JsonObject> ratingMap, Realm realm) {
         this.ratingMap = ratingMap;
@@ -110,6 +111,33 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
             } else {
                 ((ViewHolderLibrary) holder).ratingBar.setRating(0);
             }
+
+            ((ViewHolderLibrary) holder).checkBox.setOnClickListener((view) -> {
+                Utilities.handleCheck(((CheckBox) view).isChecked(), position, (ArrayList) selectedItems, libraryList);
+                if (listener != null) listener.onSelectedListChange(selectedItems);
+                notifyDataSetChanged();
+            });
+        }
+    }
+
+    public boolean areAllSelected(){
+        if (selectedItems.size() != libraryList.size()) {
+            areAllSelected = false;
+        }
+        return areAllSelected;
+    }
+    public void selectAllItems(boolean selectAll) {
+        if (selectAll) {
+            selectedItems.clear();
+            selectedItems.addAll(libraryList);
+        } else {
+            selectedItems.clear();
+        }
+
+        notifyDataSetChanged();
+
+        if (listener != null) {
+            listener.onSelectedListChange(selectedItems);
         }
     }
 
@@ -163,12 +191,6 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
             llRating = itemView.findViewById(R.id.ll_rating);
             ivDownloaded = itemView.findViewById(R.id.iv_downloaded);
             average = itemView.findViewById(R.id.average);
-            checkBox.setOnCheckedChangeListener((compoundButton, b) -> {
-                if (listener != null) {
-                    Utilities.handleCheck(b, getAdapterPosition(), (ArrayList) selectedItems, libraryList);
-                    listener.onSelectedListChange(selectedItems);
-                }
-            });
             ratingBar.setOnTouchListener((v1, event) -> {
                 if (event.getAction() == MotionEvent.ACTION_UP)
                     homeItemClickListener.showRatingDialog("resource", libraryList.get(getAdapterPosition()).getResource_id(), libraryList.get(getAdapterPosition()).getTitle(), ratingChangeListener);

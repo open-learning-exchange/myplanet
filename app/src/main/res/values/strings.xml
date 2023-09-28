@@ -1039,5 +1039,6 @@
     <string name="unselect_all">Unselect All</string>
     <string name="select_all">Select All</string>
     <string name="request_failed_please_retry">Request failed, please retry</string>
+    <string name="confirm_removal">Confirm removal</string>
 
 </resources>
