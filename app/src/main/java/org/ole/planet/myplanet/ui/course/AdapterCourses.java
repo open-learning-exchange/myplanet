@@ -66,7 +66,6 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
         markwon = Markwon.builder(context)
                 .usePlugin(MovementMethodPlugin.none())
                 .build();
-
         this.selectedItems = new ArrayList<>();
         if (context instanceof OnHomeItemClickListener) {
             homeItemClickListener = (OnHomeItemClickListener) context;
