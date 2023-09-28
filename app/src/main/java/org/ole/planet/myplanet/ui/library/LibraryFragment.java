@@ -110,7 +110,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         });
 
         tvDelete.setOnClickListener(V -> new AlertDialog.Builder(this.getContext())
-                .setMessage(R.string.are_you_sure_you_want_to_remove)
+                .setMessage(R.string.confirm_removal)
                 .setPositiveButton(R.string.yes, (dialogInterface, i) -> {
                     deleteSelected(true);
                     checkList();
