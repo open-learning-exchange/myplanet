@@ -204,7 +204,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
     private void showGuestLoginDialog() {
         try {
-            mRealm = Realm.getDefaultInstance(); // Open a new Realm instance
+            mRealm = Realm.getDefaultInstance();
 
             editor = settings.edit();
             View v = LayoutInflater.from(this).inflate(R.layout.alert_guest_login, null);
@@ -263,58 +263,66 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     }
 
     public void declareMoreElements() {
-        syncIcon = findViewById(R.id.syncIcon);
-        syncIcon.setImageDrawable(getResources().getDrawable(R.drawable.login_file_upload_animation));
-        syncIcon.getScaleType();
-        syncIconDrawable = (AnimationDrawable) syncIcon.getDrawable();
-        syncIcon.setOnClickListener(v -> {
-            syncIconDrawable.start();
-            isSync = false;
-            forceSync = true;
-            service.checkVersion(this, settings);
-        });
-        declareHideKeyboardElements();
-        TextView txtVersion = findViewById(R.id.lblVersion);
-        txtVersion.setText(getResources().getText(R.string.version) + " " + getResources().getText(R.string.app_version));
-        inputName = findViewById(R.id.input_name);
-        inputPassword = findViewById(R.id.input_password);
-        inputName.addTextChangedListener(new MyTextWatcher(inputName));
-        inputPassword.addTextChangedListener(new MyTextWatcher(inputPassword));
-        inputPassword.setOnEditorActionListener((v, actionId, event) -> {
-            if (actionId == EditorInfo.IME_ACTION_DONE ||
-                    (event != null && event.getAction() == KeyEvent.ACTION_DOWN && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
-                btnSignIn.performClick();
-                return true;
-            }
-            return false;
-        });
-        setUplanguageButton();
-        if (defaultPref.getBoolean("saveUsernameAndPassword", false)) {
-            inputName.setText(settings.getString(getString(R.string.login_user), ""));
-            inputPassword.setText(settings.getString(getString(R.string.login_password), ""));
-        }
-        if (NetworkUtils.isNetworkConnected()) {
-            service.syncPlanetServers(mRealm, success -> Utilities.toast(LoginActivity.this, success));
-        }
-
-        inputName.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                String lowercaseText = s.toString().toLowerCase(Locale.ROOT);
-                if (!s.toString().equals(lowercaseText)) {
-                    inputName.setText(lowercaseText);
-                    inputName.setSelection(lowercaseText.length());
+        try {
+            mRealm = Realm.getDefaultInstance();
+            syncIcon = findViewById(R.id.syncIcon);
+            syncIcon.setImageDrawable(getResources().getDrawable(R.drawable.login_file_upload_animation));
+            syncIcon.getScaleType();
+            syncIconDrawable = (AnimationDrawable) syncIcon.getDrawable();
+            syncIcon.setOnClickListener(v -> {
+                syncIconDrawable.start();
+                isSync = false;
+                forceSync = true;
+                service.checkVersion(this, settings);
+            });
+            declareHideKeyboardElements();
+            TextView txtVersion = findViewById(R.id.lblVersion);
+            txtVersion.setText(getResources().getText(R.string.version) + " " + getResources().getText(R.string.app_version));
+            inputName = findViewById(R.id.input_name);
+            inputPassword = findViewById(R.id.input_password);
+            inputName.addTextChangedListener(new MyTextWatcher(inputName));
+            inputPassword.addTextChangedListener(new MyTextWatcher(inputPassword));
+            inputPassword.setOnEditorActionListener((v, actionId, event) -> {
+                if (actionId == EditorInfo.IME_ACTION_DONE ||
+                        (event != null && event.getAction() == KeyEvent.ACTION_DOWN && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
+                    btnSignIn.performClick();
+                    return true;
                 }
+                return false;
+            });
+            setUplanguageButton();
+            if (defaultPref.getBoolean("saveUsernameAndPassword", false)) {
+                inputName.setText(settings.getString(getString(R.string.login_user), ""));
+                inputPassword.setText(settings.getString(getString(R.string.login_password), ""));
             }
 
-            @Override
-            public void afterTextChanged(Editable s) {
+            if (NetworkUtils.isNetworkConnected()) {
+                service.syncPlanetServers(mRealm, success -> Utilities.toast(LoginActivity.this, success));
             }
-        });
+
+            inputName.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                }
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    String lowercaseText = s.toString().toLowerCase(Locale.ROOT);
+                    if (!s.toString().equals(lowercaseText)) {
+                        inputName.setText(lowercaseText);
+                        inputName.setSelection(lowercaseText.length());
+                    }
+                }
+
+                @Override
+                public void afterTextChanged(Editable s) {
+                }
+            });
+        } finally {
+            if (mRealm != null && !mRealm.isClosed()) {
+                mRealm.close();
+            }
+        }
     }
 
     private void setUplanguageButton() {
@@ -400,56 +408,70 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     }
 
     public void settingDialog() {
-        MaterialDialog.Builder builder = new MaterialDialog.Builder(LoginActivity.this);
-        builder.title(R.string.action_settings).customView(R.layout.dialog_server_url_, true).positiveText(R.string.btn_sync).negativeText(R.string.btn_sync_cancel).neutralText(R.string.btn_sync_save).onPositive((dialog, which) -> continueSync(dialog)).onNeutral((dialog, which) -> saveConfigAndContinue(dialog));
+        try {
+            mRealm = Realm.getDefaultInstance();
+            MaterialDialog.Builder builder = new MaterialDialog.Builder(LoginActivity.this);
+            builder.title(R.string.action_settings).customView(R.layout.dialog_server_url_, true).positiveText(R.string.btn_sync).negativeText(R.string.btn_sync_cancel).neutralText(R.string.btn_sync_save).onPositive((dialog, which) -> continueSync(dialog)).onNeutral((dialog, which) -> saveConfigAndContinue(dialog));
 
-        MaterialDialog dialog = builder.build();
-        positiveAction = dialog.getActionButton(DialogAction.POSITIVE);
-        spnCloud = dialog.getCustomView().findViewById(R.id.spn_cloud);
-        List<RealmCommunity> communities = mRealm.where(RealmCommunity.class).sort("weight", Sort.ASCENDING).findAll();
-        spnCloud.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, communities));
-        spnCloud.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                onChangeServerUrl();
+            MaterialDialog dialog = builder.build();
+            positiveAction = dialog.getActionButton(DialogAction.POSITIVE);
+            spnCloud = dialog.getCustomView().findViewById(R.id.spn_cloud);
+            List<RealmCommunity> communities = mRealm.where(RealmCommunity.class).sort("weight", Sort.ASCENDING).findAll();
+            spnCloud.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, communities));
+            spnCloud.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                    onChangeServerUrl();
+                }
+
+                @Override
+                public void onNothingSelected(AdapterView<?> adapterView) {
+
+                }
+            });
+            protocol_checkin = dialog.getCustomView().findViewById(R.id.radio_protocol);
+            serverUrl = dialog.getCustomView().findViewById(R.id.input_server_url);
+            serverPassword = dialog.getCustomView().findViewById(R.id.input_server_Password);
+            switchServerUrl = dialog.getCustomView().findViewById(R.id.switch_server_url);
+            serverUrlProtocol = dialog.getCustomView().findViewById(R.id.input_server_url_protocol);
+            switchServerUrl.setOnCheckedChangeListener((compoundButton, b) -> {
+                settings.edit().putBoolean("switchCloudUrl", b).commit();
+                spnCloud.setVisibility(b ? View.VISIBLE : View.GONE);
+                setUrlAndPin(switchServerUrl.isChecked());
+            });
+            serverUrl.addTextChangedListener(new MyTextWatcher(serverUrl));
+            EditText customDeviceName = dialog.getCustomView().findViewById(R.id.deviceName);
+            customDeviceName.setText(getCustomDeviceName());
+            switchServerUrl.setChecked(settings.getBoolean("switchCloudUrl", false));
+            setUrlAndPin(settings.getBoolean("switchCloudUrl", false));
+            protocol_semantics();
+            dialog.show();
+            sync(dialog);
+        } finally {
+            if (mRealm != null && !mRealm.isClosed()) {
+                mRealm.close();
             }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> adapterView) {
-
-            }
-        });
-        protocol_checkin = dialog.getCustomView().findViewById(R.id.radio_protocol);
-        serverUrl = dialog.getCustomView().findViewById(R.id.input_server_url);
-        serverPassword = dialog.getCustomView().findViewById(R.id.input_server_Password);
-        switchServerUrl = dialog.getCustomView().findViewById(R.id.switch_server_url);
-        serverUrlProtocol = dialog.getCustomView().findViewById(R.id.input_server_url_protocol);
-        switchServerUrl.setOnCheckedChangeListener((compoundButton, b) -> {
-            settings.edit().putBoolean("switchCloudUrl", b).commit();
-            spnCloud.setVisibility(b ? View.VISIBLE : View.GONE);
-            setUrlAndPin(switchServerUrl.isChecked());
-        });
-        serverUrl.addTextChangedListener(new MyTextWatcher(serverUrl));
-        EditText customDeviceName = dialog.getCustomView().findViewById(R.id.deviceName);
-        customDeviceName.setText(getCustomDeviceName());
-        switchServerUrl.setChecked(settings.getBoolean("switchCloudUrl", false));
-        setUrlAndPin(settings.getBoolean("switchCloudUrl", false));
-        protocol_semantics();
-        dialog.show();
-        sync(dialog);
+        }
     }
 
     private void onChangeServerUrl() {
-        RealmCommunity selected = (RealmCommunity) spnCloud.getSelectedItem();
-        Utilities.log((selected == null) + " selected ");
-        if (selected == null) {
-            return;
+        try {
+            mRealm = Realm.getDefaultInstance();
+            RealmCommunity selected = (RealmCommunity) spnCloud.getSelectedItem();
+            Utilities.log((selected == null) + " selected ");
+            if (selected == null) {
+                return;
+            }
+            serverUrl.setText(selected.getLocalDomain());
+            protocol_checkin.check(R.id.radio_https);
+            settings.getString("serverProtocol", "https://");
+            serverPassword.setText(selected.getWeight() == 0 ? "0660" : "");
+            serverPassword.setEnabled(selected.getWeight() != 0);
+        } finally {
+            if (mRealm != null && !mRealm.isClosed()) {
+                mRealm.close();
+            }
         }
-        serverUrl.setText(selected.getLocalDomain());
-        protocol_checkin.check(R.id.radio_https);
-        settings.getString("serverProtocol", "https://");
-        serverPassword.setText(selected.getWeight() == 0 ? "0660" : "");
-        serverPassword.setEnabled(selected.getWeight() != 0);
     }
 
     private void setUrlAndPin(boolean checked) {
@@ -497,14 +519,21 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
     @Override
     public void onUpdateAvailable(MyPlanet info, boolean cancelable) {
-        AlertDialog.Builder builder = DialogUtils.getUpdateDialog(this, info, progressDialog);
-        if (cancelable || NetworkUtils.getCustomDeviceName(this).endsWith("###")) {
-            builder.setNegativeButton(R.string.update_later, (dialogInterface, i) -> continueSyncProcess());
-        } else {
-            mRealm.executeTransactionAsync(realm -> realm.deleteAll());
+        try {
+            mRealm = Realm.getDefaultInstance();
+            AlertDialog.Builder builder = DialogUtils.getUpdateDialog(this, info, progressDialog);
+            if (cancelable || NetworkUtils.getCustomDeviceName(this).endsWith("###")) {
+                builder.setNegativeButton(R.string.update_later, (dialogInterface, i) -> continueSyncProcess());
+            } else {
+                mRealm.executeTransactionAsync(realm -> realm.deleteAll());
+            }
+            builder.setCancelable(cancelable);
+            builder.show();
+        } finally {
+            if (mRealm != null && !mRealm.isClosed()) {
+                mRealm.close();
+            }
         }
-        builder.setCancelable(cancelable);
-        builder.show();
     }
 
     @Override
@@ -550,17 +579,24 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
     @Override
     public void onSelectedUser(RealmUserModel userModel) {
-        View v = getLayoutInflater().inflate(R.layout.layout_child_login, null);
-        EditText et = v.findViewById(R.id.et_child_password);
-        new AlertDialog.Builder(this).setView(v).setTitle(R.string.please_enter_your_password).setPositiveButton(R.string.login, (dialogInterface, i) -> {
-            String password = et.getText().toString();
-            if (authenticateUser(settings, userModel.getName(), password, false)) {
-                Toast.makeText(getApplicationContext(), getString(R.string.thank_you), Toast.LENGTH_SHORT).show();
-                onLogin();
-            } else {
-                alertDialogOkay(getString(R.string.err_msg_login));
+        try {
+            mRealm = Realm.getDefaultInstance();
+            View v = getLayoutInflater().inflate(R.layout.layout_child_login, null);
+            EditText et = v.findViewById(R.id.et_child_password);
+            new AlertDialog.Builder(this).setView(v).setTitle(R.string.please_enter_your_password).setPositiveButton(R.string.login, (dialogInterface, i) -> {
+                String password = et.getText().toString();
+                if (authenticateUser(settings, userModel.getName(), password, false)) {
+                    Toast.makeText(getApplicationContext(), getString(R.string.thank_you), Toast.LENGTH_SHORT).show();
+                    onLogin();
+                } else {
+                    alertDialogOkay(getString(R.string.err_msg_login));
+                }
+            }).setNegativeButton(R.string.cancel, null).show();
+        } finally {
+            if (mRealm != null && !mRealm.isClosed()) {
+                mRealm.close();
             }
-        }).setNegativeButton(R.string.cancel, null).show();
+        }
     }
 
     @Override
