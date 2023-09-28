@@ -39,6 +39,7 @@ import java.util.List;
 import fisk.chipcloud.ChipCloud;
 import fisk.chipcloud.ChipCloudConfig;
 import io.noties.markwon.Markwon;
+import io.noties.markwon.movement.MovementMethodPlugin;
 import io.realm.Realm;
 
 public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
@@ -62,7 +63,10 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
         this.map = map;
         this.context = context;
         this.courseList = courseList;
-        markwon = Markwon.create(context);
+        markwon = Markwon.builder(context)
+                .usePlugin(MovementMethodPlugin.none())
+                .build();
+
         this.selectedItems = new ArrayList<>();
         if (context instanceof OnHomeItemClickListener) {
             homeItemClickListener = (OnHomeItemClickListener) context;
