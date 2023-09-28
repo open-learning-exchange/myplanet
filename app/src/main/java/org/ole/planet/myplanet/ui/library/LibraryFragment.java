@@ -93,6 +93,8 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         imgSearch = getView().findViewById(R.id.img_search);
         flexBoxTags = getView().findViewById(R.id.flexbox_tags);
         selectAll = getView().findViewById(R.id.selectAll);
+        tvDelete = getView().findViewById(R.id.tv_delete);
+
         initArrays();
 
         tvAddToLib.setOnClickListener(view -> {
@@ -106,6 +108,15 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
 
             }
         });
+
+        tvDelete.setOnClickListener(V -> new AlertDialog.Builder(this.getContext())
+                .setMessage(R.string.are_you_sure_you_want_to_remove)
+                .setPositiveButton(R.string.yes, (dialogInterface, i) -> {
+                    deleteSelected(true);
+                    checkList();
+                })
+                .setNegativeButton(R.string.no, null).show());
+
         imgSearch.setOnClickListener(view -> {
             adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag(etSearch.getText().toString().trim(), searchTags)));
             showNoData(tvMessage, adapterLibrary.getItemCount());

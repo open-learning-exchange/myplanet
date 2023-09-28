@@ -949,5 +949,6 @@
     <string name="unselect_all">सबै चयन गर्दिन</string>
     <string name="select_all">सबै चयन गर्नुहोस्</string>
     <string name="request_failed_please_retry">अनुरोध असफल भयो, कृपया पुन: प्रयास गर्नुहोस्</string>
+    <string name="are_you_sure_you_want_to_remove">के तपाईं हटाउन चाहनुहुन्छ भने कृपया पुष्टि गर्नुहोस्?</string>
 
 </resources>

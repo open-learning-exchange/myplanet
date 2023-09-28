@@ -949,5 +949,6 @@
     <string name="unselect_all">Deseleccionar todo</string>
     <string name="select_all">Seleccionar todo</string>
     <string name="request_failed_please_retry">La solicitud ha fallado, por favor inténtelo de nuevo</string>
+    <string name="are_you_sure_you_want_to_remove">¿Estás seguro de que quieres eliminar?</string>
 
 </resources>
