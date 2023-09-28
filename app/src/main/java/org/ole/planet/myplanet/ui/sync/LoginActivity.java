@@ -420,13 +420,12 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         if (fullName.trim().length() == 0) {
             fullName = profileDbHandler.getUserModel().getName();
         }
-
         User newUser = new User(fullName, name, password, userProfile);
         List<User> existingUsers = new ArrayList<>(prefData.getSAVEDUSERS1());
         boolean newUserExists = false;
 
         for (User user : existingUsers) {
-            if (user.getName().equals(newUser.getName())) {
+            if (user.getFullName().equals(newUser.getFullName().trim())) {
                 newUserExists = true;
                 break;
             }
@@ -437,7 +436,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             prefData.setSAVEDUSERS1(existingUsers);
         }
     }
-
 
     private void onLogin() {
         UserProfileDbHandler handler = new UserProfileDbHandler(this);
