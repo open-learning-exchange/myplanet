@@ -2,13 +2,19 @@ package org.ole.planet.myplanet.ui.userprofile;
 
 import android.app.DatePickerDialog;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.CheckedTextView;
 import android.widget.DatePicker;
 import android.widget.EditText;
+import android.widget.ListView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.AppCompatTextView;
 
@@ -18,18 +24,22 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.base.BaseContainerFragment;
 import org.ole.planet.myplanet.databinding.AlertAddAttachmentBinding;
 import org.ole.planet.myplanet.databinding.AlertReferenceBinding;
 import org.ole.planet.myplanet.databinding.EditAttachementBinding;
 import org.ole.planet.myplanet.databinding.EditOtherInfoBinding;
 import org.ole.planet.myplanet.databinding.FragmentEditAchievementBinding;
 import org.ole.planet.myplanet.databinding.MyLibraryAlertdialogBinding;
+import org.ole.planet.myplanet.databinding.RowlayoutBinding;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmAchievement;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
+import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.CheckboxListView;
 import org.ole.planet.myplanet.utilities.DialogUtils;
+import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
@@ -39,14 +49,21 @@ import java.util.Locale;
 
 import fisk.chipcloud.ChipCloud;
 import fisk.chipcloud.ChipCloudConfig;
+import io.realm.Realm;
 
-public class EditAchievementFragment extends BaseAchievementFragment implements DatePickerDialog.OnDateSetListener {
+public class EditAchievementFragment extends BaseContainerFragment implements DatePickerDialog.OnDateSetListener {
     private FragmentEditAchievementBinding fragmentEditAchievementBinding;
     private EditAttachementBinding editAttachementBinding;
     private EditOtherInfoBinding editOtherInfoBinding;
     private AlertReferenceBinding alertReferenceBinding;
     private AlertAddAttachmentBinding alertAddAttachmentBinding;
     private MyLibraryAlertdialogBinding myLibraryAlertdialogBinding;
+
+    Realm mRealm;
+    RealmUserModel user;
+    RealmAchievement achievement;
+
+    JsonArray referenceArray, achievementArray, resourceArray;
     public EditAchievementFragment() {
     }
 
@@ -215,7 +232,7 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
         List<RealmMyLibrary> list = mRealm.where(RealmMyLibrary.class).findAll();
         myLibraryAlertdialogBinding = MyLibraryAlertdialogBinding.inflate(LayoutInflater.from(getActivity()));
         View myLibraryAlertdialogView = myLibraryAlertdialogBinding.getRoot();
-        CheckboxListView lv = createResourceList(myLibraryAlertdialogView, list, prevList);
+        CheckboxListView lv = createResourceList(myLibraryAlertdialogBinding, list, prevList);
         builder.setView(myLibraryAlertdialogView);
         builder.setPositiveButton("Ok", (dialogInterface, i) -> {
             ArrayList<Integer> items = lv.getSelectedItemsList();
@@ -229,5 +246,64 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
     @Override
     public void onDateSet(DatePicker datePicker, int i, int i1, int i2) {
         fragmentEditAchievementBinding.txtDob.setText(String.format(Locale.US, "%04d-%02d-%02d", i, i1 + 1, i2));
+    }
+
+    public void initializeData() {
+        if (achievement == null) {
+            if (!mRealm.isInTransaction()) mRealm.beginTransaction();
+            achievement = mRealm.createObject(RealmAchievement.class, user.getId() + "@" + user.getPlanetCode());
+            return;
+        } else {
+            achievementArray = achievement.getAchievementsArray();
+            referenceArray = achievement.getreferencesArray();
+            fragmentEditAchievementBinding.etAchievement.setText(achievement.getAchievementsHeader());
+            fragmentEditAchievementBinding.etPurpose.setText(achievement.getPurpose());
+            fragmentEditAchievementBinding.etGoals.setText(achievement.getGoals());
+            fragmentEditAchievementBinding.cbSendToNation.setChecked(Boolean.parseBoolean(achievement.getSendToNation()));
+        }
+        fragmentEditAchievementBinding.txtDob.setText(TextUtils.isEmpty(user.getDob()) ? getString(R.string.birth_date) : TimeUtils.getFormatedDate(user.getDob(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"));
+        resourceArray = new JsonArray();
+        fragmentEditAchievementBinding.etFname.setText(user.getFirstName());
+        fragmentEditAchievementBinding.etMname.setText(user.getMiddleName());
+        fragmentEditAchievementBinding.etLname.setText(user.getLastName());
+        fragmentEditAchievementBinding.etBirthplace.setText(user.getBirthPlace());
+    }
+
+    public CheckboxListView createResourceList(MyLibraryAlertdialogBinding myLibraryAlertdialogBinding, List<RealmMyLibrary> list, List<String> prevList) {
+
+        ArrayList<String> names = new ArrayList<>();
+        ArrayList<Integer> selected = new ArrayList();
+        for (int i = 0; i < list.size(); i++) {
+            names.add(list.get(i).getTitle());
+            if (prevList.contains(list.get(i).getTitle())) selected.add(i);
+        }
+
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(getActivity(), R.layout.item_checkbox, R.id.checkBoxRowLayout, names) {
+            @NonNull
+            @Override
+            public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
+                RowlayoutBinding rowlayoutBinding = RowlayoutBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false);
+                CheckedTextView textView = rowlayoutBinding.getRoot();
+                textView.setText(getItem(position));
+                textView.setChecked(myLibraryAlertdialogBinding.alertDialogListView.getSelectedItemsList().contains(position));
+                myLibraryAlertdialogBinding.alertDialogListView.setItemChecked(position, myLibraryAlertdialogBinding.alertDialogListView.getSelectedItemsList().contains(position));
+                return textView;
+            }
+        };
+        myLibraryAlertdialogBinding.alertDialogListView.setSelectedItemsList(selected);
+        myLibraryAlertdialogBinding.alertDialogListView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
+        myLibraryAlertdialogBinding.alertDialogListView.setAdapter(adapter);
+        return myLibraryAlertdialogBinding.alertDialogListView;
+    }
+
+    public void setUserInfo() {}
+
+    public void setAchievementInfo() {
+        achievement.setAchievementsHeader(fragmentEditAchievementBinding.etAchievement.getText().toString().trim());
+        achievement.setGoals(fragmentEditAchievementBinding.etGoals.getText().toString().trim());
+        achievement.setPurpose(fragmentEditAchievementBinding.etPurpose.getText().toString().trim());
+        achievement.setAchievements(achievementArray);
+        achievement.setreferences(referenceArray);
+        achievement.setSendToNation(fragmentEditAchievementBinding.cbSendToNation.isChecked() + "");
     }
 }
