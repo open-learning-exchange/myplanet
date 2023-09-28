@@ -455,16 +455,23 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     }
 
     private void onChangeServerUrl() {
-        RealmCommunity selected = (RealmCommunity) spnCloud.getSelectedItem();
-        Utilities.log((selected == null) + " selected ");
-        if (selected == null) {
-            return;
+        try {
+            mRealm = Realm.getDefaultInstance();
+            RealmCommunity selected = (RealmCommunity) spnCloud.getSelectedItem();
+            Utilities.log((selected == null) + " selected ");
+            if (selected == null) {
+                return;
+            }
+            serverUrl.setText(selected.getLocalDomain());
+            protocol_checkin.check(R.id.radio_https);
+            settings.getString("serverProtocol", "https://");
+            serverPassword.setText(selected.getWeight() == 0 ? "0660" : "");
+            serverPassword.setEnabled(selected.getWeight() != 0);
+        } finally {
+            if (mRealm != null && !mRealm.isClosed()) {
+                mRealm.close();
+            }
         }
-        serverUrl.setText(selected.getLocalDomain());
-        protocol_checkin.check(R.id.radio_https);
-        settings.getString("serverProtocol", "https://");
-        serverPassword.setText(selected.getWeight() == 0 ? "0660" : "");
-        serverPassword.setEnabled(selected.getWeight() != 0);
     }
 
     private void setUrlAndPin(boolean checked) {
@@ -512,14 +519,21 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
     @Override
     public void onUpdateAvailable(MyPlanet info, boolean cancelable) {
-        AlertDialog.Builder builder = DialogUtils.getUpdateDialog(this, info, progressDialog);
-        if (cancelable || NetworkUtils.getCustomDeviceName(this).endsWith("###")) {
-            builder.setNegativeButton(R.string.update_later, (dialogInterface, i) -> continueSyncProcess());
-        } else {
-            mRealm.executeTransactionAsync(realm -> realm.deleteAll());
+        try {
+            mRealm = Realm.getDefaultInstance();
+            AlertDialog.Builder builder = DialogUtils.getUpdateDialog(this, info, progressDialog);
+            if (cancelable || NetworkUtils.getCustomDeviceName(this).endsWith("###")) {
+                builder.setNegativeButton(R.string.update_later, (dialogInterface, i) -> continueSyncProcess());
+            } else {
+                mRealm.executeTransactionAsync(realm -> realm.deleteAll());
+            }
+            builder.setCancelable(cancelable);
+            builder.show();
+        } finally {
+            if (mRealm != null && !mRealm.isClosed()) {
+                mRealm.close();
+            }
         }
-        builder.setCancelable(cancelable);
-        builder.show();
     }
 
     @Override
@@ -565,17 +579,24 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
     @Override
     public void onSelectedUser(RealmUserModel userModel) {
-        View v = getLayoutInflater().inflate(R.layout.layout_child_login, null);
-        EditText et = v.findViewById(R.id.et_child_password);
-        new AlertDialog.Builder(this).setView(v).setTitle(R.string.please_enter_your_password).setPositiveButton(R.string.login, (dialogInterface, i) -> {
-            String password = et.getText().toString();
-            if (authenticateUser(settings, userModel.getName(), password, false)) {
-                Toast.makeText(getApplicationContext(), getString(R.string.thank_you), Toast.LENGTH_SHORT).show();
-                onLogin();
-            } else {
-                alertDialogOkay(getString(R.string.err_msg_login));
+        try {
+            mRealm = Realm.getDefaultInstance();
+            View v = getLayoutInflater().inflate(R.layout.layout_child_login, null);
+            EditText et = v.findViewById(R.id.et_child_password);
+            new AlertDialog.Builder(this).setView(v).setTitle(R.string.please_enter_your_password).setPositiveButton(R.string.login, (dialogInterface, i) -> {
+                String password = et.getText().toString();
+                if (authenticateUser(settings, userModel.getName(), password, false)) {
+                    Toast.makeText(getApplicationContext(), getString(R.string.thank_you), Toast.LENGTH_SHORT).show();
+                    onLogin();
+                } else {
+                    alertDialogOkay(getString(R.string.err_msg_login));
+                }
+            }).setNegativeButton(R.string.cancel, null).show();
+        } finally {
+            if (mRealm != null && !mRealm.isClosed()) {
+                mRealm.close();
             }
-        }).setNegativeButton(R.string.cancel, null).show();
+        }
     }
 
     @Override
