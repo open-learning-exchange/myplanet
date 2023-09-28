@@ -36,6 +36,7 @@ import java.util.List;
 import fisk.chipcloud.ChipCloud;
 import fisk.chipcloud.ChipCloudConfig;
 import io.noties.markwon.Markwon;
+import io.noties.markwon.movement.MovementMethodPlugin;
 import io.realm.Realm;
 
 public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
@@ -54,7 +55,9 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
     public AdapterLibrary(Context context, List<RealmMyLibrary> libraryList, HashMap<String, JsonObject> ratingMap, Realm realm) {
         this.ratingMap = ratingMap;
         this.context = context;
-        markwon = Markwon.create(context);
+        markwon = Markwon.builder(context)
+                .usePlugin(MovementMethodPlugin.none())
+                .build();
         this.realm = realm;
         this.libraryList = libraryList;
         this.selectedItems = new ArrayList<>();
