@@ -235,6 +235,15 @@
                         android:text="@string/btn_sign_in"
                         android:textColor="@android:color/white" />
 
+                    <TextView
+                        android:id="@+id/previouslyLoggedIn"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_margin="4dp"
+                        android:gravity="center"
+                        android:text="Previously logged in? Click here"
+                        android:textColor="@color/colorPrimary" />
+
                     <Button
                         android:id="@+id/btn_guest_login"
                         android:layout_width="wrap_content"
