@@ -54,14 +54,5 @@
                 android:maxLines="1"
                 android:padding="@dimen/padding_normal" />
         </com.google.android.material.textfield.TextInputLayout>
-
-        <ImageView
-            android:id="@+id/img_search"
-            android:layout_width="30dp"
-            android:layout_height="@dimen/layout_height"
-            android:layout_gravity="center"
-            android:background="?attr/selectableItemBackground"
-            android:src="@drawable/ic_search" />
     </LinearLayout>
-
 </LinearLayout>
