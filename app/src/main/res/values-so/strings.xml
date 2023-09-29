@@ -938,5 +938,6 @@
     <string name="unselect_all">Dhammaad Maareey</string>
     <string name="select_all">Dhammaad Dhammaadee</string>
     <string name="request_failed_please_retry">Codka lama yimaado, fadlan dib ugu ciyaar</string>
+    <string name="confirm_removal">Xaqiiji tirtirka</string>
 
 </resources>
