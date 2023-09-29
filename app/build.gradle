@@ -8,10 +8,10 @@ android {
     compileSdkVersion 34
     defaultConfig {
         applicationId "org.ole.planet.myplanet"
-        minSdkVersion 19
-        targetSdkVersion 33
-        versionCode 1067
-        versionName "0.10.67"
+        minSdkVersion 21
+        targetSdkVersion 34
+        versionCode 1068
+        versionName "0.10.68"
         ndkVersion '21.3.6528147'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
