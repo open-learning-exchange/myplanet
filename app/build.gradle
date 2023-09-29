@@ -103,7 +103,7 @@ dependencies {
 
     implementation 'com.github.jeancsanchez:jcplayer:2.7.2'
 
-    implementation "com.google.dagger:hilt-android:2.44"
+    implementation "com.google.dagger:hilt-android:2.48"
     kapt "com.google.dagger:hilt-android-compiler:2.48"
 
     implementation 'com.mikepenz:crossfader:1.5.1@aar'
