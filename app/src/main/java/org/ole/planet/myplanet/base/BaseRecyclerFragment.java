@@ -116,16 +116,15 @@ public abstract class BaseRecyclerFragment<LI> extends BaseRecyclerParentFragmen
                 RealmMyLibrary.createFromResource(myObject, mRealm, model.getId());
                 RealmRemovedLog.onAdd(mRealm, "resources", profileDbHandler.getUserModel().getId(), myObject.getResourceId());
                 Utilities.toast(getActivity(), getString(R.string.added_to_my_library));
-                recyclerView.setAdapter(getAdapter());
             } else {
                 RealmMyCourse myObject = RealmMyCourse.getMyCourse(mRealm, ((RealmMyCourse) object).getCourseId());
                 RealmMyCourse.createMyCourse(myObject, mRealm, model.getId());
                 RealmRemovedLog.onAdd(mRealm, "courses", profileDbHandler.getUserModel().getId(), myObject.getCourseId());
                 Utilities.toast(getActivity(), getString(R.string.added_to_my_courses));
-                recyclerView.setAdapter(getAdapter());
             }
-            showNoData(tvMessage, getAdapter().getItemCount());
         }
+        recyclerView.setAdapter(getAdapter());
+        showNoData(tvMessage, getAdapter().getItemCount());
     }
 
     public void deleteSelected(boolean deleteProgress) {

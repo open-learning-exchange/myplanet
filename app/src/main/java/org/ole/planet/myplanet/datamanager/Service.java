@@ -13,6 +13,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.MainApplication;
+import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.SuccessListener;
 import org.ole.planet.myplanet.model.MyPlanet;
 import org.ole.planet.myplanet.model.RealmCommunity;
@@ -100,7 +101,7 @@ public class Service {
     public void checkVersion(CheckVersionCallback callback, SharedPreferences settings) {
         ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
         if (settings.getString("couchdbURL", "").isEmpty()) {
-            callback.onError("Config not awailable.", true);
+            callback.onError(context.getString(R.string.config_not_available), true);
             return;
         }
         retrofitInterface.checkVersion(Utilities.getUpdateUrl(settings)).enqueue(new Callback<MyPlanet>() {
@@ -281,15 +282,21 @@ public class Service {
                             community.setParentDomain(JsonUtils.getString("parentDomain", jsonDoc));
                             community.setRegistrationRequest(JsonUtils.getString("registrationRequest", jsonDoc));
                         }
+                    }, () -> {
+                        realm.close();
+                        callback.onSuccess("Server sync successfully");
+                    }, error -> {
+                        realm.close();
+                        error.printStackTrace();
+                        callback.onSuccess("Unable to connect to planet earth");
                     });
-                    callback.onSuccess("Server sync successfully");
                 }
             }
 
             @Override
             public void onFailure(Call<JsonObject> call, Throwable t) {
+                realm.close();
                 callback.onSuccess("Unable to connect to planet earth");
-
             }
         });
     }

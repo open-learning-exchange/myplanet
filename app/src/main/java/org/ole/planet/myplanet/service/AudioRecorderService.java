@@ -1,10 +1,14 @@
 package org.ole.planet.myplanet.service;
 
+import static org.ole.planet.myplanet.MainApplication.context;
+
+import android.database.Cursor;
 import android.media.MediaRecorder;
+import android.net.Uri;
 import android.os.Environment;
+import android.provider.MediaStore;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.UUID;
 
 public class AudioRecorderService {
@@ -30,13 +34,11 @@ public class AudioRecorderService {
     }
 
     public void startRecording() {
-        outputFile = Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + UUID.randomUUID().toString() + ".aac";
-        File f = new File(outputFile);
-        createFileIfNotExists(f);
+        outputFile = createAudioFile();
         myAudioRecorder = new MediaRecorder();
         myAudioRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
         myAudioRecorder.setOutputFormat(MediaRecorder.OutputFormat.AAC_ADTS);
-        myAudioRecorder.setAudioEncoder(MediaRecorder.OutputFormat.AMR_NB);
+        myAudioRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
         myAudioRecorder.setOutputFile(outputFile);
         try {
             myAudioRecorder.prepare();
@@ -50,14 +52,34 @@ public class AudioRecorderService {
         }
     }
 
-    private void createFileIfNotExists(File f) {
-        if (!f.exists()) {
-            try {
-                f.createNewFile();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+    private String createAudioFile() {
+        String audioFileName;
+        File audioFile;
+        int attempt = 0;
+
+        do {
+            audioFileName = UUID.randomUUID().toString() + ".aac";
+            audioFile = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC), audioFileName);
+            attempt++;
+        } while (audioFile.exists() && attempt < 100);
+
+        if (attempt >= 100) {
+            return null;
         }
+
+        return audioFile.getAbsolutePath();
+    }
+
+    private String getFilePathFromUri(Uri uri) {
+        String filePath = null;
+        String[] projection = {MediaStore.Audio.Media.DATA};
+        Cursor cursor = context.getContentResolver().query(uri, projection, null, null, null);
+        if (cursor != null && cursor.moveToFirst()) {
+            int columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA);
+            filePath = cursor.getString(columnIndex);
+            cursor.close();
+        }
+        return filePath;
     }
 
     public boolean isRecording() {
