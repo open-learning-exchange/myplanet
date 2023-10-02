@@ -98,12 +98,18 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         tl = findViewById(R.id.tab_layout);
         TextView appName = findViewById(R.id.app_title_name);
         try {
-            String name = profileDbHandler.getUserModel().getFullName();
-            if (name.trim().length() == 0) {
-                name = profileDbHandler.getUserModel().getName();
+            RealmUserModel userProfileModel = profileDbHandler.getUserModel();
+            if(userProfileModel != null){
+                String name = userProfileModel.getFullName();
+                if (name.trim().length() == 0) {
+                    name = profileDbHandler.getUserModel().getName();
+                }
+                appName.setText(name + "'s Planet");
+            } else {
+                appName.setText(getString(R.string.app_project_name));
             }
-            appName.setText(name + "'s Planet");
         } catch (Exception err) {
+            throw new RuntimeException(err);
         }
         findViewById(R.id.iv_setting).setOnClickListener(v -> startActivity(new Intent(this, SettingActivity.class)));
         if (user.getRolesList().isEmpty() && !user.getUserAdmin()) {
