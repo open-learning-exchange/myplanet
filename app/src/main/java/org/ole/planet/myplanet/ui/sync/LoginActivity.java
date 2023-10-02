@@ -313,7 +313,9 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
             @Override
             public void notAvailable() {
-                DialogUtils.showAlert(LoginActivity.this, "Error", getString(R.string.planet_server_not_reachable));
+                if (!isFinishing()) {
+                    DialogUtils.showAlert(LoginActivity.this, "Error", getString(R.string.planet_server_not_reachable));
+                }
             }
         });
     }
