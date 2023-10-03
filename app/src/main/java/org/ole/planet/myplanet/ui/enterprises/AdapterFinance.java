@@ -7,23 +7,22 @@ import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.LayerDrawable;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
-import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.databinding.RowFinanceBinding;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import io.realm.RealmResults;
 
-public class AdapterFinance extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
-
+public class AdapterFinance extends RecyclerView.Adapter<AdapterFinance.ViewHolderFinance> {
+    private RowFinanceBinding rowFinanceBinding;
     private Context context;
     private RealmResults<RealmMyTeam> list;
 
@@ -34,29 +33,28 @@ public class AdapterFinance extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     @NonNull
     @Override
-    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View v = LayoutInflater.from(context).inflate(R.layout.row_finance, parent, false);
-        return new ViewHolderFinance(v);
+    public ViewHolderFinance onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        rowFinanceBinding = RowFinanceBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false);
+        return new ViewHolderFinance(rowFinanceBinding);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-        if (holder instanceof ViewHolderFinance) {
-            ((ViewHolderFinance) holder).date.setText(TimeUtils.formatDate(list.get(position).getDate(), "MMM dd, yyyy"));
-            ((ViewHolderFinance) holder).note.setText(list.get(position).getDescription());
+    public void onBindViewHolder(@NonNull ViewHolderFinance holder, int position) {
+        rowFinanceBinding.date.setText(TimeUtils.formatDate(list.get(position).getDate(), "MMM dd, yyyy"));
+        rowFinanceBinding.note.setText(list.get(position).getDescription());
             Utilities.log("Type " + list.get(position).getDate());
             if (TextUtils.equals(list.get(position).getType().toLowerCase(), "debit")) {
-                ((ViewHolderFinance) holder).debit.setText(list.get(position).getAmount() + "");
-                ((ViewHolderFinance) holder).credit.setText(" -");
-                ((ViewHolderFinance) holder).credit.setTextColor(Color.BLACK);
+                rowFinanceBinding.debit.setText(list.get(position).getAmount() + "");
+                rowFinanceBinding.credit.setText(" -");
+                rowFinanceBinding.credit.setTextColor(Color.BLACK);
             } else {
-                ((ViewHolderFinance) holder).credit.setText(list.get(position).getAmount() + "");
-                ((ViewHolderFinance) holder).debit.setText(" -");
-                ((ViewHolderFinance) holder).debit.setTextColor(Color.BLACK);
+                rowFinanceBinding.credit.setText(list.get(position).getAmount() + "");
+                rowFinanceBinding.debit.setText(" -");
+                rowFinanceBinding.debit.setTextColor(Color.BLACK);
             }
-            ((ViewHolderFinance) holder).balance.setText(getBalance(position) + "");
-            updateBackgroundColor(((ViewHolderFinance) holder).row, position);
-        }
+            rowFinanceBinding.balance.setText(getBalance(position) + "");
+            updateBackgroundColor(rowFinanceBinding.llayout, position);
+
     }
 
     private String getBalance(int position) {
@@ -90,18 +88,12 @@ public class AdapterFinance extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
     }
 
-    class ViewHolderFinance extends RecyclerView.ViewHolder {
-        TextView date, note, credit, debit, balance;
-        LinearLayout row;
+    public static class ViewHolderFinance extends RecyclerView.ViewHolder {
+        RowFinanceBinding rowFinanceBinding;
 
-        public ViewHolderFinance(View itemView) {
-            super(itemView);
-            row = itemView.findViewById(R.id.llayout);
-            date = itemView.findViewById(R.id.date);
-            note = itemView.findViewById(R.id.note);
-            credit = itemView.findViewById(R.id.credit);
-            debit = itemView.findViewById(R.id.debit);
-            balance = itemView.findViewById(R.id.balance);
+        public ViewHolderFinance(RowFinanceBinding rowFinanceBinding) {
+            super(rowFinanceBinding.getRoot());
+            this.rowFinanceBinding = rowFinanceBinding;
         }
     }
 }
