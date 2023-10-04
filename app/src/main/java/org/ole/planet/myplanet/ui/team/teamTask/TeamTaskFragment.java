@@ -96,7 +96,14 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
         }
 
         Calendar myCalendar = Calendar.getInstance();
-        datePicker.setOnClickListener(view -> new DatePickerDialog(getActivity(), listener, myCalendar.get(Calendar.YEAR), myCalendar.get(Calendar.MONTH), myCalendar.get(Calendar.DAY_OF_MONTH)).show());
+        datePicker.setOnClickListener(view -> {
+            DatePickerDialog datePickerDialog = new DatePickerDialog(
+                    getContext(), listener, myCalendar.get(Calendar.YEAR),
+                    myCalendar.get(Calendar.MONTH), myCalendar.get(Calendar.DAY_OF_MONTH)
+            );
+            datePickerDialog.getDatePicker().setMinDate(myCalendar.getTimeInMillis());
+            datePickerDialog.show();
+        });
 
         new AlertDialog.Builder(getActivity()).setTitle(R.string.add_task).setView(v).setPositiveButton(R.string.save, (dialogInterface, i) -> {
             String task = title.getText().toString();

@@ -1,6 +1,8 @@
 package org.ole.planet.myplanet.ui.course;
 
 
+import static org.ole.planet.myplanet.MainApplication.context;
+
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -26,6 +28,8 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler;
 
 import java.util.List;
 
+import io.noties.markwon.Markwon;
+import io.noties.markwon.movement.MovementMethodPlugin;
 import io.realm.Realm;
 import io.realm.RealmResults;
 
@@ -36,6 +40,7 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
     RealmMyCourse courses;
     RealmUserModel user;
     String id;
+    private Markwon markwon;
 
     public CourseDetailFragment() {
     }
@@ -46,6 +51,9 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
         if (getArguments() != null) {
             id = getArguments().getString("courseId");
         }
+        markwon = Markwon.builder(context)
+                .usePlugin(MovementMethodPlugin.none())
+                .build();
     }
 
     @Override
@@ -75,7 +83,7 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
         fragmentCourseDetailBinding.method.setText(courses.getMethod());
         fragmentCourseDetailBinding.gradeLevel.setText(courses.getGradeLevel());
         fragmentCourseDetailBinding.language.setText(courses.getLanguageOfInstruction());
-        fragmentCourseDetailBinding.description.loadMarkdown(courses.getDescription());
+        markwon.setMarkdown(fragmentCourseDetailBinding.description, courses.getDescription());
         fragmentCourseDetailBinding.noOfExams.setText(RealmStepExam.getNoOfExam(mRealm, id) + "");
         final RealmResults resources = mRealm.where(RealmMyLibrary.class).equalTo("courseId", id).equalTo("resourceOffline", false).isNotNull("resourceLocalAddress").findAll();
         setResourceButton(resources, fragmentCourseDetailBinding.btnResources);

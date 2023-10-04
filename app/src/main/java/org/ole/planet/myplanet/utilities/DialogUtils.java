@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.utilities;
 
+import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -66,7 +67,13 @@ public class DialogUtils {
     }
 
     public static void showAlert(Context context, String title, String message) {
-        new AlertDialog.Builder(context).setTitle(title).setMessage(message).setPositiveButton(R.string.finish, null).show();
+        if (context instanceof Activity && !((Activity) context).isFinishing()) {
+            new AlertDialog.Builder(context)
+                    .setTitle(title)
+                    .setMessage(message)
+                    .setPositiveButton(R.string.finish, null)
+                    .show();
+        }
     }
 
     public static AlertDialog getAlertDialog(Context context, String message, String pos, DialogInterface.OnClickListener listener) {

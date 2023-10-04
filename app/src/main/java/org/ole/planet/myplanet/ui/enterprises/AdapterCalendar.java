@@ -2,20 +2,19 @@ package org.ole.planet.myplanet.ui.enterprises;
 
 import android.content.Context;
 import android.view.LayoutInflater;
-import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.databinding.RowTeamCalendarBinding;
 import org.ole.planet.myplanet.model.RealmMeetup;
 import org.ole.planet.myplanet.utilities.TimeUtils;
 
 import java.util.List;
 
-class AdapterCalendar extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+public class AdapterCalendar extends RecyclerView.Adapter<AdapterCalendar.ViewHolderCalendar> {
+    private RowTeamCalendarBinding rowTeamCalendarBinding;
     private Context context;
     private List<RealmMeetup> list;
 
@@ -26,21 +25,21 @@ class AdapterCalendar extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     @NonNull
     @Override
-    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View v = LayoutInflater.from(context).inflate(R.layout.row_team_calendar, parent, false);
-        return new ViewHolderCalendar(v);
+    public ViewHolderCalendar onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        rowTeamCalendarBinding = RowTeamCalendarBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false);
+        return new ViewHolderCalendar(rowTeamCalendarBinding);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-        if (holder instanceof ViewHolderCalendar) {
-            ((ViewHolderCalendar) holder).title.setText(list.get(position).getTitle());
-            ((ViewHolderCalendar) holder).description.setText(list.get(position).getDescription());
-            if (list.get(position).getStartDate() == list.get(position).getEndDate()) {
-                ((ViewHolderCalendar) holder).date.setText(TimeUtils.formatDate(list.get(position).getStartDate()));
-            } else {
-                ((ViewHolderCalendar) holder).date.setText(TimeUtils.formatDate(list.get(position).getStartDate()) + " to " + TimeUtils.formatDate(list.get(position).getEndDate()));
-            }
+    public void onBindViewHolder(@NonNull ViewHolderCalendar holder, int position) {
+        RealmMeetup meetup = list.get(position);
+        rowTeamCalendarBinding.tvTitle.setText(meetup.getTitle());
+        rowTeamCalendarBinding.tvDescription.setText(meetup.getDescription());
+
+        if (meetup.getStartDate() == meetup.getEndDate()) {
+            rowTeamCalendarBinding.tvDate.setText(TimeUtils.formatDate(meetup.getStartDate()));
+        } else {
+            rowTeamCalendarBinding.tvDate.setText(TimeUtils.formatDate(meetup.getStartDate()) + " to " + TimeUtils.formatDate(meetup.getEndDate()));
         }
     }
 
@@ -49,14 +48,12 @@ class AdapterCalendar extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         return list.size();
     }
 
-    class ViewHolderCalendar extends RecyclerView.ViewHolder {
-        TextView title, description, date;
+    public static class ViewHolderCalendar extends RecyclerView.ViewHolder {
+        RowTeamCalendarBinding rowTeamCalendarBinding;
 
-        public ViewHolderCalendar(View itemView) {
-            super(itemView);
-            title = itemView.findViewById(R.id.tv_title);
-            description = itemView.findViewById(R.id.tv_description);
-            date = itemView.findViewById(R.id.tv_date);
+        public ViewHolderCalendar(RowTeamCalendarBinding rowTeamCalendarBinding) {
+            super(rowTeamCalendarBinding.getRoot());
+            this.rowTeamCalendarBinding = rowTeamCalendarBinding;
         }
     }
 }

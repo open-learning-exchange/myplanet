@@ -2,31 +2,44 @@ package org.ole.planet.myplanet.ui.userprofile;
 
 import android.app.DatePickerDialog;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
+import android.widget.ArrayAdapter;
+import android.widget.CheckedTextView;
 import android.widget.DatePicker;
 import android.widget.EditText;
-import android.widget.TextView;
+import android.widget.ListView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.AppCompatTextView;
 
 import com.google.android.flexbox.FlexboxLayout;
-import com.google.android.material.textfield.TextInputLayout;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.base.BaseContainerFragment;
+import org.ole.planet.myplanet.databinding.AlertAddAttachmentBinding;
+import org.ole.planet.myplanet.databinding.AlertReferenceBinding;
+import org.ole.planet.myplanet.databinding.EditAttachementBinding;
+import org.ole.planet.myplanet.databinding.EditOtherInfoBinding;
+import org.ole.planet.myplanet.databinding.FragmentEditAchievementBinding;
+import org.ole.planet.myplanet.databinding.MyLibraryAlertdialogBinding;
+import org.ole.planet.myplanet.databinding.RowlayoutBinding;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmAchievement;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
+import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.utilities.CheckboxListView;
 import org.ole.planet.myplanet.utilities.DialogUtils;
+import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
@@ -36,38 +49,50 @@ import java.util.Locale;
 
 import fisk.chipcloud.ChipCloud;
 import fisk.chipcloud.ChipCloudConfig;
+import io.realm.Realm;
 
-public class EditAchievementFragment extends BaseAchievementFragment implements DatePickerDialog.OnDateSetListener {
+public class EditAchievementFragment extends BaseContainerFragment implements DatePickerDialog.OnDateSetListener {
+    private FragmentEditAchievementBinding fragmentEditAchievementBinding;
+    private EditAttachementBinding editAttachementBinding;
+    private EditOtherInfoBinding editOtherInfoBinding;
+    private AlertReferenceBinding alertReferenceBinding;
+    private AlertAddAttachmentBinding alertAddAttachmentBinding;
+    private MyLibraryAlertdialogBinding myLibraryAlertdialogBinding;
+
+    Realm mRealm;
+    RealmUserModel user;
+    RealmAchievement achievement;
+
+    JsonArray referenceArray, achievementArray, resourceArray;
     public EditAchievementFragment() {
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View v = inflater.inflate(R.layout.fragment_edit_achievement, container, false);
+        fragmentEditAchievementBinding = FragmentEditAchievementBinding.inflate(inflater, container, false);
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
         user = new UserProfileDbHandler(getActivity()).getUserModel();
         achievementArray = new JsonArray();
         achievement = mRealm.where(RealmAchievement.class).equalTo("_id", user.getId() + "@" + user.getPlanetCode()).findFirst();
-        createView(v);
         initializeData();
         setListeners();
         if (achievementArray != null) showAchievementAndInfo();
         if (referenceArray != null) showreference();
-        return v;
+        return fragmentEditAchievementBinding.getRoot();
     }
 
     private void setListeners() {
-        btnUpdate.setOnClickListener(view -> {
+        fragmentEditAchievementBinding.btnUpdate.setOnClickListener(view -> {
             if (!mRealm.isInTransaction()) mRealm.beginTransaction();
             setUserInfo();
             setAchievementInfo();
             getActivity().onBackPressed();
             mRealm.commitTransaction();
         });
-        btnCancel.setOnClickListener(view -> getActivity().onBackPressed());
-        btnAddAchievement.setOnClickListener(vi -> showAddachievementAlert(null));
-        btnOther.setOnClickListener(view -> showreferenceDialog(null));
-        tvDob.setOnClickListener(view -> {
+        fragmentEditAchievementBinding.btnCancel.setOnClickListener(view -> getActivity().onBackPressed());
+        fragmentEditAchievementBinding.btnAchievement.setOnClickListener(vi -> showAddachievementAlert(null));
+        fragmentEditAchievementBinding.btnOther.setOnClickListener(view -> showreferenceDialog(null));
+        fragmentEditAchievementBinding.txtDob.setOnClickListener(view -> {
             Calendar now = Calendar.getInstance();
             DatePickerDialog dpd = new DatePickerDialog(getActivity(), this, now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH));
             dpd.getDatePicker().setMaxDate(Calendar.getInstance().getTimeInMillis());
@@ -75,82 +100,62 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
         });
     }
 
-    private void createView(View v) {
-        etGoals = v.findViewById(R.id.et_goals);
-        llachievement = v.findViewById(R.id.ll_attachment);
-        llOthers = v.findViewById(R.id.ll_other_info);
-        etPurpose = v.findViewById(R.id.et_purpose);
-        etAchievement = v.findViewById(R.id.et_achievement);
-        etName = v.findViewById(R.id.et_fname);
-        etMiddleName = v.findViewById(R.id.et_mname);
-        etLastName = v.findViewById(R.id.et_lname);
-        etBirthPlace = v.findViewById(R.id.et_birthplace);
-        tvDob = v.findViewById(R.id.txt_dob);
-        btnAddAchievement = v.findViewById(R.id.btn_achievement);
-        btnOther = v.findViewById(R.id.btn_other);
-        btnUpdate = v.findViewById(R.id.btn_update);
-        btnCancel = v.findViewById(R.id.btn_cancel);
-        checkBox = v.findViewById(R.id.cb_send_to_nation);
-    }
-
     private void showAchievementAndInfo() {
         ChipCloudConfig config = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.single);
-        llachievement.removeAllViews();
+        fragmentEditAchievementBinding.llAttachment.removeAllViews();
         for (JsonElement e : achievementArray) {
-            View v = LayoutInflater.from(getActivity()).inflate(R.layout.edit_attachement, null);
-            ((TextView) v.findViewById(R.id.tv_title)).setText(e.getAsJsonObject().get("title").getAsString());
-            FlexboxLayout flexboxLayout = v.findViewById(R.id.flexbox);
+            editAttachementBinding = EditAttachementBinding.inflate(LayoutInflater.from(getActivity()));
+            editAttachementBinding.tvTitle.setText(e.getAsJsonObject().get("title").getAsString());
+            FlexboxLayout flexboxLayout = editAttachementBinding.flexbox;
             flexboxLayout.removeAllViews();
             final ChipCloud chipCloud = new ChipCloud(getActivity(), flexboxLayout, config);
             for (JsonElement element : e.getAsJsonObject().getAsJsonArray("resources")) {
                 chipCloud.addChip(element.getAsJsonObject().get("title").getAsString());
             }
-            v.findViewById(R.id.iv_delete).setOnClickListener(view -> {
+            editAttachementBinding.ivDelete.setOnClickListener(view -> {
                 achievementArray.remove(e);
                 showAchievementAndInfo();
             });
-            v.findViewById(R.id.edit).setOnClickListener(V -> {
+            editAttachementBinding.edit.setOnClickListener(V -> {
                 showAddachievementAlert(e.getAsJsonObject());
             });
-            llachievement.addView(v);
+            View editAttachementView = editAttachementBinding.getRoot();
+            fragmentEditAchievementBinding.llAttachment.addView(editAttachementView);
         }
     }
 
     private void showreference() {
-        llOthers.removeAllViews();
+        fragmentEditAchievementBinding.llOtherInfo.removeAllViews();
         for (JsonElement e : referenceArray) {
-            View v = LayoutInflater.from(getActivity()).inflate(R.layout.edit_other_info, null);
-            ((TextView) v.findViewById(R.id.tv_title)).setText(e.getAsJsonObject().get("name").getAsString());
-            v.findViewById(R.id.iv_delete).setOnClickListener(view -> {
+            editOtherInfoBinding = EditOtherInfoBinding.inflate(LayoutInflater.from(getActivity()));
+            editOtherInfoBinding.tvTitle.setText(e.getAsJsonObject().get("name").getAsString());
+            editOtherInfoBinding.ivDelete.setOnClickListener(view -> {
                 referenceArray.remove(e);
                 showreference();
             });
-            v.findViewById(R.id.edit).setOnClickListener(vi -> {
+            editOtherInfoBinding.edit.setOnClickListener(vi -> {
                 showreferenceDialog(e.getAsJsonObject());
             });
-            llOthers.addView(v);
+            View editOtherInfoView = editOtherInfoBinding.getRoot();
+            fragmentEditAchievementBinding.llOtherInfo.addView(editOtherInfoView);
         }
     }
 
     private void showreferenceDialog(JsonObject object) {
-        View v = LayoutInflater.from(getActivity()).inflate(R.layout.alert_reference, null);
-        EditText etName = v.findViewById(R.id.et_name);
-        TextInputLayout tlName = v.findViewById(R.id.tl_name);
-        EditText etRelation = v.findViewById(R.id.et_relationship);
-        EditText etPhone = v.findViewById(R.id.et_phone);
-        EditText etEmail = v.findViewById(R.id.et_email);
-        EditText[] ar = {etName, etPhone, etEmail, etRelation};
+        alertReferenceBinding = AlertReferenceBinding.inflate(LayoutInflater.from(getActivity()));
+        EditText[] ar = {alertReferenceBinding.etName, alertReferenceBinding.etPhone, alertReferenceBinding.etEmail, alertReferenceBinding.etRelationship};
         setPrevReference(ar, object);
-        AlertDialog d = DialogUtils.getAlertDialog(getActivity(), getString(R.string.add_reference), v);
+        View alertReferenceView = alertReferenceBinding.getRoot();
+        AlertDialog d = DialogUtils.getAlertDialog(getActivity(), getString(R.string.add_reference), alertReferenceView);
         d.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(view -> {
-            String name = etName.getText().toString().trim();
+            String name = alertReferenceBinding.etName.getText().toString().trim();
             if (name.isEmpty()) {
-                tlName.setError(getString(R.string.name_is_required));
+                alertReferenceBinding.tlName.setError(getString(R.string.name_is_required));
                 return;
             }
             if (object != null) referenceArray.remove(object);
             if (referenceArray == null) referenceArray = new JsonArray();
-            referenceArray.add(RealmAchievement.createReference(name, etRelation, etPhone, etEmail));
+            referenceArray.add(RealmAchievement.createReference(name, alertReferenceBinding.etRelationship, alertReferenceBinding.etPhone, alertReferenceBinding.etEmail));
             showreference();
             d.dismiss();
         });
@@ -168,18 +173,24 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
     String date = "";
 
     private void showAddachievementAlert(JsonObject object) {
-        View v = LayoutInflater.from(getActivity()).inflate(R.layout.alert_add_attachment, null);
-        Button btnAddResource = v.findViewById(R.id.btn_add_resources);
-        EditText etDescription = v.findViewById(R.id.et_desc);
-        EditText etTitle = v.findViewById(R.id.et_title);
-        AppCompatTextView tvDate = v.findViewById(R.id.tv_date);
-        initAchievementDatePicker(tvDate);
+        alertAddAttachmentBinding = AlertAddAttachmentBinding.inflate(LayoutInflater.from(getActivity()));
+        alertAddAttachmentBinding.tvDate.setOnClickListener(view -> {
+            Calendar now = Calendar.getInstance();
+            DatePickerDialog dpd = new DatePickerDialog(getActivity(), (datePicker, i, i1, i2) -> {
+                date = String.format(Locale.US, "%04d-%02d-%02d", i, i1 + 1, i2);
+                alertAddAttachmentBinding.tvDate.setText(date);
+            }, now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH));
+            dpd.getDatePicker().setMaxDate(now.getTimeInMillis());
+            dpd.show();
+        });
+
         resourceArray = new JsonArray();
-        List<String> prevList = setUpOldAchievement(object, etDescription, etTitle, tvDate);
-        btnAddResource.setOnClickListener(view -> showResourseListDialog(prevList));
-        new AlertDialog.Builder(getActivity()).setTitle(R.string.add_achievement).setIcon(R.drawable.ic_edit).setView(v).setCancelable(false).setPositiveButton("Submit", (dialogInterface, i) -> {
-            String desc = etDescription.getText().toString().trim();
-            String title = etTitle.getText().toString().trim();
+        List<String> prevList = setUpOldAchievement(object, alertAddAttachmentBinding.etDesc, alertAddAttachmentBinding.etTitle, (AppCompatTextView) alertAddAttachmentBinding.tvDate);
+        alertAddAttachmentBinding.btnAddResources.setOnClickListener(view -> showResourseListDialog(prevList));
+        View alertAddAttachmentView = alertAddAttachmentBinding.getRoot();
+        new AlertDialog.Builder(getActivity()).setTitle(R.string.add_achievement).setIcon(R.drawable.ic_edit).setView(alertAddAttachmentView).setCancelable(false).setPositiveButton("Submit", (dialogInterface, i) -> {
+            String desc = alertAddAttachmentBinding.etDesc.getText().toString().trim();
+            String title = alertAddAttachmentBinding.etTitle.getText().toString().trim();
             if (title.isEmpty()) {
                 Toast.makeText(getActivity(), getString(R.string.title_is_required), Toast.LENGTH_SHORT).show();
                 return;
@@ -205,18 +216,6 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
         return prevList;
     }
 
-    private void initAchievementDatePicker(TextView tvDate) {
-        tvDate.setOnClickListener(view -> {
-            Calendar now = Calendar.getInstance();
-            DatePickerDialog dpd = new DatePickerDialog(getActivity(), (datePicker, i, i1, i2) -> {
-                date = String.format(Locale.US, "%04d-%02d-%02d", i, i1 + 1, i2);
-                tvDate.setText(date);
-            }, now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH));
-            dpd.getDatePicker().setMaxDate(now.getTimeInMillis());
-            dpd.show();
-        });
-    }
-
     private void saveAchievement(String desc, String title) {
         JsonObject object = new JsonObject();
         object.addProperty("description", desc);
@@ -231,9 +230,10 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         builder.setTitle(R.string.select_resources);
         List<RealmMyLibrary> list = mRealm.where(RealmMyLibrary.class).findAll();
-        View v = LayoutInflater.from(getActivity()).inflate(R.layout.my_library_alertdialog, null);
-        CheckboxListView lv = createResourceList(v, list, prevList);
-        builder.setView(v);
+        myLibraryAlertdialogBinding = MyLibraryAlertdialogBinding.inflate(LayoutInflater.from(getActivity()));
+        View myLibraryAlertdialogView = myLibraryAlertdialogBinding.getRoot();
+        CheckboxListView lv = createResourceList(myLibraryAlertdialogBinding, list, prevList);
+        builder.setView(myLibraryAlertdialogView);
         builder.setPositiveButton("Ok", (dialogInterface, i) -> {
             ArrayList<Integer> items = lv.getSelectedItemsList();
             resourceArray = new JsonArray();
@@ -245,6 +245,65 @@ public class EditAchievementFragment extends BaseAchievementFragment implements 
 
     @Override
     public void onDateSet(DatePicker datePicker, int i, int i1, int i2) {
-        tvDob.setText(String.format(Locale.US, "%04d-%02d-%02d", i, i1 + 1, i2));
+        fragmentEditAchievementBinding.txtDob.setText(String.format(Locale.US, "%04d-%02d-%02d", i, i1 + 1, i2));
+    }
+
+    public void initializeData() {
+        if (achievement == null) {
+            if (!mRealm.isInTransaction()) mRealm.beginTransaction();
+            achievement = mRealm.createObject(RealmAchievement.class, user.getId() + "@" + user.getPlanetCode());
+            return;
+        } else {
+            achievementArray = achievement.getAchievementsArray();
+            referenceArray = achievement.getreferencesArray();
+            fragmentEditAchievementBinding.etAchievement.setText(achievement.getAchievementsHeader());
+            fragmentEditAchievementBinding.etPurpose.setText(achievement.getPurpose());
+            fragmentEditAchievementBinding.etGoals.setText(achievement.getGoals());
+            fragmentEditAchievementBinding.cbSendToNation.setChecked(Boolean.parseBoolean(achievement.getSendToNation()));
+        }
+        fragmentEditAchievementBinding.txtDob.setText(TextUtils.isEmpty(user.getDob()) ? getString(R.string.birth_date) : TimeUtils.getFormatedDate(user.getDob(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"));
+        resourceArray = new JsonArray();
+        fragmentEditAchievementBinding.etFname.setText(user.getFirstName());
+        fragmentEditAchievementBinding.etMname.setText(user.getMiddleName());
+        fragmentEditAchievementBinding.etLname.setText(user.getLastName());
+        fragmentEditAchievementBinding.etBirthplace.setText(user.getBirthPlace());
+    }
+
+    public CheckboxListView createResourceList(MyLibraryAlertdialogBinding myLibraryAlertdialogBinding, List<RealmMyLibrary> list, List<String> prevList) {
+
+        ArrayList<String> names = new ArrayList<>();
+        ArrayList<Integer> selected = new ArrayList();
+        for (int i = 0; i < list.size(); i++) {
+            names.add(list.get(i).getTitle());
+            if (prevList.contains(list.get(i).getTitle())) selected.add(i);
+        }
+
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(getActivity(), R.layout.item_checkbox, R.id.checkBoxRowLayout, names) {
+            @NonNull
+            @Override
+            public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
+                RowlayoutBinding rowlayoutBinding = RowlayoutBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false);
+                CheckedTextView textView = rowlayoutBinding.getRoot();
+                textView.setText(getItem(position));
+                textView.setChecked(myLibraryAlertdialogBinding.alertDialogListView.getSelectedItemsList().contains(position));
+                myLibraryAlertdialogBinding.alertDialogListView.setItemChecked(position, myLibraryAlertdialogBinding.alertDialogListView.getSelectedItemsList().contains(position));
+                return textView;
+            }
+        };
+        myLibraryAlertdialogBinding.alertDialogListView.setSelectedItemsList(selected);
+        myLibraryAlertdialogBinding.alertDialogListView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
+        myLibraryAlertdialogBinding.alertDialogListView.setAdapter(adapter);
+        return myLibraryAlertdialogBinding.alertDialogListView;
+    }
+
+    public void setUserInfo() {}
+
+    public void setAchievementInfo() {
+        achievement.setAchievementsHeader(fragmentEditAchievementBinding.etAchievement.getText().toString().trim());
+        achievement.setGoals(fragmentEditAchievementBinding.etGoals.getText().toString().trim());
+        achievement.setPurpose(fragmentEditAchievementBinding.etPurpose.getText().toString().trim());
+        achievement.setAchievements(achievementArray);
+        achievement.setreferences(referenceArray);
+        achievement.setSendToNation(fragmentEditAchievementBinding.cbSendToNation.isChecked() + "");
     }
 }

@@ -1,33 +1,28 @@
 package org.ole.planet.myplanet.ui.exam;
 
-
 import android.os.Bundle;
-
-import androidx.annotation.Nullable;
-import androidx.core.widget.NestedScrollView;
-
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.CompoundButton;
-import android.widget.EditText;
-import android.widget.LinearLayout;
 import android.widget.RadioButton;
-import android.widget.RadioGroup;
-import android.widget.TextView;
+
+import androidx.annotation.Nullable;
+import androidx.core.widget.NestedScrollView;
 
 import com.google.android.material.snackbar.Snackbar;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.databinding.FragmentTakeExamBinding;
 import org.ole.planet.myplanet.model.RealmAnswer;
 import org.ole.planet.myplanet.model.RealmCertification;
 import org.ole.planet.myplanet.model.RealmExamQuestion;
 import org.ole.planet.myplanet.model.RealmSubmission;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
+import org.ole.planet.myplanet.utilities.CameraUtils;
 import org.ole.planet.myplanet.utilities.JsonParserUtils;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.KeyboardUtils;
@@ -42,14 +37,8 @@ import io.realm.RealmList;
 import io.realm.RealmQuery;
 import io.realm.Sort;
 
-import org.ole.planet.myplanet.utilities.CameraUtils;
-
 public class TakeExamFragment extends BaseExamFragment implements View.OnClickListener, CompoundButton.OnCheckedChangeListener, CameraUtils.ImageCaptureCallback {
-    TextView tvQuestionCount, header, body;
-    EditText etAnswer;
-    Button btnSubmit;
-    RadioGroup listChoices;
-    LinearLayout llCheckbox;
+    private FragmentTakeExamBinding fragmentTakeExamBinding;
     Markwon markwon;
     boolean isCertified;
     NestedScrollView container;
@@ -59,20 +48,12 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup parent, Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_take_exam, parent, false);
+        fragmentTakeExamBinding = FragmentTakeExamBinding.inflate(inflater, parent, false);
         listAns = new HashMap<>();
-        tvQuestionCount = view.findViewById(R.id.tv_question_count);
-        header = view.findViewById(R.id.tv_header);
-        body = view.findViewById(R.id.tv_body);
-        llCheckbox = view.findViewById(R.id.ll_checkbox);
-        etAnswer = view.findViewById(R.id.et_answer);
-        btnSubmit = view.findViewById(R.id.btn_submit);
-        listChoices = view.findViewById(R.id.group_choices);
-        container = view.findViewById(R.id.container);
         markwon = Markwon.create(getActivity());
         UserProfileDbHandler dbHandler = new UserProfileDbHandler(getActivity());
         user = dbHandler.getUserModel();
-        return view;
+        return fragmentTakeExamBinding.getRoot();
     }
 
     @Override
@@ -80,7 +61,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         super.onActivityCreated(savedInstanceState);
         initExam();
         questions = mRealm.where(RealmExamQuestion.class).equalTo("examId", exam.getId()).findAll();
-        tvQuestionCount.setText(getString(R.string.Q1) + questions.size());
+        fragmentTakeExamBinding.tvQuestionCount.setText(getString(R.string.Q1) + questions.size());
         RealmQuery q = mRealm.where(RealmSubmission.class).equalTo("userId", user.getId()).equalTo("parentId", (!TextUtils.isEmpty(exam.getCourseId())) ? id + "@" + exam.getCourseId() : id).sort("startTime", Sort.DESCENDING);
         if (type.equals("exam")) q = q.equalTo("status", "pending");
 
@@ -93,9 +74,9 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
             startExam(questions.get(currentIndex));
         } else {
             container.setVisibility(View.GONE);
-            btnSubmit.setVisibility(View.GONE);
-            tvQuestionCount.setText(R.string.no_questions);
-            Snackbar.make(tvQuestionCount, R.string.no_questions_available, Snackbar.LENGTH_LONG).show();
+            fragmentTakeExamBinding.btnSubmit.setVisibility(View.GONE);
+            fragmentTakeExamBinding.tvQuestionCount.setText(R.string.no_questions);
+            Snackbar.make(fragmentTakeExamBinding.tvQuestionCount, R.string.no_questions_available, Snackbar.LENGTH_LONG).show();
         }
     }
 
@@ -124,44 +105,44 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
 
     @Override
     public void startExam(RealmExamQuestion question) {
-        tvQuestionCount.setText(getString(R.string.Q) + (currentIndex + 1) + "/" + questions.size());
+        fragmentTakeExamBinding.tvQuestionCount.setText(getString(R.string.Q) + (currentIndex + 1) + "/" + questions.size());
         setButtonText();
-        listChoices.removeAllViews();
-        llCheckbox.removeAllViews();
-        etAnswer.setVisibility(View.GONE);
-        listChoices.setVisibility(View.GONE);
-        llCheckbox.setVisibility(View.GONE);
+        fragmentTakeExamBinding.groupChoices.removeAllViews();
+        fragmentTakeExamBinding.llCheckbox.removeAllViews();
+        fragmentTakeExamBinding.etAnswer.setVisibility(View.GONE);
+        fragmentTakeExamBinding.groupChoices.setVisibility(View.GONE);
+        fragmentTakeExamBinding.llCheckbox.setVisibility(View.GONE);
         clearAnswer();
         if (sub.getAnswers().size() > currentIndex) {
             ans = sub.getAnswers().get(currentIndex).getValue();
         }
         if (question.getType().equalsIgnoreCase("select")) {
-            listChoices.setVisibility(View.VISIBLE);
-            etAnswer.setVisibility(View.GONE);
+            fragmentTakeExamBinding.groupChoices.setVisibility(View.VISIBLE);
+            fragmentTakeExamBinding.etAnswer.setVisibility(View.GONE);
             selectQuestion(question, ans);
         } else if (question.getType().equalsIgnoreCase("input") || question.getType().equalsIgnoreCase("textarea")) {
-            setMarkdownViewAndShowInput(etAnswer, question.getType(), ans);
+            setMarkdownViewAndShowInput(fragmentTakeExamBinding.etAnswer, question.getType(), ans);
         } else if (question.getType().equalsIgnoreCase("selectMultiple")) {
-            llCheckbox.setVisibility(View.VISIBLE);
-            etAnswer.setVisibility(View.GONE);
+            fragmentTakeExamBinding.llCheckbox.setVisibility(View.VISIBLE);
+            fragmentTakeExamBinding.etAnswer.setVisibility(View.GONE);
             showCheckBoxes(question, ans);
         }
-        header.setText(question.getHeader());
-        markwon.setMarkdown(body, question.getBody());
-        btnSubmit.setOnClickListener(this);
+        fragmentTakeExamBinding.tvHeader.setText(question.getHeader());
+        markwon.setMarkdown(fragmentTakeExamBinding.tvBody, question.getBody());
+        fragmentTakeExamBinding.btnSubmit.setOnClickListener(this);
     }
 
     private void clearAnswer() {
         ans = "";
-        etAnswer.setText("");
+        fragmentTakeExamBinding.etAnswer.setText("");
         listAns.clear();
     }
 
     public void setButtonText() {
         if (currentIndex == questions.size() - 1) {
-            btnSubmit.setText(R.string.finish);
+            fragmentTakeExamBinding.btnSubmit.setText(R.string.finish);
         } else {
-            btnSubmit.setText(R.string.submit);
+            fragmentTakeExamBinding.btnSubmit.setText(R.string.submit);
         }
     }
 
@@ -188,7 +169,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         rdBtn.setText(choice);
         rdBtn.setChecked(choice.equals(oldAnswer));
         rdBtn.setOnCheckedChangeListener(this);
-        listChoices.addView(rdBtn);
+        fragmentTakeExamBinding.groupChoices.addView(rdBtn);
     }
 
     public void addCompoundButton(JsonObject choice, boolean isRadio, String oldAnswer) {
@@ -197,8 +178,8 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         rdBtn.setTag(JsonUtils.getString("id", choice));
         rdBtn.setChecked(JsonUtils.getString("id", choice).equals(oldAnswer));
         rdBtn.setOnCheckedChangeListener(this);
-        if (isRadio) listChoices.addView(rdBtn);
-        else llCheckbox.addView(rdBtn);
+        if (isRadio) fragmentTakeExamBinding.groupChoices.addView(rdBtn);
+        else fragmentTakeExamBinding.llCheckbox.addView(rdBtn);
     }
 
     @Override
@@ -226,14 +207,14 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
 
     private void showTextInput(String type) {
         if (type.equalsIgnoreCase("input") || type.equalsIgnoreCase("textarea")) {
-            ans = etAnswer.getText().toString();
+            ans = fragmentTakeExamBinding.etAnswer.getText().toString();
         }
     }
 
     private boolean updateAnsDb() {
         boolean flag;
         startTransaction();
-        sub.setStatus(currentIndex == questions.size() - 1 ? getString(R.string.graded) : getString(R.string.pending));
+        sub.setStatus(currentIndex == questions.size() - 1 ? "requires grading" : "pending");
         RealmList<RealmAnswer> list = sub.getAnswers();
         RealmAnswer answer = createAnswer(list);
         RealmExamQuestion que = mRealm.copyFromRealm(questions.get(currentIndex));
