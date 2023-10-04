@@ -125,7 +125,6 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag(etSearch.getText().toString().trim(), searchTags)));
                 showNoData(tvMessage, adapterLibrary.getItemCount());
-                KeyboardUtils.hideSoftKeyboard(getActivity());
             }
 
             @Override

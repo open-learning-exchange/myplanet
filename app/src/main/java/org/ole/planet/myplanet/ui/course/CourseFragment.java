@@ -91,7 +91,6 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 adapterCourses.setCourseList(filterCourseByTag(etSearch.getText().toString(), searchTags));
                 showNoData(tvMessage, adapterCourses.getItemCount());
-                KeyboardUtils.hideSoftKeyboard(getActivity());
             }
 
             @Override
