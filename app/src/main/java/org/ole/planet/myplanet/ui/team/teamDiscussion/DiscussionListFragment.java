@@ -6,11 +6,10 @@ import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
-import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.gson.Gson;
@@ -19,6 +18,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.databinding.FragmentDiscussionListBinding;
 import org.ole.planet.myplanet.model.RealmNews;
 import org.ole.planet.myplanet.model.RealmTeamNotification;
 import org.ole.planet.myplanet.ui.news.AdapterNews;
@@ -35,19 +35,16 @@ import java.util.UUID;
 import io.realm.Sort;
 
 public class DiscussionListFragment extends BaseTeamFragment {
-    RecyclerView rvDiscussion;
-    TextView tvNodata;
+    private FragmentDiscussionListBinding fragmentDiscussionListBinding;
 
     public DiscussionListFragment() {
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View v = inflater.inflate(R.layout.fragment_discussion_list, container, false);
-        v.findViewById(R.id.add_message).setOnClickListener(view -> showAddMessage());
-        rvDiscussion = v.findViewById(R.id.rv_discussion);
-        tvNodata = v.findViewById(R.id.tv_nodata);
-        return v;
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        fragmentDiscussionListBinding = FragmentDiscussionListBinding.inflate(inflater, container, false);
+        fragmentDiscussionListBinding.addMessage.setOnClickListener(view -> showAddMessage());
+        return fragmentDiscussionListBinding.getRoot();
     }
 
     @Override
@@ -64,7 +61,7 @@ public class DiscussionListFragment extends BaseTeamFragment {
             }
             notification.setLastCount(count);
         });
-        changeLayoutManager(getResources().getConfiguration().orientation, rvDiscussion);
+        changeLayoutManager(getResources().getConfiguration().orientation, fragmentDiscussionListBinding.rvDiscussion);
         showRecyclerView(realmNewsList);
     }
 
@@ -90,15 +87,15 @@ public class DiscussionListFragment extends BaseTeamFragment {
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        changeLayoutManager(newConfig.orientation, rvDiscussion);
+        changeLayoutManager(newConfig.orientation, fragmentDiscussionListBinding.rvDiscussion);
     }
 
     private void showRecyclerView(List<RealmNews> realmNewsList) {
         AdapterNews adapterNews = new AdapterNews(getActivity(), realmNewsList, user, null);
         adapterNews.setmRealm(mRealm);
         adapterNews.setListener(this);
-        rvDiscussion.setAdapter(adapterNews);
-        showNoData(tvNodata, adapterNews.getItemCount());
+        fragmentDiscussionListBinding.rvDiscussion.setAdapter(adapterNews);
+        showNoData(fragmentDiscussionListBinding.tvNodata, adapterNews.getItemCount());
     }
 
     private void showAddMessage() {
@@ -121,7 +118,7 @@ public class DiscussionListFragment extends BaseTeamFragment {
             map.put("messagePlanetCode", team.getTeamPlanetCode());
             RealmNews.createNews(map, mRealm, user, imageList);
             Utilities.log("discussion created");
-            rvDiscussion.getAdapter().notifyDataSetChanged();
+            fragmentDiscussionListBinding.rvDiscussion.getAdapter().notifyDataSetChanged();
             setData(getNews());
         }).setNegativeButton(getString(R.string.cancel), null).show();
     }

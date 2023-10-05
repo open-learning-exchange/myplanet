@@ -4,18 +4,17 @@ import android.content.Context;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
-import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.EditText;
 import android.widget.ListView;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.databinding.ItemTeamGridBinding;
+import org.ole.planet.myplanet.databinding.LayoutUserListBinding;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.utilities.Utilities;
@@ -24,7 +23,8 @@ import java.util.List;
 
 import io.realm.Realm;
 
-public class AdapterTeam extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+public class AdapterTeam extends RecyclerView.Adapter<AdapterTeam.ViewHolderTeam> {
+    private ItemTeamGridBinding itemTeamGridBinding;
     private Context context;
     private List<RealmMyTeam> list;
     private Realm mRealm;
@@ -52,30 +52,26 @@ public class AdapterTeam extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     @NonNull
     @Override
-    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View v = LayoutInflater.from(context).inflate(R.layout.item_team_grid, parent, false);
-        return new ViewHolderTeam(v);
+    public ViewHolderTeam onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        itemTeamGridBinding = ItemTeamGridBinding.inflate(LayoutInflater.from(context), parent, false);
+        return new ViewHolderTeam(itemTeamGridBinding);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-        if (holder instanceof ViewHolderTeam) {
-            ((ViewHolderTeam) holder).title.setText(list.get(position).getName());
-            holder.itemView.setOnClickListener(view -> {
-                if (this.teamSelectedListener != null)
-                    this.teamSelectedListener.onSelectedTeam(list.get(position));
-                else showUserList(list.get(position));
-            });
-        }
+    public void onBindViewHolder(@NonNull ViewHolderTeam holder, int position) {
+        itemTeamGridBinding.title.setText(list.get(position).getName());
+        holder.itemView.setOnClickListener(view -> {
+            if (this.teamSelectedListener != null)
+                this.teamSelectedListener.onSelectedTeam(list.get(position));
+            else showUserList(list.get(position));
+        });
     }
 
     private void showUserList(RealmMyTeam realmMyTeam) {
-        View view = LayoutInflater.from(context).inflate(R.layout.layout_user_list, null);
-        EditText etSearch = view.findViewById(R.id.et_search);
-        ListView lv = view.findViewById(R.id.list_user);
+        LayoutUserListBinding layoutUserListBinding = LayoutUserListBinding.inflate(LayoutInflater.from(context));
         users = RealmMyTeam.getUsers(realmMyTeam.get_id(), mRealm, "");
-        setListAdapter(lv, users);
-        etSearch.addTextChangedListener(new TextWatcher() {
+        setListAdapter(layoutUserListBinding.listUser, users);
+        layoutUserListBinding.etSearch.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
             }
@@ -83,17 +79,17 @@ public class AdapterTeam extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
                 users = RealmMyTeam.filterUsers(realmMyTeam.get_id(), charSequence.toString(), mRealm);
-                setListAdapter(lv, users);
+                setListAdapter(layoutUserListBinding.listUser, users);
             }
 
             @Override
             public void afterTextChanged(Editable editable) {
             }
         });
-        lv.setOnItemClickListener((adapterView, view1, i, l) -> {
+        layoutUserListBinding.listUser.setOnItemClickListener((adapterView, view1, i, l) -> {
             if (listener != null) listener.onSelectedUser(users.get(i));
         });
-        new AlertDialog.Builder(context).setTitle(R.string.select_user_to_login).setView(view).setNegativeButton(R.string.dismiss, null).show();
+        new AlertDialog.Builder(context).setTitle(R.string.select_user_to_login).setView(layoutUserListBinding.getRoot()).setNegativeButton(R.string.dismiss, null).show();
     }
 
     private void setListAdapter(ListView lv, List<RealmUserModel> users) {
@@ -107,7 +103,7 @@ public class AdapterTeam extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     @Override
-    public void onViewRecycled(@NonNull RecyclerView.ViewHolder holder) {
+    public void onViewRecycled(@NonNull ViewHolderTeam holder) {
         super.onViewRecycled(holder);
         if (mRealm != null && !mRealm.isClosed()) {
             mRealm.close();
@@ -118,12 +114,12 @@ public class AdapterTeam extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         void onSelectedUser(RealmUserModel userModel);
     }
 
-    class ViewHolderTeam extends RecyclerView.ViewHolder {
-        TextView title;
+    static class ViewHolderTeam extends RecyclerView.ViewHolder {
+        ItemTeamGridBinding itemTeamGridBinding;
 
-        public ViewHolderTeam(View itemView) {
-            super(itemView);
-            title = itemView.findViewById(R.id.title);
+        public ViewHolderTeam(ItemTeamGridBinding itemTeamGridBinding) {
+            super(itemTeamGridBinding.getRoot());
+            this.itemTeamGridBinding = itemTeamGridBinding;
         }
     }
 }

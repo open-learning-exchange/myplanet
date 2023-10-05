@@ -1,19 +1,15 @@
 package org.ole.planet.myplanet.ui.team.teamTask;
 
 import android.content.Context;
+import android.text.TextUtils;
+import android.view.LayoutInflater;
+import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import android.text.TextUtils;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.CheckBox;
-import android.widget.ImageView;
-import android.widget.TextView;
-
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.databinding.RowTaskBinding;
 import org.ole.planet.myplanet.model.RealmTeamTask;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.utilities.DialogUtils;
@@ -24,7 +20,8 @@ import java.util.List;
 
 import io.realm.Realm;
 
-public class AdapterTask extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+public class AdapterTask extends RecyclerView.Adapter<AdapterTask.ViewHolderTask> {
+    private RowTaskBinding rowTaskBinding;
     private Context context;
     private List<RealmTeamTask> list;
     private OnCompletedListener listener;
@@ -42,43 +39,41 @@ public class AdapterTask extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     @NonNull
     @Override
-    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View v = LayoutInflater.from(context).inflate(R.layout.row_task, parent, false);
-        return new ViewHolderTask(v);
+    public ViewHolderTask onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        rowTaskBinding = RowTaskBinding.inflate(LayoutInflater.from(context), parent, false);
+        return new ViewHolderTask(rowTaskBinding);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-        if (holder instanceof ViewHolderTask) {
-            ((ViewHolderTask) holder).completed.setText(list.get(position).getTitle());
-            ((ViewHolderTask) holder).completed.setChecked(list.get(position).isCompleted());
-            Utilities.log(list.get(position).getDeadline() + "");
-            ((ViewHolderTask) holder).deadline.setText(context.getString(R.string.deadline_colon) + TimeUtils.formatDate(list.get(position).getDeadline()) + (list.get(position).isCompleted() ? context.getString(R.string.completed_colon) + TimeUtils.formatDate(list.get(position).getCompletedTime()) : ""));
-            showAssignee(holder, list.get(position));
-            ((ViewHolderTask) holder).completed.setOnCheckedChangeListener((compoundButton, b) -> {
-                if (listener != null) listener.onCheckChange(list.get(position), b);
-            });
-            ((ViewHolderTask) holder).icMore.setOnClickListener(view -> {
-                if (listener != null) listener.onClickMore(list.get(position));
-            });
-            ((ViewHolderTask) holder).editTask.setOnClickListener(view -> {
-                if (listener != null) listener.onEdit(list.get(position));
-            });
-            ((ViewHolderTask) holder).deleteTask.setOnClickListener(view -> {
-                if (listener != null) listener.onDelete(list.get(position));
-            });
-            holder.itemView.setOnClickListener(view -> DialogUtils.showCloseAlert(context, list.get(position).getTitle(), list.get(position).getDescription()));
-        }
+    public void onBindViewHolder(@NonNull ViewHolderTask holder, int position) {
+        rowTaskBinding.checkbox.setText(list.get(position).getTitle());
+        rowTaskBinding.checkbox.setChecked(list.get(position).isCompleted());
+        Utilities.log(list.get(position).getDeadline() + "");
+        rowTaskBinding.deadline.setText(context.getString(R.string.deadline_colon) + TimeUtils.formatDate(list.get(position).getDeadline()) + (list.get(position).isCompleted() ? context.getString(R.string.completed_colon) + TimeUtils.formatDate(list.get(position).getCompletedTime()) : ""));
+        showAssignee(holder, list.get(position));
+        rowTaskBinding.checkbox.setOnCheckedChangeListener((compoundButton, b) -> {
+            if (listener != null) listener.onCheckChange(list.get(position), b);
+        });
+        rowTaskBinding.icMore.setOnClickListener(view -> {
+            if (listener != null) listener.onClickMore(list.get(position));
+        });
+        rowTaskBinding.editTask.setOnClickListener(view -> {
+            if (listener != null) listener.onEdit(list.get(position));
+        });
+        rowTaskBinding.deleteTask.setOnClickListener(view -> {
+            if (listener != null) listener.onDelete(list.get(position));
+        });
+        holder.itemView.setOnClickListener(view -> DialogUtils.showCloseAlert(context, list.get(position).getTitle(), list.get(position).getDescription()));
     }
 
     private void showAssignee(RecyclerView.ViewHolder holder, RealmTeamTask realmTeamTask) {
         if (!TextUtils.isEmpty(realmTeamTask.getAssignee())) {
             RealmUserModel model = realm.where(RealmUserModel.class).equalTo("id", realmTeamTask.getAssignee()).findFirst();
             if (model != null) {
-                ((ViewHolderTask) holder).assignee.setText(context.getString(R.string.assigned_to_colon) + model.getName());
+                rowTaskBinding.assignee.setText(context.getString(R.string.assigned_to_colon) + model.getName());
             }
         } else {
-            ((ViewHolderTask) holder).assignee.setText(R.string.no_assignee);
+            rowTaskBinding.assignee.setText(R.string.no_assignee);
         }
     }
 
@@ -97,19 +92,12 @@ public class AdapterTask extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         void onClickMore(RealmTeamTask realmTeamTask);
     }
 
-    class ViewHolderTask extends RecyclerView.ViewHolder {
-        CheckBox completed;
-        TextView deadline, assignee;
-        ImageView icMore, editTask, deleteTask;
+    static class ViewHolderTask extends RecyclerView.ViewHolder {
+        RowTaskBinding rowTaskBinding;
 
-        public ViewHolderTask(View itemView) {
-            super(itemView);
-            completed = itemView.findViewById(R.id.checkbox);
-            deadline = itemView.findViewById(R.id.deadline);
-            assignee = itemView.findViewById(R.id.assignee);
-            icMore = itemView.findViewById(R.id.ic_more);
-            editTask = itemView.findViewById(R.id.edit_task);
-            deleteTask = itemView.findViewById(R.id.delete_task);
+        public ViewHolderTask(RowTaskBinding rowTaskBinding) {
+            super(rowTaskBinding.getRoot());
+            this.rowTaskBinding = rowTaskBinding;
         }
     }
 }

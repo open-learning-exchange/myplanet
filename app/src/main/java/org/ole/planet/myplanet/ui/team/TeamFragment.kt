@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.team
 
 import android.content.Context
-import android.content.DialogInterface
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
@@ -9,16 +8,17 @@ import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmQuery
 import kotlinx.android.synthetic.main.alert_create_team.view.*
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
+import org.ole.planet.myplanet.databinding.FragmentTeamBinding
+import org.ole.planet.myplanet.databinding.LayoutUserListBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -28,9 +28,9 @@ import org.ole.planet.myplanet.utilities.Utilities
 import java.util.*
 
 class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
+    private lateinit var fragmentTeamBinding: FragmentTeamBinding
+    lateinit var alertCreateTeamBinding: AlertCreateTeamBinding
     var mRealm: Realm? = null
-    var rvTeamList: RecyclerView? = null
-    var etSearch: EditText? = null
     var type: String? = null
     var user: RealmUserModel? = null
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,40 +45,36 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         Utilities.log("Team fragment")
     }
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
-    ): View? {
-        val v = inflater.inflate(R.layout.fragment_team, container, false)
-        rvTeamList = v.findViewById(R.id.rv_team_list)
-        etSearch = v.findViewById(R.id.et_search)
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        fragmentTeamBinding = FragmentTeamBinding.inflate(inflater, container, false)
         mRealm = DatabaseService(activity).realmInstance
         user = UserProfileDbHandler(requireActivity()).userModel
-        v.findViewById<View>(R.id.add_team).setOnClickListener { createTeamAlert(null) }
-        return v
+        fragmentTeamBinding.addTeam.setOnClickListener { createTeamAlert(null) }
+        return fragmentTeamBinding.root
     }
 
     private fun createTeamAlert(team: RealmMyTeam?) {
-        val v = LayoutInflater.from(activity).inflate(R.layout.alert_create_team, null)
+        alertCreateTeamBinding = AlertCreateTeamBinding.inflate(LayoutInflater.from(context))
         if (TextUtils.equals(type, "enterprise")) {
-            v.spn_team_type.visibility = View.GONE
-            v.et_description.hint = getString(R.string.entMission);
-            v.et_name.hint = getString(R.string.enter_enterprise_s_name)
+            alertCreateTeamBinding.spnTeamType.visibility = View.GONE
+            alertCreateTeamBinding.etDescription.hint = getString(R.string.entMission);
+            alertCreateTeamBinding.etName.hint = getString(R.string.enter_enterprise_s_name)
         } else {
-            v.et_services.visibility = View.GONE
-            v.et_rules.visibility = View.GONE
-            v.et_description.hint = getString(R.string.what_is_your_team_s_plan)
-            v.et_name.hint = getString(R.string.enter_team_s_name)
+            alertCreateTeamBinding.etServices.visibility = View.GONE
+            alertCreateTeamBinding.etRules.visibility = View.GONE
+            alertCreateTeamBinding.etDescription.hint = getString(R.string.what_is_your_team_s_plan)
+            alertCreateTeamBinding.etName.hint = getString(R.string.enter_team_s_name)
         }
         if (team != null) {
-            v.et_services.setText(team.services)
-            v.et_rules.setText(team.rules)
-            v.et_description.setText(team.description)
-            v.et_name.setText(team.name)
+            alertCreateTeamBinding.etServices.setText(team.services)
+            alertCreateTeamBinding.etRules.setText(team.rules)
+            alertCreateTeamBinding.etDescription.setText(team.description)
+            alertCreateTeamBinding.etName.setText(team.name)
         }
 
         val builder = AlertDialog.Builder(requireActivity())
             .setTitle(String.format(getString(R.string.enter) + "%s " + getString(R.string.detail), if (type == null) getString(R.string.team) else type))
-            .setView(v).setPositiveButton(getString(R.string.save), null).setNegativeButton(getString(R.string.cancel), null)
+            .setView(alertCreateTeamBinding.root).setPositiveButton(getString(R.string.save), null).setNegativeButton(getString(R.string.cancel), null)
 
         val dialog = builder.create()
 
@@ -87,31 +83,31 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
             okButton.setOnClickListener {
                 val map = HashMap<String, String>()
                 val userId = user?._id
-                val name = v.et_name.text.toString().trim()
-                map["desc"] = v.et_description.text.toString()
-                map["services"] = v.et_services.text.toString()
-                map["rules"] = v.et_rules.text.toString()
+                val name = alertCreateTeamBinding.etName.text.toString().trim()
+                map["desc"] = alertCreateTeamBinding.etDescription.text.toString()
+                map["services"] = alertCreateTeamBinding.etServices.text.toString()
+                map["rules"] = alertCreateTeamBinding.etRules.text.toString()
                 when {
                     name.isEmpty() -> {
                         Utilities.toast(activity, getString(R.string.name_is_required))
-                        v.et_name.error = getString(R.string.please_enter_a_name)
+                        alertCreateTeamBinding.etName.error = getString(R.string.please_enter_a_name)
                     }
 
                     else -> {
                         if (team == null) {
                             createTeam(
                                 name,
-                                if (v.spn_team_type.selectedItemPosition == 0) "local" else "sync",
+                                if (alertCreateTeamBinding.spnTeamType.selectedItemPosition == 0) "local" else "sync",
                                 map,
-                                v.switch_public.isChecked
+                                alertCreateTeamBinding.switchPublic.isChecked
                             )
                         } else {
                             if (!team.realm.isInTransaction) team.realm.beginTransaction()
                             team.name = name
-                            team.services = v.et_services.text.toString()
-                            team.rules = v.et_rules.text.toString()
+                            team.services = alertCreateTeamBinding.etServices.text.toString()
+                            team.rules = alertCreateTeamBinding.etRules.text.toString()
                             team.limit = 12
-                            team.description = v.et_description.text.toString()
+                            team.description = alertCreateTeamBinding.etDescription.text.toString()
                             team.createdBy = userId
                             team.isUpdated = true
                             team.realm.commitTransaction()
@@ -180,9 +176,9 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        rvTeamList!!.layoutManager = LinearLayoutManager(activity)
+        fragmentTeamBinding.rvTeamList.layoutManager = LinearLayoutManager(activity)
         setTeamList()
-        etSearch!!.addTextChangedListener(object : TextWatcher {
+        fragmentTeamBinding.etSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
             override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {
                 val query = mRealm!!.where(RealmMyTeam::class.java).isEmpty("teamId")
@@ -192,7 +188,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
                     activity as Context, getList(query), mRealm!!, childFragmentManager
                 )
                 adapterTeamList.setTeamListener(this@TeamFragment)
-                rvTeamList!!.adapter = adapterTeamList
+                fragmentTeamBinding.rvTeamList.adapter = adapterTeamList
             }
 
             override fun afterTextChanged(editable: Editable) {}
@@ -218,7 +214,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         adapterTeamList?.setTeamListener(this@TeamFragment)
         requireView().findViewById<View>(R.id.type).visibility =
             if (type == null) View.VISIBLE else View.GONE
-        rvTeamList!!.adapter = adapterTeamList
+        fragmentTeamBinding.rvTeamList.adapter = adapterTeamList
     }
 
     override fun onEditTeam(team: RealmMyTeam?) {
