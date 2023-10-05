@@ -18,6 +18,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.databinding.AlertInputBinding;
 import org.ole.planet.myplanet.databinding.FragmentDiscussionListBinding;
 import org.ole.planet.myplanet.model.RealmNews;
 import org.ole.planet.myplanet.model.RealmTeamNotification;
@@ -99,29 +100,37 @@ public class DiscussionListFragment extends BaseTeamFragment {
     }
 
     private void showAddMessage() {
-        View v = getLayoutInflater().inflate(R.layout.alert_input, null);
-        TextInputLayout layout = v.findViewById(R.id.tl_input);
-        v.findViewById(R.id.add_news_image).setOnClickListener(vi -> FileUtils.openOleFolder(this, 100));
-        v.findViewById(R.id.ll_image).setVisibility(Constants.showBetaFeature(Constants.KEY_NEWSADDIMAGE, getActivity()) ? View.VISIBLE : View.GONE);
+        AlertInputBinding binding = AlertInputBinding.inflate(getLayoutInflater());
+        TextInputLayout layout = binding.tlInput;
+
+        binding.addNewsImage.setOnClickListener(v -> FileUtils.openOleFolder(this, 100));
+        binding.llImage.setVisibility(Constants.showBetaFeature(Constants.KEY_NEWSADDIMAGE, getActivity()) ? View.VISIBLE : View.GONE);
         layout.setHint(getString(R.string.enter_message));
-        new AlertDialog.Builder(getActivity()).setView(v).setTitle(getString(R.string.add_message)).setPositiveButton(getString(R.string.save), (dialogInterface, i) -> {
-            String msg = layout.getEditText().getText().toString().trim();
-            if (msg.isEmpty()) {
-                Utilities.toast(getActivity(), getString(R.string.message_is_required));
-                return;
-            }
-            HashMap<String, String> map = new HashMap<>();
-            map.put("viewInId", teamId);
-            map.put("viewInSection", "teams");
-            map.put("message", msg);
-            map.put("messageType", team.getTeamType());
-            map.put("messagePlanetCode", team.getTeamPlanetCode());
-            RealmNews.createNews(map, mRealm, user, imageList);
-            Utilities.log("discussion created");
-            fragmentDiscussionListBinding.rvDiscussion.getAdapter().notifyDataSetChanged();
-            setData(getNews());
-        }).setNegativeButton(getString(R.string.cancel), null).show();
+
+        new AlertDialog.Builder(getActivity())
+                .setView(binding.getRoot())
+                .setTitle(getString(R.string.add_message))
+                .setPositiveButton(getString(R.string.save), (dialogInterface, i) -> {
+                    String msg = layout.getEditText().getText().toString().trim();
+                    if (msg.isEmpty()) {
+                        Utilities.toast(getActivity(), getString(R.string.message_is_required));
+                        return;
+                    }
+                    HashMap<String, String> map = new HashMap<>();
+                    map.put("viewInId", teamId);
+                    map.put("viewInSection", "teams");
+                    map.put("message", msg);
+                    map.put("messageType", team.getTeamType());
+                    map.put("messagePlanetCode", team.getTeamPlanetCode());
+                    RealmNews.createNews(map, mRealm, user, imageList);
+                    Utilities.log("discussion created");
+                    fragmentDiscussionListBinding.rvDiscussion.getAdapter().notifyDataSetChanged();
+                    setData(getNews());
+                })
+                .setNegativeButton(getString(R.string.cancel), null)
+                .show();
     }
+
 
     @Override
     public void setData(List<RealmNews> list) {

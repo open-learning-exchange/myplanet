@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.news;
 
 import android.content.Context;
 import android.content.Intent;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuInflater;
 import android.view.View;
@@ -110,7 +111,14 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 showShareButton(holder, news);
                 ((ViewHolderNews) holder).tvMessage.setText(news.getMessageWithoutMarkdown());
                 ((ViewHolderNews) holder).tvDate.setText(TimeUtils.formatDate(news.getTime()));
-                ((ViewHolderNews) holder).imgDelete.setOnClickListener(view -> new AlertDialog.Builder(context).setMessage(R.string.delete_record).setPositiveButton(R.string.ok, (dialogInterface, i) -> deletePost(news)).setNegativeButton(R.string.cancel, null).show());
+                ((ViewHolderNews) holder).imgDelete.setOnClickListener(view ->
+                        new AlertDialog.Builder(context)
+                                .setMessage(R.string.delete_record)
+                                .setPositiveButton(R.string.ok, (dialogInterface, i) -> {
+                                    Log.d("clicked", "clicked");
+                                    deletePost(news);
+                                })
+                                .setNegativeButton(R.string.cancel, null).show());
                 ((ViewHolderNews) holder).imgEdit.setOnClickListener(view -> showEditAlert(news.getId(), true));
                 ((ViewHolderNews) holder).llEditDelete.setVisibility(fromLogin ? View.GONE : View.VISIBLE);
                 ((ViewHolderNews) holder).btnAddLabel.setVisibility(fromLogin ? View.GONE : View.VISIBLE);

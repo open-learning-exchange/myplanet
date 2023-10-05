@@ -76,7 +76,7 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
     }
 
     private void showTaskAlert(RealmTeamTask t) {
-        AlertTaskBinding alertTaskBinding = AlertTaskBinding.inflate(LayoutInflater.from(context));
+        AlertTaskBinding alertTaskBinding = AlertTaskBinding.inflate(getLayoutInflater());
 
         datePicker = alertTaskBinding.tvPick;
         if (t != null) {
