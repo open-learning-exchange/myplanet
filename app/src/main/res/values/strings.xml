@@ -5,6 +5,7 @@
     <string name="action_settings">Settings</string>
     <string name="hint_name">Username</string>
     <string name="hint_password">Password</string>
+    <string name="btn_back">Back</string>
     <string name="btn_sign_in">Sign In</string>
     <string name="btn_sync">Sync</string>
     <string name="btn_sync_save">Save</string>
@@ -1032,5 +1033,13 @@
     <string name="times">times</string>
     <string name="time">time</string>
     <string name="ai_chat">AI Chat</string>
+    <string name="kindly_give_a_rating">Kindly give a rating</string>
+    <string name="must_start_with_letter_or_number">Must start with letter or number</string>
+    <string name="only_letters_numbers_and_are_allowed">Only letters, numbers and "_" , ".", "-" are allowed</string>
+    <string name="config_not_available" translatable="false">Config not available.</string>
+    <string name="unselect_all">Unselect All</string>
+    <string name="select_all">Select All</string>
+    <string name="request_failed_please_retry">Request failed, please retry</string>
+    <string name="confirm_removal">Confirm removal</string>
 
 </resources>

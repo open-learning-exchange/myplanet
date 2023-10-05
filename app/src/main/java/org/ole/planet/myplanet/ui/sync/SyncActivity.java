@@ -106,18 +106,25 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     }
 
     public void setUpChildMode() {
-        if (!settings.getBoolean("isChild", false)) return;
-        RecyclerView rvTeams = findViewById(R.id.rv_teams);
-        TextView tvNodata = findViewById(R.id.tv_nodata);
+        try {
+            mRealm = Realm.getDefaultInstance();
+            if (!settings.getBoolean("isChild", false)) return;
+            RecyclerView rvTeams = findViewById(R.id.rv_teams);
+            TextView tvNodata = findViewById(R.id.tv_nodata);
 
-        List<RealmMyTeam> teams = mRealm.where(RealmMyTeam.class).isEmpty("teamId").findAll();
-        rvTeams.setLayoutManager(new GridLayoutManager(this, 3));
-        rvTeams.setAdapter(new AdapterTeam(this, teams, mRealm));
-        if (teams.size() > 0) {
-            tvNodata.setVisibility(View.GONE);
-        } else {
-            tvNodata.setText(R.string.no_team_available);
-            tvNodata.setVisibility(View.VISIBLE);
+            List<RealmMyTeam> teams = mRealm.where(RealmMyTeam.class).isEmpty("teamId").findAll();
+            rvTeams.setLayoutManager(new GridLayoutManager(this, 3));
+            rvTeams.setAdapter(new AdapterTeam(this, teams, mRealm));
+            if (teams.size() > 0) {
+                tvNodata.setVisibility(View.GONE);
+            } else {
+                tvNodata.setText(R.string.no_team_available);
+                tvNodata.setVisibility(View.VISIBLE);
+            }
+        } finally {
+            if (mRealm != null && !mRealm.isClosed()) {
+                mRealm.close();
+            }
         }
     }
 
@@ -197,18 +204,26 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     }
 
     public boolean authenticateUser(SharedPreferences settings, String username, String password, boolean isManagerMode) {
-        this.settings = settings;
-        if (mRealm.isEmpty()) {
-            alertDialogOkay(getString(R.string.server_not_configured_properly_connect_this_device_with_planet_server));
-            return false;
-        } else {
-            return checkName(username, password, isManagerMode);
+        try {
+            mRealm = Realm.getDefaultInstance();
+            this.settings = settings;
+            if (mRealm.isEmpty()) {
+                alertDialogOkay(getString(R.string.server_not_configured_properly_connect_this_device_with_planet_server));
+                return false;
+            } else {
+                return checkName(username, password, isManagerMode);
+            }
+        } finally {
+            if (mRealm != null && !mRealm.isClosed()) {
+                mRealm.close();
+            }
         }
     }
 
     @Nullable
     private Boolean checkName(String username, String password, boolean isManagerMode) {
         try {
+            mRealm = Realm.getDefaultInstance();
             AndroidDecrypter decrypt = new AndroidDecrypter();
             RealmResults<RealmUserModel> db_users = mRealm.where(RealmUserModel.class).equalTo("name", username).findAll();
             for (RealmUserModel user : db_users) {
@@ -227,6 +242,9 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
             }
         } catch (Exception err) {
             err.printStackTrace();
+            if (mRealm != null && !mRealm.isClosed()) {
+                mRealm.close();
+            }
             return false;
         }
         return false;

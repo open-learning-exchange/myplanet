@@ -39,8 +39,8 @@ public class FileUploadService {
     }
 
     public void uploadAttachment(String id, String rev, RealmSubmitPhotos personal, SuccessListener listener) {
-        File f = new File(personal.getPhoto_location());
-        String name = FileUtils.getFileNameFromUrl(personal.getPhoto_location());
+        File f = new File(personal.getPhotoLocation());
+        String name = FileUtils.getFileNameFromUrl(personal.getPhotoLocation());
         upload_doc(id, rev, "%s/submissions/%s/%s", f, name, listener);
     }
 

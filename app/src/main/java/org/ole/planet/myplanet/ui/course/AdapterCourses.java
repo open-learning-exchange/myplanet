@@ -39,6 +39,7 @@ import java.util.List;
 import fisk.chipcloud.ChipCloud;
 import fisk.chipcloud.ChipCloudConfig;
 import io.noties.markwon.Markwon;
+import io.noties.markwon.movement.MovementMethodPlugin;
 import io.realm.Realm;
 
 public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
@@ -56,11 +57,15 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private Markwon markwon;
     private boolean isAscending = true;
     private boolean isTitleAscending = true;
+    private boolean areAllSelected = true;
+
     public AdapterCourses(Context context, List<RealmMyCourse> courseList, HashMap<String, JsonObject> map) {
         this.map = map;
         this.context = context;
         this.courseList = courseList;
-        markwon = Markwon.create(context);
+        markwon = Markwon.builder(context)
+                .usePlugin(MovementMethodPlugin.none())
+                .build();
         this.selectedItems = new ArrayList<>();
         if (context instanceof OnHomeItemClickListener) {
             homeItemClickListener = (OnHomeItemClickListener) context;
@@ -177,6 +182,29 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
             showProgressAndRating(position, holder);
         }
     }
+
+    public boolean areAllSelected(){
+        if (selectedItems.size() != courseList.size()) {
+            areAllSelected = false;
+        }
+        return areAllSelected;
+    }
+
+    public void selectAllItems(boolean selectAll) {
+        if (selectAll) {
+            selectedItems.clear();
+            selectedItems.addAll(courseList);
+        } else {
+            selectedItems.clear();
+        }
+
+        notifyDataSetChanged();
+
+        if (listener != null) {
+            listener.onSelectedListChange(selectedItems);
+        }
+    }
+
 
     private void displayTagCloud(FlexboxLayout flexboxDrawable, int position) {
         flexboxDrawable.removeAllViews();

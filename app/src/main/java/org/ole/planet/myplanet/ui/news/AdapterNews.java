@@ -6,9 +6,12 @@ import android.view.LayoutInflater;
 import android.view.MenuInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.PopupMenu;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
@@ -16,11 +19,12 @@ import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.google.android.flexbox.FlexboxLayout;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
-import org.ole.planet.myplanet.base.BaseNewsAdapter;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmNews;
 import org.ole.planet.myplanet.model.RealmUserModel;
@@ -30,6 +34,7 @@ import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.io.File;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 
@@ -40,14 +45,16 @@ import io.realm.Realm;
 import io.realm.RealmList;
 import io.realm.Sort;
 
-public class AdapterNews extends BaseNewsAdapter {
+public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private List<RealmNews> list;
-
     private OnNewsItemClickListener listener;
     private RealmNews parentNews;
-
     private ChipCloudConfig config;
     private RealmList<String> imageList;
+    public Realm mRealm;
+    public Context context;
+    public RealmUserModel currentUser;
+    public boolean fromLogin;
 
     public void setImageList(RealmList<String> imageList) {
         this.imageList = imageList;
@@ -110,7 +117,9 @@ public class AdapterNews extends BaseNewsAdapter {
                 ((ViewHolderNews) holder).btnReply.setVisibility(fromLogin ? View.GONE : View.VISIBLE);
                 loadImage(holder, news);
                 showReplyButton(holder, news, position);
-                holder.itemView.setOnClickListener(v -> context.startActivity(new Intent(context, NewsDetailActivity.class).putExtra("newsId", list.get(position).getId())));
+                if(news.isCommunityNews()) {
+                    holder.itemView.setOnClickListener(v -> context.startActivity(new Intent(context, NewsDetailActivity.class).putExtra("newsId", list.get(position).getId())));
+                }
                 addLabels(holder, news);
                 showChips(holder, news);
             }
@@ -289,5 +298,56 @@ public class AdapterNews extends BaseNewsAdapter {
         void showReply(RealmNews news, boolean fromLogin);
 
         void addImage(LinearLayout llImage);
+    }
+
+    public String getLabel(String s) {
+        for (String key : Constants.LABELS.keySet()) {
+            if (s.equals(Constants.LABELS.get(key))) {
+                return key;
+            }
+        }
+        return "";
+    }
+
+    public void showShareButton(RecyclerView.ViewHolder holder, RealmNews news) {
+        ((ViewHolderNews) holder).btnShare.setVisibility((news.isCommunityNews() || fromLogin) ? View.GONE : View.VISIBLE);
+        ((ViewHolderNews) holder).btnShare.setOnClickListener(view -> {
+            JsonArray array = new Gson().fromJson(news.getViewIn(), JsonArray.class);
+            JsonObject ob = new JsonObject();
+            ob.addProperty("section", "community");
+            ob.addProperty("_id", currentUser.getPlanetCode() + "@" + currentUser.getParentCode());
+            ob.addProperty("sharedDate", Calendar.getInstance().getTimeInMillis());
+            array.add(ob);
+            if (!mRealm.isInTransaction()) mRealm.beginTransaction();
+            news.setViewIn(new Gson().toJson(array));
+            mRealm.commitTransaction();
+            Utilities.toast(context, context.getString(R.string.shared_to_community));
+            ((ViewHolderNews) holder).btnShare.setVisibility(View.GONE);
+        });
+    }
+
+    public class ViewHolderNews extends RecyclerView.ViewHolder {
+        public TextView tvName, tvDate, tvMessage;
+        public ImageView imgEdit, imgDelete, imgUser, newsImage;
+        public LinearLayout llEditDelete;
+        public FlexboxLayout fbChips;
+        public Button btnReply, btnShowReply, btnAddLabel, btnShare;
+
+        public ViewHolderNews(View itemView) {
+            super(itemView);
+            tvDate = itemView.findViewById(R.id.tv_date);
+            tvName = itemView.findViewById(R.id.tv_name);
+            tvMessage = itemView.findViewById(R.id.tv_message);
+            imgDelete = itemView.findViewById(R.id.img_delete);
+            imgEdit = itemView.findViewById(R.id.img_edit);
+            imgUser = itemView.findViewById(R.id.img_user);
+            llEditDelete = itemView.findViewById(R.id.ll_edit_delete);
+            btnReply = itemView.findViewById(R.id.btn_reply);
+            btnShowReply = itemView.findViewById(R.id.btn_show_reply);
+            btnAddLabel = itemView.findViewById(R.id.btn_add_label);
+            btnShare = itemView.findViewById(R.id.btn_share);
+            newsImage = itemView.findViewById(R.id.img_news);
+            fbChips = itemView.findViewById(R.id.fb_chips);
+        }
     }
 }

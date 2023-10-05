@@ -8,12 +8,10 @@ import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.ImageView
 import android.widget.TextView
-import com.squareup.picasso.Callback
-import com.squareup.picasso.Picasso
+import com.bumptech.glide.Glide
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.TimeUtils
-import java.io.File
 
 class UserListArrayAdapter(activity: Activity, val view: Int, var list: List<RealmUserModel>) :
     ArrayAdapter<RealmUserModel>(activity, view, list) {
@@ -26,18 +24,16 @@ class UserListArrayAdapter(activity: Activity, val view: Int, var list: List<Rea
         tvName?.text = """${um?.fullName} (${um?.name})"""
         joined?.text = "${context.getString(R.string.joined_colon)} ${TimeUtils.formatDate(um!!.joinDate)}"
 
-        if (!TextUtils.isEmpty(um.userImage)) Picasso.get().load(um.userImage)
-            .placeholder(R.drawable.profile).into(image, object : Callback {
-                override fun onSuccess() {}
-                override fun onError(e: Exception) {
-                    e.printStackTrace()
-                    val f = File(um.userImage)
-                    Picasso.get().load(f).placeholder(R.drawable.profile).error(R.drawable.profile)
-                        .into(image)
-                }
-            }) else {
+        if (!TextUtils.isEmpty(um.userImage)) {
+            Glide.with(context)
+                .load(um.userImage)
+                .placeholder(R.drawable.profile)
+                .error(R.drawable.profile)
+                .into(image!!)
+        } else {
             image?.setImageResource(R.drawable.profile)
         }
+
         return v!!;
     }
 }

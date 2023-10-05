@@ -6,7 +6,8 @@
     android:paddingStart="@dimen/padding_normal"
     android:paddingTop="@dimen/padding_normal"
     android:paddingEnd="@dimen/padding_very_large"
-    android:paddingBottom="@dimen/padding_normal">
+    android:paddingBottom="@dimen/padding_normal"
+    android:orientation="horizontal">
 
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/tl_tags"
@@ -32,32 +33,26 @@
 
     </com.google.android.material.textfield.TextInputLayout>
 
-
-    <com.google.android.material.textfield.TextInputLayout
+    <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_gravity="center_vertical"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:orientation="horizontal">
 
-        <EditText
-            android:id="@+id/et_search"
-            android:layout_width="match_parent"
-            android:layout_height="40dp"
-            android:layout_gravity="center"
-            android:background="@null"
-            android:gravity="bottom"
-            android:hint="@string/search_dots"
-            android:inputType="text"
-            android:maxLines="1"
-            android:padding="@dimen/padding_normal" />
-    </com.google.android.material.textfield.TextInputLayout>
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1">
 
-    <ImageView
-        android:id="@+id/img_search"
-        android:layout_width="30dp"
-        android:layout_height="@dimen/layout_height"
-        android:layout_gravity="center"
-        android:background="?attr/selectableItemBackground"
-        android:src="@drawable/ic_search" />
-
+            <EditText
+                android:id="@+id/et_search"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:hint="@string/search_dots"
+                android:inputType="text"
+                android:maxLines="1"
+                android:padding="@dimen/padding_normal" />
+        </com.google.android.material.textfield.TextInputLayout>
+    </LinearLayout>
 </LinearLayout>

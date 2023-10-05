@@ -7,21 +7,15 @@ import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.DatePicker;
-import android.widget.EditText;
 import android.widget.RadioButton;
-import android.widget.RadioGroup;
-import android.widget.Spinner;
-import android.widget.TextView;
-
-import androidx.fragment.app.Fragment;
 
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseDialogFragment;
+import org.ole.planet.myplanet.databinding.FragmentUserInformationBinding;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmSubmission;
 import org.ole.planet.myplanet.model.RealmUserModel;
@@ -34,12 +28,8 @@ import java.util.Locale;
 import io.realm.Realm;
 
 public class UserInformationFragment extends BaseDialogFragment implements View.OnClickListener {
-    EditText etFname, etMname, etLname, etPhone, etEmail;
-    TextView tvBirthDate;
+    private FragmentUserInformationBinding fragmentUserInformationBinding;
     String dob = "";
-    RadioGroup rbGender;
-    Spinner spnLang, spnLvl;
-    Button btnSubmit, btnCancel;
     Realm mRealm;
     RealmSubmission submissions;
     RealmUserModel userModel;
@@ -60,13 +50,13 @@ public class UserInformationFragment extends BaseDialogFragment implements View.
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View v = inflater.inflate(R.layout.fragment_user_information, container, false);
+        fragmentUserInformationBinding = FragmentUserInformationBinding.inflate(inflater, container, false);
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
         userModel = new UserProfileDbHandler(requireContext()).getUserModel();
         if (!TextUtils.isEmpty(id))
             submissions = mRealm.where(RealmSubmission.class).equalTo("id", id).findFirst();
-        initViews(v);
-        return v;
+        initViews();
+        return fragmentUserInformationBinding.getRoot();
     }
 
     @Override
@@ -74,27 +64,16 @@ public class UserInformationFragment extends BaseDialogFragment implements View.
         super.onActivityCreated(savedInstanceState);
     }
 
-    private void initViews(View v) {
-        etEmail = v.findViewById(R.id.et_email);
-        etFname = v.findViewById(R.id.et_fname);
-        etMname = v.findViewById(R.id.et_mname);
-        etLname = v.findViewById(R.id.et_lname);
-        etPhone = v.findViewById(R.id.et_phone);
-        tvBirthDate = v.findViewById(R.id.txt_dob);
-        rbGender = v.findViewById(R.id.rb_gender);
-        spnLang = v.findViewById(R.id.spn_lang);
-        spnLvl = v.findViewById(R.id.spn_level);
-        btnCancel = v.findViewById(R.id.btn_cancel);
-        btnSubmit = v.findViewById(R.id.btn_submit);
-        etEmail.setText(userModel.getEmail() + "");
-        etFname.setText(userModel.getFirstName() + "");
-        etLname.setText(userModel.getLastName() + "");
-        etPhone.setText(userModel.getPhoneNumber() + "");
-        tvBirthDate.setText(userModel.getDob() + "");
+    private void initViews() {
+        fragmentUserInformationBinding.etEmail.setText(userModel.getEmail() + "");
+        fragmentUserInformationBinding.etFname.setText(userModel.getFirstName() + "");
+        fragmentUserInformationBinding.etLname.setText(userModel.getLastName() + "");
+        fragmentUserInformationBinding.etPhone.setText(userModel.getPhoneNumber() + "");
+        fragmentUserInformationBinding.txtDob.setText(userModel.getDob() + "");
         dob = userModel.getDob();
-        btnCancel.setOnClickListener(this);
-        btnSubmit.setOnClickListener(this);
-        tvBirthDate.setOnClickListener(this);
+        fragmentUserInformationBinding.btnCancel.setOnClickListener(this);
+        fragmentUserInformationBinding.btnSubmit.setOnClickListener(this);
+        fragmentUserInformationBinding.txtDob.setOnClickListener(this);
     }
 
     @Override
@@ -113,18 +92,18 @@ public class UserInformationFragment extends BaseDialogFragment implements View.
     }
 
     private void submitForm() {
-        String fname = etFname.getText().toString().trim();
-        String lname = etLname.getText().toString().trim();
-        String mName = etMname.getText().toString().trim();
-        String phone = etPhone.getText().toString().trim();
-        String email = etEmail.getText().toString().trim();
+        String fname = fragmentUserInformationBinding.etFname.getText().toString().trim();
+        String lname = fragmentUserInformationBinding.etLname.getText().toString().trim();
+        String mName = fragmentUserInformationBinding.etMname.getText().toString().trim();
+        String phone = fragmentUserInformationBinding.etPhone.getText().toString().trim();
+        String email = fragmentUserInformationBinding.etEmail.getText().toString().trim();
         String gender = "";
-        RadioButton rbSelected = getView().findViewById(rbGender.getCheckedRadioButtonId());
+        RadioButton rbSelected = getView().findViewById(fragmentUserInformationBinding.rbGender.getCheckedRadioButtonId());
         if (rbSelected != null) {
             gender = rbSelected.getText().toString();
         }
-        String level = spnLvl.getSelectedItem().toString();
-        String lang = spnLang.getSelectedItem().toString();
+        String level = fragmentUserInformationBinding.spnLevel.getSelectedItem().toString();
+        String lang = fragmentUserInformationBinding.spnLang.getSelectedItem().toString();
         if (TextUtils.isEmpty(id)) {
             String userId = userModel.getId();
             String finalGender = gender;
@@ -167,7 +146,7 @@ public class UserInformationFragment extends BaseDialogFragment implements View.
     private void saveSubmission(JsonObject user) {
         if (!mRealm.isInTransaction()) mRealm.beginTransaction();
         submissions.setUser(user.toString());
-        submissions.setStatus(getString(R.string.complete));
+        submissions.setStatus("complete");
         mRealm.commitTransaction();
         dismiss();
     }
@@ -185,7 +164,7 @@ public class UserInformationFragment extends BaseDialogFragment implements View.
             @Override
             public void onDateSet(DatePicker datePicker, int i, int i1, int i2) {
                 dob = String.format(Locale.US, "%04d-%02d-%02d", i, i1 + 1, i2);
-                tvBirthDate.setText(dob);
+                fragmentUserInformationBinding.txtDob.setText(dob);
             }
         }, now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH));
         dpd.show();
