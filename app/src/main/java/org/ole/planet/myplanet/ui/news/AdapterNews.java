@@ -115,7 +115,6 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                         new AlertDialog.Builder(context)
                                 .setMessage(R.string.delete_record)
                                 .setPositiveButton(R.string.ok, (dialogInterface, i) -> {
-                                    Log.d("clicked", "clicked");
                                     deletePost(news);
                                 })
                                 .setNegativeButton(R.string.cancel, null).show());
