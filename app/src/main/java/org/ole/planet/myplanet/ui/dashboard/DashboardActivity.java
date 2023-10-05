@@ -169,7 +169,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
                         startActivity(new Intent(DashboardActivity.this, DisclaimerActivity.class));
                         break;
                     case R.id.action_about:
-                        startActivity(new Intent(DashboardActivity.this, AboutActivity.class));
+                        openCallFragment(new AboutFragment());
                         break;
                     case R.id.action_logout:
                         logout();
