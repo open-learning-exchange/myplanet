@@ -55,9 +55,6 @@
             android:label="@string/title_activity_news_detail"
             android:theme="@style/MyMaterialTheme.NoActionBar" />
         <activity
-            android:name=".ui.dashboard.AboutActivity"
-            android:theme="@style/AppTheme" />
-        <activity
             android:name=".ui.myhealth.AddMyHealthActivity"
             android:theme="@style/AppTheme" />
         <activity
