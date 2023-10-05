@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="@dimen/padding_normal"
-    tools:context=".ui.DisclaimerFragment">
+    tools:context=".ui.dashboard.DisclaimerFragment">
 
     <TextView
         android:id="@+id/tv_disclaimer"

@@ -37,7 +37,6 @@ import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
-import org.ole.planet.myplanet.ui.DisclaimerFragment;
 import org.ole.planet.myplanet.ui.SettingActivity;
 import org.ole.planet.myplanet.ui.chat.ChatActivity;
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment;
@@ -168,7 +167,6 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
                         break;
                     case R.id.action_disclaimer:
                         openCallFragment(new DisclaimerFragment());
-//                        startActivity(new Intent(DashboardActivity.this, DisclaimerActivity.class));
                         break;
                     case R.id.action_about:
                         startActivity(new Intent(DashboardActivity.this, AboutActivity.class));
