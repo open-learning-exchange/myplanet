@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui
+package org.ole.planet.myplanet.ui.dashboard
 
 import android.os.Build
 import android.os.Bundle
