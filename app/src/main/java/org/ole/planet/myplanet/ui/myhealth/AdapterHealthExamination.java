@@ -5,7 +5,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
-import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
@@ -17,6 +16,8 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.databinding.AlertExaminationBinding;
+import org.ole.planet.myplanet.databinding.RowExaminationBinding;
 import org.ole.planet.myplanet.model.RealmMyHealthPojo;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.utilities.JsonUtils;
@@ -29,7 +30,8 @@ import java.util.Set;
 
 import io.realm.Realm;
 
-public class AdapterHealthExamination extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+public class AdapterHealthExamination extends RecyclerView.Adapter<AdapterHealthExamination.ViewHolderMyHealthExamination> {
+    private RowExaminationBinding rowExaminationBinding;
     private Context context;
     private List<RealmMyHealthPojo> list;
     private RealmMyHealthPojo mh;
@@ -49,40 +51,38 @@ public class AdapterHealthExamination extends RecyclerView.Adapter<RecyclerView.
 
     @NonNull
     @Override
-    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View v = LayoutInflater.from(context).inflate(R.layout.row_examination, parent, false);
-        return new ViewHolderMyHealthExamination(v);
+    public ViewHolderMyHealthExamination onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        rowExaminationBinding = RowExaminationBinding.inflate(LayoutInflater.from(context), parent, false);
+        return new ViewHolderMyHealthExamination(rowExaminationBinding);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-        if (holder instanceof ViewHolderMyHealthExamination) {
-            ((ViewHolderMyHealthExamination) holder).temp.setText(checkEmpty(list.get(position).getTemperature()));
-            ((ViewHolderMyHealthExamination) holder).date.setText(TimeUtils.formatDate(list.get(position).getDate(), "MMM dd, yyyy"));
-            JsonObject encrypted = list.get(position).getEncryptedDataAsJson(this.userModel);
-            String createdBy = JsonUtils.getString("createdBy", encrypted);
-            if (!TextUtils.isEmpty(createdBy) && !TextUtils.equals(createdBy, userModel.getId())) {
-                RealmUserModel model = mRealm.where(RealmUserModel.class).equalTo("id", createdBy).findFirst();
-                String name = "";
-                if (model != null) {
-                    name = model.getFullName();
-                } else {
-                    name = createdBy.split(":")[1];
-                }
-                ((ViewHolderMyHealthExamination) holder).date.setText(((ViewHolderMyHealthExamination) holder).date.getText() + "\n" + name);
-                holder.itemView.setBackgroundColor(context.getResources().getColor(R.color.md_grey_50));
+    public void onBindViewHolder(@NonNull ViewHolderMyHealthExamination holder, int position) {
+        rowExaminationBinding.txtTemp.setText(checkEmpty(list.get(position).getTemperature()));
+        rowExaminationBinding.txtDate.setText(TimeUtils.formatDate(list.get(position).getDate(), "MMM dd, yyyy"));
+        JsonObject encrypted = list.get(position).getEncryptedDataAsJson(this.userModel);
+        String createdBy = JsonUtils.getString("createdBy", encrypted);
+        if (!TextUtils.isEmpty(createdBy) && !TextUtils.equals(createdBy, userModel.getId())) {
+            RealmUserModel model = mRealm.where(RealmUserModel.class).equalTo("id", createdBy).findFirst();
+            String name = "";
+            if (model != null) {
+                name = model.getFullName();
             } else {
-                ((ViewHolderMyHealthExamination) holder).date.setText(((ViewHolderMyHealthExamination) holder).date.getText() + context.getString(R.string.self_examination));
-                holder.itemView.setBackgroundColor(context.getResources().getColor(R.color.md_green_50));
+                name = createdBy.split(":")[1];
             }
-            ((ViewHolderMyHealthExamination) holder).pulse.setText(checkEmptyInt(list.get(position).getPulse()));
-            ((ViewHolderMyHealthExamination) holder).bp.setText(list.get(position).getBp());
-            ((ViewHolderMyHealthExamination) holder).hearing.setText(list.get(position).getHearing() + "");
-            ((ViewHolderMyHealthExamination) holder).height.setText(checkEmpty(list.get(position).getHeight()));
-            ((ViewHolderMyHealthExamination) holder).weight.setText(checkEmpty(list.get(position).getWeight()));
-            ((ViewHolderMyHealthExamination) holder).vision.setText(list.get(position).getVision() + "");
-            holder.itemView.setOnClickListener(view -> showAlert(position, encrypted));
+            rowExaminationBinding.txtDate.setText(rowExaminationBinding.txtDate.getText() + "\n" + name);
+            holder.itemView.setBackgroundColor(context.getResources().getColor(R.color.md_grey_50));
+        } else {
+            rowExaminationBinding.txtDate.setText(rowExaminationBinding.txtDate.getText() + context.getString(R.string.self_examination));
+            holder.itemView.setBackgroundColor(context.getResources().getColor(R.color.md_green_50));
         }
+        rowExaminationBinding.txtPulse.setText(checkEmptyInt(list.get(position).getPulse()));
+        rowExaminationBinding.txtBp.setText(list.get(position).getBp());
+        rowExaminationBinding.txtHearing.setText(list.get(position).getHearing() + "");
+        rowExaminationBinding.txtHearing.setText(checkEmpty(list.get(position).getHeight()));
+        rowExaminationBinding.txtWeight.setText(checkEmpty(list.get(position).getWeight()));
+        rowExaminationBinding.txtVision.setText(list.get(position).getVision() + "");
+        holder.itemView.setOnClickListener(view -> showAlert(position, encrypted));
     }
 
     private String checkEmpty(float value) {
@@ -97,15 +97,12 @@ public class AdapterHealthExamination extends RecyclerView.Adapter<RecyclerView.
     private void showAlert(int position, JsonObject encrypted) {
         RealmMyHealthPojo realmExamination = list.get(position);
 
-        View v = LayoutInflater.from(context).inflate(R.layout.alert_examination, null);
-        TextView tvVitals = v.findViewById(R.id.tv_vitals);
-        TextView tvCondition = v.findViewById(R.id.tv_condition);
-        TextView tvOtherNotes = v.findViewById(R.id.tv_other_notes);
-        tvVitals.setText(context.getString(R.string.temperature_colon) + checkEmpty(realmExamination.getTemperature()) + "\n" + context.getString(R.string.pulse_colon) + checkEmptyInt(realmExamination.getPulse()) + "\n" + context.getString(R.string.blood_pressure_colon) + realmExamination.getBp() + "\n" + context.getString(R.string.height_colon) + checkEmpty(realmExamination.getHeight()) + "\n" + context.getString(R.string.weight_colon) + checkEmpty(realmExamination.getWeight()) + "\n" + context.getString(R.string.vision_colon) + realmExamination.getVision() + "\n" + context.getString(R.string.hearing_colon) + realmExamination.getHearing() + "\n");
+        AlertExaminationBinding alertExaminationBinding = AlertExaminationBinding.inflate(LayoutInflater.from(context));
+        alertExaminationBinding.tvVitals.setText(context.getString(R.string.temperature_colon) + checkEmpty(realmExamination.getTemperature()) + "\n" + context.getString(R.string.pulse_colon) + checkEmptyInt(realmExamination.getPulse()) + "\n" + context.getString(R.string.blood_pressure_colon) + realmExamination.getBp() + "\n" + context.getString(R.string.height_colon) + checkEmpty(realmExamination.getHeight()) + "\n" + context.getString(R.string.weight_colon) + checkEmpty(realmExamination.getWeight()) + "\n" + context.getString(R.string.vision_colon) + realmExamination.getVision() + "\n" + context.getString(R.string.hearing_colon) + realmExamination.getHearing() + "\n");
 
-        showConditions(tvCondition, realmExamination);
-        showEncryptedData(tvOtherNotes, encrypted);
-        AlertDialog dialog = new AlertDialog.Builder(context).setTitle(TimeUtils.formatDate(realmExamination.getDate(), "MMM dd, yyyy")).setView(v).setPositiveButton("OK", null).create();
+        showConditions(alertExaminationBinding.tvCondition, realmExamination);
+        showEncryptedData(alertExaminationBinding.tvOtherNotes, encrypted);
+        AlertDialog dialog = new AlertDialog.Builder(context).setTitle(TimeUtils.formatDate(realmExamination.getDate(), "MMM dd, yyyy")).setView(alertExaminationBinding.getRoot()).setPositiveButton("OK", null).create();
         long time = new Date().getTime() - 5000 * 60;
         if (realmExamination.getDate() >= time) {
             dialog.setButton(DialogInterface.BUTTON_NEUTRAL, context.getString(R.string.edit), (dialogInterface, i) -> context.startActivity(new Intent(context, AddExaminationActivity.class).putExtra("id", list.get(position).get_id()).putExtra("userId", mh.get_id())));
@@ -134,19 +131,12 @@ public class AdapterHealthExamination extends RecyclerView.Adapter<RecyclerView.
         return list.size();
     }
 
-    class ViewHolderMyHealthExamination extends RecyclerView.ViewHolder {
-        TextView temp, pulse, bp, height, weight, vision, hearing, date;
+    static class ViewHolderMyHealthExamination extends RecyclerView.ViewHolder {
+        RowExaminationBinding rowExaminationBinding;
 
-        public ViewHolderMyHealthExamination(View itemView) {
-            super(itemView);
-            temp = itemView.findViewById(R.id.txt_temp);
-            pulse = itemView.findViewById(R.id.txt_pulse);
-            date = itemView.findViewById(R.id.txt_date);
-            bp = itemView.findViewById(R.id.txt_bp);
-            height = itemView.findViewById(R.id.txt_height);
-            hearing = itemView.findViewById(R.id.txt_hearing);
-            weight = itemView.findViewById(R.id.txt_weight);
-            vision = itemView.findViewById(R.id.txt_vision);
+        public ViewHolderMyHealthExamination(RowExaminationBinding rowExaminationBinding) {
+            super(rowExaminationBinding.getRoot());
+            this.rowExaminationBinding = rowExaminationBinding;
         }
     }
 }
