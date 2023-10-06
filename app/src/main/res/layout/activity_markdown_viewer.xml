@@ -27,11 +27,11 @@
         android:background="@drawable/custom_border"
         android:orientation="vertical">
 
-        <br.tiagohm.markdownview.MarkdownView
+        <TextView
             android:id="@+id/markdown_view"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            app:escapeHtml="false" />
+            />
 
     </LinearLayout>
 

@@ -9,6 +9,7 @@ import android.view.ViewGroup;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseContainerFragment;
 import org.ole.planet.myplanet.databinding.FragmentCourseStepBinding;
@@ -30,6 +31,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
+import io.noties.markwon.Markwon;
+import io.noties.markwon.movement.MovementMethodPlugin;
 import io.realm.Case;
 import io.realm.Realm;
 import io.realm.RealmResults;
@@ -44,6 +47,7 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
     List<RealmStepExam> stepExams;
     RealmUserModel user;
     int stepNumber;
+    private Markwon markwon;
 
     public CourseStepFragment() {
     }
@@ -56,6 +60,9 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
             stepNumber = getArguments().getInt("stepNumber");
         }
         setUserVisibleHint(false);
+        markwon = Markwon.builder(MainApplication.context)
+                .usePlugin(MovementMethodPlugin.none())
+                .build();
     }
 
     @Override
@@ -107,7 +114,7 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
         if (resources != null) fragmentCourseStepBinding.btnResources.setText(getString(R.string.resources) + " ["+ resources.size() + "]");
         hideTestIfNoQuestion();
         fragmentCourseStepBinding.tvTitle.setText(step.getStepTitle());
-        fragmentCourseStepBinding.description.loadMarkdown(step.getDescription());
+        markwon.setMarkdown(fragmentCourseStepBinding.description, step.getDescription());
         if (!RealmMyCourse.isMyCourse(user.getId(), step.getCourseId(), mRealm)) {
             fragmentCourseStepBinding.btnTakeTest.setVisibility(View.INVISIBLE);
         }
