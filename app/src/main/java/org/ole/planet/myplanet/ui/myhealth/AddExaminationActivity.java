@@ -17,6 +17,8 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.databinding.ActivityAddExaminationBinding;
+import org.ole.planet.myplanet.databinding.ActivityFeedbackDetailBinding;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmMyHealth;
 import org.ole.planet.myplanet.model.RealmMyHealthPojo;
@@ -41,44 +43,23 @@ import fisk.chipcloud.ChipCloudConfig;
 import io.realm.Realm;
 
 public class AddExaminationActivity extends AppCompatActivity implements CompoundButton.OnCheckedChangeListener {
+    private ActivityAddExaminationBinding activityAddExaminationBinding;
     Realm mRealm;
     String userId;
-    EditText etOtherDiagnosis, etTemperature, etPulseRate, etBloodPressure, etHeight, etWeight, etVision, etHearing, etObservation, etDiag, etTretments, etMedications, etImmunization, etAllergies, etXray, etLabtest, etReferrals;
     RealmUserModel user;
     RealmUserModel currentUser;
     RealmMyHealthPojo pojo;
     RealmMyHealth health = null;
     Set<String> customDiag;
-    FlexboxLayout flexboxLayout, flexboxOther;
     HashMap<String, Boolean> mapConditions;
     Boolean allowSubmission = true;
-    int otherDiagId;
     private ChipCloudConfig config;
 
     private void initViews() {
-        etTemperature = findViewById(R.id.et_temperature);
-        etPulseRate = findViewById(R.id.et_pulse_rate);
-        flexboxLayout = findViewById(R.id.container_checkbox);
-        flexboxOther = findViewById(R.id.container_other_diagnosis);
-        etBloodPressure = findViewById(R.id.et_bloodpressure);
-        etHeight = findViewById(R.id.et_height);
-        etWeight = findViewById(R.id.et_weight);
-        etVision = findViewById(R.id.et_vision);
-        etHearing = findViewById(R.id.et_hearing);
-        etObservation = findViewById(R.id.et_observation);
-        etDiag = findViewById(R.id.et_diag);
-        etOtherDiagnosis = findViewById(R.id.et_other_diag);
-        etTretments = findViewById(R.id.et_treatments);
-        etMedications = findViewById(R.id.et_medications);
-        etImmunization = findViewById(R.id.et_immunization);
-        etAllergies = findViewById(R.id.et_allergies);
-        etXray = findViewById(R.id.et_xray);
-        etLabtest = findViewById(R.id.et_labtest);
-        etReferrals = findViewById(R.id.et_referrals);
         config = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.close);
-        findViewById(R.id.btn_add_diag).setOnClickListener(view -> {
-            customDiag.add(etOtherDiagnosis.getText().toString());
-            etOtherDiagnosis.setText("");
+        activityAddExaminationBinding.btnAddDiag.setOnClickListener(view -> {
+            customDiag.add(activityAddExaminationBinding.etOtherDiag.getText().toString());
+            activityAddExaminationBinding.etOtherDiag.setText("");
             showOtherDiagnosis();
         });
     }
@@ -86,7 +67,8 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_add_examination);
+        activityAddExaminationBinding = ActivityAddExaminationBinding.inflate(getLayoutInflater());
+        setContentView(activityAddExaminationBinding.getRoot());
         getSupportActionBar().setHomeButtonEnabled(true);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         customDiag = new HashSet<>();
@@ -123,23 +105,23 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
     private void initExamination() {
         if (getIntent().hasExtra("id")) {
             examination = mRealm.where(RealmMyHealthPojo.class).equalTo("_id", getIntent().getStringExtra("id")).findFirst();
-            etTemperature.setText(examination.getTemperature() + "");
-            etPulseRate.setText(examination.getPulse() + "");
-            etBloodPressure.setText(examination.getBp() + "");
-            etHeight.setText(examination.getHeight() + "");
-            etWeight.setText(examination.getWeight() + "");
-            etVision.setText(examination.getVision());
-            etHearing.setText(examination.getHearing());
+            activityAddExaminationBinding.etTemperature.setText(examination.getTemperature() + "");
+            activityAddExaminationBinding.etPulseRate.setText(examination.getPulse() + "");
+            activityAddExaminationBinding.etBloodpressure.setText(examination.getBp() + "");
+            activityAddExaminationBinding.etHeight.setText(examination.getHeight() + "");
+            activityAddExaminationBinding.etWeight.setText(examination.getWeight() + "");
+            activityAddExaminationBinding.etVision.setText(examination.getVision());
+            activityAddExaminationBinding.etHearing.setText(examination.getHearing());
             JsonObject encrypted = examination.getEncryptedDataAsJson(this.user);
-            etObservation.setText(JsonUtils.getString(getString(R.string.note_), encrypted));
-            etDiag.setText(JsonUtils.getString(getString(R.string.diagno), encrypted));
-            etTretments.setText(JsonUtils.getString(getString(R.string.treat), encrypted));
-            etMedications.setText(JsonUtils.getString(getString(R.string.medicay), encrypted));
-            etImmunization.setText(JsonUtils.getString(getString(R.string.immunizations), encrypted));
-            etAllergies.setText(JsonUtils.getString(getString(R.string.allergy), encrypted));
-            etXray.setText(JsonUtils.getString(getString(R.string.xrays), encrypted));
-            etLabtest.setText(JsonUtils.getString(getString(R.string.tests), encrypted));
-            etReferrals.setText(JsonUtils.getString(getString(R.string.referral), encrypted));
+            activityAddExaminationBinding.etObservation.setText(JsonUtils.getString(getString(R.string.note_), encrypted));
+            activityAddExaminationBinding.etDiag.setText(JsonUtils.getString(getString(R.string.diagno), encrypted));
+            activityAddExaminationBinding.etTreatments.setText(JsonUtils.getString(getString(R.string.treat), encrypted));
+            activityAddExaminationBinding.etMedications.setText(JsonUtils.getString(getString(R.string.medicay), encrypted));
+            activityAddExaminationBinding.etImmunization.setText(JsonUtils.getString(getString(R.string.immunizations), encrypted));
+            activityAddExaminationBinding.etAllergies.setText(JsonUtils.getString(getString(R.string.allergy), encrypted));
+            activityAddExaminationBinding.etXray.setText(JsonUtils.getString(getString(R.string.xrays), encrypted));
+            activityAddExaminationBinding.etLabtest.setText(JsonUtils.getString(getString(R.string.tests), encrypted));
+            activityAddExaminationBinding.etReferrals.setText(JsonUtils.getString(getString(R.string.referral), encrypted));
         }
         showCheckbox(examination);
         showOtherDiagnosis();
@@ -147,7 +129,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
 
     private void validateFields() {
         allowSubmission = true;
-        etBloodPressure.addTextChangedListener(new TextWatcher() {
+        activityAddExaminationBinding.etBloodpressure.addTextChangedListener(new TextWatcher() {
             @Override
             public void afterTextChanged(Editable s) {
             }
@@ -158,26 +140,26 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if (!etBloodPressure.getText().toString().contains("/")) {
-                    etBloodPressure.setError(getString(R.string.blood_pressure_should_be_numeric_systolic_diastolic));
+                if (!activityAddExaminationBinding.etBloodpressure.getText().toString().contains("/")) {
+                    activityAddExaminationBinding.etBloodpressure.setError(getString(R.string.blood_pressure_should_be_numeric_systolic_diastolic));
                     allowSubmission = false;
                 } else {
-                    String[] sysDia = etBloodPressure.getText().toString().trim().split("/");
+                    String[] sysDia = activityAddExaminationBinding.etBloodpressure.getText().toString().trim().split("/");
                     if (sysDia.length > 2 || sysDia.length < 1) {
-                        etBloodPressure.setError(getString(R.string.blood_pressure_should_be_systolic_diastolic));
+                        activityAddExaminationBinding.etBloodpressure.setError(getString(R.string.blood_pressure_should_be_systolic_diastolic));
                         allowSubmission = false;
                     } else {
                         try {
                             int sys = Integer.parseInt(sysDia[0]);
                             int dis = Integer.parseInt(sysDia[1]);
                             if ((sys < 60 || dis < 40) || (sys > 300 || dis > 200)) {
-                                etBloodPressure.setError(getString(R.string.bp_must_be_between_60_40_and_300_200));
+                                activityAddExaminationBinding.etBloodpressure.setError(getString(R.string.bp_must_be_between_60_40_and_300_200));
                                 allowSubmission = false;
                             } else {
                                 allowSubmission = true;
                             }
                         } catch (Exception e) {
-                            etBloodPressure.setError(getString(R.string.systolic_and_diastolic_must_be_numbers));
+                            activityAddExaminationBinding.etBloodpressure.setError(getString(R.string.systolic_and_diastolic_must_be_numbers));
                             allowSubmission = false;
                         }
                     }
@@ -187,8 +169,8 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
     }
 
     private void showOtherDiagnosis() {
-        flexboxOther.removeAllViews();
-        final ChipCloud chipCloud = new ChipCloud(this, flexboxOther, config);
+        activityAddExaminationBinding.containerOtherDiagnosis.removeAllViews();
+        final ChipCloud chipCloud = new ChipCloud(this, activityAddExaminationBinding.containerOtherDiagnosis, config);
 
         for (String s : customDiag) {
             chipCloud.addChip(s);
@@ -217,7 +199,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
 
     private void showCheckbox(RealmMyHealthPojo examination) {
         String[] arr = getResources().getStringArray(R.array.diagnosis_list);
-        flexboxLayout.removeAllViews();
+        activityAddExaminationBinding.containerCheckbox.removeAllViews();
         for (String s : arr) {
             CheckBox c = new CheckBox(this);
             if (examination != null) {
@@ -228,9 +210,8 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
             c.setText(s);
             c.setTag(s);
             c.setOnCheckedChangeListener(this);
-            flexboxLayout.addView(c);
+            activityAddExaminationBinding.containerCheckbox.addView(c);
         }
-//        flexboxLayout.addView(otherDiag);
     }
 
     private void getOtherConditions() {
@@ -268,25 +249,25 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         examination.setDate(new Date().getTime());
         examination.setPlanetCode(user.getPlanetCode());
         RealmExamination sign = new RealmExamination();
-        sign.setAllergies(etAllergies.getText().toString().trim());
+        sign.setAllergies(activityAddExaminationBinding.etAllergies.getText().toString().trim());
         sign.setCreatedBy(currentUser.get_id());
-        examination.setBp(etBloodPressure.getText().toString().trim());
-        examination.setTemperature(getFloat(etTemperature.getText().toString().trim()));
-        examination.setPulse(getInt(etPulseRate.getText().toString().trim()));
-        examination.setWeight(getFloat(etWeight.getText().toString().trim()));
-        examination.setHeight(getFloat(etHeight.getText().toString().trim()));
+        examination.setBp(activityAddExaminationBinding.etBloodpressure.getText().toString().trim());
+        examination.setTemperature(getFloat(activityAddExaminationBinding.etTemperature.getText().toString().trim()));
+        examination.setPulse(getInt(activityAddExaminationBinding.etPulseRate.getText().toString().trim()));
+        examination.setWeight(getFloat(activityAddExaminationBinding.etWeight.getText().toString().trim()));
+        examination.setHeight(getFloat(activityAddExaminationBinding.etHeight.getText().toString().trim()));
         getOtherConditions();
         examination.setConditions(new Gson().toJson(mapConditions));
-        examination.setHearing(etHearing.getText().toString().trim());
-        sign.setImmunizations(etImmunization.getText().toString().trim());
-        sign.setTests(etLabtest.getText().toString().trim());
-        sign.setXrays(etXray.getText().toString().trim());
-        examination.setVision(etVision.getText().toString().trim());
-        sign.setTreatments(etTretments.getText().toString().trim());
-        sign.setReferrals(etReferrals.getText().toString().trim());
-        sign.setNotes(etObservation.getText().toString().trim());
-        sign.setDiagnosis(etDiag.getText().toString().trim());
-        sign.setMedications(etMedications.getText().toString().trim());
+        examination.setHearing(activityAddExaminationBinding.etHearing.getText().toString().trim());
+        sign.setImmunizations(activityAddExaminationBinding.etImmunization.getText().toString().trim());
+        sign.setTests(activityAddExaminationBinding.etLabtest.getText().toString().trim());
+        sign.setXrays(activityAddExaminationBinding.etXray.getText().toString().trim());
+        examination.setVision(activityAddExaminationBinding.etVision.getText().toString().trim());
+        sign.setTreatments(activityAddExaminationBinding.etTreatments.getText().toString().trim());
+        sign.setReferrals(activityAddExaminationBinding.etReferrals.getText().toString().trim());
+        sign.setNotes(activityAddExaminationBinding.etObservation.getText().toString().trim());
+        sign.setDiagnosis(activityAddExaminationBinding.etDiag.getText().toString().trim());
+        sign.setMedications(activityAddExaminationBinding.etMedications.getText().toString().trim());
         examination.setDate(new Date().getTime());
         examination.setIsUpdated(true);
         examination.setHasInfo(getHasInfo());
@@ -303,25 +284,33 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
     }
 
     private boolean getHasInfo() {
-        return !TextUtils.isEmpty(etAllergies.getText().toString()) || !TextUtils.isEmpty(etDiag.getText().toString()) || !TextUtils.isEmpty(etImmunization.getText().toString()) || !TextUtils.isEmpty(etMedications.getText().toString()) || !TextUtils.isEmpty(etObservation.getText().toString()) || !TextUtils.isEmpty(etReferrals.getText().toString()) || !TextUtils.isEmpty(etLabtest.getText().toString()) || !TextUtils.isEmpty(etTretments.getText().toString()) || !TextUtils.isEmpty(etXray.getText().toString());
+        return !TextUtils.isEmpty(activityAddExaminationBinding.etAllergies.getText().toString()) ||
+                !TextUtils.isEmpty(activityAddExaminationBinding.etDiag.getText().toString()) ||
+                !TextUtils.isEmpty(activityAddExaminationBinding.etImmunization.getText().toString()) ||
+                !TextUtils.isEmpty(activityAddExaminationBinding.etMedications.getText().toString()) ||
+                !TextUtils.isEmpty(activityAddExaminationBinding.etObservation.getText().toString()) ||
+                !TextUtils.isEmpty(activityAddExaminationBinding.etReferrals.getText().toString()) ||
+                !TextUtils.isEmpty(activityAddExaminationBinding.etLabtest.getText().toString()) ||
+                !TextUtils.isEmpty(activityAddExaminationBinding.etTreatments.getText().toString()) ||
+                !TextUtils.isEmpty(activityAddExaminationBinding.etXray.getText().toString());
     }
 
     private boolean isValidInput() {
-        boolean isValidTemp = 30 <= getFloat(etTemperature.getText().toString().trim()) && getFloat(etTemperature.getText().toString().trim()) <= 40 || getFloat(etTemperature.getText().toString().trim()) == 0;
-        boolean isValidPulse = 40 <= getInt(etPulseRate.getText().toString().trim()) && getInt(etPulseRate.getText().toString().trim()) <= 120 || getFloat(etPulseRate.getText().toString().trim()) == 0;
-        boolean isValidHeight = 1 <= getFloat(etHeight.getText().toString().trim()) && getFloat(etHeight.getText().toString().trim()) <= 250 || getFloat(etHeight.getText().toString().trim()) == 0;
-        boolean isValidWeight = 1 <= getFloat(etWeight.getText().toString().trim()) && getFloat(etWeight.getText().toString().trim()) <= 150 || getFloat(etWeight.getText().toString().trim()) == 0;
+        boolean isValidTemp = 30 <= getFloat(activityAddExaminationBinding.etTemperature.getText().toString().trim()) && getFloat(activityAddExaminationBinding.etTemperature.getText().toString().trim()) <= 40 || getFloat(activityAddExaminationBinding.etTemperature.getText().toString().trim()) == 0;
+        boolean isValidPulse = 40 <= getInt(activityAddExaminationBinding.etPulseRate.getText().toString().trim()) && getInt(activityAddExaminationBinding.etPulseRate.getText().toString().trim()) <= 120 || getFloat(activityAddExaminationBinding.etPulseRate.getText().toString().trim()) == 0;
+        boolean isValidHeight = 1 <= getFloat(activityAddExaminationBinding.etHeight.getText().toString().trim()) && getFloat(activityAddExaminationBinding.etHeight.getText().toString().trim()) <= 250 || getFloat(activityAddExaminationBinding.etHeight.getText().toString().trim()) == 0;
+        boolean isValidWeight = 1 <= getFloat(activityAddExaminationBinding.etWeight.getText().toString().trim()) && getFloat(activityAddExaminationBinding.etWeight.getText().toString().trim()) <= 150 || getFloat(activityAddExaminationBinding.etWeight.getText().toString().trim()) == 0;
         if (!isValidTemp) {
-            etTemperature.setError(getString(R.string.invalid_input_must_be_between_30_and_40));
+            activityAddExaminationBinding.etTemperature.setError(getString(R.string.invalid_input_must_be_between_30_and_40));
         }
         if (!isValidPulse) {
-            etPulseRate.setError(getString(R.string.invalid_input_must_be_between_40_and_120));
+            activityAddExaminationBinding.etPulseRate.setError(getString(R.string.invalid_input_must_be_between_40_and_120));
         }
         if (!isValidHeight) {
-            etHeight.setError(getString(R.string.invalid_input_must_be_between_1_and_250));
+            activityAddExaminationBinding.etHeight.setError(getString(R.string.invalid_input_must_be_between_1_and_250));
         }
         if (!isValidWeight) {
-            etWeight.setError(getString(R.string.invalid_input_must_be_between_1_and_150));
+            activityAddExaminationBinding.etWeight.setError(getString(R.string.invalid_input_must_be_between_1_and_150));
         }
         return isValidTemp && isValidHeight && isValidPulse && isValidWeight;
     }
