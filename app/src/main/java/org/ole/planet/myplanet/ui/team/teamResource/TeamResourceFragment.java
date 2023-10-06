@@ -6,15 +6,16 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
-import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.GridLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.TeamPageListener;
+import org.ole.planet.myplanet.databinding.FragmentTeamResourceBinding;
+import org.ole.planet.myplanet.databinding.MyLibraryAlertdialogBinding;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment;
@@ -25,44 +26,42 @@ import java.util.List;
 import java.util.UUID;
 
 public class TeamResourceFragment extends BaseTeamFragment implements TeamPageListener {
+    private FragmentTeamResourceBinding fragmentTeamResourceBinding;
     AdapterTeamResource adapterLibrary;
-    RecyclerView rvResource;
-    TextView tvNodata;
 
     public TeamResourceFragment() {
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_team_resource, container, false);
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        fragmentTeamResourceBinding = FragmentTeamResourceBinding.inflate(inflater, container, false);
+        return fragmentTeamResourceBinding.getRoot();
     }
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        rvResource = getView().findViewById(R.id.rv_resource);
-        tvNodata = getView().findViewById(R.id.tv_nodata);
         showLibraryList();
-        getView().findViewById(R.id.fab_add_resource).setOnClickListener(view -> showResourceListDialog());
+        fragmentTeamResourceBinding.fabAddResource.setOnClickListener(view -> showResourceListDialog());
     }
 
     private void showLibraryList() {
         List<RealmMyLibrary> libraries = mRealm.where(RealmMyLibrary.class).in("id", RealmMyTeam.getResourceIds(teamId, mRealm).toArray(new String[0])).findAll();
         adapterLibrary = new AdapterTeamResource(getActivity(), libraries, mRealm, teamId, settings);
-        rvResource.setLayoutManager(new GridLayoutManager(getActivity(), 3));
-        rvResource.setAdapter(adapterLibrary);
-        showNoData(tvNodata, adapterLibrary.getItemCount());
+        fragmentTeamResourceBinding.rvResource.setLayoutManager(new GridLayoutManager(getActivity(), 3));
+        fragmentTeamResourceBinding.rvResource.setAdapter(adapterLibrary);
+        showNoData(fragmentTeamResourceBinding.tvNodata, adapterLibrary.getItemCount());
     }
 
     private void showResourceListDialog() {
-        LayoutInflater inflater = getLayoutInflater();
-        View convertView = inflater.inflate(R.layout.my_library_alertdialog, null);
+        MyLibraryAlertdialogBinding myLibraryAlertdialogBinding = MyLibraryAlertdialogBinding.inflate(getLayoutInflater());
+
         AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(getActivity());
-        CheckboxListView lv = convertView.findViewById(R.id.alertDialog_listView);
+
         alertDialogBuilder.setTitle(R.string.select_resource);
         List<RealmMyLibrary> libraries = mRealm.where(RealmMyLibrary.class).not().in("_id", RealmMyTeam.getResourceIds(teamId, mRealm).toArray(new String[0])).findAll();
-        alertDialogBuilder.setView(convertView).setPositiveButton(R.string.add, (dialogInterface, i) -> {
-            ArrayList<Integer> selected = lv.getSelectedItemsList();
+        alertDialogBuilder.setView(myLibraryAlertdialogBinding.getRoot()).setPositiveButton(R.string.add, (dialogInterface, i) -> {
+            ArrayList<Integer> selected = myLibraryAlertdialogBinding.alertDialogListView.getSelectedItemsList();
             if (!mRealm.isInTransaction()) mRealm.beginTransaction();
             for (Integer se : selected) {
                 RealmMyTeam team = mRealm.createObject(RealmMyTeam.class, UUID.randomUUID().toString());
@@ -78,8 +77,10 @@ public class TeamResourceFragment extends BaseTeamFragment implements TeamPageLi
             mRealm.commitTransaction();
             showLibraryList();
         }).setNegativeButton(R.string.cancel, null);
+
         AlertDialog alertDialog = alertDialogBuilder.create();
-        listSetting(alertDialog, libraries, lv);
+
+        listSetting(alertDialog, libraries, myLibraryAlertdialogBinding.alertDialogListView);
     }
 
     private void listSetting(AlertDialog alertDialog, List<RealmMyLibrary> libraries, CheckboxListView lv) {
