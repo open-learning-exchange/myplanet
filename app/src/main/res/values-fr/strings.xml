@@ -951,5 +951,6 @@
     <string name="select_all">Sélectionner tout</string>
     <string name="request_failed_please_retry">La demande a échoué, veuillez réessayer</string>
     <string name="confirm_removal">Confirmer la suppression</string>
+    <string name="returning_user">Utilisateur régulier</string>
 
 </resources>

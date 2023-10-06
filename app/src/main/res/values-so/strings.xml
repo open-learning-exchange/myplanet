@@ -940,5 +940,6 @@
     <string name="select_all">Dhammaad Dhammaadee</string>
     <string name="request_failed_please_retry">Codka lama yimaado, fadlan dib ugu ciyaar</string>
     <string name="confirm_removal">Xaqiiji tirtirka</string>
+    <string name="returning_user">Isticmaale sare leh</string>
 
 </resources>
