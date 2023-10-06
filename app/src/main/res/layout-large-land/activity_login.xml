@@ -267,8 +267,8 @@
                         android:layout_height="wrap_content"
                         android:layout_margin="4dp"
                         android:gravity="center"
-                        android:contentDescription="@string/previously_logged_in_click_here"
-                        android:text="@string/previously_logged_in_click_here"
+                        android:contentDescription="@string/returning_user"
+                        android:text="@string/returning_user"
                         android:textColor="@color/colorPrimary" />
 
                     <LinearLayout

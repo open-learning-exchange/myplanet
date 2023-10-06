@@ -951,6 +951,6 @@
     <string name="select_all">Seleccionar todo</string>
     <string name="request_failed_please_retry">La solicitud ha fallado, por favor inténtelo de nuevo</string>
     <string name="confirm_removal">Confirmar eliminación</string>
-    <string name="previously_logged_in_click_here">¿Ya has iniciado sesión? Haz clic aquí</string>
+    <string name="returning_user">Usuario recurrente</string>
 
 </resources>

@@ -951,6 +951,6 @@
     <string name="select_all">सबै चयन गर्नुहोस्</string>
     <string name="request_failed_please_retry">अनुरोध असफल भयो, कृपया पुन: प्रयास गर्नुहोस्</string>
     <string name="confirm_removal">हटाउनु हेरदैछ</string>
-    <string name="previously_logged_in_click_here">पहिले लगइन गरेको छ? यहाँ क्लिक गर्नुहोस</string>
+    <string name="returning_user">पुनराबृत्ति गर्ने प्रयोगकर्ता</string>
 
 </resources>
