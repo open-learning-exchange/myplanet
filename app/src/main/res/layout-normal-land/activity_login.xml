@@ -55,6 +55,7 @@
                     android:id="@+id/textView"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:contentDescription="@string/system_name"
                     android:text="@string/system_name"
                     android:textAlignment="center"
                     android:textColor="@android:color/white"
@@ -67,6 +68,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
+                    android:contentDescription="@string/language"
                     android:entries="@array/language"
                     android:padding="@dimen/padding_normal"
                     android:text="@string/language"
@@ -79,6 +81,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
+                    android:contentDescription="@string/child_mode"
                     android:gravity="center"
                     android:padding="@dimen/padding_normal"
                     android:text="@string/child_mode"
@@ -88,6 +91,7 @@
                     android:id="@+id/lblVersion"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:contentDescription="@string/app_version"
                     android:text="@string/app_version"
                     android:textAlignment="center"
                     android:textColor="@android:color/white"
@@ -107,6 +111,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
+                    android:contentDescription="@string/open_community"
                     android:gravity="center"
                     android:text="@string/open_community"
                     android:textColor="@color/md_white_1000"
@@ -128,7 +133,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:textColor="@color/md_white_1000"
-                        tools:text="Available Space:" />
+                        tools:text="@string/available_space_colon" />
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>
@@ -156,6 +161,7 @@
                     android:layout_marginLeft="8dp"
                     android:layout_marginTop="8dp"
                     android:background="@null"
+                    android:contentDescription="@string/sync"
                     android:scaleType="fitCenter" />
 
                 <TextView
@@ -173,6 +179,7 @@
                     android:layout_height="wrap_content"
                     android:layout_alignParentRight="true"
                     android:background="@null"
+                    android:contentDescription="@string/settings"
                     android:paddingTop="8dp"
                     android:paddingRight="8dp"
                     app:srcCompat="@drawable/ic_settings_black_24dp" />
@@ -197,6 +204,7 @@
                         android:id="@+id/input_layout_name"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:contentDescription="@string/hint_name"
                         android:hint="@string/hint_name"
                         app:errorTextAppearance="@style/MyAppTheme.TextInputLayout"
                         app:hintAnimationEnabled="true"
@@ -215,6 +223,7 @@
                         android:id="@+id/input_layout_password"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:contentDescription="@string/hint_password"
                         android:hint="@string/hint_password"
                         app:errorTextAppearance="@style/MyAppTheme.TextInputLayout"
                         app:hintAnimationEnabled="true"
@@ -235,6 +244,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:alpha="0.7"
+                        android:contentDescription="@string/managerial_login"
                         android:fontFamily="sans-serif"
                         android:text="@string/managerial_login"
                         android:textColor="@color/material_drawer_dark_background"
@@ -248,6 +258,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="10dp"
                         android:background="@color/colorPrimary"
+                        android:contentDescription="@string/btn_sign_in"
                         android:text="@string/btn_sign_in"
                         android:textColor="@android:color/white" />
 
@@ -256,8 +267,9 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_margin="4dp"
+                        android:contentDescription="@string/previously_logged_in_click_here"
                         android:gravity="center"
-                        android:text="Previously logged in? Click here"
+                        android:text="@string/previously_logged_in_click_here"
                         android:textColor="@color/colorPrimary" />
 
                     <LinearLayout
@@ -271,6 +283,7 @@
                             android:layout_height="wrap_content"
                             android:layout_gravity="center"
                             android:layout_weight="1"
+                            android:contentDescription="@string/btn_guest_login"
                             android:text="@string/btn_guest_login"
                             android:textSize="14sp"
                             android:theme="@style/PrimaryFlatButton" />
@@ -281,6 +294,7 @@
                             android:layout_height="wrap_content"
                             android:layout_gravity="center"
                             android:layout_weight="1"
+                            android:contentDescription="@string/become_a_member"
                             android:text="@string/become_a_member"
                             android:theme="@style/PrimaryFlatButton" />
 
@@ -292,6 +306,7 @@
                             android:layout_gravity="center"
                             android:layout_margin="@dimen/padding_normal"
                             android:layout_weight="1"
+                            android:contentDescription="@string/feedback"
                             android:text="@string/feedback"
                             android:theme="@style/PrimaryFlatButton" />
 
