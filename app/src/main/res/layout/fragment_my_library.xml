@@ -6,12 +6,10 @@
     android:layout_height="match_parent"
     tools:context=".ui.library.LibraryFragment">
 
-
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical">
-
 
         <LinearLayout
             android:id="@+id/ll_actions"
@@ -22,7 +20,6 @@
             android:gravity="right"
             android:orientation="vertical"
             android:padding="@dimen/padding_large">
-
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -70,7 +67,6 @@
                     android:text="@string/show_filter"
                     android:textSize="@dimen/text_size_small"
                     android:theme="@style/BlueButton" />
-
 
                 <Button
                     android:id="@+id/btn_clear_tags"

@@ -1,21 +1,17 @@
 package org.ole.planet.myplanet.ui.library;
 
 import android.os.Bundle;
+import android.view.MenuItem;
+import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
+import android.widget.TextView;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.view.MenuItem;
-import android.view.View;
-import android.widget.ArrayAdapter;
-import android.widget.EditText;
-import android.widget.ListView;
-import android.widget.Spinner;
-import android.widget.TextView;
-
-import com.google.android.material.textfield.TextInputLayout;
-
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.databinding.ActivityAddResourceBinding;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmUserModel;
@@ -32,9 +28,7 @@ import io.realm.Realm;
 import io.realm.RealmList;
 
 public class AddResourceActivity extends AppCompatActivity {
-    EditText etTitle, etAuthor, etYear, etDescription, etPublisher, etLinkToLicense, etOpenWhich;
-    Spinner spnLang, spnMedia, spnResourceType, spnOpenWith;
-    TextView tvSubjects, tvLevels, tvResourceFor, tvAddedBy, fileUrl;
+    private ActivityAddResourceBinding activityAddResourceBinding;
     Realm mRealm;
     RealmUserModel userModel;
     RealmList<String> subjects;
@@ -45,7 +39,8 @@ public class AddResourceActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_add_resource);
+        activityAddResourceBinding = ActivityAddResourceBinding.inflate(getLayoutInflater());
+        setContentView(activityAddResourceBinding.getRoot());
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setHomeButtonEnabled(true);
         userModel = new UserProfileDbHandler(this).getUserModel();
@@ -64,33 +59,17 @@ public class AddResourceActivity extends AppCompatActivity {
     }
 
     private void initializeViews() {
-        etTitle = findViewById(R.id.et_title);
-        etAuthor = findViewById(R.id.et_author);
-        fileUrl = findViewById(R.id.file_url);
-        etYear = findViewById(R.id.et_year);
-        etDescription = findViewById(R.id.et_description);
-        etPublisher = findViewById(R.id.et_publisher);
-        etLinkToLicense = findViewById(R.id.et_link_to_license);
-        etOpenWhich = findViewById(R.id.et_open_which);
-        spnLang = findViewById(R.id.spn_lang);
-        spnMedia = findViewById(R.id.spn_media);
-        spnResourceType = findViewById(R.id.spn_resource_type);
-        spnOpenWith = findViewById(R.id.spn_open_with);
-        tvSubjects = findViewById(R.id.tv_subject);
-        tvAddedBy = findViewById(R.id.tv_added_by);
-        tvLevels = findViewById(R.id.tv_levels);
-        tvResourceFor = findViewById(R.id.tv_resource_for);
-        fileUrl.setText(getString(R.string.file) + resourceUrl);
-        tvAddedBy.setText(userModel.getName());
-        tvLevels.setOnClickListener(view -> showMultiSelectList(getResources().getStringArray(R.array.array_levels), levels, view));
-        tvSubjects.setOnClickListener(view -> showMultiSelectList(getResources().getStringArray(R.array.array_subjects), subjects, view));
-        tvResourceFor.setOnClickListener(view -> showMultiSelectList(getResources().getStringArray(R.array.array_resource_for), subjects, view));
-        findViewById(R.id.btn_submit).setOnClickListener(view -> saveResource());
-        findViewById(R.id.btn_cancel).setOnClickListener(view -> finish());
+        activityAddResourceBinding.fileUrl.setText(getString(R.string.file) + resourceUrl);
+        activityAddResourceBinding.tvAddedBy.setText(userModel.getName());
+        activityAddResourceBinding.tvLevels.setOnClickListener(view -> showMultiSelectList(getResources().getStringArray(R.array.array_levels), levels, view));
+        activityAddResourceBinding.tvSubject.setOnClickListener(view -> showMultiSelectList(getResources().getStringArray(R.array.array_subjects), subjects, view));
+        activityAddResourceBinding.tvResourceFor.setOnClickListener(view -> showMultiSelectList(getResources().getStringArray(R.array.array_resource_for), subjects, view));
+        activityAddResourceBinding.btnSubmit.setOnClickListener(view -> saveResource());
+        activityAddResourceBinding.btnCancel.setOnClickListener(view -> finish());
     }
 
     private void saveResource() {
-        String title = etTitle.getText().toString().trim();
+        String title = activityAddResourceBinding.etTitle.getText().toString().trim();
         if (!validate(title)) return;
         mRealm.executeTransactionAsync(realm -> {
             String id = UUID.randomUUID().toString();
@@ -104,17 +83,17 @@ public class AddResourceActivity extends AppCompatActivity {
     }
 
     private void createResource(RealmMyLibrary resource, String id) {
-        resource.setAddedBy(tvAddedBy.getText().toString().trim());
-        resource.setAuthor(etAuthor.getText().toString().trim());
+        resource.setAddedBy(activityAddResourceBinding.tvAddedBy.getText().toString().trim());
+        resource.setAuthor(activityAddResourceBinding.etAuthor.getText().toString().trim());
         resource.setResource_id(id);
-        resource.setYear(etYear.getText().toString().trim());
-        resource.setDescription(etDescription.getText().toString().trim());
-        resource.setPublisher(etPublisher.getText().toString().trim());
-        resource.setLinkToLicense(etLinkToLicense.getText().toString().trim());
-        resource.setOpenWith(spnOpenWith.getSelectedItem().toString());
-        resource.setLanguage(spnLang.getSelectedItem().toString());
-        resource.setMediaType(spnMedia.getSelectedItem().toString());
-        resource.setResourceType(spnResourceType.getSelectedItem().toString());
+        resource.setYear(activityAddResourceBinding.etYear.getText().toString().trim());
+        resource.setDescription(activityAddResourceBinding.etDescription.getText().toString().trim());
+        resource.setPublisher(activityAddResourceBinding.etPublisher.getText().toString().trim());
+        resource.setLinkToLicense(activityAddResourceBinding.etLinkToLicense.getText().toString().trim());
+        resource.setOpenWith(activityAddResourceBinding.spnOpenWith.getSelectedItem().toString());
+        resource.setLanguage(activityAddResourceBinding.spnLang.getSelectedItem().toString());
+        resource.setMediaType(activityAddResourceBinding.spnMedia.getSelectedItem().toString());
+        resource.setResourceType(activityAddResourceBinding.spnResourceType.getSelectedItem().toString());
         resource.setSubject(subjects);
         resource.setUserId(new RealmList<>());
         resource.setLevel(levels);
@@ -127,7 +106,7 @@ public class AddResourceActivity extends AppCompatActivity {
 
     private boolean validate(String title) {
         if (title.isEmpty()) {
-            ((TextInputLayout) findViewById(R.id.tl_title)).setError(getString(R.string.title_is_required));
+            activityAddResourceBinding.tlTitle.setError(getString(R.string.title_is_required));
             return false;
         }
         if (levels.isEmpty()) {
