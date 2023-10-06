@@ -259,18 +259,17 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
                 .withActivity(DashboardActivity.this)
                 .withTextColor(getResources().getColor(R.color.bg_white))
                 .withHeaderBackground(R.drawable.ole_logo)
-                .withHeaderBackgroundScaleType(ImageView.ScaleType.FIT_XY)
                 .withDividerBelowHeader(false)
                 .build();
 
         ImageView headerBackground = header.getHeaderBackgroundView();
-        headerBackground.setPadding(20, 12, 20, 12); // Add padding values as per your requirement
+        headerBackground.setPadding(30, 30, 30, 30); // Add padding values as per your requirement
         headerBackground.setColorFilter(getResources().getColor(R.color.md_white_1000), PorterDuff.Mode.SRC_IN);
         return header;
     }
 
     private void createDrawer() {
-        com.mikepenz.materialdrawer.holder.DimenHolder dimenHolder = com.mikepenz.materialdrawer.holder.DimenHolder.fromDp(200);
+        com.mikepenz.materialdrawer.holder.DimenHolder dimenHolder = com.mikepenz.materialdrawer.holder.DimenHolder.fromDp(150);
         result = new DrawerBuilder().withActivity(this).withFullscreen(true).withSliderBackgroundColor(getResources().getColor(R.color.colorPrimary)).withToolbar(mTopToolbar).withAccountHeader(headerResult).withHeaderHeight(dimenHolder).addDrawerItems(getDrawerItems()).addStickyDrawerItems(getDrawerItemsFooter()).withOnDrawerItemClickListener((view, position, drawerItem) -> {
             if (drawerItem != null) {
                 menuAction(((Nameable) drawerItem).getName().getTextRes());
