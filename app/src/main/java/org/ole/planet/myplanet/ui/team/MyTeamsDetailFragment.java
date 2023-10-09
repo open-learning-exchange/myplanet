@@ -179,7 +179,7 @@ public class MyTeamsDetailFragment extends BaseNewsFragment {
     }
 
     private void showRecyclerView(List<RealmNews> realmNewsList) {
-        AdapterNews adapterNews = new AdapterNews(getActivity(), realmNewsList, user, null);
+        AdapterNews adapterNews = new AdapterNews(getActivity(), realmNewsList, user, null, true);
         adapterNews.setmRealm(mRealm);
         adapterNews.setListener(this);
         rvDiscussion.setAdapter(adapterNews);
