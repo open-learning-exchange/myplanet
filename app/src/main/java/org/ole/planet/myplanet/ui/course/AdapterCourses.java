@@ -8,7 +8,6 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
-import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
@@ -24,6 +23,7 @@ import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnCourseItemSelected;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.callback.OnRatingChangeListener;
+import org.ole.planet.myplanet.databinding.RowCourseBinding;
 import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmTag;
 import org.ole.planet.myplanet.utilities.JsonUtils;
@@ -42,8 +42,8 @@ import io.noties.markwon.Markwon;
 import io.noties.markwon.movement.MovementMethodPlugin;
 import io.realm.Realm;
 
-public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
-
+public class AdapterCourses extends RecyclerView.Adapter<AdapterCourses.ViewHoldercourse> {
+    private RowCourseBinding rowCourseBinding;
     private Context context;
     private List<RealmMyCourse> courseList;
     private List<RealmMyCourse> selectedItems;
@@ -144,43 +144,43 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     @NonNull
     @Override
-    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View v = LayoutInflater.from(context).inflate(R.layout.row_course, parent, false);
-        return new ViewHoldercourse(v);
+    public ViewHoldercourse onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+//        View v = LayoutInflater.from(context).inflate(R.layout.row_course, parent, false);
+//        return new ViewHoldercourse(v);
+        rowCourseBinding = RowCourseBinding.inflate(LayoutInflater.from(context), parent, false);
+        return new ViewHoldercourse(rowCourseBinding);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, final int position) {
-        if (holder instanceof ViewHoldercourse) {
-            ViewHoldercourse viewHolder = (ViewHoldercourse) holder;
-            viewHolder.bind(position);
-            ((ViewHoldercourse) holder).title.setText(courseList.get(position).getCourseTitle());
-            ((ViewHoldercourse) holder).desc.setText(courseList.get(position).getDescription());
-            markwon.setMarkdown(((ViewHoldercourse) holder).desc, courseList.get(position).getDescription());
+    public void onBindViewHolder(@NonNull ViewHoldercourse holder, final int position) {
+        ViewHoldercourse viewHolder = (ViewHoldercourse) holder;
+        viewHolder.bind(position);
+        rowCourseBinding.title.setText(courseList.get(position).getCourseTitle());
+        rowCourseBinding.description.setText(courseList.get(position).getDescription());
+        markwon.setMarkdown(rowCourseBinding.description, courseList.get(position).getDescription());
 
-            ((ViewHoldercourse) holder).grad_level.setText(context.getString(R.string.grade_level_colon) + courseList.get(position).getGradeLevel());
-            ((ViewHoldercourse) holder).subject_level.setText(context.getString(R.string.subject_level_colon) + courseList.get(position).getSubjectLevel());
-            ((ViewHoldercourse) holder).checkBox.setChecked(selectedItems.contains(courseList.get(position)));
-            ((ViewHoldercourse) holder).progressBar.setMax(courseList.get(position).getnumberOfSteps());
-            displayTagCloud(((ViewHoldercourse) holder).flexboxLayout, position);
-            try {
-                ((ViewHoldercourse) holder).tvDate.setText(TimeUtils.formatDate(Long.parseLong(courseList.get(position).getCreatedDate().trim()), "MMM dd, yyyy"));
-            } catch (Exception e) {
+        rowCourseBinding.gradLevel.setText(context.getString(R.string.grade_level_colon) + courseList.get(position).getGradeLevel());
+        rowCourseBinding.subjectLevel.setText(context.getString(R.string.subject_level_colon) + courseList.get(position).getSubjectLevel());
+        rowCourseBinding.checkbox.setChecked(selectedItems.contains(courseList.get(position)));
+        rowCourseBinding.courseProgress.setMax(courseList.get(position).getnumberOfSteps());
+        displayTagCloud(rowCourseBinding.flexboxDrawable, position);
+        try {
+            rowCourseBinding.tvDate.setText(TimeUtils.formatDate(Long.parseLong(courseList.get(position).getCreatedDate().trim()), "MMM dd, yyyy"));
+        } catch (Exception e) {
 
-            }
-            ((ViewHoldercourse) holder).ratingBar.setOnTouchListener((v1, event) -> {
-                if (event.getAction() == MotionEvent.ACTION_UP)
-                    homeItemClickListener.showRatingDialog("course", courseList.get(position).getCourseId(), courseList.get(position).getCourseTitle(), ratingChangeListener);
-                return true;
-            });
-
-            ((ViewHoldercourse) holder).checkBox.setOnClickListener((view) -> {
-                Utilities.handleCheck(((CheckBox) view).isChecked(), position, (ArrayList) selectedItems, courseList);
-                if (listener != null) listener.onSelectedListChange(selectedItems);
-                notifyDataSetChanged();
-            });
-            showProgressAndRating(position, holder);
         }
+        rowCourseBinding.ratingBar.setOnTouchListener((v1, event) -> {
+            if (event.getAction() == MotionEvent.ACTION_UP)
+                homeItemClickListener.showRatingDialog("course", courseList.get(position).getCourseId(), courseList.get(position).getCourseTitle(), ratingChangeListener);
+            return true;
+        });
+
+        rowCourseBinding.checkbox.setOnClickListener((view) -> {
+            Utilities.handleCheck(((CheckBox) view).isChecked(), position, (ArrayList) selectedItems, courseList);
+            if (listener != null) listener.onSelectedListChange(selectedItems);
+            notifyDataSetChanged();
+        });
+        showProgressAndRating(position, holder);
     }
 
     public boolean areAllSelected(){
@@ -229,26 +229,26 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
         });
     }
 
-    private void showProgressAndRating(int position, RecyclerView.ViewHolder holder) {
+    private void showProgressAndRating(int position, ViewHoldercourse holder) {
         showProgress(position, holder);
         if (map.containsKey(courseList.get(position).getCourseId())) {
             JsonObject object = map.get(courseList.get(position).getCourseId());
-            showRating(object, ((ViewHoldercourse) holder).average, ((ViewHoldercourse) holder).ratingCount, ((ViewHoldercourse) holder).ratingBar);
+            showRating(object, rowCourseBinding.average, rowCourseBinding.timesRated, rowCourseBinding.ratingBar);
         } else {
-            ((ViewHoldercourse) holder).ratingBar.setRating(0);
+            rowCourseBinding.ratingBar.setRating(0);
         }
     }
 
-    private void showProgress(int position, RecyclerView.ViewHolder holder) {
+    private void showProgress(int position, ViewHoldercourse holder) {
         if (progressMap.containsKey(courseList.get(position).getCourseId())) {
             JsonObject ob = progressMap.get(courseList.get(position).getCourseId());
-            ((ViewHoldercourse) holder).progressBar.setMax(JsonUtils.getInt("max", ob));
-            ((ViewHoldercourse) holder).progressBar.setProgress(JsonUtils.getInt("current", ob));
+            rowCourseBinding.courseProgress.setMax(JsonUtils.getInt("max", ob));
+            rowCourseBinding.courseProgress.setProgress(JsonUtils.getInt("current", ob));
             if (JsonUtils.getInt("current", ob) < JsonUtils.getInt("max", ob))
-                ((ViewHoldercourse) holder).progressBar.setSecondaryProgress(JsonUtils.getInt("current", ob) + 1);
-            ((ViewHoldercourse) holder).progressBar.setVisibility(View.VISIBLE);
+                rowCourseBinding.courseProgress.setSecondaryProgress(JsonUtils.getInt("current", ob) + 1);
+            rowCourseBinding.courseProgress.setVisibility(View.VISIBLE);
         } else {
-            ((ViewHoldercourse) holder).progressBar.setVisibility(View.GONE);
+            rowCourseBinding.courseProgress.setVisibility(View.GONE);
         }
     }
 
@@ -269,29 +269,19 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
     }
 
     class ViewHoldercourse extends RecyclerView.ViewHolder {
-        TextView title, desc, grad_level, subject_level, tvDate, ratingCount, average;
-        CheckBox checkBox;
-        AppCompatRatingBar ratingBar;
-        SeekBar progressBar;
-        LinearLayout llRating;
-        FlexboxLayout flexboxLayout;
+//        TextView title, desc, grad_level, subject_level, tvDate, ratingCount, average;
+//        CheckBox checkBox;
+//        AppCompatRatingBar ratingBar;
+//        SeekBar progressBar;
+//        LinearLayout llRating;
+//        FlexboxLayout flexboxLayout;
+        RowCourseBinding rowCourseBinding;
 
         private int adapterPosition;
 
-        public ViewHoldercourse(View itemView) {
-            super(itemView);
-            title = itemView.findViewById(R.id.title);
-            desc = itemView.findViewById(R.id.description);
-            grad_level = itemView.findViewById(R.id.grad_level);
-            average = itemView.findViewById(R.id.rating);
-            ratingCount = itemView.findViewById(R.id.times_rated);
-            flexboxLayout = itemView.findViewById(R.id.flexbox_drawable);
-            tvDate = itemView.findViewById(R.id.tv_date);
-            ratingBar = itemView.findViewById(R.id.rating_bar);
-            subject_level = itemView.findViewById(R.id.subject_level);
-            checkBox = itemView.findViewById(R.id.checkbox);
-            llRating = itemView.findViewById(R.id.ll_rating);
-            progressBar = itemView.findViewById(R.id.course_progress);
+        public ViewHoldercourse(RowCourseBinding rowCourseBinding) {
+            super(rowCourseBinding.getRoot());
+            this.rowCourseBinding = rowCourseBinding;
             itemView.setOnClickListener(v -> {
                 if (adapterPosition != RecyclerView.NO_POSITION) {
                     openCourse(courseList.get(adapterPosition), 0);
@@ -299,10 +289,10 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
             });
 
             if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.LOLLIPOP) {
-                progressBar.setScaleY(0.3f);
+                rowCourseBinding.courseProgress.setScaleY(0.3f);
             }
 
-            progressBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            rowCourseBinding.courseProgress.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                 @Override
                 public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
                     if (progressMap.containsKey(courseList.get(getAdapterPosition()).getCourseId())) {
