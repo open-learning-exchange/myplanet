@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.dashboard
 
+import android.R
 import android.os.Build
 import android.os.Bundle
 import android.text.Html
@@ -17,7 +18,11 @@ class AboutFragment : Fragment() {
     @RequiresApi(Build.VERSION_CODES.N)
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         fragmentAboutBinding = FragmentAboutBinding.inflate(inflater, container, false)
-        fragmentAboutBinding.tvDisclaimer.text = Html.fromHtml(getString(Constants.ABOUT), HtmlCompat.FROM_HTML_MODE_LEGACY)
+        val versionString = "${resources.getText(org.ole.planet.myplanet.R.string.version)}: ${resources.getText(org.ole.planet.myplanet.R.string.app_version)}"
+        val aboutText = getString(Constants.ABOUT)
+
+        val newAboutText: String = aboutText.replace("<h3>MyPlanet</h3>", "<h3>MyPlanet</h3>\n<h4>$versionString</h4>")
+        fragmentAboutBinding.tvDisclaimer.text = Html.fromHtml(newAboutText, HtmlCompat.FROM_HTML_MODE_LEGACY)
         return fragmentAboutBinding.root
     }
 }
