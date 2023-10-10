@@ -58,11 +58,13 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private boolean isAscending = true;
     private boolean isTitleAscending = true;
     private boolean areAllSelected = true;
+    private CourseFragment courseFragment;
 
-    public AdapterCourses(Context context, List<RealmMyCourse> courseList, HashMap<String, JsonObject> map) {
+    public AdapterCourses(Context context, List<RealmMyCourse> courseList, HashMap<String, JsonObject> map, CourseFragment courseFragment) {
         this.map = map;
         this.context = context;
         this.courseList = courseList;
+        this.courseFragment = courseFragment;
         markwon = Markwon.builder(context)
                 .usePlugin(MovementMethodPlugin.none())
                 .build();
@@ -177,7 +179,10 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
             ((ViewHoldercourse) holder).checkBox.setOnClickListener((view) -> {
                 Utilities.handleCheck(((CheckBox) view).isChecked(), position, (ArrayList) selectedItems, courseList);
                 if (listener != null) listener.onSelectedListChange(selectedItems);
-                notifyDataSetChanged();
+//                notifyDataSetChanged();
+                if (courseFragment != null) {
+                    courseFragment.changeButtonStatus();
+                }
             });
             showProgressAndRating(position, holder);
         }
@@ -186,7 +191,10 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
     public boolean areAllSelected(){
         if (selectedItems.size() != courseList.size()) {
             areAllSelected = false;
+        } else {
+            areAllSelected = true;
         }
+
         return areAllSelected;
     }
 

@@ -1,8 +1,8 @@
 package org.ole.planet.myplanet.ui.course;
 
-
 import android.app.AlertDialog;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
@@ -12,13 +12,10 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
-
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
-
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseRecyclerFragment;
 import org.ole.planet.myplanet.callback.OnCourseItemSelected;
@@ -31,13 +28,11 @@ import org.ole.planet.myplanet.model.RealmTag;
 import org.ole.planet.myplanet.ui.library.CollectionsFragment;
 import org.ole.planet.myplanet.utilities.KeyboardUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
-
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
-
 import io.realm.Sort;
 
 public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implements OnCourseItemSelected, TagClickListener {
@@ -64,7 +59,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
     public RecyclerView.Adapter getAdapter() {
         HashMap<String, JsonObject> map = RealmRating.getRatings(mRealm, "course", model.getId());
         HashMap<String, JsonObject> progressMap = RealmCourseProgress.getCourseProgress(mRealm, model.getId());
-        adapterCourses = new AdapterCourses(getActivity(), getList(RealmMyCourse.class), map);
+        adapterCourses = new AdapterCourses(getActivity(), getList(RealmMyCourse.class), map, this);
         adapterCourses.setProgressMap(progressMap);
         adapterCourses.setmRealm(mRealm);
         adapterCourses.setListener(this);
@@ -193,6 +188,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
             btnRemove.setVisibility(View.GONE);
             tvSelected.setVisibility(View.GONE);
         }
+
         selectAll.setOnClickListener(view -> {
             boolean allSelected = selectedItems.size() == adapterCourses.getCourseList().size();
             adapterCourses.selectAllItems(!allSelected);
@@ -211,7 +207,6 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
 
         @Override
         public void onNothingSelected(AdapterView<?> adapterView) {
-
         }
     };
 
@@ -261,9 +256,15 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         showNoData(tvMessage, adapterCourses.getItemCount());
     }
 
-    private void changeButtonStatus() {
+    public void changeButtonStatus() {
         tvAddToLib.setEnabled(selectedItems.size() > 0);
-        selectAll.setText(adapterCourses.areAllSelected() ? getString(R.string.unselect_all) : getString(R.string.select_all));
+        if (adapterCourses.areAllSelected()) {
+            selectAll.setChecked(true);
+            selectAll.setText(getString(R.string.unselect_all));
+        } else {
+            selectAll.setChecked(false);
+            selectAll.setText(getString(R.string.select_all));
+        }
     }
 
     @Override
