@@ -30,6 +30,7 @@ import com.mikepenz.materialdrawer.DrawerBuilder;
 import com.mikepenz.materialdrawer.model.PrimaryDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.Nameable;
+import com.mikepenz.materialdrawer.holder.DimenHolder;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
@@ -263,13 +264,13 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
                 .build();
 
         ImageView headerBackground = header.getHeaderBackgroundView();
-        headerBackground.setPadding(30, 30, 30, 30); // Add padding values as per your requirement
+        headerBackground.setPadding(30, 40, 30, 40); // Add padding values as per your requirement
         headerBackground.setColorFilter(getResources().getColor(R.color.md_white_1000), PorterDuff.Mode.SRC_IN);
         return header;
     }
 
     private void createDrawer() {
-        com.mikepenz.materialdrawer.holder.DimenHolder dimenHolder = com.mikepenz.materialdrawer.holder.DimenHolder.fromDp(150);
+        com.mikepenz.materialdrawer.holder.DimenHolder dimenHolder = com.mikepenz.materialdrawer.holder.DimenHolder.fromDp(160);
         result = new DrawerBuilder().withActivity(this).withFullscreen(true).withSliderBackgroundColor(getResources().getColor(R.color.colorPrimary)).withToolbar(mTopToolbar).withAccountHeader(headerResult).withHeaderHeight(dimenHolder).addDrawerItems(getDrawerItems()).addStickyDrawerItems(getDrawerItemsFooter()).withOnDrawerItemClickListener((view, position, drawerItem) -> {
             if (drawerItem != null) {
                 menuAction(((Nameable) drawerItem).getName().getTextRes());
@@ -310,9 +311,9 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             case R.string.enterprises:
                 openEnterpriseFragment();
                 break;
-            case R.string.menu_feedback:
-                openMyFragment(new FeedbackListFragment());
-                break;
+//            case R.string.menu_feedback:
+//                openMyFragment(new FeedbackListFragment());
+//                break;
             case R.string.menu_logout:
                 logout();
                 break;
@@ -378,10 +379,12 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     @NonNull
     private IDrawerItem[] getDrawerItemsFooter() {
         ArrayList<Drawable> menuImageListFooter = new ArrayList<>();
-        menuImageListFooter.add(getResources().getDrawable(R.drawable.feedback));
+//        menuImageListFooter.add(getResources().getDrawable(R.drawable.feedback));
         menuImageListFooter.add(getResources().getDrawable(R.drawable.logout));
 
-        return new IDrawerItem[]{changeUX(R.string.menu_feedback, menuImageListFooter.get(0)), changeUX(R.string.menu_logout, menuImageListFooter.get(1)),};
+        return new IDrawerItem[]{
+//                changeUX(R.string.menu_feedback, menuImageListFooter.get(0)),
+                changeUX(R.string.menu_logout, menuImageListFooter.get(0)),};
     }
 
     public PrimaryDrawerItem changeUX(int iconText, Drawable drawable) {
