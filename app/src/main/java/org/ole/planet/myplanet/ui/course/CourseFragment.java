@@ -59,7 +59,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
     public RecyclerView.Adapter getAdapter() {
         HashMap<String, JsonObject> map = RealmRating.getRatings(mRealm, "course", model.getId());
         HashMap<String, JsonObject> progressMap = RealmCourseProgress.getCourseProgress(mRealm, model.getId());
-        adapterCourses = new AdapterCourses(getActivity(), getList(RealmMyCourse.class), map, this);
+        adapterCourses = new AdapterCourses(getActivity(), getList(RealmMyCourse.class), map);
         adapterCourses.setProgressMap(progressMap);
         adapterCourses.setmRealm(mRealm);
         adapterCourses.setListener(this);
