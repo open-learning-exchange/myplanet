@@ -177,7 +177,6 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
             ((ViewHoldercourse) holder).checkBox.setOnClickListener((view) -> {
                 Utilities.handleCheck(((CheckBox) view).isChecked(), position, (ArrayList) selectedItems, courseList);
                 if (listener != null) listener.onSelectedListChange(selectedItems);
-                notifyDataSetChanged();
             });
             showProgressAndRating(position, holder);
         }
@@ -186,7 +185,10 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
     public boolean areAllSelected(){
         if (selectedItems.size() != courseList.size()) {
             areAllSelected = false;
+        } else {
+            areAllSelected = true;
         }
+
         return areAllSelected;
     }
 
