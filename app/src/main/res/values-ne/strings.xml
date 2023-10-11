@@ -19,7 +19,7 @@
     <string name="radio_http">HTTP</string>
     <string name="radio_https">HTTPS</string>
     <string name="title_activity_dashboard">ड्यासबोर्ड</string>
-    <string name="menu_myplanet">My Planet</string>
+    <string name="menu_myplanet">myPlanet</string>
     <string name="menu_home">होम</string>
     <string name="menu_library">पुस्तकालय</string>
     <string name="menu_courses">पाठ्यक्रमहरू</string>
