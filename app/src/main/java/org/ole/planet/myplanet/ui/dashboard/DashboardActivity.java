@@ -311,9 +311,6 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             case R.string.enterprises:
                 openEnterpriseFragment();
                 break;
-//            case R.string.menu_feedback:
-//                openMyFragment(new FeedbackListFragment());
-//                break;
             case R.string.menu_logout:
                 logout();
                 break;
@@ -379,12 +376,9 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     @NonNull
     private IDrawerItem[] getDrawerItemsFooter() {
         ArrayList<Drawable> menuImageListFooter = new ArrayList<>();
-//        menuImageListFooter.add(getResources().getDrawable(R.drawable.feedback));
         menuImageListFooter.add(getResources().getDrawable(R.drawable.logout));
 
-        return new IDrawerItem[]{
-//                changeUX(R.string.menu_feedback, menuImageListFooter.get(0)),
-                changeUX(R.string.menu_logout, menuImageListFooter.get(0)),};
+        return new IDrawerItem[]{changeUX(R.string.menu_logout, menuImageListFooter.get(0)),};
     }
 
     public PrimaryDrawerItem changeUX(int iconText, Drawable drawable) {
