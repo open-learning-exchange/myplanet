@@ -5,6 +5,7 @@
     <string name="action_settings">Settings</string>
     <string name="hint_name">Username</string>
     <string name="hint_password">Password</string>
+    <string name="btn_back">Back</string>
     <string name="btn_sign_in">Sign In</string>
     <string name="btn_sync">Sync</string>
     <string name="btn_sync_save">Save</string>
@@ -1040,5 +1041,6 @@
     <string name="select_all">Select All</string>
     <string name="request_failed_please_retry">Request failed, please retry</string>
     <string name="confirm_removal">Confirm removal</string>
+    <string name="returning_user">Returning user</string>
 
 </resources>

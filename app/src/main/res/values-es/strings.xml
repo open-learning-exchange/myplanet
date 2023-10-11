@@ -5,6 +5,7 @@
     <string name="action_settings">Configuración</string>
     <string name="hint_name">Nombre</string>
     <string name="hint_password">Contraseña</string>
+    <string name="btn_back">Volver</string>
     <string name="btn_sign_in">Iniciar sesión</string>
     <string name="btn_sync">Sincronizar</string>
     <string name="btn_sync_save">Guardar</string>
@@ -950,5 +951,6 @@
     <string name="select_all">Seleccionar todo</string>
     <string name="request_failed_please_retry">La solicitud ha fallado, por favor inténtelo de nuevo</string>
     <string name="confirm_removal">Confirmar eliminación</string>
+    <string name="returning_user">Usuario recurrente</string>
 
 </resources>

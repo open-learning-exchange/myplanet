@@ -30,6 +30,18 @@
                     android:minHeight="?attr/actionBarSize"
                     android:padding="8dp">
 
+                    <ImageButton
+                        android:id="@+id/btn_back"
+                        style="@style/YellowButtons"
+                        android:layout_width="@dimen/_50dp"
+                        android:layout_height="@dimen/_50dp"
+                        android:layout_gravity="center_vertical"
+                        android:background="@drawable/buttonyellow"
+                        android:padding="8dp"
+                        android:src="@drawable/ic_left_arrow"
+                        android:text="@string/btn_back"
+                        app:tint="@color/md_black_1000" />
+
                     <TextView
                         android:id="@+id/tv_title"
                         android:layout_width="0dp"

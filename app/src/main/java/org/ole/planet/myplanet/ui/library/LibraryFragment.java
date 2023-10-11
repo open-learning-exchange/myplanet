@@ -6,12 +6,13 @@ import static org.ole.planet.myplanet.model.RealmMyLibrary.getSubjects;
 
 import android.app.AlertDialog;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.TextView;
 
@@ -51,7 +52,6 @@ import io.realm.Sort;
 public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implements OnLibraryItemSelected, ChipDeletedListener, TagClickListener, OnFilterListener {
     TextView tvAddToLib, tvSelected;
     EditText etSearch, etTags;
-    ImageView imgSearch;
     AdapterLibrary adapterLibrary;
     FlexboxLayout flexBoxTags;
     List<RealmTag> searchTags;
@@ -90,7 +90,6 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         etTags = getView().findViewById(R.id.et_tags);
         clearTags = getView().findViewById(R.id.btn_clear_tags);
         tvSelected = getView().findViewById(R.id.tv_selected);
-        imgSearch = getView().findViewById(R.id.img_search);
         flexBoxTags = getView().findViewById(R.id.flexbox_tags);
         selectAll = getView().findViewById(R.id.selectAll);
         tvDelete = getView().findViewById(R.id.tv_delete);
@@ -117,11 +116,22 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
                 })
                 .setNegativeButton(R.string.no, null).show());
 
-        imgSearch.setOnClickListener(view -> {
-            adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag(etSearch.getText().toString().trim(), searchTags)));
-            showNoData(tvMessage, adapterLibrary.getItemCount());
-            KeyboardUtils.hideSoftKeyboard(getActivity());
+        etSearch.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag(etSearch.getText().toString().trim(), searchTags)));
+                showNoData(tvMessage, adapterLibrary.getItemCount());
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+            }
         });
+
         getView().findViewById(R.id.btn_collections).setOnClickListener(view -> {
             CollectionsFragment f = CollectionsFragment.getInstance(searchTags, "resources");
             f.setListener(LibraryFragment.this);
@@ -167,7 +177,6 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         if (adapterLibrary.getLibraryList().size() == 0) {
             selectAll.setVisibility(View.GONE);
             etSearch.setVisibility(View.GONE);
-            imgSearch.setVisibility(View.GONE);
             tvAddToLib.setVisibility(View.GONE);
             spn.setVisibility(View.GONE);
             tvSelected.setVisibility(View.GONE);
