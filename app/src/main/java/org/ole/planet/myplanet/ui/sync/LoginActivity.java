@@ -103,8 +103,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         showWifiDialog();
         registerReceiver();
 
-//        getRealmData();
-
+        getRealmData();
 
         forceSync = getIntent().getBooleanExtra("forceSync", false);
         processedUrl = Utilities.getUrl();
@@ -343,12 +342,14 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             if (isValid) {
                 RealmUserModel existingUser = mRealm.where(RealmUserModel.class).equalTo("name", username).findFirst();
                 dialog.dismiss();
-                Log.d("model", String.valueOf(existingUser));
+                if(existingUser != null){
+                    Log.d("model", String.valueOf(existingUser.get_id()));
+                }
                 if (existingUser.get_id().contains("guest")) {
                     showGuestDialog();
                 } else if (existingUser.get_id().contains("org.couchdb.user:")) {
                     showUserAlreadyMemberDialog();
-                } else {
+                } else if (existingUser == null) {
                     RealmUserModel model = mRealm.copyFromRealm(RealmUserModel.createGuestUser(username, mRealm, settings));
                     if (model == null) {
                         Utilities.toast(LoginActivity.this, getString(R.string.unable_to_login));
@@ -370,7 +371,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
     private void showGuestDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Already a " + "guest");
+        builder.setTitle("Already a guest");
         builder.setMessage("This user is already a guest.");
         builder.setPositiveButton("OK", (dialog, which) -> dialog.dismiss());
         AlertDialog dialog = builder.create();
@@ -379,7 +380,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
     private void showUserAlreadyMemberDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Already a" + "learner");
+        builder.setTitle("Already a learner");
         builder.setMessage("This user is already a member.");
         builder.setPositiveButton("OK", (dialog, which) -> dialog.dismiss());
         AlertDialog dialog = builder.create();
