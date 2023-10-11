@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.sync;
 
-import static org.ole.planet.myplanet.MainApplication.context;
 import static org.ole.planet.myplanet.ui.dashboard.DashboardActivity.MESSAGE_PROGRESS;
 
 import android.Manifest;
@@ -37,8 +36,6 @@ import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.SyncListener;
@@ -58,7 +55,6 @@ import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.LocaleHelper;
 import org.ole.planet.myplanet.utilities.NetworkUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
-import org.ole.planet.myplanet.utilities.VersionUtils;
 
 import java.util.Arrays;
 import java.util.Calendar;
@@ -68,6 +64,7 @@ import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 import io.realm.Realm;
+import io.realm.RealmResults;
 import io.realm.Sort;
 
 public class LoginActivity extends SyncActivity implements Service.CheckVersionCallback, AdapterTeam.OnUserSelectedListener {
@@ -106,6 +103,9 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         showWifiDialog();
         registerReceiver();
 
+//        getRealmData();
+
+
         forceSync = getIntent().getBooleanExtra("forceSync", false);
         processedUrl = Utilities.getUrl();
         if (forceSync) {
@@ -134,6 +134,46 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         findViewById(R.id.btn_feedback).setOnClickListener(view -> new FeedbackFragment().show(getSupportFragmentManager(), ""));
 
         if (settings.getBoolean("firstRun", true));
+    }
+
+    private void getRealmData() {
+        Realm realm = Realm.getDefaultInstance();
+        realm.refresh();
+        realm.beginTransaction();
+        RealmResults<RealmUserModel> results = realm.where(RealmUserModel.class).findAll();
+        realm.commitTransaction();
+        for (RealmUserModel userModel : results) {
+
+            Log.d("RealmUserModel", "UserAdmin: " + userModel.getUserAdmin() +
+                    ", JoinDate: " + userModel.getJoinDate() +
+                    ", isShowTopbar: " + userModel.isShowTopbar() +
+                    ", RolesList: " + userModel.getRolesList() +
+                    ", Roles: " + userModel.getRoles() +
+                    ", Password_scheme: " + userModel.getPassword_scheme() +
+                    ", Iterations: " + userModel.getIterations() +
+                    ", Derived_key: " + userModel.getDerived_key() +
+                    ", Salt: " + userModel.getSalt() +
+                    ", PhoneNumber: " + userModel.getPhoneNumber() +
+                    ", BirthPlace: " + userModel.getBirthPlace() +
+                    ", _id: " + userModel.get_id() +
+                    ", RoleAsString: " + userModel.getRoleAsString() +
+                    ", PlanetCode: " + userModel.getPlanetCode() +
+                    ", ParentCode: " + userModel.getParentCode() +
+                    ", UserImage: " + userModel.getUserImage() +
+                    ", Dob: " + userModel.getDob() +
+                    ", CommunityName: " + userModel.getCommunityName() +
+                    ", Id: " + userModel.getId() +
+                    ", _rev: " + userModel.get_rev() +
+                    ", Name: " + userModel.getName() +
+                    ", FullName: " + userModel.getFullName() +
+                    ", FirstName: " + userModel.getFirstName() +
+                    ", LastName: " + userModel.getLastName() +
+                    ", MiddleName: " + userModel.getMiddleName() +
+                    ", email: " + userModel.getEmail());
+
+            Log.d("RealmUserModel", String.valueOf(userModel));
+        }
+        realm.close();
     }
 
     private boolean forceSyncTrigger() {
@@ -209,6 +249,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private void showGuestLoginDialog() {
         try {
             mRealm = Realm.getDefaultInstance();
+            mRealm.refresh();
         editor = settings.edit();
         View v = LayoutInflater.from(this).inflate(R.layout.alert_guest_login, null);
         TextInputEditText etUserName = v.findViewById(R.id.et_user_name);
@@ -300,13 +341,21 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             }
 
             if (isValid) {
+                RealmUserModel existingUser = mRealm.where(RealmUserModel.class).equalTo("name", username).findFirst();
                 dialog.dismiss();
-                RealmUserModel model = mRealm.copyFromRealm(RealmUserModel.createGuestUser(username, mRealm, settings));
-                if (model == null) {
-                    Utilities.toast(LoginActivity.this, getString(R.string.unable_to_login));
+                Log.d("model", String.valueOf(existingUser));
+                if (existingUser.get_id().contains("guest")) {
+                    showGuestDialog();
+                } else if (existingUser.get_id().contains("org.couchdb.user:")) {
+                    showUserAlreadyMemberDialog();
                 } else {
-                    saveUserInfoPref(settings, "", model);
-                    onLogin();
+                    RealmUserModel model = mRealm.copyFromRealm(RealmUserModel.createGuestUser(username, mRealm, settings));
+                    if (model == null) {
+                        Utilities.toast(LoginActivity.this, getString(R.string.unable_to_login));
+                    } else {
+                        saveUserInfoPref(settings, "", model);
+                        onLogin();
+                    }
                 }
             }
         });
@@ -318,6 +367,25 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             }
         }
     }
+
+    private void showGuestDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Already a " + "guest");
+        builder.setMessage("This user is already a guest.");
+        builder.setPositiveButton("OK", (dialog, which) -> dialog.dismiss());
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
+    private void showUserAlreadyMemberDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Already a" + "learner");
+        builder.setMessage("This user is already a member.");
+        builder.setPositiveButton("OK", (dialog, which) -> dialog.dismiss());
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
 
     private void continueSync(MaterialDialog dialog) {
         processedUrl = saveConfigAndContinue(dialog);
