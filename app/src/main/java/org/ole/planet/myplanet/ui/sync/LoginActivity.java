@@ -103,8 +103,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         showWifiDialog();
         registerReceiver();
 
-        getRealmData();
-
         forceSync = getIntent().getBooleanExtra("forceSync", false);
         processedUrl = Utilities.getUrl();
         if (forceSync) {
@@ -124,55 +122,19 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         if (!Utilities.getUrl().isEmpty()) {
             btnOpenCommunity.setVisibility(View.VISIBLE);
             btnOpenCommunity.setOnClickListener(v -> {
+                inputName.setText("");
                 new HomeCommunityDialogFragment().show(getSupportFragmentManager(), "");
             });
             new HomeCommunityDialogFragment().show(getSupportFragmentManager(), "");
         } else {
             btnOpenCommunity.setVisibility(View.GONE);
         }
-        findViewById(R.id.btn_feedback).setOnClickListener(view -> new FeedbackFragment().show(getSupportFragmentManager(), ""));
+        findViewById(R.id.btn_feedback).setOnClickListener(view -> {
+            inputName.setText("");
+            new FeedbackFragment().show(getSupportFragmentManager(), "");
+        });
 
         if (settings.getBoolean("firstRun", true));
-    }
-
-    private void getRealmData() {
-        Realm realm = Realm.getDefaultInstance();
-        realm.refresh();
-        realm.beginTransaction();
-        RealmResults<RealmUserModel> results = realm.where(RealmUserModel.class).findAll();
-        realm.commitTransaction();
-        for (RealmUserModel userModel : results) {
-
-            Log.d("RealmUserModel", "UserAdmin: " + userModel.getUserAdmin() +
-                    ", JoinDate: " + userModel.getJoinDate() +
-                    ", isShowTopbar: " + userModel.isShowTopbar() +
-                    ", RolesList: " + userModel.getRolesList() +
-                    ", Roles: " + userModel.getRoles() +
-                    ", Password_scheme: " + userModel.getPassword_scheme() +
-                    ", Iterations: " + userModel.getIterations() +
-                    ", Derived_key: " + userModel.getDerived_key() +
-                    ", Salt: " + userModel.getSalt() +
-                    ", PhoneNumber: " + userModel.getPhoneNumber() +
-                    ", BirthPlace: " + userModel.getBirthPlace() +
-                    ", _id: " + userModel.get_id() +
-                    ", RoleAsString: " + userModel.getRoleAsString() +
-                    ", PlanetCode: " + userModel.getPlanetCode() +
-                    ", ParentCode: " + userModel.getParentCode() +
-                    ", UserImage: " + userModel.getUserImage() +
-                    ", Dob: " + userModel.getDob() +
-                    ", CommunityName: " + userModel.getCommunityName() +
-                    ", Id: " + userModel.getId() +
-                    ", _rev: " + userModel.get_rev() +
-                    ", Name: " + userModel.getName() +
-                    ", FullName: " + userModel.getFullName() +
-                    ", FirstName: " + userModel.getFirstName() +
-                    ", LastName: " + userModel.getLastName() +
-                    ", MiddleName: " + userModel.getMiddleName() +
-                    ", email: " + userModel.getEmail());
-
-            Log.d("RealmUserModel", String.valueOf(userModel));
-        }
-        realm.close();
     }
 
     private boolean forceSyncTrigger() {
@@ -225,18 +187,29 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         btnSignIn.setOnClickListener(view -> submitForm());
         if (!settings.contains("serverProtocol"))
             settings.edit().putString("serverProtocol", "http://").commit();
-        findViewById(R.id.become_member).setOnClickListener(v -> becomeAMember());
-        imgBtnSetting.setOnClickListener(view -> settingDialog());
-        btnGuestLogin.setOnClickListener(view -> showGuestLoginDialog());
+        findViewById(R.id.become_member).setOnClickListener(v -> {
+            inputName.setText("");
+            becomeAMember();
+        });
+        imgBtnSetting.setOnClickListener(view -> {
+            inputName.setText("");
+            settingDialog();
+        });
+        btnGuestLogin.setOnClickListener(view -> {
+            inputName.setText("");
+            showGuestLoginDialog();
+        });
         SwitchCompat switchChildMode = findViewById(R.id.switch_child_mode);
         switchChildMode.setChecked(settings.getBoolean("isChild", false));
         switchChildMode.setOnCheckedChangeListener((compoundButton, b) -> {
+            inputName.setText("");
             settings.edit().putBoolean("isChild", b).commit();
             recreate();
         });
     }
 
     private void becomeAMember() {
+
         if (!Utilities.getUrl().isEmpty()) {
             startActivity(new Intent(this, BecomeMemberActivity.class));
         } else {
@@ -249,46 +222,35 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         try {
             mRealm = Realm.getDefaultInstance();
             mRealm.refresh();
-        editor = settings.edit();
-        View v = LayoutInflater.from(this).inflate(R.layout.alert_guest_login, null);
-        TextInputEditText etUserName = v.findViewById(R.id.et_user_name);
-        etUserName.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                String username = s.toString().toLowerCase().trim(); // Get the current username
-
-                char firstChar = s.length() > 0 ? s.charAt(0) : '\0';
-                boolean hasInvalidCharacters = false;
-                for (int i = 0; i < s.length(); i++) {
-                    char c = s.charAt(i);
-                    if (c != '_' && c != '.' && c != '-' && !Character.isDigit(c) && !Character.isLetter(c)) {
-                        hasInvalidCharacters = true;
-                        break;
+            editor = settings.edit();
+            View v = LayoutInflater.from(this).inflate(R.layout.alert_guest_login, null);
+            TextInputEditText etUserName = v.findViewById(R.id.et_user_name);
+            etUserName.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    char firstChar = s.length() > 0 ? s.charAt(0) : '\0';
+                    boolean hasInvalidCharacters = false;
+                    for (int i = 0; i < s.length(); i++) {
+                        char c = s.charAt(i);
+                        if (c != '_' && c != '.' && c != '-' && !Character.isDigit(c) && !Character.isLetter(c)) {
+                            hasInvalidCharacters = true;
+                            break;
+                        }
                     }
-                }
 
-                if (!Character.isDigit(firstChar) && !Character.isLetter(firstChar)) {
-                    etUserName.setError(getString(R.string.must_start_with_letter_or_number));
-                }
-                else if (hasInvalidCharacters) {
-                    etUserName.setError(getString(R.string.only_letters_numbers_and_are_allowed));
-                } else {
-                    String lowercaseText = s.toString().toLowerCase(Locale.ROOT);
-                    if (!s.toString().equals(lowercaseText)) {
-                        etUserName.setText(lowercaseText);
-                        etUserName.setSelection(lowercaseText.length());
-                    }
-                    etUserName.setError(null);
-
-                    // Check if the username is taken
-                    if (RealmUserModel.isUserExists(mRealm, username)) {
-                        etUserName.setError(getString(R.string.username_taken));
+                    if (!Character.isDigit(firstChar) && !Character.isLetter(firstChar)) {
+                        etUserName.setError(getString(R.string.must_start_with_letter_or_number));
+                    } else if (hasInvalidCharacters) {
+                        etUserName.setError(getString(R.string.only_letters_numbers_and_are_allowed));
                     } else {
+                        String lowercaseText = s.toString().toLowerCase(Locale.ROOT);
+                        if (!s.toString().equals(lowercaseText)) {
+                            etUserName.setText(lowercaseText);
+                            etUserName.setSelection(lowercaseText.length());
+                        }
                         etUserName.setError(null);
-                    }
                 }
             }
 
@@ -342,14 +304,15 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             if (isValid) {
                 RealmUserModel existingUser = mRealm.where(RealmUserModel.class).equalTo("name", username).findFirst();
                 dialog.dismiss();
-                if(existingUser != null){
+
+                if (existingUser != null) {
                     Log.d("model", String.valueOf(existingUser.get_id()));
-                }
-                if (existingUser.get_id().contains("guest")) {
-                    showGuestDialog();
-                } else if (existingUser.get_id().contains("org.couchdb.user:")) {
-                    showUserAlreadyMemberDialog();
-                } else if (existingUser == null) {
+                    if (existingUser.get_id().contains("guest")) {
+                        showGuestDialog(username);
+                    } else if (existingUser.get_id().contains("org.couchdb.user:")) {
+                        showUserAlreadyMemberDialog(username);
+                    }
+                } else {
                     RealmUserModel model = mRealm.copyFromRealm(RealmUserModel.createGuestUser(username, mRealm, settings));
                     if (model == null) {
                         Utilities.toast(LoginActivity.this, getString(R.string.unable_to_login));
@@ -369,24 +332,44 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         }
     }
 
-    private void showGuestDialog() {
+    private void showGuestDialog(String username) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Already a guest");
-        builder.setMessage("This user is already a guest.");
-        builder.setPositiveButton("OK", (dialog, which) -> dialog.dismiss());
+        builder.setTitle(username + " is already a guest");
+        builder.setMessage("Continue only if this is you");
+        builder.setCancelable(false);
+        builder.setNegativeButton("cancel", (dialog, which) -> dialog.dismiss());
+
+        builder.setPositiveButton("continue", (dialog, which) -> {
+            dialog.dismiss();
+            RealmUserModel model = mRealm.copyFromRealm(RealmUserModel.createGuestUser(username, mRealm, settings));
+            if (model == null) {
+                Utilities.toast(LoginActivity.this, getString(R.string.unable_to_login));
+            } else {
+                saveUserInfoPref(settings, "", model);
+                onLogin();
+            }
+        });
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+
+    }
+
+    private void showUserAlreadyMemberDialog(String username) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(username + " is already a member");
+        builder.setMessage("Continue to login if this is you");
+        builder.setCancelable(false);
+        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
+
+        builder.setPositiveButton("login", (dialog, which) -> {
+            dialog.dismiss();
+            inputName.setText(username);
+        });
+
         AlertDialog dialog = builder.create();
         dialog.show();
     }
-
-    private void showUserAlreadyMemberDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Already a learner");
-        builder.setMessage("This user is already a member.");
-        builder.setPositiveButton("OK", (dialog, which) -> dialog.dismiss());
-        AlertDialog dialog = builder.create();
-        dialog.show();
-    }
-
 
     private void continueSync(MaterialDialog dialog) {
         processedUrl = saveConfigAndContinue(dialog);
@@ -540,7 +523,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                     syncIconDrawable.stop();
                     syncIconDrawable.selectDrawable(0);
                 }
-
             });
         }
         editor.commit();
