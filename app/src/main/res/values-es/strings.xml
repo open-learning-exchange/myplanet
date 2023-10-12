@@ -19,7 +19,7 @@
     <string name="radio_http">HTTP</string>
     <string name="radio_https">HTTPS</string>
     <string name="title_activity_dashboard">Panel de control</string>
-    <string name="menu_myplanet">My Planet</string>
+    <string name="menu_myplanet">myPlanet</string>
     <string name="menu_home">Inicio</string>
     <string name="menu_library">Nuestra biblioteca</string>
     <string name="menu_courses">Nuestros cursos</string>
@@ -951,5 +951,6 @@
     <string name="select_all">Seleccionar todo</string>
     <string name="request_failed_please_retry">La solicitud ha fallado, por favor inténtelo de nuevo</string>
     <string name="confirm_removal">Confirmar eliminación</string>
+    <string name="returning_user">Usuario recurrente</string>
 
 </resources>

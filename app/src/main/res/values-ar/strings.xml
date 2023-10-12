@@ -19,7 +19,7 @@
     <string name="radio_http">HTTP</string>
     <string name="radio_https">HTTPS</string>
     <string name="title_activity_dashboard">لوحة التحكم</string>
-    <string name="menu_myplanet">My Planet</string>
+    <string name="menu_myplanet">myPlanet</string>
     <string name="menu_home">الرئيسية</string>
     <string name="menu_library">المكتبة</string>
     <string name="menu_courses">الدورات</string>
@@ -946,5 +946,6 @@
     <string name="select_all">تحديد الكل</string>
     <string name="request_failed_please_retry">الطلب فشل، يرجى إعادة المحاولة</string>
     <string name="confirm_removal">تأكيد الحذف</string>
+    <string name="returning_user">مستخدم عائد</string>
 
 </resources>

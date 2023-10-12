@@ -34,6 +34,7 @@ import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
@@ -55,16 +56,18 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     public Context context;
     public RealmUserModel currentUser;
     public boolean fromLogin;
+    private boolean isFromNewsFragment;
 
     public void setImageList(RealmList<String> imageList) {
         this.imageList = imageList;
     }
 
-    public AdapterNews(Context context, List<RealmNews> list, RealmUserModel user, RealmNews parentNews) {
+    public AdapterNews(Context context, List<RealmNews> list, RealmUserModel user, RealmNews parentNews,boolean isFromNewsFragment) {
         this.context = context;
         this.list = list;
         this.currentUser = user;
         this.parentNews = parentNews;
+        this.isFromNewsFragment = isFromNewsFragment;
         config = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.close);
     }
 
@@ -278,9 +281,12 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
     }
 
+
     private void deletePost(RealmNews news) {
         if (!mRealm.isInTransaction()) mRealm.beginTransaction();
-        list.remove(news);
+        if (isFromNewsFragment) {
+            list.remove(news);
+        }
         if (news != null) {
             news.deleteFromRealm();
         }

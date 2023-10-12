@@ -56,6 +56,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/system_name"
+                    android:contentDescription="@string/system_name"
                     android:textAlignment="center"
                     android:textColor="@android:color/white"
                     android:textSize="10sp"
@@ -68,6 +69,7 @@
                     android:layout_gravity="center"
                     android:entries="@array/language"
                     android:padding="@dimen/padding_normal"
+                    android:contentDescription="@string/language"
                     android:text="@string/language"
                     android:textColor="@android:color/white"
                     android:theme="@style/PrimaryFlatButton" />
@@ -78,6 +80,7 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
+                    android:contentDescription="@string/child_mode"
                     android:padding="@dimen/padding_normal"
                     android:text="@string/child_mode"
                     android:textColor="@color/md_white_1000" />
@@ -87,6 +90,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="@string/app_version"
+                    android:contentDescription="@string/app_version"
                     android:textAlignment="center"
                     android:textColor="@android:color/white"
                     android:textSize="12sp" />
@@ -104,6 +108,7 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
+                    android:contentDescription="@string/open_community"
                     android:text="@string/open_community"
                     android:textColor="@color/md_white_1000"
                     android:theme="@style/PrimaryFlatButton" />
@@ -150,6 +155,7 @@
                     android:layout_alignParentLeft="true"
                     android:layout_marginLeft="10dp"
                     android:layout_marginTop="6dp"
+                    android:contentDescription="@string/sync"
                     android:background="@null"
                     android:scaleType="fitCenter" />
 
@@ -167,6 +173,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignParentRight="true"
+                    android:contentDescription="@string/settings"
                     android:background="@null"
                     android:paddingTop="6dp"
                     android:paddingRight="10dp"
@@ -192,6 +199,7 @@
                         android:id="@+id/input_layout_name"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:contentDescription="@string/hint_name"
                         android:hint="@string/hint_name"
                         app:errorTextAppearance="@style/MyAppTheme.TextInputLayout"
                         app:hintAnimationEnabled="true"
@@ -210,6 +218,7 @@
                         android:id="@+id/input_layout_password"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:contentDescription="@string/hint_password"
                         android:hint="@string/hint_password"
                         app:errorTextAppearance="@style/MyAppTheme.TextInputLayout"
                         app:hintAnimationEnabled="true"
@@ -232,6 +241,7 @@
                         android:layout_marginTop="10dp"
                         android:background="@color/colorPrimary"
                         android:text="@string/btn_sign_in"
+                        android:contentDescription="@string/btn_sign_in"
                         android:textColor="@android:color/white" />
 
                     <TextView
@@ -240,7 +250,8 @@
                         android:layout_height="wrap_content"
                         android:layout_margin="4dp"
                         android:gravity="center"
-                        android:text="Previously logged in? Click here"
+                        android:contentDescription="@string/returning_user"
+                        android:text="@string/returning_user"
                         android:textColor="@color/colorPrimary" />
 
                     <Button
@@ -248,6 +259,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="10dp"
+                        android:contentDescription="@string/btn_guest_login"
                         android:text="@string/btn_guest_login"
                         android:textSize="14sp"
                         android:theme="@style/PrimaryFlatButton" />
@@ -258,6 +270,7 @@
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
                         android:layout_margin="@dimen/padding_normal"
+                        android:contentDescription="@string/become_a_member"
                         android:text="@string/become_a_member"
                         android:theme="@style/PrimaryFlatButton" />
 
@@ -267,6 +280,7 @@
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
                         android:layout_margin="@dimen/padding_normal"
+                        android:contentDescription="@string/feedback"
                         android:text="@string/feedback"
                         android:theme="@style/PrimaryFlatButton" />
                 </LinearLayout>

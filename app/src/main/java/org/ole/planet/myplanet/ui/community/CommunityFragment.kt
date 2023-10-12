@@ -58,7 +58,7 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
         changeLayoutManager(orientation)
 
         Utilities.log("list size " + list.size)
-        var adapter = AdapterNews(activity, list, user, null)
+        var adapter = AdapterNews(activity, list, user, null, true)
         adapter.setListener(this)
         adapter.setFromLogin(requireArguments().getBoolean("fromLogin", false))
         adapter.setmRealm(mRealm)
