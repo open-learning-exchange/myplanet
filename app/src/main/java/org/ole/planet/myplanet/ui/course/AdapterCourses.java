@@ -177,7 +177,6 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
             viewHolder.rowCourseBinding.checkbox.setOnClickListener((view) -> {
                 Utilities.handleCheck(((CheckBox) view).isChecked(), position, (ArrayList) selectedItems, courseList);
                 if (listener != null) listener.onSelectedListChange(selectedItems);
-                notifyDataSetChanged();
             });
             showProgressAndRating(position, holder);
         }
@@ -186,7 +185,10 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
     public boolean areAllSelected(){
         if (selectedItems.size() != courseList.size()) {
             areAllSelected = false;
+        } else {
+            areAllSelected = true;
         }
+
         return areAllSelected;
     }
 
@@ -289,11 +291,14 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
             rowCourseBinding.courseProgress.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                 @Override
                 public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-                    if (progressMap.containsKey(courseList.get(getAdapterPosition()).getCourseId())) {
-                        JsonObject ob = progressMap.get(courseList.get(getAdapterPosition()).getCourseId());
-                        int current = JsonUtils.getInt("current", ob);
-                        if (b && i <= current + 1) {
-                            openCourse(courseList.get(getAdapterPosition()), seekBar.getProgress());
+                    int position = getAdapterPosition();
+                    if (position != RecyclerView.NO_POSITION && position < courseList.size()) {
+                        if (progressMap.containsKey(courseList.get(getAdapterPosition()).getCourseId())) {
+                            JsonObject ob = progressMap.get(courseList.get(getAdapterPosition()).getCourseId());
+                            int current = JsonUtils.getInt("current", ob);
+                            if (b && i <= current + 1) {
+                                openCourse(courseList.get(getAdapterPosition()), seekBar.getProgress());
+                            }
                         }
                     }
                 }
