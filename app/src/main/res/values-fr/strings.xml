@@ -5,6 +5,7 @@
     <string name="action_settings">Paramètres</string>
     <string name="hint_name">Nom d\'utilisateur</string>
     <string name="hint_password">Mot de passe</string>
+    <string name="btn_back">Retourner</string>
     <string name="btn_sign_in">Se connecter</string>
     <string name="btn_sync">Synchroniser</string>
     <string name="btn_sync_save">Enregistrer</string>
@@ -18,7 +19,7 @@
     <string name="radio_http">HTTP</string>
     <string name="radio_https">HTTPS</string>
     <string name="title_activity_dashboard">Tableau de bord</string>
-    <string name="menu_myplanet">My Planet</string>
+    <string name="menu_myplanet">myPlanet</string>
     <string name="menu_home">Accueil</string>
     <string name="menu_library">Bibliothèque</string>
     <string name="menu_courses">Cours</string>
@@ -949,5 +950,7 @@
     <string name="unselect_all">Désélectionner tout</string>
     <string name="select_all">Sélectionner tout</string>
     <string name="request_failed_please_retry">La demande a échoué, veuillez réessayer</string>
+    <string name="confirm_removal">Confirmer la suppression</string>
+    <string name="returning_user">Utilisateur régulier</string>
 
 </resources>

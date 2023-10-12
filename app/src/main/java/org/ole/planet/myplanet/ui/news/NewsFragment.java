@@ -144,7 +144,7 @@ public class NewsFragment extends BaseNewsFragment {
         SharedPreferences settings = getActivity().getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
         List<RealmMyLibrary> lib = mRealm.where(RealmMyLibrary.class).in("_id", resourceIds.toArray(new String[]{})).findAll();
         getUrlsAndStartDownload(lib, settings, urls);
-        adapterNews = new AdapterNews(getActivity(), list, user, null);
+        adapterNews = new AdapterNews(getActivity(), list, user, null, true);
         adapterNews.setmRealm(mRealm);
         adapterNews.setFromLogin(getArguments().getBoolean("fromLogin"));
         adapterNews.setListener(this);

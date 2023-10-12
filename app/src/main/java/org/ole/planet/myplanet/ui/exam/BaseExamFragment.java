@@ -140,7 +140,7 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
             UserInformationFragment.getInstance(sub.getId()).show(getChildFragmentManager(), "");
         } else {
             if (!mRealm.isInTransaction()) mRealm.beginTransaction();
-            sub.setStatus(getString(R.string.complete));
+            sub.setStatus("complete");
             mRealm.commitTransaction();
             Utilities.toast(getActivity(), getString(R.string.thank_you_for_taking_this_survey));
             getActivity().onBackPressed();

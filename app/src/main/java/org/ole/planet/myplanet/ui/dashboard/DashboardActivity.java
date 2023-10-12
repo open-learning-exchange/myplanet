@@ -34,6 +34,7 @@ import com.mikepenz.materialdrawer.DrawerBuilder;
 import com.mikepenz.materialdrawer.model.PrimaryDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.Nameable;
+import com.mikepenz.materialdrawer.holder.DimenHolder;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
@@ -103,12 +104,18 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         tl = findViewById(R.id.tab_layout);
         TextView appName = findViewById(R.id.app_title_name);
         try {
-            String name = profileDbHandler.getUserModel().getFullName();
-            if (name.trim().length() == 0) {
-                name = profileDbHandler.getUserModel().getName();
+            RealmUserModel userProfileModel = profileDbHandler.getUserModel();
+            if(userProfileModel != null){
+                String name = userProfileModel.getFullName();
+                if (name.trim().length() == 0) {
+                    name = profileDbHandler.getUserModel().getName();
+                }
+                appName.setText(name + "'s Planet");
+            } else {
+                appName.setText(getString(R.string.app_project_name));
             }
-            appName.setText(name + "'s Planet");
         } catch (Exception err) {
+            throw new RuntimeException(err);
         }
         findViewById(R.id.iv_setting).setOnClickListener(v -> startActivity(new Intent(this, SettingActivity.class)));
         if (user.getRolesList().isEmpty() && !user.getUserAdmin()) {
@@ -164,10 +171,10 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
                         startActivity(new Intent(DashboardActivity.this, SettingActivity.class));
                         break;
                     case R.id.action_disclaimer:
-                        startActivity(new Intent(DashboardActivity.this, DisclaimerActivity.class));
+                        openCallFragment(new DisclaimerFragment());
                         break;
                     case R.id.action_about:
-                        startActivity(new Intent(DashboardActivity.this, AboutActivity.class));
+                        openCallFragment(new AboutFragment());
                         break;
                     case R.id.action_logout:
                         logout();
@@ -279,18 +286,17 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
                 .withActivity(DashboardActivity.this)
                 .withTextColor(getResources().getColor(R.color.bg_white))
                 .withHeaderBackground(R.drawable.ole_logo)
-                .withHeaderBackgroundScaleType(ImageView.ScaleType.FIT_XY)
                 .withDividerBelowHeader(false)
                 .build();
 
         ImageView headerBackground = header.getHeaderBackgroundView();
-        headerBackground.setPadding(20, 12, 20, 12); // Add padding values as per your requirement
+        headerBackground.setPadding(30, 60, 30, 60);
         headerBackground.setColorFilter(getResources().getColor(R.color.md_white_1000), PorterDuff.Mode.SRC_IN);
         return header;
     }
 
     private void createDrawer() {
-        com.mikepenz.materialdrawer.holder.DimenHolder dimenHolder = com.mikepenz.materialdrawer.holder.DimenHolder.fromDp(200);
+        com.mikepenz.materialdrawer.holder.DimenHolder dimenHolder = com.mikepenz.materialdrawer.holder.DimenHolder.fromDp(160);
         result = new DrawerBuilder().withActivity(this).withFullscreen(true).withSliderBackgroundColor(getResources().getColor(R.color.colorPrimary)).withToolbar(mTopToolbar).withAccountHeader(headerResult).withHeaderHeight(dimenHolder).addDrawerItems(getDrawerItems()).addStickyDrawerItems(getDrawerItemsFooter()).withOnDrawerItemClickListener((view, position, drawerItem) -> {
             if (drawerItem != null) {
                 menuAction(((Nameable) drawerItem).getName().getTextRes());
@@ -330,9 +336,6 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
                 break;
             case R.string.enterprises:
                 openEnterpriseFragment();
-                break;
-            case R.string.menu_feedback:
-                openMyFragment(new FeedbackListFragment());
                 break;
             case R.string.menu_logout:
                 logout();
@@ -399,10 +402,9 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     @NonNull
     private IDrawerItem[] getDrawerItemsFooter() {
         ArrayList<Drawable> menuImageListFooter = new ArrayList<>();
-        menuImageListFooter.add(getResources().getDrawable(R.drawable.feedback));
         menuImageListFooter.add(getResources().getDrawable(R.drawable.logout));
 
-        return new IDrawerItem[]{changeUX(R.string.menu_feedback, menuImageListFooter.get(0)), changeUX(R.string.menu_logout, menuImageListFooter.get(1)),};
+        return new IDrawerItem[]{changeUX(R.string.menu_logout, menuImageListFooter.get(0)),};
     }
 
     public PrimaryDrawerItem changeUX(int iconText, Drawable drawable) {

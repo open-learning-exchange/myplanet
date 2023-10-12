@@ -214,7 +214,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
     private boolean updateAnsDb() {
         boolean flag;
         startTransaction();
-        sub.setStatus(currentIndex == questions.size() - 1 ? getString(R.string.graded) : getString(R.string.pending));
+        sub.setStatus(currentIndex == questions.size() - 1 ? "requires grading" : "pending");
         RealmList<RealmAnswer> list = sub.getAnswers();
         RealmAnswer answer = createAnswer(list);
         RealmExamQuestion que = mRealm.copyFromRealm(questions.get(currentIndex));

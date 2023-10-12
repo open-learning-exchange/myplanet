@@ -25,6 +25,10 @@ import android.widget.TextView;
 import org.json.JSONArray;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseNewsFragment;
+import org.ole.planet.myplanet.databinding.AlertInputBinding;
+import org.ole.planet.myplanet.databinding.FragmentMyTeamsDetailBinding;
+import org.ole.planet.myplanet.databinding.FragmentPlanBinding;
+import org.ole.planet.myplanet.databinding.MyLibraryAlertdialogBinding;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
@@ -48,12 +52,13 @@ import java.util.UUID;
 import io.realm.RealmResults;
 
 public class MyTeamsDetailFragment extends BaseNewsFragment {
-    TextView tvTitle, tvDescription;
+    private FragmentMyTeamsDetailBinding fragmentMyTeamsDetailBinding;
+    TextView tvDescription;
     RealmUserModel user;
     String teamId;
     RealmMyTeam team;
-    Button btnLeave;
-    Button btnInvite;
+//    Button btnLeave;
+//    Button btnInvite;
     ListView listContent;
     TabLayout tabLayout;
     DatabaseService dbService;
@@ -76,37 +81,37 @@ public class MyTeamsDetailFragment extends BaseNewsFragment {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View v = inflater.inflate(R.layout.fragment_my_teams_detail, container, false);
+        fragmentMyTeamsDetailBinding = FragmentMyTeamsDetailBinding.inflate(inflater, container, false);
+        View v = fragmentMyTeamsDetailBinding.getRoot();
         initializeViews(v);
         dbService = new DatabaseService(getActivity());
         mRealm = dbService.getRealmInstance();
         user = mRealm.copyFromRealm(profileDbHandler.getUserModel());
         team = mRealm.where(RealmMyTeam.class).equalTo("_id", teamId).findFirst();
-        return v;
+        return fragmentMyTeamsDetailBinding.getRoot();
     }
 
     private void initializeViews(View v) {
-        btnLeave = v.findViewById(R.id.btn_leave);
         llRv = v.findViewById(R.id.ll_rv);
-        btnLeave.setVisibility(Constants.showBetaFeature(Constants.KEY_MEETUPS, getActivity()) ? View.VISIBLE : View.GONE);
-        btnInvite = v.findViewById(R.id.btn_invite);
-        btnInvite.setVisibility(Constants.showBetaFeature(Constants.KEY_MEETUPS, getActivity()) ? View.VISIBLE : View.GONE);
         rvDiscussion = v.findViewById(R.id.rv_discussion);
         tvDescription = v.findViewById(R.id.description);
         tabLayout = v.findViewById(R.id.tab_layout);
         listContent = v.findViewById(R.id.list_content);
-        tvTitle = v.findViewById(R.id.title);
+
+        fragmentMyTeamsDetailBinding.btnInvite.setVisibility(Constants.showBetaFeature(Constants.KEY_MEETUPS, getActivity()) ? View.VISIBLE : View.GONE);
+        fragmentMyTeamsDetailBinding.btnLeave.setVisibility(Constants.showBetaFeature(Constants.KEY_MEETUPS, getActivity()) ? View.VISIBLE : View.GONE);
         v.findViewById(R.id.add_message).setOnClickListener(view -> {
             showAddMessage();
         });
     }
 
     private void showAddMessage() {
-        View v = getLayoutInflater().inflate(R.layout.alert_input, null);
-        TextInputLayout layout = v.findViewById(R.id.tl_input);
-        layout.setHint(getString(R.string.enter_message));
-        new AlertDialog.Builder(getActivity()).setView(v).setTitle(R.string.add_message).setPositiveButton(R.string.save, (dialogInterface, i) -> {
-            String msg = layout.getEditText().getText().toString().trim();
+        AlertInputBinding alertInputBinding = AlertInputBinding.inflate(getLayoutInflater());
+//        View v = getLayoutInflater().inflate(R.layout.alert_input, null);
+//        TextInputLayout layout = v.findViewById(R.id.tl_input);
+        alertInputBinding.tlInput.setHint(getString(R.string.enter_message));
+        new AlertDialog.Builder(getActivity()).setView(alertInputBinding.getRoot()).setTitle(R.string.add_message).setPositiveButton(R.string.save, (dialogInterface, i) -> {
+            String msg = alertInputBinding.tlInput.getEditText().getText().toString().trim();
             if (msg.isEmpty()) {
                 Utilities.toast(getActivity(), String.valueOf(R.string.message_is_required));
                 return;
@@ -125,7 +130,7 @@ public class MyTeamsDetailFragment extends BaseNewsFragment {
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        tvTitle.setText(team.getName());
+        fragmentMyTeamsDetailBinding.title.setText(team.getName());
         tvDescription.setText(team.getDescription());
         setTeamList();
     }
@@ -174,7 +179,7 @@ public class MyTeamsDetailFragment extends BaseNewsFragment {
     }
 
     private void showRecyclerView(List<RealmNews> realmNewsList) {
-        AdapterNews adapterNews = new AdapterNews(getActivity(), realmNewsList, user, null);
+        AdapterNews adapterNews = new AdapterNews(getActivity(), realmNewsList, user, null, true);
         adapterNews.setmRealm(mRealm);
         adapterNews.setListener(this);
         rvDiscussion.setAdapter(adapterNews);

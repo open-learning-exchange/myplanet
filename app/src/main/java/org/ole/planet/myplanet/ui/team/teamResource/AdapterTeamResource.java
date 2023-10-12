@@ -2,18 +2,15 @@ package org.ole.planet.myplanet.ui.team.teamResource;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.ImageView;
-import android.widget.TextView;
-
-import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
+import org.ole.planet.myplanet.databinding.RowTeamResourceBinding;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 
@@ -21,7 +18,8 @@ import java.util.List;
 
 import io.realm.Realm;
 
-public class AdapterTeamResource extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+public class AdapterTeamResource extends RecyclerView.Adapter<AdapterTeamResource.ViewHolderTeamResource> {
+    private RowTeamResourceBinding rowTeamResourceBinding;
     private Context context;
     private List<RealmMyLibrary> list;
     private Realm mRealm;
@@ -42,26 +40,24 @@ public class AdapterTeamResource extends RecyclerView.Adapter<RecyclerView.ViewH
 
     @NonNull
     @Override
-    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View v = LayoutInflater.from(context).inflate(R.layout.row_team_resource, parent, false);
-        return new ViewHolderTeamResource(v);
+    public ViewHolderTeamResource onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        rowTeamResourceBinding = RowTeamResourceBinding.inflate(LayoutInflater.from(context), parent, false);
+        return new ViewHolderTeamResource(rowTeamResourceBinding);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-        if (holder instanceof ViewHolderTeamResource) {
-            ((ViewHolderTeamResource) holder).title.setText(list.get(position).getTitle());
-            ((ViewHolderTeamResource) holder).description.setText(list.get(position).getDescription());
-            holder.itemView.setOnClickListener(v -> {
-                if (listener != null) {
-                    listener.openLibraryDetailFragment(list.get(position));
-                }
-            });
-            ((ViewHolderTeamResource) holder).ivRemove.setOnClickListener(view -> {
-            });
-            if (!settings.getString("userId", "--").equalsIgnoreCase(teamCreator)) {
-                ((ViewHolderTeamResource) holder).ivRemove.setVisibility(View.GONE);
+    public void onBindViewHolder(@NonNull ViewHolderTeamResource holder, int position) {
+        rowTeamResourceBinding.tvTitle.setText(list.get(position).getTitle());
+        rowTeamResourceBinding.tvDescription.setText(list.get(position).getDescription());
+        holder.itemView.setOnClickListener(v -> {
+            if (listener != null) {
+                listener.openLibraryDetailFragment(list.get(position));
             }
+        });
+        rowTeamResourceBinding.ivRemove.setOnClickListener(view -> {
+        });
+        if (!settings.getString("userId", "--").equalsIgnoreCase(teamCreator)) {
+            rowTeamResourceBinding.ivRemove.setVisibility(View.GONE);
         }
     }
 
@@ -70,15 +66,12 @@ public class AdapterTeamResource extends RecyclerView.Adapter<RecyclerView.ViewH
         return list.size();
     }
 
-    class ViewHolderTeamResource extends RecyclerView.ViewHolder {
-        TextView title, description;
-        ImageView ivRemove;
+    static class ViewHolderTeamResource extends RecyclerView.ViewHolder {
+        RowTeamResourceBinding rowTeamResourceBinding;
 
-        public ViewHolderTeamResource(View itemView) {
-            super(itemView);
-            title = itemView.findViewById(R.id.tv_title);
-            description = itemView.findViewById(R.id.tv_description);
-            ivRemove = itemView.findViewById(R.id.iv_remove);
+        public ViewHolderTeamResource(RowTeamResourceBinding rowTeamResourceBinding) {
+            super(rowTeamResourceBinding.getRoot());
+            this.rowTeamResourceBinding = rowTeamResourceBinding;
         }
     }
 }
