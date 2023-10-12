@@ -68,6 +68,7 @@ import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 import io.realm.Realm;
+import io.realm.RealmResults;
 import io.realm.Sort;
 
 public class LoginActivity extends SyncActivity implements Service.CheckVersionCallback, AdapterTeam.OnUserSelectedListener {
@@ -129,13 +130,17 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         if (!Utilities.getUrl().isEmpty()) {
             btnOpenCommunity.setVisibility(View.VISIBLE);
             btnOpenCommunity.setOnClickListener(v -> {
+                inputName.setText("");
                 new HomeCommunityDialogFragment().show(getSupportFragmentManager(), "");
             });
             new HomeCommunityDialogFragment().show(getSupportFragmentManager(), "");
         } else {
             btnOpenCommunity.setVisibility(View.GONE);
         }
-        findViewById(R.id.btn_feedback).setOnClickListener(view -> new FeedbackFragment().show(getSupportFragmentManager(), ""));
+        findViewById(R.id.btn_feedback).setOnClickListener(view -> {
+            inputName.setText("");
+            new FeedbackFragment().show(getSupportFragmentManager(), "");
+        });
 
         if (settings.getBoolean("firstRun", true));
 
@@ -238,18 +243,29 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         });
         if (!settings.contains("serverProtocol"))
             settings.edit().putString("serverProtocol", "http://").commit();
-        findViewById(R.id.become_member).setOnClickListener(v -> becomeAMember());
-        imgBtnSetting.setOnClickListener(view -> settingDialog());
-        btnGuestLogin.setOnClickListener(view -> showGuestLoginDialog());
+        findViewById(R.id.become_member).setOnClickListener(v -> {
+            inputName.setText("");
+            becomeAMember();
+        });
+        imgBtnSetting.setOnClickListener(view -> {
+            inputName.setText("");
+            settingDialog();
+        });
+        btnGuestLogin.setOnClickListener(view -> {
+            inputName.setText("");
+            showGuestLoginDialog();
+        });
         SwitchCompat switchChildMode = findViewById(R.id.switch_child_mode);
         switchChildMode.setChecked(settings.getBoolean("isChild", false));
         switchChildMode.setOnCheckedChangeListener((compoundButton, b) -> {
+            inputName.setText("");
             settings.edit().putBoolean("isChild", b).commit();
             recreate();
         });
     }
 
     private void becomeAMember() {
+
         if (!Utilities.getUrl().isEmpty()) {
             startActivity(new Intent(this, BecomeMemberActivity.class));
         } else {
@@ -261,40 +277,154 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private void showGuestLoginDialog() {
         try {
             mRealm = Realm.getDefaultInstance();
-
+            mRealm.refresh();
             editor = settings.edit();
             View v = LayoutInflater.from(this).inflate(R.layout.alert_guest_login, null);
             TextInputEditText etUserName = v.findViewById(R.id.et_user_name);
-            new AlertDialog.Builder(this)
-                    .setTitle("Login As Guest")
-                    .setView(v)
-                    .setPositiveButton("Login", (dialogInterface, i) -> {
-                        if (mRealm != null && !mRealm.isClosed()) {
-                            if (mRealm.isEmpty()) {
-                                alertDialogOkay(getString(R.string.this_device_not_configured_properly_please_check_and_sync));
-                                return;
-                            }
-                            String username = etUserName.getText().toString().toLowerCase().trim();
-                            if (username.isEmpty()) {
-                                Utilities.toast(this, getString(R.string.username_cannot_be_empty));
-                                return;
-                            }
-                            RealmUserModel model = mRealm.copyFromRealm(RealmUserModel.createGuestUser(username, mRealm, settings));
-                            if (model == null) {
-                                Utilities.toast(this, getString(R.string.unable_to_login));
-                            } else {
-                                saveUserInfoPref(settings, "", model);
-                                onLogin();
-                            }
+            etUserName.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    char firstChar = s.length() > 0 ? s.charAt(0) : '\0';
+                    boolean hasInvalidCharacters = false;
+                    for (int i = 0; i < s.length(); i++) {
+                        char c = s.charAt(i);
+                        if (c != '_' && c != '.' && c != '-' && !Character.isDigit(c) && !Character.isLetter(c)) {
+                            hasInvalidCharacters = true;
+                            break;
                         }
-                    })
-                    .setNegativeButton("Cancel", null)
-                    .show();
+                    }
+
+                    if (!Character.isDigit(firstChar) && !Character.isLetter(firstChar)) {
+                        etUserName.setError(getString(R.string.must_start_with_letter_or_number));
+                    } else if (hasInvalidCharacters) {
+                        etUserName.setError(getString(R.string.only_letters_numbers_and_are_allowed));
+                    } else {
+                        String lowercaseText = s.toString().toLowerCase(Locale.ROOT);
+                        if (!s.toString().equals(lowercaseText)) {
+                            etUserName.setText(lowercaseText);
+                            etUserName.setSelection(lowercaseText.length());
+                        }
+                        etUserName.setError(null);
+                }
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {}
+        });
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Login As Guest");
+        builder.setView(v);
+        builder.setPositiveButton("Login", null);
+        builder.setNegativeButton("Cancel", null);
+        AlertDialog dialog = builder.create();
+        dialog.show();
+        Button login = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+        Button cancel = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
+
+        login.setOnClickListener(view -> {
+            if (mRealm.isEmpty()) {
+                alertDialogOkay(getString(R.string.this_device_not_configured_properly_please_check_and_sync));
+                return;
+            }
+            String username = etUserName.getText().toString().trim();
+            Character firstChar = username.isEmpty() ? null : username.charAt(0);
+            boolean hasInvalidCharacters = false;
+
+            boolean isValid = true;
+
+            if (TextUtils.isEmpty(username)) {
+                etUserName.setError(getString(R.string.username_cannot_be_empty));
+                isValid = false;
+            }
+
+            if (firstChar != null && !Character.isDigit(firstChar) && !Character.isLetter(firstChar)) {
+                etUserName.setError(getString(R.string.must_start_with_letter_or_number));
+                isValid = false;
+            } else {
+                for (char c : username.toCharArray()) {
+                    if (c != '_' && c != '.' && c != '-' && !Character.isDigit(c) && !Character.isLetter(c)) {
+                        hasInvalidCharacters = true;
+                        break;
+                    }
+                }
+
+                if (hasInvalidCharacters) {
+                    etUserName.setError(getString(R.string.only_letters_numbers_and_are_allowed));
+                    isValid = false;
+                }
+            }
+
+            if (isValid) {
+                RealmUserModel existingUser = mRealm.where(RealmUserModel.class).equalTo("name", username).findFirst();
+                dialog.dismiss();
+
+                if (existingUser != null) {
+                    Log.d("model", String.valueOf(existingUser.get_id()));
+                    if (existingUser.get_id().contains("guest")) {
+                        showGuestDialog(username);
+                    } else if (existingUser.get_id().contains("org.couchdb.user:")) {
+                        showUserAlreadyMemberDialog(username);
+                    }
+                } else {
+                    RealmUserModel model = mRealm.copyFromRealm(RealmUserModel.createGuestUser(username, mRealm, settings));
+                    if (model == null) {
+                        Utilities.toast(LoginActivity.this, getString(R.string.unable_to_login));
+                    } else {
+                        saveUserInfoPref(settings, "", model);
+                        onLogin();
+                    }
+                }
+            }
+        });
+
+        cancel.setOnClickListener(view -> dialog.dismiss());
         } finally {
             if (mRealm != null && !mRealm.isClosed()) {
                 mRealm.close();
             }
         }
+    }
+
+    private void showGuestDialog(String username) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(username + " is already a guest");
+        builder.setMessage("Continue only if this is you");
+        builder.setCancelable(false);
+        builder.setNegativeButton("cancel", (dialog, which) -> dialog.dismiss());
+
+        builder.setPositiveButton("continue", (dialog, which) -> {
+            dialog.dismiss();
+            RealmUserModel model = mRealm.copyFromRealm(RealmUserModel.createGuestUser(username, mRealm, settings));
+            if (model == null) {
+                Utilities.toast(LoginActivity.this, getString(R.string.unable_to_login));
+            } else {
+                saveUserInfoPref(settings, "", model);
+                onLogin();
+            }
+        });
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+
+    }
+
+    private void showUserAlreadyMemberDialog(String username) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(username + " is already a member");
+        builder.setMessage("Continue to login if this is you");
+        builder.setCancelable(false);
+        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
+
+        builder.setPositiveButton("login", (dialog, which) -> {
+            dialog.dismiss();
+            inputName.setText(username);
+        });
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
     }
 
     private void continueSync(MaterialDialog dialog) {
@@ -729,5 +859,3 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         return settings.getString("customDeviceName", NetworkUtils.getDeviceName());
     }
 }
-
-

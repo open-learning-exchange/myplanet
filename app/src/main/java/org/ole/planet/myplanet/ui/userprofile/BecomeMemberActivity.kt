@@ -2,9 +2,11 @@ package org.ole.planet.myplanet.ui.userprofile
 
 import android.app.DatePickerDialog
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.text.Editable
+import android.text.TextUtils
 import android.text.TextWatcher
 import android.view.View
 import android.widget.ArrayAdapter
@@ -20,6 +22,7 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.Utilities
@@ -31,6 +34,7 @@ class BecomeMemberActivity : BaseActivity() {
     private lateinit var activityBecomeMemberBinding: ActivityBecomeMemberBinding
     var dob: String = "";
     lateinit var settings: SharedPreferences
+    var guest: Boolean = false
     private fun showDatePickerDialog() {
         val now = Calendar.getInstance()
         val dpd = DatePickerDialog(
@@ -58,8 +62,15 @@ class BecomeMemberActivity : BaseActivity() {
             showDatePickerDialog()
         }
 
+        val username = intent.getStringExtra("username");
+        guest = intent.getBooleanExtra("guest", false);
+
         settings = getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE)
         textChangedListener(mRealm)
+
+        if (username != null) {
+            activityBecomeMemberBinding.etUsername.setText(username)
+        }
 
         activityBecomeMemberBinding.etUsername.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -94,6 +105,7 @@ class BecomeMemberActivity : BaseActivity() {
         activityBecomeMemberBinding.btnCancel.setOnClickListener {
             finish()
         }
+
         activityBecomeMemberBinding.btnSubmit.setOnClickListener {
             var username: String? = activityBecomeMemberBinding.etUsername.text.toString()
             var password: String? = activityBecomeMemberBinding.etPassword.text.toString()
@@ -106,63 +118,62 @@ class BecomeMemberActivity : BaseActivity() {
             var phoneNumber: String? = activityBecomeMemberBinding.etPhone.text.toString()
             var birthDate: String? = dob
             var level: String? = activityBecomeMemberBinding.spnLevel.selectedItem.toString()
-
-            var rb: RadioButton? =
-                findViewById<View>(activityBecomeMemberBinding.rbGender.checkedRadioButtonId) as RadioButton?
-            var gender: String? = ""
-            if (rb != null) gender = rb.text.toString()
-            else {
-                Utilities.toast(this, getString(R.string.please_select_gender))
-            }
-
+            var gender: String? = null
+          
             val firstChar = if (username!!.isNotEmpty()) username[0] else null
             val hasInvalidCharacters = username.any { char ->
                 char != '_' && char != '.' && char != '-' &&
                         !Character.isDigit(char) && !Character.isLetter(char)
             }
 
-            if (username.isEmpty()) {
+
+            if (TextUtils.isEmpty(username)) {
                 activityBecomeMemberBinding.etUsername.error = getString(R.string.please_enter_a_username)
             } else if (username.contains(" ")) {
                 activityBecomeMemberBinding.etUsername.error = getString(R.string.invalid_username)
             } else if (firstChar != null && !Character.isDigit(firstChar) && !Character.isLetter(firstChar)) {
                 activityBecomeMemberBinding.etUsername.error = getString(R.string.must_start_with_letter_or_number)
             } else if (hasInvalidCharacters) {
-                activityBecomeMemberBinding.etUsername.error = getString(R.string.only_letters_numbers_and_are_allowed)
-            }
-
-            if (password!!.isEmpty()) {
+               activityBecomeMemberBinding.etUsername.error = getString(R.string.only_letters_numbers_and_are_allowed)
+            } else if (TextUtils.isEmpty(password)) {
                 activityBecomeMemberBinding.etPassword.error = getString(R.string.please_enter_a_password)
             } else if (password != repassword) {
                 activityBecomeMemberBinding.etRePassword.error = getString(R.string.password_doesn_t_match)
-            }
-            if (email!!.isNotEmpty() && !Utilities.isValidEmail(email)) {
+            } else if (!TextUtils.isEmpty(email) && !Utilities.isValidEmail(email)) {
                 activityBecomeMemberBinding.etEmail.error = getString(R.string.invalid_email)
-            }
-            if (level == null) {
+            } else if (activityBecomeMemberBinding.rbGender.checkedRadioButtonId == -1) {
+                Utilities.toast(this, getString(R.string.please_select_gender))
+            } else if (level == null) {
                 Utilities.toast(this, getString(R.string.level_is_required));
-            }
-            if (password.isEmpty() && phoneNumber!!.isNotEmpty()) {
-                activityBecomeMemberBinding.etRePassword.setText(phoneNumber)
-                password = phoneNumber
-                ///Add dialog that using phone as password , Agree / disagree
-            }
+            } else {
+                if (activityBecomeMemberBinding.male.isChecked) {
+                    gender = "male"
+                } else if (activityBecomeMemberBinding.female.isChecked) {
+                    gender = "female"
+                }
 
-            checkMandatoryFieldsAndAddMember(
-                username,
-                password,
-                repassword,
-                fname,
-                lname,
-                mname,
-                email,
-                language,
-                level,
-                phoneNumber,
-                birthDate,
-                gender,
-                mRealm
-            )
+                if (TextUtils.isEmpty(password) && !TextUtils.isEmpty(phoneNumber)) {
+                    activityBecomeMemberBinding.etRePassword.setText(phoneNumber)
+                    password = phoneNumber
+                    ///Add dialog that using phone as password , Agree / disagree
+                }
+
+                checkMandatoryFieldsAndAddMember(
+                    username,
+                    password!!,
+                    repassword,
+                    fname,
+                    lname,
+                    mname,
+                    email,
+                    language,
+                    level,
+                    phoneNumber,
+                    birthDate,
+                    gender,
+                    mRealm
+                )
+            }
         }
     }
 
@@ -218,6 +229,13 @@ class BecomeMemberActivity : BaseActivity() {
                     activityBecomeMemberBinding.pbar.visibility = View.GONE
                     Utilities.toast(this, res)
                 }
+                finish()
+            }
+
+            if (guest){
+                val intent = Intent(this, LoginActivity::class.java)
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                startActivity(intent)
                 finish()
             }
         }
