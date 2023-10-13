@@ -49,7 +49,6 @@ public class AdapterTeam extends RecyclerView.Adapter<AdapterTeam.ViewHolderTeam
         if (context instanceof OnUserSelectedListener) listener = (OnUserSelectedListener) context;
     }
 
-
     @NonNull
     @Override
     public ViewHolderTeam onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
