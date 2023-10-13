@@ -44,11 +44,11 @@ public class AdapterTeam extends RecyclerView.Adapter<AdapterTeam.ViewHolderTeam
     public AdapterTeam(Context context, List<RealmMyTeam> list, Realm mRealm) {
         this.context = context;
         this.list = list;
-        mRealm = Realm.getDefaultInstance();
         this.mRealm = mRealm;
 
         if (context instanceof OnUserSelectedListener) listener = (OnUserSelectedListener) context;
     }
+
 
     @NonNull
     @Override
@@ -100,14 +100,6 @@ public class AdapterTeam extends RecyclerView.Adapter<AdapterTeam.ViewHolderTeam
     @Override
     public int getItemCount() {
         return list.size();
-    }
-
-    @Override
-    public void onViewRecycled(@NonNull ViewHolderTeam holder) {
-        super.onViewRecycled(holder);
-        if (mRealm != null && !mRealm.isClosed()) {
-            mRealm.close();
-        }
     }
 
     public interface OnUserSelectedListener {
