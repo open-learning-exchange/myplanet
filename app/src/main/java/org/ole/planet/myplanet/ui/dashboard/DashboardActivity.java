@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.ui.dashboard;
 
+import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
@@ -8,11 +10,13 @@ import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -30,6 +34,7 @@ import com.mikepenz.materialdrawer.DrawerBuilder;
 import com.mikepenz.materialdrawer.model.PrimaryDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.Nameable;
+import com.mikepenz.materialdrawer.holder.DimenHolder;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
@@ -48,6 +53,7 @@ import org.ole.planet.myplanet.ui.survey.SendSurveyFragment;
 import org.ole.planet.myplanet.ui.survey.SurveyFragment;
 import org.ole.planet.myplanet.ui.sync.DashboardElementActivity;
 import org.ole.planet.myplanet.ui.team.TeamFragment;
+import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity;
 import org.ole.planet.myplanet.utilities.BottomNavigationViewHelper;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.KeyboardUtils;
@@ -121,9 +127,8 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         navigationView.setVisibility(new UserProfileDbHandler(this).getUserModel().getShowTopbar() ? View.VISIBLE : View.GONE);
         headerResult = getAccountHeader();
         createDrawer();
-        if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
+        if (!(user.getId().startsWith("guest") && profileDbHandler.getOfflineVisits() >= 3) && getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
             result.openDrawer();
-
         }//Opens drawer by default
         result.getStickyFooter().setPadding(0, 0, 0, 0); // moves logout button to the very bottom of the drawer. Without it, the "logout" button suspends a little.
         result.getActionBarDrawerToggle().setDrawerIndicatorEnabled(true);
@@ -204,8 +209,30 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             logout();
             return;
         }
-        if (user.getId().startsWith("guest")) {
-            getTheme().applyStyle(R.style.GuestStyle, true);
+        if(user.getId().startsWith("guest") && profileDbHandler.getOfflineVisits() >= 3 ){
+
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("Become a member");
+            builder.setMessage("Trial period ended! Kindly complete registration to continue");
+            builder.setCancelable(false);
+            builder.setPositiveButton("Become a member", null);
+            builder.setNegativeButton("Logout", null);
+            AlertDialog dialog = builder.create();
+            dialog.show();
+            Button becomeMember = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            Button logout = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
+            becomeMember.setOnClickListener(view -> {
+                boolean guest = true;
+                Intent intent = new Intent(this, BecomeMemberActivity.class);
+                intent.putExtra("username", profileDbHandler.getUserModel().getName());
+                intent.putExtra("guest", guest);
+                setResult(Activity.RESULT_OK, intent);
+                startActivity(intent);
+            });
+            logout.setOnClickListener(view -> {
+                dialog.dismiss();
+                logout();
+            });
         }
     }
 
@@ -259,18 +286,17 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
                 .withActivity(DashboardActivity.this)
                 .withTextColor(getResources().getColor(R.color.bg_white))
                 .withHeaderBackground(R.drawable.ole_logo)
-                .withHeaderBackgroundScaleType(ImageView.ScaleType.FIT_XY)
                 .withDividerBelowHeader(false)
                 .build();
 
         ImageView headerBackground = header.getHeaderBackgroundView();
-        headerBackground.setPadding(20, 12, 20, 12); // Add padding values as per your requirement
+        headerBackground.setPadding(30, 60, 30, 60);
         headerBackground.setColorFilter(getResources().getColor(R.color.md_white_1000), PorterDuff.Mode.SRC_IN);
         return header;
     }
 
     private void createDrawer() {
-        com.mikepenz.materialdrawer.holder.DimenHolder dimenHolder = com.mikepenz.materialdrawer.holder.DimenHolder.fromDp(200);
+        com.mikepenz.materialdrawer.holder.DimenHolder dimenHolder = com.mikepenz.materialdrawer.holder.DimenHolder.fromDp(160);
         result = new DrawerBuilder().withActivity(this).withFullscreen(true).withSliderBackgroundColor(getResources().getColor(R.color.colorPrimary)).withToolbar(mTopToolbar).withAccountHeader(headerResult).withHeaderHeight(dimenHolder).addDrawerItems(getDrawerItems()).addStickyDrawerItems(getDrawerItemsFooter()).withOnDrawerItemClickListener((view, position, drawerItem) -> {
             if (drawerItem != null) {
                 menuAction(((Nameable) drawerItem).getName().getTextRes());
@@ -310,9 +336,6 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
                 break;
             case R.string.enterprises:
                 openEnterpriseFragment();
-                break;
-            case R.string.menu_feedback:
-                openMyFragment(new FeedbackListFragment());
                 break;
             case R.string.menu_logout:
                 logout();
@@ -379,10 +402,9 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     @NonNull
     private IDrawerItem[] getDrawerItemsFooter() {
         ArrayList<Drawable> menuImageListFooter = new ArrayList<>();
-        menuImageListFooter.add(getResources().getDrawable(R.drawable.feedback));
         menuImageListFooter.add(getResources().getDrawable(R.drawable.logout));
 
-        return new IDrawerItem[]{changeUX(R.string.menu_feedback, menuImageListFooter.get(0)), changeUX(R.string.menu_logout, menuImageListFooter.get(1)),};
+        return new IDrawerItem[]{changeUX(R.string.menu_logout, menuImageListFooter.get(0)),};
     }
 
     public PrimaryDrawerItem changeUX(int iconText, Drawable drawable) {
