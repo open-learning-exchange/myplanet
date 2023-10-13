@@ -19,7 +19,7 @@
     <string name="radio_http">HTTP</string>
     <string name="radio_https">HTTPS</string>
     <string name="title_activity_dashboard">dashboard</string>
-    <string name="menu_myplanet">My Planet</string>
+    <string name="menu_myplanet">myPlanet</string>
     <string name="menu_home">Guriga</string>
     <string name="menu_library">Library</string>
     <string name="menu_courses">Koorsooyin</string>

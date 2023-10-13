@@ -19,6 +19,8 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.databinding.ActivityFeedbackDetailBinding;
+import org.ole.planet.myplanet.databinding.ActivityReplyBinding;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmNews;
 import org.ole.planet.myplanet.model.RealmUserModel;
@@ -36,18 +38,19 @@ import io.realm.RealmList;
 import io.realm.Sort;
 
 public class ReplyActivity extends AppCompatActivity implements AdapterNews.OnNewsItemClickListener {
+    private ActivityReplyBinding activityReplyBinding;
     Realm mRealm;
     String id;
     AdapterNews newsAdapter;
     RealmUserModel user;
-    RecyclerView rvReply;
     protected RealmList<String> imageList;
     protected LinearLayout llImage;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_reply);
+        activityReplyBinding = ActivityReplyBinding.inflate(getLayoutInflater());
+        setContentView(activityReplyBinding.getRoot());
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setHomeButtonEnabled(true);
         mRealm = new DatabaseService(this).getRealmInstance();
@@ -55,9 +58,8 @@ public class ReplyActivity extends AppCompatActivity implements AdapterNews.OnNe
         imageList = new RealmList<>();
         id = getIntent().getStringExtra("id");
         user = new UserProfileDbHandler(this).getUserModel();
-        rvReply = findViewById(R.id.rv_reply);
-        rvReply.setLayoutManager(new LinearLayoutManager(this));
-        rvReply.setNestedScrollingEnabled(false);
+        activityReplyBinding.rvReply.setLayoutManager(new LinearLayoutManager(this));
+        activityReplyBinding.rvReply.setNestedScrollingEnabled(false);
         showData(id);
     }
 
@@ -65,11 +67,11 @@ public class ReplyActivity extends AppCompatActivity implements AdapterNews.OnNe
         RealmNews news = mRealm.where(RealmNews.class).equalTo("id", id).findFirst();
 
         List<RealmNews> list = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING).equalTo("replyTo", id, Case.INSENSITIVE).findAll();
-        newsAdapter = new AdapterNews(this, list, user, news);
+        newsAdapter = new AdapterNews(this, list, user, news, false);
         newsAdapter.setListener(this);
         newsAdapter.setmRealm(mRealm);
         newsAdapter.setFromLogin(getIntent().getBooleanExtra("fromLogin", false));
-        rvReply.setAdapter(newsAdapter);
+        activityReplyBinding.rvReply.setAdapter(newsAdapter);
     }
 
     @Override

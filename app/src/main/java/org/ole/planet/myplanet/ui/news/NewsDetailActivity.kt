@@ -7,11 +7,9 @@ import com.bumptech.glide.Glide
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.realm.Realm
-import kotlinx.android.synthetic.main.activity_news_detail.img
-import kotlinx.android.synthetic.main.activity_news_detail.toolbar
-import kotlinx.android.synthetic.main.content_news_detail.tv_detail
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
+import org.ole.planet.myplanet.databinding.ActivityNewsDetailBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
@@ -25,12 +23,14 @@ import java.util.Date
 import java.util.UUID
 
 class NewsDetailActivity : BaseActivity() {
+    lateinit var activityNewsDetailBinding: ActivityNewsDetailBinding
     var news: RealmNews? = null
     lateinit var realm: Realm
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_news_detail)
-        setSupportActionBar(toolbar)
+        activityNewsDetailBinding = ActivityNewsDetailBinding.inflate(layoutInflater)
+        setContentView(activityNewsDetailBinding.root)
+        setSupportActionBar(activityNewsDetailBinding.toolbar)
         initActionBar()
         realm = DatabaseService(this).realmInstance
         var id = intent.getStringExtra("newsId")
@@ -78,8 +78,8 @@ class NewsDetailActivity : BaseActivity() {
             "\n",
             "<div/><br/><div style=\" word-wrap: break-word;page-break-after: always;  word-spacing: 2px;\" >"
         )
-        tv_detail.settings.layoutAlgorithm = WebSettings.LayoutAlgorithm.SINGLE_COLUMN;
-        tv_detail.loadDataWithBaseURL(
+        activityNewsDetailBinding.tvDetail.settings.layoutAlgorithm = WebSettings.LayoutAlgorithm.SINGLE_COLUMN;
+        activityNewsDetailBinding.tvDetail.loadDataWithBaseURL(
             null,
             "<html><body><div style=\" word-wrap: break-word;  word-spacing: 2px;\" >$msg</div></body></html>",
             "text/html",
@@ -92,9 +92,9 @@ class NewsDetailActivity : BaseActivity() {
         var msg: String = news!!.message
         try {
             val imgObject = Gson().fromJson(news!!.imageUrls[0], JsonObject::class.java)
-            img.visibility = View.VISIBLE
+            activityNewsDetailBinding.img.visibility = View.VISIBLE
             Glide.with(this@NewsDetailActivity)
-                .load(File(JsonUtils.getString("imageUrl", imgObject))).into(img)
+                .load(File(JsonUtils.getString("imageUrl", imgObject))).into(activityNewsDetailBinding.img)
             news!!.imageUrls.forEach {
                 val imageObject = Gson().fromJson(it, JsonObject::class.java)
                 msg += "<br/><img width=\"50%\" src=\"file://" + JsonUtils.getString(
@@ -116,11 +116,11 @@ class NewsDetailActivity : BaseActivity() {
             if (library != null) {
                 Glide.with(this)
                     .load(File(Utilities.SD_PATH, library.id + "/" + library.resourceLocalAddress))
-                    .into(img)
-                img.visibility = View.VISIBLE
+                    .into(activityNewsDetailBinding.img)
+                activityNewsDetailBinding.img.visibility = View.VISIBLE
                 return
             }
         }
-        img.visibility = View.GONE
+        activityNewsDetailBinding.img.visibility = View.GONE
     }
 }

@@ -6,12 +6,9 @@ import android.view.LayoutInflater;
 import android.view.MenuInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.PopupMenu;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
@@ -19,12 +16,12 @@ import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
-import com.google.android.flexbox.FlexboxLayout;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.databinding.RowNewsBinding;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmNews;
 import org.ole.planet.myplanet.model.RealmUserModel;
@@ -46,6 +43,7 @@ import io.realm.RealmList;
 import io.realm.Sort;
 
 public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+    private RowNewsBinding rowNewsBinding;
     private List<RealmNews> list;
     private OnNewsItemClickListener listener;
     private RealmNews parentNews;
@@ -55,16 +53,18 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     public Context context;
     public RealmUserModel currentUser;
     public boolean fromLogin;
+    private boolean isFromNewsFragment;
 
     public void setImageList(RealmList<String> imageList) {
         this.imageList = imageList;
     }
 
-    public AdapterNews(Context context, List<RealmNews> list, RealmUserModel user, RealmNews parentNews) {
+    public AdapterNews(Context context, List<RealmNews> list, RealmUserModel user, RealmNews parentNews,boolean isFromNewsFragment) {
         this.context = context;
         this.list = list;
         this.currentUser = user;
         this.parentNews = parentNews;
+        this.isFromNewsFragment = isFromNewsFragment;
         config = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.close);
     }
 
@@ -88,33 +88,35 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     @NonNull
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View v = LayoutInflater.from(context).inflate(R.layout.row_news, parent, false);
-        return new ViewHolderNews(v);
+        rowNewsBinding = RowNewsBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false);
+        return new ViewHolderNews(rowNewsBinding);
     }
 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (holder instanceof ViewHolderNews) {
+            ViewHolderNews viewHolder = (ViewHolderNews) holder;
+            viewHolder.bind(position);
             RealmNews news = getNews(holder, position);
             if (news.isValid()) {
                 RealmUserModel userModel = mRealm.where(RealmUserModel.class).equalTo("id", news.getUserId()).findFirst();
                 if (userModel != null && currentUser != null) {
-                    ((ViewHolderNews) holder).tvName.setText(userModel.toString());
-                    Utilities.loadImage(userModel.getUserImage(), ((ViewHolderNews) holder).imgUser);
+                    viewHolder.rowNewsBinding.tvName.setText(userModel.toString());
+                    Utilities.loadImage(userModel.getUserImage(), viewHolder.rowNewsBinding.imgUser);
                     showHideButtons(userModel, holder);
                 } else {
-                    ((ViewHolderNews) holder).tvName.setText(news.getUserName());
-                    ((ViewHolderNews) holder).llEditDelete.setVisibility(View.GONE);
+                    viewHolder.rowNewsBinding.tvName.setText(news.getUserName());
+                    viewHolder.rowNewsBinding.llEditDelete.setVisibility(View.GONE);
                 }
 
                 showShareButton(holder, news);
-                ((ViewHolderNews) holder).tvMessage.setText(news.getMessageWithoutMarkdown());
-                ((ViewHolderNews) holder).tvDate.setText(TimeUtils.formatDate(news.getTime()));
-                ((ViewHolderNews) holder).imgDelete.setOnClickListener(view -> new AlertDialog.Builder(context).setMessage(R.string.delete_record).setPositiveButton(R.string.ok, (dialogInterface, i) -> deletePost(news)).setNegativeButton(R.string.cancel, null).show());
-                ((ViewHolderNews) holder).imgEdit.setOnClickListener(view -> showEditAlert(news.getId(), true));
-                ((ViewHolderNews) holder).llEditDelete.setVisibility(fromLogin ? View.GONE : View.VISIBLE);
-                ((ViewHolderNews) holder).btnAddLabel.setVisibility(fromLogin ? View.GONE : View.VISIBLE);
-                ((ViewHolderNews) holder).btnReply.setVisibility(fromLogin ? View.GONE : View.VISIBLE);
+                viewHolder.rowNewsBinding.tvMessage.setText(news.getMessageWithoutMarkdown());
+                viewHolder.rowNewsBinding.tvDate.setText(TimeUtils.formatDate(news.getTime()));
+                viewHolder.rowNewsBinding.imgDelete.setOnClickListener(view -> new AlertDialog.Builder(context).setMessage(R.string.delete_record).setPositiveButton(R.string.ok, (dialogInterface, i) -> deletePost(news)).setNegativeButton(R.string.cancel, null).show());
+                viewHolder.rowNewsBinding.imgEdit.setOnClickListener(view -> showEditAlert(news.getId(), true));
+                viewHolder.rowNewsBinding.llEditDelete.setVisibility(fromLogin ? View.GONE : View.VISIBLE);
+                viewHolder.rowNewsBinding.btnAddLabel.setVisibility(fromLogin ? View.GONE : View.VISIBLE);
+                viewHolder.rowNewsBinding.btnReply.setVisibility(fromLogin ? View.GONE : View.VISIBLE);
                 loadImage(holder, news);
                 showReplyButton(holder, news, position);
                 if(news.isCommunityNews()) {
@@ -127,8 +129,9 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     private void addLabels(RecyclerView.ViewHolder holder, RealmNews news) {
-        ((ViewHolderNews) holder).btnAddLabel.setOnClickListener(view -> {
-            PopupMenu menu = new PopupMenu(context, ((ViewHolderNews) holder).btnAddLabel);
+        ViewHolderNews viewHolder = (ViewHolderNews) holder;
+        viewHolder.rowNewsBinding.btnAddLabel.setOnClickListener(view -> {
+            PopupMenu menu = new PopupMenu(context, viewHolder.rowNewsBinding.btnAddLabel);
             MenuInflater inflater = menu.getMenuInflater();
             inflater.inflate(R.menu.menu_add_label, menu.getMenu());
             menu.setOnMenuItemClickListener(menuItem -> {
@@ -144,8 +147,9 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     private void showChips(RecyclerView.ViewHolder holder, RealmNews news) {
-        ((ViewHolderNews) holder).fbChips.removeAllViews();
-        final ChipCloud chipCloud = new ChipCloud(context, ((ViewHolderNews) holder).fbChips, config);
+        ViewHolderNews viewHolder = (ViewHolderNews) holder;
+        viewHolder.rowNewsBinding.fbChips.removeAllViews();
+        final ChipCloud chipCloud = new ChipCloud(context, viewHolder.rowNewsBinding.fbChips, config);
 
         for (String s : news.getLabels()) {
             chipCloud.addChip(getLabel(s));
@@ -153,18 +157,19 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 if (!mRealm.isInTransaction()) mRealm.beginTransaction();
                 news.getLabels().remove(Constants.LABELS.get(s1));
                 mRealm.commitTransaction();
-                ((ViewHolderNews) holder).btnAddLabel.setEnabled(news.getLabels().size() < 3);
+                viewHolder.rowNewsBinding.btnAddLabel.setEnabled(news.getLabels().size() < 3);
             });
         }
-        ((ViewHolderNews) holder).btnAddLabel.setEnabled(news.getLabels().size() < 3);
+        viewHolder.rowNewsBinding.btnAddLabel.setEnabled(news.getLabels().size() < 3);
     }
 
     private void loadImage(RecyclerView.ViewHolder holder, RealmNews news) {
+        ViewHolderNews viewHolder = (ViewHolderNews) holder;
         if (news.getImageUrls() != null && news.getImageUrls().size() > 0) {
             try {
                 JsonObject imgObject = new Gson().fromJson(news.getImageUrls().get(0), JsonObject.class);
-                ((ViewHolderNews) holder).newsImage.setVisibility(View.VISIBLE);
-                Glide.with(context).load(new File(JsonUtils.getString("imageUrl", imgObject))).into(((ViewHolderNews) holder).newsImage);
+                viewHolder.rowNewsBinding.imgNews.setVisibility(View.VISIBLE);
+                Glide.with(context).load(new File(JsonUtils.getString("imageUrl", imgObject))).into(viewHolder.rowNewsBinding.imgNews);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -174,6 +179,7 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     private void loadRemoteImage(RecyclerView.ViewHolder holder, RealmNews news) {
+        ViewHolderNews viewHolder = (ViewHolderNews) holder;
         Utilities.log(news.getImages());
         if (news.getImagesArray().size() > 0) {
             JsonObject ob = news.getImagesArray().get(0).getAsJsonObject();
@@ -184,26 +190,27 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 File imageFile = new File(basePath, "ole/" + library.getId() + "/" + library.getResourceLocalAddress());
 
                 if (imageFile.exists()) {
-                    Glide.with(context).load(imageFile).into(((ViewHolderNews) holder).newsImage);
-                    ((ViewHolderNews) holder).newsImage.setVisibility(View.VISIBLE);
+                    Glide.with(context).load(imageFile).into(viewHolder.rowNewsBinding.imgNews);
+                    viewHolder.rowNewsBinding.imgNews.setVisibility(View.VISIBLE);
                     return;
                 }
             }
         }
-        ((ViewHolderNews) holder).newsImage.setVisibility(View.GONE);
+        viewHolder.rowNewsBinding.imgNews.setVisibility(View.GONE);
     }
 
     private void showReplyButton(RecyclerView.ViewHolder holder, RealmNews finalNews, int position) {
+        ViewHolderNews viewHolder = (ViewHolderNews) holder;
         if (this.listener == null || this.fromLogin)
-            ((ViewHolderNews) holder).btnShowReply.setVisibility(View.GONE);
-        ((ViewHolderNews) holder).btnReply.setOnClickListener(view -> showEditAlert(finalNews.getId(), false));
+            viewHolder.rowNewsBinding.btnShowReply.setVisibility(View.GONE);
+        viewHolder.rowNewsBinding.btnReply.setOnClickListener(view -> showEditAlert(finalNews.getId(), false));
         List<RealmNews> replies = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING).equalTo("replyTo", finalNews.getId(), Case.INSENSITIVE).findAll();
-        ((ViewHolderNews) holder).btnShowReply.setText(String.format(context.getString(R.string.show_replies) + " (%d)", replies.size()));
-        ((ViewHolderNews) holder).btnShowReply.setVisibility(replies.size() > 0 ? View.VISIBLE : View.GONE);
+        viewHolder.rowNewsBinding.btnShowReply.setText(String.format(context.getString(R.string.show_replies) + " (%d)", replies.size()));
+        viewHolder.rowNewsBinding.btnShowReply.setVisibility(replies.size() > 0 ? View.VISIBLE : View.GONE);
         if (position == 0 && parentNews != null)
-            ((ViewHolderNews) holder).btnShowReply.setVisibility(View.GONE);
+            viewHolder.rowNewsBinding.btnShowReply.setVisibility(View.GONE);
 
-        ((ViewHolderNews) holder).btnShowReply.setOnClickListener(view -> {
+        viewHolder.rowNewsBinding.btnShowReply.setOnClickListener(view -> {
             if (listener != null) {
                 listener.showReply(finalNews, fromLogin);
             }
@@ -269,18 +276,22 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     private void showHideButtons(RealmUserModel userModel, RecyclerView.ViewHolder holder) {
+        ViewHolderNews viewHolder = (ViewHolderNews) holder;
         if (currentUser.getId().equals(userModel.getId())) {
-            ((ViewHolderNews) holder).llEditDelete.setVisibility(View.VISIBLE);
-            ((ViewHolderNews) holder).btnAddLabel.setVisibility(View.VISIBLE);
+            viewHolder.rowNewsBinding.llEditDelete.setVisibility(View.VISIBLE);
+            viewHolder.rowNewsBinding.btnAddLabel.setVisibility(View.VISIBLE);
         } else {
-            ((ViewHolderNews) holder).llEditDelete.setVisibility(View.GONE);
-            ((ViewHolderNews) holder).btnAddLabel.setVisibility(View.GONE);
+            viewHolder.rowNewsBinding.llEditDelete.setVisibility(View.GONE);
+            viewHolder.rowNewsBinding.btnAddLabel.setVisibility(View.GONE);
         }
     }
 
+
     private void deletePost(RealmNews news) {
         if (!mRealm.isInTransaction()) mRealm.beginTransaction();
-        list.remove(news);
+        if (isFromNewsFragment) {
+            list.remove(news);
+        }
         if (news != null) {
             news.deleteFromRealm();
         }
@@ -310,8 +321,9 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     }
 
     public void showShareButton(RecyclerView.ViewHolder holder, RealmNews news) {
-        ((ViewHolderNews) holder).btnShare.setVisibility((news.isCommunityNews() || fromLogin) ? View.GONE : View.VISIBLE);
-        ((ViewHolderNews) holder).btnShare.setOnClickListener(view -> {
+        ViewHolderNews viewHolder = (ViewHolderNews) holder;
+        viewHolder.rowNewsBinding.btnShare.setVisibility((news.isCommunityNews() || fromLogin) ? View.GONE : View.VISIBLE);
+        viewHolder.rowNewsBinding.btnShare.setOnClickListener(view -> {
             JsonArray array = new Gson().fromJson(news.getViewIn(), JsonArray.class);
             JsonObject ob = new JsonObject();
             ob.addProperty("section", "community");
@@ -322,32 +334,21 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             news.setViewIn(new Gson().toJson(array));
             mRealm.commitTransaction();
             Utilities.toast(context, context.getString(R.string.shared_to_community));
-            ((ViewHolderNews) holder).btnShare.setVisibility(View.GONE);
+            viewHolder.rowNewsBinding.btnShare.setVisibility(View.GONE);
         });
     }
 
-    public class ViewHolderNews extends RecyclerView.ViewHolder {
-        public TextView tvName, tvDate, tvMessage;
-        public ImageView imgEdit, imgDelete, imgUser, newsImage;
-        public LinearLayout llEditDelete;
-        public FlexboxLayout fbChips;
-        public Button btnReply, btnShowReply, btnAddLabel, btnShare;
+    class ViewHolderNews extends RecyclerView.ViewHolder {
+        private final RowNewsBinding rowNewsBinding;
+        private int adapterPosition;
 
-        public ViewHolderNews(View itemView) {
-            super(itemView);
-            tvDate = itemView.findViewById(R.id.tv_date);
-            tvName = itemView.findViewById(R.id.tv_name);
-            tvMessage = itemView.findViewById(R.id.tv_message);
-            imgDelete = itemView.findViewById(R.id.img_delete);
-            imgEdit = itemView.findViewById(R.id.img_edit);
-            imgUser = itemView.findViewById(R.id.img_user);
-            llEditDelete = itemView.findViewById(R.id.ll_edit_delete);
-            btnReply = itemView.findViewById(R.id.btn_reply);
-            btnShowReply = itemView.findViewById(R.id.btn_show_reply);
-            btnAddLabel = itemView.findViewById(R.id.btn_add_label);
-            btnShare = itemView.findViewById(R.id.btn_share);
-            newsImage = itemView.findViewById(R.id.img_news);
-            fbChips = itemView.findViewById(R.id.fb_chips);
+        public ViewHolderNews(RowNewsBinding rowNewsBinding) {
+            super(rowNewsBinding.getRoot());
+            this.rowNewsBinding = rowNewsBinding;
+        }
+
+        public void bind(int position) {
+            adapterPosition = position;
         }
     }
 }

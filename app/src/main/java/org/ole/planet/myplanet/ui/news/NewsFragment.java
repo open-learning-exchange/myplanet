@@ -24,6 +24,8 @@ import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseNewsFragment;
+import org.ole.planet.myplanet.databinding.FragmentFeedbackBinding;
+import org.ole.planet.myplanet.databinding.FragmentNewsBinding;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmNews;
@@ -43,53 +45,55 @@ import io.realm.Case;
 import io.realm.Sort;
 
 public class NewsFragment extends BaseNewsFragment {
-    RecyclerView rvNews;
-    EditText etMessage;
-    TextInputLayout tlMessage;
-    Button btnSubmit, btnAddImage, btnAddStory;
-    LinearLayout llAddNews;
+    private FragmentNewsBinding fragmentNewsBinding;
+//    RecyclerView rvNews;
+//    EditText etMessage;
+//    TextInputLayout tlMessage;
+//    Button btnSubmit, btnAddImage, btnAddStory;
+//    LinearLayout llAddNews;
     RealmUserModel user;
-    TextView tvMessage;
+//    TextView tvMessage;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        View v = inflater.inflate(R.layout.fragment_news, container, false);
-        rvNews = v.findViewById(R.id.rv_news);
-        etMessage = v.findViewById(R.id.et_message);
-        tlMessage = v.findViewById(R.id.tl_message);
-        btnSubmit = v.findViewById(R.id.btn_submit);
-        tvMessage = v.findViewById(R.id.tv_message);
-        llImage = v.findViewById(R.id.ll_image);
-        llImage = v.findViewById(R.id.ll_images);
-        llAddNews = v.findViewById(R.id.ll_add_news);
-        btnAddStory = v.findViewById(R.id.btn_add_story);
-        btnAddImage = v.findViewById(R.id.add_news_image);
+        fragmentNewsBinding = FragmentNewsBinding.inflate(inflater, container, false);
+//        View v = inflater.inflate(R.layout.fragment_news, container, false);
+//        rvNews = v.findViewById(R.id.rv_news);
+//        etMessage = v.findViewById(R.id.et_message);
+//        tlMessage = v.findViewById(R.id.tl_message);
+//        btnSubmit = v.findViewById(R.id.btn_submit);
+//        tvMessage = v.findViewById(R.id.tv_message);
+//        llImage = v.findViewById(R.id.ll_image);
+        llImage = fragmentNewsBinding.llImages;
+//        llAddNews = v.findViewById(R.id.ll_add_news);
+//        btnAddStory = v.findViewById(R.id.btn_add_story);
+//        btnAddImage = v.findViewById(R.id.add_news_image);
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
         user = new UserProfileDbHandler(getActivity()).getUserModel();
-        KeyboardUtils.setupUI(v.findViewById(R.id.news_fragment_parent_layout), getActivity());
-        btnAddStory.setOnClickListener(view -> {
-            llAddNews.setVisibility(llAddNews.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE);
-            btnAddStory.setText(llAddNews.getVisibility() == View.VISIBLE ? getString(R.string.hide_add_story) : getString(R.string.add_story));
+        KeyboardUtils.setupUI(fragmentNewsBinding.newsFragmentParentLayout, getActivity());
+        fragmentNewsBinding.btnAddStory.setOnClickListener(view -> {
+            fragmentNewsBinding.llAddNews.setVisibility(fragmentNewsBinding.llAddNews.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE);
+            fragmentNewsBinding.btnAddStory.setText(fragmentNewsBinding.llAddNews.getVisibility() == View.VISIBLE ? getString(R.string.hide_add_story) : getString(R.string.add_story));
         });
         if (getArguments().getBoolean("fromLogin")) {
-            btnAddStory.setVisibility(View.GONE);
-            llAddNews.setVisibility(View.GONE);
+            fragmentNewsBinding.btnAddStory.setVisibility(View.GONE);
+            fragmentNewsBinding.llAddNews.setVisibility(View.GONE);
         }
-        return v;
+        return fragmentNewsBinding.getRoot();
     }
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         setData(getNewsList());
-        btnSubmit.setOnClickListener(view -> {
-            String message = etMessage.getText().toString().trim();
+        fragmentNewsBinding.btnSubmit.setOnClickListener(view -> {
+            String message = fragmentNewsBinding.etMessage.getText().toString().trim();
             if (message.isEmpty()) {
-                tlMessage.setError(getString(R.string.please_enter_message));
+                fragmentNewsBinding.tlMessage.setError(getString(R.string.please_enter_message));
                 return;
             }
-            etMessage.setText("");
+            fragmentNewsBinding.etMessage.setText("");
             HashMap<String, String> map = new HashMap<>();
             map.put("message", message);
             map.put("viewInId", user.getPlanetCode() + "@" + user.getParentCode());
@@ -102,11 +106,11 @@ public class NewsFragment extends BaseNewsFragment {
             adapterNews.addItem(n);
             setData(getNewsList());
         });
-        btnAddImage.setOnClickListener(v -> {
+        fragmentNewsBinding.addNewsImage.setOnClickListener(v -> {
             llImage = v.findViewById(R.id.ll_images);
             FileUtils.openOleFolder(this, 100);
         });
-        btnAddImage.setVisibility(Constants.showBetaFeature(Constants.KEY_NEWSADDIMAGE, getActivity()) ? View.VISIBLE : View.GONE);
+        fragmentNewsBinding.addNewsImage.setVisibility(Constants.showBetaFeature(Constants.KEY_NEWSADDIMAGE, getActivity()) ? View.VISIBLE : View.GONE);
     }
 
     private List<RealmNews> getNewsList() {
@@ -131,7 +135,7 @@ public class NewsFragment extends BaseNewsFragment {
     }
 
     public void setData(List<RealmNews> list) {
-        changeLayoutManager(getResources().getConfiguration().orientation, rvNews);
+        changeLayoutManager(getResources().getConfiguration().orientation, fragmentNewsBinding.rvNews);
         List<String> resourceIds = new ArrayList<>();
         for (RealmNews news : list) {
             if (news.getImagesArray().size() > 0) {
@@ -144,38 +148,38 @@ public class NewsFragment extends BaseNewsFragment {
         SharedPreferences settings = getActivity().getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
         List<RealmMyLibrary> lib = mRealm.where(RealmMyLibrary.class).in("_id", resourceIds.toArray(new String[]{})).findAll();
         getUrlsAndStartDownload(lib, settings, urls);
-        adapterNews = new AdapterNews(getActivity(), list, user, null);
+        adapterNews = new AdapterNews(getActivity(), list, user, null, true);
         adapterNews.setmRealm(mRealm);
         adapterNews.setFromLogin(getArguments().getBoolean("fromLogin"));
         adapterNews.setListener(this);
         adapterNews.registerAdapterDataObserver(observer);
-        rvNews.setAdapter(adapterNews);
-        showNoData(tvMessage, adapterNews.getItemCount());
-        llAddNews.setVisibility(View.GONE);
-        btnAddStory.setText(getString(R.string.add_story));
+        fragmentNewsBinding.rvNews.setAdapter(adapterNews);
+        showNoData(fragmentNewsBinding.tvMessage, adapterNews.getItemCount());
+        fragmentNewsBinding.llAddNews.setVisibility(View.GONE);
+        fragmentNewsBinding.btnAddStory.setText(getString(R.string.add_story));
     }
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
         int orientation = newConfig.orientation;
-        changeLayoutManager(orientation, rvNews);
+        changeLayoutManager(orientation, fragmentNewsBinding.rvNews);
     }
 
     final private RecyclerView.AdapterDataObserver observer = new RecyclerView.AdapterDataObserver() {
         @Override
         public void onChanged() {
-            showNoData(tvMessage, adapterNews.getItemCount());
+            showNoData(fragmentNewsBinding.tvMessage, adapterNews.getItemCount());
         }
 
         @Override
         public void onItemRangeInserted(int positionStart, int itemCount) {
-            showNoData(tvMessage, adapterNews.getItemCount());
+            showNoData(fragmentNewsBinding.tvMessage, adapterNews.getItemCount());
         }
 
         @Override
         public void onItemRangeRemoved(int positionStart, int itemCount) {
-            showNoData(tvMessage, adapterNews.getItemCount());
+            showNoData(fragmentNewsBinding.tvMessage, adapterNews.getItemCount());
         }
     };
 }
