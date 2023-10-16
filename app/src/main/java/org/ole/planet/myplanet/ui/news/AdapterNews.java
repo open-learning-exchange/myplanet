@@ -112,20 +112,20 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 }
 
                 showShareButton(holder, news);
-                ((ViewHolderNews) holder).tvMessage.setText(news.getMessageWithoutMarkdown());
-                ((ViewHolderNews) holder).tvDate.setText(TimeUtils.formatDate(news.getTime()));
+                viewHolder.rowNewsBinding.tvMessage.setText(news.getMessageWithoutMarkdown());
+                viewHolder.rowNewsBinding.tvDate.setText(TimeUtils.formatDate(news.getTime()));
                 if(Objects.equals(news.getUserId(), currentUser.get_id())){
-                    ((ViewHolderNews) holder).imgDelete.setOnClickListener(view -> new AlertDialog.Builder(context).setMessage(R.string.delete_record).setPositiveButton(R.string.ok, (dialogInterface, i) -> deletePost(news)).setNegativeButton(R.string.cancel, null).show());
-                    ((ViewHolderNews) holder).imgEdit.setOnClickListener(view -> showEditAlert(news.getId(), true));
-                    ((ViewHolderNews) holder).btnAddLabel.setVisibility(fromLogin ? View.GONE : View.VISIBLE);
+                    viewHolder.rowNewsBinding.imgDelete.setOnClickListener(view -> new AlertDialog.Builder(context).setMessage(R.string.delete_record).setPositiveButton(R.string.ok, (dialogInterface, i) -> deletePost(news)).setNegativeButton(R.string.cancel, null).show());
+                    viewHolder.rowNewsBinding.imgEdit.setOnClickListener(view -> showEditAlert(news.getId(), true));
+                    viewHolder.rowNewsBinding.btnAddLabel.setVisibility(fromLogin ? View.GONE : View.VISIBLE);
                 } else{
-                    ((ViewHolderNews) holder).imgEdit.setVisibility(View.GONE);
-                    ((ViewHolderNews) holder).imgDelete.setVisibility(View.GONE);
-                    ((ViewHolderNews) holder).btnAddLabel.setVisibility(View.GONE);
+                    viewHolder.rowNewsBinding.imgEdit.setVisibility(View.GONE);
+                    viewHolder.rowNewsBinding.imgDelete.setVisibility(View.GONE);
+                    viewHolder.rowNewsBinding.btnAddLabel.setVisibility(View.GONE);
                 }
 
-                ((ViewHolderNews) holder).llEditDelete.setVisibility(fromLogin ? View.GONE : View.VISIBLE);
-                ((ViewHolderNews) holder).btnReply.setVisibility(fromLogin ? View.GONE : View.VISIBLE);
+                viewHolder.rowNewsBinding.llEditDelete.setVisibility(fromLogin ? View.GONE : View.VISIBLE);
+                viewHolder.rowNewsBinding.btnReply.setVisibility(fromLogin ? View.GONE : View.VISIBLE);
                 loadImage(holder, news);
                 showReplyButton(holder, news, position);
 
