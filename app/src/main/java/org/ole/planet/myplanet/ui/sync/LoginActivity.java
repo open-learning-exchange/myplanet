@@ -319,12 +319,12 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                             etUserName.setSelection(lowercaseText.length());
                         }
                         etUserName.setError(null);
+                    }
                 }
-            }
 
-            @Override
-            public void afterTextChanged(Editable s) {}
-        });
+                @Override
+                public void afterTextChanged(Editable s) {}
+            });
 
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setTitle("Login As Guest");
