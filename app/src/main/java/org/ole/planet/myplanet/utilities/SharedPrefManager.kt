@@ -14,6 +14,7 @@ class SharedPrefManager(context: Context) {
     var SHARED_PREF_NAME = "OLEmyPlanetPrefData"
 
     var SAVEDUSERS = "savedUsers"
+    var REPLIEDNEWSID = "repliedNewsId"
 
     init {
         pref = context.getSharedPreferences(SHARED_PREF_NAME, PRIVATE_MODE)
@@ -57,6 +58,18 @@ class SharedPrefManager(context: Context) {
             jsonArray.put(userJson)
         }
         editor.putString(SAVEDUSERS, jsonArray.toString())
+        editor.apply()
+    }
+
+    @JvmName("getREPLIEDNEWSID1")
+    fun getREPLIEDNEWSID(): String? {
+        return if (pref.getString(REPLIEDNEWSID, "") != "") pref.getString(
+            REPLIEDNEWSID, "") else ""
+    }
+
+    @JvmName("setREPLIEDNEWSID1")
+    fun setREPLIEDNEWSID(repliedNewsId: String?) {
+        editor.putString(REPLIEDNEWSID, repliedNewsId)
         editor.apply()
     }
 }
