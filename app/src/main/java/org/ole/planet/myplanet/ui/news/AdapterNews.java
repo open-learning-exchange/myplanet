@@ -122,8 +122,8 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                     viewHolder.rowNewsBinding.imgEdit.setOnClickListener(view -> showEditAlert(news.getId(), true));
                     viewHolder.rowNewsBinding.btnAddLabel.setVisibility(fromLogin ? View.GONE : View.VISIBLE);
                 } else{
-                    viewHolder.rowNewsBinding.imgDelete.setVisibility(View.GONE);
                     viewHolder.rowNewsBinding.imgEdit.setVisibility(View.GONE);
+                    viewHolder.rowNewsBinding.imgDelete.setVisibility(View.GONE);
                     viewHolder.rowNewsBinding.btnAddLabel.setVisibility(View.GONE);
                 }
 
