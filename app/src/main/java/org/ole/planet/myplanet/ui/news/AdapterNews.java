@@ -117,13 +117,21 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 showShareButton(holder, news);
                 viewHolder.rowNewsBinding.tvMessage.setText(news.getMessageWithoutMarkdown());
                 viewHolder.rowNewsBinding.tvDate.setText(TimeUtils.formatDate(news.getTime()));
-                viewHolder.rowNewsBinding.imgDelete.setOnClickListener(view -> new AlertDialog.Builder(context).setMessage(R.string.delete_record).setPositiveButton(R.string.ok, (dialogInterface, i) -> deletePost(news, context)).setNegativeButton(R.string.cancel, null).show());
-                viewHolder.rowNewsBinding.imgEdit.setOnClickListener(view -> showEditAlert(news.getId(), true));
+                if(Objects.equals(news.getUserId(), currentUser.get_id())){
+                    viewHolder.rowNewsBinding.imgDelete.setOnClickListener(view -> new AlertDialog.Builder(context).setMessage(R.string.delete_record).setPositiveButton(R.string.ok, (dialogInterface, i) -> deletePost(news, context)).setNegativeButton(R.string.cancel, null).show());
+                    viewHolder.rowNewsBinding.imgEdit.setOnClickListener(view -> showEditAlert(news.getId(), true));
+                    viewHolder.rowNewsBinding.btnAddLabel.setVisibility(fromLogin ? View.GONE : View.VISIBLE);
+                } else{
+                    viewHolder.rowNewsBinding.imgDelete.setVisibility(View.GONE);
+                    viewHolder.rowNewsBinding.imgEdit.setVisibility(View.GONE);
+                    viewHolder.rowNewsBinding.btnAddLabel.setVisibility(View.GONE);
+                }
+
                 viewHolder.rowNewsBinding.llEditDelete.setVisibility(fromLogin ? View.GONE : View.VISIBLE);
-                viewHolder.rowNewsBinding.btnAddLabel.setVisibility(fromLogin ? View.GONE : View.VISIBLE);
                 viewHolder.rowNewsBinding.btnReply.setVisibility(fromLogin ? View.GONE : View.VISIBLE);
                 loadImage(holder, news);
                 showReplyButton(holder, news, position);
+
                 if(news.isCommunityNews()) {
                     holder.itemView.setOnClickListener(v -> context.startActivity(new Intent(context, NewsDetailActivity.class).putExtra("newsId", list.get(position).getId())));
                 }
