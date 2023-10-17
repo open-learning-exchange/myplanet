@@ -145,10 +145,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         if (settings.getBoolean("firstRun", true));
 
         previouslyLoggedIn = findViewById(R.id.previouslyLoggedIn);
-        previouslyLoggedIn.setOnClickListener(view -> {
-            showUserList();
-        });
-
+        previouslyLoggedIn.setOnClickListener(view -> showUserList());
     }
 
     private void showUserList(){
@@ -160,9 +157,24 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         ListView lv = view.findViewById(R.id.list_user);
 
         List<User> existingUsers = prefData.getSAVEDUSERS1();
-
         UserListAdapter adapter = new UserListAdapter(LoginActivity.this, existingUsers);
-        adapter.setOnItemClickListener(this::submitForm);
+        adapter.setOnItemClickListener(new UserListAdapter.OnItemClickListener() {
+            @Override
+            public void onItemClickGuest(String name) {
+                RealmUserModel model = mRealm.copyFromRealm(RealmUserModel.createGuestUser(name, mRealm, settings));
+                if (model == null) {
+                    Utilities.toast(LoginActivity.this, getString(R.string.unable_to_login));
+                } else {
+                    saveUserInfoPref(settings, "", model);
+                    onLogin();
+                }
+            }
+
+            @Override
+            public void onItemClickMember(String name, String password) {
+                submitForm(name, password);
+            }
+        });
 
         lv.setAdapter(adapter);
 
@@ -314,73 +326,72 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             public void afterTextChanged(Editable s) {}
         });
 
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Login As Guest");
-        builder.setView(v);
-        builder.setPositiveButton("Login", null);
-        builder.setNegativeButton("Cancel", null);
-        AlertDialog dialog = builder.create();
-        dialog.show();
-        Button login = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
-        Button cancel = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("Login As Guest");
+            builder.setView(v);
+            builder.setPositiveButton("Login", null);
+            builder.setNegativeButton("Cancel", null);
+            AlertDialog dialog = builder.create();
+            dialog.show();
+            Button login = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            Button cancel = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
 
-        login.setOnClickListener(view -> {
-            if (mRealm.isEmpty()) {
-                alertDialogOkay(getString(R.string.this_device_not_configured_properly_please_check_and_sync));
-                return;
-            }
-            String username = etUserName.getText().toString().trim();
-            Character firstChar = username.isEmpty() ? null : username.charAt(0);
-            boolean hasInvalidCharacters = false;
-
-            boolean isValid = true;
-
-            if (TextUtils.isEmpty(username)) {
-                etUserName.setError(getString(R.string.username_cannot_be_empty));
-                isValid = false;
-            }
-
-            if (firstChar != null && !Character.isDigit(firstChar) && !Character.isLetter(firstChar)) {
-                etUserName.setError(getString(R.string.must_start_with_letter_or_number));
-                isValid = false;
-            } else {
-                for (char c : username.toCharArray()) {
-                    if (c != '_' && c != '.' && c != '-' && !Character.isDigit(c) && !Character.isLetter(c)) {
-                        hasInvalidCharacters = true;
-                        break;
-                    }
+            login.setOnClickListener(view -> {
+                if (mRealm.isEmpty()) {
+                    alertDialogOkay(getString(R.string.this_device_not_configured_properly_please_check_and_sync));
+                    return;
                 }
+                String username = etUserName.getText().toString().trim();
+                Character firstChar = username.isEmpty() ? null : username.charAt(0);
+                boolean hasInvalidCharacters = false;
 
-                if (hasInvalidCharacters) {
-                    etUserName.setError(getString(R.string.only_letters_numbers_and_are_allowed));
+                boolean isValid = true;
+
+                if (TextUtils.isEmpty(username)) {
+                    etUserName.setError(getString(R.string.username_cannot_be_empty));
                     isValid = false;
                 }
-            }
 
-            if (isValid) {
-                RealmUserModel existingUser = mRealm.where(RealmUserModel.class).equalTo("name", username).findFirst();
-                dialog.dismiss();
-
-                if (existingUser != null) {
-                    Log.d("model", String.valueOf(existingUser.get_id()));
-                    if (existingUser.get_id().contains("guest")) {
-                        showGuestDialog(username);
-                    } else if (existingUser.get_id().contains("org.couchdb.user:")) {
-                        showUserAlreadyMemberDialog(username);
-                    }
+                if (firstChar != null && !Character.isDigit(firstChar) && !Character.isLetter(firstChar)) {
+                    etUserName.setError(getString(R.string.must_start_with_letter_or_number));
+                    isValid = false;
                 } else {
-                    RealmUserModel model = mRealm.copyFromRealm(RealmUserModel.createGuestUser(username, mRealm, settings));
-                    if (model == null) {
-                        Utilities.toast(LoginActivity.this, getString(R.string.unable_to_login));
-                    } else {
-                        saveUserInfoPref(settings, "", model);
-                        onLogin();
+                    for (char c : username.toCharArray()) {
+                        if (c != '_' && c != '.' && c != '-' && !Character.isDigit(c) && !Character.isLetter(c)) {
+                            hasInvalidCharacters = true;
+                            break;
+                        }
+                    }
+                    if (hasInvalidCharacters) {
+                        etUserName.setError(getString(R.string.only_letters_numbers_and_are_allowed));
+                        isValid = false;
                     }
                 }
-            }
-        });
 
-        cancel.setOnClickListener(view -> dialog.dismiss());
+                if (isValid) {
+                    RealmUserModel existingUser = mRealm.where(RealmUserModel.class).equalTo("name", username).findFirst();
+                    dialog.dismiss();
+
+                    if (existingUser != null) {
+                        if (existingUser.get_id().contains("guest")) {
+                            showGuestDialog(username);
+                        } else if (existingUser.get_id().contains("org.couchdb.user:")) {
+                            showUserAlreadyMemberDialog(username);
+                        }
+                    } else {
+                        RealmUserModel model = mRealm.copyFromRealm(RealmUserModel.createGuestUser(username, mRealm, settings));
+                        if (model == null) {
+                            Utilities.toast(LoginActivity.this, getString(R.string.unable_to_login));
+                        } else {
+                            saveUsers(username, "", "guest");
+                            saveUserInfoPref(settings, "", model);
+                            onLogin();
+                        }
+                    }
+                }
+            });
+
+            cancel.setOnClickListener(view -> dialog.dismiss());
         } finally {
             if (mRealm != null && !mRealm.isClosed()) {
                 mRealm.close();
@@ -547,7 +558,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         if (isLoggedIn) {
             Toast.makeText(getApplicationContext(), getString(R.string.thank_you), Toast.LENGTH_SHORT).show();
             onLogin();
-            saveUsers(inputName.getText().toString(), inputPassword.getText().toString());
+            saveUsers(inputName.getText().toString(), inputPassword.getText().toString(), "member");
         } else {
             ManagerSync.getInstance().login(name, password, new SyncListener() {
                 @Override
@@ -564,7 +575,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                     if (log) {
                         Toast.makeText(getApplicationContext(), getString(R.string.thank_you), Toast.LENGTH_SHORT).show();
                         onLogin();
-                        saveUsers(inputName.getText().toString(), inputPassword.getText().toString());
+                        saveUsers(inputName.getText().toString(), inputPassword.getText().toString(), "member");
                     } else {
                         alertDialogOkay(getString(R.string.err_msg_login));
                     }
@@ -584,31 +595,52 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         editor.commit();
     }
 
-    private void saveUsers(String name, String password) {
-        String userProfile = profileDbHandler.getUserModel().getUserImage();
-        String fullName = profileDbHandler.getUserModel().getFullName();
+    private void saveUsers(String name, String password, String source) {
+        if(source == "guest"){
+            User newUser = new User("", name, password, "", "guest");
+            List<User> existingUsers = new ArrayList<>(prefData.getSAVEDUSERS1());
 
-        if (userProfile == null) {
-            userProfile = "";
-        }
+            boolean newUserExists = false;
 
-        if (fullName.trim().length() == 0) {
-            fullName = profileDbHandler.getUserModel().getName();
-        }
-        User newUser = new User(fullName, name, password, userProfile);
-        List<User> existingUsers = new ArrayList<>(prefData.getSAVEDUSERS1());
-        boolean newUserExists = false;
-
-        for (User user : existingUsers) {
-            if (user.getFullName().equals(newUser.getFullName().trim())) {
-                newUserExists = true;
-                break;
+            for (User user : existingUsers) {
+                if (user.getName().equals(newUser.getName().trim())) {
+                    newUserExists = true;
+                    break;
+                }
             }
-        }
 
-        if (!newUserExists) {
-            existingUsers.add(newUser);
-            prefData.setSAVEDUSERS1(existingUsers);
+            if (!newUserExists) {
+                existingUsers.add(newUser);
+                prefData.setSAVEDUSERS1(existingUsers);
+            }
+        } else if(source == "member"){
+            String userProfile = profileDbHandler.getUserModel().getUserImage();
+            String fullName = profileDbHandler.getUserModel().getFullName();
+
+            if (userProfile == null) {
+                userProfile = "";
+            }
+
+            if (fullName.trim().length() == 0) {
+                fullName = profileDbHandler.getUserModel().getName();
+            }
+
+            User newUser = new User(fullName, name, password, userProfile, "member");
+            List<User> existingUsers = new ArrayList<>(prefData.getSAVEDUSERS1());
+
+            boolean newUserExists = false;
+
+            for (User user : existingUsers) {
+                if (user.getFullName().equals(newUser.getFullName().trim())) {
+                    newUserExists = true;
+                    break;
+                }
+            }
+
+            if (!newUserExists) {
+                existingUsers.add(newUser);
+                prefData.setSAVEDUSERS1(existingUsers);
+            }
         }
     }
 
