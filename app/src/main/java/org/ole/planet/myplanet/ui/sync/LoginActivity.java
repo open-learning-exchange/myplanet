@@ -22,24 +22,25 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageButton;
-import android.widget.ListView;
 import android.widget.RadioGroup;
 import android.widget.Spinner;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.widget.SwitchCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+import androidx.viewbinding.ViewBinding;
 
 import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
-import com.google.android.material.textfield.TextInputEditText;
-import com.google.android.material.textfield.TextInputLayout;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.SyncListener;
+import org.ole.planet.myplanet.databinding.ActivityChildLoginBinding;
+import org.ole.planet.myplanet.databinding.ActivityLoginBinding;
+import org.ole.planet.myplanet.databinding.AlertGuestLoginBinding;
+import org.ole.planet.myplanet.databinding.DialogServerUrlBinding;
+import org.ole.planet.myplanet.databinding.LayoutChildLoginBinding;
+import org.ole.planet.myplanet.databinding.LayoutUserListBinding;
 import org.ole.planet.myplanet.datamanager.ManagerSync;
 import org.ole.planet.myplanet.datamanager.Service;
 import org.ole.planet.myplanet.model.MyPlanet;
@@ -68,41 +69,43 @@ import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 import io.realm.Realm;
-import io.realm.RealmResults;
 import io.realm.Sort;
 
 public class LoginActivity extends SyncActivity implements Service.CheckVersionCallback, AdapterTeam.OnUserSelectedListener {
+    private ViewBinding activityLoginBinding;
     public static Calendar cal_today, cal_last_Sync;
     private EditText serverUrl, serverUrlProtocol;
     private EditText serverPassword;
     private String processedUrl;
     private RadioGroup protocol_checkin;
-    private EditText inputName, inputPassword;
-    private TextInputLayout inputLayoutName, inputLayoutPassword;
-    private Button btnSignIn;
     private View positiveAction;
-
-    private ImageButton imgBtnSetting;
     private boolean isSync = false, forceSync = false;
-    private SwitchCompat switchServerUrl;
     private SharedPreferences defaultPref;
     private Service service;
     private Spinner spnCloud;
-    private TextView tvAvailableSpace, previouslyLoggedIn;
     SharedPrefManager prefData;
     private UserProfileDbHandler profileDbHandler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(settings.getBoolean("isChild", false) ? R.layout.activity_child_login : R.layout.activity_login);
+        if (settings.getBoolean("isChild", false)) {
+            activityLoginBinding = ActivityChildLoginBinding.inflate(getLayoutInflater());
+        } else {
+            activityLoginBinding = ActivityLoginBinding.inflate(getLayoutInflater());
+        }
+
+        setContentView(activityLoginBinding.getRoot());
         prefData = new SharedPrefManager(this);
         profileDbHandler = new UserProfileDbHandler(this);
 
-        // Find and show space available on the device
-        tvAvailableSpace = findViewById(R.id.tv_available_space);
-        tvAvailableSpace.setText(FileUtils.getAvailableOverTotalMemoryFormattedString());
-
+        if (activityLoginBinding instanceof ActivityLoginBinding) {
+            ((ActivityLoginBinding) activityLoginBinding).tvAvailableSpace.setText(FileUtils.getAvailableOverTotalMemoryFormattedString());
+        } else if (activityLoginBinding instanceof ActivityChildLoginBinding) {
+            ((ActivityChildLoginBinding) activityLoginBinding).tvAvailableSpace.setText(FileUtils.getAvailableOverTotalMemoryFormattedString());
+        }
+//        tvAvailableSpace = findViewById(R.id.tv_available_space);
+//        tvAvailableSpace.setText(FileUtils.getAvailableOverTotalMemoryFormattedString());
         changeLogoColor();
         service = new Service(this);
         defaultPref = PreferenceManager.getDefaultSharedPreferences(this);
@@ -124,37 +127,61 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         }
         checkUsagesPermission();
         setUpChildMode();
-        lblLastSyncDate = findViewById(R.id.lblLastSyncDate);
-        forceSyncTrigger();
-        Button btnOpenCommunity = findViewById(R.id.open_community);
-        if (!Utilities.getUrl().isEmpty()) {
-            btnOpenCommunity.setVisibility(View.VISIBLE);
-            btnOpenCommunity.setOnClickListener(v -> {
-                inputName.setText("");
+        if (activityLoginBinding instanceof ActivityLoginBinding) {
+            lblLastSyncDate = ((ActivityLoginBinding) activityLoginBinding).lblLastSyncDate;
+            if (!Utilities.getUrl().isEmpty()) {
+                ((ActivityLoginBinding) activityLoginBinding).openCommunity.setVisibility(View.VISIBLE);
+                ((ActivityLoginBinding) activityLoginBinding).openCommunity.setOnClickListener(v -> {
+                    ((ActivityLoginBinding) activityLoginBinding).inputName.setText("");
+                    new HomeCommunityDialogFragment().show(getSupportFragmentManager(), "");
+                });
                 new HomeCommunityDialogFragment().show(getSupportFragmentManager(), "");
+            } else {
+                ((ActivityLoginBinding) activityLoginBinding).openCommunity.setVisibility(View.GONE);
+            }
+            ((ActivityLoginBinding) activityLoginBinding).btnFeedback.setOnClickListener(view -> {
+                ((ActivityLoginBinding) activityLoginBinding).inputName.setText("");
+                new FeedbackFragment().show(getSupportFragmentManager(), "");
             });
-            new HomeCommunityDialogFragment().show(getSupportFragmentManager(), "");
-        } else {
-            btnOpenCommunity.setVisibility(View.GONE);
+
+            if (settings.getBoolean("firstRun", true)) ;
+            ((ActivityLoginBinding) activityLoginBinding).previouslyLoggedIn.setOnClickListener(view -> {
+                showUserList();
+            });
         }
-        findViewById(R.id.btn_feedback).setOnClickListener(view -> {
-            inputName.setText("");
-            new FeedbackFragment().show(getSupportFragmentManager(), "");
-        });
+        else if (activityLoginBinding instanceof ActivityChildLoginBinding) {
+            lblLastSyncDate = ((ActivityChildLoginBinding) activityLoginBinding).lblLastSyncDate;
+            if (!Utilities.getUrl().isEmpty()) {
+                ((ActivityChildLoginBinding) activityLoginBinding).openCommunity.setVisibility(View.VISIBLE);
+                ((ActivityChildLoginBinding) activityLoginBinding).openCommunity.setOnClickListener(v -> {
+                    ((ActivityChildLoginBinding) activityLoginBinding).inputName.setText("");
+                    new HomeCommunityDialogFragment().show(getSupportFragmentManager(), "");
+                });
+                new HomeCommunityDialogFragment().show(getSupportFragmentManager(), "");
+            } else {
+                ((ActivityChildLoginBinding) activityLoginBinding).openCommunity.setVisibility(View.GONE);
+            }
+            ((ActivityChildLoginBinding) activityLoginBinding).btnFeedback.setOnClickListener(view -> {
+                ((ActivityChildLoginBinding) activityLoginBinding).inputName.setText("");
+                new FeedbackFragment().show(getSupportFragmentManager(), "");
+            });
 
-        if (settings.getBoolean("firstRun", true));
-
-        previouslyLoggedIn = findViewById(R.id.previouslyLoggedIn);
-        previouslyLoggedIn.setOnClickListener(view -> showUserList());
+            if (settings.getBoolean("firstRun", true)) ;
+            ((ActivityChildLoginBinding) activityLoginBinding).previouslyLoggedIn.setOnClickListener(view -> {
+                showUserList();
+            });
+        }
+        forceSyncTrigger();
     }
 
     private void showUserList(){
-        View view = LayoutInflater.from(this).inflate(R.layout.layout_user_list, null);
-        AlertDialog.Builder builder = new AlertDialog.Builder(LoginActivity.this);
-        builder.setTitle(R.string.select_user_to_login).setView(view).setNegativeButton(R.string.dismiss, null);
+        LayoutUserListBinding layoutUserListBinding = LayoutUserListBinding.inflate(LayoutInflater.from(this));
+        View view = layoutUserListBinding.getRoot();
 
-        EditText etSearch = view.findViewById(R.id.et_search);
-        ListView lv = view.findViewById(R.id.list_user);
+        AlertDialog.Builder builder = new AlertDialog.Builder(LoginActivity.this);
+        builder.setTitle(R.string.select_user_to_login)
+                .setView(view)
+                .setNegativeButton(R.string.dismiss, null);
 
         List<User> existingUsers = prefData.getSAVEDUSERS1();
         UserListAdapter adapter = new UserListAdapter(LoginActivity.this, existingUsers);
@@ -176,9 +203,8 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             }
         });
 
-        lv.setAdapter(adapter);
-
-        etSearch.addTextChangedListener(new TextWatcher() {
+        layoutUserListBinding.listUser.setAdapter(adapter);
+        layoutUserListBinding.etSearch.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
             }
@@ -237,47 +263,75 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         if (!defaultPref.contains("beta_addImageToMessage")) {
             defaultPref.edit().putBoolean("beta_addImageToMessage", true).commit();
         }
-        inputLayoutName = findViewById(R.id.input_layout_name);
-        inputLayoutPassword = findViewById(R.id.input_layout_password);
-        imgBtnSetting = findViewById(R.id.imgBtnSetting);
-        Button btnGuestLogin = findViewById(R.id.btn_guest_login);
-        TextView customDeviceName = findViewById(R.id.customDeviceName);
-        customDeviceName.setText(getCustomDeviceName());
-        btnSignIn = findViewById(R.id.btn_signin);
-        btnSignIn.setOnClickListener(view -> {
-            if(TextUtils.isEmpty(inputName.getText().toString())){
-                inputName.setError(getString(R.string.err_msg_name));
-            } else if(TextUtils.isEmpty(inputPassword.getText().toString())){
-                inputPassword.setError(getString(R.string.err_msg_password));
-            }else{
-                submitForm(inputName.getText().toString(), inputPassword.getText().toString());
-            }
-        });
-        if (!settings.contains("serverProtocol"))
-            settings.edit().putString("serverProtocol", "http://").commit();
-        findViewById(R.id.become_member).setOnClickListener(v -> {
-            inputName.setText("");
-            becomeAMember();
-        });
-        imgBtnSetting.setOnClickListener(view -> {
-            inputName.setText("");
-            settingDialog();
-        });
-        btnGuestLogin.setOnClickListener(view -> {
-            inputName.setText("");
-            showGuestLoginDialog();
-        });
-        SwitchCompat switchChildMode = findViewById(R.id.switch_child_mode);
-        switchChildMode.setChecked(settings.getBoolean("isChild", false));
-        switchChildMode.setOnCheckedChangeListener((compoundButton, b) -> {
-            inputName.setText("");
-            settings.edit().putBoolean("isChild", b).commit();
-            recreate();
-        });
+        if (activityLoginBinding instanceof ActivityLoginBinding) {
+            ((ActivityLoginBinding) activityLoginBinding).tvAvailableSpace.setText(FileUtils.getAvailableOverTotalMemoryFormattedString());
+            ((ActivityLoginBinding) activityLoginBinding).customDeviceName.setText(getCustomDeviceName());
+            ((ActivityLoginBinding) activityLoginBinding).btnSignin.setOnClickListener(view -> {
+                if(TextUtils.isEmpty(((ActivityLoginBinding) activityLoginBinding).inputName.getText().toString())){
+                    ((ActivityLoginBinding) activityLoginBinding).inputName.setError(getString(R.string.err_msg_name));
+                } else if(TextUtils.isEmpty(((ActivityLoginBinding) activityLoginBinding).inputPassword.getText().toString())){
+                    ((ActivityLoginBinding) activityLoginBinding).inputPassword.setError(getString(R.string.err_msg_password));
+                }else{
+                    submitForm(((ActivityLoginBinding) activityLoginBinding).inputName.getText().toString(), ((ActivityLoginBinding) activityLoginBinding).inputPassword.getText().toString());
+                }
+            });
+            if (!settings.contains("serverProtocol"))
+                settings.edit().putString("serverProtocol", "http://").commit();
+            ((ActivityLoginBinding) activityLoginBinding).becomeMember.setOnClickListener(v -> {
+                ((ActivityLoginBinding) activityLoginBinding).inputName.setText("");
+                becomeAMember();
+            });
+            ((ActivityLoginBinding) activityLoginBinding).imgBtnSetting.setOnClickListener(view -> {
+                ((ActivityLoginBinding) activityLoginBinding).inputName.setText("");
+                settingDialog();
+            });
+            ((ActivityLoginBinding) activityLoginBinding).btnGuestLogin.setOnClickListener(view -> {
+                ((ActivityLoginBinding) activityLoginBinding).inputName.setText("");
+                showGuestLoginDialog();
+            });
+
+            ((ActivityLoginBinding) activityLoginBinding).switchChildMode.setChecked(settings.getBoolean("isChild", false));
+            ((ActivityLoginBinding) activityLoginBinding).switchChildMode.setOnCheckedChangeListener((compoundButton, b) -> {
+                ((ActivityLoginBinding) activityLoginBinding).inputName.setText("");
+                settings.edit().putBoolean("isChild", b).commit();
+                recreate();
+            });
+        } else if (activityLoginBinding instanceof ActivityChildLoginBinding) {
+            ((ActivityChildLoginBinding) activityLoginBinding).customDeviceName.setText(getCustomDeviceName());
+            ((ActivityChildLoginBinding) activityLoginBinding).btnSignin.setOnClickListener(view -> {
+                if(TextUtils.isEmpty(((ActivityChildLoginBinding) activityLoginBinding).inputName.getText().toString())){
+                    ((ActivityChildLoginBinding) activityLoginBinding).inputName.setError(getString(R.string.err_msg_name));
+                } else if(TextUtils.isEmpty(((ActivityChildLoginBinding) activityLoginBinding).inputPassword.getText().toString())){
+                    ((ActivityChildLoginBinding) activityLoginBinding).inputPassword.setError(getString(R.string.err_msg_password));
+                }else{
+                    submitForm(((ActivityChildLoginBinding) activityLoginBinding).inputName.getText().toString(), ((ActivityChildLoginBinding) activityLoginBinding).inputPassword.getText().toString());
+                }
+            });
+            if (!settings.contains("serverProtocol"))
+                settings.edit().putString("serverProtocol", "http://").commit();
+            ((ActivityChildLoginBinding) activityLoginBinding).becomeMember.setOnClickListener(v -> {
+                ((ActivityChildLoginBinding) activityLoginBinding).inputName.setText("");
+                becomeAMember();
+            });
+            ((ActivityChildLoginBinding) activityLoginBinding).imgBtnSetting.setOnClickListener(view -> {
+                ((ActivityChildLoginBinding) activityLoginBinding).inputName.setText("");
+                settingDialog();
+            });
+            ((ActivityChildLoginBinding) activityLoginBinding).btnGuestLogin.setOnClickListener(view -> {
+                ((ActivityChildLoginBinding) activityLoginBinding).inputName.setText("");
+                showGuestLoginDialog();
+            });
+            ((ActivityChildLoginBinding) activityLoginBinding).switchChildMode.setChecked(settings.getBoolean("isChild", false));
+            ((ActivityChildLoginBinding) activityLoginBinding).switchChildMode.setOnCheckedChangeListener((compoundButton, b) -> {
+                ((ActivityChildLoginBinding) activityLoginBinding).inputName.setText("");
+                settings.edit().putBoolean("isChild", b).commit();
+                recreate();
+            });
+        }
+
     }
 
     private void becomeAMember() {
-
         if (!Utilities.getUrl().isEmpty()) {
             startActivity(new Intent(this, BecomeMemberActivity.class));
         } else {
@@ -286,14 +340,129 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         }
     }
 
+//    private void showGuestLoginDialog() {
+//        try {
+//            mRealm = Realm.getDefaultInstance();
+//            mRealm.refresh();
+//            editor = settings.edit();
+//            View v = LayoutInflater.from(this).inflate(R.layout.alert_guest_login, null);
+//            TextInputEditText etUserName = v.findViewById(R.id.et_user_name);
+//            etUserName.addTextChangedListener(new TextWatcher() {
+//                @Override
+//                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+//                @Override
+//                public void onTextChanged(CharSequence s, int start, int before, int count) {
+//                    char firstChar = s.length() > 0 ? s.charAt(0) : '\0';
+//                    boolean hasInvalidCharacters = false;
+//                    for (int i = 0; i < s.length(); i++) {
+//                        char c = s.charAt(i);
+//                        if (c != '_' && c != '.' && c != '-' && !Character.isDigit(c) && !Character.isLetter(c)) {
+//                            hasInvalidCharacters = true;
+//                            break;
+//                        }
+//                    }
+//
+//                    if (!Character.isDigit(firstChar) && !Character.isLetter(firstChar)) {
+//                        etUserName.setError(getString(R.string.must_start_with_letter_or_number));
+//                    } else if (hasInvalidCharacters) {
+//                        etUserName.setError(getString(R.string.only_letters_numbers_and_are_allowed));
+//                    } else {
+//                        String lowercaseText = s.toString().toLowerCase(Locale.ROOT);
+//                        if (!s.toString().equals(lowercaseText)) {
+//                            etUserName.setText(lowercaseText);
+//                            etUserName.setSelection(lowercaseText.length());
+//                        }
+//                        etUserName.setError(null);
+//                    }
+//                }
+//
+//                @Override
+//                public void afterTextChanged(Editable s) {}
+//            });
+//
+//            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+//            builder.setTitle("Login As Guest");
+//            builder.setView(v);
+//            builder.setPositiveButton("Login", null);
+//            builder.setNegativeButton("Cancel", null);
+//            AlertDialog dialog = builder.create();
+//            dialog.show();
+//            Button login = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+//            Button cancel = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
+//
+//            login.setOnClickListener(view -> {
+//                if (mRealm.isEmpty()) {
+//                    alertDialogOkay(getString(R.string.this_device_not_configured_properly_please_check_and_sync));
+//                    return;
+//                }
+//                String username = etUserName.getText().toString().trim();
+//                Character firstChar = username.isEmpty() ? null : username.charAt(0);
+//                boolean hasInvalidCharacters = false;
+//
+//                boolean isValid = true;
+//
+//                if (TextUtils.isEmpty(username)) {
+//                    etUserName.setError(getString(R.string.username_cannot_be_empty));
+//                    isValid = false;
+//                }
+//
+//                if (firstChar != null && !Character.isDigit(firstChar) && !Character.isLetter(firstChar)) {
+//                    etUserName.setError(getString(R.string.must_start_with_letter_or_number));
+//                    isValid = false;
+//                } else {
+//                    for (char c : username.toCharArray()) {
+//                        if (c != '_' && c != '.' && c != '-' && !Character.isDigit(c) && !Character.isLetter(c)) {
+//                            hasInvalidCharacters = true;
+//                            break;
+//                        }
+//                    }
+//                    if (hasInvalidCharacters) {
+//                        etUserName.setError(getString(R.string.only_letters_numbers_and_are_allowed));
+//                        isValid = false;
+//                    }
+//                }
+//
+//                if (isValid) {
+//                    RealmUserModel existingUser = mRealm.where(RealmUserModel.class).equalTo("name", username).findFirst();
+//                    dialog.dismiss();
+//
+//                    if (existingUser != null) {
+//                        if (existingUser.get_id().contains("guest")) {
+//                            showGuestDialog(username);
+//                        } else if (existingUser.get_id().contains("org.couchdb.user:")) {
+//                            showUserAlreadyMemberDialog(username);
+//                        }
+//                    } else {
+//                        RealmUserModel model = mRealm.copyFromRealm(RealmUserModel.createGuestUser(username, mRealm, settings));
+//                        if (model == null) {
+//                            Utilities.toast(LoginActivity.this, getString(R.string.unable_to_login));
+//                        } else {
+//                            saveUsers(username, "", "guest");
+//                            saveUserInfoPref(settings, "", model);
+//                            onLogin();
+//                        }
+//                    }
+//                }
+//            });
+//
+//            cancel.setOnClickListener(view -> dialog.dismiss());
+//        } finally {
+//            if (mRealm != null && !mRealm.isClosed()) {
+//                mRealm.close();
+//            }
+//        }
+//    }
+
     private void showGuestLoginDialog() {
         try {
             mRealm = Realm.getDefaultInstance();
             mRealm.refresh();
             editor = settings.edit();
-            View v = LayoutInflater.from(this).inflate(R.layout.alert_guest_login, null);
-            TextInputEditText etUserName = v.findViewById(R.id.et_user_name);
-            etUserName.addTextChangedListener(new TextWatcher() {
+
+            AlertGuestLoginBinding alertGuestLoginBinding = AlertGuestLoginBinding.inflate(LayoutInflater.from(this));
+            View v = alertGuestLoginBinding.getRoot();
+
+            alertGuestLoginBinding.etUserName.addTextChangedListener(new TextWatcher() {
                 @Override
                 public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
                 @Override
@@ -309,16 +478,16 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                     }
 
                     if (!Character.isDigit(firstChar) && !Character.isLetter(firstChar)) {
-                        etUserName.setError(getString(R.string.must_start_with_letter_or_number));
+                        alertGuestLoginBinding.etUserName.setError(getString(R.string.must_start_with_letter_or_number));
                     } else if (hasInvalidCharacters) {
-                        etUserName.setError(getString(R.string.only_letters_numbers_and_are_allowed));
+                        alertGuestLoginBinding.etUserName.setError(getString(R.string.only_letters_numbers_and_are_allowed));
                     } else {
                         String lowercaseText = s.toString().toLowerCase(Locale.ROOT);
                         if (!s.toString().equals(lowercaseText)) {
-                            etUserName.setText(lowercaseText);
-                            etUserName.setSelection(lowercaseText.length());
+                            alertGuestLoginBinding.etUserName.setText(lowercaseText);
+                            alertGuestLoginBinding.etUserName.setSelection(lowercaseText.length());
                         }
-                        etUserName.setError(null);
+                        alertGuestLoginBinding.etUserName.setError(null);
                     }
                 }
 
@@ -327,12 +496,13 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             });
 
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setTitle("Login As Guest");
-            builder.setView(v);
-            builder.setPositiveButton("Login", null);
-            builder.setNegativeButton("Cancel", null);
+            builder.setTitle("Login As Guest")
+                    .setView(v)
+                    .setPositiveButton("Login", null)
+                    .setNegativeButton("Cancel", null);
             AlertDialog dialog = builder.create();
             dialog.show();
+
             Button login = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
             Button cancel = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
 
@@ -341,19 +511,19 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                     alertDialogOkay(getString(R.string.this_device_not_configured_properly_please_check_and_sync));
                     return;
                 }
-                String username = etUserName.getText().toString().trim();
+                String username = alertGuestLoginBinding.etUserName.getText().toString().trim();
                 Character firstChar = username.isEmpty() ? null : username.charAt(0);
                 boolean hasInvalidCharacters = false;
 
                 boolean isValid = true;
 
                 if (TextUtils.isEmpty(username)) {
-                    etUserName.setError(getString(R.string.username_cannot_be_empty));
+                    alertGuestLoginBinding.etUserName.setError(getString(R.string.username_cannot_be_empty));
                     isValid = false;
                 }
 
                 if (firstChar != null && !Character.isDigit(firstChar) && !Character.isLetter(firstChar)) {
-                    etUserName.setError(getString(R.string.must_start_with_letter_or_number));
+                    alertGuestLoginBinding.etUserName.setError(getString(R.string.must_start_with_letter_or_number));
                     isValid = false;
                 } else {
                     for (char c : username.toCharArray()) {
@@ -362,8 +532,9 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                             break;
                         }
                     }
+
                     if (hasInvalidCharacters) {
-                        etUserName.setError(getString(R.string.only_letters_numbers_and_are_allowed));
+                        alertGuestLoginBinding.etUserName.setError(getString(R.string.only_letters_numbers_and_are_allowed));
                         isValid = false;
                     }
                 }
@@ -373,6 +544,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                     dialog.dismiss();
 
                     if (existingUser != null) {
+                        Log.d("model", String.valueOf(existingUser.get_id()));
                         if (existingUser.get_id().contains("guest")) {
                             showGuestDialog(username);
                         } else if (existingUser.get_id().contains("org.couchdb.user:")) {
@@ -419,7 +591,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
         AlertDialog dialog = builder.create();
         dialog.show();
-
     }
 
     private void showUserAlreadyMemberDialog(String username) {
@@ -431,7 +602,11 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
         builder.setPositiveButton("login", (dialog, which) -> {
             dialog.dismiss();
-            inputName.setText(username);
+            if (activityLoginBinding instanceof ActivityLoginBinding) {
+                ((ActivityLoginBinding) activityLoginBinding).inputName.setText(username);
+            } else if (activityLoginBinding instanceof ActivityChildLoginBinding) {
+                ((ActivityChildLoginBinding) activityLoginBinding).inputName.setText(username);
+            }
         });
 
         AlertDialog dialog = builder.create();
@@ -464,59 +639,104 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     public void declareMoreElements() {
         try {
             mRealm = Realm.getDefaultInstance();
-            syncIcon = findViewById(R.id.syncIcon);
-            syncIcon.setImageDrawable(getResources().getDrawable(R.drawable.login_file_upload_animation));
-            syncIcon.getScaleType();
-            syncIconDrawable = (AnimationDrawable) syncIcon.getDrawable();
-            syncIcon.setOnClickListener(v -> {
-                syncIconDrawable.start();
-                isSync = false;
-                forceSync = true;
-                service.checkVersion(this, settings);
-            });
             declareHideKeyboardElements();
-            TextView txtVersion = findViewById(R.id.lblVersion);
-            txtVersion.setText(getResources().getText(R.string.version) + " " + getResources().getText(R.string.app_version));
-            inputName = findViewById(R.id.input_name);
-            inputPassword = findViewById(R.id.input_password);
-            inputName.addTextChangedListener(new MyTextWatcher(inputName));
-            inputPassword.addTextChangedListener(new MyTextWatcher(inputPassword));
-            inputPassword.setOnEditorActionListener((v, actionId, event) -> {
-                if (actionId == EditorInfo.IME_ACTION_DONE ||
-                        (event != null && event.getAction() == KeyEvent.ACTION_DOWN && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
-                    btnSignIn.performClick();
-                    return true;
-                }
-                return false;
-            });
-            setUplanguageButton();
-            if (defaultPref.getBoolean("saveUsernameAndPassword", false)) {
-                inputName.setText(settings.getString(getString(R.string.login_user), ""));
-                inputPassword.setText(settings.getString(getString(R.string.login_password), ""));
-            }
-
-            if (NetworkUtils.isNetworkConnected()) {
-                service.syncPlanetServers(mRealm, success -> Utilities.toast(LoginActivity.this, success));
-            }
-
-            inputName.addTextChangedListener(new TextWatcher() {
-                @Override
-                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                }
-
-                @Override
-                public void onTextChanged(CharSequence s, int start, int before, int count) {
-                    String lowercaseText = s.toString().toLowerCase(Locale.ROOT);
-                    if (!s.toString().equals(lowercaseText)) {
-                        inputName.setText(lowercaseText);
-                        inputName.setSelection(lowercaseText.length());
+            if (activityLoginBinding instanceof ActivityLoginBinding) {
+                syncIcon = ((ActivityLoginBinding) activityLoginBinding).syncIcon;
+                syncIcon.setImageDrawable(getResources().getDrawable(R.drawable.login_file_upload_animation));
+                syncIcon.getScaleType();
+                syncIconDrawable = (AnimationDrawable) syncIcon.getDrawable();
+                syncIcon.setOnClickListener(v -> {
+                    syncIconDrawable.start();
+                    isSync = false;
+                    forceSync = true;
+                    service.checkVersion(this, settings);
+                });
+                ((ActivityLoginBinding) activityLoginBinding).lblVersion.setText(getResources().getText(R.string.version) + " " + getResources().getText(R.string.app_version));
+                ((ActivityLoginBinding) activityLoginBinding).inputName.addTextChangedListener(new MyTextWatcher(((ActivityLoginBinding) activityLoginBinding).inputName));
+                ((ActivityLoginBinding) activityLoginBinding).inputPassword.addTextChangedListener(new MyTextWatcher(((ActivityLoginBinding) activityLoginBinding).inputPassword));
+                ((ActivityLoginBinding) activityLoginBinding).inputPassword.setOnEditorActionListener((v, actionId, event) -> {
+                    if (actionId == EditorInfo.IME_ACTION_DONE ||
+                            (event != null && event.getAction() == KeyEvent.ACTION_DOWN && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
+                        ((ActivityLoginBinding) activityLoginBinding).btnSignin.performClick();
+                        return true;
                     }
+                    return false;
+                });
+                setUplanguageButton();
+                if (defaultPref.getBoolean("saveUsernameAndPassword", false)) {
+                    ((ActivityLoginBinding) activityLoginBinding).inputName.setText(settings.getString(getString(R.string.login_user), ""));
+                    ((ActivityLoginBinding) activityLoginBinding).inputPassword.setText(settings.getString(getString(R.string.login_password), ""));
                 }
 
-                @Override
-                public void afterTextChanged(Editable s) {
+                if (NetworkUtils.isNetworkConnected()) {
+                    service.syncPlanetServers(mRealm, success -> Utilities.toast(LoginActivity.this, success));
                 }
-            });
+
+                ((ActivityLoginBinding) activityLoginBinding).inputName.addTextChangedListener(new TextWatcher() {
+                    @Override
+                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+                    @Override
+                    public void onTextChanged(CharSequence s, int start, int before, int count) {
+                        String lowercaseText = s.toString().toLowerCase(Locale.ROOT);
+                        if (!s.toString().equals(lowercaseText)) {
+                            ((ActivityLoginBinding) activityLoginBinding).inputName.setText(lowercaseText);
+                            ((ActivityLoginBinding) activityLoginBinding).inputName.setSelection(lowercaseText.length());
+                        }
+                    }
+
+                    @Override
+                    public void afterTextChanged(Editable s) {}
+                });
+            } else if (activityLoginBinding instanceof ActivityChildLoginBinding) {
+                syncIcon = ((ActivityChildLoginBinding) activityLoginBinding).syncIcon;
+                syncIcon.setImageDrawable(getResources().getDrawable(R.drawable.login_file_upload_animation));
+                syncIcon.getScaleType();
+                syncIconDrawable = (AnimationDrawable) syncIcon.getDrawable();
+                syncIcon.setOnClickListener(v -> {
+                    syncIconDrawable.start();
+                    isSync = false;
+                    forceSync = true;
+                    service.checkVersion(this, settings);
+                });
+                ((ActivityChildLoginBinding) activityLoginBinding).lblVersion.setText(getResources().getText(R.string.version) + " " + getResources().getText(R.string.app_version));
+                ((ActivityChildLoginBinding) activityLoginBinding).inputName.addTextChangedListener(new MyTextWatcher(((ActivityChildLoginBinding) activityLoginBinding).inputName));
+                ((ActivityChildLoginBinding) activityLoginBinding).inputPassword.addTextChangedListener(new MyTextWatcher(((ActivityChildLoginBinding) activityLoginBinding).inputPassword));
+                ((ActivityChildLoginBinding) activityLoginBinding).inputPassword.setOnEditorActionListener((v, actionId, event) -> {
+                    if (actionId == EditorInfo.IME_ACTION_DONE ||
+                            (event != null && event.getAction() == KeyEvent.ACTION_DOWN && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
+                        ((ActivityChildLoginBinding) activityLoginBinding).btnSignin.performClick();
+                        return true;
+                    }
+                    return false;
+                });
+                setUplanguageButton();
+                if (defaultPref.getBoolean("saveUsernameAndPassword", false)) {
+                    ((ActivityChildLoginBinding) activityLoginBinding).inputName.setText(settings.getString(getString(R.string.login_user), ""));
+                    ((ActivityChildLoginBinding) activityLoginBinding).inputPassword.setText(settings.getString(getString(R.string.login_password), ""));
+                }
+
+                if (NetworkUtils.isNetworkConnected()) {
+                    service.syncPlanetServers(mRealm, success -> Utilities.toast(LoginActivity.this, success));
+                }
+
+                ((ActivityChildLoginBinding) activityLoginBinding).inputName.addTextChangedListener(new TextWatcher() {
+                    @Override
+                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+                    @Override
+                    public void onTextChanged(CharSequence s, int start, int before, int count) {
+                        String lowercaseText = s.toString().toLowerCase(Locale.ROOT);
+                        if (!s.toString().equals(lowercaseText)) {
+                            ((ActivityChildLoginBinding) activityLoginBinding).inputName.setText(lowercaseText);
+                            ((ActivityChildLoginBinding) activityLoginBinding).inputName.setSelection(lowercaseText.length());
+                        }
+                    }
+
+                    @Override
+                    public void afterTextChanged(Editable s) {}
+                });
+            }
         } finally {
             if (mRealm != null && !mRealm.isClosed()) {
                 mRealm.close();
@@ -525,21 +745,33 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     }
 
     private void setUplanguageButton() {
-        Button btnlang = findViewById(R.id.btn_lang);
         String[] languageKey = getResources().getStringArray(R.array.language_keys);
         String[] languages = getResources().getStringArray(R.array.language);
         SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
         int index = Arrays.asList(languageKey).indexOf(pref.getString("app_language", "en"));
-        btnlang.setText(languages[index]);
-        btnlang.setOnClickListener(view -> {
-            new AlertDialog.Builder(this).setTitle(R.string.select_language).setSingleChoiceItems(getResources().getStringArray(R.array.language), index, null).setPositiveButton(R.string.ok, (dialog, whichButton) -> {
-                dialog.dismiss();
-                int selectedPosition = ((AlertDialog) dialog).getListView().getCheckedItemPosition();
-                String lang = languageKey[selectedPosition];
-                LocaleHelper.setLocale(LoginActivity.this, lang);
-                recreate();
-            }).setNegativeButton(R.string.cancel, null).show();
-        });
+        if (activityLoginBinding instanceof ActivityLoginBinding) {
+            ((ActivityLoginBinding) activityLoginBinding).btnLang.setText(languages[index]);
+            ((ActivityLoginBinding) activityLoginBinding).btnLang.setOnClickListener(view -> {
+                new AlertDialog.Builder(this).setTitle(R.string.select_language).setSingleChoiceItems(getResources().getStringArray(R.array.language), index, null).setPositiveButton(R.string.ok, (dialog, whichButton) -> {
+                    dialog.dismiss();
+                    int selectedPosition = ((AlertDialog) dialog).getListView().getCheckedItemPosition();
+                    String lang = languageKey[selectedPosition];
+                    LocaleHelper.setLocale(LoginActivity.this, lang);
+                    recreate();
+                }).setNegativeButton(R.string.cancel, null).show();
+            });
+        } else if (activityLoginBinding instanceof ActivityChildLoginBinding) {
+            ((ActivityChildLoginBinding) activityLoginBinding).btnLang.setText(languages[index]);
+            ((ActivityChildLoginBinding) activityLoginBinding).btnLang.setOnClickListener(view -> {
+                new AlertDialog.Builder(this).setTitle(R.string.select_language).setSingleChoiceItems(getResources().getStringArray(R.array.language), index, null).setPositiveButton(R.string.ok, (dialog, whichButton) -> {
+                    dialog.dismiss();
+                    int selectedPosition = ((AlertDialog) dialog).getListView().getCheckedItemPosition();
+                    String lang = languageKey[selectedPosition];
+                    LocaleHelper.setLocale(LoginActivity.this, lang);
+                    recreate();
+                }).setNegativeButton(R.string.cancel, null).show();
+            });
+        }
     }
 
     /**
@@ -558,7 +790,11 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         if (isLoggedIn) {
             Toast.makeText(getApplicationContext(), getString(R.string.thank_you), Toast.LENGTH_SHORT).show();
             onLogin();
-            saveUsers(inputName.getText().toString(), inputPassword.getText().toString(), "member");
+            if (activityLoginBinding instanceof ActivityLoginBinding) {
+                saveUsers(((ActivityLoginBinding) activityLoginBinding).inputName.getText().toString(), ((ActivityLoginBinding) activityLoginBinding).inputPassword.getText().toString(), "member");
+            } else if (activityLoginBinding instanceof ActivityChildLoginBinding) {
+                saveUsers(((ActivityChildLoginBinding) activityLoginBinding).inputName.getText().toString(), ((ActivityChildLoginBinding) activityLoginBinding).inputPassword.getText().toString(), "member");
+            }
         } else {
             ManagerSync.getInstance().login(name, password, new SyncListener() {
                 @Override
@@ -575,7 +811,11 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                     if (log) {
                         Toast.makeText(getApplicationContext(), getString(R.string.thank_you), Toast.LENGTH_SHORT).show();
                         onLogin();
-                        saveUsers(inputName.getText().toString(), inputPassword.getText().toString(), "member");
+                        if (activityLoginBinding instanceof ActivityLoginBinding) {
+                            saveUsers(((ActivityLoginBinding) activityLoginBinding).inputName.getText().toString(), ((ActivityLoginBinding) activityLoginBinding).inputPassword.getText().toString(), "member");
+                        } else if (activityLoginBinding instanceof ActivityChildLoginBinding) {
+                            saveUsers(((ActivityChildLoginBinding) activityLoginBinding).inputName.getText().toString(), ((ActivityChildLoginBinding) activityLoginBinding).inputPassword.getText().toString(), "member");
+                        }
                     } else {
                         alertDialogOkay(getString(R.string.err_msg_login));
                     }
@@ -655,15 +895,22 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     public void settingDialog() {
         try {
             mRealm = Realm.getDefaultInstance();
+            DialogServerUrlBinding dialogServerUrlBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this));
             MaterialDialog.Builder builder = new MaterialDialog.Builder(LoginActivity.this);
-            builder.title(R.string.action_settings).customView(R.layout.dialog_server_url_, true).positiveText(R.string.btn_sync).negativeText(R.string.btn_sync_cancel).neutralText(R.string.btn_sync_save).onPositive((dialog, which) -> continueSync(dialog)).onNeutral((dialog, which) -> saveConfigAndContinue(dialog));
+            builder.title(R.string.action_settings)
+                    .customView(dialogServerUrlBinding.getRoot(), true)
+                    .positiveText(R.string.btn_sync)
+                    .negativeText(R.string.btn_sync_cancel)
+                    .neutralText(R.string.btn_sync_save)
+                    .onPositive((dialog, which) -> continueSync(dialog))
+                    .onNeutral((dialog, which) -> saveConfigAndContinue(dialog));
 
             MaterialDialog dialog = builder.build();
             positiveAction = dialog.getActionButton(DialogAction.POSITIVE);
-            spnCloud = dialog.getCustomView().findViewById(R.id.spn_cloud);
+            spnCloud = dialogServerUrlBinding.spnCloud;
             List<RealmCommunity> communities = mRealm.where(RealmCommunity.class).sort("weight", Sort.ASCENDING).findAll();
-            spnCloud.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, communities));
-            spnCloud.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            dialogServerUrlBinding.spnCloud.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, communities));
+            dialogServerUrlBinding.spnCloud.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                 @Override
                 public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
                     onChangeServerUrl();
@@ -674,20 +921,18 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
                 }
             });
-            protocol_checkin = dialog.getCustomView().findViewById(R.id.radio_protocol);
-            serverUrl = dialog.getCustomView().findViewById(R.id.input_server_url);
-            serverPassword = dialog.getCustomView().findViewById(R.id.input_server_Password);
-            switchServerUrl = dialog.getCustomView().findViewById(R.id.switch_server_url);
-            serverUrlProtocol = dialog.getCustomView().findViewById(R.id.input_server_url_protocol);
-            switchServerUrl.setOnCheckedChangeListener((compoundButton, b) -> {
+            protocol_checkin = dialogServerUrlBinding.radioProtocol;
+            serverUrl = dialogServerUrlBinding.inputServerUrl;
+            serverPassword = dialogServerUrlBinding.inputServerPassword;
+            serverUrlProtocol = dialogServerUrlBinding.inputServerUrlProtocol;
+            dialogServerUrlBinding.switchServerUrl.setOnCheckedChangeListener((compoundButton, b) -> {
                 settings.edit().putBoolean("switchCloudUrl", b).commit();
-                spnCloud.setVisibility(b ? View.VISIBLE : View.GONE);
-                setUrlAndPin(switchServerUrl.isChecked());
+                dialogServerUrlBinding.spnCloud.setVisibility(b ? View.VISIBLE : View.GONE);
+                setUrlAndPin(dialogServerUrlBinding.switchServerUrl.isChecked());
             });
             serverUrl.addTextChangedListener(new MyTextWatcher(serverUrl));
-            EditText customDeviceName = dialog.getCustomView().findViewById(R.id.deviceName);
-            customDeviceName.setText(getCustomDeviceName());
-            switchServerUrl.setChecked(settings.getBoolean("switchCloudUrl", false));
+            dialogServerUrlBinding.deviceName.setText(getCustomDeviceName());
+            dialogServerUrlBinding.switchServerUrl.setChecked(settings.getBoolean("switchCloudUrl", false));
             setUrlAndPin(settings.getBoolean("switchCloudUrl", false));
             protocol_semantics();
             dialog.show();
@@ -755,7 +1000,12 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     public void onSuccess(String s) {
         Utilities.log("Sync completed ");
         if (progressDialog.isShowing() && s.contains("Crash")) progressDialog.dismiss();
-        DialogUtils.showSnack(btnSignIn, s);
+        if (activityLoginBinding instanceof ActivityLoginBinding) {
+            DialogUtils.showSnack(((ActivityLoginBinding) activityLoginBinding).btnSignin, s);
+        } else if (activityLoginBinding instanceof ActivityChildLoginBinding) {
+            DialogUtils.showSnack(((ActivityLoginBinding) activityLoginBinding).btnSignin, s);
+        }
+
         settings.edit().putLong("lastUsageUploaded", new Date().getTime()).commit();
 
         // Update last sync text
@@ -826,10 +1076,9 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     public void onSelectedUser(RealmUserModel userModel) {
         try {
             mRealm = Realm.getDefaultInstance();
-            View v = getLayoutInflater().inflate(R.layout.layout_child_login, null);
-            EditText et = v.findViewById(R.id.et_child_password);
-            new AlertDialog.Builder(this).setView(v).setTitle(R.string.please_enter_your_password).setPositiveButton(R.string.login, (dialogInterface, i) -> {
-                String password = et.getText().toString();
+            LayoutChildLoginBinding layoutChildLoginBinding = LayoutChildLoginBinding.inflate(getLayoutInflater());
+            new AlertDialog.Builder(this).setView(layoutChildLoginBinding.getRoot()).setTitle(R.string.please_enter_your_password).setPositiveButton(R.string.login, (dialogInterface, i) -> {
+                String password = layoutChildLoginBinding.etChildPassword.getText().toString();
                 if (authenticateUser(settings, userModel.getName(), password, false)) {
                     Toast.makeText(getApplicationContext(), getString(R.string.thank_you), Toast.LENGTH_SHORT).show();
                     onLogin();
@@ -875,11 +1124,20 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
         public void afterTextChanged(Editable editable) {
             switch (view.getId()) {
+
                 case R.id.input_name:
-                    validateEditText(inputName, inputLayoutName, getString(R.string.err_msg_name));
+                    if (activityLoginBinding instanceof ActivityLoginBinding) {
+                        validateEditText(((ActivityLoginBinding) activityLoginBinding).inputName, ((ActivityLoginBinding) activityLoginBinding).inputLayoutName, getString(R.string.err_msg_name));
+                    } else if (activityLoginBinding instanceof ActivityChildLoginBinding) {
+                        validateEditText(((ActivityChildLoginBinding) activityLoginBinding).inputName, ((ActivityChildLoginBinding) activityLoginBinding).inputLayoutName, getString(R.string.err_msg_name));
+                    }
                     break;
                 case R.id.input_password:
-                    validateEditText(inputPassword, inputLayoutPassword, getString(R.string.err_msg_password));
+                    if (activityLoginBinding instanceof ActivityLoginBinding) {
+                        validateEditText(((ActivityLoginBinding) activityLoginBinding).inputPassword, ((ActivityLoginBinding) activityLoginBinding).inputLayoutPassword, getString(R.string.err_msg_password));
+                    } else if (activityLoginBinding instanceof ActivityChildLoginBinding) {
+                        validateEditText(((ActivityChildLoginBinding) activityLoginBinding).inputPassword, ((ActivityChildLoginBinding) activityLoginBinding).inputLayoutPassword, getString(R.string.err_msg_password));
+                    }
                     break;
                 default:
                     break;
