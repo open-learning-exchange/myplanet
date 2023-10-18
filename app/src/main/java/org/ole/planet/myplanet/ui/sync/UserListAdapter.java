@@ -27,7 +27,8 @@ public class UserListAdapter extends BaseAdapter implements Filterable {
     private OnItemClickListener onItemClickListener;
 
     public interface OnItemClickListener {
-        void onItemClick(String name, String password);
+        void onItemClickGuest(String name);
+        void onItemClickMember(String name, String password);
     }
 
     public UserListAdapter(Context context, List<User> userList) {
@@ -67,8 +68,12 @@ public class UserListAdapter extends BaseAdapter implements Filterable {
         CircleImageView userProfile = view.findViewById(R.id.userProfile);
 
         User user = filteredUserList.get(position);
-        userNameTextView.setText(user.getFullName());
-        user.getImage();
+        if (user.getSource().equals("guest")){
+            userNameTextView.setText(user.getName());
+        } else if (user.getSource().equals("member")){
+            userNameTextView.setText(user.getFullName());
+        }
+
         if (!user.getImage().isEmpty()) {
             Glide.with(context)
                     .load(user.getImage())
@@ -79,7 +84,11 @@ public class UserListAdapter extends BaseAdapter implements Filterable {
 
         view.setOnClickListener(v -> {
             if (onItemClickListener != null) {
-                onItemClickListener.onItemClick(user.getName(), user.getPassword());
+                if (user.getSource().equals("guest")) {
+                    onItemClickListener.onItemClickGuest(user.getName());
+                } else if (user.getSource().equals("member")) {
+                    onItemClickListener.onItemClickMember(user.getName(), user.getPassword());
+                }
             }
         });
 
@@ -95,7 +104,6 @@ public class UserListAdapter extends BaseAdapter implements Filterable {
                 List<User> filteredList = new ArrayList<>();
 
                 if (constraint == null || constraint.length() == 0) {
-                    // No filter applied, return the full list
                     filteredList.addAll(userList);
                 } else {
                     String filterPattern = constraint.toString().toLowerCase().trim();
