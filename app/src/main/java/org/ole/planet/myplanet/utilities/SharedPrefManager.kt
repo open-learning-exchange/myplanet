@@ -33,7 +33,8 @@ class SharedPrefManager(context: Context) {
                     val name = userJson.getString("name")
                     val password = userJson.getString("password")
                     val image = userJson.getString("image")
-                    val user = User(fullName, name, password, image)
+                    val source = userJson.getString("source")
+                    val user = User(fullName, name, password, image, source)
                     userList.add(user)
                 }
                 userList
@@ -54,6 +55,7 @@ class SharedPrefManager(context: Context) {
             userJson.put("name", user.name)
             userJson.put("password", user.password)
             userJson.put("image", user.image)
+            userJson.put("source", user.source)
             jsonArray.put(userJson)
         }
         editor.putString(SAVEDUSERS, jsonArray.toString())

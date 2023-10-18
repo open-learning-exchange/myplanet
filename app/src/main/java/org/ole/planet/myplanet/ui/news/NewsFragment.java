@@ -8,15 +8,10 @@ import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.LinearLayout;
-import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.material.textfield.TextInputLayout;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -24,7 +19,6 @@ import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseNewsFragment;
-import org.ole.planet.myplanet.databinding.FragmentFeedbackBinding;
 import org.ole.planet.myplanet.databinding.FragmentNewsBinding;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
@@ -46,29 +40,13 @@ import io.realm.Sort;
 
 public class NewsFragment extends BaseNewsFragment {
     private FragmentNewsBinding fragmentNewsBinding;
-//    RecyclerView rvNews;
-//    EditText etMessage;
-//    TextInputLayout tlMessage;
-//    Button btnSubmit, btnAddImage, btnAddStory;
-//    LinearLayout llAddNews;
     RealmUserModel user;
-//    TextView tvMessage;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         fragmentNewsBinding = FragmentNewsBinding.inflate(inflater, container, false);
-//        View v = inflater.inflate(R.layout.fragment_news, container, false);
-//        rvNews = v.findViewById(R.id.rv_news);
-//        etMessage = v.findViewById(R.id.et_message);
-//        tlMessage = v.findViewById(R.id.tl_message);
-//        btnSubmit = v.findViewById(R.id.btn_submit);
-//        tvMessage = v.findViewById(R.id.tv_message);
-//        llImage = v.findViewById(R.id.ll_image);
         llImage = fragmentNewsBinding.llImages;
-//        llAddNews = v.findViewById(R.id.ll_add_news);
-//        btnAddStory = v.findViewById(R.id.btn_add_story);
-//        btnAddImage = v.findViewById(R.id.add_news_image);
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
         user = new UserProfileDbHandler(getActivity()).getUserModel();
         KeyboardUtils.setupUI(fragmentNewsBinding.newsFragmentParentLayout, getActivity());
