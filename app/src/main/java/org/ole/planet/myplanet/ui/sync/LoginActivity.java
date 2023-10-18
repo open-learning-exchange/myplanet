@@ -104,8 +104,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         } else if (activityLoginBinding instanceof ActivityChildLoginBinding) {
             ((ActivityChildLoginBinding) activityLoginBinding).tvAvailableSpace.setText(FileUtils.getAvailableOverTotalMemoryFormattedString());
         }
-//        tvAvailableSpace = findViewById(R.id.tv_available_space);
-//        tvAvailableSpace.setText(FileUtils.getAvailableOverTotalMemoryFormattedString());
         changeLogoColor();
         service = new Service(this);
         defaultPref = PreferenceManager.getDefaultSharedPreferences(this);
@@ -339,119 +337,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             settingDialog();
         }
     }
-
-//    private void showGuestLoginDialog() {
-//        try {
-//            mRealm = Realm.getDefaultInstance();
-//            mRealm.refresh();
-//            editor = settings.edit();
-//            View v = LayoutInflater.from(this).inflate(R.layout.alert_guest_login, null);
-//            TextInputEditText etUserName = v.findViewById(R.id.et_user_name);
-//            etUserName.addTextChangedListener(new TextWatcher() {
-//                @Override
-//                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-//                @Override
-//                public void onTextChanged(CharSequence s, int start, int before, int count) {
-//                    char firstChar = s.length() > 0 ? s.charAt(0) : '\0';
-//                    boolean hasInvalidCharacters = false;
-//                    for (int i = 0; i < s.length(); i++) {
-//                        char c = s.charAt(i);
-//                        if (c != '_' && c != '.' && c != '-' && !Character.isDigit(c) && !Character.isLetter(c)) {
-//                            hasInvalidCharacters = true;
-//                            break;
-//                        }
-//                    }
-//
-//                    if (!Character.isDigit(firstChar) && !Character.isLetter(firstChar)) {
-//                        etUserName.setError(getString(R.string.must_start_with_letter_or_number));
-//                    } else if (hasInvalidCharacters) {
-//                        etUserName.setError(getString(R.string.only_letters_numbers_and_are_allowed));
-//                    } else {
-//                        String lowercaseText = s.toString().toLowerCase(Locale.ROOT);
-//                        if (!s.toString().equals(lowercaseText)) {
-//                            etUserName.setText(lowercaseText);
-//                            etUserName.setSelection(lowercaseText.length());
-//                        }
-//                        etUserName.setError(null);
-//                    }
-//                }
-//
-//                @Override
-//                public void afterTextChanged(Editable s) {}
-//            });
-//
-//            AlertDialog.Builder builder = new AlertDialog.Builder(this);
-//            builder.setTitle("Login As Guest");
-//            builder.setView(v);
-//            builder.setPositiveButton("Login", null);
-//            builder.setNegativeButton("Cancel", null);
-//            AlertDialog dialog = builder.create();
-//            dialog.show();
-//            Button login = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
-//            Button cancel = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
-//
-//            login.setOnClickListener(view -> {
-//                if (mRealm.isEmpty()) {
-//                    alertDialogOkay(getString(R.string.this_device_not_configured_properly_please_check_and_sync));
-//                    return;
-//                }
-//                String username = etUserName.getText().toString().trim();
-//                Character firstChar = username.isEmpty() ? null : username.charAt(0);
-//                boolean hasInvalidCharacters = false;
-//
-//                boolean isValid = true;
-//
-//                if (TextUtils.isEmpty(username)) {
-//                    etUserName.setError(getString(R.string.username_cannot_be_empty));
-//                    isValid = false;
-//                }
-//
-//                if (firstChar != null && !Character.isDigit(firstChar) && !Character.isLetter(firstChar)) {
-//                    etUserName.setError(getString(R.string.must_start_with_letter_or_number));
-//                    isValid = false;
-//                } else {
-//                    for (char c : username.toCharArray()) {
-//                        if (c != '_' && c != '.' && c != '-' && !Character.isDigit(c) && !Character.isLetter(c)) {
-//                            hasInvalidCharacters = true;
-//                            break;
-//                        }
-//                    }
-//                    if (hasInvalidCharacters) {
-//                        etUserName.setError(getString(R.string.only_letters_numbers_and_are_allowed));
-//                        isValid = false;
-//                    }
-//                }
-//
-//                if (isValid) {
-//                    RealmUserModel existingUser = mRealm.where(RealmUserModel.class).equalTo("name", username).findFirst();
-//                    dialog.dismiss();
-//
-//                    if (existingUser != null) {
-//                        if (existingUser.get_id().contains("guest")) {
-//                            showGuestDialog(username);
-//                        } else if (existingUser.get_id().contains("org.couchdb.user:")) {
-//                            showUserAlreadyMemberDialog(username);
-//                        }
-//                    } else {
-//                        RealmUserModel model = mRealm.copyFromRealm(RealmUserModel.createGuestUser(username, mRealm, settings));
-//                        if (model == null) {
-//                            Utilities.toast(LoginActivity.this, getString(R.string.unable_to_login));
-//                        } else {
-//                            saveUsers(username, "", "guest");
-//                            saveUserInfoPref(settings, "", model);
-//                            onLogin();
-//                        }
-//                    }
-//                }
-//            });
-//
-//            cancel.setOnClickListener(view -> dialog.dismiss());
-//        } finally {
-//            if (mRealm != null && !mRealm.isClosed()) {
-//                mRealm.close();
-//            }
-//        }
-//    }
 
     private void showGuestLoginDialog() {
         try {
