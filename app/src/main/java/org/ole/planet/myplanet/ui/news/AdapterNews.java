@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.news;
 
 import android.content.Context;
 import android.content.Intent;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuInflater;
 import android.view.View;
@@ -28,6 +27,7 @@ import org.ole.planet.myplanet.model.RealmNews;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.JsonUtils;
+import org.ole.planet.myplanet.utilities.SharedPrefManager;
 import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
@@ -56,12 +56,14 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     public RealmUserModel currentUser;
     public boolean fromLogin;
     private boolean isFromNewsFragment;
+    private SharedPrefManager sharedPreferences;
 
     public void setImageList(RealmList<String> imageList) {
         this.imageList = imageList;
     }
 
     public AdapterNews(Context context, List<RealmNews> list, RealmUserModel user, RealmNews parentNews,boolean isFromNewsFragment) {
+
         this.context = context;
         this.list = list;
         this.currentUser = user;
@@ -91,6 +93,7 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         rowNewsBinding = RowNewsBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false);
+        sharedPreferences = new SharedPrefManager(context);
         return new ViewHolderNews(rowNewsBinding);
     }
 
@@ -115,7 +118,7 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 viewHolder.rowNewsBinding.tvMessage.setText(news.getMessageWithoutMarkdown());
                 viewHolder.rowNewsBinding.tvDate.setText(TimeUtils.formatDate(news.getTime()));
                 if(Objects.equals(news.getUserId(), currentUser.get_id())){
-                    viewHolder.rowNewsBinding.imgDelete.setOnClickListener(view -> new AlertDialog.Builder(context).setMessage(R.string.delete_record).setPositiveButton(R.string.ok, (dialogInterface, i) -> deletePost(news)).setNegativeButton(R.string.cancel, null).show());
+                    viewHolder.rowNewsBinding.imgDelete.setOnClickListener(view -> new AlertDialog.Builder(context).setMessage(R.string.delete_record).setPositiveButton(R.string.ok, (dialogInterface, i) -> deletePost(news, context)).setNegativeButton(R.string.cancel, null).show());
                     viewHolder.rowNewsBinding.imgEdit.setOnClickListener(view -> showEditAlert(news.getId(), true));
                     viewHolder.rowNewsBinding.btnAddLabel.setVisibility(fromLogin ? View.GONE : View.VISIBLE);
                 } else{
@@ -221,12 +224,12 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             viewHolder.rowNewsBinding.btnShowReply.setVisibility(View.GONE);
 
         viewHolder.rowNewsBinding.btnShowReply.setOnClickListener(view -> {
+            sharedPreferences.setREPLIEDNEWSID1(finalNews.getId());
             if (listener != null) {
                 listener.showReply(finalNews, fromLogin);
             }
         });
     }
-
 
     public void showEditAlert(String id, boolean isEdit) {
         View v = LayoutInflater.from(context).inflate(R.layout.alert_input, null);
@@ -296,14 +299,27 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         }
     }
 
-
-    private void deletePost(RealmNews news) {
+    private void deletePost(RealmNews news, Context context) {
         if (!mRealm.isInTransaction()) mRealm.beginTransaction();
-        if (isFromNewsFragment) {
-            list.remove(news);
-        }
-        if (news != null) {
-            news.deleteFromRealm();
+        if (Objects.equals(news.getId(), sharedPreferences.getREPLIEDNEWSID1())) {
+            if (isFromNewsFragment) {
+                list.remove(news);
+            }
+            if (news != null) {
+                news.deleteFromRealm();
+            }
+
+            if (context instanceof ReplyActivity) {
+                ((ReplyActivity) context).finish();
+            }
+        } else{
+            if (!mRealm.isInTransaction()) mRealm.beginTransaction();
+            if (isFromNewsFragment) {
+                list.remove(news);
+            }
+            if (news != null) {
+                news.deleteFromRealm();
+            }
         }
         mRealm.commitTransaction();
         notifyDataSetChanged();
