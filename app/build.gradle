@@ -138,6 +138,7 @@ dependencies {
     implementation 'com.applandeo:material-calendar-view:1.7.0'
     implementation "androidx.work:work-runtime:2.8.1"
     implementation(platform("org.jetbrains.kotlin:kotlin-bom:1.8.0"))
+    implementation"androidx.slidingpanelayout:slidingpanelayout:1.2.0"
 }
 realm {
     syncEnabled = true

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.slidingpanelayout.widget.SlidingPaneLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/sliding_pane_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ui.chat.ChatHistoryListFragment">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="400dp"
+        android:layout_height="match_parent">
+
+        <Button
+            android:id="@+id/newChat"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_marginTop="10dp"
+            android:layout_marginEnd="10dp"
+            android:background="@color/colorPrimary"
+            android:contentDescription="new chat"
+            android:text="new chat"
+            android:textAllCaps="false"
+            android:textColor="@android:color/white"
+            android:textSize="12sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerview"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="10dp"
+            android:clipToPadding="false"
+            android:padding="8dp"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/newChat" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <androidx.fragment.app.FragmentContainerView
+        android:id="@+id/details_container"
+        android:name="org.ole.planet.myplanet.ui.chat.ChatDetailFragment"
+        android:layout_width="300dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1" />
+
+</androidx.slidingpanelayout.widget.SlidingPaneLayout>
