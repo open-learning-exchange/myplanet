@@ -102,7 +102,9 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
     @Override
     public void onDestroy() {
         super.onDestroy();
-        mRealm.close();
+        if (mRealm != null) {
+            mRealm.close();
+        }
     }
 
     @Override
