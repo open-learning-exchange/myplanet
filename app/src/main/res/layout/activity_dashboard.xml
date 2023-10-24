@@ -20,7 +20,9 @@
             app:elevation="4dp"
             app:popupTheme="@style/CustomTheme" />
 
-        <include layout="@layout/app_bar_bell" />
+        <include
+            android:id="@+id/appBarBell"
+            layout="@layout/app_bar_bell" />
 
 
         <com.google.android.material.bottomnavigation.BottomNavigationView
@@ -38,10 +40,6 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1">
-
         </FrameLayout>
-
     </LinearLayout>
-
-
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
