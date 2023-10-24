@@ -1,28 +1,28 @@
 package org.ole.planet.myplanet.ui.dashboard;
 
 import android.os.Bundle;
-
-import androidx.fragment.app.Fragment;
-
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import org.ole.planet.myplanet.R;
+import androidx.annotation.NonNull;
+import androidx.fragment.app.Fragment;
+
+import org.ole.planet.myplanet.databinding.FragmentInActiveDashboardBinding;
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment;
 
 public class InactiveDashboardFragment extends Fragment {
+    private FragmentInActiveDashboardBinding fragmentInActiveDashboardBinding;
     public InactiveDashboardFragment() {
         // Required empty public constructor
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View v = inflater.inflate(R.layout.fragment_in_active_dashboard, container, false);
-
-        v.findViewById(R.id.btn_feedback).setOnClickListener(vi -> {
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        fragmentInActiveDashboardBinding = FragmentInActiveDashboardBinding.inflate(inflater, container, false);
+        fragmentInActiveDashboardBinding.btnFeedback.setOnClickListener(vi -> {
             new FeedbackFragment().show(getChildFragmentManager(), "");
         });
-        return v;
+        return fragmentInActiveDashboardBinding.getRoot();
     }
 }

@@ -4,13 +4,13 @@ import android.os.Bundle
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
-import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import io.realm.RealmObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
+import org.ole.planet.myplanet.databinding.ItemMyLifeBinding
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -87,15 +87,11 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
             textViewArray[itemCnt]?.text = obj.title
         } else if (obj is RealmMyCourse) {
             textViewArray[itemCnt]?.let {
-                handleClick(
-                    obj.courseId, obj.courseTitle, TakeCourseFragment(), it
-                )
+                handleClick(obj.courseId, obj.courseTitle, TakeCourseFragment(), it)
             }
         } else if (obj is RealmMeetup) {
             textViewArray[itemCnt]?.let {
-                handleClick(
-                    obj.meetupId, obj.title, MyMeetupDetailFragment(), it
-                )
+                handleClick(obj.meetupId, obj.title, MyMeetupDetailFragment(), it)
             }
         }
     }
@@ -106,27 +102,24 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
     }
 
     fun getLayout(itemCnt: Int, obj: RealmObject): View {
-        val v = LayoutInflater.from(activity).inflate(R.layout.item_my_life, null)
-        val img = v.findViewById<ImageView>(R.id.img)
-        val counter = v.findViewById<TextView>(R.id.tv_count)
-        val name = v.findViewById<TextView>(R.id.tv_name)
+        val itemMyLifeBinding = ItemMyLifeBinding.inflate(LayoutInflater.from(activity))
+        val v = itemMyLifeBinding.root
         setBackgroundColor(v, itemCnt)
+
         val title = (obj as RealmMyLife).title
-        img.setImageResource(
-            resources.getIdentifier(
-                obj.imageId, "drawable", requireActivity().packageName
-            )
-        )
-        name.text = title
         val user = UserProfileDbHandler(activity).userModel
+        itemMyLifeBinding.img.setImageResource(resources.getIdentifier(obj.imageId, "drawable", requireActivity().packageName))
+        itemMyLifeBinding.tvName.text = title
+
         if (title == getString(R.string.my_survey)) {
-            counter.visibility = View.VISIBLE
+            itemMyLifeBinding.tvCount.visibility = View.VISIBLE
             val noOfSurvey = RealmSubmission.getNoOfSurveySubmissionByUser(user.id, mRealm)
-            counter.text = noOfSurvey.toString() + ""
+            itemMyLifeBinding.tvCount.text = noOfSurvey.toString()
             Utilities.log("Count $noOfSurvey")
         } else {
-            counter.visibility = View.GONE
+            itemMyLifeBinding.tvCount.visibility = View.GONE
         }
+
         handleClickMyLife(title, v)
         return v
     }

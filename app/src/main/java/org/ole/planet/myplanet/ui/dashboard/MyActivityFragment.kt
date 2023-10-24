@@ -1,34 +1,34 @@
 package org.ole.planet.myplanet.ui.dashboard
 
-import java.text.DateFormatSymbols;
-
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import com.github.mikephil.charting.components.Description
-import com.github.mikephil.charting.data.*
+import com.github.mikephil.charting.data.BarData
+import com.github.mikephil.charting.data.BarDataSet
+import com.github.mikephil.charting.data.BarEntry
 import com.github.mikephil.charting.formatter.ValueFormatter
 import com.google.gson.Gson
 import io.realm.Realm
-import kotlinx.android.synthetic.main.fragment_my_activity.*
-import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.databinding.FragmentMyActivityBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Utilities
+import java.text.DateFormatSymbols
 import java.text.SimpleDateFormat
-import java.util.*
-import kotlin.collections.ArrayList
-import kotlin.collections.HashMap
+import java.util.Calendar
 
 class MyActivityFragment : Fragment() {
+    lateinit var fragmentMyActivityBinding : FragmentMyActivityBinding
     lateinit var realm: Realm;
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
+            inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View? {
-        return inflater.inflate(R.layout.fragment_my_activity, container, false)
+        fragmentMyActivityBinding = FragmentMyActivityBinding.inflate(inflater, container, false)
+        return fragmentMyActivityBinding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -39,9 +39,9 @@ class MyActivityFragment : Fragment() {
 
         calendar.set(Calendar.YEAR, calendar.get(Calendar.YEAR) - 1)
         var resourceActivity =
-            realm.where(RealmOfflineActivity::class.java).equalTo("userId", userModel.id)
-                .between("loginTime", calendar.timeInMillis, Calendar.getInstance().timeInMillis)
-                .findAll()
+                realm.where(RealmOfflineActivity::class.java).equalTo("userId", userModel.id)
+                        .between("loginTime", calendar.timeInMillis, Calendar.getInstance().timeInMillis)
+                        .findAll()
 
         var countMap = HashMap<String, Int>();
         var format = SimpleDateFormat("MMM")
@@ -70,17 +70,17 @@ class MyActivityFragment : Fragment() {
         val dataSet = BarDataSet(entries, "No of login ")
 
         val lineData = BarData(dataSet)
-        chart.data = lineData
+        fragmentMyActivityBinding.chart.data = lineData
         var d = Description()
         d.text = "Login Activity chart"
-        chart.description = d
-        chart.xAxis.valueFormatter = object : ValueFormatter() {
+        fragmentMyActivityBinding.chart.description = d
+        fragmentMyActivityBinding.chart.xAxis.valueFormatter = object : ValueFormatter() {
             override fun getFormattedValue(value: Float): String {
                 Utilities.log("value ${value.toInt()}")
                 return getMonth(value.toInt())
             }
         }
-        chart.invalidate()
+        fragmentMyActivityBinding.chart.invalidate()
     }
 
     public fun getMonth(month: Int): String {
