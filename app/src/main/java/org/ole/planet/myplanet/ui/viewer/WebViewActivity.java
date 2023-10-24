@@ -11,53 +11,46 @@ import android.webkit.CookieSyncManager;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.widget.ProgressBar;
-import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.databinding.ActivityWebViewBinding;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 public class WebViewActivity extends AppCompatActivity {
-    ProgressBar pBar;
+    private ActivityWebViewBinding activityWebViewBinding;
     boolean fromDeepLink = false;
     String link;
-    WebView wv;
-    TextView tv_title, tv_source;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_web_view);
+        activityWebViewBinding = ActivityWebViewBinding.inflate(getLayoutInflater());
+        setContentView(activityWebViewBinding.getRoot());
         String title, source;
         String dataFromDeepLink = getIntent().getDataString();
         fromDeepLink = !TextUtils.isEmpty(dataFromDeepLink);
 
         title = getIntent().getStringExtra("title");
         link = getIntent().getStringExtra("link");
-        wv = findViewById(R.id.wv);
 
         clearCookie();
-        tv_title = (findViewById(R.id.web_title));
-        tv_source = (findViewById(R.id.web_source));
         if (!TextUtils.isEmpty(title)) {
-            tv_title.setText(title);
+            activityWebViewBinding.contentWebView.webTitle.setText(title);
         }
-
-        pBar = findViewById(R.id.pBar);
-        pBar.setMax(100);
-        pBar.setProgress(0);
+        
+        activityWebViewBinding.contentWebView.pBar.setMax(100);
+        activityWebViewBinding.contentWebView.pBar.setProgress(0);
         setListeners();
-        wv.getSettings().setJavaScriptEnabled(true);
-        wv.getSettings().setJavaScriptCanOpenWindowsAutomatically(true);
-        wv.loadUrl(link);
-        findViewById(R.id.finish).setOnClickListener(v -> finish());
+        activityWebViewBinding.contentWebView.wv.getSettings().setJavaScriptEnabled(true);
+        activityWebViewBinding.contentWebView.wv.getSettings().setJavaScriptCanOpenWindowsAutomatically(true);
+        activityWebViewBinding.contentWebView.wv.loadUrl(link);
+        activityWebViewBinding.contentWebView.finish.setOnClickListener(v -> finish());
         setWebClient();
     }
 
     private void setWebClient() {
-        wv.setWebViewClient(new WebViewClient() {
+        activityWebViewBinding.contentWebView.wv.setWebViewClient(new WebViewClient() {
             @Override
             public void onPageStarted(WebView view, String url, Bitmap favicon) {
                 super.onPageStarted(view, url, favicon);
@@ -66,7 +59,7 @@ public class WebViewActivity extends AppCompatActivity {
                     finish();
                 }
                 Uri i = Uri.parse(url);
-                tv_source.setText(i.getHost());
+                activityWebViewBinding.contentWebView.webSource.setText(i.getHost());
             }
 
             @Override
@@ -88,7 +81,7 @@ public class WebViewActivity extends AppCompatActivity {
     }
 
     private void setListeners() {
-        wv.setWebChromeClient(new WebChromeClient() {
+        activityWebViewBinding.contentWebView.wv.setWebChromeClient(new WebChromeClient() {
             @Override
             public void onProgressChanged(WebView view, int newProgress) {
                 (WebViewActivity.this).setProgress(newProgress);
@@ -96,13 +89,13 @@ public class WebViewActivity extends AppCompatActivity {
                 if (view.getUrl().endsWith("/eng/")) {
                     finish();
                 }
-                pBar.incrementProgressBy(newProgress);
-                if (newProgress == 100 && pBar.isShown()) pBar.setVisibility(View.GONE);
+                activityWebViewBinding.contentWebView.pBar.incrementProgressBy(newProgress);
+                if (newProgress == 100 && activityWebViewBinding.contentWebView.pBar.isShown()) activityWebViewBinding.contentWebView.pBar.setVisibility(View.GONE);
             }
 
             @Override
             public void onReceivedTitle(WebView view, String title) {
-                tv_title.setText(title);
+                activityWebViewBinding.contentWebView.webTitle.setText(title);
                 super.onReceivedTitle(view, title);
             }
         });
