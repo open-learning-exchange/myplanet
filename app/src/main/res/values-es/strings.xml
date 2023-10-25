@@ -952,5 +952,6 @@
     <string name="request_failed_please_retry">La solicitud ha fallado, por favor inténtelo de nuevo</string>
     <string name="confirm_removal">Confirmar eliminación</string>
     <string name="returning_user">Usuario recurrente</string>
+    <string name="send_to_nation">Permite que tus logros se compartan con la nación</string>
 
 </resources>
