@@ -952,5 +952,11 @@
     <string name="request_failed_please_retry">La demande a échoué, veuillez réessayer</string>
     <string name="confirm_removal">Confirmer la suppression</string>
     <string name="returning_user">Utilisateur régulier</string>
+    <string name="jcplayer_description">Lecteur audio pour jouer de la musique</string>
+    <string name="image_resource">Ressource d'image</string>
+    <string name="play_audio">Lire l'audio</string>
+    <string name="video_player">Lecteur vidéo</string>
+    <string name="progress_bar">Barre de progression</string>
+    <string name="web_view">Vue Web</string>
 
 </resources>

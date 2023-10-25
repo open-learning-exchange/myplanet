@@ -952,5 +952,11 @@
     <string name="request_failed_please_retry">अनुरोध असफल भयो, कृपया पुन: प्रयास गर्नुहोस्</string>
     <string name="confirm_removal">हटाउनु हेरदैछ</string>
     <string name="returning_user">पुनराबृत्ति गर्ने प्रयोगकर्ता</string>
+    <string name="jcplayer_description">संगीत बजारका लागि आडियो प्लेयर</string>
+    <string name="image_resource">तस्वीर स्रोत</string>
+    <string name="play_audio">आडियो चलाउनुहोस्</string>
+    <string name="video_player">भिडियो प्लेयर</string>
+    <string name="progress_bar">प्रगति पट्टिका</string>
+    <string name="web_view">वेव दृश्य</string>
 
 </resources>
