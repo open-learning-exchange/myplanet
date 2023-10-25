@@ -8,12 +8,13 @@ import androidx.activity.OnBackPressedCallback
 import androidx.fragment.app.Fragment
 import androidx.slidingpanelayout.widget.SlidingPaneLayout
 import org.ole.planet.myplanet.databinding.FragmentChatHistoryListBinding
+import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.ui.community.AdapterLeader
 
 class ChatHistoryListFragment : Fragment() {
     private lateinit var fragmentChatHistoryListBinding: FragmentChatHistoryListBinding
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         fragmentChatHistoryListBinding = FragmentChatHistoryListBinding.inflate(inflater, container, false)
@@ -26,22 +27,36 @@ class ChatHistoryListFragment : Fragment() {
         slidingPaneLayout.lockMode = SlidingPaneLayout.LOCK_MODE_LOCKED
 
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, ChatHistoryListOnBackPressedCallback(slidingPaneLayout))
+
+
 //        val chatAdapter = ChatAdapter{
-        fragmentChatHistoryListBinding.slidingPaneLayout.openPane()
+//        val adapterJoinedMember = AdapterLeader {
+            fragmentChatHistoryListBinding.slidingPaneLayout.openPane()
 //        }
+        var mRealm = DatabaseService(requireActivity()).realmInstance;
+        val leaders = mRealm.where(RealmMyTeam::class.java).equalTo("isLeader", true).findAll()
+        val list = ArrayList<RealmUserModel>()
+        for (team in leaders) {
+            val model =
+                    mRealm.where(RealmUserModel::class.java).equalTo("id", team.user_id).findFirst()
+            if (model != null && !list.contains(model)) list.add(model)
+        }
+        fragmentChatHistoryListBinding.recyclerView.adapter = AdapterLeader(requireActivity(), list)
     }
 }
 
-class ChatHistoryListOnBackPressedCallback(private val slidingPaneLayout: SlidingPaneLayout) :
-        OnBackPressedCallback(slidingPaneLayout.isSlideable && slidingPaneLayout.isOpen),
-        SlidingPaneLayout.PanelSlideListener {
+class ChatHistoryListOnBackPressedCallback(private val slidingPaneLayout: SlidingPaneLayout)
+    : OnBackPressedCallback(
+        slidingPaneLayout.isSlideable && slidingPaneLayout.isOpen
+    ), SlidingPaneLayout.PanelSlideListener {
+    init {
+        slidingPaneLayout.addPanelSlideListener(this)
+    }
     override fun handleOnBackPressed() {
         slidingPaneLayout.closePane()
     }
 
-    override fun onPanelSlide(panel: View, slideOffset: Float) {
-        TODO("Not yet implemented")
-    }
+    override fun onPanelSlide(panel: View, slideOffset: Float) {}
 
     override fun onPanelOpened(panel: View) {
         isEnabled = true
@@ -49,9 +64,5 @@ class ChatHistoryListOnBackPressedCallback(private val slidingPaneLayout: Slidin
 
     override fun onPanelClosed(panel: View) {
         isEnabled = false
-    }
-
-    init {
-        slidingPaneLayout.addPanelSlideListener(this)
     }
 }
