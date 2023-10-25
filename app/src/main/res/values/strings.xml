@@ -1042,5 +1042,6 @@
     <string name="request_failed_please_retry">Request failed, please retry</string>
     <string name="confirm_removal">Confirm removal</string>
     <string name="returning_user">Returning user</string>
+    <string name="send_to_nation">Allow your achievements to be shared with the nation</string>
 
 </resources>
