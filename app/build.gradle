@@ -9,8 +9,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdkVersion 21
         targetSdkVersion 34
-        versionCode 1115
-        versionName "0.11.15"
+        versionCode 1116
+        versionName "0.11.16"
         ndkVersion '21.3.6528147'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -102,7 +102,7 @@ dependencies {
 
     implementation 'com.github.jeancsanchez:jcplayer:2.7.2'
 
-    implementation "com.google.dagger:hilt-android:2.44"
+    implementation "com.google.dagger:hilt-android:2.48.1"
     kapt "com.google.dagger:hilt-android-compiler:2.48.1"
 
     implementation 'com.mikepenz:crossfader:1.5.1@aar'
