@@ -941,11 +941,11 @@
     <string name="request_failed_please_retry">Codka lama yimaado, fadlan dib ugu ciyaar</string>
     <string name="confirm_removal">Xaqiiji tirtirka</string>
     <string name="returning_user">Isticmaale sare leh</string>
-    <string name="jcplayer_description">Addeegga codka ee codka ee loo qaban karo mowjada</string>
-    <string name="image_resource">Dalabka Sawirka</string>
-    <string name="play_audio">Daabaca Codka</string>
-    <string name="video_player">Daabaca Fíidio</string>
-    <string name="progress_bar">Geedka Bararka</string>
-    <string name="web_view">Riixta Webka</string>
+    <string name="jcplayer_description">qalabka codka</string>
+    <string name="image_resource">deriska sawirka</string>
+    <string name="play_audio">bixi codka</string>
+    <string name="video_player">qalabka fiidyowga</string>
+    <string name="progress_bar">balka soo socda</string>
+    <string name="web_view">barashada webka</string>
 
 </resources>

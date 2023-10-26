@@ -952,11 +952,11 @@
     <string name="request_failed_please_retry">La solicitud ha fallado, por favor inténtelo de nuevo</string>
     <string name="confirm_removal">Confirmar eliminación</string>
     <string name="returning_user">Usuario recurrente</string>
-    <string name="jcplayer_description">Reproductor de audio para reproducir música</string>
-    <string name="image_resource">Recurso de imagen</string>
-    <string name="play_audio">Reproducir audio</string>
-    <string name="video_player">Reproductor de video</string>
-    <string name="progress_bar">Barra de progreso</string>
-    <string name="web_view">Vista web</string>
+    <string name="jcplayer_description">reproductor de audio</string>
+    <string name="image_resource">recurso de imagen</string>
+    <string name="play_audio">reproducir audio</string>
+    <string name="video_player">reproductor de video</string>
+    <string name="progress_bar">barra de progreso</string>
+    <string name="web_view">vista web</string>
 
 </resources>
