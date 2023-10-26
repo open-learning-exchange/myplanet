@@ -62,8 +62,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
     HashMap<String, JsonObject> map;
     AlertDialog confirmation;
 
-    public LibraryFragment() {
-    }
+    public LibraryFragment() {}
 
     @Override
     public int getLayout() {
@@ -120,13 +119,11 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
             }
-
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag(etSearch.getText().toString().trim(), searchTags)));
                 showNoData(tvMessage, adapterLibrary.getItemCount());
             }
-
             @Override
             public void afterTextChanged(Editable s) {
             }

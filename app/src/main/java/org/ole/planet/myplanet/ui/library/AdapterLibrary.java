@@ -1,14 +1,19 @@
 package org.ole.planet.myplanet.ui.library;
 
 import android.content.Context;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.widget.AppCompatRatingBar;
+import androidx.recyclerview.widget.RecyclerView;
+
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
-
-import androidx.annotation.NonNull;
-import androidx.recyclerview.widget.RecyclerView;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import com.google.android.flexbox.FlexboxLayout;
 import com.google.gson.JsonObject;
@@ -34,7 +39,7 @@ import io.noties.markwon.Markwon;
 import io.noties.markwon.movement.MovementMethodPlugin;
 import io.realm.Realm;
 
-public class AdapterLibrary extends RecyclerView.Adapter<AdapterLibrary.ViewHolderLibrary> {
+public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private RowLibraryBinding rowLibraryBinding;
     private Context context;
     private List<RealmMyLibrary> libraryList;
@@ -82,36 +87,39 @@ public class AdapterLibrary extends RecyclerView.Adapter<AdapterLibrary.ViewHold
 
     @NonNull
     @Override
-    public ViewHolderLibrary onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        rowLibraryBinding = RowLibraryBinding.inflate(LayoutInflater.from(context), parent, false);
+    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        rowLibraryBinding = RowLibraryBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false);
         return new ViewHolderLibrary(rowLibraryBinding);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull ViewHolderLibrary holder, final int position) {
-        Utilities.log("On bind " + position);
-        rowLibraryBinding.title.setText(libraryList.get(position).getTitle());
-        Utilities.log(libraryList.get(position).getDescription());
-        markwon.setMarkdown(rowLibraryBinding.description, libraryList.get(position).getDescription());
-        rowLibraryBinding.timesRated.setText(libraryList.get(position).getTimesRated() + context.getString(R.string.total));
-        rowLibraryBinding.checkbox.setChecked(selectedItems.contains(libraryList.get(position)));
-        rowLibraryBinding.rating.setText(TextUtils.isEmpty(libraryList.get(position).getAverageRating()) ? "0.0" : String.format("%.1f", Double.parseDouble(libraryList.get(position).getAverageRating())));
-        rowLibraryBinding.tvDate.setText(TimeUtils.formatDate(libraryList.get(position).getCreatedDate(), "MMM dd, yyyy"));
-        displayTagCloud(rowLibraryBinding.flexboxDrawable, position);
-        holder.itemView.setOnClickListener(view -> openLibrary(libraryList.get(position)));
-        rowLibraryBinding.ivDownloaded.setImageResource(libraryList.get(position).isResourceOffline() ? R.drawable.ic_eye : R.drawable.ic_download);
-        if (ratingMap.containsKey(libraryList.get(position).getResource_id())) {
-            JsonObject object = ratingMap.get(libraryList.get(position).getResource_id());
-            AdapterCourses.showRating(object, rowLibraryBinding.rating, rowLibraryBinding.timesRated, rowLibraryBinding.ratingBar);
-        } else {
-            rowLibraryBinding.ratingBar.setRating(0);
-        }
+    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, final int position) {
+        if (holder instanceof ViewHolderLibrary) {
+            ViewHolderLibrary viewHolder = (ViewHolderLibrary) holder;
+            viewHolder.bind();
+            viewHolder.rowLibraryBinding.title.setText(libraryList.get(position).getTitle());
+            Utilities.log(libraryList.get(position).getDescription());
+            markwon.setMarkdown(viewHolder.rowLibraryBinding.description, libraryList.get(position).getDescription());
+            viewHolder.rowLibraryBinding.timesRated.setText(libraryList.get(position).getTimesRated() + context.getString(R.string.total));
+            viewHolder.rowLibraryBinding.checkbox.setChecked(selectedItems.contains(libraryList.get(position)));
+            viewHolder.rowLibraryBinding.rating.setText(TextUtils.isEmpty(libraryList.get(position).getAverageRating()) ? "0.0" : String.format("%.1f", Double.parseDouble(libraryList.get(position).getAverageRating())));
+            viewHolder.rowLibraryBinding.tvDate.setText(TimeUtils.formatDate(libraryList.get(position).getCreatedDate(), "MMM dd, yyyy"));
+            displayTagCloud(viewHolder.rowLibraryBinding.flexboxDrawable, position);
+            holder.itemView.setOnClickListener(view -> openLibrary(libraryList.get(position)));
+            viewHolder.rowLibraryBinding.ivDownloaded.setImageResource(libraryList.get(position).isResourceOffline() ? R.drawable.ic_eye : R.drawable.ic_download);
+            if (ratingMap.containsKey(libraryList.get(position).getResource_id())) {
+                JsonObject object = ratingMap.get(libraryList.get(position).getResource_id());
+                AdapterCourses.showRating(object, viewHolder.rowLibraryBinding.rating, viewHolder.rowLibraryBinding.timesRated, viewHolder.rowLibraryBinding.ratingBar);
+            } else {
+                viewHolder.rowLibraryBinding.ratingBar.setRating(0);
+            }
 
-        rowLibraryBinding.checkbox.setOnClickListener((view) -> {
-            Utilities.handleCheck(((CheckBox) view).isChecked(), position, (ArrayList) selectedItems, libraryList);
-            if (listener != null) listener.onSelectedListChange(selectedItems);
-            notifyDataSetChanged();
-        });
+            viewHolder.rowLibraryBinding.checkbox.setOnClickListener((view) -> {
+                Utilities.handleCheck(((CheckBox) view).isChecked(), position, (ArrayList) selectedItems, libraryList);
+                if (listener != null) listener.onSelectedListChange(selectedItems);
+                notifyDataSetChanged();
+            });
+        }
     }
 
     public boolean areAllSelected(){
@@ -166,7 +174,8 @@ public class AdapterLibrary extends RecyclerView.Adapter<AdapterLibrary.ViewHold
     }
 
     class ViewHolderLibrary extends RecyclerView.ViewHolder {
-        RowLibraryBinding rowLibraryBinding;
+        private final RowLibraryBinding rowLibraryBinding;
+
         public ViewHolderLibrary(RowLibraryBinding rowLibraryBinding) {
             super(rowLibraryBinding.getRoot());
             this.rowLibraryBinding = rowLibraryBinding;
@@ -175,6 +184,9 @@ public class AdapterLibrary extends RecyclerView.Adapter<AdapterLibrary.ViewHold
                     homeItemClickListener.showRatingDialog("resource", libraryList.get(getAdapterPosition()).getResource_id(), libraryList.get(getAdapterPosition()).getTitle(), ratingChangeListener);
                 return true;
             });
+        }
+
+        public void bind() {
         }
     }
 }
