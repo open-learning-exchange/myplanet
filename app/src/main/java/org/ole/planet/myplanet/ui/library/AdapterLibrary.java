@@ -1,19 +1,14 @@
 package org.ole.planet.myplanet.ui.library;
 
 import android.content.Context;
-
-import androidx.annotation.NonNull;
-import androidx.appcompat.widget.AppCompatRatingBar;
-import androidx.recyclerview.widget.RecyclerView;
-
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.TextView;
+
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.flexbox.FlexboxLayout;
 import com.google.gson.JsonObject;
