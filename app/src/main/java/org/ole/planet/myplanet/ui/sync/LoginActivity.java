@@ -71,6 +71,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import io.realm.Realm;
 import io.realm.Sort;
@@ -702,8 +703,17 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             MaterialDialog dialog = builder.build();
             positiveAction = dialog.getActionButton(DialogAction.POSITIVE);
             spnCloud = dialogServerUrlBinding.spnCloud;
+
             List<RealmCommunity> communities = mRealm.where(RealmCommunity.class).sort("weight", Sort.ASCENDING).findAll();
-            dialogServerUrlBinding.spnCloud.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, communities));
+            List<RealmCommunity> filteredCommunities = null;
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+                filteredCommunities = communities.stream()
+                        .filter(community -> community != null && !community.getName().isEmpty())
+                        .collect(Collectors.toList());
+            }
+
+            dialogServerUrlBinding.spnCloud.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, filteredCommunities));
+
             dialogServerUrlBinding.spnCloud.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                 @Override
                 public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
