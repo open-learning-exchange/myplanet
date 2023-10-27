@@ -278,7 +278,9 @@ public class Service {
                                 community.setWeight(0);
                             }
                             community.setLocalDomain(JsonUtils.getString("localDomain", jsonDoc));
-                            community.setName(JsonUtils.getString("name", jsonDoc));
+                            if (!id.contains("_design")){
+                                community.setName(JsonUtils.getString("name", jsonDoc));
+                            }
                             community.setParentDomain(JsonUtils.getString("parentDomain", jsonDoc));
                             community.setRegistrationRequest(JsonUtils.getString("registrationRequest", jsonDoc));
                         }
