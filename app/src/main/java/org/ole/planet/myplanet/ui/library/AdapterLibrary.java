@@ -112,7 +112,6 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
             viewHolder.rowLibraryBinding.checkbox.setOnClickListener((view) -> {
                 Utilities.handleCheck(((CheckBox) view).isChecked(), position, (ArrayList) selectedItems, libraryList);
                 if (listener != null) listener.onSelectedListChange(selectedItems);
-                notifyDataSetChanged();
             });
         }
     }
@@ -120,6 +119,8 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
     public boolean areAllSelected(){
         if (selectedItems.size() != libraryList.size()) {
             areAllSelected = false;
+        } else {
+            areAllSelected = true;
         }
         return areAllSelected;
     }

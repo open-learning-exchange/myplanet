@@ -103,7 +103,6 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
                 selectedItems.clear();
                 tvAddToLib.setEnabled(false);  // After clearing selectedItems size is always 0
                 checkList();
-
             }
         });
 
@@ -166,7 +165,13 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         selectAll.setOnClickListener(view -> {
             boolean allSelected = selectedItems.size() ==  adapterLibrary.getLibraryList().size();
             adapterLibrary.selectAllItems(!allSelected);
-            selectAll.setText(allSelected ? getString(R.string.select_all) : getString(R.string.unselect_all));
+            if (allSelected) {
+                selectAll.setChecked(false);
+                selectAll.setText(getString(R.string.select_all));
+            } else {
+                selectAll.setChecked(true);
+                selectAll.setText(getString(R.string.unselect_all));
+            }
         });
     }
 
@@ -270,7 +275,13 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
 
     private void changeButtonStatus() {
         tvAddToLib.setEnabled(selectedItems.size() > 0);
-        selectAll.setText(adapterLibrary.areAllSelected() ? getString(R.string.unselect_all) : getString(R.string.select_all));
+        if (adapterLibrary.areAllSelected()) {
+            selectAll.setChecked(true);
+            selectAll.setText(getString(R.string.unselect_all));
+        } else {
+            selectAll.setChecked(false);
+            selectAll.setText(getString(R.string.select_all));
+        }
     }
 
     @Override
