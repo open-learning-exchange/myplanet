@@ -705,8 +705,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             spnCloud = dialogServerUrlBinding.spnCloud;
 
             List<RealmCommunity> giddie = mRealm.where(RealmCommunity.class).findAll();
-            Log.d("Gideon", giddie.toString());
-
             List<RealmCommunity> communities = mRealm.where(RealmCommunity.class).sort("weight", Sort.ASCENDING).findAll();
             List<RealmCommunity> filteredCommunities = null;
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
