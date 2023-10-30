@@ -17,6 +17,8 @@ import android.widget.Spinner;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.flexbox.FlexboxLayout;
@@ -212,7 +214,11 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         msg += getString(R.string.return_to_the_home_tab_to_access_mylibrary) + getString(R.string.note_you_may_still_need_to_download_the_newly_added_resources);
         builder.setMessage(msg);
         builder.setCancelable(true);
-        builder.setPositiveButton(getString(R.string.ok), (dialog, id) -> dialog.cancel());
+        builder.setPositiveButton(getString(R.string.ok), (dialog, id) -> {
+            dialog.cancel();
+            LibraryFragment newFragment = new LibraryFragment();
+            recreateFragment(newFragment);
+        });
         return builder.create();
     }
 
@@ -351,5 +357,12 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
             activity.setFilter(new Gson().toJson(filter));
             mRealm.commitTransaction();
         }
+    }
+
+    public void recreateFragment(Fragment fragment) {
+        FragmentTransaction transaction = getFragmentManager().beginTransaction();
+        transaction.replace(R.id.fragment_container, fragment);
+        transaction.addToBackStack(null);
+        transaction.commit();
     }
 }
