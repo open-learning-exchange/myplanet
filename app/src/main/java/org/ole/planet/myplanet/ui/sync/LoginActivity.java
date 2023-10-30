@@ -756,11 +756,13 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             if (selected == null) {
                 return;
             }
-            serverUrl.setText(selected.getLocalDomain());
-            protocol_checkin.check(R.id.radio_https);
-            settings.getString("serverProtocol", "https://");
-            serverPassword.setText(selected.getWeight() == 0 ? "0660" : "");
-            serverPassword.setEnabled(selected.getWeight() != 0);
+            if (selected.isValid()){
+                serverUrl.setText(selected.getLocalDomain());
+                protocol_checkin.check(R.id.radio_https);
+                settings.getString("serverProtocol", "https://");
+                serverPassword.setText(selected.getWeight() == 0 ? "0660" : "");
+                serverPassword.setEnabled(selected.getWeight() != 0);
+            }
         } finally {
             if (mRealm != null && !mRealm.isClosed()) {
                 mRealm.close();
