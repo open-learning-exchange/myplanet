@@ -13,6 +13,8 @@ import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
 import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -232,7 +234,11 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         msg += getString(R.string.return_to_the_home_tab_to_access_mycourses);
         builder.setMessage(msg);
         builder.setCancelable(true);
-        builder.setPositiveButton(R.string.ok, (dialog, id) -> dialog.cancel());
+        builder.setPositiveButton(R.string.ok, (dialog, id) -> {
+            dialog.cancel();
+            CourseFragment newFragment = new CourseFragment();
+            recreateFragment(newFragment);
+        });
         return builder.create();
     }
 
@@ -311,5 +317,12 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
     public void onPause() {
         super.onPause();
         saveSearchActivity();
+    }
+
+    public void recreateFragment(Fragment fragment) {
+        FragmentTransaction transaction = getFragmentManager().beginTransaction();
+        transaction.replace(R.id.fragment_container, fragment);
+        transaction.addToBackStack(null);
+        transaction.commit();
     }
 }
