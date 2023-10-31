@@ -10,7 +10,6 @@ import android.text.TextUtils
 import android.text.TextWatcher
 import android.view.View
 import android.widget.ArrayAdapter
-import android.widget.RadioButton
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Realm
@@ -27,6 +26,7 @@ import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils
+import java.text.Normalizer
 import java.util.Calendar
 import java.util.Locale
 
@@ -84,10 +84,15 @@ class BecomeMemberActivity : BaseActivity() {
                                 !Character.isDigit(char) && !Character.isLetter(char)
                     }
 
+                    val normalizedText = Normalizer.normalize(it, Normalizer.Form.NFD)
+                    val hasDiacriticCharacters = !normalizedText.all { Character.isLetterOrDigit(it) || it == '.' || it == '-' || it == '_' }
+
                     if (firstChar != null && !Character.isDigit(firstChar) && !Character.isLetter(firstChar)) {
                         activityBecomeMemberBinding.etUsername.error = getString(R.string.must_start_with_letter_or_number)
                     } else if (hasInvalidCharacters) {
                         activityBecomeMemberBinding.etUsername.error = getString(R.string.only_letters_numbers_and_are_allowed)
+                    } else if(hasDiacriticCharacters){
+                        activityBecomeMemberBinding.etUsername.error = getString(R.string.restrict_diacritic)
                     } else {
                         val lowercaseText = it.toString().toLowerCase(Locale.ROOT)
                         if (it.toString() != lowercaseText) {
@@ -126,6 +131,8 @@ class BecomeMemberActivity : BaseActivity() {
                         !Character.isDigit(char) && !Character.isLetter(char)
             }
 
+            val normalizedText = Normalizer.normalize(username, Normalizer.Form.NFD)
+            val hasDiacriticCharacters = !normalizedText.all { Character.isLetterOrDigit(it) || it == '.' || it == '-' || it == '_' }
 
             if (TextUtils.isEmpty(username)) {
                 activityBecomeMemberBinding.etUsername.error = getString(R.string.please_enter_a_username)
@@ -135,6 +142,8 @@ class BecomeMemberActivity : BaseActivity() {
                 activityBecomeMemberBinding.etUsername.error = getString(R.string.must_start_with_letter_or_number)
             } else if (hasInvalidCharacters) {
                activityBecomeMemberBinding.etUsername.error = getString(R.string.only_letters_numbers_and_are_allowed)
+            } else if(hasDiacriticCharacters) {
+                activityBecomeMemberBinding.etUsername.error = getString(R.string.restrict_diacritic)
             } else if (TextUtils.isEmpty(password)) {
                 activityBecomeMemberBinding.etPassword.error = getString(R.string.please_enter_a_password)
             } else if (password != repassword) {

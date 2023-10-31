@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.graphics.drawable.AnimationDrawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.text.Editable;
@@ -66,6 +67,7 @@ import org.ole.planet.myplanet.utilities.NetworkUtils;
 import org.ole.planet.myplanet.utilities.SharedPrefManager;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -350,10 +352,20 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                         }
                     }
 
+                    String normalizedText = Normalizer.normalize(s, Normalizer.Form.NFD);
+                    boolean hasDiacriticCharacters = false;
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                        hasDiacriticCharacters = !normalizedText.codePoints().allMatch(
+                                codePoint -> Character.isLetterOrDigit(codePoint) || codePoint == '.' || codePoint == '-' || codePoint == '_'
+                        );
+                    }
+
                     if (!Character.isDigit(firstChar) && !Character.isLetter(firstChar)) {
                         alertGuestLoginBinding.etUserName.setError(getString(R.string.must_start_with_letter_or_number));
                     } else if (hasInvalidCharacters) {
                         alertGuestLoginBinding.etUserName.setError(getString(R.string.only_letters_numbers_and_are_allowed));
+                    } else if (hasDiacriticCharacters) {
+                        alertGuestLoginBinding.etUserName.setError(getString(R.string.restrict_diacritic));
                     } else {
                         String lowercaseText = s.toString().toLowerCase(Locale.ROOT);
                         if (!s.toString().equals(lowercaseText)) {
@@ -387,9 +399,10 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                 String username = alertGuestLoginBinding.etUserName.getText().toString().trim();
                 Character firstChar = username.isEmpty() ? null : username.charAt(0);
                 boolean hasInvalidCharacters = false;
-
+                boolean hasDiacriticCharacters = false;
                 boolean isValid = true;
 
+                String normalizedText = Normalizer.normalize(username, Normalizer.Form.NFD);
                 if (TextUtils.isEmpty(username)) {
                     alertGuestLoginBinding.etUserName.setError(getString(R.string.username_cannot_be_empty));
                     isValid = false;
@@ -404,10 +417,21 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                             hasInvalidCharacters = true;
                             break;
                         }
+
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                            hasDiacriticCharacters = !normalizedText.codePoints().allMatch(
+                                    codePoint -> Character.isLetterOrDigit(codePoint) || codePoint == '.' || codePoint == '-' || codePoint == '_'
+                            );
+                        }
                     }
 
                     if (hasInvalidCharacters) {
                         alertGuestLoginBinding.etUserName.setError(getString(R.string.only_letters_numbers_and_are_allowed));
+                        isValid = false;
+                    }
+
+                    if(hasDiacriticCharacters){
+                        alertGuestLoginBinding.etUserName.setError(getString(R.string.restrict_diacritic));
                         isValid = false;
                     }
                 }

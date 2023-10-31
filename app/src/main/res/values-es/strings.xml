@@ -953,5 +953,6 @@
     <string name="confirm_removal">Confirmar eliminación</string>
     <string name="returning_user">Usuario recurrente</string>
     <string name="send_to_nation">Permite que tus logros se compartan con la nación</string>
+    <string name="restrict_diacritic">Los caracteres diacríticos no están permitidos</string>
 
 </resources>
