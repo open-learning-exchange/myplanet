@@ -10,8 +10,10 @@ import android.graphics.drawable.AnimationDrawable;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.text.Editable;
+import android.text.InputType;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.text.method.PasswordTransformationMethod;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -708,7 +710,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             List<RealmCommunity> filteredCommunities = null;
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
                 filteredCommunities = communities.stream()
-                        .filter(community -> community != null && !community.getName().isEmpty())
+                        .filter(community -> community != null && community.isValid() && !community.getName().isEmpty())
                         .collect(Collectors.toList());
             }
 
@@ -733,6 +735,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                 settings.edit().putBoolean("switchCloudUrl", b).commit();
                 dialogServerUrlBinding.spnCloud.setVisibility(b ? View.VISIBLE : View.GONE);
                 setUrlAndPin(dialogServerUrlBinding.switchServerUrl.isChecked());
+                Log.d("checked", String.valueOf(dialogServerUrlBinding.switchServerUrl.isChecked()));
             });
             serverUrl.addTextChangedListener(new MyTextWatcher(serverUrl));
             dialogServerUrlBinding.deviceName.setText(getCustomDeviceName());
@@ -756,11 +759,14 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             if (selected == null) {
                 return;
             }
-            serverUrl.setText(selected.getLocalDomain());
-            protocol_checkin.check(R.id.radio_https);
-            settings.getString("serverProtocol", "https://");
-            serverPassword.setText(selected.getWeight() == 0 ? "0660" : "");
-            serverPassword.setEnabled(selected.getWeight() != 0);
+            if (selected.isValid()){
+                serverUrl.setText(selected.getLocalDomain());
+                protocol_checkin.check(R.id.radio_https);
+                settings.getString("serverProtocol", "https://");
+                serverPassword.setTransformationMethod(PasswordTransformationMethod.getInstance());
+                serverPassword.setText(selected.getWeight() == 0 ? "1983" : "");
+                serverPassword.setEnabled(selected.getWeight() != 0);
+            }
         } finally {
             if (mRealm != null && !mRealm.isClosed()) {
                 mRealm.close();
@@ -776,8 +782,10 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             serverPassword.setText(settings.getString("serverPin", ""));
             protocol_checkin.check(TextUtils.equals(settings.getString("serverProtocol", ""), "http://") ? R.id.radio_http : R.id.radio_https);
             serverUrlProtocol.setText(settings.getString("serverProtocol", ""));
+            serverPassword.setTransformationMethod(null);
         }
         serverUrl.setEnabled(!checked);
+        serverPassword.setEnabled(!checked);
         serverPassword.clearFocus();
         serverUrl.clearFocus();
         protocol_checkin.setEnabled(!checked);
