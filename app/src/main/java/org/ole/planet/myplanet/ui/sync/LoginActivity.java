@@ -710,7 +710,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             List<RealmCommunity> filteredCommunities = null;
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
                 filteredCommunities = communities.stream()
-                        .filter(community -> community != null && !community.getName().isEmpty())
+                        .filter(community -> community != null && community.isValid() && !community.getName().isEmpty())
                         .collect(Collectors.toList());
             }
 
