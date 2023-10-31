@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.chat
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -9,6 +10,7 @@ import androidx.fragment.app.Fragment
 import androidx.slidingpanelayout.widget.SlidingPaneLayout
 import org.ole.planet.myplanet.databinding.FragmentChatHistoryListBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.community.AdapterLeader
@@ -35,6 +37,8 @@ class ChatHistoryListFragment : Fragment() {
 //        }
         var mRealm = DatabaseService(requireActivity()).realmInstance;
         val leaders = mRealm.where(RealmMyTeam::class.java).equalTo("isLeader", true).findAll()
+        val s = mRealm.where(RealmChatHistory::class.java).findAll()
+        Log.d("giddie", s.toString())
         val list = ArrayList<RealmUserModel>()
         for (team in leaders) {
             val model =
