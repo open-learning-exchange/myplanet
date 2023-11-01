@@ -5,10 +5,14 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
+import com.google.gson.Gson
+import com.google.gson.JsonParser
+import com.google.gson.reflect.TypeToken
 import org.ole.planet.myplanet.databinding.RowChatHistoryBinding
 import org.ole.planet.myplanet.model.RealmChatHistory
+import java.lang.reflect.Type
 
-class ChatHistoryListAdapter(var context: Context, var chatHistory: List<RealmChatHistory>) :
+class ChatHistoryListAdapter(var context: Context, private var chatHistory: List<RealmChatHistory>) :
     RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private lateinit var rowChatHistoryBinding: RowChatHistoryBinding
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
@@ -19,12 +23,14 @@ class ChatHistoryListAdapter(var context: Context, var chatHistory: List<RealmCh
     override fun getItemCount(): Int {
         return chatHistory.size
     }
+
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        rowChatHistoryBinding.chatTitle.text = chatHistory[position].id
+        rowChatHistoryBinding.chatTitle.text = chatHistory[position].conversations[0]!!.query
         rowChatHistoryBinding.root.setOnClickListener {
-            Log.d("logged", chatHistory[position].conversations)
+            Log.d("logged", chatHistory[position].conversations[0]!!.query)
         }
     }
+
 
     class ViewHolderChat(rowChatHistoryBinding: RowChatHistoryBinding) : RecyclerView.ViewHolder(rowChatHistoryBinding.root)
 }

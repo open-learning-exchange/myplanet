@@ -1,12 +1,18 @@
 package org.ole.planet.myplanet.model;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import io.realm.Realm;
+import io.realm.RealmList;
 import io.realm.RealmObject;
 import io.realm.annotations.PrimaryKey;
 
@@ -17,7 +23,7 @@ public class RealmChatHistory extends RealmObject {
     private String _rev;
     private String user;
     private long time;
-    private String conversations;
+    private RealmList<Conversation> conversations;
     private boolean uploaded;
 
     public String getId() {
@@ -60,20 +66,16 @@ public class RealmChatHistory extends RealmObject {
         this.time = time;
     }
 
-    public String getConversations() {
+//    public List<Conversation> getConversations() {
+//        return conversations;
+//    }
+//
+    public void setConversations(RealmList<Conversation> conversations) {
+        this.conversations = conversations;
+    }
+
+    public RealmList<Conversation> getConversations() {
         return conversations;
-    }
-
-    public void setConversations(String conversations) {
-        this.conversations = new Gson().toJson(conversations);
-    }
-
-    public boolean isUploaded() {
-        return uploaded;
-    }
-
-    public void setUploaded(boolean uploaded) {
-        this.uploaded = uploaded;
     }
 
     public static void insert(Realm mRealm, JsonObject act) {
@@ -85,6 +87,17 @@ public class RealmChatHistory extends RealmObject {
         chatHistory.set_id(JsonUtils.getString("_id", act));
         chatHistory.setTime(JsonUtils.getLong("time", act));
         chatHistory.setUser(new Gson().toJson(JsonUtils.getJsonObject("user", act)));
-        chatHistory.setConversations(new Gson().toJson(JsonUtils.getJsonArray("conversations", act)));
+        chatHistory.setConversations(parseConversations(mRealm, JsonUtils.getJsonArray("conversations", act)));
+    }
+
+    private static RealmList<Conversation> parseConversations(Realm realm, JsonArray jsonArray) {
+        RealmList<Conversation> conversations = new RealmList<>();
+        for (JsonElement element : jsonArray) {
+            Conversation conversation = new Gson().fromJson(element, Conversation.class);
+            Conversation realmConversation = realm.copyToRealm(conversation);
+            conversations.add(realmConversation);
+        }
+        return conversations;
     }
 }
+
