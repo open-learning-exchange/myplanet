@@ -10,7 +10,6 @@ import android.graphics.drawable.AnimationDrawable;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.text.Editable;
-import android.text.InputType;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.text.method.PasswordTransformationMethod;
@@ -24,24 +23,18 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageButton;
 import android.widget.RadioGroup;
 import android.widget.Spinner;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.widget.SwitchCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
-import androidx.viewbinding.ViewBinding;
 
 import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
-import com.google.android.material.textfield.TextInputLayout;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.SyncListener;
-import org.ole.planet.myplanet.databinding.ActivityChildLoginBinding;
 import org.ole.planet.myplanet.databinding.ActivityLoginBinding;
 import org.ole.planet.myplanet.databinding.AlertGuestLoginBinding;
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding;
@@ -79,52 +72,31 @@ import io.realm.Realm;
 import io.realm.Sort;
 
 public class LoginActivity extends SyncActivity implements Service.CheckVersionCallback, AdapterTeam.OnUserSelectedListener {
+    private ActivityLoginBinding activityLoginBinding;
     public static Calendar cal_today, cal_last_Sync;
     private EditText serverUrl, serverUrlProtocol;
     private EditText serverPassword;
     private String processedUrl;
     private RadioGroup protocol_checkin;
-    private EditText inputName, inputPassword;
-    private TextInputLayout inputLayoutName, inputLayoutPassword;
-    private Button btnSignIn, becomeMember, btnGuestLogin, btnLang, openCommunity, btnFeedback;
     private View positiveAction;
-    private ImageButton imgBtnSetting;
     private boolean isSync = false, forceSync = false;
     private SharedPreferences defaultPref;
     private Service service;
     private Spinner spnCloud;
-    private TextView tvAvailableSpace, previouslyLoggedIn, customDeviceName, lblVersion;
     SharedPrefManager prefData;
     private UserProfileDbHandler profileDbHandler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        ActivityLoginBinding activityLoginBinding;
         activityLoginBinding = ActivityLoginBinding.inflate(getLayoutInflater());
         setContentView(activityLoginBinding.getRoot());
         prefData = new SharedPrefManager(this);
         profileDbHandler = new UserProfileDbHandler(this);
 
-        inputName = activityLoginBinding.inputName;
-        inputPassword = activityLoginBinding.inputPassword;
-        inputLayoutName = activityLoginBinding.inputLayoutName;
-        inputLayoutPassword = activityLoginBinding.inputLayoutPassword;
-        btnSignIn = activityLoginBinding.btnSignin;
-        imgBtnSetting = activityLoginBinding.imgBtnSetting;
-        tvAvailableSpace= activityLoginBinding.tvAvailableSpace;
-        previouslyLoggedIn = activityLoginBinding.previouslyLoggedIn;
-        openCommunity = activityLoginBinding.openCommunity;
-        lblLastSyncDate = activityLoginBinding.lblLastSyncDate;
-        btnFeedback = activityLoginBinding.btnFeedback;
-        customDeviceName = activityLoginBinding.customDeviceName;
-        becomeMember = activityLoginBinding.becomeMember;
-        btnGuestLogin = activityLoginBinding.btnGuestLogin;
         syncIcon = activityLoginBinding.syncIcon;
-        lblVersion = activityLoginBinding.lblVersion;
-        btnLang = activityLoginBinding.btnLang;
 
-        tvAvailableSpace.setText(FileUtils.getAvailableOverTotalMemoryFormattedString());
+        activityLoginBinding.tvAvailableSpace.setText(FileUtils.getAvailableOverTotalMemoryFormattedString());
         changeLogoColor();
         service = new Service(this);
         defaultPref = PreferenceManager.getDefaultSharedPreferences(this);
@@ -148,23 +120,23 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         forceSyncTrigger();
 
         if (!Utilities.getUrl().isEmpty()) {
-            openCommunity.setVisibility(View.VISIBLE);
-            openCommunity.setOnClickListener(v -> {
-                inputName.setText("");
+            activityLoginBinding.openCommunity.setVisibility(View.VISIBLE);
+            activityLoginBinding.openCommunity.setOnClickListener(v -> {
+                activityLoginBinding.inputName.setText("");
                 new HomeCommunityDialogFragment().show(getSupportFragmentManager(), "");
             });
             new HomeCommunityDialogFragment().show(getSupportFragmentManager(), "");
         } else {
-            openCommunity.setVisibility(View.GONE);
+            activityLoginBinding.openCommunity.setVisibility(View.GONE);
         }
-        btnFeedback.setOnClickListener(view -> {
-            inputName.setText("");
+        activityLoginBinding.btnFeedback.setOnClickListener(view -> {
+            activityLoginBinding.inputName.setText("");
             new FeedbackFragment().show(getSupportFragmentManager(), "");
         });
 
         if (settings.getBoolean("firstRun", true));
 
-        previouslyLoggedIn.setOnClickListener(view -> showUserList());
+        activityLoginBinding.previouslyLoggedIn.setOnClickListener(view -> showUserList());
     }
 
     private void showUserList(){
@@ -215,7 +187,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     }
 
     private boolean forceSyncTrigger() {
-        lblLastSyncDate.setText(getString(R.string.last_sync) + Utilities.getRelativeTime(settings.getLong(getString(R.string.last_syncs), 0)) + " >>");
+        activityLoginBinding.lblLastSyncDate.setText(getString(R.string.last_sync) + Utilities.getRelativeTime(settings.getLong(getString(R.string.last_syncs), 0)) + " >>");
         if (Constants.autoSynFeature(Constants.KEY_AUTOSYNC_, getApplicationContext()) && Constants.autoSynFeature(Constants.KEY_AUTOSYNC_WEEKLY, getApplicationContext())) {
             return checkForceSync(7);
         } else if (Constants.autoSynFeature(Constants.KEY_AUTOSYNC_, getApplicationContext()) && Constants.autoSynFeature(Constants.KEY_AUTOSYNC_MONTHLY, getApplicationContext())) {
@@ -255,28 +227,28 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             defaultPref.edit().putBoolean("beta_addImageToMessage", true).commit();
         }
 
-        customDeviceName.setText(getCustomDeviceName());
-        btnSignIn.setOnClickListener(view -> {
-            if(TextUtils.isEmpty(inputName.getText().toString())){
-                inputName.setError(getString(R.string.err_msg_name));
-            } else if(TextUtils.isEmpty(inputPassword.getText().toString())){
-                inputPassword.setError(getString(R.string.err_msg_password));
-            }else{
-                submitForm(inputName.getText().toString(), inputPassword.getText().toString());
+        activityLoginBinding.customDeviceName.setText(getCustomDeviceName());
+        activityLoginBinding.btnSignin.setOnClickListener(view -> {
+            if(TextUtils.isEmpty(activityLoginBinding.inputName.getText().toString())){
+                activityLoginBinding.inputName.setError(getString(R.string.err_msg_name));
+            } else if(TextUtils.isEmpty(activityLoginBinding.inputPassword.getText().toString())){
+                activityLoginBinding.inputPassword.setError(getString(R.string.err_msg_password));
+            } else {
+                submitForm(activityLoginBinding.inputName.getText().toString(), activityLoginBinding.inputPassword.getText().toString());
             }
         });
         if (!settings.contains("serverProtocol"))
             settings.edit().putString("serverProtocol", "http://").commit();
-        becomeMember.setOnClickListener(v -> {
-            inputName.setText("");
+        activityLoginBinding.becomeMember.setOnClickListener(v -> {
+            activityLoginBinding.inputName.setText("");
             becomeAMember();
         });
-        imgBtnSetting.setOnClickListener(view -> {
-            inputName.setText("");
+        activityLoginBinding.imgBtnSetting.setOnClickListener(view -> {
+            activityLoginBinding.inputName.setText("");
             settingDialog();
         });
-        btnGuestLogin.setOnClickListener(view -> {
-            inputName.setText("");
+        activityLoginBinding.btnGuestLogin.setOnClickListener(view -> {
+            activityLoginBinding.inputName.setText("");
             showGuestLoginDialog();
         });
     }
@@ -439,7 +411,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
         builder.setPositiveButton("login", (dialog, which) -> {
             dialog.dismiss();
-            inputName.setText(username);
+            activityLoginBinding.inputName.setText(username);
         });
 
         AlertDialog dialog = builder.create();
@@ -482,28 +454,28 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                 service.checkVersion(this, settings);
             });
             declareHideKeyboardElements();
-            lblVersion.setText(getResources().getText(R.string.version) + " " + getResources().getText(R.string.app_version));
-            inputName.addTextChangedListener(new MyTextWatcher(inputName));
-            inputPassword.addTextChangedListener(new MyTextWatcher(inputPassword));
-            inputPassword.setOnEditorActionListener((v, actionId, event) -> {
+            activityLoginBinding.lblVersion.setText(getResources().getText(R.string.version) + " " + getResources().getText(R.string.app_version));
+            activityLoginBinding.inputName.addTextChangedListener(new MyTextWatcher(activityLoginBinding.inputName));
+            activityLoginBinding.inputPassword.addTextChangedListener(new MyTextWatcher(activityLoginBinding.inputPassword));
+            activityLoginBinding.inputPassword.setOnEditorActionListener((v, actionId, event) -> {
                 if (actionId == EditorInfo.IME_ACTION_DONE ||
                         (event != null && event.getAction() == KeyEvent.ACTION_DOWN && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
-                    btnSignIn.performClick();
+                    activityLoginBinding.btnSignin.performClick();
                     return true;
                 }
                 return false;
             });
             setUplanguageButton();
             if (defaultPref.getBoolean("saveUsernameAndPassword", false)) {
-                inputName.setText(settings.getString(getString(R.string.login_user), ""));
-                inputPassword.setText(settings.getString(getString(R.string.login_password), ""));
+                activityLoginBinding.inputName.setText(settings.getString(getString(R.string.login_user), ""));
+                activityLoginBinding.inputPassword.setText(settings.getString(getString(R.string.login_password), ""));
             }
 
             if (NetworkUtils.isNetworkConnected()) {
                 service.syncPlanetServers(mRealm, success -> Utilities.toast(LoginActivity.this, success));
             }
 
-            inputName.addTextChangedListener(new TextWatcher() {
+            activityLoginBinding.inputName.addTextChangedListener(new TextWatcher() {
                 @Override
                 public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
@@ -511,8 +483,8 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                 public void onTextChanged(CharSequence s, int start, int before, int count) {
                     String lowercaseText = s.toString().toLowerCase(Locale.ROOT);
                     if (!s.toString().equals(lowercaseText)) {
-                        inputName.setText(lowercaseText);
-                        inputName.setSelection(lowercaseText.length());
+                        activityLoginBinding.inputName.setText(lowercaseText);
+                        activityLoginBinding.inputName.setSelection(lowercaseText.length());
                     }
                 }
 
@@ -531,8 +503,8 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         String[] languages = getResources().getStringArray(R.array.language);
         SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
         int index = Arrays.asList(languageKey).indexOf(pref.getString("app_language", "en"));
-        btnLang.setText(languages[index]);
-        btnLang.setOnClickListener(view -> {
+        activityLoginBinding.btnLang.setText(languages[index]);
+        activityLoginBinding.btnLang.setOnClickListener(view -> {
             new AlertDialog.Builder(this).setTitle(R.string.select_language).setSingleChoiceItems(getResources().getStringArray(R.array.language), index, null).setPositiveButton(R.string.ok, (dialog, whichButton) -> {
                 dialog.dismiss();
                 int selectedPosition = ((AlertDialog) dialog).getListView().getCheckedItemPosition();
@@ -559,7 +531,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         if (isLoggedIn) {
             Toast.makeText(getApplicationContext(), getString(R.string.thank_you), Toast.LENGTH_SHORT).show();
             onLogin();
-            saveUsers(inputName.getText().toString(), inputPassword.getText().toString(), "member");
+            saveUsers(activityLoginBinding.inputName.getText().toString(), activityLoginBinding.inputPassword.getText().toString(), "member");
         } else {
             ManagerSync.getInstance().login(name, password, new SyncListener() {
                 @Override
@@ -576,7 +548,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                     if (log) {
                         Toast.makeText(getApplicationContext(), getString(R.string.thank_you), Toast.LENGTH_SHORT).show();
                         onLogin();
-                        saveUsers(inputName.getText().toString(), inputPassword.getText().toString(), "member");
+                        saveUsers(activityLoginBinding.inputName.getText().toString(), activityLoginBinding.inputPassword.getText().toString(), "member");
                     } else {
                         alertDialogOkay(getString(R.string.err_msg_login));
                     }
@@ -776,11 +748,11 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     public void onSuccess(String s) {
         Utilities.log("Sync completed ");
         if (progressDialog.isShowing() && s.contains("Crash")) progressDialog.dismiss();
-        DialogUtils.showSnack(btnSignIn, s);
+        DialogUtils.showSnack(activityLoginBinding.btnSignin, s);
         settings.edit().putLong("lastUsageUploaded", new Date().getTime()).commit();
 
         // Update last sync text
-        lblLastSyncDate.setText(getString(R.string.last_sync) + Utilities.getRelativeTime(new Date().getTime()) + " >>");
+        activityLoginBinding.lblLastSyncDate.setText(getString(R.string.last_sync) + Utilities.getRelativeTime(new Date().getTime()) + " >>");
     }
 
     @Override
@@ -894,10 +866,10 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         public void afterTextChanged(Editable editable) {
             switch (view.getId()) {
                 case R.id.input_name:
-                    validateEditText(inputName, inputLayoutName, getString(R.string.err_msg_name));
+                    validateEditText(activityLoginBinding.inputName, activityLoginBinding.inputLayoutName, getString(R.string.err_msg_name));
                     break;
                 case R.id.input_password:
-                    validateEditText(inputPassword, inputLayoutPassword, getString(R.string.err_msg_password));
+                    validateEditText(activityLoginBinding.inputPassword, activityLoginBinding.inputLayoutPassword, getString(R.string.err_msg_password));
                     break;
                 default:
                     break;
