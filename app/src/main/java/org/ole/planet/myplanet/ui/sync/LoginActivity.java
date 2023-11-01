@@ -742,14 +742,13 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             spnCloud = dialogServerUrlBinding.spnCloud;
 
             List<RealmCommunity> communities = mRealm.where(RealmCommunity.class).sort("weight", Sort.ASCENDING).findAll();
-            List<RealmCommunity> filteredCommunities = null;
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
-                filteredCommunities = communities.stream()
-                        .filter(community -> community != null && !community.getName().isEmpty())
-                        .collect(Collectors.toList());
+            List<RealmCommunity> nonEmptyCommunities = new ArrayList<>();
+            for (RealmCommunity community : communities) {
+                if (community.isValid() && !TextUtils.isEmpty(community.getName())) {
+                    nonEmptyCommunities.add(community);
+                }
             }
-
-            dialogServerUrlBinding.spnCloud.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, filteredCommunities));
+            dialogServerUrlBinding.spnCloud.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, nonEmptyCommunities));
 
             dialogServerUrlBinding.spnCloud.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                 @Override
