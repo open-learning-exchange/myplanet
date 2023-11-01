@@ -5,12 +5,9 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import com.google.gson.Gson
-import com.google.gson.JsonParser
-import com.google.gson.reflect.TypeToken
 import org.ole.planet.myplanet.databinding.RowChatHistoryBinding
 import org.ole.planet.myplanet.model.RealmChatHistory
-import java.lang.reflect.Type
+
 
 class ChatHistoryListAdapter(var context: Context, private var chatHistory: List<RealmChatHistory>) :
     RecyclerView.Adapter<RecyclerView.ViewHolder>() {
