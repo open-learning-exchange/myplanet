@@ -100,54 +100,29 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        ViewBinding activityLoginBinding;
-        if (settings.getBoolean("isChild", false)) {
-            activityLoginBinding = ActivityChildLoginBinding.inflate(getLayoutInflater());
-        } else {
-            activityLoginBinding = ActivityLoginBinding.inflate(getLayoutInflater());
-        }
-
+        ActivityLoginBinding activityLoginBinding;
+        activityLoginBinding = ActivityLoginBinding.inflate(getLayoutInflater());
         setContentView(activityLoginBinding.getRoot());
         prefData = new SharedPrefManager(this);
         profileDbHandler = new UserProfileDbHandler(this);
 
-        if (activityLoginBinding instanceof ActivityLoginBinding) {
-            inputName = ((ActivityLoginBinding) activityLoginBinding).inputName;
-            inputPassword = ((ActivityLoginBinding) activityLoginBinding).inputPassword;
-            inputLayoutName = ((ActivityLoginBinding) activityLoginBinding).inputLayoutName;
-            inputLayoutPassword = ((ActivityLoginBinding) activityLoginBinding).inputLayoutPassword;
-            btnSignIn = ((ActivityLoginBinding) activityLoginBinding).btnSignin;
-            imgBtnSetting = ((ActivityLoginBinding) activityLoginBinding).imgBtnSetting;
-            tvAvailableSpace= ((ActivityLoginBinding) activityLoginBinding).tvAvailableSpace;
-            previouslyLoggedIn = ((ActivityLoginBinding) activityLoginBinding).previouslyLoggedIn;
-            openCommunity = ((ActivityLoginBinding) activityLoginBinding).openCommunity;
-            lblLastSyncDate = ((ActivityLoginBinding) activityLoginBinding).lblLastSyncDate;
-            btnFeedback =((ActivityLoginBinding) activityLoginBinding).btnFeedback;
-            customDeviceName =((ActivityLoginBinding) activityLoginBinding).customDeviceName;
-            becomeMember = ((ActivityLoginBinding) activityLoginBinding).becomeMember;
-            btnGuestLogin = ((ActivityLoginBinding) activityLoginBinding).btnGuestLogin;
-            syncIcon = ((ActivityLoginBinding) activityLoginBinding).syncIcon;
-            lblVersion = ((ActivityLoginBinding) activityLoginBinding).lblVersion;
-            btnLang = ((ActivityLoginBinding) activityLoginBinding).btnLang;
-        } else {
-            inputName = ((ActivityChildLoginBinding) activityLoginBinding).inputName;
-            inputPassword = ((ActivityChildLoginBinding) activityLoginBinding).inputPassword;
-            inputLayoutName = ((ActivityChildLoginBinding) activityLoginBinding).inputLayoutName;
-            inputLayoutPassword = ((ActivityChildLoginBinding) activityLoginBinding).inputLayoutPassword;
-            btnSignIn = ((ActivityChildLoginBinding) activityLoginBinding).btnSignin;
-            imgBtnSetting = ((ActivityChildLoginBinding) activityLoginBinding).imgBtnSetting;
-            tvAvailableSpace= ((ActivityChildLoginBinding) activityLoginBinding).tvAvailableSpace;
-            previouslyLoggedIn = ((ActivityChildLoginBinding) activityLoginBinding).previouslyLoggedIn;
-            openCommunity = ((ActivityChildLoginBinding) activityLoginBinding).openCommunity;
-            lblLastSyncDate = ((ActivityChildLoginBinding) activityLoginBinding).lblLastSyncDate;
-            btnFeedback =((ActivityChildLoginBinding) activityLoginBinding).btnFeedback;
-            customDeviceName =((ActivityChildLoginBinding) activityLoginBinding).customDeviceName;
-            becomeMember = ((ActivityChildLoginBinding) activityLoginBinding).becomeMember;
-            btnGuestLogin = ((ActivityChildLoginBinding) activityLoginBinding).btnGuestLogin;
-            syncIcon = ((ActivityChildLoginBinding) activityLoginBinding).syncIcon;
-            lblVersion = ((ActivityChildLoginBinding) activityLoginBinding).lblVersion;
-            btnLang = ((ActivityChildLoginBinding) activityLoginBinding).btnLang;
-        }
+        inputName = activityLoginBinding.inputName;
+        inputPassword = activityLoginBinding.inputPassword;
+        inputLayoutName = activityLoginBinding.inputLayoutName;
+        inputLayoutPassword = activityLoginBinding.inputLayoutPassword;
+        btnSignIn = activityLoginBinding.btnSignin;
+        imgBtnSetting = activityLoginBinding.imgBtnSetting;
+        tvAvailableSpace= activityLoginBinding.tvAvailableSpace;
+        previouslyLoggedIn = activityLoginBinding.previouslyLoggedIn;
+        openCommunity = activityLoginBinding.openCommunity;
+        lblLastSyncDate = activityLoginBinding.lblLastSyncDate;
+        btnFeedback = activityLoginBinding.btnFeedback;
+        customDeviceName = activityLoginBinding.customDeviceName;
+        becomeMember = activityLoginBinding.becomeMember;
+        btnGuestLogin = activityLoginBinding.btnGuestLogin;
+        syncIcon = activityLoginBinding.syncIcon;
+        lblVersion = activityLoginBinding.lblVersion;
+        btnLang = activityLoginBinding.btnLang;
 
         tvAvailableSpace.setText(FileUtils.getAvailableOverTotalMemoryFormattedString());
         changeLogoColor();
@@ -170,7 +145,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             service.checkVersion(this, settings);
         }
         checkUsagesPermission();
-        setUpChildMode();
         forceSyncTrigger();
 
         if (!Utilities.getUrl().isEmpty()) {

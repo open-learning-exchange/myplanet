@@ -105,29 +105,6 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         }
     }
 
-    public void setUpChildMode() {
-        try {
-            mRealm = Realm.getDefaultInstance();
-            if (!settings.getBoolean("isChild", false)) return;
-            RecyclerView rvTeams = findViewById(R.id.rv_teams);
-            TextView tvNodata = findViewById(R.id.tv_nodata);
-
-            List<RealmMyTeam> teams = mRealm.where(RealmMyTeam.class).isEmpty("teamId").findAll();
-            rvTeams.setLayoutManager(new GridLayoutManager(this, 3));
-            rvTeams.setAdapter(new AdapterTeam(this, teams, mRealm));
-            if (teams.size() > 0) {
-                tvNodata.setVisibility(View.GONE);
-            } else {
-                tvNodata.setText(R.string.no_team_available);
-                tvNodata.setVisibility(View.VISIBLE);
-            }
-        } finally {
-            if (mRealm != null && !mRealm.isClosed()) {
-                mRealm.close();
-            }
-        }
-    }
-
     public boolean isServerReachable(String processedUrl) throws Exception {
         progressDialog.setMessage(getString(R.string.connecting_to_server));
         progressDialog.show();
@@ -297,10 +274,6 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
             syncIcon.invalidateDrawable(syncIconDrawable);
         });
         DialogUtils.showSnack(findViewById(android.R.id.content), getString(R.string.sync_completed));
-
-        if (settings.getBoolean("isChild", false)) {
-            runOnUiThread(() -> setUpChildMode());
-        }
 
         NotificationUtil.cancellAll(this);
     }
