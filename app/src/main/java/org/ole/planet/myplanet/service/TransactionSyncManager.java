@@ -131,7 +131,7 @@ public class TransactionSyncManager {
 
     private static void insertToChat(JsonArray arr, Realm mRealm, String table) {
 //        if(Objects.equals(table, "chat_history")){
-//            Log.d("jsonDoc", String.valueOf(jsonDoc));
+            Log.d("jsonDoc", String.valueOf(arr));
 //            RealmChatHistory.insert(mRealm, jsonDoc);
 //        }
 

@@ -22,7 +22,7 @@ class ChatHistoryListAdapter(var context: Context, var chatHistory: List<RealmCh
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         rowChatHistoryBinding.chatTitle.text = chatHistory[position].id
         rowChatHistoryBinding.root.setOnClickListener {
-            Log.d("logged", chatHistory[position].id)
+            Log.d("logged", chatHistory[position].conversations)
         }
     }
 

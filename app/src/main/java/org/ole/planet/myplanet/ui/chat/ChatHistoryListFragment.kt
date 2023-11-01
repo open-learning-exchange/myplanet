@@ -30,18 +30,14 @@ class ChatHistoryListFragment : Fragment() {
 
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, ChatHistoryListOnBackPressedCallback(slidingPaneLayout))
 
+        fragmentChatHistoryListBinding.slidingPaneLayout.openPane()
 
-//        val chatAdapter = ChatAdapter{
-//        val adapterJoinedMember = AdapterLeader {
-            fragmentChatHistoryListBinding.slidingPaneLayout.openPane()
-//        }
         val mRealm = DatabaseService(requireActivity()).realmInstance;
         val leaders = mRealm.where(RealmChatHistory::class.java).findAll()
 
         val list = ArrayList<RealmChatHistory>()
         for (team in leaders) {
-            val model =
-                    mRealm.where(RealmChatHistory::class.java).equalTo("id", team.id).findFirst()
+            val model = mRealm.where(RealmChatHistory::class.java).equalTo("id", team.id).findFirst()
             if (model != null && !list.contains(model)) list.add(model)
         }
         fragmentChatHistoryListBinding.recyclerView.adapter = ChatHistoryListAdapter(requireActivity(), list)

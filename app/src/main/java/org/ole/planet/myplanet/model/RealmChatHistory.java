@@ -65,7 +65,7 @@ public class RealmChatHistory extends RealmObject {
     }
 
     public void setConversations(String conversations) {
-        this.conversations = conversations;
+        this.conversations = new Gson().toJson(conversations);
     }
 
     public boolean isUploaded() {
@@ -85,6 +85,6 @@ public class RealmChatHistory extends RealmObject {
         chatHistory.set_id(JsonUtils.getString("_id", act));
         chatHistory.setTime(JsonUtils.getLong("time", act));
         chatHistory.setUser(new Gson().toJson(JsonUtils.getJsonObject("user", act)));
-        chatHistory.setConversations(JsonUtils.getString("conversations", act));
+        chatHistory.setConversations(new Gson().toJson(JsonUtils.getJsonArray("conversations", act)));
     }
 }
