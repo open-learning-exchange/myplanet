@@ -75,6 +75,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import io.realm.Realm;
@@ -340,20 +342,30 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             alertGuestLoginBinding.etUserName.addTextChangedListener(new TextWatcher() {
                 @Override
                 public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
                 @Override
                 public void onTextChanged(CharSequence s, int start, int before, int count) {
-                    char firstChar = s.length() > 0 ? s.charAt(0) : '\0';
+                    String input = s.toString();
+                    char firstChar = input.length() > 0 ? input.charAt(0) : '\0';
                     boolean hasInvalidCharacters = false;
-                    for (int i = 0; i < s.length(); i++) {
-                        char c = s.charAt(i);
+                    boolean hasSpecialCharacters = false;
+                    boolean hasDiacriticCharacters = false;
+
+                    String normalizedText = Normalizer.normalize(s, Normalizer.Form.NFD);
+
+                    for (int i = 0; i < input.length(); i++) {
+                        char c = input.charAt(i);
                         if (c != '_' && c != '.' && c != '-' && !Character.isDigit(c) && !Character.isLetter(c)) {
                             hasInvalidCharacters = true;
                             break;
                         }
                     }
 
-                    String normalizedText = Normalizer.normalize(s, Normalizer.Form.NFD);
-                    boolean hasDiacriticCharacters = false;
+                    String regex = ".*[ßäöüéèêæÆœøØ¿àìòùÀÈÌÒÙáíóúýÁÉÍÓÚÝâîôûÂÊÎÔÛãñõÃÑÕëïÿÄËÏÖÜŸåÅŒçÇðÐ].*";
+                    Pattern pattern = Pattern.compile(regex);
+                    Matcher matcher = pattern.matcher(input);
+                    hasSpecialCharacters = matcher.matches();
+
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                         hasDiacriticCharacters = !normalizedText.codePoints().allMatch(
                                 codePoint -> Character.isLetterOrDigit(codePoint) || codePoint == '.' || codePoint == '-' || codePoint == '_'
@@ -362,13 +374,11 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
                     if (!Character.isDigit(firstChar) && !Character.isLetter(firstChar)) {
                         alertGuestLoginBinding.etUserName.setError(getString(R.string.must_start_with_letter_or_number));
-                    } else if (hasInvalidCharacters) {
+                    } else if (hasInvalidCharacters || hasDiacriticCharacters || hasSpecialCharacters) {
                         alertGuestLoginBinding.etUserName.setError(getString(R.string.only_letters_numbers_and_are_allowed));
-                    } else if (hasDiacriticCharacters) {
-                        alertGuestLoginBinding.etUserName.setError(getString(R.string.restrict_diacritic));
                     } else {
-                        String lowercaseText = s.toString().toLowerCase(Locale.ROOT);
-                        if (!s.toString().equals(lowercaseText)) {
+                        String lowercaseText = input.toLowerCase(Locale.ROOT);
+                        if (!input.equals(lowercaseText)) {
                             alertGuestLoginBinding.etUserName.setText(lowercaseText);
                             alertGuestLoginBinding.etUserName.setSelection(lowercaseText.length());
                         }
@@ -400,9 +410,14 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                 Character firstChar = username.isEmpty() ? null : username.charAt(0);
                 boolean hasInvalidCharacters = false;
                 boolean hasDiacriticCharacters = false;
+                boolean hasSpecialCharacters = false;
                 boolean isValid = true;
-
                 String normalizedText = Normalizer.normalize(username, Normalizer.Form.NFD);
+
+                String regex = ".*[ßäöüéèêæÆœøØ¿àìòùÀÈÌÒÙáíóúýÁÉÍÓÚÝâîôûÂÊÎÔÛãñõÃÑÕëïÿÄËÏÖÜŸåÅŒçÇðÐ].*";
+                Pattern pattern = Pattern.compile(regex);
+                Matcher matcher = pattern.matcher(username);
+
                 if (TextUtils.isEmpty(username)) {
                     alertGuestLoginBinding.etUserName.setError(getString(R.string.username_cannot_be_empty));
                     isValid = false;
@@ -418,6 +433,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                             break;
                         }
 
+                        hasSpecialCharacters = matcher.matches();
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                             hasDiacriticCharacters = !normalizedText.codePoints().allMatch(
                                     codePoint -> Character.isLetterOrDigit(codePoint) || codePoint == '.' || codePoint == '-' || codePoint == '_'
@@ -425,13 +441,8 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                         }
                     }
 
-                    if (hasInvalidCharacters) {
+                    if (hasInvalidCharacters || hasDiacriticCharacters || hasSpecialCharacters) {
                         alertGuestLoginBinding.etUserName.setError(getString(R.string.only_letters_numbers_and_are_allowed));
-                        isValid = false;
-                    }
-
-                    if(hasDiacriticCharacters){
-                        alertGuestLoginBinding.etUserName.setError(getString(R.string.restrict_diacritic));
                         isValid = false;
                     }
                 }
