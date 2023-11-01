@@ -90,7 +90,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private View positiveAction;
     private ImageButton imgBtnSetting;
     private boolean isSync = false, forceSync = false;
-    private SwitchCompat switchChildMode;
     private SharedPreferences defaultPref;
     private Service service;
     private Spinner spnCloud;
@@ -127,7 +126,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             customDeviceName =((ActivityLoginBinding) activityLoginBinding).customDeviceName;
             becomeMember = ((ActivityLoginBinding) activityLoginBinding).becomeMember;
             btnGuestLogin = ((ActivityLoginBinding) activityLoginBinding).btnGuestLogin;
-            switchChildMode = ((ActivityLoginBinding) activityLoginBinding).switchChildMode;
             syncIcon = ((ActivityLoginBinding) activityLoginBinding).syncIcon;
             lblVersion = ((ActivityLoginBinding) activityLoginBinding).lblVersion;
             btnLang = ((ActivityLoginBinding) activityLoginBinding).btnLang;
@@ -146,7 +144,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             customDeviceName =((ActivityChildLoginBinding) activityLoginBinding).customDeviceName;
             becomeMember = ((ActivityChildLoginBinding) activityLoginBinding).becomeMember;
             btnGuestLogin = ((ActivityChildLoginBinding) activityLoginBinding).btnGuestLogin;
-            switchChildMode = ((ActivityChildLoginBinding) activityLoginBinding).switchChildMode;
             syncIcon = ((ActivityChildLoginBinding) activityLoginBinding).syncIcon;
             lblVersion = ((ActivityChildLoginBinding) activityLoginBinding).lblVersion;
             btnLang = ((ActivityChildLoginBinding) activityLoginBinding).btnLang;
@@ -307,13 +304,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         btnGuestLogin.setOnClickListener(view -> {
             inputName.setText("");
             showGuestLoginDialog();
-        });
-
-        switchChildMode.setChecked(settings.getBoolean("isChild", false));
-        switchChildMode.setOnCheckedChangeListener((compoundButton, b) -> {
-            inputName.setText("");
-            settings.edit().putBoolean("isChild", b).commit();
-            recreate();
         });
     }
 
