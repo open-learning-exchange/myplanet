@@ -194,7 +194,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             inputName.setText("");
             new FeedbackFragment().show(getSupportFragmentManager(), "");
         });
-        
+
         previouslyLoggedIn.setOnClickListener(view -> showUserList());
     }
 
