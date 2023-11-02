@@ -723,8 +723,9 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     }
 
     public void settingDialog() {
+        Realm sRealm = null;
         try {
-            mRealm = Realm.getDefaultInstance();
+            sRealm = Realm.getDefaultInstance();
             DialogServerUrlBinding dialogServerUrlBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this));
             MaterialDialog.Builder builder = new MaterialDialog.Builder(LoginActivity.this);
             builder.title(R.string.action_settings)
@@ -739,7 +740,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             positiveAction = dialog.getActionButton(DialogAction.POSITIVE);
             spnCloud = dialogServerUrlBinding.spnCloud;
 
-            List<RealmCommunity> communities = mRealm.where(RealmCommunity.class).sort("weight", Sort.ASCENDING).findAll();
+            List<RealmCommunity> communities = sRealm.where(RealmCommunity.class).sort("weight", Sort.ASCENDING).findAll();
             List<RealmCommunity> nonEmptyCommunities = new ArrayList<>();
             for (RealmCommunity community : communities) {
                 if (community.isValid() && !TextUtils.isEmpty(community.getName())) {
@@ -777,8 +778,8 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             dialog.show();
             sync(dialog);
         } finally {
-            if (mRealm != null && !mRealm.isClosed()) {
-                mRealm.close();
+            if (sRealm != null && !sRealm.isClosed()) {
+                sRealm.close();
             }
         }
     }
@@ -787,11 +788,10 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         try {
             mRealm = Realm.getDefaultInstance();
             RealmCommunity selected = (RealmCommunity) spnCloud.getSelectedItem();
-            Utilities.log((selected == null) + " selected ");
             if (selected == null) {
                 return;
             }
-            if (selected.isValid()){
+            if (selected.isValid()) {
                 serverUrl.setText(selected.getLocalDomain());
                 protocol_checkin.check(R.id.radio_https);
                 settings.getString("serverProtocol", "https://");
