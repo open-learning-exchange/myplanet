@@ -544,6 +544,14 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             syncIcon.setImageDrawable(getResources().getDrawable(R.drawable.login_file_upload_animation));
             syncIcon.getScaleType();
             syncIconDrawable = (AnimationDrawable) syncIcon.getDrawable();
+
+            if (prefData.getCOMPLETESIGNUP1()){
+                syncIconDrawable.start();
+                isSync = false;
+                forceSync = true;
+                service.checkVersion(this, settings);
+            }
+
             syncIcon.setOnClickListener(v -> {
                 syncIconDrawable.start();
                 isSync = false;

@@ -25,6 +25,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.NetworkUtils
+import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils
 import java.text.Normalizer
@@ -37,6 +38,8 @@ class BecomeMemberActivity : BaseActivity() {
     var dob: String = "";
     lateinit var settings: SharedPreferences
     var guest: Boolean = false
+    var complete: Boolean = false
+    private lateinit var prefData: SharedPrefManager
     private fun showDatePickerDialog() {
         val now = Calendar.getInstance()
         val dpd = DatePickerDialog(
@@ -59,6 +62,8 @@ class BecomeMemberActivity : BaseActivity() {
         var user = UserProfileDbHandler(this).userModel;
         val languages = resources.getStringArray(R.array.language)
         val adapter = ArrayAdapter<String>(this, R.layout.become_a_member_spinner_layout, languages)
+        prefData = SharedPrefManager(this)
+
         activityBecomeMemberBinding.spnLang.adapter = adapter
         activityBecomeMemberBinding.txtDob.setOnClickListener {
             showDatePickerDialog()
@@ -128,6 +133,7 @@ class BecomeMemberActivity : BaseActivity() {
         }
 
         activityBecomeMemberBinding.btnSubmit.setOnClickListener {
+            prefData.setCOMPLETESIGNUP(true)
             var username: String? = activityBecomeMemberBinding.etUsername.text.toString()
             var password: String? = activityBecomeMemberBinding.etPassword.text.toString()
             var repassword: String? = activityBecomeMemberBinding.etRePassword.text.toString()
@@ -140,7 +146,7 @@ class BecomeMemberActivity : BaseActivity() {
             var birthDate: String? = dob
             var level: String? = activityBecomeMemberBinding.spnLevel.selectedItem.toString()
             var gender: String? = null
-          
+
             val firstChar = if (username!!.isNotEmpty()) username[0] else null
             val hasInvalidCharacters = username.any { char ->
                 char != '_' && char != '.' && char != '-' && !Character.isDigit(char) && !Character.isLetter(char)

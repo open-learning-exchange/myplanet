@@ -15,6 +15,7 @@ class SharedPrefManager(context: Context) {
 
     var SAVEDUSERS = "savedUsers"
     var REPLIEDNEWSID = "repliedNewsId"
+    var COMPLETESIGNUP = "completeSignUp"
 
     init {
         pref = context.getSharedPreferences(SHARED_PREF_NAME, PRIVATE_MODE)
@@ -72,6 +73,17 @@ class SharedPrefManager(context: Context) {
     @JvmName("setREPLIEDNEWSID1")
     fun setREPLIEDNEWSID(repliedNewsId: String?) {
         editor.putString(REPLIEDNEWSID, repliedNewsId)
+        editor.apply()
+    }
+
+    @JvmName("getCOMPLETESIGNUP1")
+    fun getCOMPLETESIGNUP(): Boolean {
+        return pref.getBoolean(COMPLETESIGNUP, false)
+    }
+
+    @JvmName("setCOMPLETESIGNUP1")
+    fun setCOMPLETESIGNUP(completeSignUp: Boolean) {
+        editor.putBoolean(COMPLETESIGNUP, completeSignUp)
         editor.apply()
     }
 }
