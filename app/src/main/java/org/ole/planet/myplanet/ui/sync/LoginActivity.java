@@ -72,6 +72,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
@@ -93,7 +94,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private Button btnSignIn, becomeMember, btnGuestLogin, btnLang, openCommunity, btnFeedback;
     private View positiveAction;
     private ImageButton imgBtnSetting;
-    private boolean isSync = false, forceSync = false;
+    private boolean isSync = false, forceSync = false, guest = false;
     private SwitchCompat switchChildMode;
     private SharedPreferences defaultPref;
     private Service service;
@@ -196,6 +197,33 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         });
 
         previouslyLoggedIn.setOnClickListener(view -> showUserList());
+
+        guest = getIntent().getBooleanExtra("guest", false);
+        String username = getIntent().getStringExtra("username");
+        if (guest){
+            List<User> existingUsers = prefData.getSAVEDUSERS1();
+
+            boolean newUserExists = false;
+
+            for (User user : existingUsers) {
+                if (user.getName().equals(username)) {
+                    newUserExists = true;
+                    break;
+                }
+            }
+
+            if (newUserExists){
+                Iterator<User> iterator = existingUsers.iterator();
+                while (iterator.hasNext()) {
+                    User user = iterator.next();
+                    if (user.getName().equals(username)) {
+                        iterator.remove();
+                    }
+                }
+                prefData.setSAVEDUSERS1(existingUsers);
+            }
+        }
+
     }
 
     private void showUserList(){

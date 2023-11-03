@@ -70,8 +70,9 @@ class BecomeMemberActivity : BaseActivity() {
         settings = getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE)
         textChangedListener(mRealm)
 
-        if (username != null) {
+        if (guest) {
             activityBecomeMemberBinding.etUsername.setText(username)
+            activityBecomeMemberBinding.etUsername.isFocusable = false
         }
 
         activityBecomeMemberBinding.etUsername.addTextChangedListener(object : TextWatcher {
@@ -264,6 +265,8 @@ class BecomeMemberActivity : BaseActivity() {
 
             if (guest){
                 val intent = Intent(this, LoginActivity::class.java)
+                intent.putExtra("username", username)
+                intent.putExtra("guest", guest)
                 intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
                 startActivity(intent)
                 finish()
