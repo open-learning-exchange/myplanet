@@ -764,6 +764,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             serverUrl = dialogServerUrlBinding.inputServerUrl;
             serverPassword = dialogServerUrlBinding.inputServerPassword;
             serverUrlProtocol = dialogServerUrlBinding.inputServerUrlProtocol;
+
             dialogServerUrlBinding.switchServerUrl.setOnCheckedChangeListener((compoundButton, b) -> {
                 settings.edit().putBoolean("switchCloudUrl", b).commit();
                 dialogServerUrlBinding.spnCloud.setVisibility(b ? View.VISIBLE : View.GONE);
@@ -795,7 +796,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                 serverUrl.setText(selected.getLocalDomain());
                 protocol_checkin.check(R.id.radio_https);
                 settings.getString("serverProtocol", "https://");
-                serverPassword.setTransformationMethod(PasswordTransformationMethod.getInstance());
                 serverPassword.setText(selected.getWeight() == 0 ? "1983" : "");
                 serverPassword.setEnabled(selected.getWeight() != 0);
             }
@@ -814,7 +814,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             serverPassword.setText(settings.getString("serverPin", ""));
             protocol_checkin.check(TextUtils.equals(settings.getString("serverProtocol", ""), "http://") ? R.id.radio_http : R.id.radio_https);
             serverUrlProtocol.setText(settings.getString("serverProtocol", ""));
-            serverPassword.setTransformationMethod(null);
         }
         serverUrl.setEnabled(!checked);
         serverPassword.setEnabled(!checked);

@@ -97,7 +97,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="@string/hint_serverPin"
-                android:inputType="number"
+                android:inputType="numberPassword"
                 android:textColor="@android:color/background_dark"
                 android:textColorHint="@android:color/darker_gray"
                 android:textSize="18sp" />
