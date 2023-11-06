@@ -44,6 +44,7 @@
                     android:layout_height="wrap_content"
                     android:drawableLeft="@drawable/ic_edit"
                     android:drawablePadding="@dimen/padding_normal"
+                    android:contentDescription="@string/edit_achievement"
                     android:padding="@dimen/padding_normal"
                     android:text="@string/edit_achievement" />
 
@@ -209,6 +210,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:padding="@dimen/padding_normal"
+                    android:contentDescription="@string/add_an_achievement"
                     android:text="@string/add_an_achievement"
                     android:theme="@style/PrimaryButton" />
 
@@ -230,7 +232,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:padding="@dimen/padding_normal"
-
+                    android:contentDescription="@string/add_a_reference"
                     android:text="@string/add_a_reference"
                     android:theme="@style/PrimaryButton" />
 
@@ -240,7 +242,7 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:padding="@dimen/padding_normal"
-                    android:text="Allow your achievements to be shared with the nation"
+                    android:text="@string/send_to_nation"
                     android:textSize="@dimen/text_size_large" />
 
                 <LinearLayout
@@ -252,6 +254,7 @@
                         android:id="@+id/btn_update"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:contentDescription="@string/button_update"
                         android:text="@string/button_update"
                         android:theme="@style/PrimaryButton" />
 
@@ -259,6 +262,7 @@
                         android:id="@+id/btn_cancel"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:contentDescription="@string/button_cancel"
                         android:text="@string/button_cancel"
                         android:theme="@style/AccentButton" />
 

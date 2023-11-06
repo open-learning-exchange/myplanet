@@ -7,11 +7,14 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.graphics.drawable.AnimationDrawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.text.Editable;
+import android.text.InputType;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.text.method.PasswordTransformationMethod;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -64,13 +67,18 @@ import org.ole.planet.myplanet.utilities.NetworkUtils;
 import org.ole.planet.myplanet.utilities.SharedPrefManager;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import io.realm.Realm;
 import io.realm.Sort;
@@ -86,7 +94,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private Button btnSignIn, becomeMember, btnGuestLogin, btnLang, openCommunity, btnFeedback;
     private View positiveAction;
     private ImageButton imgBtnSetting;
-    private boolean isSync = false, forceSync = false;
+    private boolean isSync = false, forceSync = false, guest = false;
     private SwitchCompat switchChildMode;
     private SharedPreferences defaultPref;
     private Service service;
@@ -188,9 +196,34 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             new FeedbackFragment().show(getSupportFragmentManager(), "");
         });
 
-        if (settings.getBoolean("firstRun", true));
-
         previouslyLoggedIn.setOnClickListener(view -> showUserList());
+
+        guest = getIntent().getBooleanExtra("guest", false);
+        String username = getIntent().getStringExtra("username");
+        if (guest){
+            List<User> existingUsers = prefData.getSAVEDUSERS1();
+
+            boolean newUserExists = false;
+
+            for (User user : existingUsers) {
+                if (user.getName().equals(username)) {
+                    newUserExists = true;
+                    break;
+                }
+            }
+
+            if (newUserExists){
+                Iterator<User> iterator = existingUsers.iterator();
+                while (iterator.hasNext()) {
+                    User user = iterator.next();
+                    if (user.getName().equals(username)) {
+                        iterator.remove();
+                    }
+                }
+                prefData.setSAVEDUSERS1(existingUsers);
+            }
+        }
+
     }
 
     private void showUserList(){
@@ -335,25 +368,43 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             alertGuestLoginBinding.etUserName.addTextChangedListener(new TextWatcher() {
                 @Override
                 public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
                 @Override
                 public void onTextChanged(CharSequence s, int start, int before, int count) {
-                    char firstChar = s.length() > 0 ? s.charAt(0) : '\0';
+                    String input = s.toString();
+                    char firstChar = input.length() > 0 ? input.charAt(0) : '\0';
                     boolean hasInvalidCharacters = false;
-                    for (int i = 0; i < s.length(); i++) {
-                        char c = s.charAt(i);
+                    boolean hasSpecialCharacters = false;
+                    boolean hasDiacriticCharacters = false;
+
+                    String normalizedText = Normalizer.normalize(s, Normalizer.Form.NFD);
+
+                    for (int i = 0; i < input.length(); i++) {
+                        char c = input.charAt(i);
                         if (c != '_' && c != '.' && c != '-' && !Character.isDigit(c) && !Character.isLetter(c)) {
                             hasInvalidCharacters = true;
                             break;
                         }
                     }
 
+                    String regex = ".*[ßäöüéèêæÆœøØ¿àìòùÀÈÌÒÙáíóúýÁÉÍÓÚÝâîôûÂÊÎÔÛãñõÃÑÕëïÿÄËÏÖÜŸåÅŒçÇðÐ].*";
+                    Pattern pattern = Pattern.compile(regex);
+                    Matcher matcher = pattern.matcher(input);
+                    hasSpecialCharacters = matcher.matches();
+
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                        hasDiacriticCharacters = !normalizedText.codePoints().allMatch(
+                                codePoint -> Character.isLetterOrDigit(codePoint) || codePoint == '.' || codePoint == '-' || codePoint == '_'
+                        );
+                    }
+
                     if (!Character.isDigit(firstChar) && !Character.isLetter(firstChar)) {
                         alertGuestLoginBinding.etUserName.setError(getString(R.string.must_start_with_letter_or_number));
-                    } else if (hasInvalidCharacters) {
+                    } else if (hasInvalidCharacters || hasDiacriticCharacters || hasSpecialCharacters) {
                         alertGuestLoginBinding.etUserName.setError(getString(R.string.only_letters_numbers_and_are_allowed));
                     } else {
-                        String lowercaseText = s.toString().toLowerCase(Locale.ROOT);
-                        if (!s.toString().equals(lowercaseText)) {
+                        String lowercaseText = input.toLowerCase(Locale.ROOT);
+                        if (!input.equals(lowercaseText)) {
                             alertGuestLoginBinding.etUserName.setText(lowercaseText);
                             alertGuestLoginBinding.etUserName.setSelection(lowercaseText.length());
                         }
@@ -384,8 +435,14 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                 String username = alertGuestLoginBinding.etUserName.getText().toString().trim();
                 Character firstChar = username.isEmpty() ? null : username.charAt(0);
                 boolean hasInvalidCharacters = false;
-
+                boolean hasDiacriticCharacters = false;
+                boolean hasSpecialCharacters = false;
                 boolean isValid = true;
+                String normalizedText = Normalizer.normalize(username, Normalizer.Form.NFD);
+
+                String regex = ".*[ßäöüéèêæÆœøØ¿àìòùÀÈÌÒÙáíóúýÁÉÍÓÚÝâîôûÂÊÎÔÛãñõÃÑÕëïÿÄËÏÖÜŸåÅŒçÇðÐ].*";
+                Pattern pattern = Pattern.compile(regex);
+                Matcher matcher = pattern.matcher(username);
 
                 if (TextUtils.isEmpty(username)) {
                     alertGuestLoginBinding.etUserName.setError(getString(R.string.username_cannot_be_empty));
@@ -401,9 +458,16 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                             hasInvalidCharacters = true;
                             break;
                         }
+
+                        hasSpecialCharacters = matcher.matches();
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                            hasDiacriticCharacters = !normalizedText.codePoints().allMatch(
+                                    codePoint -> Character.isLetterOrDigit(codePoint) || codePoint == '.' || codePoint == '-' || codePoint == '_'
+                            );
+                        }
                     }
 
-                    if (hasInvalidCharacters) {
+                    if (hasInvalidCharacters || hasDiacriticCharacters || hasSpecialCharacters) {
                         alertGuestLoginBinding.etUserName.setError(getString(R.string.only_letters_numbers_and_are_allowed));
                         isValid = false;
                     }
@@ -687,8 +751,9 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     }
 
     public void settingDialog() {
+        Realm sRealm = null;
         try {
-            mRealm = Realm.getDefaultInstance();
+            sRealm = Realm.getDefaultInstance();
             DialogServerUrlBinding dialogServerUrlBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this));
             MaterialDialog.Builder builder = new MaterialDialog.Builder(LoginActivity.this);
             builder.title(R.string.action_settings)
@@ -702,8 +767,16 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             MaterialDialog dialog = builder.build();
             positiveAction = dialog.getActionButton(DialogAction.POSITIVE);
             spnCloud = dialogServerUrlBinding.spnCloud;
-            List<RealmCommunity> communities = mRealm.where(RealmCommunity.class).sort("weight", Sort.ASCENDING).findAll();
-            dialogServerUrlBinding.spnCloud.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, communities));
+
+            List<RealmCommunity> communities = sRealm.where(RealmCommunity.class).sort("weight", Sort.ASCENDING).findAll();
+            List<RealmCommunity> nonEmptyCommunities = new ArrayList<>();
+            for (RealmCommunity community : communities) {
+                if (community.isValid() && !TextUtils.isEmpty(community.getName())) {
+                    nonEmptyCommunities.add(community);
+                }
+            }
+            dialogServerUrlBinding.spnCloud.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, nonEmptyCommunities));
+
             dialogServerUrlBinding.spnCloud.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                 @Override
                 public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
@@ -723,6 +796,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                 settings.edit().putBoolean("switchCloudUrl", b).commit();
                 dialogServerUrlBinding.spnCloud.setVisibility(b ? View.VISIBLE : View.GONE);
                 setUrlAndPin(dialogServerUrlBinding.switchServerUrl.isChecked());
+                Log.d("checked", String.valueOf(dialogServerUrlBinding.switchServerUrl.isChecked()));
             });
             serverUrl.addTextChangedListener(new MyTextWatcher(serverUrl));
             dialogServerUrlBinding.deviceName.setText(getCustomDeviceName());
@@ -732,8 +806,8 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             dialog.show();
             sync(dialog);
         } finally {
-            if (mRealm != null && !mRealm.isClosed()) {
-                mRealm.close();
+            if (sRealm != null && !sRealm.isClosed()) {
+                sRealm.close();
             }
         }
     }
@@ -742,15 +816,17 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         try {
             mRealm = Realm.getDefaultInstance();
             RealmCommunity selected = (RealmCommunity) spnCloud.getSelectedItem();
-            Utilities.log((selected == null) + " selected ");
             if (selected == null) {
                 return;
             }
-            serverUrl.setText(selected.getLocalDomain());
-            protocol_checkin.check(R.id.radio_https);
-            settings.getString("serverProtocol", "https://");
-            serverPassword.setText(selected.getWeight() == 0 ? "0660" : "");
-            serverPassword.setEnabled(selected.getWeight() != 0);
+            if (selected.isValid()) {
+                serverUrl.setText(selected.getLocalDomain());
+                protocol_checkin.check(R.id.radio_https);
+                settings.getString("serverProtocol", "https://");
+                serverPassword.setTransformationMethod(PasswordTransformationMethod.getInstance());
+                serverPassword.setText(selected.getWeight() == 0 ? "1983" : "");
+                serverPassword.setEnabled(selected.getWeight() != 0);
+            }
         } finally {
             if (mRealm != null && !mRealm.isClosed()) {
                 mRealm.close();
@@ -766,8 +842,10 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             serverPassword.setText(settings.getString("serverPin", ""));
             protocol_checkin.check(TextUtils.equals(settings.getString("serverProtocol", ""), "http://") ? R.id.radio_http : R.id.radio_https);
             serverUrlProtocol.setText(settings.getString("serverProtocol", ""));
+            serverPassword.setTransformationMethod(null);
         }
         serverUrl.setEnabled(!checked);
+        serverPassword.setEnabled(!checked);
         serverPassword.clearFocus();
         serverUrl.clearFocus();
         protocol_checkin.setEnabled(!checked);

@@ -155,6 +155,7 @@
                         android:layout_height="wrap_content"
                         android:background="@drawable/border"
                         android:entries="@array/language"
+                        android:contentDescription="@string/language"
                         android:padding="@dimen/padding_normal" />
 
                 </LinearLayout>
@@ -221,12 +222,14 @@
                         android:id="@+id/male"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:contentDescription="@string/male"
                         android:text="@string/male" />
 
                     <RadioButton
                         android:id="@+id/female"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:contentDescription="@string/female"
                         android:text="@string/female" />
 
 
@@ -259,6 +262,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:entries="@array/level"
+                        android:contentDescription="@string/level"
                         android:padding="@dimen/padding_small" />
                 </RelativeLayout>
             </LinearLayout>
@@ -274,6 +278,7 @@
                     style="@style/Widget.MaterialComponents.Button.TextButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:contentDescription="@string/button_cancel"
                     android:text="@string/button_cancel"
                     android:textSize="@dimen/text_size_mid"
                     android:textStyle="bold" />
@@ -284,6 +289,7 @@
                     android:layout_height="wrap_content"
                     android:text="@string/become_a_member"
                     android:textSize="@dimen/text_size_mid"
+                    android:contentDescription="@string/become_a_member"
                     android:theme="@style/FocusButton" />
 
 
