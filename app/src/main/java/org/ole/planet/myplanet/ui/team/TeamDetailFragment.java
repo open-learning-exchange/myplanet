@@ -55,15 +55,6 @@ public class TeamDetailFragment extends Fragment {
                 fragmentTeamDetailBinding.viewPager.setAdapter(new TeamPagerAdapter(getChildFragmentManager(), team, false));
                 fragmentTeamDetailBinding.llActionButtons.setVisibility(View.GONE);
             }).setNegativeButton(R.string.no, null).show());
-
-            fragmentTeamDetailBinding.btnAddDoc.setOnClickListener(view -> {
-                MainApplication.showDownload = true;
-                fragmentTeamDetailBinding.viewPager.setCurrentItem(6);
-                MainApplication.showDownload = false;
-                if (MainApplication.listener != null) {
-                    MainApplication.listener.onAddDocument();
-                }
-            });
         }
         if (RealmMyTeam.isTeamLeader(teamId, user.getId(), mRealm)) {
             fragmentTeamDetailBinding.btnLeave.setVisibility(View.GONE);
