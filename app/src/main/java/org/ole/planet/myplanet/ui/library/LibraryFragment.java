@@ -112,7 +112,8 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
                 .setMessage(R.string.confirm_removal)
                 .setPositiveButton(R.string.yes, (dialogInterface, i) -> {
                     deleteSelected(true);
-                    checkList();
+                    LibraryFragment newFragment = new LibraryFragment();
+                    recreateFragment(newFragment);
                 })
                 .setNegativeButton(R.string.no, null).show());
 
@@ -360,9 +361,19 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
     }
 
     public void recreateFragment(Fragment fragment) {
-        FragmentTransaction transaction = getFragmentManager().beginTransaction();
-        transaction.replace(R.id.fragment_container, fragment);
-        transaction.addToBackStack(null);
-        transaction.commit();
+        if(isMyCourseLib){
+            Bundle args = new Bundle();
+            args.putBoolean("isMyCourseLib", true);
+            fragment.setArguments(args);
+            FragmentTransaction transaction = getFragmentManager().beginTransaction();
+            transaction.replace(R.id.fragment_container, fragment);
+            transaction.addToBackStack(null);
+            transaction.commit();
+        } else{
+            FragmentTransaction transaction = getFragmentManager().beginTransaction();
+            transaction.replace(R.id.fragment_container, fragment);
+            transaction.addToBackStack(null);
+            transaction.commit();
+        }
     }
 }
