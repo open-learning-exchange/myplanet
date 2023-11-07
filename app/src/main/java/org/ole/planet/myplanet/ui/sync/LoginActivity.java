@@ -180,6 +180,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         checkUsagesPermission();
         setUpChildMode();
         forceSyncTrigger();
+        showTeamList();
 
         if (!Utilities.getUrl().isEmpty()) {
             openCommunity.setVisibility(View.VISIBLE);
@@ -1004,4 +1005,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     public String getCustomDeviceName() {
         return settings.getString("customDeviceName", NetworkUtils.getDeviceName());
     }
+
+
 }
