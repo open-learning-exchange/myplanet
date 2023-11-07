@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.sync;
 
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.drawable.AnimationDrawable;
 import android.os.Bundle;
@@ -39,6 +40,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.SyncManager;
 import org.ole.planet.myplanet.ui.team.AdapterTeam;
+import org.ole.planet.myplanet.ui.userprofile.UsersLoginActivity;
 import org.ole.planet.myplanet.utilities.AndroidDecrypter;
 import org.ole.planet.myplanet.utilities.DialogUtils;
 import org.ole.planet.myplanet.utilities.NotificationUtil;
@@ -135,6 +137,51 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         }
     }
 
+//    public void showTeamList() {
+//        try {
+//            mRealm = Realm.getDefaultInstance();
+//
+//            List<RealmMyTeam> teams = mRealm.where(RealmMyTeam.class).isEmpty("teamId").findAll();
+//
+//            if (teams.size() > 0) {
+//                AlertDialog.Builder builder = new AlertDialog.Builder(this);
+//                builder.setTitle("Select a Team");
+//
+//                Spinner teamSpinner = new Spinner(this);
+//                ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item);
+//                for (RealmMyTeam team : teams) {
+//                    if (team.isValid()) {
+//                        adapter.add(team.getName() + team.get_id());
+//                    }
+//                }
+//                adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+//                teamSpinner.setAdapter(adapter);
+//
+//                builder.setView(teamSpinner);
+//                builder.setPositiveButton("Proceed", (dialog, which) -> {
+//                    RealmMyTeam selectedTeam = (RealmMyTeam) teamSpinner.getSelectedItem();
+//                    if (selectedTeam != null) {
+//                        Log.d("Selected", String.valueOf(selectedTeam));
+//                        Intent intent = new Intent(this, UsersLoginActivity.class);
+//                        intent.putExtra("selectedTeamId", selectedTeam.get_id());
+//                        startActivity(intent);
+//                    }
+//                    dialog.dismiss();
+//                });
+//
+//                AlertDialog dialog = builder.create();
+//                dialog.show();
+//            } else {
+//                // Handle the case when there are no teams available
+//                // Update your UI accordingly
+//            }
+//        } finally {
+//            if (mRealm != null && !mRealm.isClosed()) {
+//                mRealm.close();
+//            }
+//        }
+//    }
+
     public void showTeamList() {
         try {
             mRealm = Realm.getDefaultInstance();
@@ -148,16 +195,23 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
                 Spinner teamSpinner = new Spinner(this);
                 ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item);
                 for (RealmMyTeam team : teams) {
-                    adapter.add(team.getName());
+                    if (team.isValid()) {
+                        adapter.add(team.getName());
+                    }
                 }
                 adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
                 teamSpinner.setAdapter(adapter);
 
                 builder.setView(teamSpinner);
                 builder.setPositiveButton("Proceed", (dialog, which) -> {
-                    RealmMyTeam selectedTeam = (RealmMyTeam) teamSpinner.getSelectedItem();
-                    if (selectedTeam != null) {
-                        handleSelectedTeam(selectedTeam);
+                    int selectedPosition = teamSpinner.getSelectedItemPosition();
+                    if (selectedPosition >= 0 && selectedPosition < teams.size()) {
+                        RealmMyTeam selectedTeam = teams.get(selectedPosition);
+                        assert selectedTeam != null;
+                        Log.d("Selected", String.valueOf(selectedTeam.get_id()));
+                        Intent intent = new Intent(this, UsersLoginActivity.class);
+                        intent.putExtra("selectedTeamId", selectedTeam.get_id());
+                        startActivity(intent);
                     }
                     dialog.dismiss();
                 });
@@ -173,9 +227,6 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
                 mRealm.close();
             }
         }
-    }
-    private void handleSelectedTeam(RealmMyTeam selectedTeam) {
-        Log.d("Selected", String.valueOf(selectedTeam));
     }
 
     public boolean isServerReachable(String processedUrl) throws Exception {
