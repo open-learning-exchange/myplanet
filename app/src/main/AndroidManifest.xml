@@ -42,8 +42,9 @@
         android:usesCleartextTraffic="true"
         tools:replace="android:label">
         <activity
-            android:name=".ui.chat.ChatActivity"
-            />
+            android:name=".ui.userprofile.UsersLoginActivity"
+            android:exported="false" />
+        <activity android:name=".ui.chat.ChatActivity" />
         <activity
             android:name=".ui.userprofile.BecomeMemberActivity"
             android:theme="@style/AppTheme" />
@@ -72,6 +73,7 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
@@ -102,6 +104,7 @@
         <activity
             android:name=".ui.SettingActivity"
             android:theme="@style/AppTheme" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="org.ole.planet.myplanet.fileprovider"
