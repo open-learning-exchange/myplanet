@@ -742,16 +742,25 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             serverUrl = dialogServerUrlBinding.inputServerUrl;
             serverPassword = dialogServerUrlBinding.inputServerPassword;
             serverUrlProtocol = dialogServerUrlBinding.inputServerUrlProtocol;
+
+//            defaultSetting();
             serverUrl.setText("planet.learning.ole.org");
             serverPassword.setText("1983");
             serverUrl.setEnabled(false);
             serverPassword.setEnabled(false);
+            settings.edit().putString("serverProtocol", "https://").commit();
+
+            MaterialDialog dialog = builder.build();
+            positiveAction = dialog.getActionButton(DialogAction.POSITIVE);
 
             dialogServerUrlBinding.manualConfiguration.setOnCheckedChangeListener((compoundButton, isChecked) -> {
                 if (isChecked) {
                     showConfigurationUIElements(dialogServerUrlBinding, true);
                     serverUrl.setText("");
                     serverPassword.setText("");
+                    serverUrl.setEnabled(true);
+                    serverPassword.setEnabled(true);
+
                     List<RealmCommunity> communities = mRealm.where(RealmCommunity.class).sort("weight", Sort.ASCENDING).findAll();
                     List<RealmCommunity> nonEmptyCommunities = new ArrayList<>();
                     for (RealmCommunity community : communities) {
@@ -772,8 +781,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
                         }
                     });
-
-                    dialogServerUrlBinding.switchServerUrl.setOnCheckedChangeListener((compounButton, b) -> {
+                    dialogServerUrlBinding.switchServerUrl.setOnCheckedChangeListener((compoundBtn, b) -> {
                         settings.edit().putBoolean("switchCloudUrl", b).commit();
                         dialogServerUrlBinding.spnCloud.setVisibility(b ? View.VISIBLE : View.GONE);
                         setUrlAndPin(dialogServerUrlBinding.switchServerUrl.isChecked());
@@ -790,12 +798,9 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                     serverPassword.setText("1983");
                     serverUrl.setEnabled(false);
                     serverPassword.setEnabled(false);
+                    settings.edit().putString("serverProtocol", "https://").commit();
                 }
             });
-
-            MaterialDialog dialog = builder.build();
-            positiveAction = dialog.getActionButton(DialogAction.POSITIVE);
-
             dialog.show();
             sync(dialog);
         } finally {
@@ -812,6 +817,21 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         binding.ltIntervalLabel.setVisibility(show ? View.VISIBLE : View.GONE);
         binding.ltSyncSwitch.setVisibility(show ? View.VISIBLE : View.GONE);
         binding.ltDeviceName.setVisibility(show ? View.VISIBLE : View.GONE);
+//        if (show) {
+//            serverUrl.setText("");
+//            serverPassword.setText("");
+//            serverUrl.setEnabled(true);
+//            serverPassword.setEnabled(true);
+//        } else {
+//            defaultSetting();
+//        }
+    }
+    private void defaultSetting() {
+        serverUrl.setText("planet.learning.ole.org");
+        serverPassword.setText("1983");
+        serverUrl.setEnabled(false);
+        serverPassword.setEnabled(false);
+        settings.edit().putString("serverProtocol", "https://").commit();
     }
 
     private void onChangeServerUrl() {
