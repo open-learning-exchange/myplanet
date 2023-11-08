@@ -743,12 +743,9 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             serverPassword = dialogServerUrlBinding.inputServerPassword;
             serverUrlProtocol = dialogServerUrlBinding.inputServerUrlProtocol;
 
-//            defaultSetting();
-            serverUrl.setText("planet.learning.ole.org");
-            serverPassword.setText("1983");
-            serverUrl.setEnabled(false);
-            serverPassword.setEnabled(false);
-            settings.edit().putString("serverProtocol", "https://").commit();
+            if(!dialogServerUrlBinding.manualConfiguration.isChecked()){
+                defaultSetting();
+            }
 
             MaterialDialog dialog = builder.build();
             positiveAction = dialog.getActionButton(DialogAction.POSITIVE);
@@ -756,11 +753,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             dialogServerUrlBinding.manualConfiguration.setOnCheckedChangeListener((compoundButton, isChecked) -> {
                 if (isChecked) {
                     showConfigurationUIElements(dialogServerUrlBinding, true);
-                    serverUrl.setText("");
-                    serverPassword.setText("");
-                    serverUrl.setEnabled(true);
-                    serverPassword.setEnabled(true);
-
                     List<RealmCommunity> communities = mRealm.where(RealmCommunity.class).sort("weight", Sort.ASCENDING).findAll();
                     List<RealmCommunity> nonEmptyCommunities = new ArrayList<>();
                     for (RealmCommunity community : communities) {
@@ -794,11 +786,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                     protocol_semantics();
                 } else {
                     showConfigurationUIElements(dialogServerUrlBinding, false);
-                    serverUrl.setText("planet.learning.ole.org");
-                    serverPassword.setText("1983");
-                    serverUrl.setEnabled(false);
-                    serverPassword.setEnabled(false);
-                    settings.edit().putString("serverProtocol", "https://").commit();
                 }
             });
             dialog.show();
@@ -817,21 +804,24 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         binding.ltIntervalLabel.setVisibility(show ? View.VISIBLE : View.GONE);
         binding.ltSyncSwitch.setVisibility(show ? View.VISIBLE : View.GONE);
         binding.ltDeviceName.setVisibility(show ? View.VISIBLE : View.GONE);
-//        if (show) {
-//            serverUrl.setText("");
-//            serverPassword.setText("");
-//            serverUrl.setEnabled(true);
-//            serverPassword.setEnabled(true);
-//        } else {
-//            defaultSetting();
-//        }
+
+        if (show) {
+            serverUrl.setText("");
+            serverPassword.setText("");
+            serverUrl.setEnabled(true);
+            serverPassword.setEnabled(true);
+            settings.edit().putString("serverProtocol", getString(R.string.http_protocol)).commit();
+        } else {
+            defaultSetting();
+        }
     }
     private void defaultSetting() {
         serverUrl.setText("planet.learning.ole.org");
         serverPassword.setText("1983");
         serverUrl.setEnabled(false);
         serverPassword.setEnabled(false);
-        settings.edit().putString("serverProtocol", "https://").commit();
+        settings.edit().putString("serverProtocol", getString(R.string.https_protocol)).commit();
+        serverUrlProtocol.setText(getString(R.string.https_protocol));
     }
 
     private void onChangeServerUrl() {
@@ -844,7 +834,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             if (selected.isValid()) {
                 serverUrl.setText(selected.getLocalDomain());
                 protocol_checkin.check(R.id.radio_https);
-                settings.getString("serverProtocol", "https://");
+                settings.getString("serverProtocol", getString(R.string.https_protocol));
                 serverPassword.setText(selected.getWeight() == 0 ? "1983" : "");
                 serverPassword.setEnabled(selected.getWeight() != 0);
             }
