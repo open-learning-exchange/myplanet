@@ -26,7 +26,9 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.RadioGroup;
+import android.widget.RelativeLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -723,9 +725,8 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     }
 
     public void settingDialog() {
-        Realm sRealm = null;
         try {
-            sRealm = Realm.getDefaultInstance();
+            mRealm = Realm.getDefaultInstance();
             DialogServerUrlBinding dialogServerUrlBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this));
             MaterialDialog.Builder builder = new MaterialDialog.Builder(LoginActivity.this);
             builder.title(R.string.action_settings)
@@ -736,53 +737,81 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                     .onPositive((dialog, which) -> continueSync(dialog))
                     .onNeutral((dialog, which) -> saveConfigAndContinue(dialog));
 
-            MaterialDialog dialog = builder.build();
-            positiveAction = dialog.getActionButton(DialogAction.POSITIVE);
             spnCloud = dialogServerUrlBinding.spnCloud;
-
-            List<RealmCommunity> communities = sRealm.where(RealmCommunity.class).sort("weight", Sort.ASCENDING).findAll();
-            List<RealmCommunity> nonEmptyCommunities = new ArrayList<>();
-            for (RealmCommunity community : communities) {
-                if (community.isValid() && !TextUtils.isEmpty(community.getName())) {
-                    nonEmptyCommunities.add(community);
-                }
-            }
-            dialogServerUrlBinding.spnCloud.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, nonEmptyCommunities));
-
-            dialogServerUrlBinding.spnCloud.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                @Override
-                public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                    onChangeServerUrl();
-                }
-
-                @Override
-                public void onNothingSelected(AdapterView<?> adapterView) {
-
-                }
-            });
             protocol_checkin = dialogServerUrlBinding.radioProtocol;
             serverUrl = dialogServerUrlBinding.inputServerUrl;
             serverPassword = dialogServerUrlBinding.inputServerPassword;
             serverUrlProtocol = dialogServerUrlBinding.inputServerUrlProtocol;
+            serverUrl.setText("planet.learning.ole.org");
+            serverPassword.setText("1983");
+            serverUrl.setEnabled(false);
+            serverPassword.setEnabled(false);
 
-            dialogServerUrlBinding.switchServerUrl.setOnCheckedChangeListener((compoundButton, b) -> {
-                settings.edit().putBoolean("switchCloudUrl", b).commit();
-                dialogServerUrlBinding.spnCloud.setVisibility(b ? View.VISIBLE : View.GONE);
-                setUrlAndPin(dialogServerUrlBinding.switchServerUrl.isChecked());
-                Log.d("checked", String.valueOf(dialogServerUrlBinding.switchServerUrl.isChecked()));
+            dialogServerUrlBinding.manualConfiguration.setOnCheckedChangeListener((compoundButton, isChecked) -> {
+                if (isChecked) {
+                    showConfigurationUIElements(dialogServerUrlBinding, true);
+                    serverUrl.setText("");
+                    serverPassword.setText("");
+                    List<RealmCommunity> communities = mRealm.where(RealmCommunity.class).sort("weight", Sort.ASCENDING).findAll();
+                    List<RealmCommunity> nonEmptyCommunities = new ArrayList<>();
+                    for (RealmCommunity community : communities) {
+                        if (community.isValid() && !TextUtils.isEmpty(community.getName())) {
+                            nonEmptyCommunities.add(community);
+                        }
+                    }
+                    dialogServerUrlBinding.spnCloud.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, nonEmptyCommunities));
+
+                    dialogServerUrlBinding.spnCloud.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                        @Override
+                        public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                            onChangeServerUrl();
+                        }
+
+                        @Override
+                        public void onNothingSelected(AdapterView<?> adapterView) {
+
+                        }
+                    });
+
+                    dialogServerUrlBinding.switchServerUrl.setOnCheckedChangeListener((compounButton, b) -> {
+                        settings.edit().putBoolean("switchCloudUrl", b).commit();
+                        dialogServerUrlBinding.spnCloud.setVisibility(b ? View.VISIBLE : View.GONE);
+                        setUrlAndPin(dialogServerUrlBinding.switchServerUrl.isChecked());
+                        Log.d("checked", String.valueOf(dialogServerUrlBinding.switchServerUrl.isChecked()));
+                    });
+                    serverUrl.addTextChangedListener(new MyTextWatcher(serverUrl));
+                    dialogServerUrlBinding.deviceName.setText(getCustomDeviceName());
+                    dialogServerUrlBinding.switchServerUrl.setChecked(settings.getBoolean("switchCloudUrl", false));
+                    setUrlAndPin(settings.getBoolean("switchCloudUrl", false));
+                    protocol_semantics();
+                } else {
+                    showConfigurationUIElements(dialogServerUrlBinding, false);
+                    serverUrl.setText("planet.learning.ole.org");
+                    serverPassword.setText("1983");
+                    serverUrl.setEnabled(false);
+                    serverPassword.setEnabled(false);
+                }
             });
-            serverUrl.addTextChangedListener(new MyTextWatcher(serverUrl));
-            dialogServerUrlBinding.deviceName.setText(getCustomDeviceName());
-            dialogServerUrlBinding.switchServerUrl.setChecked(settings.getBoolean("switchCloudUrl", false));
-            setUrlAndPin(settings.getBoolean("switchCloudUrl", false));
-            protocol_semantics();
+
+            MaterialDialog dialog = builder.build();
+            positiveAction = dialog.getActionButton(DialogAction.POSITIVE);
+
             dialog.show();
             sync(dialog);
         } finally {
-            if (sRealm != null && !sRealm.isClosed()) {
-                sRealm.close();
+            if (mRealm != null && !mRealm.isClosed()) {
+                mRealm.close();
             }
         }
+    }
+
+    private void showConfigurationUIElements(DialogServerUrlBinding binding, boolean show) {
+        binding.radioProtocol.setVisibility(show ? View.VISIBLE : View.GONE);
+        binding.switchServerUrl.setVisibility(show ? View.VISIBLE : View.GONE);
+        binding.ltProtocol.setVisibility(show ? View.VISIBLE : View.GONE);
+        binding.ltIntervalLabel.setVisibility(show ? View.VISIBLE : View.GONE);
+        binding.ltSyncSwitch.setVisibility(show ? View.VISIBLE : View.GONE);
+        binding.ltDeviceName.setVisibility(show ? View.VISIBLE : View.GONE);
     }
 
     private void onChangeServerUrl() {
