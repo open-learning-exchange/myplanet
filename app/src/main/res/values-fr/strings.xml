@@ -959,5 +959,6 @@
     <string name="video_player">lecteur vidéo</string>
     <string name="progress_bar">barre de progression</string>
     <string name="web_view">vue web</string>
+    <string name="invalid_configuration">Configurations de serveur invalides</string>
 
 </resources>

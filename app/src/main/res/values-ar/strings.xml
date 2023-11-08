@@ -954,5 +954,6 @@
     <string name="video_player">مشغل الفيديو</string>
     <string name="progress_bar">شريط التقدم</string>
     <string name="web_view">عرض الويب</string>
+    <string name="invalid_configuration">تكوينات الخادم غير صالحة</string>
 
 </resources>
