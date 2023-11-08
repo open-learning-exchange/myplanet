@@ -396,14 +396,15 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
             syncIconDrawable.stop();
             syncIconDrawable.selectDrawable(0);
             syncIcon.invalidateDrawable(syncIconDrawable);
+
+            DialogUtils.showSnack(findViewById(android.R.id.content), getString(R.string.sync_completed));
+            showTeamList();
+
+            if (settings.getBoolean("isChild", false)) {
+                setUpChildMode();
+            }
+
+            NotificationUtil.cancellAll(this);
         });
-        DialogUtils.showSnack(findViewById(android.R.id.content), getString(R.string.sync_completed));
-        showTeamList();
-
-        if (settings.getBoolean("isChild", false)) {
-            runOnUiThread(() -> setUpChildMode());
-        }
-
-        NotificationUtil.cancellAll(this);
     }
 }

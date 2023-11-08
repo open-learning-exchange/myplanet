@@ -20,6 +20,44 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
 
+            <ImageView
+                android:id="@+id/syncIcon"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_alignParentLeft="true"
+                android:layout_marginTop="@dimen/_10dp"
+                android:background="@drawable/file_upload_animation_login"
+                android:contentDescription="@string/sync"
+                android:scaleType="fitCenter"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <TextView
+                android:id="@+id/lblLastSyncDate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/_10dp"
+                android:padding="@dimen/padding_normal"
+                android:text="@string/dash_4"
+                android:textAlignment="center"
+                app:layout_constraintEnd_toStartOf="@+id/imgBtnSetting"
+                app:layout_constraintStart_toEndOf="@+id/syncIcon"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <ImageButton
+                android:id="@+id/imgBtnSetting"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentRight="true"
+                android:layout_marginTop="@dimen/_10dp"
+                android:background="@null"
+                android:contentDescription="@string/settings"
+                android:paddingTop="6dp"
+                android:paddingRight="10dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:srcCompat="@drawable/ic_settings_black_24dp" />
+
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -64,7 +102,7 @@
                     app:passwordToggleEnabled="true">
 
                     <EditText
-                        android:id="@+id/etPassword"
+                        android:id="@+id/input_password"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_centerHorizontal="true"
@@ -121,7 +159,6 @@
                     android:text="@string/become_a_member"
                     android:theme="@style/PrimaryFlatButton" />
 
-
                 <Button
                     android:id="@+id/btn_feedback"
                     android:layout_width="wrap_content"
@@ -132,6 +169,19 @@
                     android:text="@string/feedback"
                     android:theme="@style/PrimaryFlatButton" />
             </LinearLayout>
+
+            <Button
+                android:id="@+id/open_community"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="@dimen/padding_normal"
+                android:layout_marginEnd="10dp"
+                android:contentDescription="@string/open_community"
+                android:text="@string/open_community"
+                android:textSize="14sp"
+                android:theme="@style/PrimaryFlatButton"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
         </androidx.constraintlayout.widget.ConstraintLayout>
 
         <LinearLayout
@@ -161,17 +211,33 @@
                     app:srcCompat="@drawable/ole_logo" />
 
                 <TextView
-                    android:id="@+id/usersTitle"
+                    android:id="@+id/textView"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="20dp"
-                    android:layout_marginTop="15dp"
-                    android:text="Users"
-                    android:textColor="@color/md_white_1000"
-                    android:textSize="18sp"
+                    android:contentDescription="@string/system_name"
+                    android:text="@string/system_name"
+                    android:layout_marginTop="@dimen/_10dp"
+                    android:textAlignment="center"
+                    android:textColor="@android:color/white"
+                    android:textSize="24sp"
                     android:textStyle="bold"
+                    app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/logoImageView" />
+
+                <TextView
+                    android:id="@+id/lblVersion"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="5dp"
+                    android:contentDescription="@string/app_version"
+                    android:text="@string/app_version"
+                    android:textAlignment="center"
+                    android:textColor="@android:color/white"
+                    android:textSize="12sp"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/textView" />
 
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/recyclerView"
@@ -180,11 +246,9 @@
                     android:layout_marginStart="20dp"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/usersTitle" />
+                    app:layout_constraintTop_toBottomOf="@+id/lblVersion" />
             </androidx.constraintlayout.widget.ConstraintLayout>
         </LinearLayout>
 
     </LinearLayout>
-
-
 </androidx.constraintlayout.widget.ConstraintLayout>
