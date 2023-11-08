@@ -1049,5 +1049,6 @@
     <string name="video_player">video player</string>
     <string name="progress_bar">progress bar</string>
     <string name="web_view">web view</string>
+    <string name="invalid_configuration">Invalid server configurations</string>
 
 </resources>
