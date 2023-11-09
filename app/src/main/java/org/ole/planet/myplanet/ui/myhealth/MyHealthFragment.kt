@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.myhealth
 
-import android.content.DialogInterface
 import android.content.Intent
 import android.os.Bundle
 import android.os.CountDownTimer
@@ -10,9 +9,12 @@ import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.*
+import android.widget.AdapterView
 import android.widget.AdapterView.OnItemClickListener
 import android.widget.AdapterView.OnItemSelectedListener
+import android.widget.Button
+import android.widget.EditText
+import android.widget.ListView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatSpinner
 import androidx.fragment.app.Fragment
@@ -22,7 +24,6 @@ import com.google.gson.Gson
 import io.realm.Case
 import io.realm.Realm
 import io.realm.Sort
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
@@ -32,7 +33,6 @@ import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmMyHealthPojo
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.ui.dashboard.BaseDashboardFragment
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.Utilities
@@ -40,11 +40,11 @@ import org.ole.planet.myplanet.utilities.Utilities
 /**
  * A simple [Fragment] subclass.
  */
-class MyHealthFragment : BaseDashboardFragment() {
+class MyHealthFragment : Fragment() {
     lateinit var fragmentVitalSignBinding : FragmentVitalSignBinding
     lateinit var alertMyPersonalBinding: AlertMyPersonalBinding
     lateinit var alertHealthListBinding: AlertHealthListBinding
-//    var profileDbHandler: UserProfileDbHandler? = null
+    var profileDbHandler: UserProfileDbHandler? = null
     var userId: String? = null
     var mRealm: Realm? = null
     var userModel: RealmUserModel? = null
@@ -84,15 +84,6 @@ class MyHealthFragment : BaseDashboardFragment() {
         }
         fragmentVitalSignBinding.fabAddMember.setOnClickListener {
             startActivity(Intent(activity, BecomeMemberActivity::class.java))
-        }
-
-        if (!model.id.startsWith("guest") && TextUtils.isEmpty(model.key) && MainApplication.showHealthDialog) {
-            AlertDialog.Builder(requireActivity())
-                .setMessage(getString(R.string.health_record_not_available_sync_health_data))
-                .setPositiveButton(getString(R.string.sync)) { _: DialogInterface?, _: Int ->
-                    syncKeyId()
-                    MainApplication.showHealthDialog = false
-                }.setNegativeButton(getString(R.string.cancel), null).show()
         }
     }
 
