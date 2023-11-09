@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.userprofile
+package org.ole.planet.myplanet.ui.sync
 
 import android.Manifest
 import android.content.DialogInterface
@@ -14,14 +14,13 @@ import android.text.TextUtils
 import android.text.TextWatcher
 import android.text.method.PasswordTransformationMethod
 import android.util.Log
-import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.inputmethod.EditorInfo
 import android.webkit.URLUtil
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.widget.CompoundButton
 import android.widget.EditText
 import android.widget.RadioGroup
 import android.widget.Spinner
@@ -42,7 +41,7 @@ import org.ole.planet.myplanet.databinding.ActivityUsersLoginBinding
 import org.ole.planet.myplanet.databinding.AlertGuestLoginBinding
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.databinding.LayoutChildLoginBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.databinding.LayoutUserListBinding
 import org.ole.planet.myplanet.datamanager.ManagerSync
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.datamanager.Service.CheckVersionCallback
@@ -56,10 +55,11 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
-import org.ole.planet.myplanet.ui.sync.SyncActivity
+import org.ole.planet.myplanet.ui.team.AdapterTeam.OnUserSelectedListener
+import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
+import org.ole.planet.myplanet.ui.userprofile.TeamListAdapter
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.DialogUtils
-import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
@@ -70,74 +70,66 @@ import java.util.Locale
 import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
 
-class UsersLoginActivity : SyncActivity(), CheckVersionCallback, TeamListAdapter.OnItemClickListener{
+class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedListener, TeamListAdapter.OnItemClickListener {
     private lateinit var activityUsersLoginBinding: ActivityUsersLoginBinding
-    private lateinit var mRealm: Realm
-    lateinit var cal_today: Calendar
-    lateinit var cal_last_Sync: Calendar
-    lateinit var serverUrl: EditText
-    lateinit var serverUrlProtocol:EditText
-    lateinit var serverPassword: EditText
-    private var processedUrl: String? = null
-    lateinit var protocol_checkin: RadioGroup
-    lateinit var positiveAction: View
-    var isSync: Boolean = false
-    var forceSync: Boolean = false
-    var guest: Boolean = false
-    var defaultPref: SharedPreferences? = null
-    lateinit var service: Service
-    lateinit var spnCloud: Spinner
-
-    var prefData: SharedPrefManager? = null
-    private var profileDbHandler: UserProfileDbHandler? = null
-
+    private lateinit var serverUrl: EditText
+    private lateinit var serverUrlProtocol: EditText
+    private lateinit var serverPassword: EditText
+    private lateinit var processedUrl: String
+    private lateinit var protocolCheckin: RadioGroup
+    private lateinit var positiveAction: View
+    private var isSync = false
+    private var forceSync = false
+    private var guest = false
+    private lateinit var defaultPref: SharedPreferences
+    private lateinit var service: Service
+    private lateinit var spnCloud: Spinner
+    private lateinit var prefData: SharedPrefManager
+    private lateinit var profileDbHandler: UserProfileDbHandler
     var users: List<RealmUserModel>? = null
     var mAdapter: TeamListAdapter? = null
+    private lateinit var cal_today: Calendar
+    private lateinit var cal_last_Sync: Calendar
 
-    //TODO: remove
-    lateinit var inputName: EditText
+//    private var tvAvailableSpace: TextView? = null
+//    private var previouslyLoggedIn: TextView? = null
+//    private var customDeviceName: TextView? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         activityUsersLoginBinding = ActivityUsersLoginBinding.inflate(layoutInflater)
         setContentView(activityUsersLoginBinding.root)
 
-        mRealm = DatabaseService(this).realmInstance
         prefData = SharedPrefManager(this)
         profileDbHandler = UserProfileDbHandler(this)
-        service = Service(this)
-        defaultPref = PreferenceManager.getDefaultSharedPreferences(this)
 
-        syncIcon = activityUsersLoginBinding.syncIcon
-        getTeamMembers()
 //        tvAvailableSpace!!.text = FileUtils.getAvailableOverTotalMemoryFormattedString()
         changeLogoColor()
+        service = Service(this)
+        defaultPref = PreferenceManager.getDefaultSharedPreferences(this)
         declareElements()
         declareMoreElements()
         showWifiDialog()
         registerReceiver()
-
         forceSync = intent.getBooleanExtra("forceSync", false)
         processedUrl = Utilities.getUrl()
         if (forceSync) {
             isSync = false
         }
-
         if (intent.hasExtra("versionInfo")) {
             onUpdateAvailable(
-                intent.getSerializableExtra("versionInfo") as MyPlanet?,
+                (intent.getSerializableExtra("versionInfo") as MyPlanet?)!!,
                 intent.getBooleanExtra("cancelable", false)
             )
         } else {
             service.checkVersion(this, settings)
         }
         checkUsagesPermission()
+        setUpChildMode()
         forceSyncTrigger()
-
         if (Utilities.getUrl().isNotEmpty()) {
             activityUsersLoginBinding.openCommunity.visibility = View.VISIBLE
             activityUsersLoginBinding.openCommunity.setOnClickListener {
-//                inputName!!.setText("")
                 HomeCommunityDialogFragment().show(supportFragmentManager, "")
             }
             HomeCommunityDialogFragment().show(supportFragmentManager, "")
@@ -145,17 +137,14 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, TeamListAdapter
             activityUsersLoginBinding.openCommunity.visibility = View.GONE
         }
         activityUsersLoginBinding.btnFeedback.setOnClickListener {
-//            inputName!!.setText("")
             FeedbackFragment().show(supportFragmentManager, "")
         }
-
-//        activityUsersLoginBinding.previouslyLoggedIn.setOnClickListener { showUserList() }
-
+//        previouslyLoggedIn!!.setOnClickListener { showUserList() }
         val guest = intent.getBooleanExtra("guest", false)
         val username = intent.getStringExtra("username")
 
         if (guest) {
-            val existingUsers = prefData!!.getSAVEDUSERS()
+            val existingUsers = prefData.getSAVEDUSERS()
 
             var newUserExists = false
 
@@ -167,63 +156,64 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, TeamListAdapter
             }
 
             if (newUserExists) {
-                val iterator = existingUsers.iterator()
+                val iterator: MutableIterator<User> = existingUsers.iterator() as MutableIterator<User>
                 while (iterator.hasNext()) {
                     val user = iterator.next()
                     if (user.name == username) {
                         iterator.remove()
                     }
                 }
-                prefData!!.setSAVEDUSERS(existingUsers)
+                prefData.setSAVEDUSERS(existingUsers)
             }
         }
+
+
+        getTeamMembers()
     }
 
-//    private fun showUserList() {
-//        val layoutUserListBinding: LayoutUserListBinding = LayoutUserListBinding.inflate(LayoutInflater.from(this))
-//        val view: View = layoutUserListBinding.root
-//        val builder = AlertDialog.Builder(this)
-//        builder.setTitle(R.string.select_user_to_login)
-//            .setView(view)
-//            .setNegativeButton(R.string.dismiss, null)
-//        val existingUsers = prefData!!.getSAVEDUSERS()
-//        val adapter = UserListAdapter(this, existingUsers)
-//        adapter.setOnItemClickListener(object : UserListAdapter.OnItemClickListener {
-//            override fun onItemClickGuest(name: String) {
-//                val model =
-//                    mRealm.copyFromRealm(RealmUserModel.createGuestUser(name, mRealm, settings))
-//                if (model == null) {
-//                    Utilities.toast(this@UsersLoginActivity, getString(R.string.unable_to_login))
-//                } else {
-//                    saveUserInfoPref(settings, "", model)
-//                    onLogin()
-//                }
-//            }
-//
-//            override fun onItemClickMember(name: String, password: String) {
-//                submitForm(name, password)
-//            }
-//        })
-//        layoutUserListBinding.listUser.setAdapter(adapter)
-//        layoutUserListBinding.etSearch.addTextChangedListener(object : TextWatcher {
-//            override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
-//            override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {
-//                adapter.filter.filter(charSequence)
-//            }
-//
-//            override fun afterTextChanged(editable: Editable) {}
-//        })
-//        val dialog = builder.create()
-//        dialog.show()
-//    }
+    private fun showUserList() {
+        val layoutUserListBinding = LayoutUserListBinding.inflate(LayoutInflater.from(this))
+        val view: View = layoutUserListBinding.root
+        val builder = AlertDialog.Builder(this@UsersLoginActivity)
+        builder.setTitle(R.string.select_user_to_login)
+            .setView(view)
+            .setNegativeButton(R.string.dismiss, null)
+        val existingUsers = prefData.getSAVEDUSERS()
+        val adapter = UserListAdapter(this@UsersLoginActivity, existingUsers)
+        adapter.setOnItemClickListener(object : UserListAdapter.OnItemClickListener {
+            override fun onItemClickGuest(name: String) {
+                val model = mRealm.copyFromRealm(RealmUserModel.createGuestUser(name, mRealm, settings))
+                if (model == null) {
+                    Utilities.toast(this@UsersLoginActivity, getString(R.string.unable_to_login))
+                } else {
+                    saveUserInfoPref(settings, "", model)
+                    onLogin()
+                }
+            }
+
+            override fun onItemClickMember(name: String, password: String) {
+                submitForm(name, password)
+            }
+        })
+        layoutUserListBinding.listUser.adapter = adapter
+        layoutUserListBinding.etSearch.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
+            override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {
+                adapter.filter.filter(charSequence)
+            }
+
+            override fun afterTextChanged(editable: Editable) {}
+        })
+        val dialog = builder.create()
+        dialog.show()
+    }
 
     private fun forceSyncTrigger(): Boolean {
-        activityUsersLoginBinding.lblLastSyncDate.text = getString(R.string.last_sync) + Utilities.getRelativeTime(settings.getLong(getString(R.string.last_syncs), 0)) + " >>"
-        if (Constants.autoSynFeature(Constants.KEY_AUTOSYNC_, applicationContext) &&
-            Constants.autoSynFeature(Constants.KEY_AUTOSYNC_WEEKLY, applicationContext)) {
+        lblLastSyncDate = activityUsersLoginBinding.lblLastSyncDate
+        lblLastSyncDate.text = getString(R.string.last_sync) + Utilities.getRelativeTime(settings.getLong(getString(R.string.last_syncs), 0)) + " >>"
+        if (Constants.autoSynFeature(Constants.KEY_AUTOSYNC_, applicationContext) && Constants.autoSynFeature(Constants.KEY_AUTOSYNC_WEEKLY, applicationContext)) {
             return checkForceSync(7)
-        } else if (Constants.autoSynFeature(Constants.KEY_AUTOSYNC_, applicationContext)
-            && Constants.autoSynFeature(Constants.KEY_AUTOSYNC_MONTHLY, applicationContext)) {
+        } else if (Constants.autoSynFeature(Constants.KEY_AUTOSYNC_, applicationContext) && Constants.autoSynFeature(Constants.KEY_AUTOSYNC_MONTHLY, applicationContext)) {
             return checkForceSync(30)
         }
         return false
@@ -235,23 +225,23 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, TeamListAdapter
         }
     }
 
-    fun checkForceSync(maxDays: Int): Boolean {
+    private fun checkForceSync(maxDays: Int): Boolean {
         cal_today = Calendar.getInstance(Locale.ENGLISH)
         cal_last_Sync = Calendar.getInstance(Locale.ENGLISH)
-        cal_last_Sync.timeInMillis = settings.getLong("LastSync", 0)
-        cal_today.timeInMillis = Date().time
-        val msDiff = Calendar.getInstance().timeInMillis - cal_last_Sync.timeInMillis
+        cal_last_Sync.setTimeInMillis(settings.getLong("LastSync", 0))
+        cal_today.setTimeInMillis(Date().time)
+        val msDiff = Calendar.getInstance().timeInMillis - cal_last_Sync.getTimeInMillis()
         val daysDiff = TimeUnit.MILLISECONDS.toDays(msDiff)
         return if (daysDiff >= maxDays) {
             Log.e("Sync Date ", "Expired - ")
             val alertDialogBuilder = AlertDialog.Builder(this)
-            alertDialogBuilder.setMessage(getString(R.string.it_has_been_more_than) + (daysDiff - 1) +
-                    getString(R.string.days_since_you_last_synced_this_device) +
-                    getString(R.string.connect_it_to_the_server_over_wifi_and_sync_it_to_reactivate_this_tablet)
+            alertDialogBuilder.setMessage(
+                getString(R.string.it_has_been_more_than) + (daysDiff - 1) + getString(
+                    R.string.days_since_you_last_synced_this_device
+                ) + getString(R.string.connect_it_to_the_server_over_wifi_and_sync_it_to_reactivate_this_tablet)
             )
-            alertDialogBuilder.setPositiveButton(R.string.okay) { _, _ ->
-                Toast.makeText(applicationContext, getString(R.string.connect_to_the_server_over_wifi_and_sync_your_device_to_continue),
-                    Toast.LENGTH_LONG).show()
+            alertDialogBuilder.setPositiveButton(R.string.okay) { _: DialogInterface?, _: Int ->
+                Toast.makeText(applicationContext, getString(R.string.connect_to_the_server_over_wifi_and_sync_your_device_to_continue), Toast.LENGTH_LONG).show()
             }
             alertDialogBuilder.show()
             true
@@ -261,36 +251,34 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, TeamListAdapter
         }
     }
 
-    fun declareElements() {
-        if (!defaultPref!!.contains("beta_addImageToMessage")) {
-            defaultPref!!.edit().putBoolean("beta_addImageToMessage", true).apply()
+    private fun declareElements() {
+        if (!defaultPref.contains("beta_addImageToMessage")) {
+            defaultPref.edit().putBoolean("beta_addImageToMessage", true).apply()
         }
-//        activityUsersLoginBinding.customDeviceName.setText(getCustomDeviceName())
+//        customDeviceName!!.text = getCustomDeviceName()
         activityUsersLoginBinding.btnSignin.setOnClickListener {
-            if (TextUtils.isEmpty(inputName.text.toString())) {
-                inputName.error = getString(R.string.err_msg_name)
-            } else if (TextUtils.isEmpty(activityUsersLoginBinding.inputPassword.text.toString())) {
+//            if (TextUtils.isEmpty(activityUsersLoginBinding.userName!!.text.toString())) {
+//                activityUsersLoginBinding.userName!!.error = getString(R.string.err_msg_name)
+//            } else
+            if (TextUtils.isEmpty(activityUsersLoginBinding.inputPassword.text.toString())) {
                 activityUsersLoginBinding.inputPassword.error = getString(R.string.err_msg_password)
             } else {
-                submitForm(inputName.text.toString(), activityUsersLoginBinding.inputPassword.text.toString())
+                submitForm(activityUsersLoginBinding.userName!!.text.toString(), activityUsersLoginBinding.inputPassword!!.text.toString())
             }
         }
         if (!settings.contains("serverProtocol")) settings.edit().putString("serverProtocol", "http://").apply()
         activityUsersLoginBinding.becomeMember.setOnClickListener {
-//            inputName!!.setText("")
             becomeAMember()
         }
         activityUsersLoginBinding.imgBtnSetting.setOnClickListener {
-//            inputName!!.setText("")
             settingDialog()
         }
         activityUsersLoginBinding.btnGuestLogin.setOnClickListener {
-//            inputName!!.setText("")
             showGuestLoginDialog()
         }
 //        switchChildMode!!.isChecked = settings.getBoolean("isChild", false)
-//        switchChildMode.setOnCheckedChangeListener { _: CompoundButton?, b: Boolean ->
-//            inputName!!.setText("")
+//        switchChildMode!!.setOnCheckedChangeListener { _: CompoundButton?, b: Boolean ->
+//
 //            settings.edit().putBoolean("isChild", b).apply()
 //            recreate()
 //        }
@@ -310,7 +298,7 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, TeamListAdapter
             mRealm = Realm.getDefaultInstance()
             mRealm.refresh()
             editor = settings.edit()
-            val alertGuestLoginBinding: AlertGuestLoginBinding = AlertGuestLoginBinding.inflate(LayoutInflater.from(this))
+            val alertGuestLoginBinding = AlertGuestLoginBinding.inflate(LayoutInflater.from(this))
             val v: View = alertGuestLoginBinding.root
             alertGuestLoginBinding.etUserName.addTextChangedListener(object : TextWatcher {
                 override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
@@ -333,9 +321,7 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, TeamListAdapter
                     val matcher = pattern.matcher(input)
                     hasSpecialCharacters = matcher.matches()
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                        hasDiacriticCharacters = !normalizedText.codePoints().allMatch { codePoint: Int ->
-                            Character.isLetterOrDigit(codePoint) || codePoint == '.'.code || codePoint == '-'.code || codePoint == '_'.code
-                        }
+                        hasDiacriticCharacters = !normalizedText.codePoints().allMatch { codePoint: Int -> Character.isLetterOrDigit(codePoint) || codePoint == '.'.code || codePoint == '-'.code || codePoint == '_'.code }
                     }
                     if (!Character.isDigit(firstChar) && !Character.isLetter(firstChar)) {
                         alertGuestLoginBinding.etUserName.error = getString(R.string.must_start_with_letter_or_number)
@@ -367,7 +353,7 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, TeamListAdapter
                     alertDialogOkay(getString(R.string.this_device_not_configured_properly_please_check_and_sync))
                     return@setOnClickListener
                 }
-                val username: String = alertGuestLoginBinding.etUserName.getText().toString().trim()
+                val username = alertGuestLoginBinding.etUserName.text.toString().trim { it <= ' ' }
                 val firstChar = if (username.isEmpty()) null else username[0]
                 var hasInvalidCharacters = false
                 var hasDiacriticCharacters = false
@@ -392,9 +378,7 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, TeamListAdapter
                         }
                         hasSpecialCharacters = matcher.matches()
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                            hasDiacriticCharacters = !normalizedText.codePoints().allMatch { codePoint: Int ->
-                                Character.isLetterOrDigit(codePoint) || codePoint == '.'.code || codePoint == '-'.code || codePoint == '_'.code
-                            }
+                            hasDiacriticCharacters = !normalizedText.codePoints().allMatch { codePoint: Int -> Character.isLetterOrDigit(codePoint) || codePoint == '.'.code || codePoint == '-'.code || codePoint == '_'.code }
                         }
                     }
                     if (hasInvalidCharacters || hasDiacriticCharacters || hasSpecialCharacters) {
@@ -413,9 +397,7 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, TeamListAdapter
                             showUserAlreadyMemberDialog(username)
                         }
                     } else {
-                        val model = mRealm.copyFromRealm(
-                            RealmUserModel.createGuestUser(username, mRealm, settings)
-                        )
+                        val model = mRealm.copyFromRealm(RealmUserModel.createGuestUser(username, mRealm, settings))
                         if (model == null) {
                             Utilities.toast(this@UsersLoginActivity, getString(R.string.unable_to_login))
                         } else {
@@ -462,7 +444,7 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, TeamListAdapter
         builder.setNegativeButton("Cancel") { dialog: DialogInterface, _: Int -> dialog.dismiss() }
         builder.setPositiveButton("login") { dialog: DialogInterface, _: Int ->
             dialog.dismiss()
-//            inputName!!.setText(username)
+//            activityUsersLoginBinding.userName!!.text = username
         }
         val dialog = builder.create()
         dialog.show()
@@ -476,59 +458,57 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, TeamListAdapter
             clearInternalStorage()
         }
         Service(this).isPlanetAvailable(object : PlanetAvailableListener {
-            override fun isAvailable() {
-                Service(this@UsersLoginActivity).checkVersion(this@UsersLoginActivity, settings)
-            }
+            override fun isAvailable() { Service(this@UsersLoginActivity).checkVersion(this@UsersLoginActivity, settings) }
 
             override fun notAvailable() {
-                if (!isFinishing) {
-                    DialogUtils.showAlert(this@UsersLoginActivity, "Error", getString(R.string.planet_server_not_reachable))
-                }
+                if (!isFinishing) { DialogUtils.showAlert(this@UsersLoginActivity, "Error", getString(R.string.planet_server_not_reachable)) }
             }
         })
     }
 
-    fun declareMoreElements() {
+    private fun declareMoreElements() {
+        syncIcon = activityUsersLoginBinding.syncIcon
         try {
             mRealm = Realm.getDefaultInstance()
             syncIcon.setImageDrawable(resources.getDrawable(R.drawable.login_file_upload_animation))
             syncIcon.scaleType
             syncIconDrawable = syncIcon.drawable as AnimationDrawable
-            syncIcon.setOnClickListener { v: View? ->
+            syncIcon.setOnClickListener {
                 syncIconDrawable.start()
                 isSync = false
                 forceSync = true
-                service!!.checkVersion(this, settings)
+                service.checkVersion(this, settings)
             }
             declareHideKeyboardElements()
             activityUsersLoginBinding.lblVersion.text = resources.getText(R.string.version).toString() + " " + resources.getText(R.string.app_version)
-//            inputName!!.addTextChangedListener(MyTextWatcher(inputName))
-            activityUsersLoginBinding.inputPassword.addTextChangedListener(MyTextWatcher(activityUsersLoginBinding.inputPassword))
-            activityUsersLoginBinding.inputPassword.setOnEditorActionListener { _: TextView?, actionId: Int, event: KeyEvent? ->
-                if (actionId == EditorInfo.IME_ACTION_DONE || event != null && event.action == KeyEvent.ACTION_DOWN && event.keyCode == KeyEvent.KEYCODE_ENTER) {
-                    activityUsersLoginBinding.btnSignin.performClick()
-                    return@setOnEditorActionListener true
-                }
-                false
-            }
-            setUplanguageButton()
-            if (defaultPref!!.getBoolean("saveUsernameAndPassword", false)) {
-//                inputName.setText(settings.getString(getString(R.string.login_user), ""))
+//            activityUsersLoginBinding.userName!!.addTextChangedListener(MyTextWatcher(activityUsersLoginBinding.userName!!))
+//            activityUsersLoginBinding.inputPassword!!.addTextChangedListener(MyTextWatcher(activityUsersLoginBinding.inputPassword!!))
+//            activityUsersLoginBinding.inputPassword!!.setOnEditorActionListener { _: TextView?, actionId: Int, event: KeyEvent? ->
+//                if (actionId == EditorInfo.IME_ACTION_DONE || event != null && event.action == KeyEvent.ACTION_DOWN && event.keyCode == KeyEvent.KEYCODE_ENTER) {
+//                    activityUsersLoginBinding.btnSignin!!.performClick()
+//                    return@setOnEditorActionListener true
+//                }
+//                false
+//            }
+
+//            setUplanguageButton()
+            if (defaultPref.getBoolean("saveUsernameAndPassword", false)) {
+                activityUsersLoginBinding.userName!!.text = settings.getString(getString(R.string.login_user), "")
                 activityUsersLoginBinding.inputPassword.setText(settings.getString(getString(R.string.login_password), ""))
             }
             if (NetworkUtils.isNetworkConnected()) {
-                service!!.syncPlanetServers(mRealm) { success: String? ->
+                service.syncPlanetServers(mRealm) { success: String? ->
                     Utilities.toast(this@UsersLoginActivity, success)
                 }
             }
-//            inputName.addTextChangedListener(object : TextWatcher {
+//            activityUsersLoginBinding.userName!!.addTextChangedListener(object : TextWatcher {
 //                override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
 //
 //                override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
 //                    val lowercaseText = s.toString().lowercase()
 //                    if (s.toString() != lowercaseText) {
-//                        inputName.setText(lowercaseText)
-//                        inputName.setSelection(lowercaseText.length)
+//                        activityUsersLoginBinding.userName!!.text = lowercaseText
+//                        activityUsersLoginBinding.userName!!.setSelection(lowercaseText.length)
 //                    }
 //                }
 //
@@ -541,25 +521,29 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, TeamListAdapter
         }
     }
 
-    private fun setUplanguageButton() {
-        val languageKey = resources.getStringArray(R.array.language_keys)
-        val languages = resources.getStringArray(R.array.language)
-        val pref = PreferenceManager.getDefaultSharedPreferences(this)
-        val index = listOf(*languageKey).indexOf(pref.getString("app_language", "en"))
-        btnLang!!.text = languages[index]
-        btnLang!!.setOnClickListener {
-            AlertDialog.Builder(this).setTitle(R.string.select_language)
-                .setSingleChoiceItems(resources.getStringArray(R.array.language), index, null)
-                .setPositiveButton(R.string.ok) { dialog, _ ->
-                    dialog.dismiss()
-                    val selectedPosition = (dialog as AlertDialog).listView.checkedItemPosition
-                    val lang = languageKey[selectedPosition]
-                    LocaleHelper.setLocale(this@UsersLoginActivity, lang)
-                    recreate()
-                }.setNegativeButton(R.string.cancel, null).show()
-        }
-    }
+//    private fun setUplanguageButton() {
+//        val languageKey = resources.getStringArray(R.array.language_keys)
+//        val languages = resources.getStringArray(R.array.language)
+//        val pref = PreferenceManager.getDefaultSharedPreferences(this)
+//        val index = listOf(*languageKey).indexOf(pref.getString("app_language", "en"))
+//        btnLang!!.text = languages[index]
+//        btnLang!!.setOnClickListener {
+//            AlertDialog.Builder(this)
+//                .setTitle(R.string.select_language)
+//                .setSingleChoiceItems(resources.getStringArray(R.array.language), index, null)
+//                .setPositiveButton(R.string.ok) { dialog: DialogInterface, _: Int ->
+//                dialog.dismiss()
+//                val selectedPosition = (dialog as AlertDialog).listView.checkedItemPosition
+//                val lang = languageKey[selectedPosition]
+//                LocaleHelper.setLocale(this@UsersLoginActivity, lang)
+//                recreate()
+//            }.setNegativeButton(R.string.cancel, null).show()
+//        }
+//    }
 
+    /**
+     * Form  Validation
+     */
     private fun submitForm(name: String, password: String) {
         if (forceSyncTrigger()) {
             return
@@ -569,10 +553,9 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, TeamListAdapter
         editor.putString("loginUserPassword", password)
         val isLoggedIn = authenticateUser(settings, name, password, false)
         if (isLoggedIn) {
-            Toast.makeText(applicationContext, getString(R.string.thank_you), Toast.LENGTH_SHORT)
-                .show()
+            Toast.makeText(applicationContext, getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
             onLogin()
-            saveUsers(inputName!!.text.toString(), activityUsersLoginBinding.inputPassword.text.toString(), "member")
+            saveUsers(activityUsersLoginBinding.userName!!.text.toString(), activityUsersLoginBinding.inputPassword.text.toString(), "member")
         } else {
             ManagerSync.getInstance().login(name, password, object : SyncListener {
                 override fun onSyncStarted() {
@@ -587,7 +570,7 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, TeamListAdapter
                     if (log) {
                         Toast.makeText(applicationContext, getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
                         onLogin()
-                        saveUsers(inputName!!.text.toString(), activityUsersLoginBinding.inputPassword.text.toString(), "member")
+                        saveUsers(activityUsersLoginBinding.userName!!.text.toString(), activityUsersLoginBinding.inputPassword.text.toString(), "member")
                     } else {
                         alertDialogOkay(getString(R.string.err_msg_login))
                     }
@@ -607,48 +590,45 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, TeamListAdapter
     }
 
     private fun saveUsers(name: String, password: String, source: String) {
-        if (source == "guest") {
+        if (source === "guest") {
             val newUser = User("", name, password, "", "guest")
-            val existingUsers = ArrayList(prefData!!.getSAVEDUSERS())
-
+            val existingUsers: MutableList<User> = ArrayList(
+                prefData.getSAVEDUSERS()
+            )
             var newUserExists = false
-            for (user in existingUsers) {
-                if (user.name == newUser.name.trim()) {
+            for ((_, name1) in existingUsers) {
+                if (name1 == newUser.name.trim { it <= ' ' }) {
                     newUserExists = true
                     break
                 }
             }
-
             if (!newUserExists) {
                 existingUsers.add(newUser)
-                prefData!!.setSAVEDUSERS(existingUsers)
+                prefData.setSAVEDUSERS(existingUsers)
             }
-        } else if (source == "member") {
-            var userProfile = profileDbHandler!!.userModel.userImage
-            var fullName = profileDbHandler!!.userModel.fullName ?: ""
-
+        } else if (source === "member") {
+            var userProfile = profileDbHandler.userModel.userImage
+            var fullName = profileDbHandler.userModel.fullName
             if (userProfile == null) {
                 userProfile = ""
             }
-
-            if (fullName.trim().isEmpty()) {
-                fullName = profileDbHandler!!.userModel.name
+            if (fullName.trim { it <= ' ' }.isEmpty()) {
+                fullName = profileDbHandler.userModel.name
             }
-
             val newUser = User(fullName, name, password, userProfile, "member")
-            val existingUsers = ArrayList(prefData!!.getSAVEDUSERS())
-
+            val existingUsers: MutableList<User> = ArrayList(
+                prefData.getSAVEDUSERS()
+            )
             var newUserExists = false
-            for (user in existingUsers) {
-                if (user.fullName == newUser.fullName.trim()) {
+            for ((fullName1) in existingUsers) {
+                if (fullName1 == newUser.fullName.trim { it <= ' ' }) {
                     newUserExists = true
                     break
                 }
             }
-
             if (!newUserExists) {
                 existingUsers.add(newUser)
-                prefData!!.setSAVEDUSERS(existingUsers)
+                prefData.setSAVEDUSERS(existingUsers)
             }
         }
     }
@@ -657,62 +637,60 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, TeamListAdapter
         val handler = UserProfileDbHandler(this)
         handler.onLogin()
         handler.onDestory()
-        editor.putBoolean(Constants.KEY_LOGIN, true).commit()
+        editor.putBoolean(Constants.KEY_LOGIN, true).apply()
         openDashboard()
     }
 
-    fun settingDialog() {
+    private fun settingDialog() {
         var sRealm: Realm? = null
         try {
             sRealm = Realm.getDefaultInstance()
             val dialogServerUrlBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this))
-            val builder = MaterialDialog.Builder(this)
+            val builder = MaterialDialog.Builder(this@UsersLoginActivity)
             builder.title(R.string.action_settings)
                 .customView(dialogServerUrlBinding.root, true)
                 .positiveText(R.string.btn_sync)
                 .negativeText(R.string.btn_sync_cancel)
                 .neutralText(R.string.btn_sync_save)
-                .onPositive { dialog, _ -> continueSync(dialog) }
-                .onNeutral { dialog, _ -> saveConfigAndContinue(dialog) }
-
+                .onPositive { dialog: MaterialDialog, _: DialogAction? -> continueSync(dialog) }
+                .onNeutral { dialog: MaterialDialog?, _: DialogAction? ->
+                    saveConfigAndContinue(
+                        dialog
+                    )
+                }
             val dialog = builder.build()
             positiveAction = dialog.getActionButton(DialogAction.POSITIVE)
             spnCloud = dialogServerUrlBinding.spnCloud
-
-            val communities = sRealm.where(RealmCommunity::class.java).sort("weight", Sort.ASCENDING).findAll()
-            val nonEmptyCommunities = ArrayList<RealmCommunity>()
+            val communities: List<RealmCommunity> = sRealm.where(RealmCommunity::class.java).sort("weight", Sort.ASCENDING).findAll()
+            val nonEmptyCommunities: MutableList<RealmCommunity> = ArrayList()
             for (community in communities) {
-                if (community.isValid && community.name.isNotEmpty()) {
+                if (community.isValid && !TextUtils.isEmpty(community.name)) {
                     nonEmptyCommunities.add(community)
                 }
             }
             dialogServerUrlBinding.spnCloud.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, nonEmptyCommunities)
-
             dialogServerUrlBinding.spnCloud.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-                override fun onItemSelected(adapterView: AdapterView<*>?, view: View?, i: Int, l: Long) {
+                override fun onItemSelected(adapterView: AdapterView<*>?, view: View, i: Int, l: Long) {
                     onChangeServerUrl()
                 }
 
                 override fun onNothingSelected(adapterView: AdapterView<*>?) {}
             }
-
-            protocol_checkin = dialogServerUrlBinding.radioProtocol
+            protocolCheckin = dialogServerUrlBinding.radioProtocol
             serverUrl = dialogServerUrlBinding.inputServerUrl
             serverPassword = dialogServerUrlBinding.inputServerPassword
             serverUrlProtocol = dialogServerUrlBinding.inputServerUrlProtocol
-
-            dialogServerUrlBinding.switchServerUrl.setOnCheckedChangeListener { _, b ->
+            dialogServerUrlBinding.switchServerUrl.setOnCheckedChangeListener { _: CompoundButton?, b: Boolean ->
                 settings.edit().putBoolean("switchCloudUrl", b).apply()
                 dialogServerUrlBinding.spnCloud.visibility = if (b) View.VISIBLE else View.GONE
                 setUrlAndPin(dialogServerUrlBinding.switchServerUrl.isChecked)
                 Log.d("checked", dialogServerUrlBinding.switchServerUrl.isChecked.toString())
             }
-
             serverUrl.addTextChangedListener(MyTextWatcher(serverUrl))
-            dialogServerUrlBinding.deviceName.text = getCustomDeviceName()
+            dialogServerUrlBinding.deviceName.setText(getCustomDeviceName())
             dialogServerUrlBinding.switchServerUrl.isChecked = settings.getBoolean("switchCloudUrl", false)
             setUrlAndPin(settings.getBoolean("switchCloudUrl", false))
-            protocol_semantics()
+            protocolSemantics()
             dialog.show()
             sync(dialog)
         } finally {
@@ -725,12 +703,12 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, TeamListAdapter
     private fun onChangeServerUrl() {
         try {
             mRealm = Realm.getDefaultInstance()
-            val selected = spnCloud!!.selectedItem as RealmCommunity ?: return
+            val selected = spnCloud.selectedItem as RealmCommunity
             if (selected.isValid) {
-                serverUrl!!.setText(selected.localDomain)
-                protocol_checkin!!.check(R.id.radio_https)
+                serverUrl.setText(selected.localDomain)
+                protocolCheckin.check(R.id.radio_https)
                 settings.getString("serverProtocol", "https://")
-                serverPassword!!.transformationMethod = PasswordTransformationMethod.getInstance()
+                serverPassword.transformationMethod = PasswordTransformationMethod.getInstance()
                 serverPassword.setText(if (selected.weight == 0) "1983" else "")
                 serverPassword.isEnabled = selected.weight != 0
             }
@@ -746,47 +724,48 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, TeamListAdapter
             onChangeServerUrl()
         } else {
             serverUrl.setText(removeProtocol(settings.getString("serverURL", "")))
-            serverPassword!!.setText(settings.getString("serverPin", ""))
-            protocol_checkin!!.check(
-                if (TextUtils.equals(settings.getString("serverProtocol", ""), "http://")) R.id.radio_http else R.id.radio_https
+            serverPassword.setText(settings.getString("serverPin", ""))
+            protocolCheckin.check(
+                if (TextUtils.equals(settings.getString("serverProtocol", ""), "http://")) R.id.radio_http
+                else R.id.radio_https
             )
-            serverUrlProtocol!!.setText(settings.getString("serverProtocol", ""))
+            serverUrlProtocol.setText(settings.getString("serverProtocol", ""))
             serverPassword.transformationMethod = null
         }
-        serverUrl!!.isEnabled = !checked
-        serverPassword!!.isEnabled = !checked
+        serverUrl.isEnabled = !checked
+        serverPassword.isEnabled = !checked
         serverPassword.clearFocus()
         serverUrl.clearFocus()
-        protocol_checkin!!.isEnabled = !checked
+        protocolCheckin.isEnabled = !checked
     }
 
-    private fun protocol_semantics() {
-        settings.edit().putString("serverProtocol", serverUrlProtocol!!.text.toString()).commit()
-        protocol_checkin!!.setOnCheckedChangeListener { _: RadioGroup?, i: Int ->
+    private fun protocolSemantics() {
+        settings.edit().putString("serverProtocol", serverUrlProtocol.text.toString()).apply()
+        protocolCheckin.setOnCheckedChangeListener { _: RadioGroup?, i: Int ->
             when (i) {
-                R.id.radio_http -> serverUrlProtocol!!.setText(getString(R.string.http_protocol))
-                R.id.radio_https -> serverUrlProtocol!!.setText(getString(R.string.https_protocol))
+                R.id.radio_http -> serverUrlProtocol.setText(getString(R.string.http_protocol))
+                R.id.radio_https -> serverUrlProtocol.setText(getString(R.string.https_protocol))
             }
-            settings.edit().putString("serverProtocol", serverUrlProtocol!!.text.toString()).apply()
+            settings.edit().putString("serverProtocol", serverUrlProtocol.text.toString()).apply()
         }
     }
 
     override fun onSuccess(s: String) {
         Utilities.log("Sync completed ")
         if (progressDialog.isShowing && s.contains("Crash")) progressDialog.dismiss()
-        DialogUtils.showSnack(btnSignIn, s)
-        settings.edit().putLong("lastUsageUploaded", Date().time).commit()
+        DialogUtils.showSnack(activityUsersLoginBinding.btnSignin, s)
+        settings.edit().putLong("lastUsageUploaded", Date().time).apply()
 
         // Update last sync text
-        activityUsersLoginBinding.lblLastSyncDate.text = getString(R.string.last_sync) + Utilities.getRelativeTime(Date().time) + " >>"
+        lblLastSyncDate.text = getString(R.string.last_sync) + Utilities.getRelativeTime(Date().time) + " >>"
     }
 
-    override fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean) {
+    override fun onUpdateAvailable(info: MyPlanet, cancelable: Boolean) {
         try {
             mRealm = Realm.getDefaultInstance()
             val builder = DialogUtils.getUpdateDialog(this, info, progressDialog)
             if (cancelable || NetworkUtils.getCustomDeviceName(this).endsWith("###")) {
-                builder.setNegativeButton(R.string.update_later) { _, _ -> continueSyncProcess() }
+                builder.setNegativeButton(R.string.update_later) { _: DialogInterface?, _: Int -> continueSyncProcess() }
             } else {
                 mRealm.executeTransactionAsync { realm: Realm -> realm.deleteAll() }
             }
@@ -823,7 +802,7 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, TeamListAdapter
         }
     }
 
-    fun continueSyncProcess() {
+    private fun continueSyncProcess() {
         Utilities.log("Upload : Continue sync process")
         try {
             if (isSync) {
@@ -837,15 +816,14 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, TeamListAdapter
         }
     }
 
-    fun onSelectedUser(userModel: RealmUserModel) {
+    override fun onSelectedUser(userModel: RealmUserModel) {
         try {
             mRealm = Realm.getDefaultInstance()
-            val layoutChildLoginBinding: LayoutChildLoginBinding = LayoutChildLoginBinding.inflate(layoutInflater)
+            val layoutChildLoginBinding = LayoutChildLoginBinding.inflate(layoutInflater)
             AlertDialog.Builder(this).setView(layoutChildLoginBinding.root)
                 .setTitle(R.string.please_enter_your_password)
-                .setPositiveButton(R.string.login) { _, _ ->
-                    val password: String =
-                        layoutChildLoginBinding.etChildPassword.text.toString()
+                .setPositiveButton(R.string.login) { _: DialogInterface?, _: Int ->
+                    val password = layoutChildLoginBinding.etChildPassword.text.toString()
                     if (authenticateUser(settings, userModel.name, password, false)) {
                         Toast.makeText(applicationContext, getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
                         onLogin()
@@ -862,35 +840,24 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, TeamListAdapter
 
     override fun onDestroy() {
         super.onDestroy()
-        if (mRealm != null && !mRealm.isClosed) {
-            mRealm.close()
-        }
+        if (mRealm != null && !mRealm.isClosed) mRealm.close()
     }
 
-    fun removeProtocol(url: String): String {
+    private fun removeProtocol(url: String?): String {
         var url = url
-        url = url.replaceFirst(getString(R.string.https_protocol).toRegex(), "")
+        url = url!!.replaceFirst(getString(R.string.https_protocol).toRegex(), "")
         url = url.replaceFirst(getString(R.string.http_protocol).toRegex(), "")
         return url
     }
 
-    private class MyTextWatcher private constructor(private val view: View) : TextWatcher {
+    inner class MyTextWatcher(private val view: View) : TextWatcher {
         override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
         override fun onTextChanged(s: CharSequence, i: Int, i1: Int, i2: Int) {
-            val protocol: String = if (serverUrlProtocol == null) settings.getString("serverProtocol", "http://")
-            else serverUrlProtocol.getText().toString()
-            if (view.id == R.id.input_server_url) positiveAction.setEnabled(
-                s.toString().trim { it <= ' ' }.isNotEmpty() && URLUtil.isValidUrl(protocol + s.toString())
-            )
+            val protocol = if (serverUrlProtocol == null) settings.getString("serverProtocol", "http://") else serverUrlProtocol.text.toString()
+            if (view.id == R.id.input_server_url) positiveAction.isEnabled = s.toString().trim { it <= ' ' }.isNotEmpty() && URLUtil.isValidUrl(protocol + s.toString())
         }
 
-        override fun afterTextChanged(editable: Editable) {
-//            when (view.id) {
-//                R.id.input_name -> validateEditText(inputName, inputLayoutName, getString(R.string.err_msg_name))
-//                R.id.input_password -> validateEditText(inputPassword, inputLayoutPassword, getString(R.string.err_msg_password))
-//                else -> {}
-//            }
-        }
+        override fun afterTextChanged(editable: Editable) {}
     }
 
     fun getCustomDeviceName(): String? {
@@ -917,11 +884,13 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, TeamListAdapter
     }
 
     override fun onItemClick(user: RealmUserModel) {
-        Glide.with(this)
-            .load(user.userImage)
-            .placeholder(R.drawable.profile)
-            .error(R.drawable.profile)
-            .into(activityUsersLoginBinding.userProfile)
-        activityUsersLoginBinding.userNameTextView.text = user.name
+        activityUsersLoginBinding.userProfile.let {
+            Glide.with(this)
+                .load(user.userImage)
+                .placeholder(R.drawable.profile)
+                .error(R.drawable.profile)
+                .into(it)
+        }
+        activityUsersLoginBinding.userName.text = user.name
     }
 }

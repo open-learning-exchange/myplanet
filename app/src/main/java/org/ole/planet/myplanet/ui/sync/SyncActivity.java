@@ -1,22 +1,12 @@
 package org.ole.planet.myplanet.ui.sync;
 
 import android.app.ProgressDialog;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.drawable.AnimationDrawable;
 import android.os.Bundle;
-
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
-import androidx.recyclerview.widget.GridLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -24,23 +14,22 @@ import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
 
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.afollestad.materialdialogs.MaterialDialog;
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.SyncListener;
-import org.ole.planet.myplanet.databinding.LayoutUserListBinding;
 import org.ole.planet.myplanet.datamanager.ApiClient;
 import org.ole.planet.myplanet.datamanager.ApiInterface;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
-import org.ole.planet.myplanet.datamanager.Service;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.SyncManager;
 import org.ole.planet.myplanet.ui.team.AdapterTeam;
-import org.ole.planet.myplanet.ui.userprofile.UsersLoginActivity;
 import org.ole.planet.myplanet.utilities.AndroidDecrypter;
 import org.ole.planet.myplanet.utilities.DialogUtils;
 import org.ole.planet.myplanet.utilities.NotificationUtil;
@@ -136,51 +125,6 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
             }
         }
     }
-
-//    public void showTeamList() {
-//        try {
-//            mRealm = Realm.getDefaultInstance();
-//
-//            List<RealmMyTeam> teams = mRealm.where(RealmMyTeam.class).isEmpty("teamId").findAll();
-//
-//            if (teams.size() > 0) {
-//                AlertDialog.Builder builder = new AlertDialog.Builder(this);
-//                builder.setTitle("Select a Team");
-//
-//                Spinner teamSpinner = new Spinner(this);
-//                ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item);
-//                for (RealmMyTeam team : teams) {
-//                    if (team.isValid()) {
-//                        adapter.add(team.getName() + team.get_id());
-//                    }
-//                }
-//                adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-//                teamSpinner.setAdapter(adapter);
-//
-//                builder.setView(teamSpinner);
-//                builder.setPositiveButton("Proceed", (dialog, which) -> {
-//                    RealmMyTeam selectedTeam = (RealmMyTeam) teamSpinner.getSelectedItem();
-//                    if (selectedTeam != null) {
-//                        Log.d("Selected", String.valueOf(selectedTeam));
-//                        Intent intent = new Intent(this, UsersLoginActivity.class);
-//                        intent.putExtra("selectedTeamId", selectedTeam.get_id());
-//                        startActivity(intent);
-//                    }
-//                    dialog.dismiss();
-//                });
-//
-//                AlertDialog dialog = builder.create();
-//                dialog.show();
-//            } else {
-//                // Handle the case when there are no teams available
-//                // Update your UI accordingly
-//            }
-//        } finally {
-//            if (mRealm != null && !mRealm.isClosed()) {
-//                mRealm.close();
-//            }
-//        }
-//    }
 
     public void showTeamList() {
         try {
