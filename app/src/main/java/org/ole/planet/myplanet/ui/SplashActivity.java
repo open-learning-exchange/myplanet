@@ -10,6 +10,7 @@ import org.ole.planet.myplanet.databinding.ActivitySplashBinding;
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity;
 import org.ole.planet.myplanet.ui.sync.LoginActivity;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
+import org.ole.planet.myplanet.ui.sync.UsersLoginActivity;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.FileUtils;
 
@@ -34,12 +35,12 @@ public class SplashActivity extends AppCompatActivity {
             return;
         }
         if (settings.contains("isChild")) {
-            startActivity(new Intent(SplashActivity.this, LoginActivity.class));
+            startActivity(new Intent(SplashActivity.this, UsersLoginActivity.class));
             finish();
         }
         binding.getStarted.setOnClickListener(view -> {
             settings.edit().putBoolean("isChild", binding.childLogin.isChecked()).commit();
-            startActivity(new Intent(SplashActivity.this, LoginActivity.class));
+            startActivity(new Intent(SplashActivity.this, UsersLoginActivity.class));
         });
     }
 }

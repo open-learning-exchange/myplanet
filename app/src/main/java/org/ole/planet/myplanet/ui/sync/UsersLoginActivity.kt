@@ -24,7 +24,6 @@ import android.widget.CompoundButton
 import android.widget.EditText
 import android.widget.RadioGroup
 import android.widget.Spinner
-import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
@@ -60,9 +59,11 @@ import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.ui.userprofile.TeamListAdapter
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.DialogUtils
+import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
+import java.io.File
 import java.text.Normalizer
 import java.util.Calendar
 import java.util.Date
@@ -127,6 +128,7 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
         checkUsagesPermission()
         setUpChildMode()
         forceSyncTrigger()
+
         if (Utilities.getUrl().isNotEmpty()) {
             activityUsersLoginBinding.openCommunity.visibility = View.VISIBLE
             activityUsersLoginBinding.openCommunity.setOnClickListener {
@@ -140,14 +142,12 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
             FeedbackFragment().show(supportFragmentManager, "")
         }
 //        previouslyLoggedIn!!.setOnClickListener { showUserList() }
-        val guest = intent.getBooleanExtra("guest", false)
+        guest = intent.getBooleanExtra("guest", false)
         val username = intent.getStringExtra("username")
 
         if (guest) {
             val existingUsers = prefData.getSAVEDUSERS()
-
             var newUserExists = false
-
             for (user in existingUsers) {
                 if (user.name == username) {
                     newUserExists = true
@@ -166,8 +166,6 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
                 prefData.setSAVEDUSERS(existingUsers)
             }
         }
-
-
         getTeamMembers()
     }
 
@@ -228,9 +226,9 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
     private fun checkForceSync(maxDays: Int): Boolean {
         cal_today = Calendar.getInstance(Locale.ENGLISH)
         cal_last_Sync = Calendar.getInstance(Locale.ENGLISH)
-        cal_last_Sync.setTimeInMillis(settings.getLong("LastSync", 0))
-        cal_today.setTimeInMillis(Date().time)
-        val msDiff = Calendar.getInstance().timeInMillis - cal_last_Sync.getTimeInMillis()
+        cal_last_Sync.timeInMillis = settings.getLong("LastSync", 0)
+        cal_today.timeInMillis = Date().time
+        val msDiff = Calendar.getInstance().timeInMillis - cal_last_Sync.timeInMillis
         val daysDiff = TimeUnit.MILLISECONDS.toDays(msDiff)
         return if (daysDiff >= maxDays) {
             Log.e("Sync Date ", "Expired - ")
@@ -263,7 +261,7 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
             if (TextUtils.isEmpty(activityUsersLoginBinding.inputPassword.text.toString())) {
                 activityUsersLoginBinding.inputPassword.error = getString(R.string.err_msg_password)
             } else {
-                submitForm(activityUsersLoginBinding.userName!!.text.toString(), activityUsersLoginBinding.inputPassword!!.text.toString())
+                submitForm(activityUsersLoginBinding.userName.text.toString(), activityUsersLoginBinding.inputPassword!!.text.toString())
             }
         }
         if (!settings.contains("serverProtocol")) settings.edit().putString("serverProtocol", "http://").apply()
@@ -691,6 +689,7 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
             dialogServerUrlBinding.switchServerUrl.isChecked = settings.getBoolean("switchCloudUrl", false)
             setUrlAndPin(settings.getBoolean("switchCloudUrl", false))
             protocolSemantics()
+            dialog.setCancelable(false)
             dialog.show()
             sync(dialog)
         } finally {
@@ -884,13 +883,12 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
     }
 
     override fun onItemClick(user: RealmUserModel) {
-        activityUsersLoginBinding.userProfile.let {
-            Glide.with(this)
-                .load(user.userImage)
-                .placeholder(R.drawable.profile)
-                .error(R.drawable.profile)
-                .into(it)
-        }
+        Glide.with(this)
+            .load(user.userImage)
+            .placeholder(R.drawable.profile)
+            .error(R.drawable.profile)
+            .into( activityUsersLoginBinding.userProfile)
+
         activityUsersLoginBinding.userName.text = user.name
     }
 }
