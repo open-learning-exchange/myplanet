@@ -953,5 +953,6 @@
     <string name="confirm_removal">Confirmer la suppression</string>
     <string name="returning_user">Utilisateur régulier</string>
     <string name="send_to_nation">Autorisez la partage de vos réalisations avec la nation</string>
+    <string name="date_reset">Réinitialisation des dates</string>
 
 </resources>

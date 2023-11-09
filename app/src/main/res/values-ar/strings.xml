@@ -948,5 +948,6 @@
     <string name="confirm_removal">تأكيد الحذف</string>
     <string name="returning_user">مستخدم عائد</string>
     <string name="send_to_nation">اسمح بمشاركة إنجازاتك مع الوطن</string>
+    <string name="date_reset">إعادة ضبط التاريخ</string>
 
 </resources>

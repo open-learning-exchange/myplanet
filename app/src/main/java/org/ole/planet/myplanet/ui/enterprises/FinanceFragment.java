@@ -35,6 +35,7 @@ public class FinanceFragment extends BaseTeamFragment {
     Calendar date;
     RealmResults<RealmMyTeam> list;
     boolean isAsc = false;
+    int year, monthOfYear, dayOfMonth, yearEnd, monthOfYearEnd, dayOfMonthEnd;
 
     DatePickerDialog.OnDateSetListener listener = (view, year, monthOfYear, dayOfMonth) -> {
         date = Calendar.getInstance();
@@ -61,6 +62,13 @@ public class FinanceFragment extends BaseTeamFragment {
             adapterFinance = new AdapterFinance(getActivity(), list);
             fragmentFinanceBinding.rvFinance.setAdapter(adapterFinance);
             isAsc = !isAsc;
+        });
+        fragmentFinanceBinding.btnReset.setOnClickListener(view -> {
+            list = mRealm.where(RealmMyTeam.class).notEqualTo("status", "archived").equalTo("teamId", teamId).equalTo("docType", "transaction").sort("date", Sort.DESCENDING).findAll();
+            adapterFinance = new AdapterFinance(getActivity(), list);
+            fragmentFinanceBinding.rvFinance.setLayoutManager(new LinearLayoutManager(getActivity()));
+            fragmentFinanceBinding.rvFinance.setAdapter(adapterFinance);
+            calculateTotal(list);
         });
         return fragmentFinanceBinding.getRoot();
     }
