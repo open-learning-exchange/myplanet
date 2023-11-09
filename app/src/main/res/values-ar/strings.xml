@@ -948,5 +948,12 @@
     <string name="confirm_removal">تأكيد الحذف</string>
     <string name="returning_user">مستخدم عائد</string>
     <string name="send_to_nation">اسمح بمشاركة إنجازاتك مع الوطن</string>
+    <string name="jcplayer_description">مشغل الصوت</string>
+    <string name="image_resource">مصدر الصورة</string>
+    <string name="play_audio">تشغيل الصوت</string>
+    <string name="video_player">مشغل الفيديو</string>
+    <string name="progress_bar">شريط التقدم</string>
+    <string name="web_view">عرض الويب</string>
+    <string name="invalid_configuration">تكوينات الخادم غير صالحة</string>
 
 </resources>
