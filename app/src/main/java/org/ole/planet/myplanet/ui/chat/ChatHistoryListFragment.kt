@@ -7,9 +7,12 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.activity.OnBackPressedCallback
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.ViewModelProvider
 import androidx.slidingpanelayout.widget.SlidingPaneLayout
+import io.realm.RealmList
 import org.ole.planet.myplanet.databinding.FragmentChatHistoryListBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -17,8 +20,13 @@ import org.ole.planet.myplanet.ui.community.AdapterLeader
 
 class ChatHistoryListFragment : Fragment() {
     private lateinit var fragmentChatHistoryListBinding: FragmentChatHistoryListBinding
+    private lateinit var sharedViewModel: ChatViewModel
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        sharedViewModel = ViewModelProvider(requireActivity())[ChatViewModel::class.java]
+    }
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentChatHistoryListBinding = FragmentChatHistoryListBinding.inflate(inflater, container, false)
         return fragmentChatHistoryListBinding.root
     }
@@ -40,7 +48,13 @@ class ChatHistoryListFragment : Fragment() {
             val model = mRealm.where(RealmChatHistory::class.java).equalTo("id", team.id).findFirst()
             if (model != null && !list.contains(model)) list.add(model)
         }
-        fragmentChatHistoryListBinding.recyclerView.adapter = ChatHistoryListAdapter(requireActivity(), list)
+        val adapter = ChatHistoryListAdapter(requireContext(), list)
+        adapter.setChatHistoryItemClickListener(object : ChatHistoryItemClickListener {
+            override fun onChatHistoryItemClicked(conversations: RealmList<Conversation>) {
+                sharedViewModel.setSelectedChatHistory(conversations)
+            }
+        })
+        fragmentChatHistoryListBinding.recyclerView.adapter = adapter
     }
 }
 

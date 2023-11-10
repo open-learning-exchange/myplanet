@@ -66,10 +66,6 @@ public class RealmChatHistory extends RealmObject {
         this.time = time;
     }
 
-//    public List<Conversation> getConversations() {
-//        return conversations;
-//    }
-//
     public void setConversations(RealmList<Conversation> conversations) {
         this.conversations = conversations;
     }
@@ -100,4 +96,3 @@ public class RealmChatHistory extends RealmObject {
         return conversations;
     }
 }
-
