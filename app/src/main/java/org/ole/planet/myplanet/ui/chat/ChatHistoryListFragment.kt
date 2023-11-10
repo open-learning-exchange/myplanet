@@ -10,6 +10,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.slidingpanelayout.widget.SlidingPaneLayout
 import io.realm.RealmList
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentChatHistoryListBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.Conversation
@@ -39,6 +40,14 @@ class ChatHistoryListFragment : Fragment() {
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, ChatHistoryListOnBackPressedCallback(slidingPaneLayout))
 
         fragmentChatHistoryListBinding.slidingPaneLayout.openPane()
+
+        fragmentChatHistoryListBinding.newChat.setOnClickListener {
+            val newFragment = ChatHistoryListFragment()
+            requireActivity().supportFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, newFragment)
+                .addToBackStack(null)
+                .commit()
+        }
 
         val mRealm = DatabaseService(requireActivity()).realmInstance;
         val leaders = mRealm.where(RealmChatHistory::class.java).findAll()
