@@ -50,8 +50,10 @@ class ChatHistoryListFragment : Fragment() {
         }
         val adapter = ChatHistoryListAdapter(requireContext(), list)
         adapter.setChatHistoryItemClickListener(object : ChatHistoryItemClickListener {
-            override fun onChatHistoryItemClicked(conversations: RealmList<Conversation>) {
+            override fun onChatHistoryItemClicked(conversations: RealmList<Conversation>, _id: String, _rev:String) {
                 sharedViewModel.setSelectedChatHistory(conversations)
+                sharedViewModel.setSelected_id(_id)
+                sharedViewModel.setSelected_rev(_rev)
             }
         })
         fragmentChatHistoryListBinding.recyclerView.adapter = adapter
