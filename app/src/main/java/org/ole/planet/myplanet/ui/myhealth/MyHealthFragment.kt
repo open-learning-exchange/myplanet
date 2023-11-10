@@ -58,7 +58,6 @@ class MyHealthFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
         alertMyPersonalBinding = AlertMyPersonalBinding.inflate(LayoutInflater.from(context))
 
         fragmentVitalSignBinding.rvRecords.addItemDecoration(
@@ -83,7 +82,6 @@ class MyHealthFragment : Fragment() {
         fragmentVitalSignBinding.fabAddMember.setOnClickListener {
             startActivity(Intent(activity, BecomeMemberActivity::class.java))
         }
-
     }
 
     private fun getHealthRecords(memberId: String?) {

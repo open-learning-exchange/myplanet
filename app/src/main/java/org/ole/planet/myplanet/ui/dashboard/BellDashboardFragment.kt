@@ -56,6 +56,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
             )
         }
         showBadges()
+        
         val noOfSurvey = RealmSubmission.getNoOfSurveySubmissionByUser(model.id, mRealm)
         if (noOfSurvey >= 1){
             val title: String = if (noOfSurvey > 1 ) {
@@ -85,15 +86,6 @@ class BellDashboardFragment : BaseDashboardFragment() {
                 dialog.dismiss()
             }
             alertDialog.show()
-        }
-
-        if (!model.id.startsWith("guest") && TextUtils.isEmpty(model.key) && MainApplication.showHealthDialog) {
-            AlertDialog.Builder(activity!!)
-                .setMessage(getString(R.string.health_record_not_available_sync_health_data))
-                .setPositiveButton(getString(R.string.sync)) { _: DialogInterface?, _: Int ->
-                    syncKeyId()
-                    MainApplication.showHealthDialog = false
-                }.setNegativeButton(getString(R.string.cancel), null).show()
         }
     }
 
