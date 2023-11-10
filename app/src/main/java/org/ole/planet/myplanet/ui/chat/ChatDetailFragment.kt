@@ -80,13 +80,13 @@ class ChatDetailFragment : Fragment() {
         })
 
         sharedViewModel.getSelectedChatHistory().observe(viewLifecycleOwner) { conversations ->
+            mAdapter.clearData()
             for (conversation in conversations) {
                 val query = conversation.query
                 val response = conversation.response
                 mAdapter.addQuery(query)
                 mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_SHARED_VIEW_MODEL
                 mAdapter.addResponse(response)
-
             }
         }
     }

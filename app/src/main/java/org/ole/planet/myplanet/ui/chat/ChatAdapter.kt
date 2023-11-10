@@ -65,6 +65,11 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context)
         notifyItemInserted(chatList.size - 1)
     }
 
+    fun clearData() {
+        chatList.clear()
+        notifyDataSetChanged()
+    }
+
     override fun getItemViewType(position: Int): Int {
         return if (position % 2 == 0) VIEW_TYPE_QUERY else VIEW_TYPE_RESPONSE
     }
