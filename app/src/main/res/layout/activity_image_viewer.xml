@@ -28,6 +28,7 @@
 
         <ImageView
             android:id="@+id/imageViewer"
+            android:contentDescription="@string/image_resource"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
 

@@ -22,6 +22,7 @@
             android:layout_height="40dp"
             android:layout_gravity="center_vertical"
             android:padding="8dp"
+            android:contentDescription="@string/finish"
             android:src="@android:drawable/ic_menu_close_clear_cancel"
             ads:tint="#000000" />
 
@@ -61,12 +62,14 @@
         android:id="@+id/pBar"
         style="?android:attr/progressBarStyleHorizontal"
         android:layout_width="match_parent"
+        android:contentDescription="@string/progress_bar"
         android:layout_height="wrap_content" />
 
     <WebView
         android:id="@+id/wv"
         android:layout_width="match_parent"
         android:layout_height="0dp"
+        android:contentDescription="@string/web_view"
         android:layout_weight="1" />
 
 </LinearLayout>

@@ -10,18 +10,23 @@ import android.widget.ImageView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import io.realm.Case
+import org.json.JSONException
+import org.json.JSONObject
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentHomeBellBinding
 import org.ole.planet.myplanet.model.RealmCertification
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmExamQuestion
+import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.ui.course.CourseFragment
 import org.ole.planet.myplanet.ui.course.MyProgressFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
 import org.ole.planet.myplanet.ui.library.AddResourceFragment
 import org.ole.planet.myplanet.ui.library.LibraryFragment
 import org.ole.planet.myplanet.ui.mylife.LifeFragment
+import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
 import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.ui.team.TeamFragment
 import org.ole.planet.myplanet.utilities.TimeUtils
@@ -51,13 +56,36 @@ class BellDashboardFragment : BaseDashboardFragment() {
             )
         }
         showBadges()
-        if (!model.id.startsWith("guest") && TextUtils.isEmpty(model.key) && MainApplication.showHealthDialog) {
-            AlertDialog.Builder(activity!!)
-                .setMessage(getString(R.string.health_record_not_available_sync_health_data))
-                .setPositiveButton(getString(R.string.sync)) { _: DialogInterface?, _: Int ->
-                    syncKeyId()
-                    MainApplication.showHealthDialog = false
-                }.setNegativeButton(getString(R.string.cancel), null).show()
+        
+        val noOfSurvey = RealmSubmission.getNoOfSurveySubmissionByUser(model.id, mRealm)
+        if (noOfSurvey >= 1){
+            val title: String = if (noOfSurvey > 1 ) {
+                "surveys"
+            } else{
+                "survey"
+            }
+            val itemsQuery = mRealm.where(RealmSubmission::class.java).equalTo("userId", model.id)
+                .equalTo("type", "survey").equalTo("status", "pending", Case.INSENSITIVE)
+                .findAll()
+            val courseTitles = itemsQuery.map { it.parent }
+            val surveyNames = courseTitles.map { json ->
+                try {
+                    val jsonObject = JSONObject(json)
+                    jsonObject.getString("name")
+                } catch (e: JSONException) {
+                    e.printStackTrace()
+                }
+            }
+
+            val alertDialog: AlertDialog.Builder = AlertDialog.Builder(requireActivity())
+            alertDialog.setTitle("You have $noOfSurvey $title to complete")
+            val surveyNamesArray = surveyNames.map { it as CharSequence }.toTypedArray()
+            alertDialog.setItems(surveyNamesArray, null)
+            alertDialog.setPositiveButton("OK") { dialog, _ ->
+                homeItemClickListener.openCallFragment(MySubmissionFragment.newInstance("survey"))
+                dialog.dismiss()
+            }
+            alertDialog.show()
         }
     }
 

@@ -17,6 +17,8 @@ import android.widget.Spinner;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.flexbox.FlexboxLayout;
@@ -62,8 +64,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
     HashMap<String, JsonObject> map;
     AlertDialog confirmation;
 
-    public LibraryFragment() {
-    }
+    public LibraryFragment() {}
 
     @Override
     public int getLayout() {
@@ -104,7 +105,6 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
                 selectedItems.clear();
                 tvAddToLib.setEnabled(false);  // After clearing selectedItems size is always 0
                 checkList();
-
             }
         });
 
@@ -112,7 +112,8 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
                 .setMessage(R.string.confirm_removal)
                 .setPositiveButton(R.string.yes, (dialogInterface, i) -> {
                     deleteSelected(true);
-                    checkList();
+                    LibraryFragment newFragment = new LibraryFragment();
+                    recreateFragment(newFragment);
                 })
                 .setNegativeButton(R.string.no, null).show());
 
@@ -120,13 +121,11 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
             }
-
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag(etSearch.getText().toString().trim(), searchTags)));
                 showNoData(tvMessage, adapterLibrary.getItemCount());
             }
-
             @Override
             public void afterTextChanged(Editable s) {
             }
@@ -169,7 +168,13 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         selectAll.setOnClickListener(view -> {
             boolean allSelected = selectedItems.size() ==  adapterLibrary.getLibraryList().size();
             adapterLibrary.selectAllItems(!allSelected);
-            selectAll.setText(allSelected ? getString(R.string.select_all) : getString(R.string.unselect_all));
+            if (allSelected) {
+                selectAll.setChecked(false);
+                selectAll.setText(getString(R.string.select_all));
+            } else {
+                selectAll.setChecked(true);
+                selectAll.setText(getString(R.string.unselect_all));
+            }
         });
     }
 
@@ -210,7 +215,11 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         msg += getString(R.string.return_to_the_home_tab_to_access_mylibrary) + getString(R.string.note_you_may_still_need_to_download_the_newly_added_resources);
         builder.setMessage(msg);
         builder.setCancelable(true);
-        builder.setPositiveButton(getString(R.string.ok), (dialog, id) -> dialog.cancel());
+        builder.setPositiveButton(getString(R.string.ok), (dialog, id) -> {
+            dialog.cancel();
+            LibraryFragment newFragment = new LibraryFragment();
+            recreateFragment(newFragment);
+        });
         return builder.create();
     }
 
@@ -273,7 +282,13 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
 
     private void changeButtonStatus() {
         tvAddToLib.setEnabled(selectedItems.size() > 0);
-        selectAll.setText(adapterLibrary.areAllSelected() ? getString(R.string.unselect_all) : getString(R.string.select_all));
+        if (adapterLibrary.areAllSelected()) {
+            selectAll.setChecked(true);
+            selectAll.setText(getString(R.string.unselect_all));
+        } else {
+            selectAll.setChecked(false);
+            selectAll.setText(getString(R.string.select_all));
+        }
     }
 
     @Override
@@ -342,6 +357,23 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
             filter.add("mediaType", getJsonArrayFromList(mediums));
             activity.setFilter(new Gson().toJson(filter));
             mRealm.commitTransaction();
+        }
+    }
+
+    public void recreateFragment(Fragment fragment) {
+        if(isMyCourseLib){
+            Bundle args = new Bundle();
+            args.putBoolean("isMyCourseLib", true);
+            fragment.setArguments(args);
+            FragmentTransaction transaction = getFragmentManager().beginTransaction();
+            transaction.replace(R.id.fragment_container, fragment);
+            transaction.addToBackStack(null);
+            transaction.commit();
+        } else{
+            FragmentTransaction transaction = getFragmentManager().beginTransaction();
+            transaction.replace(R.id.fragment_container, fragment);
+            transaction.addToBackStack(null);
+            transaction.commit();
         }
     }
 }

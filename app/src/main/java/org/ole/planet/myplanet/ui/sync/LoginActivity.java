@@ -7,11 +7,14 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.graphics.drawable.AnimationDrawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.text.Editable;
+import android.text.InputType;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.text.method.PasswordTransformationMethod;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -23,7 +26,9 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.RadioGroup;
+import android.widget.RelativeLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -64,13 +69,17 @@ import org.ole.planet.myplanet.utilities.NetworkUtils;
 import org.ole.planet.myplanet.utilities.SharedPrefManager;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import io.realm.Realm;
@@ -87,7 +96,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private Button btnSignIn, becomeMember, btnGuestLogin, btnLang, openCommunity, btnFeedback;
     private View positiveAction;
     private ImageButton imgBtnSetting;
-    private boolean isSync = false, forceSync = false;
+    private boolean isSync = false, forceSync = false, guest = false;
     private SwitchCompat switchChildMode;
     private SharedPreferences defaultPref;
     private Service service;
@@ -189,9 +198,34 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             new FeedbackFragment().show(getSupportFragmentManager(), "");
         });
 
-        if (settings.getBoolean("firstRun", true));
-
         previouslyLoggedIn.setOnClickListener(view -> showUserList());
+
+        guest = getIntent().getBooleanExtra("guest", false);
+        String username = getIntent().getStringExtra("username");
+        if (guest){
+            List<User> existingUsers = prefData.getSAVEDUSERS1();
+
+            boolean newUserExists = false;
+
+            for (User user : existingUsers) {
+                if (user.getName().equals(username)) {
+                    newUserExists = true;
+                    break;
+                }
+            }
+
+            if (newUserExists){
+                Iterator<User> iterator = existingUsers.iterator();
+                while (iterator.hasNext()) {
+                    User user = iterator.next();
+                    if (user.getName().equals(username)) {
+                        iterator.remove();
+                    }
+                }
+                prefData.setSAVEDUSERS1(existingUsers);
+            }
+        }
+
     }
 
     private void showUserList(){
@@ -336,25 +370,43 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             alertGuestLoginBinding.etUserName.addTextChangedListener(new TextWatcher() {
                 @Override
                 public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
                 @Override
                 public void onTextChanged(CharSequence s, int start, int before, int count) {
-                    char firstChar = s.length() > 0 ? s.charAt(0) : '\0';
+                    String input = s.toString();
+                    char firstChar = input.length() > 0 ? input.charAt(0) : '\0';
                     boolean hasInvalidCharacters = false;
-                    for (int i = 0; i < s.length(); i++) {
-                        char c = s.charAt(i);
+                    boolean hasSpecialCharacters = false;
+                    boolean hasDiacriticCharacters = false;
+
+                    String normalizedText = Normalizer.normalize(s, Normalizer.Form.NFD);
+
+                    for (int i = 0; i < input.length(); i++) {
+                        char c = input.charAt(i);
                         if (c != '_' && c != '.' && c != '-' && !Character.isDigit(c) && !Character.isLetter(c)) {
                             hasInvalidCharacters = true;
                             break;
                         }
                     }
 
+                    String regex = ".*[ßäöüéèêæÆœøØ¿àìòùÀÈÌÒÙáíóúýÁÉÍÓÚÝâîôûÂÊÎÔÛãñõÃÑÕëïÿÄËÏÖÜŸåÅŒçÇðÐ].*";
+                    Pattern pattern = Pattern.compile(regex);
+                    Matcher matcher = pattern.matcher(input);
+                    hasSpecialCharacters = matcher.matches();
+
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                        hasDiacriticCharacters = !normalizedText.codePoints().allMatch(
+                                codePoint -> Character.isLetterOrDigit(codePoint) || codePoint == '.' || codePoint == '-' || codePoint == '_'
+                        );
+                    }
+
                     if (!Character.isDigit(firstChar) && !Character.isLetter(firstChar)) {
                         alertGuestLoginBinding.etUserName.setError(getString(R.string.must_start_with_letter_or_number));
-                    } else if (hasInvalidCharacters) {
+                    } else if (hasInvalidCharacters || hasDiacriticCharacters || hasSpecialCharacters) {
                         alertGuestLoginBinding.etUserName.setError(getString(R.string.only_letters_numbers_and_are_allowed));
                     } else {
-                        String lowercaseText = s.toString().toLowerCase(Locale.ROOT);
-                        if (!s.toString().equals(lowercaseText)) {
+                        String lowercaseText = input.toLowerCase(Locale.ROOT);
+                        if (!input.equals(lowercaseText)) {
                             alertGuestLoginBinding.etUserName.setText(lowercaseText);
                             alertGuestLoginBinding.etUserName.setSelection(lowercaseText.length());
                         }
@@ -385,8 +437,14 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                 String username = alertGuestLoginBinding.etUserName.getText().toString().trim();
                 Character firstChar = username.isEmpty() ? null : username.charAt(0);
                 boolean hasInvalidCharacters = false;
-
+                boolean hasDiacriticCharacters = false;
+                boolean hasSpecialCharacters = false;
                 boolean isValid = true;
+                String normalizedText = Normalizer.normalize(username, Normalizer.Form.NFD);
+
+                String regex = ".*[ßäöüéèêæÆœøØ¿àìòùÀÈÌÒÙáíóúýÁÉÍÓÚÝâîôûÂÊÎÔÛãñõÃÑÕëïÿÄËÏÖÜŸåÅŒçÇðÐ].*";
+                Pattern pattern = Pattern.compile(regex);
+                Matcher matcher = pattern.matcher(username);
 
                 if (TextUtils.isEmpty(username)) {
                     alertGuestLoginBinding.etUserName.setError(getString(R.string.username_cannot_be_empty));
@@ -402,9 +460,16 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                             hasInvalidCharacters = true;
                             break;
                         }
+
+                        hasSpecialCharacters = matcher.matches();
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                            hasDiacriticCharacters = !normalizedText.codePoints().allMatch(
+                                    codePoint -> Character.isLetterOrDigit(codePoint) || codePoint == '.' || codePoint == '-' || codePoint == '_'
+                            );
+                        }
                     }
 
-                    if (hasInvalidCharacters) {
+                    if (hasInvalidCharacters || hasDiacriticCharacters || hasSpecialCharacters) {
                         alertGuestLoginBinding.etUserName.setError(getString(R.string.only_letters_numbers_and_are_allowed));
                         isValid = false;
                     }
@@ -700,45 +765,57 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                     .onPositive((dialog, which) -> continueSync(dialog))
                     .onNeutral((dialog, which) -> saveConfigAndContinue(dialog));
 
-            MaterialDialog dialog = builder.build();
-            positiveAction = dialog.getActionButton(DialogAction.POSITIVE);
             spnCloud = dialogServerUrlBinding.spnCloud;
-
-            List<RealmCommunity> communities = mRealm.where(RealmCommunity.class).sort("weight", Sort.ASCENDING).findAll();
-            List<RealmCommunity> filteredCommunities = null;
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
-                filteredCommunities = communities.stream()
-                        .filter(community -> community != null && !community.getName().isEmpty())
-                        .collect(Collectors.toList());
-            }
-
-            dialogServerUrlBinding.spnCloud.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, filteredCommunities));
-
-            dialogServerUrlBinding.spnCloud.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                @Override
-                public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                    onChangeServerUrl();
-                }
-
-                @Override
-                public void onNothingSelected(AdapterView<?> adapterView) {
-
-                }
-            });
             protocol_checkin = dialogServerUrlBinding.radioProtocol;
             serverUrl = dialogServerUrlBinding.inputServerUrl;
             serverPassword = dialogServerUrlBinding.inputServerPassword;
             serverUrlProtocol = dialogServerUrlBinding.inputServerUrlProtocol;
-            dialogServerUrlBinding.switchServerUrl.setOnCheckedChangeListener((compoundButton, b) -> {
-                settings.edit().putBoolean("switchCloudUrl", b).commit();
-                dialogServerUrlBinding.spnCloud.setVisibility(b ? View.VISIBLE : View.GONE);
-                setUrlAndPin(dialogServerUrlBinding.switchServerUrl.isChecked());
+
+            if(!dialogServerUrlBinding.manualConfiguration.isChecked()){
+                defaultSetting();
+            }
+
+            MaterialDialog dialog = builder.build();
+            positiveAction = dialog.getActionButton(DialogAction.POSITIVE);
+
+            dialogServerUrlBinding.manualConfiguration.setOnCheckedChangeListener((compoundButton, isChecked) -> {
+                if (isChecked) {
+                    showConfigurationUIElements(dialogServerUrlBinding, true);
+                    List<RealmCommunity> communities = mRealm.where(RealmCommunity.class).sort("weight", Sort.ASCENDING).findAll();
+                    List<RealmCommunity> nonEmptyCommunities = new ArrayList<>();
+                    for (RealmCommunity community : communities) {
+                        if (community.isValid() && !TextUtils.isEmpty(community.getName())) {
+                            nonEmptyCommunities.add(community);
+                        }
+                    }
+                    dialogServerUrlBinding.spnCloud.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, nonEmptyCommunities));
+
+                    dialogServerUrlBinding.spnCloud.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                        @Override
+                        public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                            onChangeServerUrl();
+                        }
+
+                        @Override
+                        public void onNothingSelected(AdapterView<?> adapterView) {
+
+                        }
+                    });
+                    dialogServerUrlBinding.switchServerUrl.setOnCheckedChangeListener((compoundBtn, b) -> {
+                        settings.edit().putBoolean("switchCloudUrl", b).commit();
+                        dialogServerUrlBinding.spnCloud.setVisibility(b ? View.VISIBLE : View.GONE);
+                        setUrlAndPin(dialogServerUrlBinding.switchServerUrl.isChecked());
+                        Log.d("checked", String.valueOf(dialogServerUrlBinding.switchServerUrl.isChecked()));
+                    });
+                    serverUrl.addTextChangedListener(new MyTextWatcher(serverUrl));
+                    dialogServerUrlBinding.deviceName.setText(getCustomDeviceName());
+                    dialogServerUrlBinding.switchServerUrl.setChecked(settings.getBoolean("switchCloudUrl", false));
+                    setUrlAndPin(settings.getBoolean("switchCloudUrl", false));
+                    protocol_semantics();
+                } else {
+                    showConfigurationUIElements(dialogServerUrlBinding, false);
+                }
             });
-            serverUrl.addTextChangedListener(new MyTextWatcher(serverUrl));
-            dialogServerUrlBinding.deviceName.setText(getCustomDeviceName());
-            dialogServerUrlBinding.switchServerUrl.setChecked(settings.getBoolean("switchCloudUrl", false));
-            setUrlAndPin(settings.getBoolean("switchCloudUrl", false));
-            protocol_semantics();
             dialog.show();
             sync(dialog);
         } finally {
@@ -748,19 +825,47 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         }
     }
 
+    private void showConfigurationUIElements(DialogServerUrlBinding binding, boolean show) {
+        binding.radioProtocol.setVisibility(show ? View.VISIBLE : View.GONE);
+        binding.switchServerUrl.setVisibility(show ? View.VISIBLE : View.GONE);
+        binding.ltProtocol.setVisibility(show ? View.VISIBLE : View.GONE);
+        binding.ltIntervalLabel.setVisibility(show ? View.VISIBLE : View.GONE);
+        binding.ltSyncSwitch.setVisibility(show ? View.VISIBLE : View.GONE);
+        binding.ltDeviceName.setVisibility(show ? View.VISIBLE : View.GONE);
+
+        if (show) {
+            serverUrl.setText("");
+            serverPassword.setText("");
+            serverUrl.setEnabled(true);
+            serverPassword.setEnabled(true);
+            settings.edit().putString("serverProtocol", getString(R.string.http_protocol)).commit();
+        } else {
+            defaultSetting();
+        }
+    }
+    private void defaultSetting() {
+        serverUrl.setText("planet.learning.ole.org");
+        serverPassword.setText("1983");
+        serverUrl.setEnabled(false);
+        serverPassword.setEnabled(false);
+        settings.edit().putString("serverProtocol", getString(R.string.https_protocol)).commit();
+        serverUrlProtocol.setText(getString(R.string.https_protocol));
+    }
+
     private void onChangeServerUrl() {
         try {
             mRealm = Realm.getDefaultInstance();
             RealmCommunity selected = (RealmCommunity) spnCloud.getSelectedItem();
-            Utilities.log((selected == null) + " selected ");
             if (selected == null) {
                 return;
             }
-            serverUrl.setText(selected.getLocalDomain());
-            protocol_checkin.check(R.id.radio_https);
-            settings.getString("serverProtocol", "https://");
-            serverPassword.setText(selected.getWeight() == 0 ? "0660" : "");
-            serverPassword.setEnabled(selected.getWeight() != 0);
+            if (selected.isValid()) {
+                serverUrl.setText(selected.getLocalDomain());
+                protocol_checkin.check(R.id.radio_https);
+                settings.getString("serverProtocol", getString(R.string.https_protocol));
+                serverPassword.setText(selected.getWeight() == 0 ? "1983" : "");
+                serverPassword.setEnabled(selected.getWeight() != 0);
+            }
         } finally {
             if (mRealm != null && !mRealm.isClosed()) {
                 mRealm.close();
@@ -778,6 +883,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             serverUrlProtocol.setText(settings.getString("serverProtocol", ""));
         }
         serverUrl.setEnabled(!checked);
+        serverPassword.setEnabled(!checked);
         serverPassword.clearFocus();
         serverUrl.clearFocus();
         protocol_checkin.setEnabled(!checked);

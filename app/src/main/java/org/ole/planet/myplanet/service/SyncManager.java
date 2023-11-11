@@ -96,7 +96,7 @@ public class SyncManager {
             if (TransactionSyncManager.authenticate()) {
                 startSync();
             } else {
-                handleException("Invalid name or password");
+                handleException(context.getString(R.string.invalid_configuration));
                 destroy();
             }
         });

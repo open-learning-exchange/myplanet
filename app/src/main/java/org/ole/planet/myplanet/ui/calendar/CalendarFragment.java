@@ -52,12 +52,8 @@ public class CalendarFragment extends Fragment {
         });
 
         Calendar calendar = Calendar.getInstance();
+        calendarBinding.calendarView.setDate(calendar.getTime());
 
-        try {
-            calendarBinding.calendarView.setDate(calendar.getTime());
-        } catch (OutOfDateRangeException e) {
-            e.printStackTrace();
-        }
         return calendarBinding.getRoot();
     }
 
