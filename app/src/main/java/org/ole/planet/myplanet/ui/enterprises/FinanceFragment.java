@@ -35,7 +35,6 @@ public class FinanceFragment extends BaseTeamFragment {
     Calendar date;
     RealmResults<RealmMyTeam> list;
     boolean isAsc = false;
-    int year, monthOfYear, dayOfMonth, yearEnd, monthOfYearEnd, dayOfMonthEnd;
 
     DatePickerDialog.OnDateSetListener listener = (view, year, monthOfYear, dayOfMonth) -> {
         date = Calendar.getInstance();
@@ -86,6 +85,7 @@ public class FinanceFragment extends BaseTeamFragment {
             fragmentFinanceBinding.rvFinance.setAdapter(adapterFinance);
             calculateTotal(list);
         }, now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH)).show(getActivity().getFragmentManager(), "");
+
     }
 
     @Override
