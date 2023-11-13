@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.chat
 
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -10,14 +9,10 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.slidingpanelayout.widget.SlidingPaneLayout
 import io.realm.RealmList
-import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentChatHistoryListBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.RealmChatHistory
-import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.ui.community.AdapterLeader
 
 class ChatHistoryListFragment : Fragment() {
     private lateinit var fragmentChatHistoryListBinding: FragmentChatHistoryListBinding
@@ -37,16 +32,12 @@ class ChatHistoryListFragment : Fragment() {
         val slidingPaneLayout = fragmentChatHistoryListBinding.slidingPaneLayout
         slidingPaneLayout.lockMode = SlidingPaneLayout.LOCK_MODE_LOCKED
 
-        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, ChatHistoryListOnBackPressedCallback(slidingPaneLayout))
+        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, ChatHistoryListOnBackPressedCallback(slidingPaneLayout, this))
 
         fragmentChatHistoryListBinding.slidingPaneLayout.openPane()
 
         fragmentChatHistoryListBinding.newChat.setOnClickListener {
-            val newFragment = ChatHistoryListFragment()
-            requireActivity().supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, newFragment)
-                .addToBackStack(null)
-                .commit()
+
         }
 
         val mRealm = DatabaseService(requireActivity()).realmInstance;
@@ -69,7 +60,7 @@ class ChatHistoryListFragment : Fragment() {
     }
 }
 
-class ChatHistoryListOnBackPressedCallback(private val slidingPaneLayout: SlidingPaneLayout)
+class ChatHistoryListOnBackPressedCallback(private val slidingPaneLayout: SlidingPaneLayout , private val chatHistoryListFragment: ChatHistoryListFragment)
     : OnBackPressedCallback(
         slidingPaneLayout.isSlideable && slidingPaneLayout.isOpen
     ), SlidingPaneLayout.PanelSlideListener {

@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -42,6 +43,7 @@ class ChatDetailFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         mAdapter = ChatAdapter(ArrayList(), requireContext())
+        clearChatDetail()
         fragmentChatDetailBinding.recyclerGchat.adapter = mAdapter
         val layoutManager: RecyclerView.LayoutManager = LinearLayoutManager(requireContext())
         fragmentChatDetailBinding.recyclerGchat.layoutManager = layoutManager
@@ -61,12 +63,14 @@ class ChatDetailFragment : Fragment() {
             } else {
                 val message = "${fragmentChatDetailBinding.editGchatMessage.text}".replace("\n", " ")
                 mAdapter.addQuery(message)
-                if(_id == ""){
+                if(_id != ""){
+                    Log.d("continue","chat");
                     val continueChatData = ContinueChatModel(data = Data(message, _id, _rev), save = true)
                     val jsonContent = Gson().toJson(continueChatData)
                     val requestBody = RequestBody.create(MediaType.parse("application/json"), jsonContent)
                     continueChatRequest(requestBody)
                 } else {
+                    Log.d("new","chat");
                     val chatData = ChatRequestModel(data = ContentData(message), save = true)
                     val jsonContent = Gson().toJson(chatData)
                     val requestBody = RequestBody.create(MediaType.parse("application/json"), jsonContent)
@@ -189,5 +193,12 @@ class ChatDetailFragment : Fragment() {
                 fragmentChatDetailBinding.imageGchatLoading.visibility = View.INVISIBLE
             }
         })
+    }
+
+    fun clearChatDetail() {
+        Log.d("called", "called")
+        mAdapter.clearData()
+        _id = ""
+        _rev = ""
     }
 }
