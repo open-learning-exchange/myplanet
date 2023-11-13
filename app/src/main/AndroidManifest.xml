@@ -42,9 +42,6 @@
         android:usesCleartextTraffic="true"
         tools:replace="android:label">
         <activity
-            android:name=".ui.chat.ChatActivity"
-            />
-        <activity
             android:name=".ui.userprofile.BecomeMemberActivity"
             android:theme="@style/AppTheme" />
         <activity
