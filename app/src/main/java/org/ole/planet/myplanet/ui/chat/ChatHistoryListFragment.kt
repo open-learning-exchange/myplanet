@@ -32,7 +32,7 @@ class ChatHistoryListFragment : Fragment() {
         val slidingPaneLayout = fragmentChatHistoryListBinding.slidingPaneLayout
         slidingPaneLayout.lockMode = SlidingPaneLayout.LOCK_MODE_LOCKED
 
-        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, ChatHistoryListOnBackPressedCallback(slidingPaneLayout, this))
+        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, ChatHistoryListOnBackPressedCallback(slidingPaneLayout))
 
         fragmentChatHistoryListBinding.slidingPaneLayout.openPane()
 
@@ -60,7 +60,7 @@ class ChatHistoryListFragment : Fragment() {
     }
 }
 
-class ChatHistoryListOnBackPressedCallback(private val slidingPaneLayout: SlidingPaneLayout , private val chatHistoryListFragment: ChatHistoryListFragment)
+class ChatHistoryListOnBackPressedCallback(private val slidingPaneLayout: SlidingPaneLayout)
     : OnBackPressedCallback(
         slidingPaneLayout.isSlideable && slidingPaneLayout.isOpen
     ), SlidingPaneLayout.PanelSlideListener {
