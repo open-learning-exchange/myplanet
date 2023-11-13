@@ -843,11 +843,26 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         binding.ltDeviceName.setVisibility(show ? View.VISIBLE : View.GONE);
 
         if (show) {
-            serverUrl.setText("");
-            serverPassword.setText("");
+            if (settings.getString("serverURL", "").equals("https://planet.learning.ole.org")){
+                settings.edit().putString("serverURL", "").apply();
+                settings.edit().putString("serverPin", "").apply();
+            }
+
+            if (settings.getString("serverProtocol", "").equals(getString(R.string.http_protocol))) {
+                binding.radioHttp.setChecked(true);
+                settings.edit().putString("serverProtocol", getString(R.string.http_protocol)).commit();
+            }
+
+            if (settings.getString("serverProtocol", "").equals(getString(R.string.https_protocol))
+                    && prefData.getMANUALCONFIG1() && !settings.getString("serverURL", "").equals("")){
+                binding.radioHttps.setChecked(true);
+                settings.edit().putString("serverProtocol", getString(R.string.https_protocol)).commit();
+            }
+
+            serverUrl.setText(removeProtocol(settings.getString("serverURL", "")));
+            serverPassword.setText(settings.getString("serverPin", ""));
             serverUrl.setEnabled(true);
             serverPassword.setEnabled(true);
-            settings.edit().putString("serverProtocol", getString(R.string.http_protocol)).commit();
         } else {
             serverUrl.setText("planet.learning.ole.org");
             serverPassword.setText("1983");
