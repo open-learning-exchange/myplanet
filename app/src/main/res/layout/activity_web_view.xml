@@ -8,7 +8,9 @@
     android:fitsSystemWindows="true"
     tools:context=".ui.viewer.WebViewActivity">
 
-    <include layout="@layout/content_web_view" />
+    <include
+        android:id="@+id/contentWebView"
+        layout="@layout/content_web_view" />
 
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

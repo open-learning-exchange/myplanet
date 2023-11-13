@@ -2,21 +2,19 @@ package org.ole.planet.myplanet.ui.dashboard.notification
 
 import android.content.Context
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
-import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.NotificationCallback
+import org.ole.planet.myplanet.databinding.RowNotificationBinding
 import org.ole.planet.myplanet.model.Notifications
 
 class AdapterNotification(
     var context: Context, var list: List<Notifications>, var callback: NotificationCallback
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+    lateinit var rowNotificationBinding: RowNotificationBinding
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
-        var v = LayoutInflater.from(context).inflate(R.layout.row_notification, parent, false)
-        return ViewHolderNotification(v)
+        rowNotificationBinding = RowNotificationBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        return ViewHolderNotification(rowNotificationBinding)
     }
 
     override fun getItemCount(): Int {
@@ -25,8 +23,8 @@ class AdapterNotification(
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         if (holder is ViewHolderNotification) {
-            holder.title.text = list[position].text
-            holder.icon.setImageResource(list[position].icon)
+            rowNotificationBinding.title.text = list[position].text
+            rowNotificationBinding.icon.setImageResource(list[position].icon)
             holder.itemView.setOnClickListener {
                 when (position) {
                     0 -> callback.showResourceDownloadDialog()
@@ -41,9 +39,11 @@ class AdapterNotification(
         }
     }
 
-    internal inner class ViewHolderNotification(itemView: View) :
-        RecyclerView.ViewHolder(itemView) {
-        var title: TextView = itemView.findViewById(R.id.title)
-        var icon: ImageView = itemView.findViewById(R.id.icon)
+    class ViewHolderNotification(rowNotificationBinding: RowNotificationBinding) : RecyclerView.ViewHolder(rowNotificationBinding.getRoot()) {
+        private var rowNotificationBinding: RowNotificationBinding
+
+        init {
+            this.rowNotificationBinding = rowNotificationBinding
+        }
     }
 }

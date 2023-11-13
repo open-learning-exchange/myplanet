@@ -274,7 +274,7 @@ public class Service {
                             jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc);
                             String id = JsonUtils.getString("_id", jsonDoc);
                             RealmCommunity community = realm1.createObject(RealmCommunity.class, id);
-                            if (JsonUtils.getString("name", jsonDoc).equals("vi")) {
+                            if (JsonUtils.getString("name", jsonDoc).equals("learning")) {
                                 community.setWeight(0);
                             }
                             community.setLocalDomain(JsonUtils.getString("localDomain", jsonDoc));

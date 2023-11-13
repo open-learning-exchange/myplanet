@@ -36,6 +36,8 @@ import com.mikepenz.materialdrawer.model.interfaces.Nameable;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
+import org.ole.planet.myplanet.databinding.ActivityDashboardBinding;
+import org.ole.planet.myplanet.databinding.CustomTabBinding;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmUserModel;
@@ -61,11 +63,11 @@ import org.ole.planet.myplanet.utilities.Utilities;
 import java.util.ArrayList;
 
 public class DashboardActivity extends DashboardElementActivity implements OnHomeItemClickListener, BottomNavigationView.OnNavigationItemSelectedListener {
+    private ActivityDashboardBinding activityDashboardBinding;
     public static final String MESSAGE_PROGRESS = "message_progress";
     AccountHeader headerResult;
     RealmUserModel user;
     private Drawer result = null;
-    private Toolbar mTopToolbar, bellToolbar;
     TabLayout.Tab menul;
     TabLayout.Tab menuh;
     TabLayout.Tab menuc;
@@ -73,9 +75,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     TabLayout.Tab menuco;
     TabLayout.Tab menut;
     TabLayout tl;
-    View begin;
     DrawerLayout dl;
-    ImageView img;
     @Override
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(LocaleHelper.onAttach(base));
@@ -85,22 +85,19 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         checkUser();
-        setContentView(R.layout.activity_dashboard);
-        KeyboardUtils.setupUI(findViewById(R.id.activity_dashboard_parent_layout), DashboardActivity.this);
-        img = findViewById(R.id.img_logo);
-        begin = findViewById(R.id.menu_library);
-        mTopToolbar = findViewById(R.id.my_toolbar);
-        bellToolbar = findViewById(R.id.bell_toolbar);
-        setSupportActionBar(mTopToolbar);
+        activityDashboardBinding = ActivityDashboardBinding.inflate(getLayoutInflater());
+        setContentView(activityDashboardBinding.getRoot());
+        KeyboardUtils.setupUI(activityDashboardBinding.activityDashboardParentLayout, DashboardActivity.this);
+        setSupportActionBar(activityDashboardBinding.myToolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(false);
         getSupportActionBar().setTitle(R.string.app_project_name);
-        mTopToolbar.setTitleTextColor(Color.WHITE);
-        mTopToolbar.setSubtitleTextColor(Color.WHITE);
-        navigationView = findViewById(R.id.top_bar_navigation);
+        activityDashboardBinding.myToolbar.setTitleTextColor(Color.WHITE);
+        activityDashboardBinding.myToolbar.setSubtitleTextColor(Color.WHITE);
+        navigationView = activityDashboardBinding.topBarNavigation;
         BottomNavigationViewHelper.disableShiftMode(navigationView);
-        bellToolbar.inflateMenu(R.menu.menu_bell_dashboard);
+        activityDashboardBinding.appBarBell.bellToolbar.inflateMenu(R.menu.menu_bell_dashboard);
         tl = findViewById(R.id.tab_layout);
-        TextView appName = findViewById(R.id.app_title_name);
+
         try {
             RealmUserModel userProfileModel = profileDbHandler.getUserModel();
             if(userProfileModel != null){
@@ -108,14 +105,14 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
                 if (name.trim().length() == 0) {
                     name = profileDbHandler.getUserModel().getName();
                 }
-                appName.setText(name + "'s Planet");
+                activityDashboardBinding.appBarBell.appTitleName.setText(name + "'s Planet");
             } else {
-                appName.setText(getString(R.string.app_project_name));
+                activityDashboardBinding.appBarBell.appTitleName.setText(getString(R.string.app_project_name));
             }
         } catch (Exception err) {
             throw new RuntimeException(err);
         }
-        findViewById(R.id.iv_setting).setOnClickListener(v -> startActivity(new Intent(this, SettingActivity.class)));
+        activityDashboardBinding.appBarBell.ivSetting.setOnClickListener(v -> startActivity(new Intent(this, SettingActivity.class)));
         if (user.getRolesList().isEmpty() && !user.getUserAdmin()) {
             navigationView.setVisibility(View.GONE);
             openCallFragment(new InactiveDashboardFragment(), "Dashboard");
@@ -143,13 +140,13 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             }
         } else {
             openCallFragment(new BellDashboardFragment());
-            bellToolbar.setVisibility(View.VISIBLE);
+            activityDashboardBinding.appBarBell.bellToolbar.setVisibility(View.VISIBLE);
         }
 
-        findViewById(R.id.iv_sync).setOnClickListener(view -> syncNow());
-        findViewById(R.id.img_logo).setOnClickListener(view -> result.openDrawer());
+        activityDashboardBinding.appBarBell.ivSync.setOnClickListener(view -> syncNow());
+        activityDashboardBinding.appBarBell.imgLogo.setOnClickListener(view -> result.openDrawer());
 
-        bellToolbar.setOnMenuItemClickListener(new Toolbar.OnMenuItemClickListener() {
+        activityDashboardBinding.appBarBell.bellToolbar.setOnMenuItemClickListener(new Toolbar.OnMenuItemClickListener() {
             @Override
             public boolean onMenuItemClick(MenuItem item) {
                 switch (item.getItemId()) {
@@ -196,7 +193,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     }
 
     private void hideWifi() {
-        Menu nav_Menu = bellToolbar.getMenu();
+        Menu nav_Menu = activityDashboardBinding.appBarBell.bellToolbar.getMenu();
         nav_Menu.findItem(R.id.menu_goOnline).setVisible((Constants.showBetaFeature(Constants.KEY_SYNC, this)));
     }
 
@@ -253,21 +250,24 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             }
         });
         for (int i = 0; i < tabLayout.getTabCount(); i++) {
-            View v = LayoutInflater.from(this).inflate(R.layout.custom_tab, null);
-            TextView title = v.findViewById(R.id.title);
-            ImageView icon = v.findViewById(R.id.icon);
+            CustomTabBinding customTabBinding = CustomTabBinding.inflate(LayoutInflater.from(this));
+            TextView title = customTabBinding.title;
+            ImageView icon = customTabBinding.icon;
+
             title.setText(tabLayout.getTabAt(i).getText());
             icon.setImageResource(R.drawable.ic_home);
             icon.setImageDrawable(tabLayout.getTabAt(i).getIcon());
-            tabLayout.getTabAt(i).setCustomView(v);
+
+            tabLayout.getTabAt(i).setCustomView(customTabBinding.getRoot());
         }
+
         tabLayout.setTabIndicatorFullWidth(false);
 
     }
 
     private void UITheme() {
-        bellToolbar.setVisibility(View.VISIBLE);
-        mTopToolbar.setVisibility(View.GONE);
+        activityDashboardBinding.appBarBell.bellToolbar.setVisibility(View.VISIBLE);
+        activityDashboardBinding.myToolbar.setVisibility(View.GONE);
         navigationView.setVisibility(View.GONE);
     }
 
@@ -295,7 +295,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
 
     private void createDrawer() {
         com.mikepenz.materialdrawer.holder.DimenHolder dimenHolder = com.mikepenz.materialdrawer.holder.DimenHolder.fromDp(160);
-        result = new DrawerBuilder().withActivity(this).withFullscreen(true).withSliderBackgroundColor(getResources().getColor(R.color.colorPrimary)).withToolbar(mTopToolbar).withAccountHeader(headerResult).withHeaderHeight(dimenHolder).addDrawerItems(getDrawerItems()).addStickyDrawerItems(getDrawerItemsFooter()).withOnDrawerItemClickListener((view, position, drawerItem) -> {
+        result = new DrawerBuilder().withActivity(this).withFullscreen(true).withSliderBackgroundColor(getResources().getColor(R.color.colorPrimary)).withToolbar(activityDashboardBinding.myToolbar).withAccountHeader(headerResult).withHeaderHeight(dimenHolder).addDrawerItems(getDrawerItems()).addStickyDrawerItems(getDrawerItemsFooter()).withOnDrawerItemClickListener((view, position, drawerItem) -> {
             if (drawerItem != null) {
                 menuAction(((Nameable) drawerItem).getName().getTextRes());
             }

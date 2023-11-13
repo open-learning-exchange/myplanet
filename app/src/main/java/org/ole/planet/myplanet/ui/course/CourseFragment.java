@@ -13,6 +13,8 @@ import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
 import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -97,15 +99,8 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
                 .setMessage(R.string.are_you_sure_you_want_to_delete_these_courses)
                 .setPositiveButton(R.string.yes, (dialogInterface, i) -> {
                     deleteSelected(true);
-                    if (adapterCourses.getCourseList().size() == 0) {
-                        selectAll.setVisibility(View.GONE);
-                        etSearch.setVisibility(View.GONE);
-                        tvAddToLib.setVisibility(View.GONE);
-                        getView().findViewById(R.id.filter).setVisibility(View.GONE);
-                        spn.setVisibility(View.GONE);
-                        btnRemove.setVisibility(View.GONE);
-                        tvSelected.setVisibility(View.GONE);
-                    }
+                    CourseFragment newFragment = new CourseFragment();
+                    recreateFragment(newFragment);
                 })
                 .setNegativeButton(R.string.no, null).show());
         getView().findViewById(R.id.btn_collections).setOnClickListener(view -> {
@@ -157,15 +152,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
                 addToMyList();
                 selectedItems.clear();
                 tvAddToLib.setEnabled(false);  // selectedItems will always have a size of 0
-                if (adapterCourses.getCourseList().size() == 0) {
-                    selectAll.setVisibility(View.GONE);
-                    etSearch.setVisibility(View.GONE);
-                    tvAddToLib.setVisibility(View.GONE);
-                    getView().findViewById(R.id.filter).setVisibility(View.GONE);
-                    spn.setVisibility(View.GONE);
-                    btnRemove.setVisibility(View.GONE);
-                    tvSelected.setVisibility(View.GONE);
-                }
+                checkList();
             }
         });
         etSearch = getView().findViewById(R.id.et_search);
@@ -179,6 +166,22 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         spnGrade.setOnItemSelectedListener(itemSelectedListener);
         spnSubject.setOnItemSelectedListener(itemSelectedListener);
         selectAll = getView().findViewById(R.id.selectAll);
+        checkList();
+
+        selectAll.setOnClickListener(view -> {
+            boolean allSelected = selectedItems.size() == adapterCourses.getCourseList().size();
+            adapterCourses.selectAllItems(!allSelected);
+            if (allSelected) {
+                selectAll.setChecked(false);
+                selectAll.setText(getString(R.string.select_all));
+            } else {
+                selectAll.setChecked(true);
+                selectAll.setText(getString(R.string.unselect_all));
+            }
+        });
+    }
+
+    private void checkList() {
         if (adapterCourses.getCourseList().size() == 0) {
             selectAll.setVisibility(View.GONE);
             etSearch.setVisibility(View.GONE);
@@ -188,18 +191,6 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
             btnRemove.setVisibility(View.GONE);
             tvSelected.setVisibility(View.GONE);
         }
-
-        selectAll.setOnClickListener(view -> {
-            boolean allSelected = selectedItems.size() == adapterCourses.getCourseList().size();
-            adapterCourses.selectAllItems(!allSelected);
-                if (allSelected) {
-                    selectAll.setChecked(false);
-                    selectAll.setText(getString(R.string.select_all));
-                } else {
-                    selectAll.setChecked(true);
-                    selectAll.setText(getString(R.string.unselect_all));
-                }
-        });
     }
 
     private AdapterView.OnItemSelectedListener itemSelectedListener = new AdapterView.OnItemSelectedListener() {
@@ -244,7 +235,11 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         msg += getString(R.string.return_to_the_home_tab_to_access_mycourses);
         builder.setMessage(msg);
         builder.setCancelable(true);
-        builder.setPositiveButton(R.string.ok, (dialog, id) -> dialog.cancel());
+        builder.setPositiveButton(R.string.ok, (dialog, id) -> {
+            dialog.cancel();
+            CourseFragment newFragment = new CourseFragment();
+            recreateFragment(newFragment);
+        });
         return builder.create();
     }
 
@@ -323,5 +318,22 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
     public void onPause() {
         super.onPause();
         saveSearchActivity();
+    }
+
+    public void recreateFragment(Fragment fragment) {
+        if(isMyCourseLib){
+            Bundle args = new Bundle();
+            args.putBoolean("isMyCourseLib", true);
+            fragment.setArguments(args);
+            FragmentTransaction transaction = getFragmentManager().beginTransaction();
+            transaction.replace(R.id.fragment_container, fragment);
+            transaction.addToBackStack(null);
+            transaction.commit();
+        } else{
+            FragmentTransaction transaction = getFragmentManager().beginTransaction();
+            transaction.replace(R.id.fragment_container, fragment);
+            transaction.addToBackStack(null);
+            transaction.commit();
+        }
     }
 }

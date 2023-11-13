@@ -24,6 +24,7 @@ import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Calendar;
 import java.util.Locale;
+import java.util.Objects;
 
 import io.realm.Realm;
 
@@ -80,7 +81,9 @@ public class UserInformationFragment extends BaseDialogFragment implements View.
     public void onClick(View view) {
         switch (view.getId()) {
             case R.id.btn_cancel:
-                dismiss();
+                if (isAdded()) {
+                    Objects.requireNonNull(getDialog()).dismiss();
+                }
                 break;
             case R.id.btn_submit:
                 submitForm();
@@ -122,10 +125,14 @@ public class UserInformationFragment extends BaseDialogFragment implements View.
                 }
             }, () -> {
                 Utilities.toast(MainApplication.context, getString(R.string.user_profile_updated));
-                dismiss();
+                if (isAdded()) {
+                    Objects.requireNonNull(getDialog()).dismiss();
+                }
             }, error -> {
                 Utilities.toast(MainApplication.context, getString(R.string.unable_to_update_user));
-                dismiss();
+                if (isAdded()) {
+                    Objects.requireNonNull(getDialog()).dismiss();
+                }
             });
         } else {
             final JsonObject user = new JsonObject();
@@ -148,7 +155,9 @@ public class UserInformationFragment extends BaseDialogFragment implements View.
         submissions.setUser(user.toString());
         submissions.setStatus("complete");
         mRealm.commitTransaction();
-        dismiss();
+        if (isAdded()) {
+            Objects.requireNonNull(getDialog()).dismiss();
+        }
     }
 
     @Override

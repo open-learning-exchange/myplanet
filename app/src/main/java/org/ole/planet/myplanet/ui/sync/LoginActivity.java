@@ -7,11 +7,14 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.graphics.drawable.AnimationDrawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.text.Editable;
+import android.text.InputType;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.text.method.PasswordTransformationMethod;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -23,8 +26,9 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.ListView;
+import android.widget.LinearLayout;
 import android.widget.RadioGroup;
+import android.widget.RelativeLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -32,14 +36,20 @@ import android.widget.Toast;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.SwitchCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+import androidx.viewbinding.ViewBinding;
 
 import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
-import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.SyncListener;
+import org.ole.planet.myplanet.databinding.ActivityChildLoginBinding;
+import org.ole.planet.myplanet.databinding.ActivityLoginBinding;
+import org.ole.planet.myplanet.databinding.AlertGuestLoginBinding;
+import org.ole.planet.myplanet.databinding.DialogServerUrlBinding;
+import org.ole.planet.myplanet.databinding.LayoutChildLoginBinding;
+import org.ole.planet.myplanet.databinding.LayoutUserListBinding;
 import org.ole.planet.myplanet.datamanager.ManagerSync;
 import org.ole.planet.myplanet.datamanager.Service;
 import org.ole.planet.myplanet.model.MyPlanet;
@@ -59,16 +69,20 @@ import org.ole.planet.myplanet.utilities.NetworkUtils;
 import org.ole.planet.myplanet.utilities.SharedPrefManager;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import io.realm.Realm;
-import io.realm.RealmResults;
 import io.realm.Sort;
 
 public class LoginActivity extends SyncActivity implements Service.CheckVersionCallback, AdapterTeam.OnUserSelectedListener {
@@ -79,30 +93,73 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private RadioGroup protocol_checkin;
     private EditText inputName, inputPassword;
     private TextInputLayout inputLayoutName, inputLayoutPassword;
-    private Button btnSignIn;
+    private Button btnSignIn, becomeMember, btnGuestLogin, btnLang, openCommunity, btnFeedback;
     private View positiveAction;
-
     private ImageButton imgBtnSetting;
-    private boolean isSync = false, forceSync = false;
-    private SwitchCompat switchServerUrl;
+    private boolean isSync = false, forceSync = false, guest = false;
+    private SwitchCompat switchChildMode;
     private SharedPreferences defaultPref;
     private Service service;
     private Spinner spnCloud;
-    private TextView tvAvailableSpace, previouslyLoggedIn;
+    private TextView tvAvailableSpace, previouslyLoggedIn, customDeviceName, lblVersion;
     SharedPrefManager prefData;
     private UserProfileDbHandler profileDbHandler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(settings.getBoolean("isChild", false) ? R.layout.activity_child_login : R.layout.activity_login);
+        ViewBinding activityLoginBinding;
+        if (settings.getBoolean("isChild", false)) {
+            activityLoginBinding = ActivityChildLoginBinding.inflate(getLayoutInflater());
+        } else {
+            activityLoginBinding = ActivityLoginBinding.inflate(getLayoutInflater());
+        }
+
+        setContentView(activityLoginBinding.getRoot());
         prefData = new SharedPrefManager(this);
         profileDbHandler = new UserProfileDbHandler(this);
 
-        // Find and show space available on the device
-        tvAvailableSpace = findViewById(R.id.tv_available_space);
-        tvAvailableSpace.setText(FileUtils.getAvailableOverTotalMemoryFormattedString());
+        if (activityLoginBinding instanceof ActivityLoginBinding) {
+            inputName = ((ActivityLoginBinding) activityLoginBinding).inputName;
+            inputPassword = ((ActivityLoginBinding) activityLoginBinding).inputPassword;
+            inputLayoutName = ((ActivityLoginBinding) activityLoginBinding).inputLayoutName;
+            inputLayoutPassword = ((ActivityLoginBinding) activityLoginBinding).inputLayoutPassword;
+            btnSignIn = ((ActivityLoginBinding) activityLoginBinding).btnSignin;
+            imgBtnSetting = ((ActivityLoginBinding) activityLoginBinding).imgBtnSetting;
+            tvAvailableSpace= ((ActivityLoginBinding) activityLoginBinding).tvAvailableSpace;
+            previouslyLoggedIn = ((ActivityLoginBinding) activityLoginBinding).previouslyLoggedIn;
+            openCommunity = ((ActivityLoginBinding) activityLoginBinding).openCommunity;
+            lblLastSyncDate = ((ActivityLoginBinding) activityLoginBinding).lblLastSyncDate;
+            btnFeedback =((ActivityLoginBinding) activityLoginBinding).btnFeedback;
+            customDeviceName =((ActivityLoginBinding) activityLoginBinding).customDeviceName;
+            becomeMember = ((ActivityLoginBinding) activityLoginBinding).becomeMember;
+            btnGuestLogin = ((ActivityLoginBinding) activityLoginBinding).btnGuestLogin;
+            switchChildMode = ((ActivityLoginBinding) activityLoginBinding).switchChildMode;
+            syncIcon = ((ActivityLoginBinding) activityLoginBinding).syncIcon;
+            lblVersion = ((ActivityLoginBinding) activityLoginBinding).lblVersion;
+            btnLang = ((ActivityLoginBinding) activityLoginBinding).btnLang;
+        } else {
+            inputName = ((ActivityChildLoginBinding) activityLoginBinding).inputName;
+            inputPassword = ((ActivityChildLoginBinding) activityLoginBinding).inputPassword;
+            inputLayoutName = ((ActivityChildLoginBinding) activityLoginBinding).inputLayoutName;
+            inputLayoutPassword = ((ActivityChildLoginBinding) activityLoginBinding).inputLayoutPassword;
+            btnSignIn = ((ActivityChildLoginBinding) activityLoginBinding).btnSignin;
+            imgBtnSetting = ((ActivityChildLoginBinding) activityLoginBinding).imgBtnSetting;
+            tvAvailableSpace= ((ActivityChildLoginBinding) activityLoginBinding).tvAvailableSpace;
+            previouslyLoggedIn = ((ActivityChildLoginBinding) activityLoginBinding).previouslyLoggedIn;
+            openCommunity = ((ActivityChildLoginBinding) activityLoginBinding).openCommunity;
+            lblLastSyncDate = ((ActivityChildLoginBinding) activityLoginBinding).lblLastSyncDate;
+            btnFeedback =((ActivityChildLoginBinding) activityLoginBinding).btnFeedback;
+            customDeviceName =((ActivityChildLoginBinding) activityLoginBinding).customDeviceName;
+            becomeMember = ((ActivityChildLoginBinding) activityLoginBinding).becomeMember;
+            btnGuestLogin = ((ActivityChildLoginBinding) activityLoginBinding).btnGuestLogin;
+            switchChildMode = ((ActivityChildLoginBinding) activityLoginBinding).switchChildMode;
+            syncIcon = ((ActivityChildLoginBinding) activityLoginBinding).syncIcon;
+            lblVersion = ((ActivityChildLoginBinding) activityLoginBinding).lblVersion;
+            btnLang = ((ActivityChildLoginBinding) activityLoginBinding).btnLang;
+        }
 
+        tvAvailableSpace.setText(FileUtils.getAvailableOverTotalMemoryFormattedString());
         changeLogoColor();
         service = new Service(this);
         defaultPref = PreferenceManager.getDefaultSharedPreferences(this);
@@ -124,37 +181,61 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         }
         checkUsagesPermission();
         setUpChildMode();
-        lblLastSyncDate = findViewById(R.id.lblLastSyncDate);
         forceSyncTrigger();
-        Button btnOpenCommunity = findViewById(R.id.open_community);
+
         if (!Utilities.getUrl().isEmpty()) {
-            btnOpenCommunity.setVisibility(View.VISIBLE);
-            btnOpenCommunity.setOnClickListener(v -> {
+            openCommunity.setVisibility(View.VISIBLE);
+            openCommunity.setOnClickListener(v -> {
                 inputName.setText("");
                 new HomeCommunityDialogFragment().show(getSupportFragmentManager(), "");
             });
             new HomeCommunityDialogFragment().show(getSupportFragmentManager(), "");
         } else {
-            btnOpenCommunity.setVisibility(View.GONE);
+            openCommunity.setVisibility(View.GONE);
         }
-        findViewById(R.id.btn_feedback).setOnClickListener(view -> {
+        btnFeedback.setOnClickListener(view -> {
             inputName.setText("");
             new FeedbackFragment().show(getSupportFragmentManager(), "");
         });
 
-        if (settings.getBoolean("firstRun", true));
-
-        previouslyLoggedIn = findViewById(R.id.previouslyLoggedIn);
         previouslyLoggedIn.setOnClickListener(view -> showUserList());
+
+        guest = getIntent().getBooleanExtra("guest", false);
+        String username = getIntent().getStringExtra("username");
+        if (guest){
+            List<User> existingUsers = prefData.getSAVEDUSERS1();
+
+            boolean newUserExists = false;
+
+            for (User user : existingUsers) {
+                if (user.getName().equals(username)) {
+                    newUserExists = true;
+                    break;
+                }
+            }
+
+            if (newUserExists){
+                Iterator<User> iterator = existingUsers.iterator();
+                while (iterator.hasNext()) {
+                    User user = iterator.next();
+                    if (user.getName().equals(username)) {
+                        iterator.remove();
+                    }
+                }
+                prefData.setSAVEDUSERS1(existingUsers);
+            }
+        }
+
     }
 
     private void showUserList(){
-        View view = LayoutInflater.from(this).inflate(R.layout.layout_user_list, null);
-        AlertDialog.Builder builder = new AlertDialog.Builder(LoginActivity.this);
-        builder.setTitle(R.string.select_user_to_login).setView(view).setNegativeButton(R.string.dismiss, null);
+        LayoutUserListBinding layoutUserListBinding = LayoutUserListBinding.inflate(LayoutInflater.from(this));
+        View view = layoutUserListBinding.getRoot();
 
-        EditText etSearch = view.findViewById(R.id.et_search);
-        ListView lv = view.findViewById(R.id.list_user);
+        AlertDialog.Builder builder = new AlertDialog.Builder(LoginActivity.this);
+        builder.setTitle(R.string.select_user_to_login)
+                .setView(view)
+                .setNegativeButton(R.string.dismiss, null);
 
         List<User> existingUsers = prefData.getSAVEDUSERS1();
         UserListAdapter adapter = new UserListAdapter(LoginActivity.this, existingUsers);
@@ -176,12 +257,10 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             }
         });
 
-        lv.setAdapter(adapter);
-
-        etSearch.addTextChangedListener(new TextWatcher() {
+        layoutUserListBinding.listUser.setAdapter(adapter);
+        layoutUserListBinding.etSearch.addTextChangedListener(new TextWatcher() {
             @Override
-            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-            }
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {}
 
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
@@ -189,8 +268,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             }
 
             @Override
-            public void afterTextChanged(Editable editable) {
-            }
+            public void afterTextChanged(Editable editable) {}
         });
 
         AlertDialog dialog = builder.create();
@@ -237,13 +315,8 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         if (!defaultPref.contains("beta_addImageToMessage")) {
             defaultPref.edit().putBoolean("beta_addImageToMessage", true).commit();
         }
-        inputLayoutName = findViewById(R.id.input_layout_name);
-        inputLayoutPassword = findViewById(R.id.input_layout_password);
-        imgBtnSetting = findViewById(R.id.imgBtnSetting);
-        Button btnGuestLogin = findViewById(R.id.btn_guest_login);
-        TextView customDeviceName = findViewById(R.id.customDeviceName);
+
         customDeviceName.setText(getCustomDeviceName());
-        btnSignIn = findViewById(R.id.btn_signin);
         btnSignIn.setOnClickListener(view -> {
             if(TextUtils.isEmpty(inputName.getText().toString())){
                 inputName.setError(getString(R.string.err_msg_name));
@@ -255,7 +328,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         });
         if (!settings.contains("serverProtocol"))
             settings.edit().putString("serverProtocol", "http://").commit();
-        findViewById(R.id.become_member).setOnClickListener(v -> {
+        becomeMember.setOnClickListener(v -> {
             inputName.setText("");
             becomeAMember();
         });
@@ -267,7 +340,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             inputName.setText("");
             showGuestLoginDialog();
         });
-        SwitchCompat switchChildMode = findViewById(R.id.switch_child_mode);
+
         switchChildMode.setChecked(settings.getBoolean("isChild", false));
         switchChildMode.setOnCheckedChangeListener((compoundButton, b) -> {
             inputName.setText("");
@@ -277,7 +350,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     }
 
     private void becomeAMember() {
-
         if (!Utilities.getUrl().isEmpty()) {
             startActivity(new Intent(this, BecomeMemberActivity.class));
         } else {
@@ -291,34 +363,54 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             mRealm = Realm.getDefaultInstance();
             mRealm.refresh();
             editor = settings.edit();
-            View v = LayoutInflater.from(this).inflate(R.layout.alert_guest_login, null);
-            TextInputEditText etUserName = v.findViewById(R.id.et_user_name);
-            etUserName.addTextChangedListener(new TextWatcher() {
+
+            AlertGuestLoginBinding alertGuestLoginBinding = AlertGuestLoginBinding.inflate(LayoutInflater.from(this));
+            View v = alertGuestLoginBinding.getRoot();
+
+            alertGuestLoginBinding.etUserName.addTextChangedListener(new TextWatcher() {
                 @Override
                 public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
                 @Override
                 public void onTextChanged(CharSequence s, int start, int before, int count) {
-                    char firstChar = s.length() > 0 ? s.charAt(0) : '\0';
+                    String input = s.toString();
+                    char firstChar = input.length() > 0 ? input.charAt(0) : '\0';
                     boolean hasInvalidCharacters = false;
-                    for (int i = 0; i < s.length(); i++) {
-                        char c = s.charAt(i);
+                    boolean hasSpecialCharacters = false;
+                    boolean hasDiacriticCharacters = false;
+
+                    String normalizedText = Normalizer.normalize(s, Normalizer.Form.NFD);
+
+                    for (int i = 0; i < input.length(); i++) {
+                        char c = input.charAt(i);
                         if (c != '_' && c != '.' && c != '-' && !Character.isDigit(c) && !Character.isLetter(c)) {
                             hasInvalidCharacters = true;
                             break;
                         }
                     }
 
+                    String regex = ".*[ßäöüéèêæÆœøØ¿àìòùÀÈÌÒÙáíóúýÁÉÍÓÚÝâîôûÂÊÎÔÛãñõÃÑÕëïÿÄËÏÖÜŸåÅŒçÇðÐ].*";
+                    Pattern pattern = Pattern.compile(regex);
+                    Matcher matcher = pattern.matcher(input);
+                    hasSpecialCharacters = matcher.matches();
+
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                        hasDiacriticCharacters = !normalizedText.codePoints().allMatch(
+                                codePoint -> Character.isLetterOrDigit(codePoint) || codePoint == '.' || codePoint == '-' || codePoint == '_'
+                        );
+                    }
+
                     if (!Character.isDigit(firstChar) && !Character.isLetter(firstChar)) {
-                        etUserName.setError(getString(R.string.must_start_with_letter_or_number));
-                    } else if (hasInvalidCharacters) {
-                        etUserName.setError(getString(R.string.only_letters_numbers_and_are_allowed));
+                        alertGuestLoginBinding.etUserName.setError(getString(R.string.must_start_with_letter_or_number));
+                    } else if (hasInvalidCharacters || hasDiacriticCharacters || hasSpecialCharacters) {
+                        alertGuestLoginBinding.etUserName.setError(getString(R.string.only_letters_numbers_and_are_allowed));
                     } else {
-                        String lowercaseText = s.toString().toLowerCase(Locale.ROOT);
-                        if (!s.toString().equals(lowercaseText)) {
-                            etUserName.setText(lowercaseText);
-                            etUserName.setSelection(lowercaseText.length());
+                        String lowercaseText = input.toLowerCase(Locale.ROOT);
+                        if (!input.equals(lowercaseText)) {
+                            alertGuestLoginBinding.etUserName.setText(lowercaseText);
+                            alertGuestLoginBinding.etUserName.setSelection(lowercaseText.length());
                         }
-                        etUserName.setError(null);
+                        alertGuestLoginBinding.etUserName.setError(null);
                     }
                 }
 
@@ -327,12 +419,13 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             });
 
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setTitle("Login As Guest");
-            builder.setView(v);
-            builder.setPositiveButton("Login", null);
-            builder.setNegativeButton("Cancel", null);
+            builder.setTitle("Login As Guest")
+                    .setView(v)
+                    .setPositiveButton("Login", null)
+                    .setNegativeButton("Cancel", null);
             AlertDialog dialog = builder.create();
             dialog.show();
+
             Button login = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
             Button cancel = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
 
@@ -341,19 +434,25 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                     alertDialogOkay(getString(R.string.this_device_not_configured_properly_please_check_and_sync));
                     return;
                 }
-                String username = etUserName.getText().toString().trim();
+                String username = alertGuestLoginBinding.etUserName.getText().toString().trim();
                 Character firstChar = username.isEmpty() ? null : username.charAt(0);
                 boolean hasInvalidCharacters = false;
-
+                boolean hasDiacriticCharacters = false;
+                boolean hasSpecialCharacters = false;
                 boolean isValid = true;
+                String normalizedText = Normalizer.normalize(username, Normalizer.Form.NFD);
+
+                String regex = ".*[ßäöüéèêæÆœøØ¿àìòùÀÈÌÒÙáíóúýÁÉÍÓÚÝâîôûÂÊÎÔÛãñõÃÑÕëïÿÄËÏÖÜŸåÅŒçÇðÐ].*";
+                Pattern pattern = Pattern.compile(regex);
+                Matcher matcher = pattern.matcher(username);
 
                 if (TextUtils.isEmpty(username)) {
-                    etUserName.setError(getString(R.string.username_cannot_be_empty));
+                    alertGuestLoginBinding.etUserName.setError(getString(R.string.username_cannot_be_empty));
                     isValid = false;
                 }
 
                 if (firstChar != null && !Character.isDigit(firstChar) && !Character.isLetter(firstChar)) {
-                    etUserName.setError(getString(R.string.must_start_with_letter_or_number));
+                    alertGuestLoginBinding.etUserName.setError(getString(R.string.must_start_with_letter_or_number));
                     isValid = false;
                 } else {
                     for (char c : username.toCharArray()) {
@@ -361,9 +460,17 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                             hasInvalidCharacters = true;
                             break;
                         }
+
+                        hasSpecialCharacters = matcher.matches();
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                            hasDiacriticCharacters = !normalizedText.codePoints().allMatch(
+                                    codePoint -> Character.isLetterOrDigit(codePoint) || codePoint == '.' || codePoint == '-' || codePoint == '_'
+                            );
+                        }
                     }
-                    if (hasInvalidCharacters) {
-                        etUserName.setError(getString(R.string.only_letters_numbers_and_are_allowed));
+
+                    if (hasInvalidCharacters || hasDiacriticCharacters || hasSpecialCharacters) {
+                        alertGuestLoginBinding.etUserName.setError(getString(R.string.only_letters_numbers_and_are_allowed));
                         isValid = false;
                     }
                 }
@@ -373,6 +480,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                     dialog.dismiss();
 
                     if (existingUser != null) {
+                        Log.d("model", String.valueOf(existingUser.get_id()));
                         if (existingUser.get_id().contains("guest")) {
                             showGuestDialog(username);
                         } else if (existingUser.get_id().contains("org.couchdb.user:")) {
@@ -419,7 +527,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
         AlertDialog dialog = builder.create();
         dialog.show();
-
     }
 
     private void showUserAlreadyMemberDialog(String username) {
@@ -464,7 +571,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     public void declareMoreElements() {
         try {
             mRealm = Realm.getDefaultInstance();
-            syncIcon = findViewById(R.id.syncIcon);
             syncIcon.setImageDrawable(getResources().getDrawable(R.drawable.login_file_upload_animation));
             syncIcon.getScaleType();
             syncIconDrawable = (AnimationDrawable) syncIcon.getDrawable();
@@ -475,10 +581,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                 service.checkVersion(this, settings);
             });
             declareHideKeyboardElements();
-            TextView txtVersion = findViewById(R.id.lblVersion);
-            txtVersion.setText(getResources().getText(R.string.version) + " " + getResources().getText(R.string.app_version));
-            inputName = findViewById(R.id.input_name);
-            inputPassword = findViewById(R.id.input_password);
+            lblVersion.setText(getResources().getText(R.string.version) + " " + getResources().getText(R.string.app_version));
             inputName.addTextChangedListener(new MyTextWatcher(inputName));
             inputPassword.addTextChangedListener(new MyTextWatcher(inputPassword));
             inputPassword.setOnEditorActionListener((v, actionId, event) -> {
@@ -501,8 +604,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
             inputName.addTextChangedListener(new TextWatcher() {
                 @Override
-                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                }
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
                 @Override
                 public void onTextChanged(CharSequence s, int start, int before, int count) {
@@ -514,8 +616,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                 }
 
                 @Override
-                public void afterTextChanged(Editable s) {
-                }
+                public void afterTextChanged(Editable s) {}
             });
         } finally {
             if (mRealm != null && !mRealm.isClosed()) {
@@ -525,13 +626,12 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     }
 
     private void setUplanguageButton() {
-        Button btnlang = findViewById(R.id.btn_lang);
         String[] languageKey = getResources().getStringArray(R.array.language_keys);
         String[] languages = getResources().getStringArray(R.array.language);
         SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
         int index = Arrays.asList(languageKey).indexOf(pref.getString("app_language", "en"));
-        btnlang.setText(languages[index]);
-        btnlang.setOnClickListener(view -> {
+        btnLang.setText(languages[index]);
+        btnLang.setOnClickListener(view -> {
             new AlertDialog.Builder(this).setTitle(R.string.select_language).setSingleChoiceItems(getResources().getStringArray(R.array.language), index, null).setPositiveButton(R.string.ok, (dialog, whichButton) -> {
                 dialog.dismiss();
                 int selectedPosition = ((AlertDialog) dialog).getListView().getCheckedItemPosition();
@@ -655,41 +755,67 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     public void settingDialog() {
         try {
             mRealm = Realm.getDefaultInstance();
+            DialogServerUrlBinding dialogServerUrlBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this));
             MaterialDialog.Builder builder = new MaterialDialog.Builder(LoginActivity.this);
-            builder.title(R.string.action_settings).customView(R.layout.dialog_server_url_, true).positiveText(R.string.btn_sync).negativeText(R.string.btn_sync_cancel).neutralText(R.string.btn_sync_save).onPositive((dialog, which) -> continueSync(dialog)).onNeutral((dialog, which) -> saveConfigAndContinue(dialog));
+            builder.title(R.string.action_settings)
+                    .customView(dialogServerUrlBinding.getRoot(), true)
+                    .positiveText(R.string.btn_sync)
+                    .negativeText(R.string.btn_sync_cancel)
+                    .neutralText(R.string.btn_sync_save)
+                    .onPositive((dialog, which) -> continueSync(dialog))
+                    .onNeutral((dialog, which) -> saveConfigAndContinue(dialog));
+
+            spnCloud = dialogServerUrlBinding.spnCloud;
+            protocol_checkin = dialogServerUrlBinding.radioProtocol;
+            serverUrl = dialogServerUrlBinding.inputServerUrl;
+            serverPassword = dialogServerUrlBinding.inputServerPassword;
+            serverUrlProtocol = dialogServerUrlBinding.inputServerUrlProtocol;
+
+            if(!dialogServerUrlBinding.manualConfiguration.isChecked()){
+                defaultSetting();
+            }
 
             MaterialDialog dialog = builder.build();
             positiveAction = dialog.getActionButton(DialogAction.POSITIVE);
-            spnCloud = dialog.getCustomView().findViewById(R.id.spn_cloud);
-            List<RealmCommunity> communities = mRealm.where(RealmCommunity.class).sort("weight", Sort.ASCENDING).findAll();
-            spnCloud.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, communities));
-            spnCloud.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                @Override
-                public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                    onChangeServerUrl();
-                }
 
-                @Override
-                public void onNothingSelected(AdapterView<?> adapterView) {
+            dialogServerUrlBinding.manualConfiguration.setOnCheckedChangeListener((compoundButton, isChecked) -> {
+                if (isChecked) {
+                    showConfigurationUIElements(dialogServerUrlBinding, true);
+                    List<RealmCommunity> communities = mRealm.where(RealmCommunity.class).sort("weight", Sort.ASCENDING).findAll();
+                    List<RealmCommunity> nonEmptyCommunities = new ArrayList<>();
+                    for (RealmCommunity community : communities) {
+                        if (community.isValid() && !TextUtils.isEmpty(community.getName())) {
+                            nonEmptyCommunities.add(community);
+                        }
+                    }
+                    dialogServerUrlBinding.spnCloud.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, nonEmptyCommunities));
 
+                    dialogServerUrlBinding.spnCloud.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                        @Override
+                        public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+                            onChangeServerUrl();
+                        }
+
+                        @Override
+                        public void onNothingSelected(AdapterView<?> adapterView) {
+
+                        }
+                    });
+                    dialogServerUrlBinding.switchServerUrl.setOnCheckedChangeListener((compoundBtn, b) -> {
+                        settings.edit().putBoolean("switchCloudUrl", b).commit();
+                        dialogServerUrlBinding.spnCloud.setVisibility(b ? View.VISIBLE : View.GONE);
+                        setUrlAndPin(dialogServerUrlBinding.switchServerUrl.isChecked());
+                        Log.d("checked", String.valueOf(dialogServerUrlBinding.switchServerUrl.isChecked()));
+                    });
+                    serverUrl.addTextChangedListener(new MyTextWatcher(serverUrl));
+                    dialogServerUrlBinding.deviceName.setText(getCustomDeviceName());
+                    dialogServerUrlBinding.switchServerUrl.setChecked(settings.getBoolean("switchCloudUrl", false));
+                    setUrlAndPin(settings.getBoolean("switchCloudUrl", false));
+                    protocol_semantics();
+                } else {
+                    showConfigurationUIElements(dialogServerUrlBinding, false);
                 }
             });
-            protocol_checkin = dialog.getCustomView().findViewById(R.id.radio_protocol);
-            serverUrl = dialog.getCustomView().findViewById(R.id.input_server_url);
-            serverPassword = dialog.getCustomView().findViewById(R.id.input_server_Password);
-            switchServerUrl = dialog.getCustomView().findViewById(R.id.switch_server_url);
-            serverUrlProtocol = dialog.getCustomView().findViewById(R.id.input_server_url_protocol);
-            switchServerUrl.setOnCheckedChangeListener((compoundButton, b) -> {
-                settings.edit().putBoolean("switchCloudUrl", b).commit();
-                spnCloud.setVisibility(b ? View.VISIBLE : View.GONE);
-                setUrlAndPin(switchServerUrl.isChecked());
-            });
-            serverUrl.addTextChangedListener(new MyTextWatcher(serverUrl));
-            EditText customDeviceName = dialog.getCustomView().findViewById(R.id.deviceName);
-            customDeviceName.setText(getCustomDeviceName());
-            switchServerUrl.setChecked(settings.getBoolean("switchCloudUrl", false));
-            setUrlAndPin(settings.getBoolean("switchCloudUrl", false));
-            protocol_semantics();
             dialog.show();
             sync(dialog);
         } finally {
@@ -699,19 +825,47 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         }
     }
 
+    private void showConfigurationUIElements(DialogServerUrlBinding binding, boolean show) {
+        binding.radioProtocol.setVisibility(show ? View.VISIBLE : View.GONE);
+        binding.switchServerUrl.setVisibility(show ? View.VISIBLE : View.GONE);
+        binding.ltProtocol.setVisibility(show ? View.VISIBLE : View.GONE);
+        binding.ltIntervalLabel.setVisibility(show ? View.VISIBLE : View.GONE);
+        binding.ltSyncSwitch.setVisibility(show ? View.VISIBLE : View.GONE);
+        binding.ltDeviceName.setVisibility(show ? View.VISIBLE : View.GONE);
+
+        if (show) {
+            serverUrl.setText("");
+            serverPassword.setText("");
+            serverUrl.setEnabled(true);
+            serverPassword.setEnabled(true);
+            settings.edit().putString("serverProtocol", getString(R.string.http_protocol)).commit();
+        } else {
+            defaultSetting();
+        }
+    }
+    private void defaultSetting() {
+        serverUrl.setText("planet.learning.ole.org");
+        serverPassword.setText("1983");
+        serverUrl.setEnabled(false);
+        serverPassword.setEnabled(false);
+        settings.edit().putString("serverProtocol", getString(R.string.https_protocol)).commit();
+        serverUrlProtocol.setText(getString(R.string.https_protocol));
+    }
+
     private void onChangeServerUrl() {
         try {
             mRealm = Realm.getDefaultInstance();
             RealmCommunity selected = (RealmCommunity) spnCloud.getSelectedItem();
-            Utilities.log((selected == null) + " selected ");
             if (selected == null) {
                 return;
             }
-            serverUrl.setText(selected.getLocalDomain());
-            protocol_checkin.check(R.id.radio_https);
-            settings.getString("serverProtocol", "https://");
-            serverPassword.setText(selected.getWeight() == 0 ? "0660" : "");
-            serverPassword.setEnabled(selected.getWeight() != 0);
+            if (selected.isValid()) {
+                serverUrl.setText(selected.getLocalDomain());
+                protocol_checkin.check(R.id.radio_https);
+                settings.getString("serverProtocol", getString(R.string.https_protocol));
+                serverPassword.setText(selected.getWeight() == 0 ? "1983" : "");
+                serverPassword.setEnabled(selected.getWeight() != 0);
+            }
         } finally {
             if (mRealm != null && !mRealm.isClosed()) {
                 mRealm.close();
@@ -729,6 +883,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             serverUrlProtocol.setText(settings.getString("serverProtocol", ""));
         }
         serverUrl.setEnabled(!checked);
+        serverPassword.setEnabled(!checked);
         serverPassword.clearFocus();
         serverUrl.clearFocus();
         protocol_checkin.setEnabled(!checked);
@@ -826,10 +981,9 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     public void onSelectedUser(RealmUserModel userModel) {
         try {
             mRealm = Realm.getDefaultInstance();
-            View v = getLayoutInflater().inflate(R.layout.layout_child_login, null);
-            EditText et = v.findViewById(R.id.et_child_password);
-            new AlertDialog.Builder(this).setView(v).setTitle(R.string.please_enter_your_password).setPositiveButton(R.string.login, (dialogInterface, i) -> {
-                String password = et.getText().toString();
+            LayoutChildLoginBinding layoutChildLoginBinding = LayoutChildLoginBinding.inflate(getLayoutInflater());
+            new AlertDialog.Builder(this).setView(layoutChildLoginBinding.getRoot()).setTitle(R.string.please_enter_your_password).setPositiveButton(R.string.login, (dialogInterface, i) -> {
+                String password = layoutChildLoginBinding.etChildPassword.getText().toString();
                 if (authenticateUser(settings, userModel.getName(), password, false)) {
                     Toast.makeText(getApplicationContext(), getString(R.string.thank_you), Toast.LENGTH_SHORT).show();
                     onLogin();
@@ -863,11 +1017,9 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             this.view = view;
         }
 
-        public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-        }
+        public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {}
 
         public void onTextChanged(CharSequence s, int i, int i1, int i2) {
-
             String protocol = serverUrlProtocol == null ? settings.getString("serverProtocol", "http://") : serverUrlProtocol.getText().toString();
             if (view.getId() == R.id.input_server_url)
                 positiveAction.setEnabled(s.toString().trim().length() > 0 && URLUtil.isValidUrl(protocol + s.toString()));
