@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.callback.OnLibraryItemSelected;
 import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.databinding.RowLibraryBinding;
+import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmTag;
 import org.ole.planet.myplanet.ui.course.AdapterCourses;
@@ -25,6 +26,8 @@ import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 
@@ -46,6 +49,8 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private OnRatingChangeListener ratingChangeListener;
     private Markwon markwon;
     private Realm realm;
+    private boolean isAscending = true;
+    private boolean isTitleAscending = true;
     private boolean areAllSelected = true;
 
     public AdapterLibrary(Context context, List<RealmMyLibrary> libraryList, HashMap<String, JsonObject> ratingMap, Realm realm) {
@@ -98,7 +103,8 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
             viewHolder.rowLibraryBinding.timesRated.setText(libraryList.get(position).getTimesRated() + context.getString(R.string.total));
             viewHolder.rowLibraryBinding.checkbox.setChecked(selectedItems.contains(libraryList.get(position)));
             viewHolder.rowLibraryBinding.rating.setText(TextUtils.isEmpty(libraryList.get(position).getAverageRating()) ? "0.0" : String.format("%.1f", Double.parseDouble(libraryList.get(position).getAverageRating())));
-            viewHolder.rowLibraryBinding.tvDate.setText(TimeUtils.formatDate(libraryList.get(position).getCreatedDate(), "MMM dd, yyyy"));
+            viewHolder.rowLibraryBinding.tvDate.setText(TimeUtils.formatDate(Long.parseLong(libraryList.get(position).getCreatedDate().trim()), "MMM dd, yyyy"));
+
             displayTagCloud(viewHolder.rowLibraryBinding.flexboxDrawable, position);
             holder.itemView.setOnClickListener(view -> openLibrary(libraryList.get(position)));
             viewHolder.rowLibraryBinding.ivDownloaded.setImageResource(libraryList.get(position).isResourceOffline() ? R.drawable.ic_eye : R.drawable.ic_download);
@@ -162,6 +168,38 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 }
             });
         }
+    }
+
+    public void toggleTitleSortOrder() {
+        isTitleAscending = !isTitleAscending;
+        sortLibraryListByTitle();
+        notifyDataSetChanged();
+    }
+
+    public void toggleSortOrder() {
+        isAscending = !isAscending;
+        sortLibraryList();
+        notifyDataSetChanged();
+    }
+
+    private void sortLibraryListByTitle() {
+        Collections.sort(libraryList, (library1, library2) -> {
+            if (isTitleAscending) {
+                return library1.getTitle().compareToIgnoreCase(library2.getTitle());
+            } else {
+                return library2.getTitle().compareToIgnoreCase(library1.getTitle());
+            }
+        });
+    }
+
+    private void sortLibraryList() {
+        Collections.sort(libraryList, (library1, library2) -> {
+            if (isAscending) {
+                return library1.getCreatedDate().compareTo(library2.getCreatedDate());
+            } else {
+                return library2.getCreatedDate().compareTo(library1.getCreatedDate());
+            }
+        });
     }
 
     @Override
