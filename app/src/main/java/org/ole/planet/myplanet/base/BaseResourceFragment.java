@@ -150,20 +150,24 @@ public abstract class BaseResourceFragment extends Fragment {
     }
 
     public void startDownload(ArrayList urls) {
-        new Service(getActivity()).isPlanetAvailable(new Service.PlanetAvailableListener() {
-            @Override
-            public void isAvailable() {
-                if (!urls.isEmpty()) {
-                    prgDialog.show();
-                    Utilities.openDownloadService(getActivity(), urls);
+        if (isAdded()) {
+            new Service(requireActivity()).isPlanetAvailable(new Service.PlanetAvailableListener() {
+                @Override
+                public void isAvailable() {
+                    if (!urls.isEmpty()) {
+                        prgDialog.show();
+                        Utilities.openDownloadService(getActivity(), urls);
+                    }
                 }
-            }
 
-            @Override
-            public void notAvailable() {
-                Utilities.toast(getActivity(), getString(R.string.device_not_connected_to_planet));
-            }
-        });
+                @Override
+                public void notAvailable() {
+                    if (isAdded()) {
+                        Utilities.toast(requireActivity(), getString(R.string.device_not_connected_to_planet));
+                    }
+                }
+            });
+        }
     }
 
     public void setProgress(Download download) {
