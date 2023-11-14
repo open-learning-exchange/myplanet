@@ -11,10 +11,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.text.Editable;
-import android.text.InputType;
 import android.text.TextUtils;
 import android.text.TextWatcher;
-import android.text.method.PasswordTransformationMethod;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -26,9 +24,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.LinearLayout;
 import android.widget.RadioGroup;
-import android.widget.RelativeLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -80,7 +76,6 @@ import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import io.realm.Realm;
 import io.realm.Sort;
@@ -788,6 +783,8 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                     prefData.setMANUALCONFIG1(true);
                     settings.edit().putString("serverURL", "").apply();
                     settings.edit().putString("serverPin", "").apply();
+                    dialogServerUrlBinding.radioHttp.setChecked(true);
+                    settings.edit().putString("serverProtocol", getString(R.string.http_protocol)).commit();
 
                     showConfigurationUIElements(dialogServerUrlBinding, true);
                     List<RealmCommunity> communities = mRealm.where(RealmCommunity.class).sort("weight", Sort.ASCENDING).findAll();
@@ -825,6 +822,16 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                     settings.edit().putBoolean("switchCloudUrl", false).commit();
                 }
             });
+
+            dialogServerUrlBinding.radioProtocol.setOnCheckedChangeListener((group, checkedId) -> {
+                switch (checkedId) {
+                    case R.id.radio_http ->
+                            settings.edit().putString("serverProtocol", getString(R.string.http_protocol)).commit();
+                    case R.id.radio_https ->
+                            settings.edit().putString("serverProtocol", getString(R.string.https_protocol)).commit();
+                }
+            });
+
             dialog.show();
             sync(dialog);
         } finally {
@@ -854,7 +861,8 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             }
 
             if (settings.getString("serverProtocol", "").equals(getString(R.string.https_protocol))
-                    && prefData.getMANUALCONFIG1() && !settings.getString("serverURL", "").equals("")){
+                    && !settings.getString("serverURL", "").equals("")
+                    && !settings.getString("serverURL", "").equals("https://planet.learning.ole.org")){
                 binding.radioHttps.setChecked(true);
                 settings.edit().putString("serverProtocol", getString(R.string.https_protocol)).commit();
             }
