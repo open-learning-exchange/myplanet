@@ -70,14 +70,6 @@
                     android:textSize="@dimen/text_size_mid"
                     app:drawableLeftCompat="@drawable/ic_add_library" />
 
-                <Spinner
-                    android:id="@+id/spn_sort"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:entries="@array/sort_by_date"
-                    android:padding="@dimen/padding_normal" />
-
                 <TextView
                     android:id="@+id/tv_selected"
                     android:layout_width="wrap_content"
@@ -131,7 +123,8 @@
                 android:id="@+id/selectAll"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_margin="10.5dp"
+                android:layout_marginStart="10.5dp"
+                android:layout_gravity="center"
                 android:padding="8dp"
                 android:layout_weight="1"
                 android:text="@string/select_all"
@@ -143,8 +136,6 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1" /> <!-- Set layout_width to 0dp and layout_weight to 1 for equal distribution -->
         </LinearLayout>
-
-
 
         <FrameLayout
             android:layout_width="match_parent"
