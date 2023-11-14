@@ -49,7 +49,7 @@ class ChatHistoryListFragment : Fragment() {
             if (model != null && !list.contains(model)) list.add(model)
         }
         val adapter = ChatHistoryListAdapter(requireContext(), list)
-        adapter.setChatHistoryItemClickListener(object : ChatHistoryItemClickListener {
+        adapter.setChatHistoryItemClickListener(object : ChatHistoryListAdapter.ChatHistoryItemClickListener {
             override fun onChatHistoryItemClicked(conversations: RealmList<Conversation>, _id: String, _rev:String) {
                 sharedViewModel.setSelectedChatHistory(conversations)
                 sharedViewModel.setSelected_id(_id)

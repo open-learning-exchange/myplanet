@@ -4,13 +4,19 @@ import android.content.Context
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
+import io.realm.RealmList
 import org.ole.planet.myplanet.databinding.RowChatHistoryBinding
+import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.RealmChatHistory
 
 class ChatHistoryListAdapter(var context: Context, private var chatHistory: List<RealmChatHistory>) :
     RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private lateinit var rowChatHistoryBinding: RowChatHistoryBinding
     private var chatHistoryItemClickListener: ChatHistoryItemClickListener? = null
+
+    interface ChatHistoryItemClickListener {
+        fun onChatHistoryItemClicked(conversations: RealmList<Conversation>, _id: String, _rev: String)
+    }
 
     fun setChatHistoryItemClickListener(listener: ChatHistoryItemClickListener) {
         chatHistoryItemClickListener = listener
