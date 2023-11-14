@@ -94,104 +94,6 @@
 
         </LinearLayout>
 
-        <!--        <LinearLayout-->
-        <!--            android:id="@+id/ll_actions"-->
-        <!--            android:layout_width="match_parent"-->
-        <!--            android:layout_height="wrap_content"-->
-        <!--            android:layout_gravity="right"-->
-        <!--            android:background="@color/colorPrimary"-->
-        <!--            android:gravity="right"-->
-        <!--            android:orientation="vertical"-->
-        <!--            android:padding="@dimen/padding_large">-->
-
-        <!--            <LinearLayout-->
-        <!--                android:layout_width="match_parent"-->
-        <!--                android:layout_height="wrap_content"-->
-        <!--                android:layout_gravity="right"-->
-        <!--                android:layout_margin="@dimen/_10dp"-->
-        <!--                android:gravity="right"-->
-        <!--                android:padding="@dimen/padding_normal">-->
-
-        <!--                <TextView-->
-        <!--                    android:id="@+id/tv_fragment_info"-->
-        <!--                    android:layout_width="wrap_content"-->
-        <!--                    android:layout_height="wrap_content"-->
-        <!--                    android:layout_gravity="center_vertical"-->
-        <!--                    android:layout_weight="1"-->
-        <!--                    android:gravity="center_vertical"-->
-        <!--                    android:padding="@dimen/padding_normal"-->
-        <!--                    android:text="@string/library"-->
-        <!--                    android:textColor="@color/md_white_1000"-->
-        <!--                    android:textSize="@dimen/text_size_large"-->
-        <!--                    android:textStyle="bold" />-->
-
-        <!--                <TextView-->
-        <!--                    android:id="@+id/tv_selected"-->
-        <!--                    android:layout_width="wrap_content"-->
-        <!--                    android:layout_height="wrap_content"-->
-        <!--                    android:padding="@dimen/padding_small"-->
-        <!--                    android:textColor="@color/md_white_1000"-->
-        <!--                    android:textSize="@dimen/text_size_mid" />-->
-
-        <!--                <Button-->
-        <!--                    android:id="@+id/btn_collections"-->
-        <!--                    android:layout_width="wrap_content"-->
-        <!--                    android:layout_height="wrap_content"-->
-        <!--                    android:layout_marginRight="10dp"-->
-        <!--                    android:text="@string/collections"-->
-        <!--                    android:textSize="@dimen/text_size_small"-->
-        <!--                    android:theme="@style/AccentButton" />-->
-
-        <!--                <Button-->
-        <!--                    android:id="@+id/show_filter"-->
-        <!--                    android:layout_width="wrap_content"-->
-        <!--                    android:layout_height="wrap_content"-->
-        <!--                    android:layout_marginRight="10dp"-->
-        <!--                    android:text="@string/show_filter"-->
-        <!--                    android:textSize="@dimen/text_size_small"-->
-        <!--                    android:theme="@style/BlueButton" />-->
-
-        <!--                <Button-->
-        <!--                    android:id="@+id/btn_clear_tags"-->
-        <!--                    android:layout_width="wrap_content"-->
-        <!--                    android:layout_height="wrap_content"-->
-        <!--                    android:text="@string/clear_tags"-->
-        <!--                    android:textColor="@color/md_white_1000"-->
-        <!--                    android:textSize="@dimen/text_size_small"-->
-        <!--                    android:theme="@style/AccentButton" />-->
-
-        <!--                <TextView-->
-        <!--                    android:id="@+id/tv_add"-->
-        <!--                    android:layout_width="wrap_content"-->
-        <!--                    android:layout_height="match_parent"-->
-        <!--                    android:layout_gravity="center"-->
-        <!--                    android:background="?attr/selectableItemBackground"-->
-        <!--                    android:drawablePadding="8dp"-->
-        <!--                    android:gravity="center"-->
-        <!--                    android:text="@string/add_to_mylib"-->
-        <!--                    android:textColor="@drawable/tv_color"-->
-        <!--                    android:textSize="@dimen/text_size_mid"-->
-        <!--                    app:drawableLeftCompat="@drawable/ic_add_library" />-->
-
-
-        <!--                <TextView-->
-        <!--                    android:id="@+id/tv_delete"-->
-        <!--                    android:layout_width="wrap_content"-->
-        <!--                    android:layout_height="wrap_content"-->
-        <!--                    android:layout_gravity="center"-->
-        <!--                    android:layout_marginStart="@dimen/padding_normal"-->
-        <!--                    android:background="?attr/selectableItemBackground"-->
-        <!--                    android:drawablePadding="4dp"-->
-        <!--                    android:gravity="center"-->
-        <!--                    android:text="@string/remove_selected"-->
-        <!--                    android:textColor="@drawable/tv_color"-->
-        <!--                    android:textSize="@dimen/text_size_mid"-->
-        <!--                    android:visibility="gone"-->
-        <!--                    app:drawableStartCompat="@drawable/ic_delete" />-->
-
-        <!--            </LinearLayout>-->
-        <!--        </LinearLayout>-->
-
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -320,12 +222,6 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal">
 
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="4dp"
-                    android:layout_weight="1" />
-
                 <Button
                     android:id="@+id/btn_clear_tags"
                     android:layout_width="0dp"
@@ -335,6 +231,12 @@
                     android:background="@drawable/buttonblue"
                     android:text="@string/clear_tags"
                     android:textColor="@color/md_white_1000" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="4dp"
+                    android:layout_weight="1" />
             </LinearLayout>
 
         </LinearLayout>
