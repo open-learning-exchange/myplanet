@@ -15,6 +15,7 @@ class SharedPrefManager(context: Context) {
 
     var SAVEDUSERS = "savedUsers"
     var REPLIEDNEWSID = "repliedNewsId"
+    var MANUALCONFIG = "manualConfig"
 
     init {
         pref = context.getSharedPreferences(SHARED_PREF_NAME, PRIVATE_MODE)
@@ -72,6 +73,17 @@ class SharedPrefManager(context: Context) {
     @JvmName("setREPLIEDNEWSID1")
     fun setREPLIEDNEWSID(repliedNewsId: String?) {
         editor.putString(REPLIEDNEWSID, repliedNewsId)
+        editor.apply()
+    }
+
+    @JvmName("getMANUALCONFIG1")
+    fun getMANUALCONFIG(): Boolean {
+        return pref.getBoolean(MANUALCONFIG, false)
+    }
+
+    @JvmName("setMANUALCONFIG1")
+    fun setMANUALCONFIG(manualConfig: Boolean) {
+        editor.putBoolean(MANUALCONFIG, manualConfig)
         editor.apply()
     }
 }
