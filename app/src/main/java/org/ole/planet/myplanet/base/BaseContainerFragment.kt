@@ -5,7 +5,9 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.content.SharedPreferences
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.text.TextUtils
 import android.util.Log
 import android.view.LayoutInflater
@@ -18,8 +20,11 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatRatingBar
+import androidx.core.content.FileProvider.getUriForFile
 import com.google.gson.JsonObject
 import io.realm.RealmResults
+import org.ole.planet.myplanet.BuildConfig
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
@@ -33,6 +38,7 @@ import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import java.io.File
 import java.util.*
+
 
 abstract class BaseContainerFragment : BaseResourceFragment() {
     var timesRated: TextView? = null
@@ -141,9 +147,22 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             "txt" -> openIntent(items, TextFileViewerActivity::class.java)
             "md" -> openIntent(items, MarkdownViewerActivity::class.java)
             "csv" -> openIntent(items, CSVViewerActivity::class.java)
+            "apk" -> installApk(items)
             else -> Toast.makeText(
                 activity, getString(R.string.this_file_type_is_currently_unsupported), Toast.LENGTH_LONG
             ).show()
+        }
+    }
+
+    private fun installApk(items: RealmMyLibrary) {
+        val apkFile = File(items.resourceLocalAddress)
+        if (apkFile.exists()) {
+            val intent = Intent(Intent.ACTION_VIEW)
+            intent.setDataAndType(Uri.fromFile(apkFile), "application/vnd.android.package-archive")
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            startActivity(intent)
+        } else {
+            Log.e("InstallApkActivity", "APK file not found")
         }
     }
 

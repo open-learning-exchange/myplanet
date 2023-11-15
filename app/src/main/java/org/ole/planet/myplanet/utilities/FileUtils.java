@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.utilities;
 
+import static androidx.core.content.FileProvider.getUriForFile;
 import static org.ole.planet.myplanet.MainApplication.context;
 
 import android.content.Context;
@@ -111,7 +112,7 @@ public class FileUtils {
             File toInstall = FileUtils.getSDPathFromUrl(file);
             toInstall.setReadable(true, false);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                Uri apkUri = FileProvider.getUriForFile(activity, BuildConfig.APPLICATION_ID + ".provider", toInstall);
+                Uri apkUri = getUriForFile(activity, BuildConfig.APPLICATION_ID + ".provider", toInstall);
                 Intent intent = new Intent(Intent.ACTION_INSTALL_PACKAGE);
                 intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                 intent.setData(apkUri);
