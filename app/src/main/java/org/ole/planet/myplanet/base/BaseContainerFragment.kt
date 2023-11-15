@@ -5,9 +5,7 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.content.SharedPreferences
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
-import android.os.Environment
 import android.text.TextUtils
 import android.util.Log
 import android.view.LayoutInflater
@@ -20,10 +18,8 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatRatingBar
-import androidx.core.content.FileProvider.getUriForFile
 import com.google.gson.JsonObject
 import io.realm.RealmResults
-import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
@@ -33,11 +29,16 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.service.UserProfileDbHandler.KEY_RESOURCE_DOWNLOAD
 import org.ole.planet.myplanet.service.UserProfileDbHandler.KEY_RESOURCE_OPEN
 import org.ole.planet.myplanet.ui.course.AdapterCourses
-import org.ole.planet.myplanet.ui.viewer.*
+import org.ole.planet.myplanet.ui.viewer.AudioPlayerActivity
+import org.ole.planet.myplanet.ui.viewer.CSVViewerActivity
+import org.ole.planet.myplanet.ui.viewer.ImageViewerActivity
+import org.ole.planet.myplanet.ui.viewer.MarkdownViewerActivity
+import org.ole.planet.myplanet.ui.viewer.PDFReaderActivity
+import org.ole.planet.myplanet.ui.viewer.TextFileViewerActivity
+import org.ole.planet.myplanet.ui.viewer.VideoPlayerActivity
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import java.io.File
-import java.util.*
 
 
 abstract class BaseContainerFragment : BaseResourceFragment() {
@@ -155,15 +156,36 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
 
     private fun installApk(items: RealmMyLibrary) {
-        val apkFile = File(items.resourceLocalAddress)
-        if (apkFile.exists()) {
-            val intent = Intent(Intent.ACTION_VIEW)
-            intent.setDataAndType(Uri.fromFile(apkFile), "application/vnd.android.package-archive")
-            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            startActivity(intent)
-        } else {
-            Log.e("InstallApkActivity", "APK file not found")
+        val directory = File(MainApplication.context.getExternalFilesDir(null).toString() + "/ole" + "/" + items.id)
+        if (!directory.exists()) {
+            if (!directory.mkdirs()) {
+                throw RuntimeException("Failed to create directory: " + directory.absolutePath)
+            }
         }
+
+        val apkFile = File(directory, items.resourceLocalAddress)
+        Log.d("true", apkFile.exists().toString())
+
+        if (!apkFile.exists()) {
+            Log.e("InstallApkActivity", "APK file not found")
+            return
+        }
+
+        val intent = Intent(Intent.ACTION_VIEW)
+        intent.setDataAndType(Uri.fromFile(apkFile), "application/vnd.android.package-archive")
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        startActivity(intent)
+
+//        val apkFile = File(directory, items.resourceLocalAddress)
+//        Log.d("true", apkFile.exists().toString())
+//        if (apkFile.exists()) {
+//            val intent = Intent(Intent.ACTION_VIEW)
+//            intent.setDataAndType(Uri.fromFile(apkFile), "application/vnd.android.package-archive")
+//            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+//            startActivity(intent)
+//        } else {
+//            Log.e("InstallApkActivity", "APK file not found")
+//        }
     }
 
     fun openFileType(items: RealmMyLibrary, videotype: String) {
