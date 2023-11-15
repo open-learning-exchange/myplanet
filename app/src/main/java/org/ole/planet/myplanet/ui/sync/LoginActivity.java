@@ -11,10 +11,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.text.Editable;
-import android.text.InputType;
 import android.text.TextUtils;
 import android.text.TextWatcher;
-import android.text.method.PasswordTransformationMethod;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -26,9 +24,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.LinearLayout;
 import android.widget.RadioGroup;
-import android.widget.RelativeLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -80,7 +76,6 @@ import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import io.realm.Realm;
 import io.realm.Sort;
@@ -770,9 +765,14 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             serverUrl = dialogServerUrlBinding.inputServerUrl;
             serverPassword = dialogServerUrlBinding.inputServerPassword;
             serverUrlProtocol = dialogServerUrlBinding.inputServerUrlProtocol;
+            dialogServerUrlBinding.deviceName.setText(NetworkUtils.getDeviceName());
 
-            if(!dialogServerUrlBinding.manualConfiguration.isChecked()){
-                defaultSetting();
+            if(!prefData.getMANUALCONFIG1()){
+                dialogServerUrlBinding.manualConfiguration.setChecked(false);
+                showConfigurationUIElements(dialogServerUrlBinding, false);
+            } else {
+                dialogServerUrlBinding.manualConfiguration.setChecked(true);
+                showConfigurationUIElements(dialogServerUrlBinding, true);
             }
 
             MaterialDialog dialog = builder.build();
@@ -780,6 +780,12 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
             dialogServerUrlBinding.manualConfiguration.setOnCheckedChangeListener((compoundButton, isChecked) -> {
                 if (isChecked) {
+                    prefData.setMANUALCONFIG1(true);
+                    settings.edit().putString("serverURL", "").apply();
+                    settings.edit().putString("serverPin", "").apply();
+                    dialogServerUrlBinding.radioHttp.setChecked(true);
+                    settings.edit().putString("serverProtocol", getString(R.string.http_protocol)).commit();
+
                     showConfigurationUIElements(dialogServerUrlBinding, true);
                     List<RealmCommunity> communities = mRealm.where(RealmCommunity.class).sort("weight", Sort.ASCENDING).findAll();
                     List<RealmCommunity> nonEmptyCommunities = new ArrayList<>();
@@ -805,17 +811,27 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                         settings.edit().putBoolean("switchCloudUrl", b).commit();
                         dialogServerUrlBinding.spnCloud.setVisibility(b ? View.VISIBLE : View.GONE);
                         setUrlAndPin(dialogServerUrlBinding.switchServerUrl.isChecked());
-                        Log.d("checked", String.valueOf(dialogServerUrlBinding.switchServerUrl.isChecked()));
                     });
                     serverUrl.addTextChangedListener(new MyTextWatcher(serverUrl));
-                    dialogServerUrlBinding.deviceName.setText(getCustomDeviceName());
                     dialogServerUrlBinding.switchServerUrl.setChecked(settings.getBoolean("switchCloudUrl", false));
                     setUrlAndPin(settings.getBoolean("switchCloudUrl", false));
                     protocol_semantics();
                 } else {
+                    prefData.setMANUALCONFIG1(false);
                     showConfigurationUIElements(dialogServerUrlBinding, false);
+                    settings.edit().putBoolean("switchCloudUrl", false).commit();
                 }
             });
+
+            dialogServerUrlBinding.radioProtocol.setOnCheckedChangeListener((group, checkedId) -> {
+                switch (checkedId) {
+                    case R.id.radio_http ->
+                            settings.edit().putString("serverProtocol", getString(R.string.http_protocol)).commit();
+                    case R.id.radio_https ->
+                            settings.edit().putString("serverProtocol", getString(R.string.https_protocol)).commit();
+                }
+            });
+
             dialog.show();
             sync(dialog);
         } finally {
@@ -834,22 +850,35 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         binding.ltDeviceName.setVisibility(show ? View.VISIBLE : View.GONE);
 
         if (show) {
-            serverUrl.setText("");
-            serverPassword.setText("");
+            if (settings.getString("serverURL", "").equals("https://planet.learning.ole.org")){
+                settings.edit().putString("serverURL", "").apply();
+                settings.edit().putString("serverPin", "").apply();
+            }
+
+            if (settings.getString("serverProtocol", "").equals(getString(R.string.http_protocol))) {
+                binding.radioHttp.setChecked(true);
+                settings.edit().putString("serverProtocol", getString(R.string.http_protocol)).commit();
+            }
+
+            if (settings.getString("serverProtocol", "").equals(getString(R.string.https_protocol))
+                    && !settings.getString("serverURL", "").equals("")
+                    && !settings.getString("serverURL", "").equals("https://planet.learning.ole.org")){
+                binding.radioHttps.setChecked(true);
+                settings.edit().putString("serverProtocol", getString(R.string.https_protocol)).commit();
+            }
+
+            serverUrl.setText(removeProtocol(settings.getString("serverURL", "")));
+            serverPassword.setText(settings.getString("serverPin", ""));
             serverUrl.setEnabled(true);
             serverPassword.setEnabled(true);
-            settings.edit().putString("serverProtocol", getString(R.string.http_protocol)).commit();
         } else {
-            defaultSetting();
+            serverUrl.setText("planet.learning.ole.org");
+            serverPassword.setText("1983");
+            serverUrl.setEnabled(false);
+            serverPassword.setEnabled(false);
+            settings.edit().putString("serverProtocol", getString(R.string.https_protocol)).commit();
+            serverUrlProtocol.setText(getString(R.string.https_protocol));
         }
-    }
-    private void defaultSetting() {
-        serverUrl.setText("planet.learning.ole.org");
-        serverPassword.setText("1983");
-        serverUrl.setEnabled(false);
-        serverPassword.setEnabled(false);
-        settings.edit().putString("serverProtocol", getString(R.string.https_protocol)).commit();
-        serverUrlProtocol.setText(getString(R.string.https_protocol));
     }
 
     private void onChangeServerUrl() {

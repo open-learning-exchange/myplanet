@@ -45,7 +45,6 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
     CheckBox selectAll;
     Spinner spnGrade, spnSubject;
     List<RealmTag> searchTags;
-    Spinner spn;
     AlertDialog confirmation;
     private boolean allItemsSelected = false;
 
@@ -114,23 +113,6 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         changeButtonStatus();
         if (!isMyCourseLib) tvFragmentInfo.setText(R.string.our_courses);
         additionalSetup();
-
-        spn.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                if (i == 0) {
-                    adapterCourses.setCourseList(getList(RealmMyCourse.class, "createdDate", Sort.ASCENDING));
-                } else if (i == 1) {
-                    adapterCourses.setCourseList(getList(RealmMyCourse.class, "createdDate", Sort.DESCENDING));
-                } else {
-                    adapterCourses.setCourseList(getList(RealmMyCourse.class, "courseTitle"));
-                }
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> adapterView) {
-            }
-        });
     }
 
     public void additionalSetup() {
@@ -143,7 +125,6 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
     }
 
     private void initializeView() {
-        spn = getView().findViewById(R.id.spn_sort);
         tvAddToLib = getView().findViewById(R.id.tv_add);
         tvAddToLib.setOnClickListener(view -> {
             if (selectedItems.size() > 0) {
@@ -187,7 +168,6 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
             etSearch.setVisibility(View.GONE);
             tvAddToLib.setVisibility(View.GONE);
             getView().findViewById(R.id.filter).setVisibility(View.GONE);
-            spn.setVisibility(View.GONE);
             btnRemove.setVisibility(View.GONE);
             tvSelected.setVisibility(View.GONE);
         }
