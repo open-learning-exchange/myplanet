@@ -15,18 +15,17 @@
             android:id="@+id/ll_actions"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="right"
+            android:layout_gravity="end"
             android:background="@color/colorPrimary"
-            android:gravity="right"
+            android:gravity="end"
             android:orientation="vertical"
             android:padding="@dimen/padding_large">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_gravity="right"
-                android:layout_margin="@dimen/_10dp"
-                android:gravity="right"
+                android:background="@color/colorPrimary"
+                android:orientation="horizontal"
                 android:padding="@dimen/padding_normal">
 
                 <TextView
@@ -34,6 +33,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_vertical"
+                    android:layout_margin="@dimen/_10dp"
                     android:layout_weight="1"
                     android:gravity="center_vertical"
                     android:padding="@dimen/padding_normal"
@@ -43,6 +43,20 @@
                     android:textStyle="bold" />
 
                 <TextView
+                    android:id="@+id/tv_add"
+                    style="@style/Widget.AppCompat.Button.Borderless.Colored"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_margin="@dimen/padding_small"
+                    android:drawablePadding="4dp"
+                    android:gravity="center"
+                    android:text="@string/add_to_mylib"
+                    android:textColor="@drawable/tv_color"
+                    android:textSize="@dimen/text_size_mid"
+                    app:drawableLeftCompat="@drawable/ic_add_library" />
+
+                <TextView
                     android:id="@+id/tv_selected"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -50,70 +64,34 @@
                     android:textColor="@color/md_white_1000"
                     android:textSize="@dimen/text_size_mid" />
 
-                <Button
-                    android:id="@+id/btn_collections"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginRight="10dp"
-                    android:text="@string/collections"
-                    android:textSize="@dimen/text_size_small"
-                    android:theme="@style/AccentButton" />
-
-                <Button
-                    android:id="@+id/show_filter"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginRight="10dp"
-                    android:text="@string/show_filter"
-                    android:textSize="@dimen/text_size_small"
-                    android:theme="@style/BlueButton" />
-
-                <Button
-                    android:id="@+id/btn_clear_tags"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/clear_tags"
-                    android:textColor="@color/md_white_1000"
-                    android:textSize="@dimen/text_size_small"
-                    android:theme="@style/AccentButton" />
-
-                <Spinner
-                    android:id="@+id/spn_sort"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:entries="@array/sort_by_date"
-                    android:padding="@dimen/padding_normal" />
-
-                <TextView
-                    android:id="@+id/tv_add"
-                    android:layout_width="wrap_content"
-                    android:layout_height="match_parent"
-                    android:layout_gravity="center"
-                    android:background="?attr/selectableItemBackground"
-                    android:drawablePadding="8dp"
-                    android:gravity="center"
-                    android:text="@string/add_to_mylib"
-                    android:textColor="@drawable/tv_color"
-                    android:textSize="@dimen/text_size_mid"
-                    app:drawableLeftCompat="@drawable/ic_add_library" />
-
-
                 <TextView
                     android:id="@+id/tv_delete"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
-                    android:layout_marginStart="@dimen/padding_normal"
+                    android:layout_margin="@dimen/_10dp"
                     android:background="?attr/selectableItemBackground"
-                    android:drawablePadding="4dp"
-                    android:gravity="center"
+                    android:gravity="start|center_vertical"
                     android:text="@string/remove_selected"
                     android:textColor="@drawable/tv_color"
                     android:textSize="@dimen/text_size_mid"
                     android:visibility="gone"
-                    app:drawableStartCompat="@drawable/ic_delete" />
+                    app:drawableLeftCompat="@drawable/ic_delete" />
+
+                <ImageButton
+                    android:id="@+id/filter"
+                    style="@style/YellowButtons"
+                    android:layout_width="@dimen/_50dp"
+                    android:layout_height="@dimen/_50dp"
+                    android:layout_margin="@dimen/padding_normal"
+                    android:background="@drawable/buttonyellow"
+                    android:padding="@dimen/padding_normal"
+                    android:text="@string/more_action"
+                    android:textColor="@color/md_white_1000"
+                    app:srcCompat="@drawable/ic_filter" />
 
             </LinearLayout>
+
         </LinearLayout>
 
         <LinearLayout
@@ -155,4 +133,112 @@
                 android:layout_gravity="center_horizontal" />
         </FrameLayout>
     </LinearLayout>
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/card_filter"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:animateLayoutChanges="true"
+        android:visibility="gone"
+        app:cardCornerRadius="8dp">
+
+        <LinearLayout
+            android:id="@+id/ll_filter"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="right"
+            android:background="@drawable/custom_border"
+            android:gravity="right"
+            android:orientation="vertical"
+            android:padding="@dimen/padding_normal"
+            app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="@dimen/padding_normal"
+                android:text="@string/filter"
+                android:textColor="@color/colorPrimaryDark"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/order_by_date_button"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="4dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/buttonblue"
+                    android:text="@string/order_by_date"
+                    android:textColor="@color/md_white_1000" />
+
+                <Button
+                    android:id="@+id/order_by_title_button"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="4dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/buttonblue"
+                    android:text="@string/order_by_title"
+                    android:textColor="@color/md_white_1000" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp">
+
+                <Button
+                    android:id="@+id/filterCategories"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="4dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/buttonblue"
+                    android:text="Filter by category"
+                    android:textColor="@color/md_white_1000" />
+
+                <Button
+                    android:id="@+id/btn_collections"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="4dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/buttonblue"
+                    android:text="@string/collections"
+                    android:textColor="@color/md_white_1000" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btn_clear_tags"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="4dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/buttonblue"
+                    android:text="@string/clear_tags"
+                    android:textColor="@color/md_white_1000" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="4dp"
+                    android:layout_weight="1" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
