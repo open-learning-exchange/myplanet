@@ -1,13 +1,20 @@
 package org.ole.planet.myplanet.model;
 
+import static org.ole.planet.myplanet.MainApplication.context;
+
 import android.util.Base64;
+import android.util.Log;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.utilities.JsonUtils;
+import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import io.realm.Realm;
 
@@ -31,10 +38,29 @@ public class RealmCourseStep extends io.realm.RealmObject {
             JsonObject stepContainer = steps.get(step).getAsJsonObject();
             myCourseStepDB.setStepTitle(JsonUtils.getString("stepTitle", stepContainer));
             myCourseStepDB.setDescription(JsonUtils.getString("description", stepContainer));
+            String description = JsonUtils.getString("description", stepContainer);
+            ArrayList<String> links = extractLinks(description);
+
+            for (String link : links) {
+//                System.out.println(link);
+                Log.d("Giddie", link);
+            }
+
+            Utilities.openDownloadService(context, links);
             myCourseStepDB.setNoOfResources(JsonUtils.getJsonArray("resources", stepContainer).size());
             insertCourseStepsAttachments(myCoursesID, step_id, JsonUtils.getJsonArray("resources", stepContainer), mRealm);
             insertExam(stepContainer, mRealm, step_id, step + 1, myCoursesID);
         }
+    }
+
+    private static ArrayList<String> extractLinks(String text) {
+        ArrayList<String> links = new ArrayList<>();
+        Pattern pattern = Pattern.compile("!\\[.*?\\]\\((.*?)\\)");
+        Matcher matcher = pattern.matcher(text);
+        while (matcher.find()) {
+            links.add(matcher.group(1));
+        }
+        return links;
     }
 
     private static void insertExam(JsonObject stepContainer, Realm mRealm, String step_id, int i, String myCoursesID) {
