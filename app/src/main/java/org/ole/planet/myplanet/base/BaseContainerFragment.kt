@@ -18,8 +18,10 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatRatingBar
+import androidx.core.content.FileProvider
 import com.google.gson.JsonObject
 import io.realm.RealmResults
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
@@ -32,7 +34,6 @@ import org.ole.planet.myplanet.ui.viewer.*
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import java.io.File
-import java.util.*
 
 abstract class BaseContainerFragment : BaseResourceFragment() {
     var timesRated: TextView? = null
@@ -141,9 +142,40 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             "txt" -> openIntent(items, TextFileViewerActivity::class.java)
             "md" -> openIntent(items, MarkdownViewerActivity::class.java)
             "csv" -> openIntent(items, CSVViewerActivity::class.java)
+            "apk" -> installApk(items)
             else -> Toast.makeText(
                 activity, getString(R.string.this_file_type_is_currently_unsupported), Toast.LENGTH_LONG
             ).show()
+        }
+    }
+
+    private fun installApk(items: RealmMyLibrary) {
+        val directory = File(MainApplication.context.getExternalFilesDir(null).toString() + "/ole" + "/" + items.id)
+        if (!directory.exists()) {
+            if (!directory.mkdirs()) {
+                throw RuntimeException("Failed to create directory: " + directory.absolutePath)
+            }
+        }
+
+        val apkFile = File(directory, items.resourceLocalAddress)
+        if (!apkFile.exists()) {
+            Utilities.toast(activity,"APK file not found")
+            return
+        }
+
+        val uri = FileProvider.getUriForFile(
+            MainApplication.context, "${MainApplication.context.packageName}.fileprovider",
+            apkFile
+        )
+
+        val intent = Intent(Intent.ACTION_INSTALL_PACKAGE)
+        intent.data = uri
+        intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK
+
+        if (intent.resolveActivity(requireActivity().packageManager) != null) {
+            startActivity(intent)
+        } else {
+            Utilities.toast(activity,"No app to handle the installation")
         }
     }
 
