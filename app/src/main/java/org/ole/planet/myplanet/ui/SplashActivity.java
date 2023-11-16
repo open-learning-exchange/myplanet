@@ -35,12 +35,12 @@ public class SplashActivity extends AppCompatActivity {
             return;
         }
         if (settings.contains("isChild")) {
-            startActivity(new Intent(SplashActivity.this, UsersLoginActivity.class));
+            startActivity(new Intent(SplashActivity.this, LoginActivity.class));
             finish();
         }
         binding.getStarted.setOnClickListener(view -> {
             settings.edit().putBoolean("isChild", binding.childLogin.isChecked()).commit();
-            startActivity(new Intent(SplashActivity.this, UsersLoginActivity.class));
+            startActivity(new Intent(SplashActivity.this, LoginActivity.class));
         });
     }
 }

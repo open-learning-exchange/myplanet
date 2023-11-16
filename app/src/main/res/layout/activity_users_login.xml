@@ -77,16 +77,45 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
 
-                <TextView
-                    android:id="@+id/userName"
-                    android:layout_width="wrap_content"
+<!--                <TextView-->
+<!--                    android:id="@+id/userName"-->
+<!--                    android:layout_width="wrap_content"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:layout_gravity="center"-->
+<!--                    android:textColor="@color/md_black_1000"-->
+<!--                    android:textSize="20sp"-->
+<!--                    app:layout_constraintEnd_toEndOf="parent"-->
+<!--                    app:layout_constraintStart_toStartOf="parent"-->
+<!--                    app:layout_constraintTop_toBottomOf="@+id/userProfile" />-->
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/ltInputName"
+                    android:layout_width="200dp"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:textColor="@color/md_black_1000"
-                    android:textSize="20sp"
+                    android:layout_marginTop="10dp"
+                    app:boxBackgroundColor="@color/md_white_1000"
+                    app:boxStrokeColor="@color/md_white_1000"
+                    app:boxStrokeWidth="0dp"
+                    app:boxStrokeWidthFocused="0dp"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/userProfile" />
+                    app:layout_constraintTop_toBottomOf="@+id/userProfile">
+
+                    <EditText
+                        android:id="@+id/inputName"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_centerHorizontal="true"
+                        android:layout_centerVertical="true"
+                        android:autofillHints=""
+                        android:drawablePadding="12dp"
+                        android:contentDescription="@string/hint_name"
+                        android:hint="@string/hint_name"
+                        android:inputType="text"
+                        android:paddingStart="10dp"
+                        android:paddingEnd="8dp"
+                        android:textColor="@color/md_black_1000" />
+                </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/edtPassword"
@@ -99,7 +128,7 @@
                     app:boxStrokeWidthFocused="0dp"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/userName"
+                    app:layout_constraintTop_toBottomOf="@+id/ltInputName"
                     app:passwordToggleEnabled="true">
 
                     <EditText

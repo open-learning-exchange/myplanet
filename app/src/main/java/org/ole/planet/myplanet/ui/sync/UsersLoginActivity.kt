@@ -139,7 +139,8 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
             activityUsersLoginBinding.openCommunity.visibility = View.GONE
         }
         activityUsersLoginBinding.btnFeedback.setOnClickListener {
-            FeedbackFragment().show(supportFragmentManager, "")
+//            FeedbackFragment().show(supportFragmentManager, "")
+            showUserList()
         }
 //        previouslyLoggedIn!!.setOnClickListener { showUserList() }
         guest = intent.getBooleanExtra("guest", false)
@@ -177,6 +178,7 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
             .setView(view)
             .setNegativeButton(R.string.dismiss, null)
         val existingUsers = prefData.getSAVEDUSERS()
+        Log.d("existingUsers", existingUsers.toString())
         val adapter = UserListAdapter(this@UsersLoginActivity, existingUsers)
         adapter.setOnItemClickListener(object : UserListAdapter.OnItemClickListener {
             override fun onItemClickGuest(name: String) {
@@ -255,13 +257,12 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
         }
 //        customDeviceName!!.text = getCustomDeviceName()
         activityUsersLoginBinding.btnSignin.setOnClickListener {
-//            if (TextUtils.isEmpty(activityUsersLoginBinding.userName!!.text.toString())) {
-//                activityUsersLoginBinding.userName!!.error = getString(R.string.err_msg_name)
-//            } else
-            if (TextUtils.isEmpty(activityUsersLoginBinding.inputPassword.text.toString())) {
+            if (TextUtils.isEmpty(activityUsersLoginBinding.inputName.text.toString())) {
+                activityUsersLoginBinding.inputName.error = getString(R.string.err_msg_name)
+            } else if (TextUtils.isEmpty(activityUsersLoginBinding.inputPassword.text.toString())) {
                 activityUsersLoginBinding.inputPassword.error = getString(R.string.err_msg_password)
             } else {
-                submitForm(activityUsersLoginBinding.userName.text.toString(), activityUsersLoginBinding.inputPassword!!.text.toString())
+                submitForm(activityUsersLoginBinding.inputName.text.toString(), activityUsersLoginBinding.inputPassword.text.toString())
             }
         }
         if (!settings.contains("serverProtocol")) settings.edit().putString("serverProtocol", "http://").apply()
@@ -491,7 +492,7 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
 
 //            setUplanguageButton()
             if (defaultPref.getBoolean("saveUsernameAndPassword", false)) {
-                activityUsersLoginBinding.userName!!.text = settings.getString(getString(R.string.login_user), "")
+                activityUsersLoginBinding.inputName.setText(settings.getString(getString(R.string.login_user), ""))
                 activityUsersLoginBinding.inputPassword.setText(settings.getString(getString(R.string.login_password), ""))
             }
             if (NetworkUtils.isNetworkConnected()) {
@@ -553,7 +554,7 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
         if (isLoggedIn) {
             Toast.makeText(applicationContext, getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
             onLogin()
-            saveUsers(activityUsersLoginBinding.userName!!.text.toString(), activityUsersLoginBinding.inputPassword.text.toString(), "member")
+            saveUsers(activityUsersLoginBinding.inputName!!.text.toString(), activityUsersLoginBinding.inputPassword.text.toString(), "member")
         } else {
             ManagerSync.getInstance().login(name, password, object : SyncListener {
                 override fun onSyncStarted() {
@@ -568,7 +569,7 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
                     if (log) {
                         Toast.makeText(applicationContext, getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
                         onLogin()
-                        saveUsers(activityUsersLoginBinding.userName!!.text.toString(), activityUsersLoginBinding.inputPassword.text.toString(), "member")
+                        saveUsers(activityUsersLoginBinding.inputName!!.text.toString(), activityUsersLoginBinding.inputPassword.text.toString(), "member")
                     } else {
                         alertDialogOkay(getString(R.string.err_msg_login))
                     }
@@ -868,9 +869,7 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
 
         activityUsersLoginBinding.recyclerView.layoutManager = LinearLayoutManager(this)
         users = RealmMyTeam.getUsers(selectedTeamId, mRealm, "")
-
         mAdapter = TeamListAdapter(users as MutableList<RealmUserModel>, this, this)
-        activityUsersLoginBinding.recyclerView.adapter = mAdapter
 
         val layoutManager: RecyclerView.LayoutManager = object : LinearLayoutManager(this) {
             override fun generateDefaultLayoutParams(): RecyclerView.LayoutParams {
@@ -889,6 +888,6 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
             .error(R.drawable.profile)
             .into( activityUsersLoginBinding.userProfile)
 
-        activityUsersLoginBinding.userName.text = user.name
+        activityUsersLoginBinding.inputName.setText(user.name)
     }
 }
