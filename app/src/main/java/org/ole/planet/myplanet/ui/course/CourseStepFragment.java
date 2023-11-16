@@ -1,7 +1,10 @@
 package org.ole.planet.myplanet.ui.course;
 
 
+import static org.ole.planet.myplanet.MainApplication.context;
+
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -26,12 +29,18 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.exam.TakeExamFragment;
 import org.ole.planet.myplanet.utilities.CameraUtils;
 import org.ole.planet.myplanet.utilities.Constants;
+import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import io.noties.markwon.Markwon;
+import io.noties.markwon.image.ImagesPlugin;
+import io.noties.markwon.image.gif.GifMediaDecoder;
+import io.noties.markwon.image.svg.SvgPictureMediaDecoder;
 import io.noties.markwon.movement.MovementMethodPlugin;
 import io.realm.Case;
 import io.realm.Realm;
@@ -60,8 +69,14 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
             stepNumber = getArguments().getInt("stepNumber");
         }
         setUserVisibleHint(false);
-        markwon = Markwon.builder(MainApplication.context)
-                .usePlugin(MovementMethodPlugin.none())
+        markwon = Markwon.builder(context)
+                .usePlugin(ImagesPlugin.create())
+                .usePlugin(ImagesPlugin.create(plugin -> {
+                    plugin.addMediaDecoder(SvgPictureMediaDecoder.create());
+                }))
+                .usePlugin(ImagesPlugin.create(plugin -> {
+                    plugin.addMediaDecoder(GifMediaDecoder.create());
+                }))
                 .build();
     }
 
@@ -116,7 +131,11 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
         if (resources != null) fragmentCourseStepBinding.btnResources.setText(getString(R.string.resources) + " ["+ resources.size() + "]");
         hideTestIfNoQuestion();
         fragmentCourseStepBinding.tvTitle.setText(step.getStepTitle());
-        markwon.setMarkdown(fragmentCourseStepBinding.description, step.getDescription());
+        String markdownContentWithBaseUrl = prependBaseUrlToImages(step.getDescription(), Utilities.getUrl()+"/");
+        Log.d("markdownContent", Utilities.getHeader());
+        markwon.setMarkdown(fragmentCourseStepBinding.description, markdownContentWithBaseUrl);
+
+//        markwon.setMarkdown(fragmentCourseStepBinding.description, step.getDescription());
         if (!RealmMyCourse.isMyCourse(user.getId(), step.getCourseId(), mRealm)) {
             fragmentCourseStepBinding.btnTakeTest.setVisibility(View.INVISIBLE);
         }
@@ -178,5 +197,21 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
 
     @Override
     public void onImageCapture(String fileUri) {
+    }
+
+    private String prependBaseUrlToImages(String markdownContent, String baseUrl) {
+        String pattern = "!\\[.*?\\]\\((.*?)\\)";
+        Pattern imagePattern = Pattern.compile(pattern);
+        Matcher matcher = imagePattern.matcher(markdownContent);
+
+        StringBuffer result = new StringBuffer();
+        while (matcher.find()) {
+            String relativePath = matcher.group(1);
+            String fullUrl = baseUrl + relativePath;
+            matcher.appendReplacement(result, "![](" + fullUrl + ")");
+        }
+        matcher.appendTail(result);
+
+        return result.toString();
     }
 }
