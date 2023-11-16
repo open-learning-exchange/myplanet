@@ -9,8 +9,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdkVersion 21
         targetSdkVersion 34
-        versionCode 1147
-        versionName "0.11.47"
+        versionCode 1148
+        versionName "0.11.48"
         ndkVersion '21.3.6528147'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -128,7 +128,7 @@ dependencies {
     implementation 'com.nex3z:toggle-button-group:1.2.3'
     implementation 'com.sa90.materialarcmenu:library:2.0.0'
     implementation project(':library')
-    implementation 'org.jetbrains:annotations:24.0.1'
+    implementation 'org.jetbrains:annotations:24.1.0'
     implementation 'com.github.kizitonwose:CalendarView:1.1.0'
     implementation "io.noties.markwon:editor:4.6.2"
     implementation "androidx.core:core-ktx:1.12.0"
