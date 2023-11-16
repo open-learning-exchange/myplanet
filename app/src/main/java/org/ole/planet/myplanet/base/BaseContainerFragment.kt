@@ -18,6 +18,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatRatingBar
+import androidx.core.content.FileProvider
 import com.google.gson.JsonObject
 import io.realm.RealmResults
 import org.ole.planet.myplanet.MainApplication
@@ -39,7 +40,6 @@ import org.ole.planet.myplanet.ui.viewer.VideoPlayerActivity
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import java.io.File
-
 
 abstract class BaseContainerFragment : BaseResourceFragment() {
     var timesRated: TextView? = null
@@ -164,28 +164,25 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         }
 
         val apkFile = File(directory, items.resourceLocalAddress)
-        Log.d("true", apkFile.exists().toString())
-
         if (!apkFile.exists()) {
-            Log.e("InstallApkActivity", "APK file not found")
+            Utilities.toast(activity,"APK file not found")
             return
         }
 
-        val intent = Intent(Intent.ACTION_VIEW)
-        intent.setDataAndType(Uri.fromFile(apkFile), "application/vnd.android.package-archive")
-        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-        startActivity(intent)
+        val uri = FileProvider.getUriForFile(
+            MainApplication.context, "${MainApplication.context.packageName}.fileprovider",
+            apkFile
+        )
 
-//        val apkFile = File(directory, items.resourceLocalAddress)
-//        Log.d("true", apkFile.exists().toString())
-//        if (apkFile.exists()) {
-//            val intent = Intent(Intent.ACTION_VIEW)
-//            intent.setDataAndType(Uri.fromFile(apkFile), "application/vnd.android.package-archive")
-//            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-//            startActivity(intent)
-//        } else {
-//            Log.e("InstallApkActivity", "APK file not found")
-//        }
+        val intent = Intent(Intent.ACTION_INSTALL_PACKAGE)
+        intent.data = uri
+        intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK
+
+        if (intent.resolveActivity(requireActivity().packageManager) != null) {
+            startActivity(intent)
+        } else {
+            Utilities.toast(activity,"No app to handle the installation")
+        }
     }
 
     fun openFileType(items: RealmMyLibrary, videotype: String) {
