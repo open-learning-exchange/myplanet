@@ -42,7 +42,6 @@ public class RealmCourseStep extends io.realm.RealmObject {
             ArrayList<String> links = extractLinks(description);
 
             for (String link : links) {
-//                System.out.println(link);
                 Log.d("Giddie", link);
             }
 
