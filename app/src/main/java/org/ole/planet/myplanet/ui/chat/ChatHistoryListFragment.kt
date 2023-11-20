@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.chat
 
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -54,8 +53,6 @@ class ChatHistoryListFragment : Fragment() {
             val model = mRealm.where(RealmChatHistory::class.java).equalTo("id", chat.id).findFirst()
             if (model != null && !list.contains(model)) list.add(model)
         }
-        Log.d("chatListSize", list.size.toString())
-        Log.d("chatList", list.toString())
         val adapter = ChatHistoryListAdapter(requireContext(), list)
         adapter.setChatHistoryItemClickListener(object : ChatHistoryListAdapter.ChatHistoryItemClickListener {
             override fun onChatHistoryItemClicked(conversations: RealmList<Conversation>, _id: String, _rev:String) {

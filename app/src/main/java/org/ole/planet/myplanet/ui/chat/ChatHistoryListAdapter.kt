@@ -31,16 +31,22 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        if (chatHistory[position].title == ""){
-            rowChatHistoryBinding.chatTitle.text = chatHistory[position].conversations[0]!!.query
+        val viewHolderChat = holder as ViewHolderChat
+
+        if (chatHistory[position].conversations != null && chatHistory[position].conversations.isNotEmpty()) {
+            viewHolderChat.rowChatHistoryBinding.chatTitle.text = chatHistory[position].conversations[0]!!.query
         } else {
-            rowChatHistoryBinding.chatTitle.text = chatHistory[position].title
+            viewHolderChat.rowChatHistoryBinding.chatTitle.text = chatHistory[position].title
         }
 
-        rowChatHistoryBinding.root.setOnClickListener {
-            chatHistoryItemClickListener?.onChatHistoryItemClicked(chatHistory[position].conversations, chatHistory[position]._id.toString(), chatHistory[position]._rev)
+        viewHolderChat.rowChatHistoryBinding.root.setOnClickListener {
+            chatHistoryItemClickListener?.onChatHistoryItemClicked(
+                chatHistory[position].conversations,
+                chatHistory[position]._id.toString(),
+                chatHistory[position]._rev
+            )
         }
     }
 
-    class ViewHolderChat(rowChatHistoryBinding: RowChatHistoryBinding) : RecyclerView.ViewHolder(rowChatHistoryBinding.root)
+    class ViewHolderChat(val rowChatHistoryBinding: RowChatHistoryBinding) : RecyclerView.ViewHolder(rowChatHistoryBinding.root)
 }
