@@ -117,7 +117,7 @@ public class TransactionSyncManager {
                             JsonArray arr = JsonUtils.getJsonArray("rows", response.body());
                             Log.d("allDocs3", arr.toString());
                             if(table.equals("chat_history")) {
-                                insertToChat(arr, mRealm, table);
+                                insertToChat(arr, mRealm);
                             }
                             insertDocs(arr, mRealm, table);
                         }
@@ -129,7 +129,7 @@ public class TransactionSyncManager {
         });
     }
 
-    private static void insertToChat(JsonArray arr, Realm mRealm, String table) {
+    private static void insertToChat(JsonArray arr, Realm mRealm) {
 //        if(Objects.equals(table, "chat_history")){
             Log.d("jsonDoc", String.valueOf(arr));
 //            RealmChatHistory.insert(mRealm, jsonDoc);
