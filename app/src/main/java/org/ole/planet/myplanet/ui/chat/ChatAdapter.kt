@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.chat
 import android.content.Context
 import android.os.Handler
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.databinding.ItemAiResponseMessageBinding
@@ -36,7 +37,11 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context)
                     animateTyping(response, typingDelayMillis)
                 }, typingAnimationDurationMillis)
             } else if(responseSource == RESPONSE_SOURCE_SHARED_VIEW_MODEL){
-                textAiMessageBinding.textGchatMessageOther.text = response
+                if (response != "") {
+                    textAiMessageBinding.textGchatMessageOther.text = response
+                } else{
+                    textAiMessageBinding.textGchatMessageOther.visibility = View.GONE
+                }
             }
         }
 

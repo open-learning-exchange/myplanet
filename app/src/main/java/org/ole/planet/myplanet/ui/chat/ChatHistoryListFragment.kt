@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.chat
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -46,13 +47,15 @@ class ChatHistoryListFragment : Fragment() {
         }
 
         val mRealm = DatabaseService(requireActivity()).realmInstance;
-        val leaders = mRealm.where(RealmChatHistory::class.java).findAll()
+        val chats = mRealm.where(RealmChatHistory::class.java).findAll()
 
         val list = ArrayList<RealmChatHistory>()
-        for (team in leaders) {
-            val model = mRealm.where(RealmChatHistory::class.java).equalTo("id", team.id).findFirst()
+        for (chat in chats) {
+            val model = mRealm.where(RealmChatHistory::class.java).equalTo("id", chat.id).findFirst()
             if (model != null && !list.contains(model)) list.add(model)
         }
+        Log.d("chatListSize", list.size.toString())
+        Log.d("chatList", list.toString())
         val adapter = ChatHistoryListAdapter(requireContext(), list)
         adapter.setChatHistoryItemClickListener(object : ChatHistoryListAdapter.ChatHistoryItemClickListener {
             override fun onChatHistoryItemClicked(conversations: RealmList<Conversation>, _id: String, _rev:String) {
@@ -66,8 +69,7 @@ class ChatHistoryListFragment : Fragment() {
 }
 
 class ChatHistoryListOnBackPressedCallback(private val slidingPaneLayout: SlidingPaneLayout)
-    : OnBackPressedCallback(
-        slidingPaneLayout.isSlideable && slidingPaneLayout.isOpen
+    : OnBackPressedCallback(slidingPaneLayout.isSlideable && slidingPaneLayout.isOpen
     ), SlidingPaneLayout.PanelSlideListener {
     init {
         slidingPaneLayout.addPanelSlideListener(this)

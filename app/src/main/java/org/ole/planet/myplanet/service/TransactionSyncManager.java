@@ -4,7 +4,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.text.TextUtils;
 import android.util.Base64;
-import android.util.Log;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -29,7 +28,6 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 import io.realm.Realm;
 import io.realm.RealmResults;
@@ -99,11 +97,9 @@ public class TransactionSyncManager {
         realm.executeTransactionAsync(mRealm -> {
             ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
             final retrofit2.Call<JsonObject> allDocs = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/" + table + "/_all_docs?include_doc=false");
-            Log.d("allDocs", allDocs.toString());
             try {
                 Response<JsonObject> all = allDocs.execute();
                 JsonArray rows = JsonUtils.getJsonArray("rows", all.body());
-                Log.d("allDocs", rows.toString());
                 List<String> keys = new ArrayList<>();
                 for (int i = 0; i < rows.size(); i++) {
                     JsonObject object = rows.get(i).getAsJsonObject();
@@ -115,7 +111,6 @@ public class TransactionSyncManager {
                         final Response<JsonObject> response = apiInterface.findDocs(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/" + table + "/_all_docs?include_docs=true", obj).execute();
                         if (response.body() != null) {
                             JsonArray arr = JsonUtils.getJsonArray("rows", response.body());
-                            Log.d("allDocs3", arr.toString());
                             if(table.equals("chat_history")) {
                                 insertToChat(arr, mRealm);
                             }
@@ -130,11 +125,6 @@ public class TransactionSyncManager {
     }
 
     private static void insertToChat(JsonArray arr, Realm mRealm) {
-//        if(Objects.equals(table, "chat_history")){
-            Log.d("jsonDoc", String.valueOf(arr));
-//            RealmChatHistory.insert(mRealm, jsonDoc);
-//        }
-
         for (JsonElement j : arr) {
             JsonObject jsonDoc = j.getAsJsonObject();
             jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc);
@@ -147,7 +137,6 @@ public class TransactionSyncManager {
             JsonObject jsonDoc = j.getAsJsonObject();
             jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc);
             String id = JsonUtils.getString("_id", jsonDoc);
-
             if (!id.startsWith("_design")) {
                 continueInsert(mRealm, table, jsonDoc);
             }
@@ -160,14 +149,12 @@ public class TransactionSyncManager {
             RealmStepExam.insertCourseStepsExams("", "", jsonDoc, mRealm);
         } else if (table.equals("tablet_users")) {
             RealmUserModel.populateUsersTable(jsonDoc, mRealm, settings);
-        }
-        else {
+        } else {
             callMethod(mRealm, jsonDoc, table);
         }
     }
 
     private static void callMethod(Realm mRealm, JsonObject jsonDoc, String type) {
-        Log.d("creial", type);
         try {
             Method[] methods = Constants.classList.get(type).getMethods();
             for (Method m : methods) {

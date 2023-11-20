@@ -6,10 +6,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.utilities.JsonUtils;
-import org.ole.planet.myplanet.utilities.Utilities;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import io.realm.Realm;
 import io.realm.RealmList;
@@ -22,7 +18,9 @@ public class RealmChatHistory extends RealmObject {
     private String _id;
     private String _rev;
     private String user;
-    private long time;
+    private String time;
+    private String title;
+    private String updatedTime;
     private RealmList<Conversation> conversations;
     private boolean uploaded;
 
@@ -58,12 +56,28 @@ public class RealmChatHistory extends RealmObject {
         this.user = user;
     }
 
-    public long getTime() {
+    public String getTime() {
         return time;
     }
 
-    public void setTime(long time) {
+    public void setTime(String time) {
         this.time = time;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public String getUpdatedTime() {
+        return updatedTime;
+    }
+
+    public void setUpdatedTime(String updatedTime) {
+        this.updatedTime = updatedTime;
     }
 
     public void setConversations(RealmList<Conversation> conversations) {
@@ -75,13 +89,20 @@ public class RealmChatHistory extends RealmObject {
     }
 
     public static void insert(Realm mRealm, JsonObject act) {
-        Utilities.log("Insert chatHistory " + act);
-        RealmChatHistory chatHistory = mRealm.where(RealmChatHistory.class).equalTo("_id", JsonUtils.getString("_id", act)).findFirst();
-        if (chatHistory == null)
-            chatHistory = mRealm.createObject(RealmChatHistory.class, JsonUtils.getString("_id", act));
+        String chatHistoryId = JsonUtils.getString("_id", act);
+
+        RealmChatHistory existingChatHistory = mRealm.where(RealmChatHistory.class).equalTo("_id", chatHistoryId).findFirst();
+
+        if (existingChatHistory != null) {
+            existingChatHistory.deleteFromRealm();
+        }
+
+        RealmChatHistory chatHistory = mRealm.createObject(RealmChatHistory.class, chatHistoryId);
         chatHistory.set_rev(JsonUtils.getString("_rev", act));
         chatHistory.set_id(JsonUtils.getString("_id", act));
-        chatHistory.setTime(JsonUtils.getLong("time", act));
+        chatHistory.setTime(JsonUtils.getString("time", act));
+        chatHistory.setTitle(JsonUtils.getString("title", act));
+        chatHistory.setUpdatedTime(JsonUtils.getString("updatedTime", act));
         chatHistory.setUser(new Gson().toJson(JsonUtils.getJsonObject("user", act)));
         chatHistory.setConversations(parseConversations(mRealm, JsonUtils.getJsonArray("conversations", act)));
     }
@@ -94,5 +115,26 @@ public class RealmChatHistory extends RealmObject {
             conversations.add(realmConversation);
         }
         return conversations;
+    }
+
+    public static void addConversationToChatHistory(Realm mRealm, String chatHistoryId, String query, String response) {
+        RealmChatHistory chatHistory = mRealm.where(RealmChatHistory.class).equalTo("_id", chatHistoryId).findFirst();
+        if (chatHistory != null) {
+            mRealm.beginTransaction();
+            try {
+                Conversation conversation = new Conversation();
+                conversation.setQuery(query);
+                conversation.setResponse(response);
+                if (chatHistory.getConversations() == null) {
+                    chatHistory.setConversations(new RealmList<>());
+                }
+                chatHistory.getConversations().add(conversation);
+                mRealm.copyToRealmOrUpdate(chatHistory);
+                mRealm.commitTransaction();
+            } catch (Exception e) {
+                mRealm.cancelTransaction();
+                e.printStackTrace();
+            }
+        }
     }
 }

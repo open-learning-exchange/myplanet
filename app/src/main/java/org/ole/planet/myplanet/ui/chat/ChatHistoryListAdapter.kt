@@ -31,7 +31,12 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        rowChatHistoryBinding.chatTitle.text = chatHistory[position].conversations[0]!!.query
+        if (chatHistory[position].title == ""){
+            rowChatHistoryBinding.chatTitle.text = chatHistory[position].conversations[0]!!.query
+        } else {
+            rowChatHistoryBinding.chatTitle.text = chatHistory[position].title
+        }
+
         rowChatHistoryBinding.root.setOnClickListener {
             chatHistoryItemClickListener?.onChatHistoryItemClicked(chatHistory[position].conversations, chatHistory[position]._id.toString(), chatHistory[position]._rev)
         }
