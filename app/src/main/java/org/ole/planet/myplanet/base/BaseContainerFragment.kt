@@ -1,11 +1,14 @@
 package org.ole.planet.myplanet.base
 
+import android.app.Activity
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.SharedPreferences
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.text.TextUtils
 import android.util.Log
 import android.view.LayoutInflater
@@ -16,6 +19,7 @@ import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatRatingBar
 import androidx.core.content.FileProvider
@@ -23,6 +27,7 @@ import com.google.gson.JsonObject
 import io.realm.RealmResults
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.PermissionActivity.hasInstallPermission
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -40,6 +45,9 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     var rating: TextView? = null
     var ratingBar: AppCompatRatingBar? = null
     lateinit var profileDbHandler: UserProfileDbHandler
+    private val INSTALL_UNKNOWN_SOURCES_REQUEST_CODE = 112
+    var hasInstallPermission = hasInstallPermission(MainApplication.context)
+    private var currentLibrary: RealmMyLibrary? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -137,6 +145,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     fun checkMoreFileExtensions(extension: String?, items: RealmMyLibrary) {
         when (extension) {
             "txt" -> openIntent(items, TextFileViewerActivity::class.java)
@@ -149,7 +158,9 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun installApk(items: RealmMyLibrary) {
+        currentLibrary = items
         val directory = File(MainApplication.context.getExternalFilesDir(null).toString() + "/ole" + "/" + items.id)
         if (!directory.exists()) {
             if (!directory.mkdirs()) {
@@ -173,10 +184,21 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK
 
         if (intent.resolveActivity(requireActivity().packageManager) != null) {
-            startActivity(intent)
+            if (hasInstallPermission(MainApplication.context)) {
+                startActivity(intent)
+            } else {
+                requestInstallPermission()
+            }
         } else {
             Utilities.toast(activity,"No app to handle the installation")
         }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun requestInstallPermission() {
+        val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES)
+        intent.data = Uri.parse("package:" + MainApplication.context.packageName)
+        startActivityForResult(intent, INSTALL_UNKNOWN_SOURCES_REQUEST_CODE)
     }
 
     fun openFileType(items: RealmMyLibrary, videotype: String) {
@@ -275,5 +297,24 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 )
             }
         }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == INSTALL_UNKNOWN_SOURCES_REQUEST_CODE) {
+            if (resultCode == Activity.RESULT_OK) {
+                if (currentLibrary != null) {
+                    installApk(currentLibrary!!)
+                    currentLibrary = null
+                }
+            } else {
+                Utilities.toast(requireActivity(), getString(R.string.permissions_denied))
+            }
+        }
+    }
+
+    open fun handleBackPressed() {
+        requireActivity().onBackPressed()
     }
 }

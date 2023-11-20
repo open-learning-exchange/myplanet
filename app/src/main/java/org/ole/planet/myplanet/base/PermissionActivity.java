@@ -1,7 +1,5 @@
 package org.ole.planet.myplanet.base;
 
-import static org.ole.planet.myplanet.MainApplication.context;
-
 import android.Manifest;
 import android.app.AppOpsManager;
 import android.content.Context;
@@ -24,8 +22,6 @@ import java.util.ArrayList;
 
 public abstract class PermissionActivity extends AppCompatActivity {
     private static final int PERMISSION_REQUEST_CODE_FILE = 111;
-    private static final int INSTALL_UNKNOWN_SOURCES_REQUEST_CODE = 112;
-    boolean hasInstallPermission = hasInstallPermission(context);
 
     public boolean checkPermission(String strPermission) {
         int result = ContextCompat.checkSelfPermission(this, strPermission);
@@ -97,12 +93,6 @@ public abstract class PermissionActivity extends AppCompatActivity {
 
         if (!checkPermission(Manifest.permission.READ_MEDIA_AUDIO)) {
             permissions.add(Manifest.permission.READ_MEDIA_AUDIO);
-        }
-
-        if (!hasInstallPermission) {
-            Intent intent = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES);
-            intent.setData(android.net.Uri.parse("package:" + getPackageName()));
-            startActivityForResult(intent, INSTALL_UNKNOWN_SOURCES_REQUEST_CODE);
         }
 
         if (!permissions.isEmpty()) {
