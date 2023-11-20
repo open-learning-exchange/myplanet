@@ -89,6 +89,7 @@ public class RealmChatHistory extends RealmObject {
     }
 
     public static void insert(Realm mRealm, JsonObject act) {
+        if (!mRealm.isInTransaction()) mRealm.beginTransaction();
         String chatHistoryId = JsonUtils.getString("_id", act);
 
         RealmChatHistory existingChatHistory = mRealm.where(RealmChatHistory.class).equalTo("_id", chatHistoryId).findFirst();

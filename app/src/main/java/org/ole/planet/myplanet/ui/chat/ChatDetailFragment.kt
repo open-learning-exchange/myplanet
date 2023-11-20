@@ -12,6 +12,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.Gson
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import io.realm.Realm
 import okhttp3.MediaType
 import okhttp3.RequestBody
@@ -20,6 +22,7 @@ import org.ole.planet.myplanet.databinding.FragmentChatDetailBinding
 import org.ole.planet.myplanet.datamanager.ApiClient
 import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmChatHistory.addConversationToChatHistory
 import org.ole.planet.myplanet.utilities.Utilities
 import retrofit2.Call
@@ -76,7 +79,7 @@ class ChatDetailFragment : Fragment() {
                     val chatData = ChatRequestModel(data = ContentData(message), save = true)
                     val jsonContent = Gson().toJson(chatData)
                     val requestBody = RequestBody.create(MediaType.parse("application/json"), jsonContent)
-                    makePostRequest(requestBody)
+                    makePostRequest(requestBody, message)
                 }
                 fragmentChatDetailBinding.editGchatMessage.text.clear()
                 fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
@@ -97,12 +100,14 @@ class ChatDetailFragment : Fragment() {
             mAdapter.clearData()
             fragmentChatDetailBinding.editGchatMessage.text.clear()
             fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
-            for (conversation in conversations) {
-                val query = conversation.query
-                val response = conversation.response
-                mAdapter.addQuery(query)
-                mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_SHARED_VIEW_MODEL
-                mAdapter.addResponse(response)
+            if (conversations.isValid) {
+                for (conversation in conversations) {
+                    val query = conversation.query
+                    val response = conversation.response
+                    mAdapter.addQuery(query)
+                    mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_SHARED_VIEW_MODEL
+                    mAdapter.addResponse(response)
+                }
             }
         }
 
@@ -118,7 +123,7 @@ class ChatDetailFragment : Fragment() {
         }
     }
 
-    private fun makePostRequest(content: RequestBody) {
+    private fun makePostRequest(content: RequestBody, query: String) {
         fragmentChatDetailBinding.buttonGchatSend.isEnabled = false
         fragmentChatDetailBinding.editGchatMessage.isEnabled = false
         fragmentChatDetailBinding.imageGchatLoading.visibility = View.VISIBLE
@@ -135,14 +140,64 @@ class ChatDetailFragment : Fragment() {
                         if (chatResponse != null) {
                             mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_NETWORK
                             mAdapter.addResponse(chatResponse)
+                            _id = response.body()!!.couchDBResponse!!.id.toString()
+                            val jsonObject = JsonObject()
+                            jsonObject.addProperty("_rev", response.body()!!.couchDBResponse!!.rev.toString())
+                            jsonObject.addProperty("_id", response.body()!!.couchDBResponse!!.id.toString())
+                            jsonObject.addProperty("time", "")
+                            jsonObject.addProperty("title", "")
+                            jsonObject.addProperty("updatedTime", "")
+
+                            val conversationsArray = JsonArray()
+                            val conversationObject = JsonObject()
+                            conversationObject.addProperty("query", query)
+                            conversationObject.addProperty("response", chatResponse)
+                            conversationsArray.add(conversationObject)
+
+                            jsonObject.add("conversations", conversationsArray)
                         }
                     } else {
                         fragmentChatDetailBinding.textGchatIndicator.visibility = View.VISIBLE
                         fragmentChatDetailBinding.textGchatIndicator.text = "${responseBody.message}"
+
+                        val jsonObject = JsonObject()
+                        jsonObject.addProperty("_rev", "")
+                        jsonObject.addProperty("_id", "")
+                        jsonObject.addProperty("time", "")
+                        jsonObject.addProperty("title", "")
+                        jsonObject.addProperty("updatedTime", "")
+
+                        val conversationsArray = JsonArray()
+                        val conversationObject = JsonObject()
+                        conversationObject.addProperty("query", query)
+                        conversationObject.addProperty("response", "")
+                        conversationsArray.add(conversationObject)
+
+                        jsonObject.add("conversations", conversationsArray)
+                        requireActivity().runOnUiThread {
+                            RealmChatHistory.insert(mRealm, jsonObject)
+                        }
                     }
                 } else {
                     fragmentChatDetailBinding.textGchatIndicator.visibility = View.VISIBLE
                     fragmentChatDetailBinding.textGchatIndicator.text = getString(R.string.request_failed_please_retry)
+                    val jsonObject = JsonObject()
+                    jsonObject.addProperty("_rev", "")
+                    jsonObject.addProperty("_id", "")
+                    jsonObject.addProperty("time", "")
+                    jsonObject.addProperty("title", "")
+                    jsonObject.addProperty("updatedTime", "")
+
+                    val conversationsArray = JsonArray()
+                    val conversationObject = JsonObject()
+                    conversationObject.addProperty("query", query)
+                    conversationObject.addProperty("response", "")
+                    conversationsArray.add(conversationObject)
+
+                    jsonObject.add("conversations", conversationsArray)
+                    requireActivity().runOnUiThread {
+                        RealmChatHistory.insert(mRealm, jsonObject)
+                    }
                 }
 
                 fragmentChatDetailBinding.buttonGchatSend.isEnabled = true
@@ -151,6 +206,23 @@ class ChatDetailFragment : Fragment() {
             }
 
             override fun onFailure(call: Call<ChatModel>, t: Throwable) {
+                val jsonObject = JsonObject()
+                jsonObject.addProperty("_rev", "")
+                jsonObject.addProperty("_id", "")
+                jsonObject.addProperty("time", "")
+                jsonObject.addProperty("title", "")
+                jsonObject.addProperty("updatedTime", "")
+
+                val conversationsArray = JsonArray()
+                val conversationObject = JsonObject()
+                conversationObject.addProperty("query", query)
+                conversationObject.addProperty("response", "")
+                conversationsArray.add(conversationObject)
+
+                jsonObject.add("conversations", conversationsArray)
+                requireActivity().runOnUiThread {
+                    RealmChatHistory.insert(mRealm, jsonObject)
+                }
                 fragmentChatDetailBinding.textGchatIndicator.visibility = View.VISIBLE
                 fragmentChatDetailBinding.textGchatIndicator.text = "${t.message}"
                 fragmentChatDetailBinding.buttonGchatSend.isEnabled = true
@@ -160,7 +232,7 @@ class ChatDetailFragment : Fragment() {
         })
     }
 
-    private fun continueChatRequest(content: RequestBody,  _id: String, query: String) {
+    private fun continueChatRequest(content: RequestBody, _id: String, query: String) {
         fragmentChatDetailBinding.buttonGchatSend.isEnabled = false
         fragmentChatDetailBinding.editGchatMessage.isEnabled = false
         fragmentChatDetailBinding.imageGchatLoading.visibility = View.VISIBLE
