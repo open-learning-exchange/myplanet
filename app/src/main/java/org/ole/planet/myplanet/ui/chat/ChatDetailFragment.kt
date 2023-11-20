@@ -42,7 +42,6 @@ class ChatDetailFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         mAdapter = ChatAdapter(ArrayList(), requireContext())
-        clearChatDetail()
         fragmentChatDetailBinding.recyclerGchat.adapter = mAdapter
         val layoutManager: RecyclerView.LayoutManager = LinearLayoutManager(requireContext())
         fragmentChatDetailBinding.recyclerGchat.layoutManager = layoutManager
@@ -107,6 +106,9 @@ class ChatDetailFragment : Fragment() {
 
         sharedViewModel.getSelected_rev().observe(viewLifecycleOwner) { selected_rev ->
             _rev = selected_rev
+        }
+        view.post {
+            clearChatDetail()
         }
     }
 
@@ -194,9 +196,13 @@ class ChatDetailFragment : Fragment() {
         })
     }
 
-    fun clearChatDetail() {
-        mAdapter.clearData()
-        _id = ""
-        _rev = ""
+    private fun clearChatDetail() {
+        if (::mAdapter.isInitialized) {
+            mAdapter.clearData()
+            _id = ""
+            _rev = ""
+            mAdapter.notifyDataSetChanged()
+            fragmentChatDetailBinding.recyclerGchat.invalidate()
+        }
     }
 }
