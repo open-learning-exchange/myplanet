@@ -141,6 +141,7 @@ class ChatDetailFragment : Fragment() {
                             mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_NETWORK
                             mAdapter.addResponse(chatResponse)
                             _id = response.body()!!.couchDBResponse!!.id.toString()
+                            _rev = response.body()!!.couchDBResponse!!.rev.toString()
                             val jsonObject = JsonObject()
                             jsonObject.addProperty("_rev", response.body()!!.couchDBResponse!!.rev.toString())
                             jsonObject.addProperty("_id", response.body()!!.couchDBResponse!!.id.toString())
@@ -159,7 +160,6 @@ class ChatDetailFragment : Fragment() {
                     } else {
                         fragmentChatDetailBinding.textGchatIndicator.visibility = View.VISIBLE
                         fragmentChatDetailBinding.textGchatIndicator.text = "${responseBody.message}"
-
                         val jsonObject = JsonObject()
                         jsonObject.addProperty("_rev", "")
                         jsonObject.addProperty("_id", "")
