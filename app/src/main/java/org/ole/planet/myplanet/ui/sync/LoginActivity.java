@@ -220,7 +220,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                 prefData.setSAVEDUSERS1(existingUsers);
             }
         }
-
     }
 
     private void showUserList(){

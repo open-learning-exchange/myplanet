@@ -10,6 +10,7 @@ import org.ole.planet.myplanet.databinding.ActivitySplashBinding;
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity;
 import org.ole.planet.myplanet.ui.sync.LoginActivity;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
+import org.ole.planet.myplanet.ui.sync.UsersLoginActivity;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.FileUtils;
 
