@@ -139,8 +139,8 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
             activityUsersLoginBinding.openCommunity.visibility = View.GONE
         }
         activityUsersLoginBinding.btnFeedback.setOnClickListener {
-//            FeedbackFragment().show(supportFragmentManager, "")
-            showUserList()
+            FeedbackFragment().show(supportFragmentManager, "")
+//            showUserList()
         }
 //        previouslyLoggedIn!!.setOnClickListener { showUserList() }
         guest = intent.getBooleanExtra("guest", false)
@@ -870,6 +870,7 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
         activityUsersLoginBinding.recyclerView.layoutManager = LinearLayoutManager(this)
         users = RealmMyTeam.getUsers(selectedTeamId, mRealm, "")
         mAdapter = TeamListAdapter(users as MutableList<RealmUserModel>, this, this)
+        Log.d("users", users.toString())
 
         val layoutManager: RecyclerView.LayoutManager = object : LinearLayoutManager(this) {
             override fun generateDefaultLayoutParams(): RecyclerView.LayoutParams {

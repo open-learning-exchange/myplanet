@@ -28,11 +28,11 @@ class TeamListAdapter(private val accountsList: List<RealmUserModel>, val contex
         holder.bindView(accountsList[position])
 
         holder.itemView.setOnClickListener {
-            val customer = accountsList[position]
+            val member = accountsList[position]
 
-            val customerId: String? = customer.id
+            val memberId: String? = member.id
 
-            onItemClickListener.onItemClick(customer)
+            onItemClickListener.onItemClick(member)
         }
     }
 

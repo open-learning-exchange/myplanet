@@ -50,6 +50,7 @@ import org.ole.planet.myplanet.datamanager.ManagerSync;
 import org.ole.planet.myplanet.datamanager.Service;
 import org.ole.planet.myplanet.model.MyPlanet;
 import org.ole.planet.myplanet.model.RealmCommunity;
+import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.model.User;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
@@ -99,7 +100,9 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     private TextView tvAvailableSpace, previouslyLoggedIn, customDeviceName, lblVersion;
     SharedPrefManager prefData;
     private UserProfileDbHandler profileDbHandler;
-
+    ArrayList<String> teamList = new ArrayList<>();
+    ArrayAdapter<String> teamAdapter;
+    String selectedTeamId = null;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -757,7 +760,17 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                     .negativeText(R.string.btn_sync_cancel)
                     .neutralText(R.string.btn_sync_save)
                     .onPositive((dialog, which) -> continueSync(dialog))
-                    .onNeutral((dialog, which) -> saveConfigAndContinue(dialog));
+                    .onNeutral((dialog, which) -> {
+                        if (selectedTeamId == null){
+                            saveConfigAndContinue(dialog);
+                        } else {
+                            Intent intent = new Intent(LoginActivity.this, UsersLoginActivity.class);
+                            intent.putExtra("selectedTeamId", selectedTeamId);
+                            startActivity(intent);
+                            saveConfigAndContinue(dialog);
+                        }
+
+                    });
 
             spnCloud = dialogServerUrlBinding.spnCloud;
             protocol_checkin = dialogServerUrlBinding.radioProtocol;
@@ -847,6 +860,46 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         binding.ltIntervalLabel.setVisibility(show ? View.VISIBLE : View.GONE);
         binding.ltSyncSwitch.setVisibility(show ? View.VISIBLE : View.GONE);
         binding.ltDeviceName.setVisibility(show ? View.VISIBLE : View.GONE);
+
+        try {
+            mRealm = Realm.getDefaultInstance();
+            List<RealmMyTeam> teams = mRealm.where(RealmMyTeam.class).isEmpty("teamId").findAll();
+            if (teams.size() > 0 && show) {
+                binding.team.setVisibility(View.VISIBLE);
+                teamAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, teamList);
+                teamAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+
+                teamList.clear();
+                teamList.add("Select team");
+                for (RealmMyTeam team : teams) {
+                    if (team.isValid()) {
+                        teamList.add(team.getName());
+                    }
+                }
+                binding.team.setAdapter(teamAdapter);
+                binding.team.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                    @Override
+                    public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
+                        if (position > 0) {
+                            RealmMyTeam selectedTeam = teams.get(position - 1);
+                            if (selectedTeam != null) {
+                                selectedTeamId = selectedTeam.get_id();
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onNothingSelected(AdapterView<?> parentView) {
+                        // Do nothing when nothing is selected
+                    }
+                });
+            }
+        } finally {
+            if (mRealm != null && !mRealm.isClosed()) {
+                mRealm.close();
+            }
+        }
+
 
         if (show) {
             if (settings.getString("serverURL", "").equals("https://planet.learning.ole.org")){

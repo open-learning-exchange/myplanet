@@ -295,7 +295,6 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
             syncIcon.invalidateDrawable(syncIconDrawable);
 
             DialogUtils.showSnack(findViewById(android.R.id.content), getString(R.string.sync_completed));
-            showTeamList();
 
             if (settings.getBoolean("isChild", false)) {
                 setUpChildMode();
@@ -303,49 +302,5 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
 
             NotificationUtil.cancellAll(this);
         });
-    }
-
-    public void showTeamList() {
-        try {
-            mRealm = Realm.getDefaultInstance();
-            List<RealmMyTeam> teams = mRealm.where(RealmMyTeam.class).isEmpty("teamId").findAll();
-
-            if (teams.size() > 0) {
-                AlertDialog.Builder builder = new AlertDialog.Builder(this);
-                builder.setTitle("Select a Team");
-                Spinner teamSpinner = new Spinner(this);
-                ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item);
-                for (RealmMyTeam team : teams) {
-                    if (team.isValid()) {
-                        adapter.add(team.getName());
-                    }
-                }
-                adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-                teamSpinner.setAdapter(adapter);
-
-                builder.setView(teamSpinner);
-                builder.setPositiveButton("Proceed", (dialog, which) -> {
-                    int selectedPosition = teamSpinner.getSelectedItemPosition();
-                    if (selectedPosition >= 0 && selectedPosition < teams.size()) {
-                        RealmMyTeam selectedTeam = teams.get(selectedPosition);
-                        assert selectedTeam != null;
-                        Intent intent = new Intent(this, UsersLoginActivity.class);
-                        intent.putExtra("selectedTeamId", selectedTeam.get_id());
-                        startActivity(intent);
-                    }
-                    dialog.dismiss();
-                });
-
-                AlertDialog dialog = builder.create();
-                dialog.show();
-            } else {
-                // Handle the case when there are no teams available
-                // Update your UI accordingly
-            }
-        } finally {
-            if (mRealm != null && !mRealm.isClosed()) {
-                mRealm.close();
-            }
-        }
     }
 }
