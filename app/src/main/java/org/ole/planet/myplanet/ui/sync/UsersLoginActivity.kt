@@ -13,7 +13,6 @@ import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
 import android.text.method.PasswordTransformationMethod
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -59,11 +58,9 @@ import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.ui.userprofile.TeamListAdapter
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.DialogUtils
-import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
-import java.io.File
 import java.text.Normalizer
 import java.util.Calendar
 import java.util.Date
@@ -91,6 +88,9 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
     var mAdapter: TeamListAdapter? = null
     private lateinit var cal_today: Calendar
     private lateinit var cal_last_Sync: Calendar
+    private var selectedTeamId: String? = null
+    var teamList: ArrayList<String> = ArrayList()
+    var teamAdapter: ArrayAdapter<String>? = null
 
 //    private var tvAvailableSpace: TextView? = null
 //    private var previouslyLoggedIn: TextView? = null
@@ -178,7 +178,6 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
             .setView(view)
             .setNegativeButton(R.string.dismiss, null)
         val existingUsers = prefData.getSAVEDUSERS()
-        Log.d("existingUsers", existingUsers.toString())
         val adapter = UserListAdapter(this@UsersLoginActivity, existingUsers)
         adapter.setOnItemClickListener(object : UserListAdapter.OnItemClickListener {
             override fun onItemClickGuest(name: String) {
@@ -233,20 +232,16 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
         val msDiff = Calendar.getInstance().timeInMillis - cal_last_Sync.timeInMillis
         val daysDiff = TimeUnit.MILLISECONDS.toDays(msDiff)
         return if (daysDiff >= maxDays) {
-            Log.e("Sync Date ", "Expired - ")
             val alertDialogBuilder = AlertDialog.Builder(this)
-            alertDialogBuilder.setMessage(
-                getString(R.string.it_has_been_more_than) + (daysDiff - 1) + getString(
-                    R.string.days_since_you_last_synced_this_device
-                ) + getString(R.string.connect_it_to_the_server_over_wifi_and_sync_it_to_reactivate_this_tablet)
-            )
+            alertDialogBuilder.setMessage(getString(R.string.it_has_been_more_than)
+                    + (daysDiff - 1) + getString(R.string.days_since_you_last_synced_this_device)
+                    + getString(R.string.connect_it_to_the_server_over_wifi_and_sync_it_to_reactivate_this_tablet))
             alertDialogBuilder.setPositiveButton(R.string.okay) { _: DialogInterface?, _: Int ->
                 Toast.makeText(applicationContext, getString(R.string.connect_to_the_server_over_wifi_and_sync_your_device_to_continue), Toast.LENGTH_LONG).show()
             }
             alertDialogBuilder.show()
             true
         } else {
-            Log.e("Sync Date ", "Not up to  - $maxDays")
             false
         }
     }
@@ -389,7 +384,6 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
                     val existingUser = mRealm.where(RealmUserModel::class.java).equalTo("name", username).findFirst()
                     dialog.dismiss()
                     if (existingUser != null) {
-                        Log.d("model", existingUser._id.toString())
                         if (existingUser._id.contains("guest")) {
                             showGuestDialog(username)
                         } else if (existingUser._id.contains("org.couchdb.user:")) {
@@ -540,9 +534,6 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
 //        }
 //    }
 
-    /**
-     * Form  Validation
-     */
     private fun submitForm(name: String, password: String) {
         if (forceSyncTrigger()) {
             return
@@ -641,9 +632,8 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
     }
 
     private fun settingDialog() {
-        var sRealm: Realm? = null
         try {
-            sRealm = Realm.getDefaultInstance()
+            mRealm = Realm.getDefaultInstance()
             val dialogServerUrlBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this))
             val builder = MaterialDialog.Builder(this@UsersLoginActivity)
             builder.title(R.string.action_settings)
@@ -651,52 +641,153 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
                 .positiveText(R.string.btn_sync)
                 .negativeText(R.string.btn_sync_cancel)
                 .neutralText(R.string.btn_sync_save)
-                .onPositive { dialog: MaterialDialog, _: DialogAction? -> continueSync(dialog) }
+                .onPositive { dialog: MaterialDialog?, _: DialogAction? -> continueSync(dialog!!) }
                 .onNeutral { dialog: MaterialDialog?, _: DialogAction? ->
-                    saveConfigAndContinue(
-                        dialog
-                    )
+                    if (selectedTeamId == null) {
+                        saveConfigAndContinue(dialog)
+                    } else {
+                        val intent = Intent(this@UsersLoginActivity, UsersLoginActivity::class.java)
+                        intent.putExtra("selectedTeamId", selectedTeamId)
+                        startActivity(intent)
+                        saveConfigAndContinue(dialog)
+                    }
                 }
-            val dialog = builder.build()
-            positiveAction = dialog.getActionButton(DialogAction.POSITIVE)
             spnCloud = dialogServerUrlBinding.spnCloud
-            val communities: List<RealmCommunity> = sRealm.where(RealmCommunity::class.java).sort("weight", Sort.ASCENDING).findAll()
-            val nonEmptyCommunities: MutableList<RealmCommunity> = ArrayList()
-            for (community in communities) {
-                if (community.isValid && !TextUtils.isEmpty(community.name)) {
-                    nonEmptyCommunities.add(community)
-                }
-            }
-            dialogServerUrlBinding.spnCloud.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, nonEmptyCommunities)
-            dialogServerUrlBinding.spnCloud.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-                override fun onItemSelected(adapterView: AdapterView<*>?, view: View, i: Int, l: Long) {
-                    onChangeServerUrl()
-                }
-
-                override fun onNothingSelected(adapterView: AdapterView<*>?) {}
-            }
             protocolCheckin = dialogServerUrlBinding.radioProtocol
             serverUrl = dialogServerUrlBinding.inputServerUrl
             serverPassword = dialogServerUrlBinding.inputServerPassword
             serverUrlProtocol = dialogServerUrlBinding.inputServerUrlProtocol
-            dialogServerUrlBinding.switchServerUrl.setOnCheckedChangeListener { _: CompoundButton?, b: Boolean ->
-                settings.edit().putBoolean("switchCloudUrl", b).apply()
-                dialogServerUrlBinding.spnCloud.visibility = if (b) View.VISIBLE else View.GONE
-                setUrlAndPin(dialogServerUrlBinding.switchServerUrl.isChecked)
-                Log.d("checked", dialogServerUrlBinding.switchServerUrl.isChecked.toString())
+            dialogServerUrlBinding.deviceName.setText(NetworkUtils.getDeviceName())
+            if (!prefData.getMANUALCONFIG()) {
+                dialogServerUrlBinding.manualConfiguration.isChecked = false
+                showConfigurationUIElements(dialogServerUrlBinding, false)
+            } else {
+                dialogServerUrlBinding.manualConfiguration.isChecked = true
+                showConfigurationUIElements(dialogServerUrlBinding, true)
             }
-            serverUrl.addTextChangedListener(MyTextWatcher(serverUrl))
-            dialogServerUrlBinding.deviceName.setText(getCustomDeviceName())
-            dialogServerUrlBinding.switchServerUrl.isChecked = settings.getBoolean("switchCloudUrl", false)
-            setUrlAndPin(settings.getBoolean("switchCloudUrl", false))
-            protocolSemantics()
-            dialog.setCancelable(false)
+            val dialog = builder.build()
+            positiveAction = dialog.getActionButton(DialogAction.POSITIVE)
+            dialogServerUrlBinding.manualConfiguration.setOnCheckedChangeListener { _, isChecked ->
+                if (isChecked) {
+                    prefData.setMANUALCONFIG(true)
+                    settings.edit().putString("serverURL", "").apply()
+                    settings.edit().putString("serverPin", "").apply()
+                    dialogServerUrlBinding.radioHttp.isChecked = true
+                    settings.edit().putString("serverProtocol", getString(R.string.http_protocol)).apply()
+                    showConfigurationUIElements(dialogServerUrlBinding, true)
+                    val communities: List<RealmCommunity> = mRealm.where(RealmCommunity::class.java).sort("weight", Sort.ASCENDING).findAll()
+                    val nonEmptyCommunities: MutableList<RealmCommunity> = ArrayList()
+                    for (community in communities) {
+                        if (community.isValid && !TextUtils.isEmpty(community.name)) {
+                            nonEmptyCommunities.add(community)
+                        }
+                    }
+                    dialogServerUrlBinding.spnCloud.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, nonEmptyCommunities)
+                    dialogServerUrlBinding.spnCloud.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                        override fun onItemSelected(adapterView: AdapterView<*>?, view: View, i: Int, l: Long) {
+                            onChangeServerUrl()
+                        }
+
+                        override fun onNothingSelected(adapterView: AdapterView<*>?) {}
+                    }
+
+                    dialogServerUrlBinding.switchServerUrl.setOnCheckedChangeListener { _: CompoundButton?, b: Boolean ->
+                        settings.edit().putBoolean("switchCloudUrl", b).apply()
+                        dialogServerUrlBinding.spnCloud.visibility = if (b) View.VISIBLE else View.GONE
+                        setUrlAndPin(dialogServerUrlBinding.switchServerUrl.isChecked)
+                    }
+
+                    serverUrl.addTextChangedListener(MyTextWatcher(serverUrl))
+                    dialogServerUrlBinding.switchServerUrl.isChecked = settings.getBoolean("switchCloudUrl", false)
+                    setUrlAndPin(settings.getBoolean("switchCloudUrl", false))
+                    protocolSemantics()
+                } else {
+                    prefData.setMANUALCONFIG(false)
+                    showConfigurationUIElements(dialogServerUrlBinding, false)
+                    settings.edit().putBoolean("switchCloudUrl", false).apply()
+                }
+            }
+            dialogServerUrlBinding.radioProtocol.setOnCheckedChangeListener { _, checkedId ->
+                when (checkedId) {
+                    R.id.radio_http -> settings.edit().putString("serverProtocol", getString(R.string.http_protocol)).apply()
+                    R.id.radio_https -> settings.edit().putString("serverProtocol", getString(R.string.https_protocol)).apply()
+                }
+            }
             dialog.show()
             sync(dialog)
         } finally {
-            if (sRealm != null && !sRealm.isClosed) {
-                sRealm.close()
+            if (mRealm != null && !mRealm.isClosed) {
+                mRealm.close()
             }
+        }
+    }
+
+    private fun showConfigurationUIElements(binding: DialogServerUrlBinding, show: Boolean) {
+        binding.radioProtocol.visibility = if (show) View.VISIBLE else View.GONE
+        binding.switchServerUrl.visibility = if (show) View.VISIBLE else View.GONE
+        binding.ltProtocol.visibility = if (show) View.VISIBLE else View.GONE
+        binding.ltIntervalLabel.visibility = if (show) View.VISIBLE else View.GONE
+        binding.ltSyncSwitch.visibility = if (show) View.VISIBLE else View.GONE
+        binding.ltDeviceName.visibility = if (show) View.VISIBLE else View.GONE
+        try {
+            mRealm = Realm.getDefaultInstance()
+            val teams: List<RealmMyTeam> =
+                mRealm.where(RealmMyTeam::class.java).isEmpty("teamId").findAll()
+            if (teams.isNotEmpty() && show) {
+                binding.team.visibility = View.VISIBLE
+                teamAdapter = ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, teamList)
+                teamAdapter!!.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+                teamList.clear()
+                teamList.add("Select team")
+                for (team in teams) {
+                    if (team.isValid) {
+                        teamList.add(team.name)
+                    }
+                }
+                binding.team.adapter = teamAdapter
+                binding.team.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                    override fun onItemSelected(parentView: AdapterView<*>?, selectedItemView: View, position: Int, id: Long) {
+                        if (position > 0) {
+                            val selectedTeam = teams[position - 1]
+                            selectedTeamId = selectedTeam._id
+                        }
+                    }
+
+                    override fun onNothingSelected(parentView: AdapterView<*>?) {}
+                }
+            }
+        } finally {
+            if (mRealm != null && !mRealm.isClosed) {
+                mRealm.close()
+            }
+        }
+        if (show) {
+            if (settings.getString("serverURL", "") == "https://planet.learning.ole.org") {
+                settings.edit().putString("serverURL", "").apply()
+                settings.edit().putString("serverPin", "").apply()
+            }
+            if (settings.getString("serverProtocol", "") == getString(R.string.http_protocol)) {
+                binding.radioHttp.isChecked = true
+                settings.edit().putString("serverProtocol", getString(R.string.http_protocol)).apply()
+            }
+            if (settings.getString("serverProtocol", "") == getString(R.string.https_protocol)
+                && settings.getString("serverURL", "") != ""
+                && settings.getString("serverURL", "") != "https://planet.learning.ole.org"
+            ) {
+                binding.radioHttps.isChecked = true
+                settings.edit().putString("serverProtocol", getString(R.string.https_protocol)).apply()
+            }
+            serverUrl.setText(removeProtocol(settings.getString("serverURL", "")))
+            serverPassword.setText(settings.getString("serverPin", ""))
+            serverUrl.isEnabled = true
+            serverPassword.isEnabled = true
+        } else {
+            serverUrl.setText("planet.learning.ole.org")
+            serverPassword.setText("1983")
+            serverUrl.isEnabled = false
+            serverPassword.isEnabled = false
+            settings.edit().putString("serverProtocol", getString(R.string.https_protocol)).apply()
+            serverUrlProtocol.setText(getString(R.string.https_protocol))
         }
     }
 
@@ -726,11 +817,9 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
             serverUrl.setText(removeProtocol(settings.getString("serverURL", "")))
             serverPassword.setText(settings.getString("serverPin", ""))
             protocolCheckin.check(
-                if (TextUtils.equals(settings.getString("serverProtocol", ""), "http://")) R.id.radio_http
-                else R.id.radio_https
+                if (TextUtils.equals(settings.getString("serverProtocol", ""), "http://")) R.id.radio_http else R.id.radio_https
             )
             serverUrlProtocol.setText(settings.getString("serverProtocol", ""))
-            serverPassword.transformationMethod = null
         }
         serverUrl.isEnabled = !checked
         serverPassword.isEnabled = !checked
@@ -869,8 +958,9 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
 
         activityUsersLoginBinding.recyclerView.layoutManager = LinearLayoutManager(this)
         users = RealmMyTeam.getUsers(selectedTeamId, mRealm, "")
+
         mAdapter = TeamListAdapter(users as MutableList<RealmUserModel>, this, this)
-        Log.d("users", users.toString())
+        activityUsersLoginBinding.recyclerView.adapter = mAdapter
 
         val layoutManager: RecyclerView.LayoutManager = object : LinearLayoutManager(this) {
             override fun generateDefaultLayoutParams(): RecyclerView.LayoutParams {

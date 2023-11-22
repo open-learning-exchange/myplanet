@@ -38,7 +38,11 @@ class TeamListAdapter(private val accountsList: List<RealmUserModel>, val contex
 
     class ViewHolder(private val binding: UserListItemBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bindView(account: RealmUserModel) {
-            binding.userNameTextView.text = account.name
+            if (account.fullName != " ") {
+                binding.userNameTextView.text = account.fullName
+            } else {
+                binding.userNameTextView.text = account.name
+            }
             Glide.with(context)
                 .load(account.userImage)
                 .placeholder(R.drawable.profile)
