@@ -760,9 +760,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             serverPassword = dialogServerUrlBinding.inputServerPassword;
             serverUrlProtocol = dialogServerUrlBinding.inputServerUrlProtocol;
             dialogServerUrlBinding.deviceName.setText(NetworkUtils.getDeviceName());
-
             MaterialDialog.Builder builder = new MaterialDialog.Builder(LoginActivity.this);
-
             builder.title(R.string.action_settings)
                     .customView(dialogServerUrlBinding.getRoot(), true)
                     .positiveText(R.string.btn_sync)
@@ -898,7 +896,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             settings.edit().putString("serverProtocol", getString(R.string.https_protocol)).commit();
             serverUrlProtocol.setText(getString(R.string.https_protocol));
         }
-
         try {
             mRealm = Realm.getDefaultInstance();
             List<RealmMyTeam> teams = mRealm.where(RealmMyTeam.class).isEmpty("teamId").findAll();
@@ -906,7 +903,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                 binding.team.setVisibility(View.VISIBLE);
                 teamAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, teamList);
                 teamAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-
                 teamList.clear();
                 teamList.add("Select team");
                 for (RealmMyTeam team : teams) {
