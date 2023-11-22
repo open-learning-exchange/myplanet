@@ -37,7 +37,6 @@ public class SplashActivity extends AppCompatActivity {
             finish();
             return;
         }
-
         if (settings.contains("isChild") && prefData.getTEAMMODE1()) {
             startActivity(new Intent(SplashActivity.this, UsersLoginActivity.class));
             finish();
@@ -45,7 +44,6 @@ public class SplashActivity extends AppCompatActivity {
             startActivity(new Intent(SplashActivity.this, LoginActivity.class));
             finish();
         }
-
         binding.getStarted.setOnClickListener(view -> {
             settings.edit().putBoolean("isChild", binding.childLogin.isChecked()).commit();
             startActivity(new Intent(SplashActivity.this, LoginActivity.class));
