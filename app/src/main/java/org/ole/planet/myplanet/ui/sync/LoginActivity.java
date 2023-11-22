@@ -74,6 +74,7 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -753,7 +754,15 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         try {
             mRealm = Realm.getDefaultInstance();
             DialogServerUrlBinding dialogServerUrlBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this));
+            spnCloud = dialogServerUrlBinding.spnCloud;
+            protocol_checkin = dialogServerUrlBinding.radioProtocol;
+            serverUrl = dialogServerUrlBinding.inputServerUrl;
+            serverPassword = dialogServerUrlBinding.inputServerPassword;
+            serverUrlProtocol = dialogServerUrlBinding.inputServerUrlProtocol;
+            dialogServerUrlBinding.deviceName.setText(NetworkUtils.getDeviceName());
+
             MaterialDialog.Builder builder = new MaterialDialog.Builder(LoginActivity.this);
+
             builder.title(R.string.action_settings)
                     .customView(dialogServerUrlBinding.getRoot(), true)
                     .positiveText(R.string.btn_sync)
@@ -764,20 +773,17 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                         if (selectedTeamId == null){
                             saveConfigAndContinue(dialog);
                         } else {
-                            Intent intent = new Intent(LoginActivity.this, UsersLoginActivity.class);
-                            intent.putExtra("selectedTeamId", selectedTeamId);
-                            startActivity(intent);
-                            saveConfigAndContinue(dialog);
+                            String url = serverUrlProtocol.getText().toString() + serverUrl.getText().toString();
+                            if (isUrlValid(url)) {
+                                Intent intent = new Intent(LoginActivity.this, UsersLoginActivity.class);
+                                intent.putExtra("selectedTeamId", selectedTeamId);
+                                startActivity(intent);
+                                saveConfigAndContinue(dialog);
+                            } else {
+                                saveConfigAndContinue(dialog);
+                            }
                         }
-
                     });
-
-            spnCloud = dialogServerUrlBinding.spnCloud;
-            protocol_checkin = dialogServerUrlBinding.radioProtocol;
-            serverUrl = dialogServerUrlBinding.inputServerUrl;
-            serverPassword = dialogServerUrlBinding.inputServerPassword;
-            serverUrlProtocol = dialogServerUrlBinding.inputServerUrlProtocol;
-            dialogServerUrlBinding.deviceName.setText(NetworkUtils.getDeviceName());
 
             if(!prefData.getMANUALCONFIG1()){
                 dialogServerUrlBinding.manualConfiguration.setChecked(false);
@@ -893,6 +899,8 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                         // Do nothing when nothing is selected
                     }
                 });
+            } else {
+                binding.team.setVisibility(View.GONE);
             }
         } finally {
             if (mRealm != null && !mRealm.isClosed()) {
