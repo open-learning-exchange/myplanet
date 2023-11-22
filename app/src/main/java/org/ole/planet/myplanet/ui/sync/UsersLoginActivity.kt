@@ -635,6 +635,13 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
         try {
             mRealm = Realm.getDefaultInstance()
             val dialogServerUrlBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this))
+            spnCloud = dialogServerUrlBinding.spnCloud
+            protocolCheckin = dialogServerUrlBinding.radioProtocol
+            serverUrl = dialogServerUrlBinding.inputServerUrl
+            serverPassword = dialogServerUrlBinding.inputServerPassword
+            serverUrlProtocol = dialogServerUrlBinding.inputServerUrlProtocol
+            dialogServerUrlBinding.deviceName.setText(NetworkUtils.getDeviceName())
+
             val builder = MaterialDialog.Builder(this@UsersLoginActivity)
             builder.title(R.string.action_settings)
                 .customView(dialogServerUrlBinding.root, true)
@@ -646,18 +653,16 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
                     if (selectedTeamId == null) {
                         saveConfigAndContinue(dialog)
                     } else {
-                        val intent = Intent(this@UsersLoginActivity, UsersLoginActivity::class.java)
-                        intent.putExtra("selectedTeamId", selectedTeamId)
-                        startActivity(intent)
-                        saveConfigAndContinue(dialog)
+                        val url = serverUrlProtocol.text.toString() + serverUrl.text.toString()
+                        if (isUrlValid(url)) {
+                            prefData.setSELECTEDTEAMID(selectedTeamId)
+                            getTeamMembers()
+                            saveConfigAndContinue(dialog)
+                        } else {
+                            saveConfigAndContinue(dialog)
+                        }
                     }
                 }
-            spnCloud = dialogServerUrlBinding.spnCloud
-            protocolCheckin = dialogServerUrlBinding.radioProtocol
-            serverUrl = dialogServerUrlBinding.inputServerUrl
-            serverPassword = dialogServerUrlBinding.inputServerPassword
-            serverUrlProtocol = dialogServerUrlBinding.inputServerUrlProtocol
-            dialogServerUrlBinding.deviceName.setText(NetworkUtils.getDeviceName())
             if (!prefData.getMANUALCONFIG()) {
                 dialogServerUrlBinding.manualConfiguration.isChecked = false
                 showConfigurationUIElements(dialogServerUrlBinding, false)
@@ -729,38 +734,7 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
         binding.ltIntervalLabel.visibility = if (show) View.VISIBLE else View.GONE
         binding.ltSyncSwitch.visibility = if (show) View.VISIBLE else View.GONE
         binding.ltDeviceName.visibility = if (show) View.VISIBLE else View.GONE
-        try {
-            mRealm = Realm.getDefaultInstance()
-            val teams: List<RealmMyTeam> =
-                mRealm.where(RealmMyTeam::class.java).isEmpty("teamId").findAll()
-            if (teams.isNotEmpty() && show) {
-                binding.team.visibility = View.VISIBLE
-                teamAdapter = ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, teamList)
-                teamAdapter!!.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-                teamList.clear()
-                teamList.add("Select team")
-                for (team in teams) {
-                    if (team.isValid) {
-                        teamList.add(team.name)
-                    }
-                }
-                binding.team.adapter = teamAdapter
-                binding.team.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-                    override fun onItemSelected(parentView: AdapterView<*>?, selectedItemView: View, position: Int, id: Long) {
-                        if (position > 0) {
-                            val selectedTeam = teams[position - 1]
-                            selectedTeamId = selectedTeam._id
-                        }
-                    }
 
-                    override fun onNothingSelected(parentView: AdapterView<*>?) {}
-                }
-            }
-        } finally {
-            if (mRealm != null && !mRealm.isClosed) {
-                mRealm.close()
-            }
-        }
         if (show) {
             if (settings.getString("serverURL", "") == "https://planet.learning.ole.org") {
                 settings.edit().putString("serverURL", "").apply()
@@ -788,6 +762,46 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
             serverPassword.isEnabled = false
             settings.edit().putString("serverProtocol", getString(R.string.https_protocol)).apply()
             serverUrlProtocol.setText(getString(R.string.https_protocol))
+        }
+
+        try {
+            mRealm = Realm.getDefaultInstance()
+            val teams: List<RealmMyTeam> = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId").findAll()
+            if (teams.isNotEmpty() && show && binding.inputServerUrl.text.toString() != "") {
+                binding.team.visibility = View.VISIBLE
+                teamAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, teamList)
+                teamAdapter!!.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+                teamList.clear()
+                teamList.add("Select team")
+                for (team in teams) {
+                    if (team.isValid) {
+                        teamList.add(team.name)
+                    }
+                }
+                binding.team.adapter = teamAdapter
+                binding.team.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                    override fun onItemSelected(parentView: AdapterView<*>?, selectedItemView: View, position: Int, id: Long) {
+                        if (position > 0) {
+                            val selectedTeam = teams[position - 1]
+                            if (selectedTeam != null) {
+                                selectedTeamId = selectedTeam._id
+                            }
+                        }
+                    }
+
+                    override fun onNothingSelected(parentView: AdapterView<*>?) {
+                        // Do nothing when nothing is selected
+                    }
+                }
+            } else if (teams.isNotEmpty() && show && binding.inputServerUrl.text.toString() == "") {
+                binding.team.visibility = View.GONE
+            } else {
+                binding.team.visibility = View.GONE
+            }
+        } finally {
+            if (mRealm != null && !mRealm.isClosed) {
+                mRealm.close()
+            }
         }
     }
 
@@ -954,12 +968,16 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
     }
 
     private fun getTeamMembers() {
-        val selectedTeamId = intent.getStringExtra("selectedTeamId")
+        selectedTeamId = prefData.getSELECTEDTEAMID().toString()
+        users = RealmMyTeam.getUsers(selectedTeamId, mRealm, "")
+        if (mAdapter == null) {
+            mAdapter = TeamListAdapter(users as MutableList<RealmUserModel>, this, this)
+        } else {
+            mAdapter!!.clearList()
+            mAdapter = TeamListAdapter(users as MutableList<RealmUserModel>, this, this)
+        }
 
         activityUsersLoginBinding.recyclerView.layoutManager = LinearLayoutManager(this)
-        users = RealmMyTeam.getUsers(selectedTeamId, mRealm, "")
-
-        mAdapter = TeamListAdapter(users as MutableList<RealmUserModel>, this, this)
         activityUsersLoginBinding.recyclerView.adapter = mAdapter
 
         val layoutManager: RecyclerView.LayoutManager = object : LinearLayoutManager(this) {

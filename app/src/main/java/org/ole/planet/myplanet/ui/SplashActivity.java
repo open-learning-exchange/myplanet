@@ -13,15 +13,18 @@ import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.ui.sync.UsersLoginActivity;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.FileUtils;
+import org.ole.planet.myplanet.utilities.SharedPrefManager;
 
 public class SplashActivity extends AppCompatActivity {
     private ActivitySplashBinding binding;
+    SharedPrefManager prefData;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         binding = ActivitySplashBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+        prefData = new SharedPrefManager(this);
 
         // Find and show space available on the device
         binding.tvAvailableSpace.setText(FileUtils.getAvailableOverTotalMemoryFormattedString());
@@ -34,10 +37,15 @@ public class SplashActivity extends AppCompatActivity {
             finish();
             return;
         }
-        if (settings.contains("isChild")) {
+
+        if (settings.contains("isChild") && prefData.getTEAMMODE1()) {
+            startActivity(new Intent(SplashActivity.this, UsersLoginActivity.class));
+            finish();
+        } else if (settings.contains("isChild") && !prefData.getTEAMMODE1()) {
             startActivity(new Intent(SplashActivity.this, LoginActivity.class));
             finish();
         }
+
         binding.getStarted.setOnClickListener(view -> {
             settings.edit().putBoolean("isChild", binding.childLogin.isChecked()).commit();
             startActivity(new Intent(SplashActivity.this, LoginActivity.class));

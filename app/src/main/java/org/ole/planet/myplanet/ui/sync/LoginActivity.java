@@ -775,8 +775,9 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                         } else {
                             String url = serverUrlProtocol.getText().toString() + serverUrl.getText().toString();
                             if (isUrlValid(url)) {
+                                prefData.setTEAMMODE1(true);
                                 Intent intent = new Intent(LoginActivity.this, UsersLoginActivity.class);
-                                intent.putExtra("selectedTeamId", selectedTeamId);
+                                prefData.setSELECTEDTEAMID1(selectedTeamId);
                                 startActivity(intent);
                                 saveConfigAndContinue(dialog);
                             } else {
