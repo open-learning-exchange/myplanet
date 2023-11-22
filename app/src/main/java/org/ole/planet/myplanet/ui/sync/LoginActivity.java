@@ -785,7 +785,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                         }
                     });
 
-            if(!prefData.getMANUALCONFIG1()){
+            if (!prefData.getMANUALCONFIG1()) {
                 dialogServerUrlBinding.manualConfiguration.setChecked(false);
                 showConfigurationUIElements(dialogServerUrlBinding, false);
             } else {
@@ -867,48 +867,6 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         binding.ltSyncSwitch.setVisibility(show ? View.VISIBLE : View.GONE);
         binding.ltDeviceName.setVisibility(show ? View.VISIBLE : View.GONE);
 
-        try {
-            mRealm = Realm.getDefaultInstance();
-            List<RealmMyTeam> teams = mRealm.where(RealmMyTeam.class).isEmpty("teamId").findAll();
-            if (teams.size() > 0 && show) {
-                binding.team.setVisibility(View.VISIBLE);
-                teamAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, teamList);
-                teamAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-
-                teamList.clear();
-                teamList.add("Select team");
-                for (RealmMyTeam team : teams) {
-                    if (team.isValid()) {
-                        teamList.add(team.getName());
-                    }
-                }
-                binding.team.setAdapter(teamAdapter);
-                binding.team.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                    @Override
-                    public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
-                        if (position > 0) {
-                            RealmMyTeam selectedTeam = teams.get(position - 1);
-                            if (selectedTeam != null) {
-                                selectedTeamId = selectedTeam.get_id();
-                            }
-                        }
-                    }
-
-                    @Override
-                    public void onNothingSelected(AdapterView<?> parentView) {
-                        // Do nothing when nothing is selected
-                    }
-                });
-            } else {
-                binding.team.setVisibility(View.GONE);
-            }
-        } finally {
-            if (mRealm != null && !mRealm.isClosed()) {
-                mRealm.close();
-            }
-        }
-
-
         if (show) {
             if (settings.getString("serverURL", "").equals("https://planet.learning.ole.org")){
                 settings.edit().putString("serverURL", "").apply();
@@ -938,6 +896,50 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             serverPassword.setEnabled(false);
             settings.edit().putString("serverProtocol", getString(R.string.https_protocol)).commit();
             serverUrlProtocol.setText(getString(R.string.https_protocol));
+        }
+
+        try {
+            mRealm = Realm.getDefaultInstance();
+            List<RealmMyTeam> teams = mRealm.where(RealmMyTeam.class).isEmpty("teamId").findAll();
+            if (teams.size() > 0 && show && !binding.inputServerUrl.getText().toString().equals("")) {
+                binding.team.setVisibility(View.VISIBLE);
+                teamAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, teamList);
+                teamAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+
+                teamList.clear();
+                teamList.add("Select team");
+                for (RealmMyTeam team : teams) {
+                    if (team.isValid()) {
+                        teamList.add(team.getName());
+                    }
+                }
+                binding.team.setAdapter(teamAdapter);
+                binding.team.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                    @Override
+                    public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
+                        if (position > 0) {
+                            RealmMyTeam selectedTeam = teams.get(position - 1);
+                            if (selectedTeam != null) {
+                                selectedTeamId = selectedTeam.get_id();
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onNothingSelected(AdapterView<?> parentView) {
+                        // Do nothing when nothing is selected
+                    }
+                });
+            }
+            else if (teams.size() > 0 && show && binding.inputServerUrl.getText().toString().equals("")){
+                binding.team.setVisibility(View.GONE);
+            } else {
+                binding.team.setVisibility(View.GONE);
+            }
+        } finally {
+            if (mRealm != null && !mRealm.isClosed()) {
+                mRealm.close();
+            }
         }
     }
 
