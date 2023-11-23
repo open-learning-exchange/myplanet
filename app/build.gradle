@@ -9,8 +9,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdkVersion 21
         targetSdkVersion 34
-        versionCode 1155
-        versionName "0.11.55"
+        versionCode 1156
+        versionName "0.11.56"
         ndkVersion '21.3.6528147'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -119,7 +119,7 @@ dependencies {
     testImplementation 'junit:junit:4.13.2'
     implementation 'com.github.bumptech.glide:glide:4.16.0'
     kapt 'com.github.bumptech.glide:compiler:4.16.0'
-    implementation 'com.opencsv:opencsv:5.8'
+    implementation 'com.opencsv:opencsv:5.9'
     implementation 'com.google.android.exoplayer:exoplayer:2.7.2'
     implementation 'de.hdodenhof:circleimageview:3.1.0'
     implementation 'org.osmdroid:osmdroid-android:6.1.17'
