@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.course;
 
-
 import static org.ole.planet.myplanet.MainApplication.context;
 
 import android.os.Bundle;
@@ -9,10 +8,9 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-
-import com.bumptech.glide.Glide;
 
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
@@ -32,18 +30,17 @@ import org.ole.planet.myplanet.ui.exam.TakeExamFragment;
 import org.ole.planet.myplanet.utilities.CameraUtils;
 import org.ole.planet.myplanet.utilities.Constants;
 
-import java.io.File;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import io.noties.markwon.AbstractMarkwonPlugin;
 import io.noties.markwon.Markwon;
+import io.noties.markwon.MarkwonPlugin;
 import io.noties.markwon.image.ImagesPlugin;
 import io.noties.markwon.image.file.FileSchemeHandler;
-import io.noties.markwon.image.gif.GifMediaDecoder;
-import io.noties.markwon.image.svg.SvgPictureMediaDecoder;
 import io.realm.Case;
 import io.realm.Realm;
 import io.realm.RealmResults;
@@ -58,7 +55,6 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
     List<RealmStepExam> stepExams;
     RealmUserModel user;
     int stepNumber;
-    private Markwon markwon;
 
     public CourseStepFragment() {
     }
@@ -71,16 +67,6 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
             stepNumber = getArguments().getInt("stepNumber");
         }
         setUserVisibleHint(false);
-        markwon = Markwon.builder(context)
-                .usePlugin(ImagesPlugin.create())
-                .usePlugin(ImagesPlugin.create(plugin -> plugin.addSchemeHandler(FileSchemeHandler.create())))
-                .usePlugin(ImagesPlugin.create(plugin -> {
-                    plugin.addMediaDecoder(SvgPictureMediaDecoder.create());
-                }))
-                .usePlugin(ImagesPlugin.create(plugin -> {
-                    plugin.addMediaDecoder(GifMediaDecoder.create());
-                }))
-                .build();
     }
 
     @Override
@@ -134,7 +120,21 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
         if (resources != null) fragmentCourseStepBinding.btnResources.setText(getString(R.string.resources) + " ["+ resources.size() + "]");
         hideTestIfNoQuestion();
         fragmentCourseStepBinding.tvTitle.setText(step.getStepTitle());
-        String markdownContentWithLocalPaths = prependBaseUrlToImages(step.getDescription(), MainApplication.context.getExternalFilesDir(null) + "/ole/");
+        String markdownContentWithLocalPaths = prependBaseUrlToImages(step.getDescription(), "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/");
+        Markwon markwon = Markwon.builder(context)
+                .usePlugin(ImagesPlugin.create())
+                .usePlugin(new AbstractMarkwonPlugin() {
+                    @Override
+                    public void configure(@NonNull MarkwonPlugin.Registry registry) {
+                        registry.require(ImagesPlugin.class, imagesPlugin ->
+                                imagesPlugin.addSchemeHandler(FileSchemeHandler.create())
+                        );
+                    }
+                })
+
+//                .usePlugin(ImagesPlugin.create(plugin -> plugin.addMediaDecoder(SvgPictureMediaDecoder.create())))
+//                .usePlugin(ImagesPlugin.create(plugin -> plugin.addMediaDecoder(GifMediaDecoder.create())))
+                .build();
         markwon.setMarkdown(fragmentCourseStepBinding.description, markdownContentWithLocalPaths);
         Log.d("markdownContent", markdownContentWithLocalPaths);
         if (!RealmMyCourse.isMyCourse(user.getId(), step.getCourseId(), mRealm)) {
@@ -216,5 +216,4 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
 
         return result.toString();
     }
-
 }

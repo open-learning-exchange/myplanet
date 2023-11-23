@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.model;
 import static org.ole.planet.myplanet.MainApplication.context;
 
 import android.util.Base64;
-import android.util.Log;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -40,12 +39,14 @@ public class RealmCourseStep extends io.realm.RealmObject {
             myCourseStepDB.setDescription(JsonUtils.getString("description", stepContainer));
             String description = JsonUtils.getString("description", stepContainer);
             ArrayList<String> links = extractLinks(description);
+            ArrayList<String> concatenatedLinks = new ArrayList<>();
 
+            String baseUrl = Utilities.getUrl();
             for (String link : links) {
-                Log.d("Giddie", link);
+                String concatenatedLink = baseUrl +"/"+ link;
+                concatenatedLinks.add(concatenatedLink);
             }
-
-            Utilities.openDownloadService(context, links);
+            Utilities.openDownloadService(context, concatenatedLinks);
             myCourseStepDB.setNoOfResources(JsonUtils.getJsonArray("resources", stepContainer).size());
             insertCourseStepsAttachments(myCoursesID, step_id, JsonUtils.getJsonArray("resources", stepContainer), mRealm);
             insertExam(stepContainer, mRealm, step_id, step + 1, myCoursesID);
