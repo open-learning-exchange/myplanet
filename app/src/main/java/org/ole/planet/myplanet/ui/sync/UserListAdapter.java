@@ -68,9 +68,9 @@ public class UserListAdapter extends BaseAdapter implements Filterable {
         CircleImageView userProfile = view.findViewById(R.id.userProfile);
 
         User user = filteredUserList.get(position);
-        if (user.getSource().equals("guest")){
+        if (user.getName().equals("")){
             userNameTextView.setText(user.getName());
-        } else if (user.getSource().equals("member")){
+        } else {
             userNameTextView.setText(user.getFullName());
         }
 

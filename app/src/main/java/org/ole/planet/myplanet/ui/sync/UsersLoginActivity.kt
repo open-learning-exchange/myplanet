@@ -13,6 +13,7 @@ import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
 import android.text.method.PasswordTransformationMethod
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -970,11 +971,18 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
     private fun getTeamMembers() {
         selectedTeamId = prefData.getSELECTEDTEAMID().toString()
         users = RealmMyTeam.getUsers(selectedTeamId, mRealm, "")
-        if (mAdapter == null) {
-            mAdapter = TeamListAdapter(users as MutableList<RealmUserModel>, this, this)
+        val userList = (users as MutableList<RealmUserModel>?)!!.map {
+            User(it.fullName?: "", it.name?: "", "", it.userImage?: "", "team")
+        }
+
+        prefData.setSAVEDUSERS(userList)
+
+        Log.d("users", users.toString())
+        mAdapter = if (mAdapter == null) {
+            TeamListAdapter(prefData.getSAVEDUSERS(), this, this)
         } else {
             mAdapter!!.clearList()
-            mAdapter = TeamListAdapter(users as MutableList<RealmUserModel>, this, this)
+            TeamListAdapter(prefData.getSAVEDUSERS(), this, this)
         }
 
         activityUsersLoginBinding.recyclerView.layoutManager = LinearLayoutManager(this)
