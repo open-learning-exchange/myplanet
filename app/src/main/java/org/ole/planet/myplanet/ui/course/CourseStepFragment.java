@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.ui.course;
 import static org.ole.planet.myplanet.MainApplication.context;
 
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -41,6 +40,7 @@ import io.noties.markwon.Markwon;
 import io.noties.markwon.MarkwonPlugin;
 import io.noties.markwon.image.ImagesPlugin;
 import io.noties.markwon.image.file.FileSchemeHandler;
+import io.noties.markwon.movement.MovementMethodPlugin;
 import io.realm.Case;
 import io.realm.Realm;
 import io.realm.RealmResults;
@@ -55,6 +55,7 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
     List<RealmStepExam> stepExams;
     RealmUserModel user;
     int stepNumber;
+    private Markwon markwon;
 
     public CourseStepFragment() {
     }
@@ -67,6 +68,18 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
             stepNumber = getArguments().getInt("stepNumber");
         }
         setUserVisibleHint(false);
+        markwon = Markwon.builder(context)
+                .usePlugin(ImagesPlugin.create())
+                .usePlugin(MovementMethodPlugin.none())
+                .usePlugin(new AbstractMarkwonPlugin() {
+                    @Override
+                    public void configure(@NonNull MarkwonPlugin.Registry registry) {
+                        registry.require(ImagesPlugin.class, imagesPlugin ->
+                                imagesPlugin.addSchemeHandler(FileSchemeHandler.create())
+                        );
+                    }
+                })
+                .build();
     }
 
     @Override
@@ -121,19 +134,7 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
         hideTestIfNoQuestion();
         fragmentCourseStepBinding.tvTitle.setText(step.getStepTitle());
         String markdownContentWithLocalPaths = prependBaseUrlToImages(step.getDescription(), "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/");
-        Markwon markwon = Markwon.builder(context)
-                .usePlugin(ImagesPlugin.create())
-                .usePlugin(new AbstractMarkwonPlugin() {
-                    @Override
-                    public void configure(@NonNull MarkwonPlugin.Registry registry) {
-                        registry.require(ImagesPlugin.class, imagesPlugin ->
-                                imagesPlugin.addSchemeHandler(FileSchemeHandler.create())
-                        );
-                    }
-                })
-                .build();
         markwon.setMarkdown(fragmentCourseStepBinding.description, markdownContentWithLocalPaths);
-        Log.d("markdownContent", markdownContentWithLocalPaths);
         if (!RealmMyCourse.isMyCourse(user.getId(), step.getCourseId(), mRealm)) {
             fragmentCourseStepBinding.btnTakeTest.setVisibility(View.INVISIBLE);
         }

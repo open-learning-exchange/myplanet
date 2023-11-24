@@ -73,7 +73,6 @@ public class FileUtils {
     }
 
     public static boolean checkFileExist(String url) {
-        Log.d("", getFileNameFromUrl(url));
         if (url == null || url.isEmpty()) return false;
         File f = createFilePath(SD_PATH + "/" + getIdFromUrl(url), getFileNameFromUrl(url));
         return f.exists();

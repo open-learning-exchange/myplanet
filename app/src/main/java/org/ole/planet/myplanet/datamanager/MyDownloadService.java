@@ -6,7 +6,6 @@ import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.util.Log;
 
 import androidx.core.app.NotificationCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
@@ -65,7 +64,6 @@ public class MyDownloadService extends IntentService {
         Notification noti = notificationBuilder.setSmallIcon(R.mipmap.ic_launcher).setContentTitle("OLE Download").setContentText("Downloading File...").setAutoCancel(true).build();
         notificationManager.notify(0, noti);
         urls = intent.getStringArrayListExtra("urls");
-        Log.d("urls", String.valueOf(urls));
         realmConfig();
         for (int i = 0; i < urls.size(); i++) {
             url = urls.get(i);

@@ -29,8 +29,7 @@ public class DialogUtils {
         prgDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
         prgDialog.setCancelable(false);
         prgDialog.setButton(DialogInterface.BUTTON_POSITIVE, context.getString(R.string.finish), (dialogInterface, i) -> prgDialog.dismiss());
-        prgDialog.setButton(DialogInterface.BUTTON_NEGATIVE, context.getString(R.string.stop_download),
-                (dialogInterface, i) -> context.stopService(new Intent(context, MyDownloadService.class)));
+        prgDialog.setButton(DialogInterface.BUTTON_NEGATIVE, context.getString(R.string.stop_download), (dialogInterface, i) -> context.stopService(new Intent(context, MyDownloadService.class)));
         return prgDialog;
     }
 
