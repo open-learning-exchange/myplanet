@@ -131,9 +131,6 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
                         );
                     }
                 })
-
-//                .usePlugin(ImagesPlugin.create(plugin -> plugin.addMediaDecoder(SvgPictureMediaDecoder.create())))
-//                .usePlugin(ImagesPlugin.create(plugin -> plugin.addMediaDecoder(GifMediaDecoder.create())))
                 .build();
         markwon.setMarkdown(fragmentCourseStepBinding.description, markdownContentWithLocalPaths);
         Log.d("markdownContent", markdownContentWithLocalPaths);
@@ -200,7 +197,7 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
     public void onImageCapture(String fileUri) {
     }
 
-    private String prependBaseUrlToImages(String markdownContent, String baseUrl) {
+    public static String prependBaseUrlToImages(String markdownContent, String baseUrl) {
         String pattern = "!\\[.*?\\]\\((.*?)\\)";
         Pattern imagePattern = Pattern.compile(pattern);
         Matcher matcher = imagePattern.matcher(markdownContent);

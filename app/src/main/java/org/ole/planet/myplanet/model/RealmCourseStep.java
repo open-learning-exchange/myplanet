@@ -53,7 +53,7 @@ public class RealmCourseStep extends io.realm.RealmObject {
         }
     }
 
-    private static ArrayList<String> extractLinks(String text) {
+    public static ArrayList<String> extractLinks(String text) {
         ArrayList<String> links = new ArrayList<>();
         Pattern pattern = Pattern.compile("!\\[.*?\\]\\((.*?)\\)");
         Matcher matcher = pattern.matcher(text);
