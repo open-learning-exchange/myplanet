@@ -2,17 +2,15 @@ package org.ole.planet.myplanet.ui.userprofile
 
 import android.content.Context
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import org.ole.planet.myplanet.MainApplication.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.UserListItemBinding
-import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.User
 
-class TeamListAdapter(private val membersList: List<User>, val context: Context, private val onItemClickListener: OnItemClickListener) : RecyclerView.Adapter<TeamListAdapter.ViewHolder>() {
+class TeamListAdapter(private val membersList: MutableList<User>, val context: Context, private val onItemClickListener: OnItemClickListener) : RecyclerView.Adapter<TeamListAdapter.ViewHolder>() {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = UserListItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ViewHolder(binding)
@@ -36,16 +34,16 @@ class TeamListAdapter(private val membersList: List<User>, val context: Context,
     }
 
     fun clearList() {
-//        membersList.clear()
+        membersList.clear()
         notifyDataSetChanged()
     }
 
     class ViewHolder(private val binding: UserListItemBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bindView(account: User) {
-            if (account.fullName != " ") {
-                binding.userNameTextView.text = account.fullName
-            } else {
+            if (account.fullName.isEmpty() || account.fullName == " ") {
                 binding.userNameTextView.text = account.name
+            } else {
+                binding.userNameTextView.text = account.fullName
             }
             Glide.with(context)
                 .load(account.image)

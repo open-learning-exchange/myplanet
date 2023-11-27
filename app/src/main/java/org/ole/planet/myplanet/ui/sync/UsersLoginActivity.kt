@@ -544,6 +544,16 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
         editor.putString("loginUserPassword", password)
         val isLoggedIn = authenticateUser(settings, name, password, false)
         if (isLoggedIn) {
+            val existingUser = prefData.getSAVEDUSERS()
+            for (user in existingUser) {
+                if (user.name == name) {
+                    user.password = password
+                    user.source = "member"
+                    break
+                }
+            }
+
+            prefData.setSAVEDUSERS(existingUser)
             Toast.makeText(applicationContext, getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
             onLogin()
             saveUsers(activityUsersLoginBinding.inputName!!.text.toString(), activityUsersLoginBinding.inputPassword.text.toString(), "member")
@@ -971,18 +981,37 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
     private fun getTeamMembers() {
         selectedTeamId = prefData.getSELECTEDTEAMID().toString()
         users = RealmMyTeam.getUsers(selectedTeamId, mRealm, "")
+
         val userList = (users as MutableList<RealmUserModel>?)!!.map {
-            User(it.fullName?: "", it.name?: "", "", it.userImage?: "", "team")
+            User(it.fullName ?: "", it.name ?: "", "", it.userImage ?: "", "team")
         }
 
-        prefData.setSAVEDUSERS(userList)
+        Log.d("userList", userList.toString())
 
-        Log.d("users", users.toString())
+        val existingUsers = prefData.getSAVEDUSERS().toMutableList()
+
+        // Remove items from existingUsers where source is "team"
+        val updatedExistingUsers = existingUsers.filter { it.source != "team" }
+        prefData.setSAVEDUSERS(updatedExistingUsers)
+
+        val usersToRemove = mutableListOf<User>()
+
+        for (user in userList) {
+            val existingUser = updatedExistingUsers.find { it.name == user.name }
+            if (existingUser != null) {
+                usersToRemove.add(user)
+            }
+        }
+
+        val updatedUserList = userList - usersToRemove
+        prefData.setSAVEDUSERS(updatedUserList)
+
+        Log.d("users", prefData.getSAVEDUSERS().toString())
         mAdapter = if (mAdapter == null) {
-            TeamListAdapter(prefData.getSAVEDUSERS(), this, this)
+            TeamListAdapter(prefData.getSAVEDUSERS().toMutableList(), this, this)
         } else {
             mAdapter!!.clearList()
-            TeamListAdapter(prefData.getSAVEDUSERS(), this, this)
+            TeamListAdapter(prefData.getSAVEDUSERS().toMutableList(), this, this)
         }
 
         activityUsersLoginBinding.recyclerView.layoutManager = LinearLayoutManager(this)
@@ -998,13 +1027,27 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
         activityUsersLoginBinding.recyclerView.setHasFixedSize(true)
     }
 
-    override fun onItemClick(user: RealmUserModel) {
-        Glide.with(this)
-            .load(user.userImage)
-            .placeholder(R.drawable.profile)
-            .error(R.drawable.profile)
-            .into( activityUsersLoginBinding.userProfile)
+    override fun onItemClick(user: User) {
+        if (user.password.isEmpty() && user.source != "guest") {
+            Glide.with(this)
+                .load(user.image)
+                .placeholder(R.drawable.profile)
+                .error(R.drawable.profile)
+                .into(activityUsersLoginBinding.userProfile)
 
-        activityUsersLoginBinding.inputName.setText(user.name)
+            activityUsersLoginBinding.inputName.setText(user.name)
+        } else {
+            if (user.source == "guest"){
+                val model = mRealm.copyFromRealm(RealmUserModel.createGuestUser(user.name, mRealm, settings))
+                if (model == null) {
+                    Utilities.toast(this, getString(R.string.unable_to_login))
+                } else {
+                    saveUserInfoPref(settings, "", model)
+                    onLogin()
+                }
+            } else {
+                submitForm(user.name, user.password)
+            }
+        }
     }
 }
