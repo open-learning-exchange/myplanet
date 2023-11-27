@@ -94,6 +94,7 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
         fragmentTakeCourseBinding.nextStep.setOnClickListener(this);
         fragmentTakeCourseBinding.previousStep.setOnClickListener(this);
         fragmentTakeCourseBinding.btnRemove.setOnClickListener(this);
+        fragmentTakeCourseBinding.finishStep.setOnClickListener(this);
         fragmentTakeCourseBinding.courseProgress.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
@@ -173,12 +174,16 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
     private void onClickNext() {
         if (fragmentTakeCourseBinding.viewPagerCourse.getCurrentItem() == steps.size()) {
             fragmentTakeCourseBinding.nextStep.setTextColor(getResources().getColor(R.color.md_grey_500));
+            fragmentTakeCourseBinding.nextStep.setVisibility(View.GONE);
+            fragmentTakeCourseBinding.finishStep.setVisibility(View.VISIBLE);
         }
     }
 
     private void onClickPrevious() {
         if (fragmentTakeCourseBinding.viewPagerCourse.getCurrentItem() - 1 == 0) {
             fragmentTakeCourseBinding.previousStep.setVisibility(View.GONE);
+            fragmentTakeCourseBinding.nextStep.setVisibility(View.VISIBLE);
+            fragmentTakeCourseBinding.finishStep.setVisibility(View.GONE);
         }
     }
 
@@ -197,6 +202,9 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
                 if (isValidClickLeft()) {
                     fragmentTakeCourseBinding.viewPagerCourse.setCurrentItem(fragmentTakeCourseBinding.viewPagerCourse.getCurrentItem() - 1);
                 }
+                break;
+            case R.id.finish_step:
+                getActivity().getSupportFragmentManager().popBackStack();
                 break;
             case R.id.btn_remove:
                 addRemoveCourse();
