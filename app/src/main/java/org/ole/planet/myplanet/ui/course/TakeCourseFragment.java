@@ -82,7 +82,7 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
         fragmentTakeCourseBinding.viewPagerCourse.setAdapter(new CoursePagerAdapter(getChildFragmentManager(), courseId, RealmCourseStep.getStepIds(mRealm, courseId)));
         fragmentTakeCourseBinding.viewPagerCourse.addOnPageChangeListener(this);
         if (fragmentTakeCourseBinding.viewPagerCourse.getCurrentItem() == 0) {
-            fragmentTakeCourseBinding.previousStep.setTextColor(getResources().getColor(R.color.md_grey_500));
+            fragmentTakeCourseBinding.previousStep.setVisibility(View.GONE);
         }
 
         setCourseData();
@@ -178,7 +178,7 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
 
     private void onClickPrevious() {
         if (fragmentTakeCourseBinding.viewPagerCourse.getCurrentItem() - 1 == 0) {
-            fragmentTakeCourseBinding.previousStep.setTextColor(getResources().getColor(R.color.md_grey_500));
+            fragmentTakeCourseBinding.previousStep.setVisibility(View.GONE);
         }
     }
 
@@ -188,7 +188,7 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
             case R.id.next_step:
                 if (isValidClickRight()) {
                     fragmentTakeCourseBinding.viewPagerCourse.setCurrentItem(fragmentTakeCourseBinding.viewPagerCourse.getCurrentItem() + 1);
-                    fragmentTakeCourseBinding.previousStep.setTextColor(getResources().getColor(R.color.md_white_1000));
+                    fragmentTakeCourseBinding.previousStep.setVisibility(View.VISIBLE);
                 }
                 onClickNext();
                 break;
