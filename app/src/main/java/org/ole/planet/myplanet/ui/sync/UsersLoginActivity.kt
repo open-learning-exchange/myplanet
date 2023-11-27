@@ -8,12 +8,12 @@ import android.content.SharedPreferences
 import android.graphics.drawable.AnimationDrawable
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
 import android.preference.PreferenceManager
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
 import android.text.method.PasswordTransformationMethod
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -92,6 +92,8 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
     private var selectedTeamId: String? = null
     var teamList: ArrayList<String> = ArrayList()
     var teamAdapter: ArrayAdapter<String>? = null
+    private var backPressedTime: Long = 0
+    private val BACK_PRESSED_INTERVAL: Long = 2000 //
 
 //    private var tvAvailableSpace: TextView? = null
 //    private var previouslyLoggedIn: TextView? = null
@@ -982,31 +984,18 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
         selectedTeamId = prefData.getSELECTEDTEAMID().toString()
         users = RealmMyTeam.getUsers(selectedTeamId, mRealm, "")
 
-        val userList = (users as MutableList<RealmUserModel>?)!!.map {
+        val userList = (users as MutableList<RealmUserModel>?)?.map {
             User(it.fullName ?: "", it.name ?: "", "", it.userImage ?: "", "team")
-        }
-
-        Log.d("userList", userList.toString())
+        } ?: emptyList()
 
         val existingUsers = prefData.getSAVEDUSERS().toMutableList()
+        val filteredExistingUsers = existingUsers.filter { it.source != "team" }
 
-        // Remove items from existingUsers where source is "team"
-        val updatedExistingUsers = existingUsers.filter { it.source != "team" }
-        prefData.setSAVEDUSERS(updatedExistingUsers)
-
-        val usersToRemove = mutableListOf<User>()
-
-        for (user in userList) {
-            val existingUser = updatedExistingUsers.find { it.name == user.name }
-            if (existingUser != null) {
-                usersToRemove.add(user)
-            }
-        }
-
-        val updatedUserList = userList - usersToRemove
+        val updatedUserList = userList.filterNot { user ->
+            filteredExistingUsers.any { it.name == user.name }
+        } + filteredExistingUsers
         prefData.setSAVEDUSERS(updatedUserList)
 
-        Log.d("users", prefData.getSAVEDUSERS().toString())
         mAdapter = if (mAdapter == null) {
             TeamListAdapter(prefData.getSAVEDUSERS().toMutableList(), this, this)
         } else {
@@ -1048,6 +1037,15 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
             } else {
                 submitForm(user.name, user.password)
             }
+        }
+    }
+    
+    override fun onBackPressed() {
+        if (System.currentTimeMillis() - backPressedTime < BACK_PRESSED_INTERVAL) {
+            super.onBackPressed()
+        } else {
+            Utilities.toast(this, getString(R.string.press_back_again_to_exit))
+            backPressedTime = System.currentTimeMillis()
         }
     }
 }
