@@ -3,6 +3,9 @@ package org.ole.planet.myplanet.ui.course;
 import static org.ole.planet.myplanet.MainApplication.context;
 
 import android.os.Bundle;
+import android.text.Spannable;
+import android.text.method.LinkMovementMethod;
+import android.text.style.URLSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -28,6 +31,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.exam.TakeExamFragment;
 import org.ole.planet.myplanet.utilities.CameraUtils;
 import org.ole.planet.myplanet.utilities.Constants;
+import org.ole.planet.myplanet.utilities.CustomClickableSpan;
 
 import java.util.Date;
 import java.util.List;
@@ -135,10 +139,28 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
         fragmentCourseStepBinding.tvTitle.setText(step.getStepTitle());
         String markdownContentWithLocalPaths = prependBaseUrlToImages(step.getDescription(), "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/");
         markwon.setMarkdown(fragmentCourseStepBinding.description, markdownContentWithLocalPaths);
+        fragmentCourseStepBinding.description.setMovementMethod(LinkMovementMethod.getInstance());
+      
         if (!RealmMyCourse.isMyCourse(user.getId(), step.getCourseId(), mRealm)) {
             fragmentCourseStepBinding.btnTakeTest.setVisibility(View.INVISIBLE);
         }
         setListeners();
+
+        CharSequence textWithSpans = fragmentCourseStepBinding.description.getText();
+        if (textWithSpans instanceof Spannable) {
+            Spannable spannable = (Spannable) textWithSpans;
+            URLSpan[] urlSpans = spannable.getSpans(0, spannable.length(), URLSpan.class);
+
+            for (URLSpan urlSpan : urlSpans) {
+                int start = spannable.getSpanStart(urlSpan);
+                int end = spannable.getSpanEnd(urlSpan);
+
+                String dynamicTitle = spannable.subSequence(start, end).toString();
+
+                spannable.setSpan(new CustomClickableSpan(urlSpan.getURL(), dynamicTitle, getActivity()), start, end, spannable.getSpanFlags(urlSpan));
+                spannable.removeSpan(urlSpan);
+            }
+        }
     }
 
     private void hideTestIfNoQuestion() {

@@ -808,9 +808,16 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
                         }
                     });
                     dialogServerUrlBinding.switchServerUrl.setOnCheckedChangeListener((compoundBtn, b) -> {
-                        settings.edit().putBoolean("switchCloudUrl", b).commit();
-                        dialogServerUrlBinding.spnCloud.setVisibility(b ? View.VISIBLE : View.GONE);
-                        setUrlAndPin(dialogServerUrlBinding.switchServerUrl.isChecked());
+                        if (b) {
+                            settings.edit().putBoolean("switchCloudUrl", true).commit();
+                            dialogServerUrlBinding.spnCloud.setVisibility(View.VISIBLE);
+                            setUrlAndPin(dialogServerUrlBinding.switchServerUrl.isChecked());
+                        } else {
+                            settings.edit().putBoolean("switchCloudUrl", false).commit();
+                            dialogServerUrlBinding.spnCloud.setVisibility(View.GONE);
+                            setUrlAndPin(!dialogServerUrlBinding.switchServerUrl.isChecked());
+                        }
+
                     });
                     serverUrl.addTextChangedListener(new MyTextWatcher(serverUrl));
                     dialogServerUrlBinding.switchServerUrl.setChecked(settings.getBoolean("switchCloudUrl", false));
