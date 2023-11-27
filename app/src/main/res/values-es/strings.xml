@@ -960,5 +960,6 @@
     <string name="progress_bar">barra de progreso</string>
     <string name="web_view">vista web</string>
     <string name="invalid_configuration">Configuraciones de servidor no válidas</string>
+    <string name="date_reset">Restablecer fecha</string>
 
 </resources>

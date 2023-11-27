@@ -427,6 +427,13 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
         } else {
             super.onBackPressed();
         }
+
+//        Fragment fragment = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
+//        if (fragment instanceof BaseContainerFragment) {
+//            ((BaseContainerFragment) fragment).handleBackPressed();
+//        } else {
+//            super.onBackPressed();
+//        }
     }
 
     @Override

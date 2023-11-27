@@ -11,15 +11,32 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <Button
-            android:id="@+id/btn_filter"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="left"
-            android:padding="@dimen/padding_normal"
-            android:text="@string/filter_by_date"
-            android:textSize="18sp"
-            android:theme="@style/GuestStyle" />
+            android:orientation="horizontal"
+            android:paddingLeft="@dimen/padding_normal"
+            android:paddingRight="@dimen/padding_normal">
+
+            <Button
+                android:id="@+id/btn_filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="left"
+                android:padding="@dimen/padding_normal"
+                android:text="@string/filter_by_date"
+                android:textSize="18sp"
+                android:theme="@style/GuestStyle" />
+            <Button
+                android:id="@+id/btn_reset"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="left"
+                android:padding="@dimen/padding_normal"
+                android:text="@string/date_reset"
+                android:textSize="18sp"
+                android:theme="@style/GuestStyle" />
+        </LinearLayout>
 
         <LinearLayout
             android:layout_width="match_parent"

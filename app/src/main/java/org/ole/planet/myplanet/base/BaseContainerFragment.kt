@@ -18,8 +18,10 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatRatingBar
+import androidx.core.content.FileProvider
 import com.google.gson.JsonObject
 import io.realm.RealmResults
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
@@ -28,17 +30,25 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.service.UserProfileDbHandler.KEY_RESOURCE_DOWNLOAD
 import org.ole.planet.myplanet.service.UserProfileDbHandler.KEY_RESOURCE_OPEN
 import org.ole.planet.myplanet.ui.course.AdapterCourses
-import org.ole.planet.myplanet.ui.viewer.*
+import org.ole.planet.myplanet.ui.viewer.AudioPlayerActivity
+import org.ole.planet.myplanet.ui.viewer.CSVViewerActivity
+import org.ole.planet.myplanet.ui.viewer.ImageViewerActivity
+import org.ole.planet.myplanet.ui.viewer.MarkdownViewerActivity
+import org.ole.planet.myplanet.ui.viewer.PDFReaderActivity
+import org.ole.planet.myplanet.ui.viewer.TextFileViewerActivity
+import org.ole.planet.myplanet.ui.viewer.VideoPlayerActivity
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import java.io.File
-import java.util.*
 
 abstract class BaseContainerFragment : BaseResourceFragment() {
     var timesRated: TextView? = null
     var rating: TextView? = null
     var ratingBar: AppCompatRatingBar? = null
     lateinit var profileDbHandler: UserProfileDbHandler
+//    private val INSTALL_UNKNOWN_SOURCES_REQUEST_CODE = 112
+//    var hasInstallPermission = hasInstallPermission(MainApplication.context)
+//    private var currentLibrary: RealmMyLibrary? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -141,11 +151,54 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             "txt" -> openIntent(items, TextFileViewerActivity::class.java)
             "md" -> openIntent(items, MarkdownViewerActivity::class.java)
             "csv" -> openIntent(items, CSVViewerActivity::class.java)
+            "apk" -> installApk(items)
             else -> Toast.makeText(
                 activity, getString(R.string.this_file_type_is_currently_unsupported), Toast.LENGTH_LONG
             ).show()
         }
     }
+
+    private fun installApk(items: RealmMyLibrary) {
+//        currentLibrary = items
+        val directory = File(MainApplication.context.getExternalFilesDir(null).toString() + "/ole" + "/" + items.id)
+        if (!directory.exists()) {
+            if (!directory.mkdirs()) {
+                throw RuntimeException("Failed to create directory: " + directory.absolutePath)
+            }
+        }
+
+        val apkFile = File(directory, items.resourceLocalAddress)
+        if (!apkFile.exists()) {
+            Utilities.toast(activity,"APK file not found")
+            return
+        }
+
+        val uri = FileProvider.getUriForFile(
+            MainApplication.context, "${MainApplication.context.packageName}.fileprovider",
+            apkFile
+        )
+
+        val intent = Intent(Intent.ACTION_INSTALL_PACKAGE)
+        intent.data = uri
+        intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK
+
+        if (intent.resolveActivity(requireActivity().packageManager) != null) {
+//            if (hasInstallPermission(MainApplication.context)) {
+                startActivity(intent)
+//            } else {
+//                requestInstallPermission()
+//            }
+        } else {
+            Utilities.toast(activity,"No app to handle the installation")
+        }
+    }
+
+//    @RequiresApi(Build.VERSION_CODES.O)
+//    private fun requestInstallPermission() {
+//        val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES)
+//        intent.data = Uri.parse("package:" + MainApplication.context.packageName)
+//        startActivityForResult(intent, INSTALL_UNKNOWN_SOURCES_REQUEST_CODE)
+//    }
 
     fun openFileType(items: RealmMyLibrary, videotype: String) {
         val mimetype = Utilities.getMimeType(items.resourceLocalAddress)
@@ -244,4 +297,23 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             }
         }
     }
+
+//    @RequiresApi(Build.VERSION_CODES.O)
+//    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+//        super.onActivityResult(requestCode, resultCode, data)
+//        if (requestCode == INSTALL_UNKNOWN_SOURCES_REQUEST_CODE) {
+//            if (resultCode == Activity.RESULT_OK) {
+//                if (currentLibrary != null) {
+//                    installApk(currentLibrary!!)
+//                    currentLibrary = null
+//                }
+//            } else {
+//                Utilities.toast(requireActivity(), getString(R.string.permissions_denied))
+//            }
+//        }
+//    }
+
+//    open fun handleBackPressed() {
+//        requireActivity().onBackPressed()
+//    }
 }

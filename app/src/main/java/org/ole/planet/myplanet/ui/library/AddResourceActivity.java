@@ -97,7 +97,7 @@ public class AddResourceActivity extends AppCompatActivity {
         resource.setSubject(subjects);
         resource.setUserId(new RealmList<>());
         resource.setLevel(levels);
-        resource.setCreatedDate(Calendar.getInstance().getTimeInMillis());
+        resource.setCreatedDate(String.valueOf(Calendar.getInstance().getTimeInMillis()));
         resource.setResourceFor(resourceFor);
         resource.setResourceLocalAddress(resourceUrl);
         resource.setResourceOffline(true);

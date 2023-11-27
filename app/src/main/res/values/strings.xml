@@ -326,6 +326,7 @@
     <string name="weekly">Weekly</string>
     <string name="recurring_frequency">Recurring Frequency</string>
     <string name="filter_by_date">Date Filter</string>
+    <string name="date_reset">Date Reset</string>
     <string name="emergency_contact">Emergency Contact</string>
     <string name="contact">Contact</string>
     <string name="special_needs">Special Needs</string>
