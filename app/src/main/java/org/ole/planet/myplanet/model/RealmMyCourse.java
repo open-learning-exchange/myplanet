@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.model;
 
+import static org.ole.planet.myplanet.MainApplication.context;
+
 import android.content.SharedPreferences;
 import android.text.TextUtils;
 
@@ -49,6 +51,16 @@ public class RealmMyCourse extends RealmObject {
         myMyCoursesDB.setCourseTitle(JsonUtils.getString("courseTitle", myCousesDoc));
         myMyCoursesDB.setMemberLimit(JsonUtils.getInt("memberLimit", myCousesDoc));
         myMyCoursesDB.setDescription(JsonUtils.getString("description", myCousesDoc));
+        String description = JsonUtils.getString("description", myCousesDoc);
+        ArrayList<String> links = RealmCourseStep.extractLinks(description);
+        ArrayList<String> concatenatedLinks = new ArrayList<>();
+
+        String baseUrl = Utilities.getUrl();
+        for (String link : links) {
+            String concatenatedLink = baseUrl +"/"+ link;
+            concatenatedLinks.add(concatenatedLink);
+        }
+        Utilities.openDownloadService(context, concatenatedLinks);
         myMyCoursesDB.setMethod(JsonUtils.getString("method", myCousesDoc));
         myMyCoursesDB.setGradeLevel(JsonUtils.getString("gradeLevel", myCousesDoc));
         myMyCoursesDB.setSubjectLevel(JsonUtils.getString("subjectLevel", myCousesDoc));

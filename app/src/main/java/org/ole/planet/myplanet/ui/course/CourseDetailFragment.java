@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.google.gson.JsonObject;
 
+import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.base.BaseContainerFragment;
 import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.databinding.FragmentCourseDetailBinding;
@@ -28,7 +29,11 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler;
 
 import java.util.List;
 
+import io.noties.markwon.AbstractMarkwonPlugin;
 import io.noties.markwon.Markwon;
+import io.noties.markwon.MarkwonPlugin;
+import io.noties.markwon.image.ImagesPlugin;
+import io.noties.markwon.image.file.FileSchemeHandler;
 import io.noties.markwon.movement.MovementMethodPlugin;
 import io.realm.Realm;
 import io.realm.RealmResults;
@@ -52,7 +57,16 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
             id = getArguments().getString("courseId");
         }
         markwon = Markwon.builder(context)
+                .usePlugin(ImagesPlugin.create())
                 .usePlugin(MovementMethodPlugin.none())
+                .usePlugin(new AbstractMarkwonPlugin() {
+                    @Override
+                    public void configure(@NonNull MarkwonPlugin.Registry registry) {
+                        registry.require(ImagesPlugin.class, imagesPlugin ->
+                                imagesPlugin.addSchemeHandler(FileSchemeHandler.create())
+                        );
+                    }
+                })
                 .build();
     }
 
@@ -83,7 +97,8 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
         fragmentCourseDetailBinding.method.setText(courses.getMethod());
         fragmentCourseDetailBinding.gradeLevel.setText(courses.getGradeLevel());
         fragmentCourseDetailBinding.language.setText(courses.getLanguageOfInstruction());
-        markwon.setMarkdown(fragmentCourseDetailBinding.description, courses.getDescription());
+        String markdownContentWithLocalPaths = CourseStepFragment.prependBaseUrlToImages(courses.getDescription(), "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/");
+        markwon.setMarkdown(fragmentCourseDetailBinding.description, markdownContentWithLocalPaths);
         fragmentCourseDetailBinding.noOfExams.setText(RealmStepExam.getNoOfExam(mRealm, id) + "");
         final RealmResults resources = mRealm.where(RealmMyLibrary.class).equalTo("courseId", id).equalTo("resourceOffline", false).isNotNull("resourceLocalAddress").findAll();
         setResourceButton(resources, fragmentCourseDetailBinding.btnResources);
