@@ -93,11 +93,7 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
     var teamList: ArrayList<String> = ArrayList()
     var teamAdapter: ArrayAdapter<String>? = null
     private var backPressedTime: Long = 0
-    private val BACK_PRESSED_INTERVAL: Long = 2000 //
-
-//    private var tvAvailableSpace: TextView? = null
-//    private var previouslyLoggedIn: TextView? = null
-//    private var customDeviceName: TextView? = null
+    private val BACK_PRESSED_INTERVAL: Long = 2000
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -107,7 +103,6 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
         prefData = SharedPrefManager(this)
         profileDbHandler = UserProfileDbHandler(this)
 
-//        tvAvailableSpace!!.text = FileUtils.getAvailableOverTotalMemoryFormattedString()
         changeLogoColor()
         service = Service(this)
         defaultPref = PreferenceManager.getDefaultSharedPreferences(this)
@@ -143,9 +138,8 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
         }
         activityUsersLoginBinding.btnFeedback.setOnClickListener {
             FeedbackFragment().show(supportFragmentManager, "")
-//            showUserList()
         }
-//        previouslyLoggedIn!!.setOnClickListener { showUserList() }
+
         guest = intent.getBooleanExtra("guest", false)
         val username = intent.getStringExtra("username")
 
@@ -171,43 +165,6 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
             }
         }
         getTeamMembers()
-    }
-
-    private fun showUserList() {
-        val layoutUserListBinding = LayoutUserListBinding.inflate(LayoutInflater.from(this))
-        val view: View = layoutUserListBinding.root
-        val builder = AlertDialog.Builder(this@UsersLoginActivity)
-        builder.setTitle(R.string.select_user_to_login)
-            .setView(view)
-            .setNegativeButton(R.string.dismiss, null)
-        val existingUsers = prefData.getSAVEDUSERS()
-        val adapter = UserListAdapter(this@UsersLoginActivity, existingUsers)
-        adapter.setOnItemClickListener(object : UserListAdapter.OnItemClickListener {
-            override fun onItemClickGuest(name: String) {
-                val model = mRealm.copyFromRealm(RealmUserModel.createGuestUser(name, mRealm, settings))
-                if (model == null) {
-                    Utilities.toast(this@UsersLoginActivity, getString(R.string.unable_to_login))
-                } else {
-                    saveUserInfoPref(settings, "", model)
-                    onLogin()
-                }
-            }
-
-            override fun onItemClickMember(name: String, password: String) {
-                submitForm(name, password)
-            }
-        })
-        layoutUserListBinding.listUser.adapter = adapter
-        layoutUserListBinding.etSearch.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
-            override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {
-                adapter.filter.filter(charSequence)
-            }
-
-            override fun afterTextChanged(editable: Editable) {}
-        })
-        val dialog = builder.create()
-        dialog.show()
     }
 
     private fun forceSyncTrigger(): Boolean {
@@ -253,7 +210,6 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
         if (!defaultPref.contains("beta_addImageToMessage")) {
             defaultPref.edit().putBoolean("beta_addImageToMessage", true).apply()
         }
-//        customDeviceName!!.text = getCustomDeviceName()
         activityUsersLoginBinding.btnSignin.setOnClickListener {
             if (TextUtils.isEmpty(activityUsersLoginBinding.inputName.text.toString())) {
                 activityUsersLoginBinding.inputName.error = getString(R.string.err_msg_name)
@@ -273,12 +229,6 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
         activityUsersLoginBinding.btnGuestLogin.setOnClickListener {
             showGuestLoginDialog()
         }
-//        switchChildMode!!.isChecked = settings.getBoolean("isChild", false)
-//        switchChildMode!!.setOnCheckedChangeListener { _: CompoundButton?, b: Boolean ->
-//
-//            settings.edit().putBoolean("isChild", b).apply()
-//            recreate()
-//        }
     }
 
     private fun becomeAMember() {
@@ -440,7 +390,6 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
         builder.setNegativeButton("Cancel") { dialog: DialogInterface, _: Int -> dialog.dismiss() }
         builder.setPositiveButton("login") { dialog: DialogInterface, _: Int ->
             dialog.dismiss()
-//            activityUsersLoginBinding.userName!!.text = username
         }
         val dialog = builder.create()
         dialog.show()
@@ -477,17 +426,7 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
             }
             declareHideKeyboardElements()
             activityUsersLoginBinding.lblVersion.text = resources.getText(R.string.version).toString() + " " + resources.getText(R.string.app_version)
-//            activityUsersLoginBinding.userName!!.addTextChangedListener(MyTextWatcher(activityUsersLoginBinding.userName!!))
-//            activityUsersLoginBinding.inputPassword!!.addTextChangedListener(MyTextWatcher(activityUsersLoginBinding.inputPassword!!))
-//            activityUsersLoginBinding.inputPassword!!.setOnEditorActionListener { _: TextView?, actionId: Int, event: KeyEvent? ->
-//                if (actionId == EditorInfo.IME_ACTION_DONE || event != null && event.action == KeyEvent.ACTION_DOWN && event.keyCode == KeyEvent.KEYCODE_ENTER) {
-//                    activityUsersLoginBinding.btnSignin!!.performClick()
-//                    return@setOnEditorActionListener true
-//                }
-//                false
-//            }
 
-//            setUplanguageButton()
             if (defaultPref.getBoolean("saveUsernameAndPassword", false)) {
                 activityUsersLoginBinding.inputName.setText(settings.getString(getString(R.string.login_user), ""))
                 activityUsersLoginBinding.inputPassword.setText(settings.getString(getString(R.string.login_password), ""))
@@ -497,45 +436,12 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
                     Utilities.toast(this@UsersLoginActivity, success)
                 }
             }
-//            activityUsersLoginBinding.userName!!.addTextChangedListener(object : TextWatcher {
-//                override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
-//
-//                override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-//                    val lowercaseText = s.toString().lowercase()
-//                    if (s.toString() != lowercaseText) {
-//                        activityUsersLoginBinding.userName!!.text = lowercaseText
-//                        activityUsersLoginBinding.userName!!.setSelection(lowercaseText.length)
-//                    }
-//                }
-//
-//                override fun afterTextChanged(s: Editable) {}
-//            })
         } finally {
             if (mRealm != null && !mRealm.isClosed) {
                 mRealm.close()
             }
         }
     }
-
-//    private fun setUplanguageButton() {
-//        val languageKey = resources.getStringArray(R.array.language_keys)
-//        val languages = resources.getStringArray(R.array.language)
-//        val pref = PreferenceManager.getDefaultSharedPreferences(this)
-//        val index = listOf(*languageKey).indexOf(pref.getString("app_language", "en"))
-//        btnLang!!.text = languages[index]
-//        btnLang!!.setOnClickListener {
-//            AlertDialog.Builder(this)
-//                .setTitle(R.string.select_language)
-//                .setSingleChoiceItems(resources.getStringArray(R.array.language), index, null)
-//                .setPositiveButton(R.string.ok) { dialog: DialogInterface, _: Int ->
-//                dialog.dismiss()
-//                val selectedPosition = (dialog as AlertDialog).listView.checkedItemPosition
-//                val lang = languageKey[selectedPosition]
-//                LocaleHelper.setLocale(this@UsersLoginActivity, lang)
-//                recreate()
-//            }.setNegativeButton(R.string.cancel, null).show()
-//        }
-//    }
 
     private fun submitForm(name: String, password: String) {
         if (forceSyncTrigger()) {
@@ -1039,7 +945,7 @@ class UsersLoginActivity : SyncActivity(), CheckVersionCallback, OnUserSelectedL
             }
         }
     }
-    
+
     override fun onBackPressed() {
         if (System.currentTimeMillis() - backPressedTime < BACK_PRESSED_INTERVAL) {
             super.onBackPressed()
