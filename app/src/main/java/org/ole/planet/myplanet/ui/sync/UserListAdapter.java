@@ -1,6 +1,8 @@
 package org.ole.planet.myplanet.ui.sync;
 
 import android.content.Context;
+import android.graphics.Color;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -8,6 +10,8 @@ import android.widget.BaseAdapter;
 import android.widget.Filter;
 import android.widget.Filterable;
 import android.widget.TextView;
+
+import androidx.core.content.ContextCompat;
 
 import com.bumptech.glide.Glide;
 
@@ -66,9 +70,10 @@ public class UserListAdapter extends BaseAdapter implements Filterable {
 
         TextView userNameTextView = view.findViewById(R.id.userNameTextView);
         CircleImageView userProfile = view.findViewById(R.id.userProfile);
+        userNameTextView.setTextColor(ContextCompat.getColor(context, R.color.md_black_1000));
 
         User user = filteredUserList.get(position);
-        if (user.getFullName().isEmpty() || user.getFullName() == " ") {
+        if (user.getFullName().isEmpty() || user.getFullName().equals(" ")) {
             userNameTextView.setText(user.getName());
         } else {
             userNameTextView.setText(user.getFullName());
