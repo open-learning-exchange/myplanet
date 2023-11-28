@@ -854,7 +854,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
                                     prefData.setTEAMMODE1(true);
                                     Intent intent = new Intent(this, TeamLoginActivity.class);
                                     startActivity(intent);
-                                } else {
+                                } else if (prefData.getTEAMMODE1() && activity instanceof TeamLoginActivity) {
                                     ((TeamLoginActivity) activity).getTeamMembers();
                                 }
                                 saveConfigAndContinue(dialog);
@@ -1244,7 +1244,9 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
                     validateEditText(inputName, inputLayoutName, getString(R.string.err_msg_name));
                     break;
                 case R.id.input_password:
-                    validateEditText(inputPassword, inputLayoutPassword, getString(R.string.err_msg_password));
+                    if(!prefData.getTEAMMODE1()) {
+                        validateEditText(inputPassword, inputLayoutPassword, getString(R.string.err_msg_password));
+                    }
                     break;
                 default:
                     break;
