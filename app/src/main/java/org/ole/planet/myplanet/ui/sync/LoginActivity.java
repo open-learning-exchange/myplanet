@@ -83,27 +83,27 @@ import io.realm.Realm;
 import io.realm.Sort;
 
 public class LoginActivity extends SyncActivity implements Service.CheckVersionCallback, AdapterTeam.OnUserSelectedListener {
-    public static Calendar cal_today, cal_last_Sync;
+//    public static Calendar cal_today, cal_last_Sync;
     private EditText serverUrl, serverUrlProtocol;
     private EditText serverPassword;
-    private String processedUrl;
-    private RadioGroup protocol_checkin;
-    private EditText inputName, inputPassword;
-    private TextInputLayout inputLayoutName, inputLayoutPassword;
+//    private String processedUrl;
+//    private RadioGroup protocol_checkin;
+//    private EditText inputPassword;
+//    private TextInputLayout inputLayoutName, inputLayoutPassword;
     private Button btnSignIn, becomeMember, btnGuestLogin, btnLang, openCommunity, btnFeedback;
-    private View positiveAction;
+//    private View positiveAction;
     private ImageButton imgBtnSetting;
-    private boolean isSync = false, forceSync = false, guest = false;
+    private boolean forceSync = false, guest = false;
     private SwitchCompat switchChildMode;
     private SharedPreferences defaultPref;
     private Service service;
-    private Spinner spnCloud;
+//    private Spinner spnCloud;
     private TextView tvAvailableSpace, previouslyLoggedIn, customDeviceName, lblVersion;
     SharedPrefManager prefData;
-    private UserProfileDbHandler profileDbHandler;
-    ArrayList<String> teamList = new ArrayList<>();
-    ArrayAdapter<String> teamAdapter;
-    String selectedTeamId = null;
+//    private UserProfileDbHandler profileDbHandler;
+//    ArrayList<String> teamList = new ArrayList<>();
+//    ArrayAdapter<String> teamAdapter;
+//    String selectedTeamId = null;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -116,7 +116,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
 
         setContentView(activityLoginBinding.getRoot());
         prefData = new SharedPrefManager(this);
-        profileDbHandler = new UserProfileDbHandler(this);
+//        profileDbHandler = new UserProfileDbHandler(this);
 
         if (activityLoginBinding instanceof ActivityLoginBinding) {
             inputName = ((ActivityLoginBinding) activityLoginBinding).inputName;
@@ -273,41 +273,41 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         dialog.show();
     }
 
-    private boolean forceSyncTrigger() {
-        lblLastSyncDate.setText(getString(R.string.last_sync) + Utilities.getRelativeTime(settings.getLong(getString(R.string.last_syncs), 0)) + " >>");
-        if (Constants.autoSynFeature(Constants.KEY_AUTOSYNC_, getApplicationContext()) && Constants.autoSynFeature(Constants.KEY_AUTOSYNC_WEEKLY, getApplicationContext())) {
-            return checkForceSync(7);
-        } else if (Constants.autoSynFeature(Constants.KEY_AUTOSYNC_, getApplicationContext()) && Constants.autoSynFeature(Constants.KEY_AUTOSYNC_MONTHLY, getApplicationContext())) {
-            return checkForceSync(30);
-        }
-        return false;
-    }
+//    private boolean forceSyncTrigger() {
+//        lblLastSyncDate.setText(getString(R.string.last_sync) + Utilities.getRelativeTime(settings.getLong(getString(R.string.last_syncs), 0)) + " >>");
+//        if (Constants.autoSynFeature(Constants.KEY_AUTOSYNC_, getApplicationContext()) && Constants.autoSynFeature(Constants.KEY_AUTOSYNC_WEEKLY, getApplicationContext())) {
+//            return checkForceSync(7);
+//        } else if (Constants.autoSynFeature(Constants.KEY_AUTOSYNC_, getApplicationContext()) && Constants.autoSynFeature(Constants.KEY_AUTOSYNC_MONTHLY, getApplicationContext())) {
+//            return checkForceSync(30);
+//        }
+//        return false;
+//    }
+//
+//    private void showWifiDialog() {
+//        if (getIntent().getBooleanExtra("showWifiDialog", false)) {
+//            DialogUtils.showWifiSettingDialog(this);
+//        }
+//    }
 
-    private void showWifiDialog() {
-        if (getIntent().getBooleanExtra("showWifiDialog", false)) {
-            DialogUtils.showWifiSettingDialog(this);
-        }
-    }
-
-    public boolean checkForceSync(int maxDays) {
-        cal_today = Calendar.getInstance(Locale.ENGLISH);
-        cal_last_Sync = Calendar.getInstance(Locale.ENGLISH);
-        cal_last_Sync.setTimeInMillis(settings.getLong("LastSync", 0));
-        cal_today.setTimeInMillis(new Date().getTime());
-        long msDiff = Calendar.getInstance().getTimeInMillis() - cal_last_Sync.getTimeInMillis();
-        long daysDiff = TimeUnit.MILLISECONDS.toDays(msDiff);
-        if (daysDiff >= maxDays) {
-            Log.e("Sync Date ", "Expired - ");
-            AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
-            alertDialogBuilder.setMessage(getString(R.string.it_has_been_more_than) + (daysDiff - 1) + getString(R.string.days_since_you_last_synced_this_device) + getString(R.string.connect_it_to_the_server_over_wifi_and_sync_it_to_reactivate_this_tablet));
-            alertDialogBuilder.setPositiveButton(R.string.okay, (arg0, arg1) -> Toast.makeText(getApplicationContext(), getString(R.string.connect_to_the_server_over_wifi_and_sync_your_device_to_continue), Toast.LENGTH_LONG).show());
-            alertDialogBuilder.show();
-            return true;
-        } else {
-            Log.e("Sync Date ", "Not up to  - " + maxDays);
-            return false;
-        }
-    }
+//    public boolean checkForceSync(int maxDays) {
+//        cal_today = Calendar.getInstance(Locale.ENGLISH);
+//        cal_last_Sync = Calendar.getInstance(Locale.ENGLISH);
+//        cal_last_Sync.setTimeInMillis(settings.getLong("LastSync", 0));
+//        cal_today.setTimeInMillis(new Date().getTime());
+//        long msDiff = Calendar.getInstance().getTimeInMillis() - cal_last_Sync.getTimeInMillis();
+//        long daysDiff = TimeUnit.MILLISECONDS.toDays(msDiff);
+//        if (daysDiff >= maxDays) {
+//            Log.e("Sync Date ", "Expired - ");
+//            AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
+//            alertDialogBuilder.setMessage(getString(R.string.it_has_been_more_than) + (daysDiff - 1) + getString(R.string.days_since_you_last_synced_this_device) + getString(R.string.connect_it_to_the_server_over_wifi_and_sync_it_to_reactivate_this_tablet));
+//            alertDialogBuilder.setPositiveButton(R.string.okay, (arg0, arg1) -> Toast.makeText(getApplicationContext(), getString(R.string.connect_to_the_server_over_wifi_and_sync_your_device_to_continue), Toast.LENGTH_LONG).show());
+//            alertDialogBuilder.show();
+//            return true;
+//        } else {
+//            Log.e("Sync Date ", "Not up to  - " + maxDays);
+//            return false;
+//        }
+//    }
 
     public void declareElements() {
         if (!defaultPref.contains("beta_addImageToMessage")) {
@@ -332,7 +332,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         });
         imgBtnSetting.setOnClickListener(view -> {
             inputName.setText("");
-            settingDialog();
+            settingDialog(this);
         });
         btnGuestLogin.setOnClickListener(view -> {
             inputName.setText("");
@@ -352,219 +352,219 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
             startActivity(new Intent(this, BecomeMemberActivity.class));
         } else {
             Utilities.toast(this, getString(R.string.please_enter_server_url_first));
-            settingDialog();
+            settingDialog(this);
         }
     }
 
-    private void showGuestLoginDialog() {
-        try {
-            mRealm = Realm.getDefaultInstance();
-            mRealm.refresh();
-            editor = settings.edit();
+//    private void showGuestLoginDialog() {
+//        try {
+//            mRealm = Realm.getDefaultInstance();
+//            mRealm.refresh();
+//            editor = settings.edit();
+//
+//            AlertGuestLoginBinding alertGuestLoginBinding = AlertGuestLoginBinding.inflate(LayoutInflater.from(this));
+//            View v = alertGuestLoginBinding.getRoot();
+//
+//            alertGuestLoginBinding.etUserName.addTextChangedListener(new TextWatcher() {
+//                @Override
+//                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+//
+//                @Override
+//                public void onTextChanged(CharSequence s, int start, int before, int count) {
+//                    String input = s.toString();
+//                    char firstChar = input.length() > 0 ? input.charAt(0) : '\0';
+//                    boolean hasInvalidCharacters = false;
+//                    boolean hasSpecialCharacters = false;
+//                    boolean hasDiacriticCharacters = false;
+//
+//                    String normalizedText = Normalizer.normalize(s, Normalizer.Form.NFD);
+//
+//                    for (int i = 0; i < input.length(); i++) {
+//                        char c = input.charAt(i);
+//                        if (c != '_' && c != '.' && c != '-' && !Character.isDigit(c) && !Character.isLetter(c)) {
+//                            hasInvalidCharacters = true;
+//                            break;
+//                        }
+//                    }
+//
+//                    String regex = ".*[ßäöüéèêæÆœøØ¿àìòùÀÈÌÒÙáíóúýÁÉÍÓÚÝâîôûÂÊÎÔÛãñõÃÑÕëïÿÄËÏÖÜŸåÅŒçÇðÐ].*";
+//                    Pattern pattern = Pattern.compile(regex);
+//                    Matcher matcher = pattern.matcher(input);
+//                    hasSpecialCharacters = matcher.matches();
+//
+//                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+//                        hasDiacriticCharacters = !normalizedText.codePoints().allMatch(
+//                                codePoint -> Character.isLetterOrDigit(codePoint) || codePoint == '.' || codePoint == '-' || codePoint == '_'
+//                        );
+//                    }
+//
+//                    if (!Character.isDigit(firstChar) && !Character.isLetter(firstChar)) {
+//                        alertGuestLoginBinding.etUserName.setError(getString(R.string.must_start_with_letter_or_number));
+//                    } else if (hasInvalidCharacters || hasDiacriticCharacters || hasSpecialCharacters) {
+//                        alertGuestLoginBinding.etUserName.setError(getString(R.string.only_letters_numbers_and_are_allowed));
+//                    } else {
+//                        String lowercaseText = input.toLowerCase(Locale.ROOT);
+//                        if (!input.equals(lowercaseText)) {
+//                            alertGuestLoginBinding.etUserName.setText(lowercaseText);
+//                            alertGuestLoginBinding.etUserName.setSelection(lowercaseText.length());
+//                        }
+//                        alertGuestLoginBinding.etUserName.setError(null);
+//                    }
+//                }
+//
+//                @Override
+//                public void afterTextChanged(Editable s) {}
+//            });
+//
+//            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+//            builder.setTitle("Login As Guest")
+//                    .setView(v)
+//                    .setPositiveButton("Login", null)
+//                    .setNegativeButton("Cancel", null);
+//            AlertDialog dialog = builder.create();
+//            dialog.show();
+//
+//            Button login = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+//            Button cancel = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
+//
+//            login.setOnClickListener(view -> {
+//                if (mRealm.isEmpty()) {
+//                    alertDialogOkay(getString(R.string.this_device_not_configured_properly_please_check_and_sync));
+//                    return;
+//                }
+//                String username = alertGuestLoginBinding.etUserName.getText().toString().trim();
+//                Character firstChar = username.isEmpty() ? null : username.charAt(0);
+//                boolean hasInvalidCharacters = false;
+//                boolean hasDiacriticCharacters = false;
+//                boolean hasSpecialCharacters = false;
+//                boolean isValid = true;
+//                String normalizedText = Normalizer.normalize(username, Normalizer.Form.NFD);
+//
+//                String regex = ".*[ßäöüéèêæÆœøØ¿àìòùÀÈÌÒÙáíóúýÁÉÍÓÚÝâîôûÂÊÎÔÛãñõÃÑÕëïÿÄËÏÖÜŸåÅŒçÇðÐ].*";
+//                Pattern pattern = Pattern.compile(regex);
+//                Matcher matcher = pattern.matcher(username);
+//
+//                if (TextUtils.isEmpty(username)) {
+//                    alertGuestLoginBinding.etUserName.setError(getString(R.string.username_cannot_be_empty));
+//                    isValid = false;
+//                }
+//
+//                if (firstChar != null && !Character.isDigit(firstChar) && !Character.isLetter(firstChar)) {
+//                    alertGuestLoginBinding.etUserName.setError(getString(R.string.must_start_with_letter_or_number));
+//                    isValid = false;
+//                } else {
+//                    for (char c : username.toCharArray()) {
+//                        if (c != '_' && c != '.' && c != '-' && !Character.isDigit(c) && !Character.isLetter(c)) {
+//                            hasInvalidCharacters = true;
+//                            break;
+//                        }
+//
+//                        hasSpecialCharacters = matcher.matches();
+//                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+//                            hasDiacriticCharacters = !normalizedText.codePoints().allMatch(
+//                                    codePoint -> Character.isLetterOrDigit(codePoint) || codePoint == '.' || codePoint == '-' || codePoint == '_'
+//                            );
+//                        }
+//                    }
+//
+//                    if (hasInvalidCharacters || hasDiacriticCharacters || hasSpecialCharacters) {
+//                        alertGuestLoginBinding.etUserName.setError(getString(R.string.only_letters_numbers_and_are_allowed));
+//                        isValid = false;
+//                    }
+//                }
+//
+//                if (isValid) {
+//                    RealmUserModel existingUser = mRealm.where(RealmUserModel.class).equalTo("name", username).findFirst();
+//                    dialog.dismiss();
+//
+//                    if (existingUser != null) {
+//                        Log.d("model", String.valueOf(existingUser.get_id()));
+//                        if (existingUser.get_id().contains("guest")) {
+//                            showGuestDialog(username);
+//                        } else if (existingUser.get_id().contains("org.couchdb.user:")) {
+//                            showUserAlreadyMemberDialog(username);
+//                        }
+//                    } else {
+//                        RealmUserModel model = mRealm.copyFromRealm(RealmUserModel.createGuestUser(username, mRealm, settings));
+//                        if (model == null) {
+//                            Utilities.toast(LoginActivity.this, getString(R.string.unable_to_login));
+//                        } else {
+//                            saveUsers(username, "", "guest");
+//                            saveUserInfoPref(settings, "", model);
+//                            onLogin();
+//                        }
+//                    }
+//                }
+//            });
+//
+//            cancel.setOnClickListener(view -> dialog.dismiss());
+//        } finally {
+//            if (mRealm != null && !mRealm.isClosed()) {
+//                mRealm.close();
+//            }
+//        }
+//    }
+//
+//    private void showGuestDialog(String username) {
+//        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+//        builder.setTitle(username + " is already a guest");
+//        builder.setMessage("Continue only if this is you");
+//        builder.setCancelable(false);
+//        builder.setNegativeButton("cancel", (dialog, which) -> dialog.dismiss());
+//
+//        builder.setPositiveButton("continue", (dialog, which) -> {
+//            dialog.dismiss();
+//            RealmUserModel model = mRealm.copyFromRealm(RealmUserModel.createGuestUser(username, mRealm, settings));
+//            if (model == null) {
+//                Utilities.toast(LoginActivity.this, getString(R.string.unable_to_login));
+//            } else {
+//                saveUserInfoPref(settings, "", model);
+//                onLogin();
+//            }
+//        });
+//
+//        AlertDialog dialog = builder.create();
+//        dialog.show();
+//    }
+//
+//    private void showUserAlreadyMemberDialog(String username) {
+//        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+//        builder.setTitle(username + " is already a member");
+//        builder.setMessage("Continue to login if this is you");
+//        builder.setCancelable(false);
+//        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
+//
+//        builder.setPositiveButton("login", (dialog, which) -> {
+//            dialog.dismiss();
+//            inputName.setText(username);
+//        });
+//
+//        AlertDialog dialog = builder.create();
+//        dialog.show();
+//    }
 
-            AlertGuestLoginBinding alertGuestLoginBinding = AlertGuestLoginBinding.inflate(LayoutInflater.from(this));
-            View v = alertGuestLoginBinding.getRoot();
-
-            alertGuestLoginBinding.etUserName.addTextChangedListener(new TextWatcher() {
-                @Override
-                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-                @Override
-                public void onTextChanged(CharSequence s, int start, int before, int count) {
-                    String input = s.toString();
-                    char firstChar = input.length() > 0 ? input.charAt(0) : '\0';
-                    boolean hasInvalidCharacters = false;
-                    boolean hasSpecialCharacters = false;
-                    boolean hasDiacriticCharacters = false;
-
-                    String normalizedText = Normalizer.normalize(s, Normalizer.Form.NFD);
-
-                    for (int i = 0; i < input.length(); i++) {
-                        char c = input.charAt(i);
-                        if (c != '_' && c != '.' && c != '-' && !Character.isDigit(c) && !Character.isLetter(c)) {
-                            hasInvalidCharacters = true;
-                            break;
-                        }
-                    }
-
-                    String regex = ".*[ßäöüéèêæÆœøØ¿àìòùÀÈÌÒÙáíóúýÁÉÍÓÚÝâîôûÂÊÎÔÛãñõÃÑÕëïÿÄËÏÖÜŸåÅŒçÇðÐ].*";
-                    Pattern pattern = Pattern.compile(regex);
-                    Matcher matcher = pattern.matcher(input);
-                    hasSpecialCharacters = matcher.matches();
-
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                        hasDiacriticCharacters = !normalizedText.codePoints().allMatch(
-                                codePoint -> Character.isLetterOrDigit(codePoint) || codePoint == '.' || codePoint == '-' || codePoint == '_'
-                        );
-                    }
-
-                    if (!Character.isDigit(firstChar) && !Character.isLetter(firstChar)) {
-                        alertGuestLoginBinding.etUserName.setError(getString(R.string.must_start_with_letter_or_number));
-                    } else if (hasInvalidCharacters || hasDiacriticCharacters || hasSpecialCharacters) {
-                        alertGuestLoginBinding.etUserName.setError(getString(R.string.only_letters_numbers_and_are_allowed));
-                    } else {
-                        String lowercaseText = input.toLowerCase(Locale.ROOT);
-                        if (!input.equals(lowercaseText)) {
-                            alertGuestLoginBinding.etUserName.setText(lowercaseText);
-                            alertGuestLoginBinding.etUserName.setSelection(lowercaseText.length());
-                        }
-                        alertGuestLoginBinding.etUserName.setError(null);
-                    }
-                }
-
-                @Override
-                public void afterTextChanged(Editable s) {}
-            });
-
-            AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setTitle("Login As Guest")
-                    .setView(v)
-                    .setPositiveButton("Login", null)
-                    .setNegativeButton("Cancel", null);
-            AlertDialog dialog = builder.create();
-            dialog.show();
-
-            Button login = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
-            Button cancel = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
-
-            login.setOnClickListener(view -> {
-                if (mRealm.isEmpty()) {
-                    alertDialogOkay(getString(R.string.this_device_not_configured_properly_please_check_and_sync));
-                    return;
-                }
-                String username = alertGuestLoginBinding.etUserName.getText().toString().trim();
-                Character firstChar = username.isEmpty() ? null : username.charAt(0);
-                boolean hasInvalidCharacters = false;
-                boolean hasDiacriticCharacters = false;
-                boolean hasSpecialCharacters = false;
-                boolean isValid = true;
-                String normalizedText = Normalizer.normalize(username, Normalizer.Form.NFD);
-
-                String regex = ".*[ßäöüéèêæÆœøØ¿àìòùÀÈÌÒÙáíóúýÁÉÍÓÚÝâîôûÂÊÎÔÛãñõÃÑÕëïÿÄËÏÖÜŸåÅŒçÇðÐ].*";
-                Pattern pattern = Pattern.compile(regex);
-                Matcher matcher = pattern.matcher(username);
-
-                if (TextUtils.isEmpty(username)) {
-                    alertGuestLoginBinding.etUserName.setError(getString(R.string.username_cannot_be_empty));
-                    isValid = false;
-                }
-
-                if (firstChar != null && !Character.isDigit(firstChar) && !Character.isLetter(firstChar)) {
-                    alertGuestLoginBinding.etUserName.setError(getString(R.string.must_start_with_letter_or_number));
-                    isValid = false;
-                } else {
-                    for (char c : username.toCharArray()) {
-                        if (c != '_' && c != '.' && c != '-' && !Character.isDigit(c) && !Character.isLetter(c)) {
-                            hasInvalidCharacters = true;
-                            break;
-                        }
-
-                        hasSpecialCharacters = matcher.matches();
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                            hasDiacriticCharacters = !normalizedText.codePoints().allMatch(
-                                    codePoint -> Character.isLetterOrDigit(codePoint) || codePoint == '.' || codePoint == '-' || codePoint == '_'
-                            );
-                        }
-                    }
-
-                    if (hasInvalidCharacters || hasDiacriticCharacters || hasSpecialCharacters) {
-                        alertGuestLoginBinding.etUserName.setError(getString(R.string.only_letters_numbers_and_are_allowed));
-                        isValid = false;
-                    }
-                }
-
-                if (isValid) {
-                    RealmUserModel existingUser = mRealm.where(RealmUserModel.class).equalTo("name", username).findFirst();
-                    dialog.dismiss();
-
-                    if (existingUser != null) {
-                        Log.d("model", String.valueOf(existingUser.get_id()));
-                        if (existingUser.get_id().contains("guest")) {
-                            showGuestDialog(username);
-                        } else if (existingUser.get_id().contains("org.couchdb.user:")) {
-                            showUserAlreadyMemberDialog(username);
-                        }
-                    } else {
-                        RealmUserModel model = mRealm.copyFromRealm(RealmUserModel.createGuestUser(username, mRealm, settings));
-                        if (model == null) {
-                            Utilities.toast(LoginActivity.this, getString(R.string.unable_to_login));
-                        } else {
-                            saveUsers(username, "", "guest");
-                            saveUserInfoPref(settings, "", model);
-                            onLogin();
-                        }
-                    }
-                }
-            });
-
-            cancel.setOnClickListener(view -> dialog.dismiss());
-        } finally {
-            if (mRealm != null && !mRealm.isClosed()) {
-                mRealm.close();
-            }
-        }
-    }
-
-    private void showGuestDialog(String username) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle(username + " is already a guest");
-        builder.setMessage("Continue only if this is you");
-        builder.setCancelable(false);
-        builder.setNegativeButton("cancel", (dialog, which) -> dialog.dismiss());
-
-        builder.setPositiveButton("continue", (dialog, which) -> {
-            dialog.dismiss();
-            RealmUserModel model = mRealm.copyFromRealm(RealmUserModel.createGuestUser(username, mRealm, settings));
-            if (model == null) {
-                Utilities.toast(LoginActivity.this, getString(R.string.unable_to_login));
-            } else {
-                saveUserInfoPref(settings, "", model);
-                onLogin();
-            }
-        });
-
-        AlertDialog dialog = builder.create();
-        dialog.show();
-    }
-
-    private void showUserAlreadyMemberDialog(String username) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle(username + " is already a member");
-        builder.setMessage("Continue to login if this is you");
-        builder.setCancelable(false);
-        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
-
-        builder.setPositiveButton("login", (dialog, which) -> {
-            dialog.dismiss();
-            inputName.setText(username);
-        });
-
-        AlertDialog dialog = builder.create();
-        dialog.show();
-    }
-
-    private void continueSync(MaterialDialog dialog) {
-        processedUrl = saveConfigAndContinue(dialog);
-        if (TextUtils.isEmpty(processedUrl)) return;
-        isSync = true;
-        if (checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) && settings.getBoolean("firstRun", true)) {
-            clearInternalStorage();
-        }
-
-        new Service(this).isPlanetAvailable(new Service.PlanetAvailableListener() {
-            @Override
-            public void isAvailable() {
-                new Service(LoginActivity.this).checkVersion(LoginActivity.this, settings);
-            }
-
-            @Override
-            public void notAvailable() {
-                if (!isFinishing()) {
-                    DialogUtils.showAlert(LoginActivity.this, "Error", getString(R.string.planet_server_not_reachable));
-                }
-            }
-        });
-    }
+//    private void continueSync(MaterialDialog dialog) {
+//        processedUrl = saveConfigAndContinue(dialog);
+//        if (TextUtils.isEmpty(processedUrl)) return;
+//        isSync = true;
+//        if (checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) && settings.getBoolean("firstRun", true)) {
+//            clearInternalStorage();
+//        }
+//
+//        new Service(this).isPlanetAvailable(new Service.PlanetAvailableListener() {
+//            @Override
+//            public void isAvailable() {
+//                new Service(LoginActivity.this).checkVersion(LoginActivity.this, settings);
+//            }
+//
+//            @Override
+//            public void notAvailable() {
+//                if (!isFinishing()) {
+//                    DialogUtils.showAlert(LoginActivity.this, "Error", getString(R.string.planet_server_not_reachable));
+//                }
+//            }
+//        });
+//    }
 
     public void declareMoreElements() {
         try {
@@ -693,306 +693,306 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         editor.commit();
     }
 
-    private void saveUsers(String name, String password, String source) {
-        if(source == "guest"){
-            User newUser = new User("", name, password, "", "guest");
-            List<User> existingUsers = new ArrayList<>(prefData.getSAVEDUSERS1());
+//    private void saveUsers(String name, String password, String source) {
+//        if(source == "guest"){
+//            User newUser = new User("", name, password, "", "guest");
+//            List<User> existingUsers = new ArrayList<>(prefData.getSAVEDUSERS1());
+//
+//            boolean newUserExists = false;
+//
+//            for (User user : existingUsers) {
+//                if (user.getName().equals(newUser.getName().trim())) {
+//                    newUserExists = true;
+//                    break;
+//                }
+//            }
+//
+//            if (!newUserExists) {
+//                existingUsers.add(newUser);
+//                prefData.setSAVEDUSERS1(existingUsers);
+//            }
+//        } else if(source == "member"){
+//            String userProfile = profileDbHandler.getUserModel().getUserImage();
+//            String fullName = profileDbHandler.getUserModel().getFullName();
+//
+//            if (userProfile == null) {
+//                userProfile = "";
+//            }
+//
+//            if (fullName.trim().length() == 0) {
+//                fullName = profileDbHandler.getUserModel().getName();
+//            }
+//
+//            User newUser = new User(fullName, name, password, userProfile, "member");
+//            List<User> existingUsers = new ArrayList<>(prefData.getSAVEDUSERS1());
+//
+//            boolean newUserExists = false;
+//
+//            for (User user : existingUsers) {
+//                if (user.getFullName().equals(newUser.getFullName().trim())) {
+//                    newUserExists = true;
+//                    break;
+//                }
+//            }
+//
+//            if (!newUserExists) {
+//                existingUsers.add(newUser);
+//                prefData.setSAVEDUSERS1(existingUsers);
+//            }
+//        }
+//    }
 
-            boolean newUserExists = false;
+//    private void onLogin() {
+//        UserProfileDbHandler handler = new UserProfileDbHandler(this);
+//        handler.onLogin();
+//        handler.onDestory();
+//        editor.putBoolean(Constants.KEY_LOGIN, true).commit();
+//        openDashboard();
+//    }
 
-            for (User user : existingUsers) {
-                if (user.getName().equals(newUser.getName().trim())) {
-                    newUserExists = true;
-                    break;
-                }
-            }
-
-            if (!newUserExists) {
-                existingUsers.add(newUser);
-                prefData.setSAVEDUSERS1(existingUsers);
-            }
-        } else if(source == "member"){
-            String userProfile = profileDbHandler.getUserModel().getUserImage();
-            String fullName = profileDbHandler.getUserModel().getFullName();
-
-            if (userProfile == null) {
-                userProfile = "";
-            }
-
-            if (fullName.trim().length() == 0) {
-                fullName = profileDbHandler.getUserModel().getName();
-            }
-
-            User newUser = new User(fullName, name, password, userProfile, "member");
-            List<User> existingUsers = new ArrayList<>(prefData.getSAVEDUSERS1());
-
-            boolean newUserExists = false;
-
-            for (User user : existingUsers) {
-                if (user.getFullName().equals(newUser.getFullName().trim())) {
-                    newUserExists = true;
-                    break;
-                }
-            }
-
-            if (!newUserExists) {
-                existingUsers.add(newUser);
-                prefData.setSAVEDUSERS1(existingUsers);
-            }
-        }
-    }
-
-    private void onLogin() {
-        UserProfileDbHandler handler = new UserProfileDbHandler(this);
-        handler.onLogin();
-        handler.onDestory();
-        editor.putBoolean(Constants.KEY_LOGIN, true).commit();
-        openDashboard();
-    }
-
-    public void settingDialog() {
-        try {
-            mRealm = Realm.getDefaultInstance();
-            DialogServerUrlBinding dialogServerUrlBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this));
-            spnCloud = dialogServerUrlBinding.spnCloud;
-            protocol_checkin = dialogServerUrlBinding.radioProtocol;
-            serverUrl = dialogServerUrlBinding.inputServerUrl;
-            serverPassword = dialogServerUrlBinding.inputServerPassword;
-            serverUrlProtocol = dialogServerUrlBinding.inputServerUrlProtocol;
-            dialogServerUrlBinding.deviceName.setText(NetworkUtils.getDeviceName());
-            MaterialDialog.Builder builder = new MaterialDialog.Builder(LoginActivity.this);
-            builder.title(R.string.action_settings)
-                    .customView(dialogServerUrlBinding.getRoot(), true)
-                    .positiveText(R.string.btn_sync)
-                    .negativeText(R.string.btn_sync_cancel)
-                    .neutralText(R.string.btn_sync_save)
-                    .onPositive((dialog, which) -> continueSync(dialog))
-                    .onNeutral((dialog, which) -> {
-                        if (selectedTeamId == null){
-                            saveConfigAndContinue(dialog);
-                        } else {
-                            String url = serverUrlProtocol.getText().toString() + serverUrl.getText().toString();
-                            if (isUrlValid(url)) {
-                                prefData.setTEAMMODE1(true);
-                                Intent intent = new Intent(LoginActivity.this, UsersLoginActivity.class);
-                                prefData.setSELECTEDTEAMID1(selectedTeamId);
-                                startActivity(intent);
-                                saveConfigAndContinue(dialog);
-                            } else {
-                                saveConfigAndContinue(dialog);
-                            }
-                        }
-                    });
-
-            if (!prefData.getMANUALCONFIG1()) {
-                dialogServerUrlBinding.manualConfiguration.setChecked(false);
-                showConfigurationUIElements(dialogServerUrlBinding, false);
-            } else {
-                dialogServerUrlBinding.manualConfiguration.setChecked(true);
-                showConfigurationUIElements(dialogServerUrlBinding, true);
-            }
-
-            MaterialDialog dialog = builder.build();
-            positiveAction = dialog.getActionButton(DialogAction.POSITIVE);
-
-            dialogServerUrlBinding.manualConfiguration.setOnCheckedChangeListener((compoundButton, isChecked) -> {
-                if (isChecked) {
-                    prefData.setMANUALCONFIG1(true);
-                    settings.edit().putString("serverURL", "").apply();
-                    settings.edit().putString("serverPin", "").apply();
-                    dialogServerUrlBinding.radioHttp.setChecked(true);
-                    settings.edit().putString("serverProtocol", getString(R.string.http_protocol)).commit();
-
-                    showConfigurationUIElements(dialogServerUrlBinding, true);
-                    List<RealmCommunity> communities = mRealm.where(RealmCommunity.class).sort("weight", Sort.ASCENDING).findAll();
-                    List<RealmCommunity> nonEmptyCommunities = new ArrayList<>();
-                    for (RealmCommunity community : communities) {
-                        if (community.isValid() && !TextUtils.isEmpty(community.getName())) {
-                            nonEmptyCommunities.add(community);
-                        }
-                    }
-                    dialogServerUrlBinding.spnCloud.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, nonEmptyCommunities));
-
-                    dialogServerUrlBinding.spnCloud.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                        @Override
-                        public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                            onChangeServerUrl();
-                        }
-
-                        @Override
-                        public void onNothingSelected(AdapterView<?> adapterView) {
-
-                        }
-                    });
-                    dialogServerUrlBinding.switchServerUrl.setOnCheckedChangeListener((compoundBtn, b) -> {
-                        settings.edit().putBoolean("switchCloudUrl", b).commit();
-                        dialogServerUrlBinding.spnCloud.setVisibility(b ? View.VISIBLE : View.GONE);
-                        setUrlAndPin(dialogServerUrlBinding.switchServerUrl.isChecked());
-                    });
-                    serverUrl.addTextChangedListener(new MyTextWatcher(serverUrl));
-                    dialogServerUrlBinding.switchServerUrl.setChecked(settings.getBoolean("switchCloudUrl", false));
-                    setUrlAndPin(settings.getBoolean("switchCloudUrl", false));
-                    protocol_semantics();
-                } else {
-                    prefData.setMANUALCONFIG1(false);
-                    showConfigurationUIElements(dialogServerUrlBinding, false);
-                    settings.edit().putBoolean("switchCloudUrl", false).commit();
-                }
-            });
-
-            dialogServerUrlBinding.radioProtocol.setOnCheckedChangeListener((group, checkedId) -> {
-                switch (checkedId) {
-                    case R.id.radio_http ->
-                            settings.edit().putString("serverProtocol", getString(R.string.http_protocol)).commit();
-                    case R.id.radio_https ->
-                            settings.edit().putString("serverProtocol", getString(R.string.https_protocol)).commit();
-                }
-            });
-
-            dialog.show();
-            sync(dialog);
-        } finally {
-            if (mRealm != null && !mRealm.isClosed()) {
-                mRealm.close();
-            }
-        }
-    }
-
-    private void showConfigurationUIElements(DialogServerUrlBinding binding, boolean show) {
-        binding.radioProtocol.setVisibility(show ? View.VISIBLE : View.GONE);
-        binding.switchServerUrl.setVisibility(show ? View.VISIBLE : View.GONE);
-        binding.ltProtocol.setVisibility(show ? View.VISIBLE : View.GONE);
-        binding.ltIntervalLabel.setVisibility(show ? View.VISIBLE : View.GONE);
-        binding.ltSyncSwitch.setVisibility(show ? View.VISIBLE : View.GONE);
-        binding.ltDeviceName.setVisibility(show ? View.VISIBLE : View.GONE);
-
-        if (show) {
-            if (settings.getString("serverURL", "").equals("https://planet.learning.ole.org")){
-                settings.edit().putString("serverURL", "").apply();
-                settings.edit().putString("serverPin", "").apply();
-            }
-
-            if (settings.getString("serverProtocol", "").equals(getString(R.string.http_protocol))) {
-                binding.radioHttp.setChecked(true);
-                settings.edit().putString("serverProtocol", getString(R.string.http_protocol)).commit();
-            }
-
-            if (settings.getString("serverProtocol", "").equals(getString(R.string.https_protocol))
-                    && !settings.getString("serverURL", "").equals("")
-                    && !settings.getString("serverURL", "").equals("https://planet.learning.ole.org")){
-                binding.radioHttps.setChecked(true);
-                settings.edit().putString("serverProtocol", getString(R.string.https_protocol)).commit();
-            }
-
-            serverUrl.setText(removeProtocol(settings.getString("serverURL", "")));
-            serverPassword.setText(settings.getString("serverPin", ""));
-            serverUrl.setEnabled(true);
-            serverPassword.setEnabled(true);
-        } else {
-            serverUrl.setText("planet.learning.ole.org");
-            serverPassword.setText("1983");
-            serverUrl.setEnabled(false);
-            serverPassword.setEnabled(false);
-            settings.edit().putString("serverProtocol", getString(R.string.https_protocol)).commit();
-            serverUrlProtocol.setText(getString(R.string.https_protocol));
-        }
-        try {
-            mRealm = Realm.getDefaultInstance();
-            List<RealmMyTeam> teams = mRealm.where(RealmMyTeam.class).isEmpty("teamId").findAll();
-            if (teams.size() > 0 && show && !binding.inputServerUrl.getText().toString().equals("")) {
-                binding.team.setVisibility(View.VISIBLE);
-                teamAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, teamList);
-                teamAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-                teamList.clear();
-                teamList.add("Select team");
-                for (RealmMyTeam team : teams) {
-                    if (team.isValid()) {
-                        teamList.add(team.getName());
-                    }
-                }
-                binding.team.setAdapter(teamAdapter);
-                binding.team.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                    @Override
-                    public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
-                        if (position > 0) {
-                            RealmMyTeam selectedTeam = teams.get(position - 1);
-                            if (selectedTeam != null) {
-                                selectedTeamId = selectedTeam.get_id();
-                            }
-                        }
-                    }
-
-                    @Override
-                    public void onNothingSelected(AdapterView<?> parentView) {
-                        // Do nothing when nothing is selected
-                    }
-                });
-            }
-            else if (teams.size() > 0 && show && binding.inputServerUrl.getText().toString().equals("")){
-                binding.team.setVisibility(View.GONE);
-            } else {
-                binding.team.setVisibility(View.GONE);
-            }
-        } finally {
-            if (mRealm != null && !mRealm.isClosed()) {
-                mRealm.close();
-            }
-        }
-    }
-
-    private void onChangeServerUrl() {
-        try {
-            mRealm = Realm.getDefaultInstance();
-            RealmCommunity selected = (RealmCommunity) spnCloud.getSelectedItem();
-            if (selected == null) {
-                return;
-            }
-            if (selected.isValid()) {
-                serverUrl.setText(selected.getLocalDomain());
-                protocol_checkin.check(R.id.radio_https);
-                settings.getString("serverProtocol", getString(R.string.https_protocol));
-                serverPassword.setText(selected.getWeight() == 0 ? "1983" : "");
-                serverPassword.setEnabled(selected.getWeight() != 0);
-            }
-        } finally {
-            if (mRealm != null && !mRealm.isClosed()) {
-                mRealm.close();
-            }
-        }
-    }
-
-    private void setUrlAndPin(boolean checked) {
-        if (checked) {
-            onChangeServerUrl();
-        } else {
-            serverUrl.setText(removeProtocol(settings.getString("serverURL", "")));
-            serverPassword.setText(settings.getString("serverPin", ""));
-            protocol_checkin.check(TextUtils.equals(settings.getString("serverProtocol", ""), "http://") ? R.id.radio_http : R.id.radio_https);
-            serverUrlProtocol.setText(settings.getString("serverProtocol", ""));
-        }
-        serverUrl.setEnabled(!checked);
-        serverPassword.setEnabled(!checked);
-        serverPassword.clearFocus();
-        serverUrl.clearFocus();
-        protocol_checkin.setEnabled(!checked);
-    }
-
-    private void protocol_semantics() {
-        settings.edit().putString("serverProtocol", serverUrlProtocol.getText().toString()).commit();
-        protocol_checkin.setOnCheckedChangeListener((radioGroup, i) -> {
-            switch (i) {
-                case R.id.radio_http:
-                    serverUrlProtocol.setText(getString(R.string.http_protocol));
-                    break;
-
-                case R.id.radio_https:
-                    serverUrlProtocol.setText(getString(R.string.https_protocol));
-                    break;
-            }
-            settings.edit().putString("serverProtocol", serverUrlProtocol.getText().toString()).commit();
-        });
-
-    }
+//    public void settingDialog() {
+//        try {
+//            mRealm = Realm.getDefaultInstance();
+//            DialogServerUrlBinding dialogServerUrlBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this));
+//            spnCloud = dialogServerUrlBinding.spnCloud;
+//            protocol_checkin = dialogServerUrlBinding.radioProtocol;
+//            serverUrl = dialogServerUrlBinding.inputServerUrl;
+//            serverPassword = dialogServerUrlBinding.inputServerPassword;
+//            serverUrlProtocol = dialogServerUrlBinding.inputServerUrlProtocol;
+//            dialogServerUrlBinding.deviceName.setText(NetworkUtils.getDeviceName());
+//            MaterialDialog.Builder builder = new MaterialDialog.Builder(LoginActivity.this);
+//            builder.title(R.string.action_settings)
+//                    .customView(dialogServerUrlBinding.getRoot(), true)
+//                    .positiveText(R.string.btn_sync)
+//                    .negativeText(R.string.btn_sync_cancel)
+//                    .neutralText(R.string.btn_sync_save)
+//                    .onPositive((dialog, which) -> continueSync(dialog))
+//                    .onNeutral((dialog, which) -> {
+//                        if (selectedTeamId == null){
+//                            saveConfigAndContinue(dialog);
+//                        } else {
+//                            String url = serverUrlProtocol.getText().toString() + serverUrl.getText().toString();
+//                            if (isUrlValid(url)) {
+//                                prefData.setTEAMMODE1(true);
+//                                Intent intent = new Intent(LoginActivity.this, UsersLoginActivity.class);
+//                                prefData.setSELECTEDTEAMID1(selectedTeamId);
+//                                startActivity(intent);
+//                                saveConfigAndContinue(dialog);
+//                            } else {
+//                                saveConfigAndContinue(dialog);
+//                            }
+//                        }
+//                    });
+//
+//            if (!prefData.getMANUALCONFIG1()) {
+//                dialogServerUrlBinding.manualConfiguration.setChecked(false);
+//                showConfigurationUIElements(dialogServerUrlBinding, false);
+//            } else {
+//                dialogServerUrlBinding.manualConfiguration.setChecked(true);
+//                showConfigurationUIElements(dialogServerUrlBinding, true);
+//            }
+//
+//            MaterialDialog dialog = builder.build();
+//            positiveAction = dialog.getActionButton(DialogAction.POSITIVE);
+//
+//            dialogServerUrlBinding.manualConfiguration.setOnCheckedChangeListener((compoundButton, isChecked) -> {
+//                if (isChecked) {
+//                    prefData.setMANUALCONFIG1(true);
+//                    settings.edit().putString("serverURL", "").apply();
+//                    settings.edit().putString("serverPin", "").apply();
+//                    dialogServerUrlBinding.radioHttp.setChecked(true);
+//                    settings.edit().putString("serverProtocol", getString(R.string.http_protocol)).commit();
+//
+//                    showConfigurationUIElements(dialogServerUrlBinding, true);
+//                    List<RealmCommunity> communities = mRealm.where(RealmCommunity.class).sort("weight", Sort.ASCENDING).findAll();
+//                    List<RealmCommunity> nonEmptyCommunities = new ArrayList<>();
+//                    for (RealmCommunity community : communities) {
+//                        if (community.isValid() && !TextUtils.isEmpty(community.getName())) {
+//                            nonEmptyCommunities.add(community);
+//                        }
+//                    }
+//                    dialogServerUrlBinding.spnCloud.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, nonEmptyCommunities));
+//
+//                    dialogServerUrlBinding.spnCloud.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+//                        @Override
+//                        public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+//                            onChangeServerUrl();
+//                        }
+//
+//                        @Override
+//                        public void onNothingSelected(AdapterView<?> adapterView) {
+//
+//                        }
+//                    });
+//                    dialogServerUrlBinding.switchServerUrl.setOnCheckedChangeListener((compoundBtn, b) -> {
+//                        settings.edit().putBoolean("switchCloudUrl", b).commit();
+//                        dialogServerUrlBinding.spnCloud.setVisibility(b ? View.VISIBLE : View.GONE);
+//                        setUrlAndPin(dialogServerUrlBinding.switchServerUrl.isChecked());
+//                    });
+//                    serverUrl.addTextChangedListener(new MyTextWatcher(serverUrl));
+//                    dialogServerUrlBinding.switchServerUrl.setChecked(settings.getBoolean("switchCloudUrl", false));
+//                    setUrlAndPin(settings.getBoolean("switchCloudUrl", false));
+//                    protocol_semantics();
+//                } else {
+//                    prefData.setMANUALCONFIG1(false);
+//                    showConfigurationUIElements(dialogServerUrlBinding, false);
+//                    settings.edit().putBoolean("switchCloudUrl", false).commit();
+//                }
+//            });
+//
+//            dialogServerUrlBinding.radioProtocol.setOnCheckedChangeListener((group, checkedId) -> {
+//                switch (checkedId) {
+//                    case R.id.radio_http ->
+//                            settings.edit().putString("serverProtocol", getString(R.string.http_protocol)).commit();
+//                    case R.id.radio_https ->
+//                            settings.edit().putString("serverProtocol", getString(R.string.https_protocol)).commit();
+//                }
+//            });
+//
+//            dialog.show();
+//            sync(dialog);
+//        } finally {
+//            if (mRealm != null && !mRealm.isClosed()) {
+//                mRealm.close();
+//            }
+//        }
+//    }
+//
+//    private void showConfigurationUIElements(DialogServerUrlBinding binding, boolean show) {
+//        binding.radioProtocol.setVisibility(show ? View.VISIBLE : View.GONE);
+//        binding.switchServerUrl.setVisibility(show ? View.VISIBLE : View.GONE);
+//        binding.ltProtocol.setVisibility(show ? View.VISIBLE : View.GONE);
+//        binding.ltIntervalLabel.setVisibility(show ? View.VISIBLE : View.GONE);
+//        binding.ltSyncSwitch.setVisibility(show ? View.VISIBLE : View.GONE);
+//        binding.ltDeviceName.setVisibility(show ? View.VISIBLE : View.GONE);
+//
+//        if (show) {
+//            if (settings.getString("serverURL", "").equals("https://planet.learning.ole.org")){
+//                settings.edit().putString("serverURL", "").apply();
+//                settings.edit().putString("serverPin", "").apply();
+//            }
+//
+//            if (settings.getString("serverProtocol", "").equals(getString(R.string.http_protocol))) {
+//                binding.radioHttp.setChecked(true);
+//                settings.edit().putString("serverProtocol", getString(R.string.http_protocol)).commit();
+//            }
+//
+//            if (settings.getString("serverProtocol", "").equals(getString(R.string.https_protocol))
+//                    && !settings.getString("serverURL", "").equals("")
+//                    && !settings.getString("serverURL", "").equals("https://planet.learning.ole.org")){
+//                binding.radioHttps.setChecked(true);
+//                settings.edit().putString("serverProtocol", getString(R.string.https_protocol)).commit();
+//            }
+//
+//            serverUrl.setText(removeProtocol(settings.getString("serverURL", "")));
+//            serverPassword.setText(settings.getString("serverPin", ""));
+//            serverUrl.setEnabled(true);
+//            serverPassword.setEnabled(true);
+//        } else {
+//            serverUrl.setText("planet.learning.ole.org");
+//            serverPassword.setText("1983");
+//            serverUrl.setEnabled(false);
+//            serverPassword.setEnabled(false);
+//            settings.edit().putString("serverProtocol", getString(R.string.https_protocol)).commit();
+//            serverUrlProtocol.setText(getString(R.string.https_protocol));
+//        }
+//        try {
+//            mRealm = Realm.getDefaultInstance();
+//            List<RealmMyTeam> teams = mRealm.where(RealmMyTeam.class).isEmpty("teamId").findAll();
+//            if (teams.size() > 0 && show && !binding.inputServerUrl.getText().toString().equals("")) {
+//                binding.team.setVisibility(View.VISIBLE);
+//                teamAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, teamList);
+//                teamAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+//                teamList.clear();
+//                teamList.add("Select team");
+//                for (RealmMyTeam team : teams) {
+//                    if (team.isValid()) {
+//                        teamList.add(team.getName());
+//                    }
+//                }
+//                binding.team.setAdapter(teamAdapter);
+//                binding.team.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+//                    @Override
+//                    public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
+//                        if (position > 0) {
+//                            RealmMyTeam selectedTeam = teams.get(position - 1);
+//                            if (selectedTeam != null) {
+//                                selectedTeamId = selectedTeam.get_id();
+//                            }
+//                        }
+//                    }
+//
+//                    @Override
+//                    public void onNothingSelected(AdapterView<?> parentView) {
+//                        // Do nothing when nothing is selected
+//                    }
+//                });
+//            }
+//            else if (teams.size() > 0 && show && binding.inputServerUrl.getText().toString().equals("")){
+//                binding.team.setVisibility(View.GONE);
+//            } else {
+//                binding.team.setVisibility(View.GONE);
+//            }
+//        } finally {
+//            if (mRealm != null && !mRealm.isClosed()) {
+//                mRealm.close();
+//            }
+//        }
+//    }
+//
+//    private void onChangeServerUrl() {
+//        try {
+//            mRealm = Realm.getDefaultInstance();
+//            RealmCommunity selected = (RealmCommunity) spnCloud.getSelectedItem();
+//            if (selected == null) {
+//                return;
+//            }
+//            if (selected.isValid()) {
+//                serverUrl.setText(selected.getLocalDomain());
+//                protocol_checkin.check(R.id.radio_https);
+//                settings.getString("serverProtocol", getString(R.string.https_protocol));
+//                serverPassword.setText(selected.getWeight() == 0 ? "1983" : "");
+//                serverPassword.setEnabled(selected.getWeight() != 0);
+//            }
+//        } finally {
+//            if (mRealm != null && !mRealm.isClosed()) {
+//                mRealm.close();
+//            }
+//        }
+//    }
+//
+//    private void setUrlAndPin(boolean checked) {
+//        if (checked) {
+//            onChangeServerUrl();
+//        } else {
+//            serverUrl.setText(removeProtocol(settings.getString("serverURL", "")));
+//            serverPassword.setText(settings.getString("serverPin", ""));
+//            protocol_checkin.check(TextUtils.equals(settings.getString("serverProtocol", ""), "http://") ? R.id.radio_http : R.id.radio_https);
+//            serverUrlProtocol.setText(settings.getString("serverProtocol", ""));
+//        }
+//        serverUrl.setEnabled(!checked);
+//        serverPassword.setEnabled(!checked);
+//        serverPassword.clearFocus();
+//        serverUrl.clearFocus();
+//        protocol_checkin.setEnabled(!checked);
+//    }
+//
+//    private void protocol_semantics() {
+//        settings.edit().putString("serverProtocol", serverUrlProtocol.getText().toString()).commit();
+//        protocol_checkin.setOnCheckedChangeListener((radioGroup, i) -> {
+//            switch (i) {
+//                case R.id.radio_http:
+//                    serverUrlProtocol.setText(getString(R.string.http_protocol));
+//                    break;
+//
+//                case R.id.radio_https:
+//                    serverUrlProtocol.setText(getString(R.string.https_protocol));
+//                    break;
+//            }
+//            settings.edit().putString("serverProtocol", serverUrlProtocol.getText().toString()).commit();
+//        });
+//
+//    }
 
     @Override
     public void onSuccess(String s) {
@@ -1041,7 +1041,7 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
     public void onError(String msg, boolean block) {
         Utilities.toast(this, msg);
         if (msg.startsWith("Config")) {
-            settingDialog();
+            settingDialog(this);
         }
         progressDialog.dismiss();
         if (!block) continueSyncProcess();
@@ -1092,40 +1092,40 @@ public class LoginActivity extends SyncActivity implements Service.CheckVersionC
         if (mRealm != null && !mRealm.isClosed()) mRealm.close();
     }
 
-    public String removeProtocol(String url) {
-        url = url.replaceFirst(getString(R.string.https_protocol), "");
-        url = url.replaceFirst(getString(R.string.http_protocol), "");
-        return url;
-    }
+//    public String removeProtocol(String url) {
+//        url = url.replaceFirst(getString(R.string.https_protocol), "");
+//        url = url.replaceFirst(getString(R.string.http_protocol), "");
+//        return url;
+//    }
 
-    private class MyTextWatcher implements TextWatcher {
-        private View view;
-
-        private MyTextWatcher(View view) {
-            this.view = view;
-        }
-
-        public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {}
-
-        public void onTextChanged(CharSequence s, int i, int i1, int i2) {
-            String protocol = serverUrlProtocol == null ? settings.getString("serverProtocol", "http://") : serverUrlProtocol.getText().toString();
-            if (view.getId() == R.id.input_server_url)
-                positiveAction.setEnabled(s.toString().trim().length() > 0 && URLUtil.isValidUrl(protocol + s.toString()));
-        }
-
-        public void afterTextChanged(Editable editable) {
-            switch (view.getId()) {
-                case R.id.input_name:
-                    validateEditText(inputName, inputLayoutName, getString(R.string.err_msg_name));
-                    break;
-                case R.id.input_password:
-                    validateEditText(inputPassword, inputLayoutPassword, getString(R.string.err_msg_password));
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
+//    private class MyTextWatcher implements TextWatcher {
+//        private View view;
+//
+//        private MyTextWatcher(View view) {
+//            this.view = view;
+//        }
+//
+//        public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {}
+//
+//        public void onTextChanged(CharSequence s, int i, int i1, int i2) {
+//            String protocol = serverUrlProtocol == null ? settings.getString("serverProtocol", "http://") : serverUrlProtocol.getText().toString();
+//            if (view.getId() == R.id.input_server_url)
+//                positiveAction.setEnabled(s.toString().trim().length() > 0 && URLUtil.isValidUrl(protocol + s.toString()));
+//        }
+//
+//        public void afterTextChanged(Editable editable) {
+//            switch (view.getId()) {
+//                case R.id.input_name:
+//                    validateEditText(inputName, inputLayoutName, getString(R.string.err_msg_name));
+//                    break;
+//                case R.id.input_password:
+//                    validateEditText(inputPassword, inputLayoutPassword, getString(R.string.err_msg_password));
+//                    break;
+//                default:
+//                    break;
+//            }
+//        }
+//    }
 
     public String getCustomDeviceName() {
         return settings.getString("customDeviceName", NetworkUtils.getDeviceName());
