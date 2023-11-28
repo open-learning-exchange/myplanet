@@ -70,7 +70,7 @@ class ChatDetailFragment : Fragment() {
             } else {
                 val message = "${fragmentChatDetailBinding.editGchatMessage.text}".replace("\n", " ")
                 mAdapter.addQuery(message)
-                if(_id != ""){
+                if (_id != "") {
                     val continueChatData = ContinueChatModel(data = Data(message, _id, _rev), save = true)
                     val jsonContent = Gson().toJson(continueChatData)
                     val requestBody = RequestBody.create(MediaType.parse("application/json"), jsonContent)
@@ -249,6 +249,7 @@ class ChatDetailFragment : Fragment() {
                         if (chatResponse != null) {
                             mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_NETWORK
                             mAdapter.addResponse(chatResponse)
+                            _rev = response.body()!!.couchDBResponse!!.rev.toString()
                             continueConversationRealm(_id, query, chatResponse)
                         }
                     } else {
