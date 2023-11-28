@@ -1,26 +1,31 @@
 package org.ole.planet.myplanet.ui.sync;
 
 import static org.ole.planet.myplanet.MainApplication.context;
+import static org.ole.planet.myplanet.ui.dashboard.DashboardActivity.MESSAGE_PROGRESS;
 
 import android.Manifest;
-import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.graphics.drawable.AnimationDrawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
 import android.webkit.URLUtil;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.RadioGroup;
 import android.widget.Spinner;
@@ -30,6 +35,8 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.widget.SwitchCompat;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -41,10 +48,13 @@ import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.SyncListener;
 import org.ole.planet.myplanet.databinding.AlertGuestLoginBinding;
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding;
+import org.ole.planet.myplanet.databinding.LayoutChildLoginBinding;
 import org.ole.planet.myplanet.datamanager.ApiClient;
 import org.ole.planet.myplanet.datamanager.ApiInterface;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
+import org.ole.planet.myplanet.datamanager.ManagerSync;
 import org.ole.planet.myplanet.datamanager.Service;
+import org.ole.planet.myplanet.model.MyPlanet;
 import org.ole.planet.myplanet.model.RealmCommunity;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmUserModel;
@@ -52,9 +62,11 @@ import org.ole.planet.myplanet.model.User;
 import org.ole.planet.myplanet.service.SyncManager;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.team.AdapterTeam;
+import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity;
 import org.ole.planet.myplanet.utilities.AndroidDecrypter;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.DialogUtils;
+import org.ole.planet.myplanet.utilities.LocaleHelper;
 import org.ole.planet.myplanet.utilities.NetworkUtils;
 import org.ole.planet.myplanet.utilities.NotificationUtil;
 import org.ole.planet.myplanet.utilities.SharedPrefManager;
@@ -66,6 +78,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
@@ -80,7 +93,7 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public abstract class SyncActivity extends ProcessUserDataActivity implements SyncListener, Service.CheckVersionCallback {
+public abstract class SyncActivity extends ProcessUserDataActivity implements SyncListener, Service.CheckVersionCallback, AdapterTeam.OnUserSelectedListener {
     public static final String PREFS_NAME = "OLE_PLANET";
     public TextView syncDate, lblLastSyncDate;
     public TextView intervalLabel, tvNodata;
@@ -105,7 +118,13 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     String selectedTeamId = null;
     View positiveAction;
     String processedUrl;
-    boolean isSync = false;
+    boolean isSync = false, forceSync = false;
+    Button btnSignIn, becomeMember, btnGuestLogin, btnLang;
+    TextView customDeviceName, lblVersion;
+    SharedPreferences defaultPref;
+    ImageButton imgBtnSetting;
+    SwitchCompat switchChildMode;
+    Service service;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -118,7 +137,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         progressDialog.setCancelable(false);
         prefData = new SharedPrefManager(this);
         profileDbHandler = new UserProfileDbHandler(this);
-
+        defaultPref = PreferenceManager.getDefaultSharedPreferences(this);
         processedUrl = Utilities.getUrl();
     }
 
@@ -354,6 +373,180 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         });
     }
 
+    public void declareElements() {
+        if (!defaultPref.contains("beta_addImageToMessage")) {
+            defaultPref.edit().putBoolean("beta_addImageToMessage", true).commit();
+        }
+        if (!prefData.getTEAMMODE1()){
+            customDeviceName.setText(getCustomDeviceName());
+            switchChildMode.setChecked(settings.getBoolean("isChild", false));
+            switchChildMode.setOnCheckedChangeListener((compoundButton, b) -> {
+                inputName.setText("");
+                settings.edit().putBoolean("isChild", b).commit();
+                recreate();
+            });
+        }
+
+        btnSignIn.setOnClickListener(view -> {
+            if(TextUtils.isEmpty(inputName.getText().toString())){
+                inputName.setError(getString(R.string.err_msg_name));
+            } else if(TextUtils.isEmpty(inputPassword.getText().toString())){
+                inputPassword.setError(getString(R.string.err_msg_password));
+            }else{
+                submitForm(inputName.getText().toString(), inputPassword.getText().toString());
+            }
+        });
+        if (!settings.contains("serverProtocol"))
+            settings.edit().putString("serverProtocol", "http://").commit();
+        becomeMember.setOnClickListener(v -> {
+            inputName.setText("");
+            becomeAMember();
+        });
+        imgBtnSetting.setOnClickListener(view -> {
+            inputName.setText("");
+            settingDialog(this);
+        });
+        btnGuestLogin.setOnClickListener(view -> {
+            inputName.setText("");
+            showGuestLoginDialog();
+        });
+    }
+
+    public void declareMoreElements() {
+        try {
+            mRealm = Realm.getDefaultInstance();
+            syncIcon.setImageDrawable(getResources().getDrawable(R.drawable.login_file_upload_animation));
+            syncIcon.getScaleType();
+            syncIconDrawable = (AnimationDrawable) syncIcon.getDrawable();
+            syncIcon.setOnClickListener(v -> {
+                syncIconDrawable.start();
+                isSync = false;
+                forceSync = true;
+                service.checkVersion(this, settings);
+            });
+            declareHideKeyboardElements();
+            lblVersion.setText(getResources().getText(R.string.version) + " " + getResources().getText(R.string.app_version));
+            inputName.addTextChangedListener(new MyTextWatcher(inputName));
+            inputPassword.addTextChangedListener(new MyTextWatcher(inputPassword));
+            inputPassword.setOnEditorActionListener((v, actionId, event) -> {
+                if (actionId == EditorInfo.IME_ACTION_DONE ||
+                        (event != null && event.getAction() == KeyEvent.ACTION_DOWN && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
+                    btnSignIn.performClick();
+                    return true;
+                }
+                return false;
+            });
+            if (!prefData.getTEAMMODE1()) {
+                setUplanguageButton();
+            }
+            if (defaultPref.getBoolean("saveUsernameAndPassword", false)) {
+                inputName.setText(settings.getString(getString(R.string.login_user), ""));
+                inputPassword.setText(settings.getString(getString(R.string.login_password), ""));
+            }
+
+            if (NetworkUtils.isNetworkConnected()) {
+                service.syncPlanetServers(mRealm, success -> Utilities.toast(this, success));
+            }
+
+            inputName.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    String lowercaseText = s.toString().toLowerCase(Locale.ROOT);
+                    if (!s.toString().equals(lowercaseText)) {
+                        inputName.setText(lowercaseText);
+                        inputName.setSelection(lowercaseText.length());
+                    }
+                }
+
+                @Override
+                public void afterTextChanged(Editable s) {}
+            });
+        } finally {
+            if (mRealm != null && !mRealm.isClosed()) {
+                mRealm.close();
+            }
+        }
+    }
+
+    private void setUplanguageButton() {
+        String[] languageKey = getResources().getStringArray(R.array.language_keys);
+        String[] languages = getResources().getStringArray(R.array.language);
+        SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
+        int index = Arrays.asList(languageKey).indexOf(pref.getString("app_language", "en"));
+        btnLang.setText(languages[index]);
+        btnLang.setOnClickListener(view -> {
+            new AlertDialog.Builder(this).setTitle(R.string.select_language).setSingleChoiceItems(getResources().getStringArray(R.array.language), index, null).setPositiveButton(R.string.ok, (dialog, whichButton) -> {
+                dialog.dismiss();
+                int selectedPosition = ((AlertDialog) dialog).getListView().getCheckedItemPosition();
+                String lang = languageKey[selectedPosition];
+                LocaleHelper.setLocale(this, lang);
+                recreate();
+            }).setNegativeButton(R.string.cancel, null).show();
+        });
+    }
+
+    public void submitForm(String name, String password) {
+        if (forceSyncTrigger()) {
+            return;
+        }
+
+        SharedPreferences.Editor editor = settings.edit();
+        editor.putString("loginUserName", name);
+        editor.putString("loginUserPassword", password);
+
+        boolean isLoggedIn = authenticateUser(settings, name, password, false);
+        if (isLoggedIn) {
+            Toast.makeText(getApplicationContext(), getString(R.string.thank_you), Toast.LENGTH_SHORT).show();
+            onLogin();
+            saveUsers(inputName.getText().toString(), inputPassword.getText().toString(), "member");
+        } else {
+            ManagerSync.getInstance().login(name, password, new SyncListener() {
+                @Override
+                public void onSyncStarted() {
+                    progressDialog.setMessage(getString(R.string.please_wait));
+                    progressDialog.show();
+                }
+
+                @Override
+                public void onSyncComplete() {
+                    progressDialog.dismiss();
+                    Utilities.log("on complete");
+                    boolean log = authenticateUser(settings, name, password, true);
+                    if (log) {
+                        Toast.makeText(getApplicationContext(), getString(R.string.thank_you), Toast.LENGTH_SHORT).show();
+                        onLogin();
+                        saveUsers(inputName.getText().toString(), inputPassword.getText().toString(), "member");
+                    } else {
+                        alertDialogOkay(getString(R.string.err_msg_login));
+                    }
+                    syncIconDrawable.stop();
+                    syncIconDrawable.selectDrawable(0);
+                }
+
+                @Override
+                public void onSyncFailed(String msg) {
+                    Utilities.toast(context, msg);
+                    progressDialog.dismiss();
+                    syncIconDrawable.stop();
+                    syncIconDrawable.selectDrawable(0);
+                }
+            });
+        }
+        editor.commit();
+    }
+
+    public void becomeAMember() {
+        if (!Utilities.getUrl().isEmpty()) {
+            startActivity(new Intent(this, BecomeMemberActivity.class));
+        } else {
+            Utilities.toast(this, getString(R.string.please_enter_server_url_first));
+            settingDialog(this);
+        }
+    }
+
     public boolean forceSyncTrigger() {
         lblLastSyncDate.setText(getString(R.string.last_sync) + Utilities.getRelativeTime(settings.getLong(getString(R.string.last_syncs), 0)) + " >>");
         if (Constants.autoSynFeature(Constants.KEY_AUTOSYNC_, getApplicationContext()) && Constants.autoSynFeature(Constants.KEY_AUTOSYNC_WEEKLY, getApplicationContext())) {
@@ -512,7 +705,6 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
                     dialog.dismiss();
 
                     if (existingUser != null) {
-                        Log.d("model", String.valueOf(existingUser.get_id()));
                         if (existingUser.get_id().contains("guest")) {
                             showGuestDialog(username);
                         } else if (existingUser.get_id().contains("org.couchdb.user:")) {
@@ -634,7 +826,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         openDashboard();
     }
 
-    public void settingDialog(Activity activity) {
+    public void settingDialog(SyncActivity activity) {
         try {
             mRealm = Realm.getDefaultInstance();
             DialogServerUrlBinding dialogServerUrlBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this));
@@ -911,6 +1103,126 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         });
     }
 
+    @Override
+    public void onSuccess(String s) {
+        Utilities.log("Sync completed ");
+        if (progressDialog.isShowing() && s.contains("Crash")) progressDialog.dismiss();
+        DialogUtils.showSnack(btnSignIn, s);
+        settings.edit().putLong("lastUsageUploaded", new Date().getTime()).commit();
+
+        // Update last sync text
+        lblLastSyncDate.setText(getString(R.string.last_sync) + Utilities.getRelativeTime(new Date().getTime()) + " >>");
+    }
+
+    @Override
+    public void onUpdateAvailable(MyPlanet info, boolean cancelable) {
+        try {
+            mRealm = Realm.getDefaultInstance();
+            AlertDialog.Builder builder = DialogUtils.getUpdateDialog(this, info, progressDialog);
+            if (cancelable || NetworkUtils.getCustomDeviceName(this).endsWith("###")) {
+                builder.setNegativeButton(R.string.update_later, (dialogInterface, i) -> continueSyncProcess());
+            } else {
+                mRealm.executeTransactionAsync(realm -> realm.deleteAll());
+            }
+            builder.setCancelable(cancelable);
+            builder.show();
+        } finally {
+            if (mRealm != null && !mRealm.isClosed()) {
+                mRealm.close();
+            }
+        }
+    }
+
+    @Override
+    public void onCheckingVersion() {
+        progressDialog.setMessage(getString(R.string.checking_version));
+        progressDialog.show();
+    }
+
+    public void registerReceiver() {
+        LocalBroadcastManager bManager = LocalBroadcastManager.getInstance(this);
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(MESSAGE_PROGRESS);
+        bManager.registerReceiver(broadcastReceiver, intentFilter);
+    }
+
+    @Override
+    public void onError(String msg, boolean block) {
+        Utilities.toast(this, msg);
+        if (msg.startsWith("Config")) {
+            settingDialog(this);
+        }
+        progressDialog.dismiss();
+        if (!block) continueSyncProcess();
+        else {
+            syncIconDrawable.stop();
+            syncIconDrawable.selectDrawable(0);
+        }
+    }
+
+    public void continueSyncProcess() {
+        Utilities.log("Upload : Continue sync process");
+        try {
+            if (isSync) {
+                isServerReachable(processedUrl);
+            } else if (forceSync) {
+                isServerReachable(processedUrl);
+                startUpload();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void onSelectedUser(RealmUserModel userModel) {
+        try {
+            mRealm = Realm.getDefaultInstance();
+            LayoutChildLoginBinding layoutChildLoginBinding = LayoutChildLoginBinding.inflate(getLayoutInflater());
+            new AlertDialog.Builder(this).setView(layoutChildLoginBinding.getRoot()).setTitle(R.string.please_enter_your_password).setPositiveButton(R.string.login, (dialogInterface, i) -> {
+                String password = layoutChildLoginBinding.etChildPassword.getText().toString();
+                if (authenticateUser(settings, userModel.getName(), password, false)) {
+                    Toast.makeText(getApplicationContext(), getString(R.string.thank_you), Toast.LENGTH_SHORT).show();
+                    onLogin();
+                } else {
+                    alertDialogOkay(getString(R.string.err_msg_login));
+                }
+            }).setNegativeButton(R.string.cancel, null).show();
+        } finally {
+            if (mRealm != null && !mRealm.isClosed()) {
+                mRealm.close();
+            }
+        }
+    }
+
+    public String getCustomDeviceName() {
+        return settings.getString("customDeviceName", NetworkUtils.getDeviceName());
+    }
+
+    public void resetGuestAsMember(String username) {
+        List<User> existingUsers = prefData.getSAVEDUSERS1();
+
+        boolean newUserExists = false;
+
+        for (User user : existingUsers) {
+            if (user.getName().equals(username)) {
+                newUserExists = true;
+                break;
+            }
+        }
+
+        if (newUserExists){
+            Iterator<User> iterator = existingUsers.iterator();
+            while (iterator.hasNext()) {
+                User user = iterator.next();
+                if (user.getName().equals(username)) {
+                    iterator.remove();
+                }
+            }
+            prefData.setSAVEDUSERS1(existingUsers);
+        }
+    }
+
     public class MyTextWatcher implements TextWatcher {
         public View view;
 
@@ -938,5 +1250,11 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
                     break;
             }
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (mRealm != null && !mRealm.isClosed()) mRealm.close();
     }
 }

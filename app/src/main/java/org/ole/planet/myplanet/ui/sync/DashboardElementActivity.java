@@ -128,7 +128,11 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
 
     protected void syncNow() {
         settings.edit().putBoolean(Constants.KEY_LOGIN, false).commit();
-        startActivity(new Intent(this, LoginActivity.class).putExtra("forceSync", true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP));
+        if (prefData.getTEAMMODE1()){
+            startActivity(new Intent(this, UsersLoginActivity.class).putExtra("forceSync", true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP));
+        } else {
+            startActivity(new Intent(this, LoginActivity.class).putExtra("forceSync", true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP));
+        }
         doubleBackToExitPressedOnce = true;
         finish();
     }
