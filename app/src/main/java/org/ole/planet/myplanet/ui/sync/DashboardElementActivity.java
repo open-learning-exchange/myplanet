@@ -21,7 +21,6 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.view.menu.ActionMenuItemView;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
@@ -129,7 +128,7 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
     protected void syncNow() {
         settings.edit().putBoolean(Constants.KEY_LOGIN, false).commit();
         if (prefData.getTEAMMODE1()){
-            startActivity(new Intent(this, UsersLoginActivity.class).putExtra("forceSync", true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP));
+            startActivity(new Intent(this, TeamLoginActivity.class).putExtra("forceSync", true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP));
         } else {
             startActivity(new Intent(this, LoginActivity.class).putExtra("forceSync", true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP));
         }
@@ -190,7 +189,7 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
         settings.edit().putBoolean(Constants.KEY_LOGIN, false).commit();
         settings.edit().putBoolean(Constants.KEY_NOTIFICATION_SHOWN, false).commit();
         if (prefData.getTEAMMODE1()){
-            Intent loginscreen = new Intent(this, UsersLoginActivity.class)
+            Intent loginscreen = new Intent(this, TeamLoginActivity.class)
                     .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(loginscreen);
         } else {

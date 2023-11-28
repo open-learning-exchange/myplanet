@@ -5,7 +5,7 @@
     android:id="@+id/constraintLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".ui.sync.UsersLoginActivity">
+    tools:context=".ui.sync.TeamLoginActivity">
 
     <LinearLayout
         android:layout_width="match_parent"

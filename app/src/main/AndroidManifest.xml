@@ -43,7 +43,7 @@
         android:usesCleartextTraffic="true"
         tools:replace="android:label">
         <activity
-            android:name=".ui.sync.UsersLoginActivity"
+            android:name=".ui.sync.TeamLoginActivity"
             android:exported="false" />
         <activity android:name=".ui.chat.ChatActivity" />
         <activity
