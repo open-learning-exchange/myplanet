@@ -62,15 +62,15 @@ public abstract class ProcessUserDataActivity extends PermissionActivity impleme
     }
 
     public void checkDownloadResult(Download download, ProgressDialog progressDialog) {
-        if (!download.isFailed()) {
-            progressDialog.setMessage(getString(R.string.downloading) + download.getProgress() + "% " + getString(R.string.complete));
-            if (download.isCompleteAll()) {
+        if (!download.failed) {
+            progressDialog.setMessage(getString(R.string.downloading) + download.progress + "% " + getString(R.string.complete));
+            if (download.completeAll) {
                 progressDialog.dismiss();
-                FileUtils.installApk(this, download.getFileUrl());
+                FileUtils.installApk(this, download.fileUrl);
             }
         } else {
             progressDialog.dismiss();
-            DialogUtils.showError(progressDialog, download.getMessage());
+            DialogUtils.showError(progressDialog, download.message);
         }
     }
 
