@@ -191,8 +191,8 @@ public class SyncManager {
         mRealm.executeTransaction(realm -> {
             try {
                 DocumentResponse res = apiInterface.getDocuments(Utilities.getHeader(), Utilities.getUrl() + "/shelf/_all_docs").execute().body();
-                for (int i = 0; i < res.getRows().size(); i++) {
-                    shelfDoc = res.getRows().get(i);
+                for (int i = 0; i < res.rows.size(); i++) {
+                    shelfDoc = res.rows.get(i);
                     populateShelfItems(apiInterface, realm);
                 }
             } catch (IOException e) {
