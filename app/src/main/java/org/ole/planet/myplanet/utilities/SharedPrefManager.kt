@@ -16,6 +16,8 @@ class SharedPrefManager(context: Context) {
     var SAVEDUSERS = "savedUsers"
     var REPLIEDNEWSID = "repliedNewsId"
     var MANUALCONFIG = "manualConfig"
+    var SELECTEDTEAMID = "selectedTeamId"
+    var TEAMMODE = "teamMode"
 
     init {
         pref = context.getSharedPreferences(SHARED_PREF_NAME, PRIVATE_MODE)
@@ -84,6 +86,29 @@ class SharedPrefManager(context: Context) {
     @JvmName("setMANUALCONFIG1")
     fun setMANUALCONFIG(manualConfig: Boolean) {
         editor.putBoolean(MANUALCONFIG, manualConfig)
+        editor.apply()
+    }
+
+    @JvmName("getSELECTEDTEAMID1")
+    fun getSELECTEDTEAMID(): String? {
+        return if (pref.getString(SELECTEDTEAMID, "") != "") pref.getString(
+            SELECTEDTEAMID, "") else ""
+    }
+
+    @JvmName("setSELECTEDTEAMID1")
+    fun setSELECTEDTEAMID(selectedTeamId: String?) {
+        editor.putString(SELECTEDTEAMID, selectedTeamId)
+        editor.apply()
+    }
+
+    @JvmName("getTEAMMODE1")
+    fun getTEAMMODE(): Boolean {
+        return pref.getBoolean(TEAMMODE, false)
+    }
+
+    @JvmName("setTEAMMODE1")
+    fun setTEAMMODE(teamMode: Boolean) {
+        editor.putBoolean(TEAMMODE, teamMode)
         editor.apply()
     }
 }

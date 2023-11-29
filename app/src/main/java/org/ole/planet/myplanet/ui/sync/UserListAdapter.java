@@ -9,6 +9,8 @@ import android.widget.Filter;
 import android.widget.Filterable;
 import android.widget.TextView;
 
+import androidx.core.content.ContextCompat;
+
 import com.bumptech.glide.Glide;
 
 import org.ole.planet.myplanet.R;
@@ -66,11 +68,12 @@ public class UserListAdapter extends BaseAdapter implements Filterable {
 
         TextView userNameTextView = view.findViewById(R.id.userNameTextView);
         CircleImageView userProfile = view.findViewById(R.id.userProfile);
+        userNameTextView.setTextColor(ContextCompat.getColor(context, R.color.md_black_1000));
 
         User user = filteredUserList.get(position);
-        if (user.getSource().equals("guest")){
+        if (user.getFullName().isEmpty() || user.getFullName().equals(" ")) {
             userNameTextView.setText(user.getName());
-        } else if (user.getSource().equals("member")){
+        } else {
             userNameTextView.setText(user.getFullName());
         }
 
