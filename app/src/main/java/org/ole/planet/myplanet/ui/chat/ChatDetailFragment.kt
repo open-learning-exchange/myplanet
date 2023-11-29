@@ -1,9 +1,11 @@
 package org.ole.planet.myplanet.ui.chat
 
+import android.net.Uri
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -14,9 +16,12 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import com.google.gson.JsonSyntaxException
 import io.realm.Realm
 import okhttp3.MediaType
 import okhttp3.RequestBody
+import okhttp3.WebSocket
+import okhttp3.WebSocketListener
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentChatDetailBinding
 import org.ole.planet.myplanet.datamanager.ApiClient
@@ -36,6 +41,7 @@ class ChatDetailFragment : Fragment() {
     private var _id: String = ""
     private var _rev: String = ""
     private lateinit var mRealm: Realm
+    private lateinit var webSocket: WebSocket
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,8 +55,11 @@ class ChatDetailFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         mRealm = DatabaseService(activity).realmInstance
-        
         mAdapter = ChatAdapter(ArrayList(), requireContext())
+        val webSocketUrl = replaceProtocolWithWs(Utilities.getHostUrl())
+
+        webSocket = ApiClient.createWebSocket(webSocketUrl, MyWebSocketListener())
+        Log.d("webSocket", webSocketUrl)
         fragmentChatDetailBinding.recyclerGchat.adapter = mAdapter
         val layoutManager: RecyclerView.LayoutManager = LinearLayoutManager(requireContext())
         fragmentChatDetailBinding.recyclerGchat.layoutManager = layoutManager
@@ -78,8 +87,15 @@ class ChatDetailFragment : Fragment() {
                 } else {
                     val chatData = ChatRequestModel(data = ContentData(message), save = true)
                     val jsonContent = Gson().toJson(chatData)
-                    val requestBody = RequestBody.create(MediaType.parse("application/json"), jsonContent)
-                    makePostRequest(requestBody, message)
+
+                    fragmentChatDetailBinding.buttonGchatSend.isEnabled = false
+                    fragmentChatDetailBinding.editGchatMessage.isEnabled = false
+                    fragmentChatDetailBinding.imageGchatLoading.visibility = View.VISIBLE
+                    webSocket.send(jsonContent)
+//                    val chatData = ChatRequestModel(data = ContentData(message), save = true)
+//                    val jsonContent = Gson().toJson(chatData)
+//                    val requestBody = RequestBody.create(MediaType.parse("application/json"), jsonContent)
+//                    makePostRequest(requestBody, message)
                 }
                 fragmentChatDetailBinding.editGchatMessage.text.clear()
                 fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
@@ -297,5 +313,126 @@ class ChatDetailFragment : Fragment() {
             mAdapter.notifyDataSetChanged()
             fragmentChatDetailBinding.recyclerGchat.invalidate()
         }
+    }
+
+    fun replaceProtocolWithWs(url: String): String {
+        val uri = Uri.parse(url)
+        val updatedUri = uri.buildUpon().scheme("ws").build()
+        return updatedUri.toString()
+    }
+
+    private inner class MyWebSocketListener : WebSocketListener() {
+        override fun onOpen(webSocket: WebSocket, response: okhttp3.Response) {
+//            webSocket.send("Hello World!")
+        }
+
+        override fun onMessage(webSocket: WebSocket, text: String) {
+            output("Received : $text")
+            requireActivity().runOnUiThread {
+                try {
+                    val chatModel = Gson().fromJson(text, ChatModel::class.java)
+
+                    if (chatModel != null) {
+                        // Access properties of ChatModel
+                        val chatResponse = chatModel.chat
+                        val id = chatModel.couchDBResponse?.id
+                        val rev = chatModel.couchDBResponse?.rev
+
+                        // Update your adapter or UI with the received data
+                        mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_NETWORK
+                        mAdapter.addResponse(chatResponse ?: "")
+
+
+                        // Handle id and rev as needed
+                        _id = id ?: ""
+                        _rev = rev ?: ""
+
+                        // Further handling if needed (e.g., updating UI, storing data, etc.)
+                    } else {
+                        Log.e("WebSocket", "Received null ChatModel")
+                    }
+                } catch (e: JsonSyntaxException) {
+                    // Handle JSON parsing error
+                    Log.e("WebSocket", "Error parsing JSON: $text")
+                }
+
+
+
+//                mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_NETWORK
+//                mAdapter.addResponse(text)
+//            _id = response.body()!!.couchDBResponse!!.id.toString()
+//            _rev = response.body()!!.couchDBResponse!!.rev.toString()
+//            val jsonObject = JsonObject()
+//            jsonObject.addProperty("_rev", response.body()!!.couchDBResponse!!.rev.toString())
+//            jsonObject.addProperty("_id", response.body()!!.couchDBResponse!!.id.toString())
+//            jsonObject.addProperty("time", "")
+//            jsonObject.addProperty("title", "")
+//            jsonObject.addProperty("updatedTime", "")
+//
+//            val conversationsArray = JsonArray()
+//            val conversationObject = JsonObject()
+//            conversationObject.addProperty("query", query)
+//            conversationObject.addProperty("response", text)
+//            conversationsArray.add(conversationObject)
+//
+//            jsonObject.add("conversations", conversationsArray)
+                fragmentChatDetailBinding.buttonGchatSend.isEnabled = true
+                fragmentChatDetailBinding.editGchatMessage.isEnabled = true
+                fragmentChatDetailBinding.imageGchatLoading.visibility = View.INVISIBLE
+            }
+        }
+
+//        override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
+//            // Received a binary message from the WebSocket
+//            // Handle the message as needed
+//        }
+
+        override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
+            // WebSocket is about to close
+            webSocket.close(NORMAL_CLOSURE_STATUS, null)
+            output("Closing : $code / $reason")
+        }
+
+        override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+            // WebSocket connection closed
+//            webSocket.close(NORMAL_CLOSURE_STATUS, null)
+            output("Closed : $code / $reason")
+        }
+
+        override fun onFailure(webSocket: WebSocket, t: Throwable, response: okhttp3.Response?) {
+            requireActivity().runOnUiThread {
+                output("Error : ${t.message}")
+//                val jsonObject = JsonObject()
+//                jsonObject.addProperty("_rev", "")
+//                jsonObject.addProperty("_id", "")
+//                jsonObject.addProperty("time", "")
+//                jsonObject.addProperty("title", "")
+//                jsonObject.addProperty("updatedTime", "")
+//
+//                val conversationsArray = JsonArray()
+//                val conversationObject = JsonObject()
+//                conversationObject.addProperty("query", query)
+//                conversationObject.addProperty("response", "")
+//                conversationsArray.add(conversationObject)
+//
+//                jsonObject.add("conversations", conversationsArray)
+//                requireActivity().runOnUiThread {
+//                    RealmChatHistory.insert(mRealm, jsonObject)
+//                }
+                fragmentChatDetailBinding.textGchatIndicator.visibility = View.VISIBLE
+                fragmentChatDetailBinding.textGchatIndicator.text = "${t.message}"
+                fragmentChatDetailBinding.buttonGchatSend.isEnabled = true
+                fragmentChatDetailBinding.editGchatMessage.isEnabled = true
+                fragmentChatDetailBinding.imageGchatLoading.visibility = View.INVISIBLE
+            }
+        }
+
+        fun output(text: String?) {
+            Log.d("PieSocket", text!!)
+        }
+    }
+
+    companion object {
+        private const val NORMAL_CLOSURE_STATUS = 1000
     }
 }
