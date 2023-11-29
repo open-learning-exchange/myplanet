@@ -20,7 +20,7 @@ public class ProgressBroadcastReceiver extends BroadcastReceiver {
         if (intent.getAction().equals(MESSAGE_PROGRESS)) {
             Download download = intent.getParcelableExtra("download");
             if (onProgressChange != null) {
-                onProgressChange.onProgressChange(String.format("Downloading file %d/%d KB\n%d%% Completed.", download.getCurrentFileSize(), download.getTotalFileSize(), download.getProgress()));
+                onProgressChange.onProgressChange(String.format("Downloading file %d/%d KB\n%d%% Completed.", download.currentFileSize, download.totalFileSize, download.progress));
             }
         }
     }
