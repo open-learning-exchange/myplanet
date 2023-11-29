@@ -90,9 +90,9 @@ public class DialogUtils {
 
     public static AlertDialog.Builder getUpdateDialog(Context context, MyPlanet info, ProgressDialog progressDialog) {
         return new AlertDialog.Builder(context).setTitle(R.string.new_version_of_my_planet_available).setMessage(R.string.download_first_to_continue).setNeutralButton(R.string.upgrade_local, (dialogInterface, i) -> {
-            startDownloadUpdate(context, Utilities.getApkUpdateUrl(info.getLocalapkpath()), progressDialog);
+            startDownloadUpdate(context, Utilities.getApkUpdateUrl(info.localapkpath), progressDialog);
         }).setPositiveButton(R.string.upgrade, (dialogInterface, i) -> {
-            startDownloadUpdate(context, info.getApkpath(), progressDialog);
+            startDownloadUpdate(context, info.apkpath, progressDialog);
         });
     }
 
