@@ -88,10 +88,10 @@ public abstract class BaseResourceFragment extends Fragment {
         public void onReceive(Context context, Intent intent) {
             if (intent.getAction().equals(MESSAGE_PROGRESS) && prgDialog != null) {
                 Download download = intent.getParcelableExtra("download");
-                if (!download.isFailed()) {
+                if (!download.failed) {
                     setProgress(download);
                 } else {
-                    DialogUtils.showError(prgDialog, download.getMessage());
+                    DialogUtils.showError(prgDialog, download.message);
                 }
             }
         }
@@ -171,11 +171,11 @@ public abstract class BaseResourceFragment extends Fragment {
     }
 
     public void setProgress(Download download) {
-        prgDialog.setProgress(download.getProgress());
-        if (!TextUtils.isEmpty(download.getFileName())) {
-            prgDialog.setTitle(download.getFileName());
+        prgDialog.setProgress(download.progress);
+        if (!TextUtils.isEmpty(download.fileName)) {
+            prgDialog.setTitle(download.fileName);
         }
-        if (download.isCompleteAll()) {
+        if (download.completeAll) {
             DialogUtils.showError(prgDialog, getString(R.string.all_files_downloaded_successfully));
             onDownloadComplete();
         }
