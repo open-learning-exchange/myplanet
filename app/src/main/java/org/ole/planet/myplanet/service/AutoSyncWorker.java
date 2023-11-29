@@ -77,7 +77,7 @@ public class AutoSyncWorker extends Worker implements SyncListener, Service.Chec
         public void onReceive(Context context, Intent intent) {
             if (intent.getAction().equals(MESSAGE_PROGRESS)) {
                 Download download = intent.getParcelableExtra("download");
-                if (!download.isFailed() && download.isCompleteAll()) {
+                if (!download.getFailed() && download.getCompleteAll()) {
                     FileUtils.installApk(context, download.getFileUrl());
                 }
             }
