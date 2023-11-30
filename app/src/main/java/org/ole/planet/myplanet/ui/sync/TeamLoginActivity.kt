@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.userprofile.TeamListAdapter
+import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 class TeamLoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
@@ -40,8 +41,14 @@ class TeamLoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         imgBtnSetting = activityTeamLoginBinding.imgBtnSetting
         syncIcon = activityTeamLoginBinding.syncIcon
         lblVersion = activityTeamLoginBinding.lblVersion
+        btnLang = activityTeamLoginBinding.btnLang
+        tvAvailableSpace = activityTeamLoginBinding.tvAvailableSpace
+        openCommunity = activityTeamLoginBinding.openCommunity
+        btnFeedback = activityTeamLoginBinding.btnFeedback
+
         service = Service(this)
 
+        tvAvailableSpace.text = FileUtils.getAvailableOverTotalMemoryFormattedString()
         changeLogoColor()
         declareElements()
         declareMoreElements()
@@ -65,15 +72,15 @@ class TeamLoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         forceSyncTrigger()
 
         if (Utilities.getUrl().isNotEmpty()) {
-            activityTeamLoginBinding.openCommunity.visibility = View.VISIBLE
-            activityTeamLoginBinding.openCommunity.setOnClickListener {
+            openCommunity.visibility = View.VISIBLE
+            openCommunity.setOnClickListener {
                 HomeCommunityDialogFragment().show(supportFragmentManager, "")
             }
             HomeCommunityDialogFragment().show(supportFragmentManager, "")
         } else {
-            activityTeamLoginBinding.openCommunity.visibility = View.GONE
+            openCommunity.visibility = View.GONE
         }
-        activityTeamLoginBinding.btnFeedback.setOnClickListener {
+        btnFeedback.setOnClickListener {
             FeedbackFragment().show(supportFragmentManager, "")
         }
 
@@ -130,7 +137,7 @@ class TeamLoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                 .error(R.drawable.profile)
                 .into(activityTeamLoginBinding.userProfile)
 
-            activityTeamLoginBinding.inputName.setText(user.name)
+            inputName.setText(user.name)
         } else {
             if (user.source == "guest"){
                 val model = mRealm.copyFromRealm(RealmUserModel.createGuestUser(user.name, mRealm, settings))

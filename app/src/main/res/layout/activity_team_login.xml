@@ -258,14 +258,54 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/textView" />
 
+                <Button
+                    android:id="@+id/btn_lang"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:contentDescription="@string/language"
+                    android:entries="@array/language"
+                    android:padding="@dimen/padding_normal"
+                    android:text="@string/language"
+                    android:textColor="@android:color/white"
+                    android:theme="@style/PrimaryFlatButton"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/lblVersion" />
+
+                <LinearLayout
+                    android:id="@+id/ltAvailablaSpace"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/btn_lang">
+
+                    <ImageView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:paddingHorizontal="@dimen/padding_small"
+                        app:srcCompat="@drawable/baseline_storage_24" />
+
+                    <TextView
+                        android:id="@+id/tv_available_space"
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:textColor="@color/md_white_1000"
+                        tools:text="@string/available_space_colon" />
+                </LinearLayout>
+
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/recyclerView"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="20dp"
+                    android:layout_marginTop="@dimen/_10dp"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/lblVersion" />
+                    app:layout_constraintTop_toBottomOf="@+id/ltAvailablaSpace" />
+
             </androidx.constraintlayout.widget.ConstraintLayout>
         </LinearLayout>
 
