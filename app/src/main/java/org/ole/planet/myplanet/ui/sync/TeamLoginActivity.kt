@@ -61,7 +61,6 @@ class TeamLoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             service.checkVersion(this, settings)
         }
         checkUsagesPermission()
-        setUpChildMode()
         forceSyncTrigger()
 
         if (Utilities.getUrl().isNotEmpty()) {

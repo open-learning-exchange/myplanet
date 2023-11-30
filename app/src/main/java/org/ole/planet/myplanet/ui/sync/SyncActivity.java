@@ -123,7 +123,6 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     TextView customDeviceName, lblVersion;
     SharedPreferences defaultPref;
     ImageButton imgBtnSetting;
-    SwitchCompat switchChildMode;
     Service service;
 
     @Override
@@ -169,29 +168,6 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         } else {
             spinner.setVisibility(View.GONE);
             intervalLabel.setVisibility(View.GONE);
-        }
-    }
-
-    public void setUpChildMode() {
-        try {
-            mRealm = Realm.getDefaultInstance();
-            if (!settings.getBoolean("isChild", false)) return;
-            RecyclerView rvTeams = findViewById(R.id.rv_teams);
-            TextView tvNodata = findViewById(R.id.tv_nodata);
-
-            List<RealmMyTeam> teams = mRealm.where(RealmMyTeam.class).isEmpty("teamId").findAll();
-            rvTeams.setLayoutManager(new GridLayoutManager(this, 3));
-            rvTeams.setAdapter(new AdapterTeam(this, teams, mRealm));
-            if (teams.size() > 0) {
-                tvNodata.setVisibility(View.GONE);
-            } else {
-                tvNodata.setText(R.string.no_team_available);
-                tvNodata.setVisibility(View.VISIBLE);
-            }
-        } finally {
-            if (mRealm != null && !mRealm.isClosed()) {
-                mRealm.close();
-            }
         }
     }
 
@@ -365,10 +341,6 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
 
             DialogUtils.showSnack(findViewById(android.R.id.content), getString(R.string.sync_completed));
 
-            if (settings.getBoolean("isChild", false)) {
-                setUpChildMode();
-            }
-
             NotificationUtil.cancellAll(this);
         });
     }
@@ -379,12 +351,6 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         }
         if (!prefData.getTEAMMODE1()){
             customDeviceName.setText(getCustomDeviceName());
-            switchChildMode.setChecked(settings.getBoolean("isChild", false));
-            switchChildMode.setOnCheckedChangeListener((compoundButton, b) -> {
-                inputName.setText("");
-                settings.edit().putBoolean("isChild", b).commit();
-                recreate();
-            });
         }
 
         btnSignIn.setOnClickListener(view -> {

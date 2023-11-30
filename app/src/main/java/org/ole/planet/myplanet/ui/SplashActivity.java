@@ -37,15 +37,15 @@ public class SplashActivity extends AppCompatActivity {
             finish();
             return;
         }
-        if (settings.contains("isChild") && prefData.getTEAMMODE1()) {
+        if (prefData.getFIRSTLAUNCH1() && prefData.getTEAMMODE1()) {
             startActivity(new Intent(SplashActivity.this, TeamLoginActivity.class));
             finish();
-        } else if (settings.contains("isChild") && !prefData.getTEAMMODE1()) {
+        } else if (prefData.getFIRSTLAUNCH1() && !prefData.getTEAMMODE1()) {
             startActivity(new Intent(SplashActivity.this, LoginActivity.class));
             finish();
         }
         binding.getStarted.setOnClickListener(view -> {
-            settings.edit().putBoolean("isChild", binding.childLogin.isChecked()).commit();
+            prefData.setFIRSTLAUNCH1(true);
             startActivity(new Intent(SplashActivity.this, LoginActivity.class));
         });
     }
