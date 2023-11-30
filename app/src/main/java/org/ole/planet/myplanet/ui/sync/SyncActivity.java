@@ -119,8 +119,8 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     View positiveAction;
     String processedUrl;
     boolean isSync = false, forceSync = false;
-    Button btnSignIn, becomeMember, btnGuestLogin, btnLang;
-    TextView customDeviceName, lblVersion;
+    Button btnSignIn, becomeMember, btnGuestLogin, btnLang, openCommunity, btnFeedback;
+    TextView customDeviceName, lblVersion, tvAvailableSpace;
     SharedPreferences defaultPref;
     ImageButton imgBtnSetting;
     SwitchCompat switchChildMode;
@@ -377,8 +377,9 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         if (!defaultPref.contains("beta_addImageToMessage")) {
             defaultPref.edit().putBoolean("beta_addImageToMessage", true).commit();
         }
+        customDeviceName.setText(getCustomDeviceName());
+
         if (!prefData.getTEAMMODE1()){
-            customDeviceName.setText(getCustomDeviceName());
             switchChildMode.setChecked(settings.getBoolean("isChild", false));
             switchChildMode.setOnCheckedChangeListener((compoundButton, b) -> {
                 inputName.setText("");
@@ -436,9 +437,9 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
                 }
                 return false;
             });
-            if (!prefData.getTEAMMODE1()) {
-                setUplanguageButton();
-            }
+
+            setUplanguageButton();
+
             if (defaultPref.getBoolean("saveUsernameAndPassword", false)) {
                 inputName.setText(settings.getString(getString(R.string.login_user), ""));
                 inputPassword.setText(settings.getString(getString(R.string.login_password), ""));
