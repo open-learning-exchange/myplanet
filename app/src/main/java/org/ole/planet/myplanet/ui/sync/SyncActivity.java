@@ -377,8 +377,9 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         if (!defaultPref.contains("beta_addImageToMessage")) {
             defaultPref.edit().putBoolean("beta_addImageToMessage", true).commit();
         }
+        customDeviceName.setText(getCustomDeviceName());
+
         if (!prefData.getTEAMMODE1()){
-            customDeviceName.setText(getCustomDeviceName());
             switchChildMode.setChecked(settings.getBoolean("isChild", false));
             switchChildMode.setOnCheckedChangeListener((compoundButton, b) -> {
                 inputName.setText("");

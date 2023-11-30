@@ -45,6 +45,7 @@ class TeamLoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         tvAvailableSpace = activityTeamLoginBinding.tvAvailableSpace
         openCommunity = activityTeamLoginBinding.openCommunity
         btnFeedback = activityTeamLoginBinding.btnFeedback
+        customDeviceName = activityTeamLoginBinding.customDeviceName
 
         service = Service(this)
 
