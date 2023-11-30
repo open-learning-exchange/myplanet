@@ -136,7 +136,7 @@ dependencies {
     implementation "com.github.VaibhavLakhera:Circular-Progress-View:0.1.2"
     implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
     implementation 'com.applandeo:material-calendar-view:1.9.0'
-    implementation "androidx.work:work-runtime:2.8.1"
+    implementation "androidx.work:work-runtime:2.9.0"
     implementation(platform("org.jetbrains.kotlin:kotlin-bom:1.9.21"))
 }
 realm {
