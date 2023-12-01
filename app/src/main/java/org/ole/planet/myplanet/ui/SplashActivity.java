@@ -37,7 +37,7 @@ public class SplashActivity extends AppCompatActivity {
             return;
         }
 
-        if (prefData.getFIRSTLAUNCH1() && prefData.getTEAMMODE1()) {
+        if (prefData.getFIRSTLAUNCH1()) {
             startActivity(new Intent(SplashActivity.this, LoginActivity.class));
             finish();
         }
