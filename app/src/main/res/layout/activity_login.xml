@@ -7,7 +7,6 @@
     android:layout_height="match_parent"
     android:background="@drawable/darkblue_gradient">
 
-
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -80,16 +79,6 @@
                 android:text="@string/language"
                 android:textColor="@android:color/white"
                 android:theme="@style/PrimaryFlatButton" />
-
-            <androidx.appcompat.widget.SwitchCompat
-                android:id="@+id/switch_child_mode"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:gravity="center|top"
-                android:contentDescription="@string/child_mode"
-                android:padding="@dimen/padding_normal"
-                android:text="@string/child_mode"
-                android:textColor="@color/md_white_1000" />
 
             <TextView
                 android:id="@+id/lblVersion"
