@@ -816,10 +816,10 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
                                 prefData.setSELECTEDTEAMID1(selectedTeamId);
                                 if (!prefData.getTEAMMODE1()){
                                     prefData.setTEAMMODE1(true);
-                                    Intent intent = new Intent(this, TeamLoginActivity.class);
+                                    Intent intent = new Intent(this, LoginActivity.class);
                                     startActivity(intent);
-                                } else if (prefData.getTEAMMODE1() && activity instanceof TeamLoginActivity) {
-                                    ((TeamLoginActivity) activity).getTeamMembers();
+                                } else if (prefData.getTEAMMODE1() && activity instanceof LoginActivity) {
+                                    ((LoginActivity) activity).getTeamMembers();
                                 }
                                 saveConfigAndContinue(dialog);
                             } else {

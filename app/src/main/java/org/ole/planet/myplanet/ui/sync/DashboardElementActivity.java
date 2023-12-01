@@ -127,11 +127,7 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
 
     protected void syncNow() {
         settings.edit().putBoolean(Constants.KEY_LOGIN, false).commit();
-        if (prefData.getTEAMMODE1()){
-            startActivity(new Intent(this, TeamLoginActivity.class).putExtra("forceSync", true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP));
-        } else {
-            startActivity(new Intent(this, LoginActivity.class).putExtra("forceSync", true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP));
-        }
+        startActivity(new Intent(this, LoginActivity.class).putExtra("forceSync", true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP));
         doubleBackToExitPressedOnce = true;
         finish();
     }
@@ -188,15 +184,9 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
         profileDbHandler.onLogout();
         settings.edit().putBoolean(Constants.KEY_LOGIN, false).commit();
         settings.edit().putBoolean(Constants.KEY_NOTIFICATION_SHOWN, false).commit();
-        if (prefData.getTEAMMODE1()){
-            Intent loginscreen = new Intent(this, TeamLoginActivity.class)
-                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(loginscreen);
-        } else {
-            Intent loginscreen = new Intent(this, LoginActivity.class)
-                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(loginscreen);
-        }
+        Intent loginscreen = new Intent(this, LoginActivity.class)
+                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(loginscreen);
         doubleBackToExitPressedOnce = true;
         this.finish();
     }
