@@ -149,9 +149,9 @@ public class FeedbackDetailActivity extends AppCompatActivity {
 
         @Override
         public void onBindViewHolder(@NonNull ReplyViewHolder holder, int position) {
-            rowFeedbackReplyBinding.tvDate.setText(TimeUtils.getFormatedDateWithTime(Long.parseLong(replyList.get(position).getDate())));
-            rowFeedbackReplyBinding.tvUser.setText(replyList.get(position).getUser());
-            rowFeedbackReplyBinding.tvMessage.setText(replyList.get(position).getMessage());
+            rowFeedbackReplyBinding.tvDate.setText(TimeUtils.getFormatedDateWithTime(Long.parseLong(replyList.get(position).date)));
+            rowFeedbackReplyBinding.tvUser.setText(replyList.get(position).user);
+            rowFeedbackReplyBinding.tvMessage.setText(replyList.get(position).message);
         }
 
         @Override

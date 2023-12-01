@@ -77,8 +77,8 @@ public class AutoSyncWorker extends Worker implements SyncListener, Service.Chec
         public void onReceive(Context context, Intent intent) {
             if (intent.getAction().equals(MESSAGE_PROGRESS)) {
                 Download download = intent.getParcelableExtra("download");
-                if (!download.isFailed() && download.isCompleteAll()) {
-                    FileUtils.installApk(context, download.getFileUrl());
+                if (!download.failed && download.completeAll) {
+                    FileUtils.installApk(context, download.fileUrl);
                 }
             }
         }
@@ -104,7 +104,7 @@ public class AutoSyncWorker extends Worker implements SyncListener, Service.Chec
     @Override
     public void onUpdateAvailable(MyPlanet info, boolean cancelable) {
         if (Constants.showBetaFeature(Constants.KEY_AUTOUPDATE, context)) {
-            DialogUtils.startDownloadUpdate(context, Utilities.getApkUpdateUrl(info.getLocalapkpath()), null);
+            DialogUtils.startDownloadUpdate(context, Utilities.getApkUpdateUrl(info.localapkpath), null);
         }
     }
 
