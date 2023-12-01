@@ -75,18 +75,6 @@
                     android:textColor="@android:color/white"
                     android:theme="@style/PrimaryFlatButton" />
 
-
-                <androidx.appcompat.widget.SwitchCompat
-                    android:id="@+id/switch_child_mode"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:contentDescription="@string/child_mode"
-                    android:gravity="center"
-                    android:padding="@dimen/padding_normal"
-                    android:text="@string/child_mode"
-                    android:textColor="@color/md_white_1000" />
-
                 <TextView
                     android:id="@+id/lblVersion"
                     android:layout_width="match_parent"

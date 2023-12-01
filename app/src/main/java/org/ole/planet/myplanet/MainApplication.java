@@ -186,13 +186,13 @@ public class MainApplication extends Application {
         RealmApkLog log = mRealm.createObject(RealmApkLog.class, UUID.randomUUID().toString());
         RealmUserModel model = new UserProfileDbHandler(this).getUserModel();
         if (model != null) {
-            log.setParentCode(model.getParentCode());
-            log.setCreatedOn(model.getPlanetCode());
+            log.parentCode = model.getParentCode();
+            log.createdOn = model.getPlanetCode();
         }
-        log.setTime(new Date().getTime() + "");
-        log.setPage("");
-        log.setVersion(VersionUtils.getVersionName(this));
-        log.setType(RealmApkLog.ERROR_TYPE_CRASH);
+        log.time = new Date().getTime() + "";
+        log.page = "";
+        log.version = VersionUtils.getVersionName(this);
+        log.type = RealmApkLog.ERROR_TYPE_CRASH;
         log.setError(e);
         mRealm.commitTransaction();
         Intent homeIntent = new Intent(Intent.ACTION_MAIN);

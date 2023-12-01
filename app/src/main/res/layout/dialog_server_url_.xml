@@ -38,7 +38,6 @@
                 android:visibility="gone" />
         </LinearLayout>
 
-
         <LinearLayout
             android:id="@+id/ltProtocol"
             android:layout_width="match_parent"
@@ -216,6 +215,14 @@
                     android:textSize="8sp"
                     android:textStyle="italic" />
             </RelativeLayout>
+            <Spinner
+                android:id="@+id/team"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/_10dp"
+                android:textSize="18sp"
+                android:visibility="gone"
+                android:layout_marginEnd="@dimen/_10dp"/>
         </LinearLayout>
     </LinearLayout>
 

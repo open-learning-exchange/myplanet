@@ -21,7 +21,6 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.view.menu.ActionMenuItemView;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
@@ -44,6 +43,7 @@ import org.ole.planet.myplanet.ui.rating.RatingFragment;
 import org.ole.planet.myplanet.ui.survey.SurveyFragment;
 import org.ole.planet.myplanet.ui.team.TeamFragment;
 import org.ole.planet.myplanet.utilities.Constants;
+import org.ole.planet.myplanet.utilities.SharedPrefManager;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 public abstract class DashboardElementActivity extends AppCompatActivity implements FragmentManager.OnBackStackChangedListener {
@@ -53,12 +53,14 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
     boolean doubleBackToExitPressedOnce;
     private SharedPreferences settings;
     private MenuItem goOnline;
+    SharedPrefManager prefData;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         profileDbHandler = new UserProfileDbHandler(this);
         settings = getApplicationContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        prefData = new SharedPrefManager(this);
     }
 
     public void onClickTabItems(int position) {
@@ -125,7 +127,11 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
 
     protected void syncNow() {
         settings.edit().putBoolean(Constants.KEY_LOGIN, false).commit();
-        startActivity(new Intent(this, LoginActivity.class).putExtra("forceSync", true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP));
+        if (prefData.getTEAMMODE1()){
+            startActivity(new Intent(this, TeamLoginActivity.class).putExtra("forceSync", true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP));
+        } else {
+            startActivity(new Intent(this, LoginActivity.class).putExtra("forceSync", true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP));
+        }
         doubleBackToExitPressedOnce = true;
         finish();
     }
@@ -182,8 +188,15 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
         profileDbHandler.onLogout();
         settings.edit().putBoolean(Constants.KEY_LOGIN, false).commit();
         settings.edit().putBoolean(Constants.KEY_NOTIFICATION_SHOWN, false).commit();
-        Intent loginscreen = new Intent(this, LoginActivity.class).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-        startActivity(loginscreen);
+        if (prefData.getTEAMMODE1()){
+            Intent loginscreen = new Intent(this, TeamLoginActivity.class)
+                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(loginscreen);
+        } else {
+            Intent loginscreen = new Intent(this, LoginActivity.class)
+                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(loginscreen);
+        }
         doubleBackToExitPressedOnce = true;
         this.finish();
     }
