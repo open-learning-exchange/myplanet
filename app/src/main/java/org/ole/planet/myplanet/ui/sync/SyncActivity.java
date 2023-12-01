@@ -379,15 +379,6 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         }
         customDeviceName.setText(getCustomDeviceName());
 
-        if (!prefData.getTEAMMODE1()){
-            switchChildMode.setChecked(settings.getBoolean("isChild", false));
-            switchChildMode.setOnCheckedChangeListener((compoundButton, b) -> {
-                inputName.setText("");
-                settings.edit().putBoolean("isChild", b).commit();
-                recreate();
-            });
-        }
-
         btnSignIn.setOnClickListener(view -> {
             if(TextUtils.isEmpty(inputName.getText().toString())){
                 inputName.setError(getString(R.string.err_msg_name));
@@ -853,10 +844,10 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
                                 prefData.setSELECTEDTEAMID1(selectedTeamId);
                                 if (!prefData.getTEAMMODE1()){
                                     prefData.setTEAMMODE1(true);
-                                    Intent intent = new Intent(this, TeamLoginActivity.class);
+                                    Intent intent = new Intent(this, LoginActivity.class);
                                     startActivity(intent);
-                                } else if (prefData.getTEAMMODE1() && activity instanceof TeamLoginActivity) {
-                                    ((TeamLoginActivity) activity).getTeamMembers();
+                                } else if (prefData.getTEAMMODE1() && activity instanceof LoginActivity) {
+                                    ((LoginActivity) activity).getTeamMembers();
                                 }
                                 saveConfigAndContinue(dialog);
                             } else {

@@ -10,7 +10,6 @@ import org.ole.planet.myplanet.databinding.ActivitySplashBinding;
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity;
 import org.ole.planet.myplanet.ui.sync.LoginActivity;
 import org.ole.planet.myplanet.ui.sync.SyncActivity;
-import org.ole.planet.myplanet.ui.sync.TeamLoginActivity;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.SharedPrefManager;
@@ -38,9 +37,6 @@ public class SplashActivity extends AppCompatActivity {
             return;
         }
         if (settings.contains("isChild") && prefData.getTEAMMODE1()) {
-            startActivity(new Intent(SplashActivity.this, TeamLoginActivity.class));
-            finish();
-        } else if (settings.contains("isChild") && !prefData.getTEAMMODE1()) {
             startActivity(new Intent(SplashActivity.this, LoginActivity.class));
             finish();
         }
