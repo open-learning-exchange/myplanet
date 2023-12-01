@@ -30,7 +30,7 @@ public class LoginActivity extends SyncActivity {
     private ActivityLoginBinding activityLoginBinding;
     private Button openCommunity, btnFeedback;
     private boolean guest = false;
-    private TextView tvAvailableSpace, previouslyLoggedIn;
+    private TextView previouslyLoggedIn;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
