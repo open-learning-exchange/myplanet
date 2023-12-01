@@ -814,13 +814,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
                             String url = serverUrlProtocol.getText().toString() + serverUrl.getText().toString();
                             if (isUrlValid(url)) {
                                 prefData.setSELECTEDTEAMID1(selectedTeamId);
-                                if (!prefData.getTEAMMODE1()){
-                                    prefData.setTEAMMODE1(true);
-                                    Intent intent = new Intent(this, TeamLoginActivity.class);
-                                    startActivity(intent);
-                                } else if (prefData.getTEAMMODE1() && activity instanceof TeamLoginActivity) {
-                                    ((TeamLoginActivity) activity).getTeamMembers();
-                                }
+                                ((LoginActivity) activity).getTeamMembers();
                                 saveConfigAndContinue(dialog);
                             } else {
                                 saveConfigAndContinue(dialog);
@@ -1202,20 +1196,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
                 positiveAction.setEnabled(s.toString().trim().length() > 0 && URLUtil.isValidUrl(protocol + s.toString()));
         }
 
-        public void afterTextChanged(Editable editable) {
-            switch (view.getId()) {
-                case R.id.input_name:
-                    validateEditText(inputName, inputLayoutName, getString(R.string.err_msg_name));
-                    break;
-                case R.id.input_password:
-                    if(!prefData.getTEAMMODE1()) {
-                        validateEditText(inputPassword, inputLayoutPassword, getString(R.string.err_msg_password));
-                    }
-                    break;
-                default:
-                    break;
-            }
-        }
+        public void afterTextChanged(Editable editable) {}
     }
 
     @Override
