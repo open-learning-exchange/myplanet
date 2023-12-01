@@ -125,15 +125,15 @@ public class Service {
                                 vsn = vsn.replaceAll("\\.", "");
                                 int apkVersion = Integer.parseInt(vsn.startsWith("0") ? vsn.replace("0", "") : vsn);
                                 int currentVersion = VersionUtils.getVersionCode(context);
-                                if (Constants.showBetaFeature(KEY_UPGRADE_MAX, context) && p.getLatestapkcode() > currentVersion) {
+                                if (Constants.showBetaFeature(KEY_UPGRADE_MAX, context) && p.latestapkcode > currentVersion) {
                                     callback.onUpdateAvailable(p, false);
                                     return;
                                 }
                                 if (apkVersion > currentVersion) {
-                                    callback.onUpdateAvailable(p, currentVersion >= p.getMinapkcode());
+                                    callback.onUpdateAvailable(p, currentVersion >= p.minapkcode);
                                     return;
                                 }
-                                if (currentVersion < p.getMinapkcode() && apkVersion < p.getMinapkcode()) {
+                                if (currentVersion < p.minapkcode && apkVersion < p.minapkcode) {
                                     callback.onUpdateAvailable(p, true);
                                 } else {
                                     callback.onError("Planet up to date", false);
