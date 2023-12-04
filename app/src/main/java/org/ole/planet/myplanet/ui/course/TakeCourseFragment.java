@@ -141,7 +141,7 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
     @Override
     public void onPageSelected(int position) {
         if (position > 0) {
-            fragmentTakeCourseBinding.tvStepTitle.setText(steps.get(position - 1).getStepTitle());
+            fragmentTakeCourseBinding.tvStepTitle.setText(steps.get(position - 1).stepTitle);
             Utilities.log("Po " + position + " " + steps.size());
             if ((position - 1) < steps.size()) changeNextButtonState(position);
         } else {
@@ -156,8 +156,8 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
     }
 
     private void changeNextButtonState(int position) {
-        Utilities.log(RealmSubmission.isStepCompleted(mRealm, steps.get(position - 1).getId(), userModel.getId()) + " is step completed");
-        if (RealmSubmission.isStepCompleted(mRealm, steps.get(position - 1).getId(), userModel.getId()) || !Constants.showBetaFeature(Constants.KEY_EXAM, getActivity())) {
+        Utilities.log(RealmSubmission.isStepCompleted(mRealm, steps.get(position - 1).id, userModel.getId()) + " is step completed");
+        if (RealmSubmission.isStepCompleted(mRealm, steps.get(position - 1).id, userModel.getId()) || !Constants.showBetaFeature(Constants.KEY_EXAM, getActivity())) {
             fragmentTakeCourseBinding.nextStep.setClickable(true);
             fragmentTakeCourseBinding.nextStep.setTextColor(getResources().getColor(R.color.md_white_1000));
         } else {
