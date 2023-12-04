@@ -112,6 +112,7 @@
                     </LinearLayout>
 
                     <LinearLayout
+                        android:id="@+id/ltSubjectLevel"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content">
 
@@ -130,6 +131,7 @@
                     </LinearLayout>
 
                     <LinearLayout
+                        android:id="@+id/ltGradeLevel"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content">
 
@@ -148,6 +150,7 @@
                     </LinearLayout>
 
                     <LinearLayout
+                        android:id="@+id/ltLanguage"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content">
 
@@ -166,6 +169,7 @@
                     </LinearLayout>
 
                     <LinearLayout
+                        android:id="@+id/ltMethod"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content">
 
@@ -202,6 +206,7 @@
                     </LinearLayout>
 
                     <LinearLayout
+                        android:id="@+id/ltDescription"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal">
