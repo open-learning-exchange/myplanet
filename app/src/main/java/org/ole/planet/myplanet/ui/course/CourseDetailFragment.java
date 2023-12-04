@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -93,10 +94,10 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
     }
 
     private void setCourseData() {
-        fragmentCourseDetailBinding.subjectLevel.setText(courses.getSubjectLevel());
-        fragmentCourseDetailBinding.method.setText(courses.getMethod());
-        fragmentCourseDetailBinding.gradeLevel.setText(courses.getGradeLevel());
-        fragmentCourseDetailBinding.language.setText(courses.getLanguageOfInstruction());
+        setTextViewVisibility(fragmentCourseDetailBinding.subjectLevel, courses.getSubjectLevel(), fragmentCourseDetailBinding.ltSubjectLevel);
+        setTextViewVisibility(fragmentCourseDetailBinding.method, courses.getMethod(), fragmentCourseDetailBinding.ltMethod);
+        setTextViewVisibility(fragmentCourseDetailBinding.gradeLevel, courses.getGradeLevel(), fragmentCourseDetailBinding.ltGradeLevel);
+        setTextViewVisibility(fragmentCourseDetailBinding.language, courses.getLanguageOfInstruction(), fragmentCourseDetailBinding.ltLanguage);
         String markdownContentWithLocalPaths = CourseStepFragment.prependBaseUrlToImages(courses.getDescription(), "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/");
         markwon.setMarkdown(fragmentCourseDetailBinding.description, markdownContentWithLocalPaths);
         fragmentCourseDetailBinding.noOfExams.setText(RealmStepExam.getNoOfExam(mRealm, id) + "");
@@ -106,6 +107,14 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
         setOpenResourceButton(downloadedResources, fragmentCourseDetailBinding.btnOpen);
         onRatingChanged();
         setStepsList();
+    }
+
+    private void setTextViewVisibility(TextView textView, String content, View layout) {
+        if (content.isEmpty()) {
+            layout.setVisibility(View.GONE);
+        } else {
+            textView.setText(content);
+        }
     }
 
     private void setStepsList() {
