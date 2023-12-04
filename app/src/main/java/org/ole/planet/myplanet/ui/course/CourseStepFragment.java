@@ -142,7 +142,7 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
         fragmentCourseStepBinding.description.setMovementMethod(LinkMovementMethod.getInstance());
       
         if (!RealmMyCourse.isMyCourse(user.getId(), step.getCourseId(), mRealm)) {
-            fragmentCourseStepBinding.btnTakeTest.setVisibility(View.INVISIBLE);
+            fragmentCourseStepBinding.btnTakeTest.setVisibility(View.GONE);
         }
         setListeners();
 
@@ -164,7 +164,7 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
     }
 
     private void hideTestIfNoQuestion() {
-        fragmentCourseStepBinding.btnTakeTest.setVisibility(View.INVISIBLE);
+        fragmentCourseStepBinding.btnTakeTest.setVisibility(View.GONE);
         if (stepExams != null && stepExams.size() > 0) {
             String first_step_id = stepExams.get(0).getId();
             RealmResults<RealmExamQuestion> questions = mRealm.where(RealmExamQuestion.class).equalTo("examId", first_step_id).findAll();
