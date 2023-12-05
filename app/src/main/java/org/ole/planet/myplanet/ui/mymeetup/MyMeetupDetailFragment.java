@@ -81,7 +81,7 @@ public class MyMeetupDetailFragment extends Fragment implements View.OnClickList
     }
 
     private void setUpData() {
-        fragmentMyMeetupDetailBinding.meetupTitle.setText(meetups.getTitle());
+        fragmentMyMeetupDetailBinding.meetupTitle.setText(meetups.title);
         final HashMap<String, String> map = RealmMeetup.getHashMap(meetups);
         final ArrayList<String> keys = new ArrayList<>(map.keySet());
         listDesc.setAdapter(new ArrayAdapter<String>(getActivity(), R.layout.row_description, keys) {
@@ -107,11 +107,11 @@ public class MyMeetupDetailFragment extends Fragment implements View.OnClickList
 
     private void leaveJoinMeetUp() {
         mRealm.executeTransaction(realm -> {
-            if (meetups.getUserId().isEmpty()) {
-                meetups.setUserId(user.getId());
+            if (meetups.userId.isEmpty()) {
+                meetups.userId = user.getId();
                 fragmentMyMeetupDetailBinding.btnLeave.setText(R.string.leave);
             } else {
-                meetups.setUserId("");
+                meetups.userId = "";
                 fragmentMyMeetupDetailBinding.btnLeave.setText(R.string.join);
             }
         });

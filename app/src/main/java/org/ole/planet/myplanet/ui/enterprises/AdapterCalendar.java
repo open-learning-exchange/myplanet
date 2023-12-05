@@ -33,13 +33,13 @@ public class AdapterCalendar extends RecyclerView.Adapter<AdapterCalendar.ViewHo
     @Override
     public void onBindViewHolder(@NonNull ViewHolderCalendar holder, int position) {
         RealmMeetup meetup = list.get(position);
-        rowTeamCalendarBinding.tvTitle.setText(meetup.getTitle());
-        rowTeamCalendarBinding.tvDescription.setText(meetup.getDescription());
+        rowTeamCalendarBinding.tvTitle.setText(meetup.title);
+        rowTeamCalendarBinding.tvDescription.setText(meetup.description);
 
-        if (meetup.getStartDate() == meetup.getEndDate()) {
-            rowTeamCalendarBinding.tvDate.setText(TimeUtils.formatDate(meetup.getStartDate()));
+        if (meetup.startDate == meetup.endDate) {
+            rowTeamCalendarBinding.tvDate.setText(TimeUtils.formatDate(meetup.startDate));
         } else {
-            rowTeamCalendarBinding.tvDate.setText(TimeUtils.formatDate(meetup.getStartDate()) + " to " + TimeUtils.formatDate(meetup.getEndDate()));
+            rowTeamCalendarBinding.tvDate.setText(TimeUtils.formatDate(meetup.startDate) + " to " + TimeUtils.formatDate(meetup.endDate));
         }
     }
 
