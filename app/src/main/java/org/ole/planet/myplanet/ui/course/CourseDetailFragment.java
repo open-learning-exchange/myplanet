@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -32,8 +33,11 @@ import java.util.List;
 import io.noties.markwon.AbstractMarkwonPlugin;
 import io.noties.markwon.Markwon;
 import io.noties.markwon.MarkwonPlugin;
+import io.noties.markwon.html.HtmlPlugin;
 import io.noties.markwon.image.ImagesPlugin;
 import io.noties.markwon.image.file.FileSchemeHandler;
+import io.noties.markwon.image.network.NetworkSchemeHandler;
+import io.noties.markwon.image.network.OkHttpNetworkSchemeHandler;
 import io.noties.markwon.movement.MovementMethodPlugin;
 import io.realm.Realm;
 import io.realm.RealmResults;
@@ -57,13 +61,17 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
             id = getArguments().getString("courseId");
         }
         markwon = Markwon.builder(context)
+                .usePlugin(HtmlPlugin.create())
                 .usePlugin(ImagesPlugin.create())
                 .usePlugin(MovementMethodPlugin.none())
                 .usePlugin(new AbstractMarkwonPlugin() {
                     @Override
                     public void configure(@NonNull MarkwonPlugin.Registry registry) {
-                        registry.require(ImagesPlugin.class, imagesPlugin ->
-                                imagesPlugin.addSchemeHandler(FileSchemeHandler.create())
+                        registry.require(ImagesPlugin.class, imagesPlugin -> {
+                                    imagesPlugin.addSchemeHandler(FileSchemeHandler.create());
+                                    imagesPlugin.addSchemeHandler(NetworkSchemeHandler.create());
+                                    imagesPlugin.addSchemeHandler(OkHttpNetworkSchemeHandler.create());
+                                }
                         );
                     }
                 })
@@ -93,10 +101,10 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
     }
 
     private void setCourseData() {
-        fragmentCourseDetailBinding.subjectLevel.setText(courses.getSubjectLevel());
-        fragmentCourseDetailBinding.method.setText(courses.getMethod());
-        fragmentCourseDetailBinding.gradeLevel.setText(courses.getGradeLevel());
-        fragmentCourseDetailBinding.language.setText(courses.getLanguageOfInstruction());
+        setTextViewVisibility(fragmentCourseDetailBinding.subjectLevel, courses.getSubjectLevel(), fragmentCourseDetailBinding.ltSubjectLevel);
+        setTextViewVisibility(fragmentCourseDetailBinding.method, courses.getMethod(), fragmentCourseDetailBinding.ltMethod);
+        setTextViewVisibility(fragmentCourseDetailBinding.gradeLevel, courses.getGradeLevel(), fragmentCourseDetailBinding.ltGradeLevel);
+        setTextViewVisibility(fragmentCourseDetailBinding.language, courses.getLanguageOfInstruction(), fragmentCourseDetailBinding.ltLanguage);
         String markdownContentWithLocalPaths = CourseStepFragment.prependBaseUrlToImages(courses.getDescription(), "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/");
         markwon.setMarkdown(fragmentCourseDetailBinding.description, markdownContentWithLocalPaths);
         fragmentCourseDetailBinding.noOfExams.setText(RealmStepExam.getNoOfExam(mRealm, id) + "");
@@ -106,6 +114,14 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
         setOpenResourceButton(downloadedResources, fragmentCourseDetailBinding.btnOpen);
         onRatingChanged();
         setStepsList();
+    }
+
+    private void setTextViewVisibility(TextView textView, String content, View layout) {
+        if (content.isEmpty()) {
+            layout.setVisibility(View.GONE);
+        } else {
+            textView.setText(content);
+        }
     }
 
     private void setStepsList() {
