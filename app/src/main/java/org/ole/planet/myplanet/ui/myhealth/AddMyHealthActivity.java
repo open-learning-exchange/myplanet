@@ -81,10 +81,10 @@ public class AddMyHealthActivity extends AppCompatActivity {
         if (healthPojo == null) {
             healthPojo = realm.createObject(RealmMyHealthPojo.class, userId);
         }
-        healthPojo.setIsUpdated(true);
-        healthPojo.setUserId(userModelB.get_id());
+        healthPojo.isUpdated = true;
+        healthPojo.userId = userModelB.get_id();
         try {
-            healthPojo.setData(AndroidDecrypter.encrypt(new Gson().toJson(myHealth), key, iv));
+            healthPojo.data = AndroidDecrypter.encrypt(new Gson().toJson(myHealth), key, iv);
         } catch (Exception e) {
         }
         realm.commitTransaction();
@@ -96,8 +96,8 @@ public class AddMyHealthActivity extends AppCompatActivity {
     }
 
     public void populate() {
-        if (healthPojo != null && !TextUtils.isEmpty(healthPojo.getData())) {
-            myHealth = new Gson().fromJson(AndroidDecrypter.decrypt(healthPojo.getData(), userModelB.getKey(), userModelB.getIv()), RealmMyHealth.class);
+        if (healthPojo != null && !TextUtils.isEmpty(healthPojo.data)) {
+            myHealth = new Gson().fromJson(AndroidDecrypter.decrypt(healthPojo.data, userModelB.getKey(), userModelB.getIv()), RealmMyHealth.class);
             RealmMyHealth.RealmMyHealthProfile health = myHealth.profile;
             activityAddMyHealthBinding.etEmergency.getEditText().setText(health.emergencyContactName);
             activityAddMyHealthBinding.etSpecialNeed.getEditText().setText(health.specialNeeds);
