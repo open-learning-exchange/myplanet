@@ -46,6 +46,7 @@ import io.noties.markwon.html.HtmlPlugin;
 import io.noties.markwon.image.ImagesPlugin;
 import io.noties.markwon.image.file.FileSchemeHandler;
 import io.noties.markwon.image.network.NetworkSchemeHandler;
+import io.noties.markwon.image.network.OkHttpNetworkSchemeHandler;
 import io.noties.markwon.movement.MovementMethodPlugin;
 import io.realm.Case;
 import io.realm.Realm;
@@ -84,6 +85,7 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
                         registry.require(ImagesPlugin.class, imagesPlugin -> {
                                     imagesPlugin.addSchemeHandler(FileSchemeHandler.create());
                                     imagesPlugin.addSchemeHandler(NetworkSchemeHandler.create());
+                                    imagesPlugin.addSchemeHandler(OkHttpNetworkSchemeHandler.create());
                                 }
                         );
                     }
@@ -235,7 +237,7 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
             String relativePath = matcher.group(1);
             String modifiedPath = relativePath.replaceFirst("resources/", "");
             String fullUrl = baseUrl + modifiedPath;
-            matcher.appendReplacement(result, "<img src=" + fullUrl + " width=400 height=250/>");
+            matcher.appendReplacement(result, "<img src=" + fullUrl + " width=600 height=350/>");
         }
         matcher.appendTail(result);
 

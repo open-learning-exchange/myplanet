@@ -36,9 +36,8 @@ import io.noties.markwon.MarkwonPlugin;
 import io.noties.markwon.html.HtmlPlugin;
 import io.noties.markwon.image.ImagesPlugin;
 import io.noties.markwon.image.file.FileSchemeHandler;
-import io.noties.markwon.image.gif.GifMediaDecoder;
 import io.noties.markwon.image.network.NetworkSchemeHandler;
-import io.noties.markwon.image.svg.SvgMediaDecoder;
+import io.noties.markwon.image.network.OkHttpNetworkSchemeHandler;
 import io.noties.markwon.movement.MovementMethodPlugin;
 import io.realm.Realm;
 import io.realm.RealmResults;
@@ -65,18 +64,13 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
                 .usePlugin(HtmlPlugin.create())
                 .usePlugin(ImagesPlugin.create())
                 .usePlugin(MovementMethodPlugin.none())
-//                .usePlugin(ImagesPlugin.create(plugin -> {
-//                    plugin.addMediaDecoder(SvgMediaDecoder.create());
-//                }))
-//                .usePlugin(ImagesPlugin.create(plugin -> {
-//                    plugin.addMediaDecoder(GifMediaDecoder.create());
-//                }))
                 .usePlugin(new AbstractMarkwonPlugin() {
                     @Override
                     public void configure(@NonNull MarkwonPlugin.Registry registry) {
                         registry.require(ImagesPlugin.class, imagesPlugin -> {
                                     imagesPlugin.addSchemeHandler(FileSchemeHandler.create());
                                     imagesPlugin.addSchemeHandler(NetworkSchemeHandler.create());
+                                    imagesPlugin.addSchemeHandler(OkHttpNetworkSchemeHandler.create());
                                 }
                         );
                     }
