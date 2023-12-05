@@ -30,7 +30,7 @@
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
-<!--    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>-->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
 
     <application
         android:name=".MainApplication"
@@ -43,7 +43,7 @@
         android:usesCleartextTraffic="true"
         tools:replace="android:label">
         <activity
-            android:name=".ui.sync.TeamLoginActivity"
+            android:name=".ui.sync.LoginActivity"
             android:exported="false" />
         <activity android:name=".ui.chat.ChatActivity" />
         <activity
@@ -81,9 +81,6 @@
         <activity
             android:name=".ui.feedback.FeedbackDetailActivity"
             android:theme="@style/AppTheme" />
-        <activity
-            android:name=".ui.sync.LoginActivity"
-            android:configChanges="orientation|keyboardHidden|screenSize" />
         <activity
             android:name=".ui.dashboard.DashboardActivity"
             android:configChanges="orientation|screenSize|keyboardHidden"

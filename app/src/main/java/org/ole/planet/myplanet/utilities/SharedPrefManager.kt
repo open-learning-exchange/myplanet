@@ -17,7 +17,7 @@ class SharedPrefManager(context: Context) {
     var REPLIEDNEWSID = "repliedNewsId"
     var MANUALCONFIG = "manualConfig"
     var SELECTEDTEAMID = "selectedTeamId"
-    var TEAMMODE = "teamMode"
+    var FIRSTLAUNCH = "firstLaunch"
 
     init {
         pref = context.getSharedPreferences(SHARED_PREF_NAME, PRIVATE_MODE)
@@ -101,14 +101,14 @@ class SharedPrefManager(context: Context) {
         editor.apply()
     }
 
-    @JvmName("getTEAMMODE1")
-    fun getTEAMMODE(): Boolean {
-        return pref.getBoolean(TEAMMODE, false)
+    @JvmName("getFIRSTLAUNCH1")
+    fun getFIRSTLAUNCH(): Boolean {
+        return pref.getBoolean(FIRSTLAUNCH, false)
     }
 
-    @JvmName("setTEAMMODE1")
-    fun setTEAMMODE(teamMode: Boolean) {
-        editor.putBoolean(TEAMMODE, teamMode)
+    @JvmName("setFIRSTLAUNCH1")
+    fun setFIRSTLAUNCH(firstLaunch: Boolean) {
+        editor.putBoolean(FIRSTLAUNCH, firstLaunch)
         editor.apply()
     }
 }

@@ -157,9 +157,8 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
             viewHolder.rowCourseBinding.title.setText(courseList.get(position).getCourseTitle());
             viewHolder.rowCourseBinding.description.setText(courseList.get(position).getDescription());
             markwon.setMarkdown(viewHolder.rowCourseBinding.description, courseList.get(position).getDescription());
-
-            viewHolder.rowCourseBinding.gradLevel.setText(context.getString(R.string.grade_level_colon) + courseList.get(position).getGradeLevel());
-            viewHolder.rowCourseBinding.subjectLevel.setText(context.getString(R.string.subject_level_colon) + courseList.get(position).getSubjectLevel());
+            setTextViewContent(viewHolder.rowCourseBinding.gradLevel, courseList.get(position).getGradeLevel(), viewHolder.rowCourseBinding.gradLevel, context.getString(R.string.grade_level_colon));
+            setTextViewContent(viewHolder.rowCourseBinding.subjectLevel, courseList.get(position).getSubjectLevel(), viewHolder.rowCourseBinding.subjectLevel, context.getString(R.string.subject_level_colon));
             viewHolder.rowCourseBinding.checkbox.setChecked(selectedItems.contains(courseList.get(position)));
             viewHolder.rowCourseBinding.courseProgress.setMax(courseList.get(position).getnumberOfSteps());
             displayTagCloud(viewHolder.rowCourseBinding.flexboxDrawable, position);
@@ -179,6 +178,14 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 if (listener != null) listener.onSelectedListChange(selectedItems);
             });
             showProgressAndRating(position, holder);
+        }
+    }
+
+    private void setTextViewContent(TextView textView, String content, View layout, String prefix) {
+        if (content.isEmpty()) {
+            layout.setVisibility(View.GONE);
+        } else {
+            textView.setText(prefix + content);
         }
     }
 

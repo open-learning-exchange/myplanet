@@ -9,6 +9,8 @@ import androidx.fragment.app.Fragment;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -115,19 +117,18 @@ public class AdapterMyLife extends RecyclerView.Adapter<RecyclerView.ViewHolder>
             else changeVisibility(holder, R.drawable.ic_visibility_off, SHOW);
 
         }
-
-
     }
 
-    public void updateVisibility(RecyclerView.ViewHolder holder, int position, boolean isVisible) {
-        RealmMyLife.updateVisibility(!isVisible, myLifeList.get(position).get_id(), mRealm, myLifeList.get(position).getUserId());
-        if (isVisible) {
-            changeVisibility(holder, R.drawable.ic_visibility, HIDE);
-            Utilities.toast(context, myLifeList.get(position).getTitle() + R.string.is_now_hidden);
-        } else {
-            changeVisibility(holder, R.drawable.ic_visibility_off, SHOW);
-            Utilities.toast(context, myLifeList.get(position).getTitle() + R.string.is_now_shown);
-        }
+    public void updateVisibility(final RecyclerView.ViewHolder holder, final int position, final boolean isVisible) {
+        mRealm.executeTransactionAsync(realm -> RealmMyLife.updateVisibility(!isVisible, myLifeList.get(position).get_id(), realm, myLifeList.get(position).getUserId()), () -> new Handler(Looper.getMainLooper()).post(() -> {
+            if (isVisible) {
+                changeVisibility(holder, R.drawable.ic_visibility, HIDE);
+                Utilities.toast(context, myLifeList.get(position).getTitle() + context.getString(R.string.is_now_hidden));
+            } else {
+                changeVisibility(holder, R.drawable.ic_visibility_off, SHOW);
+                Utilities.toast(context, myLifeList.get(position).getTitle() + context.getString(R.string.is_now_shown));
+            }
+        }), error -> Utilities.log(String.valueOf(error)));
     }
 
     public void changeVisibility(RecyclerView.ViewHolder holder, int imageId, float alpha) {

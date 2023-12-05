@@ -104,7 +104,7 @@ public class AutoSyncWorker extends Worker implements SyncListener, Service.Chec
     @Override
     public void onUpdateAvailable(MyPlanet info, boolean cancelable) {
         if (Constants.showBetaFeature(Constants.KEY_AUTOUPDATE, context)) {
-            DialogUtils.startDownloadUpdate(context, Utilities.getApkUpdateUrl(info.getLocalapkpath()), null);
+            DialogUtils.startDownloadUpdate(context, Utilities.getApkUpdateUrl(info.localapkpath), null);
         }
     }
 
