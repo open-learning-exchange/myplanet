@@ -224,9 +224,9 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         if (!mRealm.isInTransaction()) mRealm.beginTransaction();
         health = new RealmMyHealth();
         RealmMyHealth.RealmMyHealthProfile profile = new RealmMyHealth.RealmMyHealthProfile();
-        health.setLastExamination(new Date().getTime());
-        health.setUserKey(AndroidDecrypter.generateKey());
-        health.setProfile(profile);
+        health.lastExamination = new Date().getTime();
+        health.userKey = AndroidDecrypter.generateKey();
+        health.profile = profile;
         mRealm.commitTransaction();
     }
 
@@ -240,8 +240,8 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
             examination.setUserId(userId);
         }
 
-        examination.setProfileId(health.getUserKey());
-        examination.setCreatorId(health.getUserKey());
+        examination.setProfileId(health.userKey);
+        examination.setCreatorId(health.userKey);
         examination.setGender(user.getGender());
 
         examination.setAge(TimeUtils.getAge(user.getDob()));
@@ -341,7 +341,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
                 pojo.setUserId(user.get_id());
             }
 //            if (TextUtils.isEmpty(pojo.getData())) {
-            health.setLastExamination(new Date().getTime());
+            health.lastExamination = new Date().getTime();
             pojo.setData(AndroidDecrypter.encrypt(new Gson().toJson(health), user.getKey(), user.getIv()));
 //            }
         } catch (Exception e) {
