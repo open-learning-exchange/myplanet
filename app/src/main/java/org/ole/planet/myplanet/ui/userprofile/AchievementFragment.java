@@ -71,11 +71,11 @@ public class AchievementFragment extends BaseContainerFragment {
         fragmentAchievementBinding.tvFirstName.setText(user.getFirstName());
         fragmentAchievementBinding.tvName.setText(String.format("%s %s %s", user.getFirstName(), user.getMiddleName(), user.getLastName()));
         if (achievement != null) {
-            fragmentAchievementBinding.tvGoals.setText(achievement.getGoals());
-            fragmentAchievementBinding.tvPurpose.setText(achievement.getPurpose());
-            fragmentAchievementBinding.tvAchievementHeader.setText(achievement.getAchievementsHeader());
+            fragmentAchievementBinding.tvGoals.setText(achievement.goals);
+            fragmentAchievementBinding.tvPurpose.setText(achievement.purpose);
+            fragmentAchievementBinding.tvAchievementHeader.setText(achievement.achievementsHeader);
             fragmentAchievementBinding.llAchievement.removeAllViews();
-            for (String s : achievement.getAchievements()) {
+            for (String s : achievement.achievements) {
                 rowAchievementBinding = RowAchievementBinding.inflate(LayoutInflater.from(MainApplication.context));
                 JsonElement ob = new Gson().fromJson(s, JsonElement.class);
                 if (ob instanceof JsonObject) {
@@ -124,7 +124,7 @@ public class AchievementFragment extends BaseContainerFragment {
     }
 
     private void createAchievementList() {
-        for (String s : achievement.getAchievements()) {
+        for (String s : achievement.achievements) {
             rowAchievementBinding = RowAchievementBinding.inflate(LayoutInflater.from(MainApplication.context));
             JsonElement ob = new Gson().fromJson(s, JsonElement.class);
             if (ob instanceof JsonObject) {
