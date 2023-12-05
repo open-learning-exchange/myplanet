@@ -232,7 +232,7 @@ public class MyTeamsDetailFragment extends BaseNewsFragment {
         listContent.setAdapter(new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, courses));
         listContent.setOnItemClickListener((adapterView, view, i, l) -> {
             if (homeItemClickListener != null) {
-                openFragment(courses.get(i).getCourseId(), new TakeCourseFragment());
+                openFragment(courses.get(i).courseId, new TakeCourseFragment());
             }
         });
     }

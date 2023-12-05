@@ -262,9 +262,9 @@ public abstract class BaseResourceFragment extends Fragment {
             RealmRemovedLog.onRemove(mRealm, "resources", model.getId(), ((RealmMyLibrary) object).getResource_id());
             Utilities.toast(getActivity(), getString(R.string.removed_from_mylibrary));
         } else {
-            RealmMyCourse myObject = RealmMyCourse.getMyCourse(mRealm, ((RealmMyCourse) object).getCourseId());
+            RealmMyCourse myObject = RealmMyCourse.getMyCourse(mRealm, ((RealmMyCourse) object).courseId);
             myObject.removeUserId(model.getId());
-            RealmRemovedLog.onRemove(mRealm, "courses", model.getId(), ((RealmMyCourse) object).getCourseId());
+            RealmRemovedLog.onRemove(mRealm, "courses", model.getId(), ((RealmMyCourse) object).courseId);
             Utilities.toast(getActivity(), getString(R.string.removed_from_mycourse));
         }
     }

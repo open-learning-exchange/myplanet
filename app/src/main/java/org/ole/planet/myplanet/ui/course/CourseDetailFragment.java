@@ -84,7 +84,7 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        initRatingView("course", courses.getCourseId(), courses.getCourseTitle(), this);
+        initRatingView("course", courses.courseId, courses.courseTitle, this);
         setCourseData();
     }
 
@@ -94,11 +94,11 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
     }
 
     private void setCourseData() {
-        setTextViewVisibility(fragmentCourseDetailBinding.subjectLevel, courses.getSubjectLevel(), fragmentCourseDetailBinding.ltSubjectLevel);
-        setTextViewVisibility(fragmentCourseDetailBinding.method, courses.getMethod(), fragmentCourseDetailBinding.ltMethod);
-        setTextViewVisibility(fragmentCourseDetailBinding.gradeLevel, courses.getGradeLevel(), fragmentCourseDetailBinding.ltGradeLevel);
-        setTextViewVisibility(fragmentCourseDetailBinding.language, courses.getLanguageOfInstruction(), fragmentCourseDetailBinding.ltLanguage);
-        String markdownContentWithLocalPaths = CourseStepFragment.prependBaseUrlToImages(courses.getDescription(), "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/");
+        setTextViewVisibility(fragmentCourseDetailBinding.subjectLevel, courses.subjectLevel, fragmentCourseDetailBinding.ltSubjectLevel);
+        setTextViewVisibility(fragmentCourseDetailBinding.method, courses.method, fragmentCourseDetailBinding.ltMethod);
+        setTextViewVisibility(fragmentCourseDetailBinding.gradeLevel, courses.gradeLevel, fragmentCourseDetailBinding.ltGradeLevel);
+        setTextViewVisibility(fragmentCourseDetailBinding.language, courses.languageOfInstruction, fragmentCourseDetailBinding.ltLanguage);
+        String markdownContentWithLocalPaths = CourseStepFragment.prependBaseUrlToImages(courses.description, "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/");
         markwon.setMarkdown(fragmentCourseDetailBinding.description, markdownContentWithLocalPaths);
         fragmentCourseDetailBinding.noOfExams.setText(RealmStepExam.getNoOfExam(mRealm, id) + "");
         final RealmResults resources = mRealm.where(RealmMyLibrary.class).equalTo("courseId", id).equalTo("resourceOffline", false).isNotNull("resourceLocalAddress").findAll();
@@ -118,14 +118,14 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
     }
 
     private void setStepsList() {
-        List<RealmCourseStep> steps = RealmCourseStep.getSteps(mRealm, courses.getCourseId());
+        List<RealmCourseStep> steps = RealmCourseStep.getSteps(mRealm, courses.courseId);
         fragmentCourseDetailBinding.stepsList.setLayoutManager(new LinearLayoutManager(getActivity()));
         fragmentCourseDetailBinding.stepsList.setAdapter(new AdapterSteps(getActivity(), steps, mRealm));
     }
 
     @Override
     public void onRatingChanged() {
-        JsonObject object = RealmRating.getRatingsById(mRealm, "course", courses.getCourseId(), user.getId());
+        JsonObject object = RealmRating.getRatingsById(mRealm, "course", courses.courseId, user.getId());
         setRatings(object);
     }
 
