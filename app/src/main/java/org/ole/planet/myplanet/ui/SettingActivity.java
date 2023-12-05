@@ -119,7 +119,7 @@ public class SettingActivity extends AppCompatActivity {
                     mRealm.executeTransactionAsync(realm -> {
                         RealmResults<RealmMyLibrary> libraries = realm.where(RealmMyLibrary.class).findAll();
                         for (RealmMyLibrary library : libraries)
-                            library.setResourceOffline(false);
+                            library.resourceOffline = false;
                     }, () -> {
                         File f = new File(Utilities.SD_PATH);
                         deleteRecursive(f);

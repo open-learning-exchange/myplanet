@@ -274,8 +274,8 @@ public class EditAchievementFragment extends BaseContainerFragment implements Da
         ArrayList<String> names = new ArrayList<>();
         ArrayList<Integer> selected = new ArrayList();
         for (int i = 0; i < list.size(); i++) {
-            names.add(list.get(i).getTitle());
-            if (prevList.contains(list.get(i).getTitle())) selected.add(i);
+            names.add(list.get(i).title);
+            if (prevList.contains(list.get(i).title)) selected.add(i);
         }
 
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(getActivity(), R.layout.item_checkbox, R.id.checkBoxRowLayout, names) {

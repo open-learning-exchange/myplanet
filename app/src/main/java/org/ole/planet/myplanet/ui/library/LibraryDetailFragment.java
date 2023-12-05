@@ -68,19 +68,19 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        initRatingView("resource", library.getResource_id(), library.getTitle(), LibraryDetailFragment.this);
+        initRatingView("resource", library.resourceId, library.title, LibraryDetailFragment.this);
         setLibraryData();
     }
 
     private void setLibraryData() {
-        fragmentLibraryDetailBinding.tvTitle.setText(String.format("%s%s", openFrom.isEmpty() ? "" : openFrom + "-", library.getTitle()));
-        fragmentLibraryDetailBinding.tvAuthor.setText(library.getAuthor());
+        fragmentLibraryDetailBinding.tvTitle.setText(String.format("%s%s", openFrom.isEmpty() ? "" : openFrom + "-", library.title));
+        fragmentLibraryDetailBinding.tvAuthor.setText(library.author);
         fragmentLibraryDetailBinding.tvPublished.setText(library.getPublisher());
-        fragmentLibraryDetailBinding.tvMedia.setText(library.getMediaType());
+        fragmentLibraryDetailBinding.tvMedia.setText(library.mediaType);
         fragmentLibraryDetailBinding.tvSubject.setText(library.getSubjectsAsString());
-        fragmentLibraryDetailBinding.tvLanguage.setText(library.getLanguage());
-        fragmentLibraryDetailBinding.tvLicense.setText(library.getLinkToLicense());
-        fragmentLibraryDetailBinding.tvResource.setText(RealmMyLibrary.listToString(library.getResourceFor()));
+        fragmentLibraryDetailBinding.tvLanguage.setText(library.language);
+        fragmentLibraryDetailBinding.tvLicense.setText(library.linkToLicense);
+        fragmentLibraryDetailBinding.tvResource.setText(RealmMyLibrary.listToString(library.resourceFor));
         profileDbHandler.setResourceOpenCount(library);
         try {
             onRatingChanged();
@@ -88,9 +88,9 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
             ex.printStackTrace();
         }
 
-        fragmentLibraryDetailBinding.btnDownload.setVisibility(TextUtils.isEmpty(library.getResourceLocalAddress()) ? View.GONE : View.VISIBLE);
-        fragmentLibraryDetailBinding.btnDownload.setImageResource(library.getResourceOffline() == null || library.isResourceOffline() ? R.drawable.ic_eye : R.drawable.ic_download);
-        if (FileUtils.getFileExtension(library.getResourceLocalAddress()).equals("mp4")) {
+        fragmentLibraryDetailBinding.btnDownload.setVisibility(TextUtils.isEmpty(library.resourceLocalAddress) ? View.GONE : View.VISIBLE);
+        fragmentLibraryDetailBinding.btnDownload.setImageResource(!library.resourceOffline || library.isResourceOffline() ? R.drawable.ic_eye : R.drawable.ic_download);
+        if (FileUtils.getFileExtension(library.resourceLocalAddress).equals("mp4")) {
             fragmentLibraryDetailBinding.btnDownload.setImageResource(R.drawable.ic_play);
         }
         setClickListeners();
@@ -98,7 +98,7 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
 
     public void setClickListeners() {
         fragmentLibraryDetailBinding.btnDownload.setOnClickListener(view -> {
-            if (TextUtils.isEmpty(library.getResourceLocalAddress())) {
+            if (TextUtils.isEmpty(library.resourceLocalAddress)) {
                 Toast.makeText(getActivity(), getString(R.string.link_not_available), Toast.LENGTH_LONG).show();
                 return;
             }
@@ -126,7 +126,7 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
 
     @Override
     public void onRatingChanged() {
-        JsonObject object = RealmRating.getRatingsById(mRealm, "resource", library.getResource_id(), userModel.getId());
+        JsonObject object = RealmRating.getRatingsById(mRealm, "resource", library.resourceId, userModel.getId());
         setRatings(object);
     }
 }

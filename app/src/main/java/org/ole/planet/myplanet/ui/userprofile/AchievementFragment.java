@@ -90,7 +90,7 @@ public class AchievementFragment extends BaseContainerFragment {
                         });
                         for (RealmMyLibrary lib : libraries) {
                             layoutButtonPrimaryBinding = LayoutButtonPrimaryBinding.inflate(LayoutInflater.from(MainApplication.context));
-                            layoutButtonPrimaryBinding.getRoot().setText(lib.getTitle());
+                            layoutButtonPrimaryBinding.getRoot().setText(lib.title);
                             layoutButtonPrimaryBinding.getRoot().setCompoundDrawablesWithIntrinsicBounds(0, 0, (lib.isResourceOffline() ? R.drawable.ic_eye : R.drawable.ic_download), 0);
                             layoutButtonPrimaryBinding.getRoot().setOnClickListener(view -> {
                                 if (lib.isResourceOffline()) {
@@ -138,7 +138,7 @@ public class AchievementFragment extends BaseContainerFragment {
                 });
                 for (RealmMyLibrary lib : libraries) {
                     layoutButtonPrimaryBinding = LayoutButtonPrimaryBinding.inflate(LayoutInflater.from(MainApplication.context));
-                    layoutButtonPrimaryBinding.getRoot().setText(lib.getTitle());
+                    layoutButtonPrimaryBinding.getRoot().setText(lib.title);
                     layoutButtonPrimaryBinding.getRoot().setCompoundDrawablesWithIntrinsicBounds(0, 0, (lib.isResourceOffline() ? R.drawable.ic_eye : R.drawable.ic_download), 0);
                     layoutButtonPrimaryBinding.getRoot().setOnClickListener(view -> {
                         if (lib.isResourceOffline()) {

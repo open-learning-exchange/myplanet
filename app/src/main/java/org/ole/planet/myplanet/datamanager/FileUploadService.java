@@ -32,8 +32,8 @@ public class FileUploadService {
     }
 
     public void uploadAttachment(String id, String rev, RealmMyLibrary personal, SuccessListener listener) {
-        File f = new File(personal.getResourceLocalAddress());
-        String name = FileUtils.getFileNameFromUrl(personal.getResourceLocalAddress());
+        File f = new File(personal.resourceLocalAddress);
+        String name = FileUtils.getFileNameFromUrl(personal.resourceLocalAddress);
 
         upload_doc(id, rev, "%s/resources/%s/%s", f, name, listener);
     }
