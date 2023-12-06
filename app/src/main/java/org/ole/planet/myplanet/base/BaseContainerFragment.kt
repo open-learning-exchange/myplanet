@@ -99,7 +99,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 
     fun openIntent(items: RealmMyLibrary, typeClass: Class<*>?) {
         val fileOpenIntent = Intent(activity, typeClass)
-        if (items.resourceLocalAddress.contains("ole/audio") || items.resourceLocalAddress.contains(
+        if (items.resourceLocalAddress!!.contains("ole/audio") || items.resourceLocalAddress!!.contains(
                 "ole/video"
             )
         ) {
@@ -118,7 +118,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
 
     fun openResource(items: RealmMyLibrary) {
-        if (items.resourceOffline != null && items.isResourceOffline) {
+        if (items.resourceOffline != null && items.isResourceOffline()) {
             openFileType(items, "offline")
         } else if (FileUtils.getFileExtension(items.resourceLocalAddress) == "mp4") {
             openFileType(items, "online")
@@ -131,7 +131,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
 
     fun checkFileExtension(items: RealmMyLibrary) {
-        val filenameArray = items.resourceLocalAddress.split("\\.".toRegex()).toTypedArray()
+        val filenameArray = items.resourceLocalAddress!!.split("\\.".toRegex()).toTypedArray()
         val extension = filenameArray[filenameArray.size - 1]
         val mimetype = Utilities.getMimeType(items.resourceLocalAddress)
         if (mimetype.contains("image")) {
@@ -256,7 +256,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 tv.setCompoundDrawablesWithIntrinsicBounds(
                     0,
                     0,
-                    if (library!!.isResourceOffline) R.drawable.ic_eye else R.drawable.ic_download,
+                    if (library!!.isResourceOffline()) R.drawable.ic_eye else R.drawable.ic_download,
                     0
                 )
                 tv.text = library.title

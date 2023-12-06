@@ -102,15 +102,17 @@ public abstract class BaseResourceFragment extends Fragment {
             @Override
             public void isAvailable() {
                 if (!db_myLibrary.isEmpty()) {
-                    LayoutInflater inflater = getLayoutInflater();
-                    convertView = inflater.inflate(R.layout.my_library_alertdialog, null);
-                    AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(getActivity());
-                    alertDialogBuilder.setView(convertView).setTitle(R.string.download_suggestion);
-                    alertDialogBuilder.setPositiveButton(R.string.download_selected, (dialogInterface, i) -> startDownload(DownloadUtils.downloadFiles(db_myLibrary, lv.getSelectedItemsList(), settings))).setNeutralButton(R.string.download_all, (dialogInterface, i) -> startDownload(DownloadUtils.downloadAllFiles(db_myLibrary, settings))).setNegativeButton(R.string.txt_cancel, null);
-                    AlertDialog alertDialog = alertDialogBuilder.create();
-                    createListView(db_myLibrary, alertDialog);
-                    alertDialog.show();
-                    (alertDialog).getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(lv.getSelectedItemsList().size() > 0);
+                    if (isAdded() && getActivity() != null) {
+                        LayoutInflater inflater = getActivity().getLayoutInflater();
+                        convertView = inflater.inflate(R.layout.my_library_alertdialog, null);
+                        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(getActivity());
+                        alertDialogBuilder.setView(convertView).setTitle(R.string.download_suggestion);
+                        alertDialogBuilder.setPositiveButton(R.string.download_selected, (dialogInterface, i) -> startDownload(DownloadUtils.downloadFiles(db_myLibrary, lv.getSelectedItemsList(), settings))).setNeutralButton(R.string.download_all, (dialogInterface, i) -> startDownload(DownloadUtils.downloadAllFiles(db_myLibrary, settings))).setNegativeButton(R.string.txt_cancel, null);
+                        AlertDialog alertDialog = alertDialogBuilder.create();
+                        createListView(db_myLibrary, alertDialog);
+                        alertDialog.show();
+                        (alertDialog).getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(lv.getSelectedItemsList().size() > 0);
+                    }
                 } else {
                     Utilities.toast(requireContext(), getString(R.string.no_resources_to_download));
                 }
@@ -188,7 +190,7 @@ public abstract class BaseResourceFragment extends Fragment {
         lv = convertView.findViewById(R.id.alertDialog_listView);
         ArrayList<String> names = new ArrayList<>();
         for (int i = 0; i < db_myLibrary.size(); i++) {
-            names.add(db_myLibrary.get(i).getTitle());
+            names.add(db_myLibrary.get(i).title);
         }
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(getActivity().getBaseContext(), R.layout.rowlayout, R.id.checkBoxRowLayout, names);
         lv.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
@@ -257,9 +259,9 @@ public abstract class BaseResourceFragment extends Fragment {
 
     public void removeFromShelf(RealmObject object) {
         if (object instanceof RealmMyLibrary) {
-            RealmMyLibrary myObject = mRealm.where(RealmMyLibrary.class).equalTo("resourceId", ((RealmMyLibrary) object).getResource_id()).findFirst();
+            RealmMyLibrary myObject = mRealm.where(RealmMyLibrary.class).equalTo("resourceId", ((RealmMyLibrary) object).resourceId).findFirst();
             myObject.removeUserId(model.getId());
-            RealmRemovedLog.onRemove(mRealm, "resources", model.getId(), ((RealmMyLibrary) object).getResource_id());
+            RealmRemovedLog.onRemove(mRealm, "resources", model.getId(), ((RealmMyLibrary) object).resourceId);
             Utilities.toast(getActivity(), getString(R.string.removed_from_mylibrary));
         } else {
             RealmMyCourse myObject = RealmMyCourse.getMyCourse(mRealm, ((RealmMyCourse) object).courseId);

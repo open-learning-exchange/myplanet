@@ -112,9 +112,9 @@ public abstract class BaseRecyclerFragment<LI> extends BaseRecyclerParentFragmen
         for (int i = 0; i < selectedItems.size(); i++) {
             RealmObject object = (RealmObject) selectedItems.get(i);
             if (object instanceof RealmMyLibrary) {
-                RealmMyLibrary myObject = mRealm.where(RealmMyLibrary.class).equalTo("resourceId", ((RealmMyLibrary) object).getResource_id()).findFirst();
+                RealmMyLibrary myObject = mRealm.where(RealmMyLibrary.class).equalTo("resourceId", ((RealmMyLibrary) object).resourceId).findFirst();
                 RealmMyLibrary.createFromResource(myObject, mRealm, model.getId());
-                RealmRemovedLog.onAdd(mRealm, "resources", profileDbHandler.getUserModel().getId(), myObject.getResourceId());
+                RealmRemovedLog.onAdd(mRealm, "resources", profileDbHandler.getUserModel().getId(), myObject.resourceId);
                 Utilities.toast(getActivity(), getString(R.string.added_to_my_library));
             } else {
                 RealmMyCourse myObject = RealmMyCourse.getMyCourse(mRealm, ((RealmMyCourse) object).courseId);
@@ -176,7 +176,7 @@ public abstract class BaseRecyclerFragment<LI> extends BaseRecyclerParentFragmen
     }
 
     private void searchAndAddToList(LI l, Class c, String[] query, List<LI> li) {
-        String title = c == RealmMyLibrary.class ? ((RealmMyLibrary) l).getTitle() : ((RealmMyCourse) l).courseTitle;
+        String title = c == RealmMyLibrary.class ? ((RealmMyLibrary) l).title : ((RealmMyCourse) l).courseTitle();
         boolean isExists = false;
         for (String q : query) {
             isExists = title.toLowerCase().contains(q.toLowerCase());
@@ -219,7 +219,7 @@ public abstract class BaseRecyclerFragment<LI> extends BaseRecyclerParentFragmen
 
     private void filter(List<RealmTag> tags, RealmMyLibrary library, RealmList<RealmMyLibrary> libraries) {
         for (RealmTag tg : tags) {
-            long count = mRealm.where(RealmTag.class).equalTo("db", "resources").equalTo("tagId", tg.getId()).equalTo("linkId", library.getId()).count();
+            long count = mRealm.where(RealmTag.class).equalTo("db", "resources").equalTo("tagId", tg.getId()).equalTo("linkId", library.id).count();
             if (count > 0 && !libraries.contains(library)) libraries.add(library);
         }
     }
@@ -247,10 +247,10 @@ public abstract class BaseRecyclerFragment<LI> extends BaseRecyclerParentFragmen
     }
 
     private boolean isValidFilter(RealmMyLibrary l) {
-        boolean sub = subjects.isEmpty() || l.getSubject().containsAll(subjects);
-        boolean lev = levels.isEmpty() || l.getLevel().containsAll(levels);
-        boolean lan = languages.isEmpty() || languages.contains(l.getLanguage());
-        boolean med = mediums.isEmpty() || mediums.contains(l.getMediaType());
+        boolean sub = subjects.isEmpty() || l.subject.containsAll(subjects);
+        boolean lev = levels.isEmpty() || l.level.containsAll(levels);
+        boolean lan = languages.isEmpty() || languages.contains(l.language);
+        boolean med = mediums.isEmpty() || mediums.contains(l.mediaType);
         return (sub && lev && lan && med);
     }
 }
