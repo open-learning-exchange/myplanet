@@ -176,7 +176,7 @@ public abstract class BaseRecyclerFragment<LI> extends BaseRecyclerParentFragmen
     }
 
     private void searchAndAddToList(LI l, Class c, String[] query, List<LI> li) {
-        String title = c == RealmMyLibrary.class ? ((RealmMyLibrary) l).title : ((RealmMyCourse) l).courseTitle();
+        String title = c == RealmMyLibrary.class ? ((RealmMyLibrary) l).title : ((RealmMyCourse) l).courseTitle;
         boolean isExists = false;
         for (String q : query) {
             isExists = title.toLowerCase().contains(q.toLowerCase());
