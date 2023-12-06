@@ -58,8 +58,8 @@ public class PDFReaderActivity extends AppCompatActivity implements OnPageChange
         });
 
         activityPdfreaderBinding.fabPlay.setOnClickListener(view -> {
-            if (library != null && !TextUtils.isEmpty(library.getTranslationAudioPath())) {
-                IntentUtils.openAudioFile(this, library.getTranslationAudioPath());
+            if (library != null && !TextUtils.isEmpty(library.translationAudioPath)) {
+                IntentUtils.openAudioFile(this, library.translationAudioPath);
             }
         });
     }
@@ -118,7 +118,7 @@ public class PDFReaderActivity extends AppCompatActivity implements OnPageChange
     private void updateTranslation(String outputFile) {
         if (library != null) {
             if (!mRealm.isInTransaction()) mRealm.beginTransaction();
-            library.setTranslationAudioPath(outputFile);
+            library.translationAudioPath = outputFile;
             mRealm.commitTransaction();
             Utilities.toast(this, getString(R.string.audio_file_saved_in_database));
         }

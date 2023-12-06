@@ -48,12 +48,12 @@ public class AdapterTeamCourse extends RecyclerView.Adapter<AdapterTeamCourse.Vi
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolderTeamCourse holder, int position) {
-        rowTeamResourceBinding.tvTitle.setText(list.get(position).getCourseTitle());
-        rowTeamResourceBinding.tvDescription.setText(list.get(position).getDescription());
+        rowTeamResourceBinding.tvTitle.setText(list.get(position).courseTitle);
+        rowTeamResourceBinding.tvDescription.setText(list.get(position).description);
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) {
                 Bundle b = new Bundle();
-                b.putString("id", list.get(position).getCourseId());
+                b.putString("id", list.get(position).courseId);
                 listener.openCallFragment(TakeCourseFragment.newInstance(b));
             }
         });

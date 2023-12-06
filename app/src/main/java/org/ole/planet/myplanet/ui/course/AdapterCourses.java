@@ -102,9 +102,9 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private void sortCourseListByTitle() {
         Collections.sort(courseList, (course1, course2) -> {
             if (isTitleAscending) {
-                return course1.getCourseTitle().compareToIgnoreCase(course2.getCourseTitle());
+                return course1.courseTitle.compareToIgnoreCase(course2.courseTitle);
             } else {
-                return course2.getCourseTitle().compareToIgnoreCase(course1.getCourseTitle());
+                return course2.courseTitle.compareToIgnoreCase(course1.courseTitle);
             }
         });
     }
@@ -114,9 +114,9 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
             @Override
             public int compare(RealmMyCourse course1, RealmMyCourse course2) {
                 if (isAscending) {
-                    return course1.getCreatedDate().compareTo(course2.getCreatedDate());
+                    return course1.createdDate.compareTo(course2.createdDate);
                 } else {
-                    return course2.getCreatedDate().compareTo(course1.getCreatedDate());
+                    return course2.createdDate.compareTo(course1.createdDate);
                 }
             }
         });
@@ -154,23 +154,22 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
         if (holder instanceof ViewHoldercourse) {
             ViewHoldercourse viewHolder = (ViewHoldercourse) holder;
             viewHolder.bind(position);
-            viewHolder.rowCourseBinding.title.setText(courseList.get(position).getCourseTitle());
-            viewHolder.rowCourseBinding.description.setText(courseList.get(position).getDescription());
-            markwon.setMarkdown(viewHolder.rowCourseBinding.description, courseList.get(position).getDescription());
-
-            viewHolder.rowCourseBinding.gradLevel.setText(context.getString(R.string.grade_level_colon) + courseList.get(position).getGradeLevel());
-            viewHolder.rowCourseBinding.subjectLevel.setText(context.getString(R.string.subject_level_colon) + courseList.get(position).getSubjectLevel());
+            viewHolder.rowCourseBinding.title.setText(courseList.get(position).courseTitle);
+            viewHolder.rowCourseBinding.description.setText(courseList.get(position).description);
+            markwon.setMarkdown(viewHolder.rowCourseBinding.description, courseList.get(position).description);
+            setTextViewContent(viewHolder.rowCourseBinding.gradLevel, courseList.get(position).gradeLevel, viewHolder.rowCourseBinding.gradLevel, context.getString(R.string.grade_level_colon));
+            setTextViewContent(viewHolder.rowCourseBinding.subjectLevel, courseList.get(position).subjectLevel, viewHolder.rowCourseBinding.subjectLevel, context.getString(R.string.subject_level_colon));
             viewHolder.rowCourseBinding.checkbox.setChecked(selectedItems.contains(courseList.get(position)));
             viewHolder.rowCourseBinding.courseProgress.setMax(courseList.get(position).getnumberOfSteps());
             displayTagCloud(viewHolder.rowCourseBinding.flexboxDrawable, position);
             try {
-                viewHolder.rowCourseBinding.tvDate.setText(TimeUtils.formatDate(Long.parseLong(courseList.get(position).getCreatedDate().trim()), "MMM dd, yyyy"));
+                viewHolder.rowCourseBinding.tvDate.setText(TimeUtils.formatDate(Long.parseLong(courseList.get(position).createdDate.trim()), "MMM dd, yyyy"));
             } catch (Exception e) {
 
             }
             viewHolder.rowCourseBinding.ratingBar.setOnTouchListener((v1, event) -> {
                 if (event.getAction() == MotionEvent.ACTION_UP)
-                    homeItemClickListener.showRatingDialog("course", courseList.get(position).getCourseId(), courseList.get(position).getCourseTitle(), ratingChangeListener);
+                    homeItemClickListener.showRatingDialog("course", courseList.get(position).courseId, courseList.get(position).courseTitle, ratingChangeListener);
                 return true;
             });
 
@@ -179,6 +178,14 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 if (listener != null) listener.onSelectedListChange(selectedItems);
             });
             showProgressAndRating(position, holder);
+        }
+    }
+
+    private void setTextViewContent(TextView textView, String content, View layout, String prefix) {
+        if (content.isEmpty()) {
+            layout.setVisibility(View.GONE);
+        } else {
+            textView.setText(prefix + content);
         }
     }
 
@@ -211,7 +218,7 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private void displayTagCloud(FlexboxLayout flexboxDrawable, int position) {
         flexboxDrawable.removeAllViews();
         final ChipCloud chipCloud = new ChipCloud(context, flexboxDrawable, config);
-        List<RealmTag> tags = mRealm.where(RealmTag.class).equalTo("db", "courses").equalTo("linkId", courseList.get(position).getId()).findAll();
+        List<RealmTag> tags = mRealm.where(RealmTag.class).equalTo("db", "courses").equalTo("linkId", courseList.get(position).id).findAll();
         showTags(tags, chipCloud);
     }
 
@@ -234,8 +241,8 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private void showProgressAndRating(int position, RecyclerView.ViewHolder holder) {
         ViewHoldercourse viewHolder = (ViewHoldercourse) holder;
         showProgress(position, holder);
-        if (map.containsKey(courseList.get(position).getCourseId())) {
-            JsonObject object = map.get(courseList.get(position).getCourseId());
+        if (map.containsKey(courseList.get(position).courseId)) {
+            JsonObject object = map.get(courseList.get(position).courseId);
             showRating(object, viewHolder.rowCourseBinding.average, viewHolder.rowCourseBinding.timesRated, viewHolder.rowCourseBinding.ratingBar);
         } else {
             viewHolder.rowCourseBinding.ratingBar.setRating(0);
@@ -243,8 +250,8 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
     }
 
     private void showProgress(int position, RecyclerView.ViewHolder holder) {
-        if (progressMap.containsKey(courseList.get(position).getCourseId())) {
-            JsonObject ob = progressMap.get(courseList.get(position).getCourseId());
+        if (progressMap.containsKey(courseList.get(position).courseId)) {
+            JsonObject ob = progressMap.get(courseList.get(position).courseId);
             rowCourseBinding.courseProgress.setMax(JsonUtils.getInt("max", ob));
             rowCourseBinding.courseProgress.setProgress(JsonUtils.getInt("current", ob));
             if (JsonUtils.getInt("current", ob) < JsonUtils.getInt("max", ob))
@@ -259,7 +266,7 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
         if (homeItemClickListener != null) {
             Fragment f = new TakeCourseFragment();
             Bundle b = new Bundle();
-            b.putString("id", realm_myCourses.getCourseId());
+            b.putString("id", realm_myCourses.courseId);
             b.putInt("position", i);
             f.setArguments(b);
             homeItemClickListener.openCallFragment(f);
@@ -293,8 +300,8 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
                     int position = getAdapterPosition();
                     if (position != RecyclerView.NO_POSITION && position < courseList.size()) {
-                        if (progressMap.containsKey(courseList.get(getAdapterPosition()).getCourseId())) {
-                            JsonObject ob = progressMap.get(courseList.get(getAdapterPosition()).getCourseId());
+                        if (progressMap.containsKey(courseList.get(getAdapterPosition()).courseId)) {
+                            JsonObject ob = progressMap.get(courseList.get(getAdapterPosition()).courseId);
                             int current = JsonUtils.getInt("current", ob);
                             if (b && i <= current + 1) {
                                 openCourse(courseList.get(getAdapterPosition()), seekBar.getProgress());

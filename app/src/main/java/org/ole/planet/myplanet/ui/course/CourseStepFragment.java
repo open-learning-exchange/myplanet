@@ -42,8 +42,11 @@ import java.util.regex.Pattern;
 import io.noties.markwon.AbstractMarkwonPlugin;
 import io.noties.markwon.Markwon;
 import io.noties.markwon.MarkwonPlugin;
+import io.noties.markwon.html.HtmlPlugin;
 import io.noties.markwon.image.ImagesPlugin;
 import io.noties.markwon.image.file.FileSchemeHandler;
+import io.noties.markwon.image.network.NetworkSchemeHandler;
+import io.noties.markwon.image.network.OkHttpNetworkSchemeHandler;
 import io.noties.markwon.movement.MovementMethodPlugin;
 import io.realm.Case;
 import io.realm.Realm;
@@ -73,13 +76,17 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
         }
         setUserVisibleHint(false);
         markwon = Markwon.builder(context)
+                .usePlugin(HtmlPlugin.create())
                 .usePlugin(ImagesPlugin.create())
                 .usePlugin(MovementMethodPlugin.none())
                 .usePlugin(new AbstractMarkwonPlugin() {
                     @Override
                     public void configure(@NonNull MarkwonPlugin.Registry registry) {
-                        registry.require(ImagesPlugin.class, imagesPlugin ->
-                                imagesPlugin.addSchemeHandler(FileSchemeHandler.create())
+                        registry.require(ImagesPlugin.class, imagesPlugin -> {
+                                    imagesPlugin.addSchemeHandler(FileSchemeHandler.create());
+                                    imagesPlugin.addSchemeHandler(NetworkSchemeHandler.create());
+                                    imagesPlugin.addSchemeHandler(OkHttpNetworkSchemeHandler.create());
+                                }
                         );
                     }
                 })
@@ -142,8 +149,8 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
         markwon.setMarkdown(fragmentCourseStepBinding.description, markdownContentWithLocalPaths);
         fragmentCourseStepBinding.description.setMovementMethod(LinkMovementMethod.getInstance());
       
-        if (!RealmMyCourse.isMyCourse(user.getId(), step.courseId, mRealm)) {
-            fragmentCourseStepBinding.btnTakeTest.setVisibility(View.INVISIBLE);
+        if (!RealmMyCourse.isMyCourse(user.getId(), step.getCourseId(), mRealm)) {
+            fragmentCourseStepBinding.btnTakeTest.setVisibility(View.GONE);
         }
         setListeners();
 
@@ -165,7 +172,7 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
     }
 
     private void hideTestIfNoQuestion() {
-        fragmentCourseStepBinding.btnTakeTest.setVisibility(View.INVISIBLE);
+        fragmentCourseStepBinding.btnTakeTest.setVisibility(View.GONE);
         if (stepExams != null && stepExams.size() > 0) {
             String first_step_id = stepExams.get(0).getId();
             RealmResults<RealmExamQuestion> questions = mRealm.where(RealmExamQuestion.class).equalTo("examId", first_step_id).findAll();
@@ -231,7 +238,7 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
             String relativePath = matcher.group(1);
             String modifiedPath = relativePath.replaceFirst("resources/", "");
             String fullUrl = baseUrl + modifiedPath;
-            matcher.appendReplacement(result, "![](" + fullUrl + ")");
+            matcher.appendReplacement(result, "<img src=" + fullUrl + " width=600 height=350/>");
         }
         matcher.appendTail(result);
 

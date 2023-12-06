@@ -131,15 +131,15 @@ public class FeedbackFragment extends DialogFragment implements View.OnClickList
 
     private void saveData(Realm realm, String urgent, String type, String message) {
         RealmFeedback feedback = realm.createObject(RealmFeedback.class, UUID.randomUUID().toString());
-        feedback.setTitle("Question regarding /");
-        feedback.setOpenTime(new Date().getTime() + "");
-        feedback.setUrl("/");
-        feedback.setOwner(user);
-        feedback.setSource(user);
-        feedback.setStatus("Open");
-        feedback.setPriority(urgent);
-        feedback.setType(type);
-        feedback.setParentCode("dev");
+        feedback.title = "Question regarding /";
+        feedback.openTime = new Date().getTime() + "";
+        feedback.url = "/";
+        feedback.owner = user;
+        feedback.source = user;
+        feedback.status = "Open";
+        feedback.priority = urgent;
+        feedback.type = type;
+        feedback.parentCode = "dev";
         JsonObject object = new JsonObject();
         object.addProperty("message", message);
         object.addProperty("time", new Date().getTime() + "");
@@ -152,17 +152,17 @@ public class FeedbackFragment extends DialogFragment implements View.OnClickList
 
     private void saveData(Realm realm, String urgent, String type, String[] argumentArray) {
         RealmFeedback feedback = realm.createObject(RealmFeedback.class, UUID.randomUUID().toString());
-        feedback.setTitle("Question regarding /" + argumentArray[2]);
-        feedback.setOpenTime(new Date().getTime() + "");
-        feedback.setUrl("/" + argumentArray[2]);
-        feedback.setOwner(user);
-        feedback.setSource(user);
-        feedback.setStatus("Open");
-        feedback.setPriority(urgent);
-        feedback.setType(type);
-        feedback.setParentCode("dev");
-        feedback.setState(argumentArray[2]);
-        feedback.setItem(argumentArray[1]);
+        feedback.title = "Question regarding /" + argumentArray[2];
+        feedback.openTime = new Date().getTime() + "";
+        feedback.url = "/" + argumentArray[2];
+        feedback.owner = user;
+        feedback.source = user;
+        feedback.status = "Open";
+        feedback.priority = urgent;
+        feedback.type = type;
+        feedback.parentCode = "dev";
+        feedback.state = argumentArray[2];
+        feedback.item = argumentArray[1];
         JsonObject object = new JsonObject();
         object.addProperty("message", argumentArray[0]);
         object.addProperty("time", new Date().getTime() + "");
