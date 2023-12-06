@@ -51,7 +51,7 @@ public class Utilities {
     }
 
     public static String getUrl(RealmMyLibrary library, SharedPreferences settings) {
-        return getUrl(library.getResource_id(), library.getResourceLocalAddress(), settings);
+        return getUrl(library.resourceId, library.resourceLocalAddress, settings);
 
     }
 

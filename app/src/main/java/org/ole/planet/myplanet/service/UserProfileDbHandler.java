@@ -104,8 +104,8 @@ public class UserProfileDbHandler {
         if (!mRealm.isInTransaction()) mRealm.beginTransaction();
         RealmResourceActivity offlineActivities = mRealm.copyToRealm(createResourceUser(model));
         offlineActivities.setType(type);
-        offlineActivities.setTitle(item.getTitle());
-        offlineActivities.setResourceId(item.getResource_id());
+        offlineActivities.setTitle(item.title);
+        offlineActivities.setResourceId(item.resourceId);
         offlineActivities.setTime(new Date().getTime());
         mRealm.commitTransaction();
         Utilities.log("Set resource open");

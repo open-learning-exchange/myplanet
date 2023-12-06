@@ -66,7 +66,7 @@ public class TeamResourceFragment extends BaseTeamFragment implements TeamPageLi
             for (Integer se : selected) {
                 RealmMyTeam team = mRealm.createObject(RealmMyTeam.class, UUID.randomUUID().toString());
                 team.setTeamId(teamId);
-                team.setTitle(libraries.get(se).getTitle());
+                team.setTitle(libraries.get(se).title);
                 team.setSourcePlanet(user.getParentCode());
                 team.setResourceId(libraries.get(se).get_id());
                 team.setDocType("resourceLink");
@@ -86,7 +86,7 @@ public class TeamResourceFragment extends BaseTeamFragment implements TeamPageLi
     private void listSetting(AlertDialog alertDialog, List<RealmMyLibrary> libraries, CheckboxListView lv) {
         ArrayList<String> names = new ArrayList<>();
         for (int i = 0; i < libraries.size(); i++) {
-            names.add(libraries.get(i).getTitle());
+            names.add(libraries.get(i).title);
         }
         ArrayAdapter<String> adapter = new ArrayAdapter<>(getActivity(), R.layout.rowlayout, R.id.checkBoxRowLayout, names);
         lv.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);

@@ -367,7 +367,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     public void openLibraryDetailFragment(RealmMyLibrary library) {
         Fragment f = new LibraryDetailFragment();
         Bundle b = new Bundle();
-        b.putString("libraryId", library.getResource_id());
+        b.putString("libraryId", library.resourceId);
         b.putString("openFrom", "Dashboard");
         f.setArguments(b);
         openCallFragment(f);
