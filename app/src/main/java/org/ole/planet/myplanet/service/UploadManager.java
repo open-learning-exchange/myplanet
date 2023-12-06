@@ -449,12 +449,12 @@ public class UploadManager extends FileUploadService {
             final RealmResults<RealmNews> activities = realm.where(RealmNews.class).findAll();
             for (RealmNews act : activities) {
                 try {
-                    if (act.getUserId().startsWith("guest")) continue;
+                    if (act.userId.startsWith("guest")) continue;
                     JsonObject object = RealmNews.serializeNews(act, userModel);
                     JsonArray image = act.getImagesArray();
                     RealmUserModel user = realm.where(RealmUserModel.class).equalTo("id", pref.getString("userId", "")).findFirst();
-                    if (act.getImageUrls() != null) {
-                        for (String imageobject : act.getImageUrls()) {
+                    if (act.imageUrls != null) {
+                        for (String imageobject : act.imageUrls) {
                             JsonObject imgObject = new Gson().fromJson(imageobject, JsonObject.class);
                             JsonObject ob = createImage(user, imgObject);
                             JsonObject response = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/resources", ob).execute().body();
@@ -481,7 +481,7 @@ public class UploadManager extends FileUploadService {
                             image.add(resourceObject);
                         }
                     }
-                    act.setImages(new Gson().toJson(image));
+                    act.images = new Gson().toJson(image);
                     object.add("images", image);
                     Response<JsonObject> newsUploadResponse;
                     if (TextUtils.isEmpty(act.get_id())) {
@@ -490,7 +490,7 @@ public class UploadManager extends FileUploadService {
                         newsUploadResponse = apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/news/" + act.get_id(), object).execute();
                     }
                     if (newsUploadResponse.body() != null) {
-                        act.getImageUrls().clear();
+                        act.imageUrls.clear();
                         act.set_id(JsonUtils.getString("id", newsUploadResponse.body()));
                         act.set_rev(JsonUtils.getString("rev", newsUploadResponse.body()));
                     }
