@@ -256,10 +256,10 @@ public class EditAchievementFragment extends BaseContainerFragment implements Da
         } else {
             achievementArray = achievement.getAchievementsArray();
             referenceArray = achievement.getreferencesArray();
-            fragmentEditAchievementBinding.etAchievement.setText(achievement.getAchievementsHeader());
-            fragmentEditAchievementBinding.etPurpose.setText(achievement.getPurpose());
-            fragmentEditAchievementBinding.etGoals.setText(achievement.getGoals());
-            fragmentEditAchievementBinding.cbSendToNation.setChecked(Boolean.parseBoolean(achievement.getSendToNation()));
+            fragmentEditAchievementBinding.etAchievement.setText(achievement.achievementsHeader);
+            fragmentEditAchievementBinding.etPurpose.setText(achievement.purpose);
+            fragmentEditAchievementBinding.etGoals.setText(achievement.goals);
+            fragmentEditAchievementBinding.cbSendToNation.setChecked(Boolean.parseBoolean(achievement.sendToNation));
         }
         fragmentEditAchievementBinding.txtDob.setText(TextUtils.isEmpty(user.getDob()) ? getString(R.string.birth_date) : TimeUtils.getFormatedDate(user.getDob(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"));
         resourceArray = new JsonArray();
@@ -299,11 +299,11 @@ public class EditAchievementFragment extends BaseContainerFragment implements Da
     public void setUserInfo() {}
 
     public void setAchievementInfo() {
-        achievement.setAchievementsHeader(fragmentEditAchievementBinding.etAchievement.getText().toString().trim());
-        achievement.setGoals(fragmentEditAchievementBinding.etGoals.getText().toString().trim());
-        achievement.setPurpose(fragmentEditAchievementBinding.etPurpose.getText().toString().trim());
+        achievement.achievementsHeader = fragmentEditAchievementBinding.etAchievement.getText().toString().trim();
+        achievement.goals = fragmentEditAchievementBinding.etGoals.getText().toString().trim();
+        achievement.purpose = fragmentEditAchievementBinding.etPurpose.getText().toString().trim();
         achievement.setAchievements(achievementArray);
         achievement.setreferences(referenceArray);
-        achievement.setSendToNation(fragmentEditAchievementBinding.cbSendToNation.isChecked() + "");
+        achievement.sendToNation = fragmentEditAchievementBinding.cbSendToNation.isChecked() + "";
     }
 }

@@ -111,7 +111,7 @@ public class UploadToShelfService {
     private void updateHealthData(Realm realm, RealmUserModel model) {
         List<RealmMyHealthPojo> list = realm.where(RealmMyHealthPojo.class).equalTo("_id", model.getId()).findAll();
         for (RealmMyHealthPojo p : list) {
-            p.setUserId(model.get_id());
+            p.userId = model.get_id();
         }
     }
 
@@ -180,7 +180,7 @@ public class UploadToShelfService {
                     Response<JsonObject> res = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/health", RealmMyHealthPojo.serialize(pojo)).execute();
                     if (res.body() != null && res.body().has("id")) {
                         pojo.set_rev(res.body().get("rev").getAsString());
-                        pojo.setIsUpdated(false);
+                        pojo.isUpdated = false;
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
