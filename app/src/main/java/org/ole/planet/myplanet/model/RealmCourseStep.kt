@@ -100,7 +100,9 @@ open class RealmCourseStep : RealmObject() {
 
         fun insertCourseStepsAttachments(myCoursesID: String?, stepId: String?, resources: JsonArray, mRealm: Realm?) {
             for (i in 0 until resources.size()) {
-                RealmMyLibrary.createStepResource(mRealm, resources[i].asJsonObject, myCoursesID, stepId)
+                if (mRealm != null) {
+                    RealmMyLibrary.createStepResource(mRealm, resources[i].asJsonObject, myCoursesID, stepId)
+                }
             }
         }
     }

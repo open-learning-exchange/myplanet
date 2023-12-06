@@ -149,7 +149,7 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
         markwon.setMarkdown(fragmentCourseStepBinding.description, markdownContentWithLocalPaths);
         fragmentCourseStepBinding.description.setMovementMethod(LinkMovementMethod.getInstance());
       
-        if (!RealmMyCourse.isMyCourse(user.getId(), step.getCourseId(), mRealm)) {
+        if (!RealmMyCourse.isMyCourse(user.getId(), step.courseId, mRealm)) {
             fragmentCourseStepBinding.btnTakeTest.setVisibility(View.GONE);
         }
         setListeners();
