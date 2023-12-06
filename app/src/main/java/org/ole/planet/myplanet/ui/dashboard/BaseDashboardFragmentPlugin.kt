@@ -120,7 +120,9 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
             itemMyLifeBinding.tvCount.visibility = View.GONE
         }
 
-        handleClickMyLife(title, v)
+        if (title != null) {
+            handleClickMyLife(title, v)
+        }
         return v
     }
 
