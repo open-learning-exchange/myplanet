@@ -7,6 +7,8 @@ import android.content.SharedPreferences;
 import android.text.TextUtils;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -197,7 +199,7 @@ public class Service {
                                 @Override
                                 public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
                                     if (response.body() != null && response.body().has("id")) {
-                                        retrofitInterface.putDoc(null, "application/json", Utilities.getUrl() + "/shelf/org.couchdb.user:" + obj.get("name").getAsString(), new JsonObject());
+                                        uploadToShelf(obj);
                                         saveUserToDb(realm, response.body().get("id").getAsString(), obj, callback);
                                     } else {
                                         callback.onSuccess("Unable to create user");
@@ -238,6 +240,26 @@ public class Service {
                 }
             }
         });
+    }
+
+    private void uploadToShelf(JsonObject obj) {
+        ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
+        retrofitInterface.putDoc(null, "application/json", Utilities.getUrl() + "/shelf/org.couchdb.user:" + obj.get("name").getAsString(), new JsonObject()).enqueue(new Callback<JsonObject>() {
+            @Override
+            public void onResponse(@NonNull Call<JsonObject> call, @NonNull Response<JsonObject> response) {
+                if (response.isSuccessful()) {
+                    Utilities.log("Successful uploaded to shelf");
+                } else {
+                    Utilities.log("Failed to upload to shelf");
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<JsonObject> call, @NonNull Throwable t) {
+                Utilities.log(t.getMessage());
+            }
+        });
+
     }
 
     private void saveUserToDb(Realm realm, String id, JsonObject obj, CreateUserCallback callback) {

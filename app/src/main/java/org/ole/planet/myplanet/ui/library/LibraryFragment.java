@@ -9,12 +9,10 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
-import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.Spinner;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
@@ -50,7 +48,6 @@ import java.util.UUID;
 import fisk.chipcloud.ChipCloud;
 import fisk.chipcloud.ChipCloudConfig;
 import fisk.chipcloud.ChipDeletedListener;
-import io.realm.Sort;
 
 public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implements OnLibraryItemSelected, ChipDeletedListener, TagClickListener, OnFilterListener {
     TextView tvAddToLib, tvSelected;
@@ -185,11 +182,11 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         String msg = getString(R.string.success_you_have_added_these_resources_to_your_mylibrary);
         if (selectedItems.size() <= 5) {
             for (int i = 0; i < selectedItems.size(); i++) {
-                msg += " - " + selectedItems.get(i).getTitle() + "\n";
+                msg += " - " + selectedItems.get(i).title + "\n";
             }
         } else {
             for (int i = 0; i < 5; i++) {
-                msg += " - " + selectedItems.get(i).getTitle() + "\n";
+                msg += " - " + selectedItems.get(i).title + "\n";
             }
             msg += getString(R.string.and) + (selectedItems.size() - 5) + getString(R.string.more_resource_s);
         }
