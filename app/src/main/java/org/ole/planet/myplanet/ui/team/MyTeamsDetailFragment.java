@@ -168,13 +168,13 @@ public class MyTeamsDetailFragment extends BaseNewsFragment {
             mRealm.beginTransaction();
         }
         RealmTeamLog log = mRealm.createObject(RealmTeamLog.class, UUID.randomUUID().toString());
-        log.setTeamId(teamId);
-        log.setUser(user.getName());
-        log.setCreatedOn(user.getPlanetCode());
-        log.setType("teamVisit");
-        log.setTeamType(team.getTeamType());
-        log.setParentCode(user.getParentCode());
-        log.setTime(new Date().getTime());
+        log.teamId = teamId;
+        log.user = user.getName();
+        log.createdOn = user.getPlanetCode();
+        log.type = "teamVisit";
+        log.teamType = team.getTeamType();
+        log.parentCode = user.getParentCode();
+        log.time = new Date().getTime();
         mRealm.commitTransaction();
     }
 
