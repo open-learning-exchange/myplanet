@@ -43,14 +43,15 @@ import retrofit2.Response;
 public class Service {
     private Context context;
     private SharedPreferences preferences;
+    private ApiInterface retrofitInterface;
 
     public Service(Context context) {
         this.context = context;
         preferences = context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
+        retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
     }
 
     public void healthAccess(SuccessListener listener) {
-        ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
         retrofitInterface.healthAccess(Utilities.getHealthAccessUrl(preferences)).enqueue(new Callback<ResponseBody>() {
             @Override
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
@@ -69,7 +70,6 @@ public class Service {
     }
 
     public void checkCheckSum(ChecksumCallback callback, String path) {
-        ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
         retrofitInterface.getChecksum(Utilities.getChecksumUrl(preferences)).enqueue(new Callback<ResponseBody>() {
             @Override
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
@@ -101,7 +101,6 @@ public class Service {
     }
 
     public void checkVersion(CheckVersionCallback callback, SharedPreferences settings) {
-        ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
         if (settings.getString("couchdbURL", "").isEmpty()) {
             callback.onError(context.getString(R.string.config_not_available), true);
             return;
@@ -167,7 +166,6 @@ public class Service {
     }
 
     public void isPlanetAvailable(PlanetAvailableListener callback) {
-        ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
         retrofitInterface.isPlanetAvailable(Utilities.getUpdateUrl(preferences)).enqueue(new Callback<ResponseBody>() {
             @Override
             public void onResponse(Call<ResponseBody> call, retrofit2.Response<ResponseBody> response) {
@@ -188,7 +186,6 @@ public class Service {
     public void becomeMember(Realm realm, JsonObject obj, CreateUserCallback callback) {
         isPlanetAvailable(new PlanetAvailableListener() {
             public void isAvailable() {
-                ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
                 retrofitInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/_users/org.couchdb.user:" + obj.get("name").getAsString()).enqueue(new Callback<JsonObject>() {
                     @Override
                     public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {
@@ -243,7 +240,6 @@ public class Service {
     }
 
     private void uploadToShelf(JsonObject obj) {
-        ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
         retrofitInterface.putDoc(null, "application/json", Utilities.getUrl() + "/shelf/org.couchdb.user:" + obj.get("name").getAsString(), new JsonObject()).enqueue(new Callback<JsonObject>() {
             @Override
             public void onResponse(@NonNull Call<JsonObject> call, @NonNull Response<JsonObject> response) {
@@ -265,7 +261,6 @@ public class Service {
     private void saveUserToDb(Realm realm, String id, JsonObject obj, CreateUserCallback callback) {
         SharedPreferences settings = MainApplication.context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
         realm.executeTransactionAsync(realm1 -> {
-            ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
             try {
                 Response<JsonObject> res = retrofitInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/_users/" + id).execute();
                 if (res.body() != null) {
@@ -283,7 +278,6 @@ public class Service {
     }
 
     public void syncPlanetServers(Realm realm, SuccessListener callback) {
-        ApiInterface retrofitInterface = ApiClient.getClient().create(ApiInterface.class);
         retrofitInterface.getJsonObject("", "https://planet.earth.ole.org/db/communityregistrationrequests/_all_docs?include_docs=true").enqueue(new Callback<JsonObject>() {
             @Override
             public void onResponse(Call<JsonObject> call, Response<JsonObject> response) {

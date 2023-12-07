@@ -25,8 +25,8 @@ import retrofit2.Response;
 
 public class FileUploadService {
     public void uploadAttachment(String id, String rev, RealmMyPersonal personal, SuccessListener listener) {
-        File f = new File(personal.getPath());
-        String name = FileUtils.getFileNameFromUrl(personal.getPath());
+        File f = new File(personal.path);
+        String name = FileUtils.getFileNameFromUrl(personal.path);
 
         upload_doc(id, rev, "%s/resources/%s/%s", f, name, listener);
     }
