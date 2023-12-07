@@ -74,7 +74,7 @@ public class AddResourceActivity extends AppCompatActivity {
         mRealm.executeTransactionAsync(realm -> {
             String id = UUID.randomUUID().toString();
             RealmMyLibrary resource = realm.createObject(RealmMyLibrary.class, id);
-            resource.setTitle(title);
+            resource.title = title;
             createResource(resource, id);
         }, () -> {
             Utilities.toast(AddResourceActivity.this, getString(R.string.resource_saved_successfully));
@@ -83,25 +83,25 @@ public class AddResourceActivity extends AppCompatActivity {
     }
 
     private void createResource(RealmMyLibrary resource, String id) {
-        resource.setAddedBy(activityAddResourceBinding.tvAddedBy.getText().toString().trim());
-        resource.setAuthor(activityAddResourceBinding.etAuthor.getText().toString().trim());
-        resource.setResource_id(id);
-        resource.setYear(activityAddResourceBinding.etYear.getText().toString().trim());
-        resource.setDescription(activityAddResourceBinding.etDescription.getText().toString().trim());
+        resource.addedBy = activityAddResourceBinding.tvAddedBy.getText().toString().trim();
+        resource.author = activityAddResourceBinding.etAuthor.getText().toString().trim();
+        resource.resourceId = id;
+        resource.year = activityAddResourceBinding.etYear.getText().toString().trim();
+        resource.description = activityAddResourceBinding.etDescription.getText().toString().trim();
         resource.setPublisher(activityAddResourceBinding.etPublisher.getText().toString().trim());
-        resource.setLinkToLicense(activityAddResourceBinding.etLinkToLicense.getText().toString().trim());
-        resource.setOpenWith(activityAddResourceBinding.spnOpenWith.getSelectedItem().toString());
-        resource.setLanguage(activityAddResourceBinding.spnLang.getSelectedItem().toString());
-        resource.setMediaType(activityAddResourceBinding.spnMedia.getSelectedItem().toString());
-        resource.setResourceType(activityAddResourceBinding.spnResourceType.getSelectedItem().toString());
-        resource.setSubject(subjects);
+        resource.linkToLicense = activityAddResourceBinding.etLinkToLicense.getText().toString().trim();
+        resource.openWith = activityAddResourceBinding.spnOpenWith.getSelectedItem().toString();
+        resource.language = activityAddResourceBinding.spnLang.getSelectedItem().toString();
+        resource.mediaType = activityAddResourceBinding.spnMedia.getSelectedItem().toString();
+        resource.resourceType = activityAddResourceBinding.spnResourceType.getSelectedItem().toString();
+        resource.subject = subjects;
         resource.setUserId(new RealmList<>());
-        resource.setLevel(levels);
-        resource.setCreatedDate(String.valueOf(Calendar.getInstance().getTimeInMillis()));
-        resource.setResourceFor(resourceFor);
-        resource.setResourceLocalAddress(resourceUrl);
-        resource.setResourceOffline(true);
-        resource.setFilename(resourceUrl.substring(resourceUrl.lastIndexOf("/")));
+        resource.level = levels;
+        resource.createdDate = String.valueOf(Calendar.getInstance().getTimeInMillis());
+        resource.resourceFor = resourceFor;
+        resource.resourceLocalAddress = resourceUrl;
+        resource.resourceOffline = true;
+        resource.filename = resourceUrl.substring(resourceUrl.lastIndexOf("/"));
     }
 
     private boolean validate(String title) {

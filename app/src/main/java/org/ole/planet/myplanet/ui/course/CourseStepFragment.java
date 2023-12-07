@@ -109,21 +109,22 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
 
     public void saveCourseProgress() {
         if (!mRealm.isInTransaction()) mRealm.beginTransaction();
-        RealmCourseProgress courseProgress = mRealm.where(RealmCourseProgress.class).equalTo("courseId", step.getCourseId()).equalTo("userId", user.getId()).equalTo("stepNum", stepNumber).findFirst();
+        RealmCourseProgress courseProgress = mRealm.where(RealmCourseProgress.class).equalTo("courseId", step.courseId).equalTo("userId", user.getId()).equalTo("stepNum", stepNumber).findFirst();
         if (courseProgress == null) {
             courseProgress = mRealm.createObject(RealmCourseProgress.class, UUID.randomUUID().toString());
-            courseProgress.setCreatedDate(new Date().getTime());
+            courseProgress.createdDate = new Date().getTime();
         }
-        courseProgress.setCourseId(step.getCourseId());
-        courseProgress.setStepNum(stepNumber);
+
+        courseProgress.courseId = step.courseId;
+        courseProgress.stepNum = stepNumber;
 
         if (stepExams.size() == 0) {
-            courseProgress.setPassed(true);
+            courseProgress.passed = true;
         }
-        courseProgress.setCreatedOn(user.getPlanetCode());
-        courseProgress.setUpdatedDate(new Date().getTime());
-        courseProgress.setParentCode(user.getParentCode());
-        courseProgress.setUserId(user.getId());
+        courseProgress.createdOn = user.getPlanetCode();
+        courseProgress.updatedDate = new Date().getTime();
+        courseProgress.parentCode = user.getParentCode();
+        courseProgress.userId = user.getId();
         mRealm.commitTransaction();
     }
 
@@ -143,12 +144,12 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
         stepExams = mRealm.where(RealmStepExam.class).equalTo("stepId", stepId).findAll();
         if (resources != null) fragmentCourseStepBinding.btnResources.setText(getString(R.string.resources) + " ["+ resources.size() + "]");
         hideTestIfNoQuestion();
-        fragmentCourseStepBinding.tvTitle.setText(step.getStepTitle());
-        String markdownContentWithLocalPaths = prependBaseUrlToImages(step.getDescription(), "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/");
+        fragmentCourseStepBinding.tvTitle.setText(step.stepTitle);
+        String markdownContentWithLocalPaths = prependBaseUrlToImages(step.description, "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/");
         markwon.setMarkdown(fragmentCourseStepBinding.description, markdownContentWithLocalPaths);
         fragmentCourseStepBinding.description.setMovementMethod(LinkMovementMethod.getInstance());
       
-        if (!RealmMyCourse.isMyCourse(user.getId(), step.getCourseId(), mRealm)) {
+        if (!RealmMyCourse.isMyCourse(user.getId(), step.courseId, mRealm)) {
             fragmentCourseStepBinding.btnTakeTest.setVisibility(View.GONE);
         }
         setListeners();
@@ -175,7 +176,7 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
         if (stepExams != null && stepExams.size() > 0) {
             String first_step_id = stepExams.get(0).getId();
             RealmResults<RealmExamQuestion> questions = mRealm.where(RealmExamQuestion.class).equalTo("examId", first_step_id).findAll();
-            long submissionsCount = mRealm.where(RealmSubmission.class).contains("parentId", step.getCourseId()).notEqualTo("status", "pending", Case.INSENSITIVE).count();
+            long submissionsCount = mRealm.where(RealmSubmission.class).contains("parentId", step.courseId).notEqualTo("status", "pending", Case.INSENSITIVE).count();
 
             if (questions != null && questions.size() > 0) {
                 fragmentCourseStepBinding.btnTakeTest.setText((submissionsCount > 0 ? getString(R.string.retake_test) : getString(R.string.take_test)) + " [" + stepExams.size() + "]");
@@ -188,7 +189,7 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
     public void setMenuVisibility(final boolean visible) {
         super.setMenuVisibility(visible);
         try {
-            if (visible && RealmMyCourse.isMyCourse(user.getId(), step.getCourseId(), mRealm)) {
+            if (visible && RealmMyCourse.isMyCourse(user.getId(), step.courseId, mRealm)) {
                 saveCourseProgress();
             }
         } catch (Exception e) {

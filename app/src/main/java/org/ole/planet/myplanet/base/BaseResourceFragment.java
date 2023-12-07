@@ -190,7 +190,7 @@ public abstract class BaseResourceFragment extends Fragment {
         lv = convertView.findViewById(R.id.alertDialog_listView);
         ArrayList<String> names = new ArrayList<>();
         for (int i = 0; i < db_myLibrary.size(); i++) {
-            names.add(db_myLibrary.get(i).getTitle());
+            names.add(db_myLibrary.get(i).title);
         }
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(getActivity().getBaseContext(), R.layout.rowlayout, R.id.checkBoxRowLayout, names);
         lv.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
@@ -259,14 +259,14 @@ public abstract class BaseResourceFragment extends Fragment {
 
     public void removeFromShelf(RealmObject object) {
         if (object instanceof RealmMyLibrary) {
-            RealmMyLibrary myObject = mRealm.where(RealmMyLibrary.class).equalTo("resourceId", ((RealmMyLibrary) object).getResource_id()).findFirst();
+            RealmMyLibrary myObject = mRealm.where(RealmMyLibrary.class).equalTo("resourceId", ((RealmMyLibrary) object).resourceId).findFirst();
             myObject.removeUserId(model.getId());
-            RealmRemovedLog.onRemove(mRealm, "resources", model.getId(), ((RealmMyLibrary) object).getResource_id());
+            RealmRemovedLog.onRemove(mRealm, "resources", model.getId(), ((RealmMyLibrary) object).resourceId);
             Utilities.toast(getActivity(), getString(R.string.removed_from_mylibrary));
         } else {
-            RealmMyCourse myObject = RealmMyCourse.getMyCourse(mRealm, ((RealmMyCourse) object).getCourseId());
+            RealmMyCourse myObject = RealmMyCourse.getMyCourse(mRealm, ((RealmMyCourse) object).courseId);
             myObject.removeUserId(model.getId());
-            RealmRemovedLog.onRemove(mRealm, "courses", model.getId(), ((RealmMyCourse) object).getCourseId());
+            RealmRemovedLog.onRemove(mRealm, "courses", model.getId(), ((RealmMyCourse) object).courseId);
             Utilities.toast(getActivity(), getString(R.string.removed_from_mycourse));
         }
     }
