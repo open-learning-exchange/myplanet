@@ -11,6 +11,7 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -69,7 +70,7 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         fragmentTeamTaskBinding = FragmentTeamTaskBinding.inflate(inflater, container, false);
         fragmentTeamTaskBinding.fab.setOnClickListener(view -> showTaskAlert(null));
         return fragmentTeamTaskBinding.getRoot();
@@ -114,7 +115,7 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
         t.description = desc;
         t.deadline = deadline.getTimeInMillis();
         t.teamId = teamId;
-        t.setUpdated(true);
+        t.isUpdated = true;
         JsonObject ob = new JsonObject();
         ob.addProperty("teams", teamId);
         t.link = new Gson().toJson(ob);
@@ -159,8 +160,8 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
     public void onCheckChange(RealmTeamTask realmTeamTask, boolean b) {
         Utilities.log("CHECK CHANGED");
         if (!mRealm.isInTransaction()) mRealm.beginTransaction();
-        realmTeamTask.setCompleted(b);
-        realmTeamTask.setUpdated(true);
+        realmTeamTask.completed = b;
+        realmTeamTask.isUpdated = true;
         realmTeamTask.completedTime = new Date().getTime();
         mRealm.commitTransaction();
         try {

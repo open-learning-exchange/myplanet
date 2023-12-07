@@ -36,7 +36,7 @@ open class RealmTeamTask : RealmObject() {
     @JvmField
     var status: String? = null
     @JvmField
-    var isCompleted = false
+    var completed = false
     @JvmField
     var isNotified = false
 
@@ -63,7 +63,7 @@ open class RealmTeamTask : RealmObject() {
                 task.teamId = JsonUtils.getString("teams", JsonUtils.getJsonObject("link", obj))
                 val user = JsonUtils.getJsonObject("assignee", obj)
                 if (user.has("_id")) task.assignee = JsonUtils.getString("_id", user)
-                task.isCompleted = JsonUtils.getBoolean("completed", obj)
+                task.completed = JsonUtils.getBoolean("completed", obj)
             }
         }
 
@@ -77,7 +77,7 @@ open class RealmTeamTask : RealmObject() {
             `object`.addProperty("title", task.title)
             `object`.addProperty("deadline", task.deadline)
             `object`.addProperty("description", task.description)
-            `object`.addProperty("completed", task.isCompleted)
+            `object`.addProperty("completed", task.completed)
             `object`.addProperty("completedTime", task.completedTime)
             val user = realm.where(RealmUserModel::class.java).equalTo("id", task.assignee).findFirst()
             if (user != null) `object`.add("assignee", user.serialize())

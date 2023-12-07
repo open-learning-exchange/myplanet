@@ -47,9 +47,9 @@ public class AdapterTask extends RecyclerView.Adapter<AdapterTask.ViewHolderTask
     @Override
     public void onBindViewHolder(@NonNull ViewHolderTask holder, int position) {
         rowTaskBinding.checkbox.setText(list.get(position).title);
-        rowTaskBinding.checkbox.setChecked(list.get(position).isCompleted());
+        rowTaskBinding.checkbox.setChecked(list.get(position).completed);
         Utilities.log(list.get(position).deadline + "");
-        rowTaskBinding.deadline.setText(context.getString(R.string.deadline_colon) + TimeUtils.formatDate(list.get(position).deadline) + (list.get(position).isCompleted() ? context.getString(R.string.completed_colon) + TimeUtils.formatDate(list.get(position).completedTime) : ""));
+        rowTaskBinding.deadline.setText(context.getString(R.string.deadline_colon) + TimeUtils.formatDate(list.get(position).deadline) + (list.get(position).completed ? context.getString(R.string.completed_colon) + TimeUtils.formatDate(list.get(position).completedTime) : ""));
         showAssignee(holder, list.get(position));
         rowTaskBinding.checkbox.setOnCheckedChangeListener((compoundButton, b) -> {
             if (listener != null) listener.onCheckChange(list.get(position), b);
