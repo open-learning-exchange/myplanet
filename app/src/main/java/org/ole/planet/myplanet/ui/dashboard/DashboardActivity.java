@@ -377,7 +377,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     public void sendSurvey(RealmStepExam current) {
         SendSurveyFragment f = new SendSurveyFragment();
         Bundle b = new Bundle();
-        b.putString("surveyId", current.getId());
+        b.putString("surveyId", current.id);
         f.setArguments(b);
 
         f.show(getSupportFragmentManager(), "");

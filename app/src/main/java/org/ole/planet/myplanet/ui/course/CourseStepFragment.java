@@ -174,7 +174,7 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
     private void hideTestIfNoQuestion() {
         fragmentCourseStepBinding.btnTakeTest.setVisibility(View.GONE);
         if (stepExams != null && stepExams.size() > 0) {
-            String first_step_id = stepExams.get(0).getId();
+            String first_step_id = stepExams.get(0).id;
             RealmResults<RealmExamQuestion> questions = mRealm.where(RealmExamQuestion.class).equalTo("examId", first_step_id).findAll();
             long submissionsCount = mRealm.where(RealmSubmission.class).contains("parentId", step.courseId).notEqualTo("status", "pending", Case.INSENSITIVE).count();
 

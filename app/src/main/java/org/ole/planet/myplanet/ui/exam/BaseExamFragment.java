@@ -127,7 +127,7 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
     }
 
     private void saveCourseProgress() {
-        RealmCourseProgress progress = mRealm.where(RealmCourseProgress.class).equalTo("courseId", exam.getCourseId()).equalTo("stepNum", stepNumber).findFirst();
+        RealmCourseProgress progress = mRealm.where(RealmCourseProgress.class).equalTo("courseId", exam.courseId).equalTo("stepNum", stepNumber).findFirst();
         if (progress != null) {
             if (!mRealm.isInTransaction()) mRealm.beginTransaction();
             progress.passed = sub.getStatus().equals("graded");
@@ -136,7 +136,7 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
     }
 
     private void showUserInfoDialog() {
-        if (!isMySurvey && !exam.isFromNation()) {
+        if (!isMySurvey && !exam.isFromNation) {
             UserInformationFragment.getInstance(sub.getId()).show(getChildFragmentManager(), "");
         } else {
             if (!mRealm.isInTransaction()) mRealm.beginTransaction();
@@ -182,8 +182,8 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
         mRealm.beginTransaction();
         RealmSubmitPhotos submit = mRealm.createObject(RealmSubmitPhotos.class, UUID.randomUUID().toString());
         submit.setSubmissionId(submit_id);
-        submit.setExamId(exam.getId());
-        submit.setCourseId(exam.getCourseId());
+        submit.setExamId(exam.id);
+        submit.setCourseId(exam.courseId);
         submit.setMemberId(user.getId());
         submit.setDate(date);
         submit.setUniqueId(unique_id);

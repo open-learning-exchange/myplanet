@@ -143,7 +143,7 @@ public abstract class BaseRecyclerFragment<LI> extends BaseRecyclerParentFragmen
             mRealm.where(RealmCourseProgress.class).equalTo("courseId", ((RealmMyCourse) object).courseId).findAll().deleteAllFromRealm();
             List<RealmStepExam> examList = mRealm.where(RealmStepExam.class).equalTo("courseId", ((RealmMyCourse) object).courseId).findAll();
             for (RealmStepExam exam : examList) {
-                mRealm.where(RealmSubmission.class).equalTo("parentId", exam.getId()).notEqualTo("type", "survey").equalTo("uploaded", false).findAll().deleteAllFromRealm();
+                mRealm.where(RealmSubmission.class).equalTo("parentId", exam.id).notEqualTo("type", "survey").equalTo("uploaded", false).findAll().deleteAllFromRealm();
             }
         }
     }

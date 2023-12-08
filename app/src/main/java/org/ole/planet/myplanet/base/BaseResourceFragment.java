@@ -141,7 +141,7 @@ public abstract class BaseResourceFragment extends Fragment {
                 if (convertView == null)
                     convertView = LayoutInflater.from(getActivity()).inflate(android.R.layout.simple_list_item_1, null);
                 if (exams.containsKey(((RealmSubmission) getItem(position)).getParentId()))
-                    ((TextView) convertView).setText(exams.get(list.get(position).getParentId()).getName());
+                    ((TextView) convertView).setText(exams.get(list.get(position).getParentId()).name);
                 else {
                     ((TextView) convertView).setText(R.string.n_a);
                 }
