@@ -181,15 +181,15 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
     public void insert_into_submitPhotos(String submit_id) {
         mRealm.beginTransaction();
         RealmSubmitPhotos submit = mRealm.createObject(RealmSubmitPhotos.class, UUID.randomUUID().toString());
-        submit.setSubmissionId(submit_id);
-        submit.setExamId(exam.getId());
-        submit.setCourseId(exam.getCourseId());
-        submit.setMemberId(user.getId());
-        submit.setDate(date);
-        submit.setUniqueId(unique_id);
-        submit.setPhotoLocation(photo_path);
-        submit.setUploaded(false);
-        Utilities.log(submit.getPhotoLocation());
+        submit.submissionId = submit_id;
+        submit.examId = exam.getId();
+        submit.courseId = exam.getCourseId();
+        submit.memberId = user.getId();
+        submit.date = date;
+        submit.uniqueId = unique_id;
+        submit.photoLocation = photo_path;
+        submit.uploaded = false;
+        Utilities.log(submit.photoLocation);
         Utilities.log("insert_into_submitPhotos");
         mRealm.commitTransaction();
     }
