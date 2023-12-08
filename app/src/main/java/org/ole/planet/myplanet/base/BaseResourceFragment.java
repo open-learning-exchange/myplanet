@@ -140,15 +140,15 @@ public abstract class BaseResourceFragment extends Fragment {
             public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
                 if (convertView == null)
                     convertView = LayoutInflater.from(getActivity()).inflate(android.R.layout.simple_list_item_1, null);
-                if (exams.containsKey(((RealmSubmission) getItem(position)).getParentId()))
-                    ((TextView) convertView).setText(exams.get(list.get(position).getParentId()).getName());
+                if (exams.containsKey(((RealmSubmission) getItem(position)).parentId))
+                    ((TextView) convertView).setText(exams.get(list.get(position).parentId).getName());
                 else {
                     ((TextView) convertView).setText(R.string.n_a);
                 }
                 return convertView;
             }
         };
-        new AlertDialog.Builder(getActivity()).setTitle("Pending Surveys").setAdapter(arrayAdapter, (dialogInterface, i) -> AdapterMySubmission.openSurvey(homeItemClickListener, list.get(i).getId(), true)).setPositiveButton(R.string.dismiss, null).show();
+        new AlertDialog.Builder(getActivity()).setTitle("Pending Surveys").setAdapter(arrayAdapter, (dialogInterface, i) -> AdapterMySubmission.openSurvey(homeItemClickListener, list.get(i).id, true)).setPositiveButton(R.string.dismiss, null).show();
     }
 
     public void startDownload(ArrayList urls) {
