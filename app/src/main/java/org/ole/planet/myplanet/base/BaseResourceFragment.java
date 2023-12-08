@@ -280,7 +280,7 @@ public abstract class BaseResourceFragment extends Fragment {
     public void showTagText(List<RealmTag> list, TextView tvSelected) {
         StringBuilder selected = new StringBuilder(getString(R.string.selected));
         for (RealmTag tags : list) {
-            selected.append(tags.getName()).append(",");
+            selected.append(tags.name).append(",");
         }
         tvSelected.setText(selected.subSequence(0, selected.length() - 1));
     }

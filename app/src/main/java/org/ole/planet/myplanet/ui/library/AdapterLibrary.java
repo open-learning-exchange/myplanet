@@ -156,9 +156,9 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
         final ChipCloud chipCloud = new ChipCloud(context, flexboxDrawable, config);
         List<RealmTag> tags = realm.where(RealmTag.class).equalTo("db", "resources").equalTo("linkId", libraryList.get(position).id).findAll();
         for (RealmTag tag : tags) {
-            RealmTag parent = realm.where(RealmTag.class).equalTo("id", tag.getTagId()).findFirst();
+            RealmTag parent = realm.where(RealmTag.class).equalTo("id", tag.tagId).findFirst();
             try {
-                chipCloud.addChip(parent.getName());
+                chipCloud.addChip(parent.name);
             } catch (Exception err) {
                 chipCloud.addChip("--");
             }

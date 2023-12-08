@@ -224,13 +224,13 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     private void showTags(List<RealmTag> tags, ChipCloud chipCloud) {
         for (RealmTag tag : tags) {
-            RealmTag parent = mRealm.where(RealmTag.class).equalTo("id", tag.getTagId()).findFirst();
+            RealmTag parent = mRealm.where(RealmTag.class).equalTo("id", tag.tagId).findFirst();
             showChip(chipCloud, parent);
         }
     }
 
     private void showChip(ChipCloud chipCloud, RealmTag parent) {
-        chipCloud.addChip(((parent != null) ? parent.getName() : ""));
+        chipCloud.addChip(((parent != null) ? parent.name : ""));
         chipCloud.setListener((i, b, b1) -> {
             if (b1 && listener != null) {
                 listener.onTagClicked(parent);

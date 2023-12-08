@@ -240,7 +240,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         List<RealmTag> li = new ArrayList<>();
         li.add(tag);
         searchTags = li;
-        tvSelected.setText(getString(R.string.selected) + tag.getName());
+        tvSelected.setText(getString(R.string.selected) + tag.name);
         adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag(etSearch.getText().toString(), li)));
         showNoData(tvMessage, adapterLibrary.getItemCount());
     }
