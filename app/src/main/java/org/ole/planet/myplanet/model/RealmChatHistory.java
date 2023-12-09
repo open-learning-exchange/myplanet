@@ -18,7 +18,6 @@ public class RealmChatHistory extends RealmObject {
     private String _id;
     private String _rev;
     private String user;
-    private String time;
     private String title;
     private String updatedTime;
     private RealmList<Conversation> conversations;
@@ -54,14 +53,6 @@ public class RealmChatHistory extends RealmObject {
 
     public void setUser(String user) {
         this.user = user;
-    }
-
-    public String getTime() {
-        return time;
-    }
-
-    public void setTime(String time) {
-        this.time = time;
     }
 
     public String getTitle() {
@@ -101,7 +92,6 @@ public class RealmChatHistory extends RealmObject {
         RealmChatHistory chatHistory = mRealm.createObject(RealmChatHistory.class, chatHistoryId);
         chatHistory.set_rev(JsonUtils.getString("_rev", act));
         chatHistory.set_id(JsonUtils.getString("_id", act));
-        chatHistory.setTime(JsonUtils.getString("time", act));
         chatHistory.setTitle(JsonUtils.getString("title", act));
         chatHistory.setUpdatedTime(JsonUtils.getString("updatedTime", act));
         chatHistory.setUser(new Gson().toJson(JsonUtils.getJsonObject("user", act)));
