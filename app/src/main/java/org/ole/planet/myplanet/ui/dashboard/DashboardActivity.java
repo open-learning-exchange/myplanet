@@ -35,7 +35,6 @@ import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.Nameable;
 
 import org.ole.planet.myplanet.R;
-import org.ole.planet.myplanet.base.BaseContainerFragment;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.databinding.ActivityDashboardBinding;
 import org.ole.planet.myplanet.databinding.CustomTabBinding;
@@ -429,12 +428,12 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             super.onBackPressed();
         }
 
-        Fragment fragment = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
-        if (fragment instanceof BaseContainerFragment) {
-            ((BaseContainerFragment) fragment).handleBackPressed();
-        } else {
-            super.onBackPressed();
-        }
+//        Fragment fragment = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
+//        if (fragment instanceof BaseContainerFragment) {
+//            ((BaseContainerFragment) fragment).handleBackPressed();
+//        } else {
+//            super.onBackPressed();
+//        }
     }
 
     @Override
