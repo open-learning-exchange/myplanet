@@ -28,12 +28,12 @@ public abstract class PermissionActivity extends AppCompatActivity {
         return result == PackageManager.PERMISSION_GRANTED;
     }
 
-    public static boolean hasInstallPermission(android.content.Context context) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            return context.getPackageManager().canRequestPackageInstalls();
-        }
-        return true;
-    }
+//    public static boolean hasInstallPermission(android.content.Context context) {
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+//            return context.getPackageManager().canRequestPackageInstalls();
+//        }
+//        return true;
+//    }
 
     public void checkUsagesPermission() {
         if (!getUsagesPermission(this)) {
