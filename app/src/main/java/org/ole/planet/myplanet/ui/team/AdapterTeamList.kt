@@ -75,7 +75,7 @@ class AdapterTeamList(
 
     fun getBundle(team: RealmMyTeam): Bundle {
         val bundle = Bundle()
-        if (team.type.isEmpty()) bundle.putString("state", "teams") else bundle.putString(
+        if (team.type!!.isEmpty()) bundle.putString("state", "teams") else bundle.putString(
             "state", team.type + "s"
         )
         bundle.putString("item", team._id)

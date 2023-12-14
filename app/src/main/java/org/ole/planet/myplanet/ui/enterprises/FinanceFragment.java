@@ -109,10 +109,10 @@ public class FinanceFragment extends BaseTeamFragment {
         int debit = 0;
         int credit = 0;
         for (RealmMyTeam team : list) {
-            if ("credit".equalsIgnoreCase(team.getType().toLowerCase())) {
-                credit += team.getAmount();
+            if ("credit".equalsIgnoreCase(team.type.toLowerCase())) {
+                credit += team.amount;
             } else {
-                debit += team.getAmount();
+                debit += team.amount;
             }
         }
         int total = credit - debit;
@@ -152,18 +152,18 @@ public class FinanceFragment extends BaseTeamFragment {
 
     private void createTransactionObject(Realm realm, String type, String note, String amount, Calendar date) {
         RealmMyTeam team = realm.createObject(RealmMyTeam.class, UUID.randomUUID().toString());
-        team.setStatus("active");
-        team.setDate(date.getTimeInMillis());
-        if (type != null) team.setTeamType(type);
-        team.setType(type);
-        team.setDescription(note);
-        team.setTeamId(teamId);
-        team.setAmount(Integer.parseInt(amount));
-        team.setParentCode(user.getParentCode());
-        team.setTeamPlanetCode(user.getPlanetCode());
-        team.setTeamType("sync");
-        team.setDocType("transaction");
-        team.setUpdated(true);
+        team.status = "active";
+        team.date = date.getTimeInMillis();
+        if (type != null) team.teamType = type;
+        team.type = type;
+        team.description = note;
+        team.teamId = teamId;
+        team.amount = Integer.parseInt(amount);
+        team.parentCode = user.getParentCode();
+        team.teamPlanetCode = user.getPlanetCode();
+        team.teamType = "sync";
+        team.docType = "transaction";
+        team.updated = true;
     }
 
     private View setUpAlertUi() {
