@@ -30,7 +30,7 @@ public class TeamCourseFragment extends BaseTeamFragment {
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        RealmResults<RealmMyCourse> courses = mRealm.where(RealmMyCourse.class).in("id", team.getCourses().toArray(new String[0])).findAll();
+        RealmResults<RealmMyCourse> courses = mRealm.where(RealmMyCourse.class).in("id", team.courses.toArray(new String[0])).findAll();
         AdapterTeamCourse adapterTeamCourse = new AdapterTeamCourse(getActivity(), courses, mRealm, teamId, settings);
         fragmentTeamCourseBinding.rvCourse.setLayoutManager(new LinearLayoutManager(getActivity()));
         fragmentTeamCourseBinding.rvCourse.setAdapter(adapterTeamCourse);

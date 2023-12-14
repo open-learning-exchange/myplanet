@@ -40,15 +40,15 @@ public class AdapterFinance extends RecyclerView.Adapter<AdapterFinance.ViewHold
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolderFinance holder, int position) {
-        rowFinanceBinding.date.setText(TimeUtils.formatDate(list.get(position).getDate(), "MMM dd, yyyy"));
-        rowFinanceBinding.note.setText(list.get(position).getDescription());
-            Utilities.log("Type " + list.get(position).getDate());
-            if (TextUtils.equals(list.get(position).getType().toLowerCase(), "debit")) {
-                rowFinanceBinding.debit.setText(list.get(position).getAmount() + "");
+        rowFinanceBinding.date.setText(TimeUtils.formatDate(list.get(position).date, "MMM dd, yyyy"));
+        rowFinanceBinding.note.setText(list.get(position).description);
+            Utilities.log("Type " + list.get(position).date);
+            if (TextUtils.equals(list.get(position).type.toLowerCase(), "debit")) {
+                rowFinanceBinding.debit.setText(list.get(position).amount + "");
                 rowFinanceBinding.credit.setText(" -");
                 rowFinanceBinding.credit.setTextColor(Color.BLACK);
             } else {
-                rowFinanceBinding.credit.setText(list.get(position).getAmount() + "");
+                rowFinanceBinding.credit.setText(list.get(position).amount + "");
                 rowFinanceBinding.debit.setText(" -");
                 rowFinanceBinding.debit.setTextColor(Color.BLACK);
             }
@@ -62,8 +62,8 @@ public class AdapterFinance extends RecyclerView.Adapter<AdapterFinance.ViewHold
         int balance = 0;
         Utilities.log(position + "");
         for (RealmMyTeam team : list) {
-            if ("debit".equalsIgnoreCase(team.getType().toLowerCase())) balance -= team.getAmount();
-            else balance += team.getAmount();
+            if ("debit".equalsIgnoreCase(team.type.toLowerCase())) balance -= team.amount;
+            else balance += team.amount;
             if (i == position) break;
             i++;
         }

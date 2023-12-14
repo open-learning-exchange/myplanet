@@ -58,7 +58,7 @@ public class AdapterTeam extends RecyclerView.Adapter<AdapterTeam.ViewHolderTeam
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolderTeam holder, int position) {
-        itemTeamGridBinding.title.setText(list.get(position).getName());
+        itemTeamGridBinding.title.setText(list.get(position).name);
         holder.itemView.setOnClickListener(view -> {
             if (this.teamSelectedListener != null)
                 this.teamSelectedListener.onSelectedTeam(list.get(position));
@@ -68,7 +68,7 @@ public class AdapterTeam extends RecyclerView.Adapter<AdapterTeam.ViewHolderTeam
 
     private void showUserList(RealmMyTeam realmMyTeam) {
         LayoutUserListBinding layoutUserListBinding = LayoutUserListBinding.inflate(LayoutInflater.from(context));
-        users = RealmMyTeam.getUsers(realmMyTeam.get_id(), mRealm, "");
+        users = RealmMyTeam.getUsers(realmMyTeam._id, mRealm, "");
         setListAdapter(layoutUserListBinding.listUser, users);
         layoutUserListBinding.etSearch.addTextChangedListener(new TextWatcher() {
             @Override
@@ -77,7 +77,7 @@ public class AdapterTeam extends RecyclerView.Adapter<AdapterTeam.ViewHolderTeam
 
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-                users = RealmMyTeam.filterUsers(realmMyTeam.get_id(), charSequence.toString(), mRealm);
+                users = RealmMyTeam.filterUsers(realmMyTeam._id, charSequence.toString(), mRealm);
                 setListAdapter(layoutUserListBinding.listUser, users);
             }
 

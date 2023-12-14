@@ -89,7 +89,7 @@ public class TeamDetailFragment extends Fragment {
         log.setUser(user.getName());
         log.setCreatedOn(user.getPlanetCode());
         log.setType("teamVisit");
-        log.setTeamType(team.getTeamType());
+        log.setTeamType(team.teamType);
         log.setParentCode(user.getParentCode());
         log.setTime(new Date().getTime());
         mRealm.commitTransaction();

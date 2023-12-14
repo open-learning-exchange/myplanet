@@ -32,13 +32,13 @@ public class TeamPagerAdapter extends FragmentStatePagerAdapter {
 
     public TeamPagerAdapter(FragmentManager fm, RealmMyTeam team, boolean isMyTeam) {
         super(fm);
-        this.teamId = team.get_id();
-        isEnterprise = TextUtils.equals(team.getType(), "enterprise");
+        this.teamId = team._id;
+        isEnterprise = TextUtils.equals(team.type, "enterprise");
         list = new ArrayList<>();
         isInMyTeam = isMyTeam;
         list.add(MainApplication.context.getString(isEnterprise ? R.string.mission : R.string.plan));
         list.add(MainApplication.context.getString(isEnterprise ? R.string.team : R.string.joined_members));
-        if (isMyTeam || team.isPublic()) {
+        if (isMyTeam || team.isPublic) {
             list.add(MainApplication.context.getString(R.string.chat));
             list.add(MainApplication.context.getString(R.string.tasks));
             list.add(MainApplication.context.getString(R.string.calendar));

@@ -32,7 +32,7 @@ class LeadersFragment : Fragment() {
             val list = ArrayList<RealmUserModel>()
             for (team in leaders) {
                 val model =
-                    mRealm.where(RealmUserModel::class.java).equalTo("id", team.user_id).findFirst()
+                    mRealm.where(RealmUserModel::class.java).equalTo("id", team.userId).findFirst()
                 if (model != null && !list.contains(model)) list.add(model)
             }
             fragmentMembersBinding.rvMember.adapter = AdapterLeader(requireActivity(), list)

@@ -945,7 +945,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
                 teamList.add("Select team");
                 for (RealmMyTeam team : teams) {
                     if (team.isValid()) {
-                        teamList.add(team.getName());
+                        teamList.add(team.name);
                     }
                 }
                 binding.team.setAdapter(teamAdapter);
@@ -955,7 +955,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
                         if (position > 0) {
                             RealmMyTeam selectedTeam = teams.get(position - 1);
                             if (selectedTeam != null) {
-                                selectedTeamId = selectedTeam.get_id();
+                                selectedTeamId = selectedTeam._id;
                             }
                         }
                     }

@@ -31,20 +31,20 @@ public class PlanFragment extends BaseTeamFragment {
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         if (team != null) {
-            Utilities.log(team.getType());
-            Utilities.log(team.getServices());
-            Utilities.log(team.getRules());
-            if (TextUtils.equals(team.getType(), "enterprise")) {
-                missionText = ((team.getDescription().trim().isEmpty()) ? "" : ("<b>" + getString(R.string.entMission) + "</b><br/>" + team.getDescription() + "<br/><br/>"));
-                servicesText = ((team.getServices().trim().isEmpty()) ? "" : ("<b>" + getString(R.string.entServices) + "</b><br/>" + team.getServices() + "<br/><br/>"));
-                rulesText = ((team.getRules().trim().isEmpty()) ? "" : ("<b>" + getString(R.string.entRules) + "</b><br/>" + team.getRules()));
+            Utilities.log(team.type);
+            Utilities.log(team.services);
+            Utilities.log(team.rules);
+            if (TextUtils.equals(team.type, "enterprise")) {
+                missionText = ((team.description.trim().isEmpty()) ? "" : ("<b>" + getString(R.string.entMission) + "</b><br/>" + team.description + "<br/><br/>"));
+                servicesText = ((team.services.trim().isEmpty()) ? "" : ("<b>" + getString(R.string.entServices) + "</b><br/>" + team.services + "<br/><br/>"));
+                rulesText = ((team.rules.trim().isEmpty()) ? "" : ("<b>" + getString(R.string.entRules) + "</b><br/>" + team.rules));
                 fragmentPlanBinding.tvDescription.setText(Html.fromHtml(missionText + servicesText + rulesText));
                 if (fragmentPlanBinding.tvDescription.getText().toString().isEmpty())
                     fragmentPlanBinding.tvDescription.setText(Html.fromHtml("<br/>" + getString(R.string.entEmptyDescription) + "<br/>"));
             } else {
-                fragmentPlanBinding.tvDescription.setText(team.getDescription());
+                fragmentPlanBinding.tvDescription.setText(team.description);
             }
-            fragmentPlanBinding.tvDate.setText(getString(R.string.created_on) + " " + TimeUtils.formatDate(team.getCreatedDate()));
+            fragmentPlanBinding.tvDate.setText(getString(R.string.created_on) + " " + TimeUtils.formatDate(team.createdDate));
         }
     }
 }
