@@ -203,7 +203,7 @@ public class SyncManager {
     private void populateShelfItems(ApiInterface apiInterface, Realm mRealm) {
         try {
             this.mRealm = mRealm;
-            JsonObject jsonDoc = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/shelf/" + shelfDoc.getId()).execute().body();
+            JsonObject jsonDoc = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/shelf/" + shelfDoc.id).execute().body();
             Utilities.log(new Gson().toJson(jsonDoc));
             for (int i = 0; i < Constants.shelfDataList.size(); i++) {
                 Constants.ShelfData shelfData = Constants.shelfDataList.get(i);
@@ -223,7 +223,7 @@ public class SyncManager {
     }
 
     private void triggerInsert(String categroryId, String categoryDBName) {
-        stringArray[0] = shelfDoc.getId();
+        stringArray[0] = shelfDoc.id;
         stringArray[1] = categroryId;
         stringArray[2] = categoryDBName;
     }
