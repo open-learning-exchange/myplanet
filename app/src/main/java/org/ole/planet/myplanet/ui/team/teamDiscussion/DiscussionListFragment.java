@@ -70,13 +70,13 @@ public class DiscussionListFragment extends BaseTeamFragment {
         List<RealmNews> realmNewsList = mRealm.where(RealmNews.class).isEmpty("replyTo").sort("time", Sort.DESCENDING).findAll();
         List<RealmNews> list = new ArrayList<>();
         for (RealmNews news : realmNewsList) {
-            if (!TextUtils.isEmpty(news.getViewableBy()) && news.getViewableBy().equalsIgnoreCase("teams") && news.getViewableId().equalsIgnoreCase(team.get_id())) {
+            if (!TextUtils.isEmpty(news.getViewableBy()) && news.getViewableBy().equalsIgnoreCase("teams") && news.getViewableId().equalsIgnoreCase(team._id)) {
                 list.add(news);
             } else if (!TextUtils.isEmpty(news.getViewIn())) {
                 JsonArray ar = new Gson().fromJson(news.getViewIn(), JsonArray.class);
                 for (JsonElement e : ar) {
                     JsonObject ob = e.getAsJsonObject();
-                    if (ob.get("_id").getAsString().equalsIgnoreCase(team.get_id())) {
+                    if (ob.get("_id").getAsString().equalsIgnoreCase(team._id)) {
                         list.add(news);
                     }
                 }
@@ -120,8 +120,8 @@ public class DiscussionListFragment extends BaseTeamFragment {
                     map.put("viewInId", teamId);
                     map.put("viewInSection", "teams");
                     map.put("message", msg);
-                    map.put("messageType", team.getTeamType());
-                    map.put("messagePlanetCode", team.getTeamPlanetCode());
+                    map.put("messageType", team.teamType);
+                    map.put("messagePlanetCode", team.teamPlanetCode);
                     RealmNews.createNews(map, mRealm, user, imageList);
                     Utilities.log("discussion created");
                     fragmentDiscussionListBinding.rvDiscussion.getAdapter().notifyDataSetChanged();

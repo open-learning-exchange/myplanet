@@ -58,8 +58,8 @@ public class AdapterMemberRequest extends RecyclerView.Adapter<AdapterMemberRequ
         RealmMyTeam team = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("userId", userModel.getId()).findFirst();
         if (team != null) {
             if (isAccept) {
-                team.setDocType("membership");
-                team.setUpdated(true);
+                team.docType = "membership";
+                team.updated = true;
             } else {
                 team.deleteFromRealm();
             }

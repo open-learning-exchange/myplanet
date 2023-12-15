@@ -130,6 +130,7 @@ open class RealmMyTeam : RealmObject() {
             return ids
         }
 
+        @JvmStatic
         fun getResourceIdsByUser(userId: String?, realm: Realm): MutableList<String> {
             val list = realm.where(RealmMyTeam::class.java)
                 .equalTo("userId", userId)
@@ -160,6 +161,7 @@ open class RealmMyTeam : RealmObject() {
             return teams?.userId ?: ""
         }
 
+        @JvmStatic
         fun getTeamLeader(teamId: String?, realm: Realm): String {
             val team = realm.where(RealmMyTeam::class.java)
                 .equalTo("teamId", teamId)
@@ -168,10 +170,12 @@ open class RealmMyTeam : RealmObject() {
             return team?.userId ?: ""
         }
 
+        @JvmStatic
         fun insert(mRealm: Realm, doc: JsonObject) {
             insertMyTeams("", doc, mRealm)
         }
 
+        @JvmStatic
         fun requestToJoin(teamId: String?, userModel: RealmUserModel, mRealm: Realm) {
             if (!mRealm.isInTransaction) mRealm.beginTransaction()
             val team = mRealm.createObject(RealmMyTeam::class.java, AndroidDecrypter.generateIv())
@@ -206,6 +210,7 @@ open class RealmMyTeam : RealmObject() {
             return getUsers(teamId, realm, "membership")
         }
 
+        @JvmStatic
         fun isTeamLeader(teamId: String?, userId: String, realm: Realm): Boolean {
             val team = realm.where(RealmMyTeam::class.java)
                 .equalTo("teamId", teamId)

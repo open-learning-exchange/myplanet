@@ -188,7 +188,7 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
     @Override
     public void onClickMore(RealmTeamTask realmTeamTask) {
         AlertUsersSpinnerBinding alertUsersSpinnerBinding = AlertUsersSpinnerBinding.inflate(LayoutInflater.from(context));
-        List<RealmUserModel> userList = RealmMyTeam.getJoinedMemeber(teamId, mRealm);
+        List<RealmUserModel> userList = RealmMyTeam.getJoinedMember(teamId, mRealm);
         ArrayAdapter<RealmUserModel> adapter = new UserListArrayAdapter(getActivity(), android.R.layout.simple_list_item_1, userList);
         alertUsersSpinnerBinding.spnUser.setAdapter(adapter);
         new AlertDialog.Builder(getActivity()).setTitle(R.string.select_member).setView(alertUsersSpinnerBinding.getRoot()).setCancelable(false).setPositiveButton(R.string.ok, (dialogInterface, i) -> {

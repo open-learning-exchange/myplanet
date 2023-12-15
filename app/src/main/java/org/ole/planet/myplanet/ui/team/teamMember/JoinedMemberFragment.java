@@ -15,7 +15,7 @@ public class JoinedMemberFragment extends BaseMemberFragment {
 
     @Override
     public List<RealmUserModel> getList() {
-        return RealmMyTeam.getJoinedMemeber(teamId, mRealm);
+        return RealmMyTeam.getJoinedMember(teamId, mRealm);
     }
 
     @Override
