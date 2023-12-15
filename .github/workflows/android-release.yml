@@ -31,7 +31,7 @@ jobs:
               app/src/main/AndroidManifest.xml \
               app/src/main/java/org/ole/planet/myplanet/base/BaseContainerFragment.kt \
               app/src/main/java/org/ole/planet/myplanet/base/PermissionActivity.java
-              app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardActivity.java \
+              app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardActivity.java
           fi
 
       - name: set more env
