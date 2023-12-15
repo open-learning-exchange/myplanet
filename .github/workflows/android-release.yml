@@ -33,7 +33,7 @@ jobs:
               app/src/main/java/org/ole/planet/myplanet/base/PermissionActivity.java \
               app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardActivity.java
             cat app/build.gradle | grep versionName\ \"
-            sed -i 's/versionName "[0-9.]\+"/versionName "&-lite"/' app/build.gradle
+            sed -i 's/versionName "[0-9.]\+"$/versionName "[0-9.]\+-lite"$/' app/build.gradle
             cat app/build.gradle | grep versionName\ \"
           fi
 
