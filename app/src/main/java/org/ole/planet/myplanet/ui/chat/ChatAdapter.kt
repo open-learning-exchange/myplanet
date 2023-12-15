@@ -9,7 +9,7 @@ import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.databinding.ItemAiResponseMessageBinding
 import org.ole.planet.myplanet.databinding.ItemUserMessageBinding
 
-class ChatAdapter(private val chatList: ArrayList<String>, val context: Context) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+class ChatAdapter(private val chatList: ArrayList<String>, val context: Context, private val recyclerView: RecyclerView) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private lateinit var textUserMessageBinding: ItemUserMessageBinding
     private lateinit var textAiMessageBinding: ItemAiResponseMessageBinding
     var responseSource: Int = RESPONSE_SOURCE_UNKNOWN
@@ -63,16 +63,26 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context)
     fun addQuery(query: String) {
         chatList.add(query)
         notifyItemInserted(chatList.size - 1)
+        scrollToLastItem()
     }
 
     fun addResponse(response: String) {
         chatList.add(response)
         notifyItemInserted(chatList.size - 1)
+        scrollToLastItem()
     }
 
     fun clearData() {
         chatList.clear()
         notifyDataSetChanged()
+        scrollToLastItem()
+    }
+
+    private fun scrollToLastItem() {
+        val lastPosition = chatList.size - 1
+        if (lastPosition >= 0) {
+            recyclerView.scrollToPosition(lastPosition)
+        }
     }
 
     override fun getItemViewType(position: Int): Int {

@@ -38,9 +38,9 @@ class ChatHistoryListFragment : Fragment() {
         fragmentChatHistoryListBinding.slidingPaneLayout.openPane()
 
         fragmentChatHistoryListBinding.newChat.setOnClickListener {
-            val chatDetailFragment = ChatHistoryListFragment()
+            val chatHistoryListFragment = ChatHistoryListFragment()
             val transaction = requireFragmentManager().beginTransaction()
-            transaction.replace(R.id.fragment_container, chatDetailFragment)
+            transaction.replace(R.id.fragment_container, chatHistoryListFragment)
             transaction.addToBackStack(null)
             transaction.commit()
         }

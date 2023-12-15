@@ -50,7 +50,7 @@ class ChatDetailFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         mRealm = DatabaseService(activity).realmInstance
         
-        mAdapter = ChatAdapter(ArrayList(), requireContext())
+        mAdapter = ChatAdapter(ArrayList(), requireContext(), fragmentChatDetailBinding.recyclerGchat)
         fragmentChatDetailBinding.recyclerGchat.adapter = mAdapter
         val layoutManager: RecyclerView.LayoutManager = LinearLayoutManager(requireContext())
         fragmentChatDetailBinding.recyclerGchat.layoutManager = layoutManager
@@ -294,8 +294,8 @@ class ChatDetailFragment : Fragment() {
             mAdapter.clearData()
             _id = ""
             _rev = ""
-            mAdapter.notifyDataSetChanged()
-            fragmentChatDetailBinding.recyclerGchat.invalidate()
+//            mAdapter.notifyDataSetChanged()
+//            fragmentChatDetailBinding.recyclerGchat.invalidate()
         }
     }
 }
