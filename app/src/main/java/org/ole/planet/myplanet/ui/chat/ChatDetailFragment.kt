@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
+import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -85,6 +86,22 @@ class ChatDetailFragment : Fragment() {
                 fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
             }
         }
+
+        fragmentChatDetailBinding.editGchatMessage.setOnKeyListener { _, keyCode, event ->
+            if (event.action == KeyEvent.ACTION_DOWN) {
+                if (event.keyCode == KeyEvent.KEYCODE_ENTER && event.isShiftPressed) {
+                    // Insert a new line when Shift + Enter is pressed
+                    fragmentChatDetailBinding.editGchatMessage.append("\n")
+                    return@setOnKeyListener true
+                } else if (event.keyCode == KeyEvent.KEYCODE_ENTER) {
+                    // Call the functionality inside buttonGchatSend click listener
+                    fragmentChatDetailBinding.buttonGchatSend.performClick()
+                    return@setOnKeyListener true
+                }
+            }
+            false
+        }
+
 
         fragmentChatDetailBinding.editGchatMessage.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
