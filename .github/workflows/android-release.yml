@@ -30,7 +30,7 @@ jobs:
               app/build.gradle \
               app/src/main/AndroidManifest.xml \
               app/src/main/java/org/ole/planet/myplanet/base/BaseContainerFragment.kt \
-              app/src/main/java/org/ole/planet/myplanet/base/PermissionActivity.java
+              app/src/main/java/org/ole/planet/myplanet/base/PermissionActivity.java \
               app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardActivity.java
           fi
 
