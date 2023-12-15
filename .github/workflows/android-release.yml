@@ -22,11 +22,16 @@ jobs:
     steps:
       - name: checkout repository code
         uses: actions/checkout@v4
-      - name: apply diff to default and get lite code
+      - name: diff the code to get lite
         run: |
           if [[ "${{ matrix.build }}" == "lite" ]]; then
             echo "lite"
-            tree
+            ls -al \
+              app/build.gradle \
+              app/src/main/AndroidManifest.xml \
+              app/src/main/java/org/ole/planet/myplanet/base/BaseContainerFragment.kt \
+              app/src/main/java/org/ole/planet/myplanet/base/PermissionActivity.java
+              app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardActivity.java \
           fi
 
       - name: set more env
@@ -76,16 +81,16 @@ jobs:
           sha256sum output/myPlanet.aab > output/myPlanet.aab.sha256
           ls -alR output
 
-      - name: publish AAB to playstore
-        if: github.ref == 'refs/heads/master'
-        uses: r0adkll/upload-google-play@v1.1.2
-        with:
-          serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
-          packageName: org.ole.planet.myplanet
-          releaseFiles: output/myPlanet.aab
-          track: internal
-          releaseName: "${{ env.ANDROID_VERSION_CODE }} (${{ env.ANDROID_VERSION_NAME }})"
-          status: completed
+#      - name: publish AAB to playstore
+#        if: github.ref == 'refs/heads/master'
+#       uses: r0adkll/upload-google-play@v1.1.2
+#        with:
+#          serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
+#          packageName: org.ole.planet.myplanet
+#          releaseFiles: output/myPlanet.aab
+#          track: internal
+#          releaseName: "${{ env.ANDROID_VERSION_CODE }} (${{ env.ANDROID_VERSION_NAME }})"
+#          status: completed
 
       - name: rename APK and AAB with version and branch for artifact
         if: github.ref != 'refs/heads/master'
@@ -96,20 +101,20 @@ jobs:
           mv output/myPlanet.aab.sha256 output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}.aab.sha256
           ls -alR output
 
-      - name: upload APK and AAB as build artifact
-        if: github.ref != 'refs/heads/master'
-        uses: actions/upload-artifact@v3
-        with:
-          name: myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}
-          path: output/*
-          retention-days: 9
+#      - name: upload APK and AAB as build artifact
+#        if: github.ref != 'refs/heads/master'
+#        uses: actions/upload-artifact@v3
+#        with:
+#          name: myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}
+#          path: output/*
+#          retention-days: 9
 
-      - name: release APK and AAB on GitHub
-        if: github.ref == 'refs/heads/master'
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: output/*
-          tag: v${{ env.ANDROID_VERSION_NAME }}
-          overwrite: 'true'
-          file_glob: 'true'
+#      - name: release APK and AAB on GitHub
+#        if: github.ref == 'refs/heads/master'
+#        uses: svenstaro/upload-release-action@v2
+#        with:
+#          repo_token: ${{ secrets.GITHUB_TOKEN }}
+#          file: output/*
+#          tag: v${{ env.ANDROID_VERSION_NAME }}
+#          overwrite: 'true'
+#          file_glob: 'true'
