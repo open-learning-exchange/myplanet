@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - 'master'
+      - '2852-make-special-less-feature-and-free-version-for-google-play'
   workflow_dispatch:
 
 jobs:
