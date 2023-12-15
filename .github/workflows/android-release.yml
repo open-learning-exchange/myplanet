@@ -22,6 +22,14 @@ jobs:
     steps:
       - name: checkout repository code
         uses: actions/checkout@v4
+      - name: apply diff to default and get lite code
+        run: |
+          if [[ "${{ matrix.build }}" == "lite" ]]; then
+            echo "lite"
+            ls -alR
+            tree
+          fi
+
 
       - name: set more env
         run: echo "BRANCHNAME="${GITHUB_REF##*/} >> $GITHUB_ENV
