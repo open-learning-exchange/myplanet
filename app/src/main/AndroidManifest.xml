@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           xmlns:tools="http://schemas.android.com/tools">
+
 <!--    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>-->    
     <uses-permission
         android:name="android.permission.BLUETOOTH"
@@ -86,9 +87,7 @@
             android:label="@string/title_activity_dashboard"
             android:theme="@style/FullscreenTheme" />
         <activity android:name=".ui.viewer.PDFReaderActivity" />
-
-        <service android:name=".datamanager.MyDownloadService" />
-
+        <activity android:name=".ui.viewer.WebViewActivity" />
         <activity android:name=".ui.viewer.VideoPlayerActivity" />
         <activity android:name=".ui.viewer.ImageViewerActivity" />
         <activity android:name=".ui.viewer.TextFileViewerActivity" />
@@ -109,8 +108,6 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
-
-        <activity android:name=".ui.viewer.WebViewActivity" />
+        <service android:name=".datamanager.MyDownloadService" />
     </application>
-
 </manifest>
