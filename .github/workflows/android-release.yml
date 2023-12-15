@@ -26,10 +26,8 @@ jobs:
         run: |
           if [[ "${{ matrix.build }}" == "lite" ]]; then
             echo "lite"
-            ls -alR
             tree
           fi
-
 
       - name: set more env
         run: echo "BRANCHNAME="${GITHUB_REF##*/} >> $GITHUB_ENV
