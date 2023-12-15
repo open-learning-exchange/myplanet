@@ -13,6 +13,7 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
     RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private lateinit var rowChatHistoryBinding: RowChatHistoryBinding
     private var chatHistoryItemClickListener: ChatHistoryItemClickListener? = null
+    private var filteredChatHistory: List<RealmChatHistory> = chatHistory
 
     interface ChatHistoryItemClickListener {
         fun onChatHistoryItemClicked(conversations: RealmList<Conversation>, _id: String, _rev: String)
@@ -21,29 +22,40 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
     fun setChatHistoryItemClickListener(listener: ChatHistoryItemClickListener) {
         chatHistoryItemClickListener = listener
     }
+
+    fun filter(query: String) {
+        filteredChatHistory = chatHistory.filter { chat ->
+            if (chat.conversations != null && chat.conversations.isNotEmpty()) {
+                chat.conversations[0]?.query?.contains(query, ignoreCase = true) == true
+            } else {
+                chat.title.contains(query, ignoreCase = true)
+            }
+        }
+        notifyDataSetChanged()
+    }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         rowChatHistoryBinding = RowChatHistoryBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ViewHolderChat(rowChatHistoryBinding)
     }
 
     override fun getItemCount(): Int {
-        return chatHistory.size
+        return filteredChatHistory.size
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val viewHolderChat = holder as ViewHolderChat
-
-        if (chatHistory[position].conversations != null && chatHistory[position].conversations.isNotEmpty()) {
-            viewHolderChat.rowChatHistoryBinding.chatTitle.text = chatHistory[position].conversations[0]!!.query
+        if (filteredChatHistory[position].conversations != null && filteredChatHistory[position].conversations.isNotEmpty()) {
+            viewHolderChat.rowChatHistoryBinding.chatTitle.text = filteredChatHistory[position].conversations[0]!!.query
         } else {
-            viewHolderChat.rowChatHistoryBinding.chatTitle.text = chatHistory[position].title
+            viewHolderChat.rowChatHistoryBinding.chatTitle.text = filteredChatHistory[position].title
         }
 
         viewHolderChat.rowChatHistoryBinding.root.setOnClickListener {
             chatHistoryItemClickListener?.onChatHistoryItemClicked(
-                chatHistory[position].conversations,
-                chatHistory[position]._id.toString(),
-                chatHistory[position]._rev
+                filteredChatHistory[position].conversations,
+                filteredChatHistory[position]._id.toString(),
+                filteredChatHistory[position]._rev
             )
         }
     }

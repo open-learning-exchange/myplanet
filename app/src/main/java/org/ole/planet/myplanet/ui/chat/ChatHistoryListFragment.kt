@@ -1,6 +1,8 @@
 package org.ole.planet.myplanet.ui.chat
 
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -62,6 +64,16 @@ class ChatHistoryListFragment : Fragment() {
             }
         })
         fragmentChatHistoryListBinding.recyclerView.adapter = adapter
+
+        fragmentChatHistoryListBinding.searchBar.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                adapter.filter(s.toString())
+            }
+
+            override fun afterTextChanged(s: Editable?) {}
+        })
     }
 }
 

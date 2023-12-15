@@ -294,8 +294,6 @@ class ChatDetailFragment : Fragment() {
             mAdapter.clearData()
             _id = ""
             _rev = ""
-//            mAdapter.notifyDataSetChanged()
-//            fragmentChatDetailBinding.recyclerGchat.invalidate()
         }
     }
 }
