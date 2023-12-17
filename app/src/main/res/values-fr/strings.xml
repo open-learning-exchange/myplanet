@@ -961,5 +961,6 @@
     <string name="web_view">vue web</string>
     <string name="invalid_configuration">Configurations de serveur invalides</string>
     <string name="date_reset">Réinitialisation des dates</string>
+    <string name="no_course_matched_filter">Aucun cours ne correspond au filtre</string>
 
 </resources>

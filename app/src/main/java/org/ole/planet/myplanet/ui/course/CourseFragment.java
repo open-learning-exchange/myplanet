@@ -180,7 +180,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
             gradeLevel = spnGrade.getSelectedItem().toString().equals("All") ? "" : spnGrade.getSelectedItem().toString();
             subjectLevel = spnSubject.getSelectedItem().toString().equals("All") ? "" : spnSubject.getSelectedItem().toString();
             adapterCourses.setCourseList(filterCourseByTag(etSearch.getText().toString(), searchTags));
-            showNoData(tvMessage, adapterCourses.getItemCount());
+            showNoFilter(tvMessage, adapterCourses.getItemCount());
         }
 
         @Override
