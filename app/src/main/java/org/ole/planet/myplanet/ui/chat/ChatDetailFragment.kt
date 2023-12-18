@@ -326,66 +326,86 @@ class ChatDetailFragment : Fragment() {
 //            webSocket.send("Hello World!")
         }
 
-        override fun onMessage(webSocket: WebSocket, text: String) {
-            output("Received : $text")
-            requireActivity().runOnUiThread {
-                try {
-                    val chatModel = Gson().fromJson(text, ChatModel::class.java)
-
-                    if (chatModel != null) {
-                        // Access properties of ChatModel
-                        val chatResponse = chatModel.chat
-                        val id = chatModel.couchDBResponse?.id
-                        val rev = chatModel.couchDBResponse?.rev
-
-                        // Update your adapter or UI with the received data
-                        mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_NETWORK
-                        mAdapter.addResponse(chatResponse ?: "")
-
-
-                        // Handle id and rev as needed
-                        _id = id ?: ""
-                        _rev = rev ?: ""
-
-                        // Further handling if needed (e.g., updating UI, storing data, etc.)
-                    } else {
-                        Log.e("WebSocket", "Received null ChatModel")
-                    }
-                } catch (e: JsonSyntaxException) {
-                    // Handle JSON parsing error
-                    Log.e("WebSocket", "Error parsing JSON: $text")
-                }
-
-
-
-//                mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_NETWORK
-//                mAdapter.addResponse(text)
-//            _id = response.body()!!.couchDBResponse!!.id.toString()
-//            _rev = response.body()!!.couchDBResponse!!.rev.toString()
-//            val jsonObject = JsonObject()
-//            jsonObject.addProperty("_rev", response.body()!!.couchDBResponse!!.rev.toString())
-//            jsonObject.addProperty("_id", response.body()!!.couchDBResponse!!.id.toString())
-//            jsonObject.addProperty("time", "")
-//            jsonObject.addProperty("title", "")
-//            jsonObject.addProperty("updatedTime", "")
+//        override fun onMessage(webSocket: WebSocket, text: String) {
+//            output("Received : $text")
+//            requireActivity().runOnUiThread {
+//                try {
+//                    val chatModel = Gson().fromJson(text, ChatModel::class.java)
 //
-//            val conversationsArray = JsonArray()
-//            val conversationObject = JsonObject()
-//            conversationObject.addProperty("query", query)
-//            conversationObject.addProperty("response", text)
-//            conversationsArray.add(conversationObject)
+//                    if (chatModel != null) {
+//                        // Access properties of ChatModel
+//                        val chatResponse = chatModel.chat
+//                        val id = chatModel.couchDBResponse?.id
+//                        val rev = chatModel.couchDBResponse?.rev
 //
-//            jsonObject.add("conversations", conversationsArray)
-                fragmentChatDetailBinding.buttonGchatSend.isEnabled = true
-                fragmentChatDetailBinding.editGchatMessage.isEnabled = true
-                fragmentChatDetailBinding.imageGchatLoading.visibility = View.INVISIBLE
-            }
-        }
+//                        // Update your adapter or UI with the received data
+//                        mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_NETWORK
+//                        mAdapter.addResponse(chatResponse ?: "")
+//
+//
+//                        // Handle id and rev as needed
+//                        _id = id ?: ""
+//                        _rev = rev ?: ""
+//
+//                        // Further handling if needed (e.g., updating UI, storing data, etc.)
+//                    } else {
+//                        Log.e("WebSocket", "Received null ChatModel")
+//                    }
+//                } catch (e: JsonSyntaxException) {
+//                    // Handle JSON parsing error
+//                    Log.e("WebSocket", "Error parsing JSON: $text")
+//                }
+//
+//
+//
+////                mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_NETWORK
+////                mAdapter.addResponse(text)
+////            _id = response.body()!!.couchDBResponse!!.id.toString()
+////            _rev = response.body()!!.couchDBResponse!!.rev.toString()
+////            val jsonObject = JsonObject()
+////            jsonObject.addProperty("_rev", response.body()!!.couchDBResponse!!.rev.toString())
+////            jsonObject.addProperty("_id", response.body()!!.couchDBResponse!!.id.toString())
+////            jsonObject.addProperty("time", "")
+////            jsonObject.addProperty("title", "")
+////            jsonObject.addProperty("updatedTime", "")
+////
+////            val conversationsArray = JsonArray()
+////            val conversationObject = JsonObject()
+////            conversationObject.addProperty("query", query)
+////            conversationObject.addProperty("response", text)
+////            conversationsArray.add(conversationObject)
+////
+////            jsonObject.add("conversations", conversationsArray)
+//                fragmentChatDetailBinding.buttonGchatSend.isEnabled = true
+//                fragmentChatDetailBinding.editGchatMessage.isEnabled = true
+//                fragmentChatDetailBinding.imageGchatLoading.visibility = View.INVISIBLE
+//            }
+//        }
 
 //        override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
 //            // Received a binary message from the WebSocket
 //            // Handle the message as needed
 //        }
+
+        private var receivedMessageBuffer = StringBuilder()
+
+        override fun onMessage(webSocket: WebSocket, text: String) {
+            // Append the received part to the buffer
+            receivedMessageBuffer.append(text)
+
+            // Log the received part
+            output("Received part: $text")
+
+            // Check if the complete JSON message is received
+            if (text.contains("[DONE]")) {
+                // Process the complete JSON message
+                val completeMessage = receivedMessageBuffer.toString()
+                output("Complete message: $completeMessage")
+
+                // Clear the buffer for the next message
+                receivedMessageBuffer = StringBuilder()
+            }
+        }
 
         override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
             // WebSocket is about to close
