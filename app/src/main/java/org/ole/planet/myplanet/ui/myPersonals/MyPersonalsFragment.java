@@ -29,9 +29,19 @@ public class MyPersonalsFragment extends Fragment implements OnSelectedMyPersona
     private FragmentMyPersonalsBinding fragmentMyPersonalsBinding;
     Realm mRealm;
     ProgressDialog pg;
+    private AddResourceFragment addResourceFragment;
 
     public MyPersonalsFragment() {
         // Required empty public constructor
+    }
+
+    public void refreshFragment() {
+        if (isAdded()) {
+            setAdapter();
+            if (addResourceFragment != null && addResourceFragment.isAdded()) {
+                addResourceFragment.dismiss();
+            }
+        }
     }
 
     @Override
@@ -42,11 +52,12 @@ public class MyPersonalsFragment extends Fragment implements OnSelectedMyPersona
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
         fragmentMyPersonalsBinding.rvMypersonal.setLayoutManager(new LinearLayoutManager(getActivity()));
         fragmentMyPersonalsBinding.addMyPersonal.setOnClickListener(vi -> {
-            AddResourceFragment f = new AddResourceFragment();
+            addResourceFragment = new AddResourceFragment();
             Bundle b = new Bundle();
             b.putInt("type", 1);
-            f.setArguments(b);
-            f.show(getChildFragmentManager(), getString(R.string.add_resource));
+            addResourceFragment.setArguments(b);
+            addResourceFragment.setMyPersonalsFragment(this);
+            addResourceFragment.show(getChildFragmentManager(), getString(R.string.add_resource));
         });
         return fragmentMyPersonalsBinding.getRoot();
 
@@ -66,7 +77,10 @@ public class MyPersonalsFragment extends Fragment implements OnSelectedMyPersona
         personalAdapter.setRealm(mRealm);
         fragmentMyPersonalsBinding.rvMypersonal.setAdapter(personalAdapter);
         showNodata();
-        mRealm.addChangeListener(realm -> showNodata());
+        mRealm.addChangeListener(realm -> {
+            showNodata();
+            personalAdapter.notifyDataSetChanged();
+        });
     }
 
     private void showNodata() {
