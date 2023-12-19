@@ -35,6 +35,7 @@ jobs:
             sed -i 's/\(versionName "[0-9.]\+\)"/\1-lite"/' app/build.gradle
             cat app/build.gradle | grep versionName\ \"
             head -n 8 app/src/main/AndroidManifest.xml
+            cat app/src/main/AndroidManifest.xml.lite
             sudo patch -o app/src/main/AndroidManifest.xml -i app/src/main/AndroidManifest.xml.lite app/src/main/AndroidManifest.xml
             head -n 8 app/src/main/AndroidManifest.xml
           fi
