@@ -35,6 +35,9 @@ jobs:
             sed -i 's/\(versionName "[0-9.]\+\)"/\1-lite"/' app/build.gradle
             cp app/src/main/AndroidManifest.xml.lite app/src/main/AndroidManifest.xml
             head -n 8 app/src/main/AndroidManifest.xml
+            cp app/src/main/java/org/ole/planet/myplanet/base/BaseContainerFragment.kt.lite app/src/main/java/org/ole/planet/myplanet/base/BaseContainerFragment.kt
+            cp app/src/main/java/org/ole/planet/myplanet/base/PermissionActivity.java.lite app/src/main/java/org/ole/planet/myplanet/base/PermissionActivity.java
+            cp app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardActivity.java.lite app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardActivity.java
           fi
 
       - name: set more env
