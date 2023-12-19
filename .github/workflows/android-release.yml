@@ -34,7 +34,6 @@ jobs:
               app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardActivity.java
             sed -i 's/\(versionName "[0-9.]\+\)"/\1-lite"/' app/build.gradle
             cp app/src/main/AndroidManifest.xml.lite app/src/main/AndroidManifest.xml
-            head -n 8 app/src/main/AndroidManifest.xml
             cp app/src/main/java/org/ole/planet/myplanet/base/BaseContainerFragment.kt.lite app/src/main/java/org/ole/planet/myplanet/base/BaseContainerFragment.kt
             cp app/src/main/java/org/ole/planet/myplanet/base/PermissionActivity.java.lite app/src/main/java/org/ole/planet/myplanet/base/PermissionActivity.java
             cp app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardActivity.java.lite app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardActivity.java
@@ -89,7 +88,7 @@ jobs:
 
 #      - name: publish AAB to playstore
 #        if: github.ref == 'refs/heads/master'
-#       uses: r0adkll/upload-google-play@v1.1.2
+#        uses: r0adkll/upload-google-play@v1.1.2
 #        with:
 #          serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
 #          packageName: org.ole.planet.myplanet
@@ -101,19 +100,26 @@ jobs:
       - name: rename APK and AAB with version and branch for artifact
         if: github.ref != 'refs/heads/master'
         run: |
-          mv output/myPlanet.apk output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}.apk
-          mv output/myPlanet.apk.sha256 output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}.apk.sha256
-          mv output/myPlanet.aab output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}.aab
-          mv output/myPlanet.aab.sha256 output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}.aab.sha256
+          if [[ "${{ matrix.build }}" == "default" ]]; then
+            mv output/myPlanet.apk output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}.apk
+            mv output/myPlanet.apk.sha256 output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}.apk.sha256
+            mv output/myPlanet.aab output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}.aab
+            mv output/myPlanet.aab.sha256 output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}.aab.sha256
+          else
+            mv output/myPlanet.apk output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}-lite.apk
+            mv output/myPlanet.apk.sha256 output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}-lite.apk.sha256
+            mv output/myPlanet.aab output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}-lite.aab
+            mv output/myPlanet.aab.sha256 output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}-lite.aab.sha256
+          fi
           ls -alR output
 
-#      - name: upload APK and AAB as build artifact
-#        if: github.ref != 'refs/heads/master'
-#        uses: actions/upload-artifact@v3
-#        with:
-#          name: myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}
-#          path: output/*
-#          retention-days: 9
+      - name: upload APK and AAB as build artifact
+        if: github.ref != 'refs/heads/master'
+        uses: actions/upload-artifact@v3
+        with:
+          name: myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}
+          path: output/*
+          retention-days: 9
 
 #      - name: release APK and AAB on GitHub
 #        if: github.ref == 'refs/heads/master'
