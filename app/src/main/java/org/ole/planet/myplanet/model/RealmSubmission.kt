@@ -136,7 +136,7 @@ open class RealmSubmission : RealmObject() {
             val parent = Gson().fromJson(sub.parent, JsonObject::class.java)
             `object`.add("parent", parent)
             Utilities.log("Parent " + sub.parent)
-            `object`.add("answers", RealmAnswer.serializeRealmAnswer(sub.answers))
+            `object`.add("answers", RealmAnswer.serializeRealmAnswer(sub.answers!!))
             Utilities.log("Parent Exam " + (exam == null))
             if (exam != null && parent == null) `object`.add("parent", RealmStepExam.serializeExam(mRealm, exam))
             if (TextUtils.isEmpty(sub.user)) {
