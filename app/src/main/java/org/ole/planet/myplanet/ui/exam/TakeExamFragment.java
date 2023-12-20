@@ -126,7 +126,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
             showCheckBoxes(question, ans);
         }
         fragmentTakeExamBinding.tvHeader.setText(question.header);
-        Markdown.INSTANCE.setMarkdownText(fragmentTakeExamBinding.tvBody, question.getBody());
+        Markdown.INSTANCE.setMarkdownText(fragmentTakeExamBinding.tvBody, question.body);
         fragmentTakeExamBinding.btnSubmit.setOnClickListener(this);
     }
 
