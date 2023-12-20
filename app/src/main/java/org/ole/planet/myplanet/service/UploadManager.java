@@ -211,7 +211,7 @@ public class UploadManager extends FileUploadService {
             List<RealmCourseProgress> data = realm.where(RealmCourseProgress.class).isNull("_id").findAll();
             for (RealmCourseProgress sub : data) {
                 try {
-                    if (sub.getUserId().startsWith("guest")) continue;
+                    if (sub.userId.startsWith("guest")) continue;
                     JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/courses_progress", RealmCourseProgress.serializeProgress(sub)).execute().body();
                     if (object != null) {
                         sub.set_id(JsonUtils.getString("id", object));
@@ -386,7 +386,7 @@ public class UploadManager extends FileUploadService {
             final RealmResults<RealmOfflineActivity> activities = realm.where(RealmOfflineActivity.class).isNull("_rev").equalTo("type", "login").findAll();
             for (RealmOfflineActivity act : activities) {
                 try {
-                    if (act.getUserId().startsWith("guest")) continue;
+                    if (act.userId.startsWith("guest")) continue;
                     JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/login_activities", RealmOfflineActivity.serializeLoginActivities(act, context)).execute().body();
                     act.changeRev(object);
                 } catch (IOException e) {
@@ -449,12 +449,12 @@ public class UploadManager extends FileUploadService {
             final RealmResults<RealmNews> activities = realm.where(RealmNews.class).findAll();
             for (RealmNews act : activities) {
                 try {
-                    if (act.getUserId().startsWith("guest")) continue;
+                    if (act.userId.startsWith("guest")) continue;
                     JsonObject object = RealmNews.serializeNews(act, userModel);
                     JsonArray image = act.getImagesArray();
                     RealmUserModel user = realm.where(RealmUserModel.class).equalTo("id", pref.getString("userId", "")).findFirst();
-                    if (act.getImageUrls() != null) {
-                        for (String imageobject : act.getImageUrls()) {
+                    if (act.imageUrls != null) {
+                        for (String imageobject : act.imageUrls) {
                             JsonObject imgObject = new Gson().fromJson(imageobject, JsonObject.class);
                             JsonObject ob = createImage(user, imgObject);
                             JsonObject response = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/resources", ob).execute().body();
@@ -481,7 +481,7 @@ public class UploadManager extends FileUploadService {
                             image.add(resourceObject);
                         }
                     }
-                    act.setImages(new Gson().toJson(image));
+                    act.images = new Gson().toJson(image);
                     object.add("images", image);
                     Response<JsonObject> newsUploadResponse;
                     if (TextUtils.isEmpty(act.get_id())) {
@@ -490,7 +490,7 @@ public class UploadManager extends FileUploadService {
                         newsUploadResponse = apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/news/" + act.get_id(), object).execute();
                     }
                     if (newsUploadResponse.body() != null) {
-                        act.getImageUrls().clear();
+                        act.imageUrls.clear();
                         act.set_id(JsonUtils.getString("id", newsUploadResponse.body()));
                         act.set_rev(JsonUtils.getString("rev", newsUploadResponse.body()));
                     }
