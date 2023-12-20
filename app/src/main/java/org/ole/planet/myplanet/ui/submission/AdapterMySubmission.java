@@ -82,7 +82,7 @@ public class AdapterMySubmission extends RecyclerView.Adapter<AdapterMySubmissio
             submitted_by.setText(ob.optString("name"));
         } catch (Exception e) {
             RealmUserModel user = mRealm.where(RealmUserModel.class).equalTo("id", list.get(position).getUserId()).findFirst();
-            if (user != null) submitted_by.setText(user.getName());
+            if (user != null) submitted_by.setText(user.name);
         }
     }
 

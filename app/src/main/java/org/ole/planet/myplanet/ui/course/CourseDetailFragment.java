@@ -1,8 +1,5 @@
 package org.ole.planet.myplanet.ui.course;
 
-
-import static org.ole.planet.myplanet.MainApplication.context;
-
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -27,18 +24,10 @@ import org.ole.planet.myplanet.model.RealmRating;
 import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
+import org.ole.planet.myplanet.utilities.Markdown;
 
 import java.util.List;
 
-import io.noties.markwon.AbstractMarkwonPlugin;
-import io.noties.markwon.Markwon;
-import io.noties.markwon.MarkwonPlugin;
-import io.noties.markwon.html.HtmlPlugin;
-import io.noties.markwon.image.ImagesPlugin;
-import io.noties.markwon.image.file.FileSchemeHandler;
-import io.noties.markwon.image.network.NetworkSchemeHandler;
-import io.noties.markwon.image.network.OkHttpNetworkSchemeHandler;
-import io.noties.markwon.movement.MovementMethodPlugin;
 import io.realm.Realm;
 import io.realm.RealmResults;
 
@@ -49,7 +38,6 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
     RealmMyCourse courses;
     RealmUserModel user;
     String id;
-    private Markwon markwon;
 
     public CourseDetailFragment() {
     }
@@ -60,22 +48,6 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
         if (getArguments() != null) {
             id = getArguments().getString("courseId");
         }
-        markwon = Markwon.builder(context)
-                .usePlugin(HtmlPlugin.create())
-                .usePlugin(ImagesPlugin.create())
-                .usePlugin(MovementMethodPlugin.none())
-                .usePlugin(new AbstractMarkwonPlugin() {
-                    @Override
-                    public void configure(@NonNull MarkwonPlugin.Registry registry) {
-                        registry.require(ImagesPlugin.class, imagesPlugin -> {
-                                    imagesPlugin.addSchemeHandler(FileSchemeHandler.create());
-                                    imagesPlugin.addSchemeHandler(NetworkSchemeHandler.create());
-                                    imagesPlugin.addSchemeHandler(OkHttpNetworkSchemeHandler.create());
-                                }
-                        );
-                    }
-                })
-                .build();
     }
 
     @Override
@@ -106,7 +78,7 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
         setTextViewVisibility(fragmentCourseDetailBinding.gradeLevel, courses.gradeLevel, fragmentCourseDetailBinding.ltGradeLevel);
         setTextViewVisibility(fragmentCourseDetailBinding.language, courses.languageOfInstruction, fragmentCourseDetailBinding.ltLanguage);
         String markdownContentWithLocalPaths = CourseStepFragment.prependBaseUrlToImages(courses.description, "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/");
-        markwon.setMarkdown(fragmentCourseDetailBinding.description, markdownContentWithLocalPaths);
+        Markdown.INSTANCE.setMarkdownText(fragmentCourseDetailBinding.description, markdownContentWithLocalPaths);
         fragmentCourseDetailBinding.noOfExams.setText(RealmStepExam.getNoOfExam(mRealm, id) + "");
         final RealmResults resources = mRealm.where(RealmMyLibrary.class).equalTo("courseId", id).equalTo("resourceOffline", false).isNotNull("resourceLocalAddress").findAll();
         setResourceButton(resources, fragmentCourseDetailBinding.btnResources);
@@ -132,7 +104,7 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
 
     @Override
     public void onRatingChanged() {
-        JsonObject object = RealmRating.getRatingsById(mRealm, "course", courses.courseId, user.getId());
+        JsonObject object = RealmRating.getRatingsById(mRealm, "course", courses.courseId, user.id);
         setRatings(object);
     }
 

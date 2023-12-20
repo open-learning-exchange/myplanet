@@ -70,10 +70,10 @@ public class DiscussionListFragment extends BaseTeamFragment {
         List<RealmNews> realmNewsList = mRealm.where(RealmNews.class).isEmpty("replyTo").sort("time", Sort.DESCENDING).findAll();
         List<RealmNews> list = new ArrayList<>();
         for (RealmNews news : realmNewsList) {
-            if (!TextUtils.isEmpty(news.getViewableBy()) && news.getViewableBy().equalsIgnoreCase("teams") && news.getViewableId().equalsIgnoreCase(team._id)) {
+            if (!TextUtils.isEmpty(news.viewableBy) && news.viewableBy.equalsIgnoreCase("teams") && news.viewableId.equalsIgnoreCase(team._id)) {
                 list.add(news);
-            } else if (!TextUtils.isEmpty(news.getViewIn())) {
-                JsonArray ar = new Gson().fromJson(news.getViewIn(), JsonArray.class);
+            } else if (!TextUtils.isEmpty(news.viewIn)) {
+                JsonArray ar = new Gson().fromJson(news.viewIn, JsonArray.class);
                 for (JsonElement e : ar) {
                     JsonObject ob = e.getAsJsonObject();
                     if (ob.get("_id").getAsString().equalsIgnoreCase(team._id)) {

@@ -56,7 +56,7 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
         if (arguments!!.getBoolean("fromLogin", false)) {
             fragmentEnterpriseCalendarBinding.addEvent.visibility = View.GONE
         } else if (user != null) {
-            if (user.isManager || user.isLeader) fragmentEnterpriseCalendarBinding.addEvent.visibility = View.VISIBLE
+            if (user.isManager() || user.isLeader()) fragmentEnterpriseCalendarBinding.addEvent.visibility = View.VISIBLE
             else fragmentEnterpriseCalendarBinding.addEvent.visibility = View.GONE
         } else {
             fragmentEnterpriseCalendarBinding.addEvent.visibility = View.GONE

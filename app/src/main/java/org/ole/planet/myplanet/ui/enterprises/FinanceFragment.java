@@ -159,8 +159,8 @@ public class FinanceFragment extends BaseTeamFragment {
         team.description = note;
         team.teamId = teamId;
         team.amount = Integer.parseInt(amount);
-        team.parentCode = user.getParentCode();
-        team.teamPlanetCode = user.getPlanetCode();
+        team.parentCode = user.parentCode;
+        team.teamPlanetCode = user.planetCode;
         team.teamType = "sync";
         team.docType = "transaction";
         team.updated = true;

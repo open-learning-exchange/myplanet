@@ -44,7 +44,7 @@ class ServicesFragment : Fragment() {
         }
         setRecyclerView()
 
-        if (user?.isManager == true || user?.isLeader == true) {
+        if (user?.isManager() == true || user?.isLeader() == true) {
             fragmentServicesBinding.fab.show()
         } else {
             fragmentServicesBinding.fab.hide()

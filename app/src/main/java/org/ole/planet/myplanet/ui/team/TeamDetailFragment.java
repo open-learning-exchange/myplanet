@@ -8,7 +8,6 @@ import android.view.ViewGroup;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
-import androidx.viewpager.widget.ViewPager;
 
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
@@ -65,7 +64,7 @@ public class TeamDetailFragment extends Fragment {
                 }
             });
         }
-        if (RealmMyTeam.isTeamLeader(teamId, user.getId(), mRealm)) {
+        if (RealmMyTeam.isTeamLeader(teamId, user.id, mRealm)) {
             fragmentTeamDetailBinding.btnLeave.setVisibility(View.GONE);
         }
         return fragmentTeamDetailBinding.getRoot();
@@ -86,11 +85,11 @@ public class TeamDetailFragment extends Fragment {
         Utilities.log("Crete team log");
         RealmTeamLog log = mRealm.createObject(RealmTeamLog.class, UUID.randomUUID().toString());
         log.setTeamId(teamId);
-        log.setUser(user.getName());
-        log.setCreatedOn(user.getPlanetCode());
+        log.setUser(user.name);
+        log.setCreatedOn(user.planetCode);
         log.setType("teamVisit");
         log.setTeamType(team.teamType);
-        log.setParentCode(user.getParentCode());
+        log.setParentCode(user.parentCode);
         log.setTime(new Date().getTime());
         mRealm.commitTransaction();
     }

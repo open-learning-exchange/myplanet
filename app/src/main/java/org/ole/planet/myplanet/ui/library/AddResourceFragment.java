@@ -68,8 +68,8 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
         EditText etTitle = v.findViewById(R.id.et_title);
         EditText etDesc = v.findViewById(R.id.et_description);
         RealmUserModel realmUserModel = new UserProfileDbHandler(MainApplication.context).getUserModel();
-        String userId = realmUserModel.getId();
-        String userName = realmUserModel.getName();
+        String userId = realmUserModel.id;
+        String userName = realmUserModel.name;
         new AlertDialog.Builder(context).setTitle(R.string.enter_resource_detail).setView(v).setPositiveButton("Save", (dialogInterface, i) -> {
             String title = etTitle.getText().toString().trim();
             if (title.isEmpty()) {

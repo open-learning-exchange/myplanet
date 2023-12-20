@@ -67,12 +67,12 @@ public class TeamResourceFragment extends BaseTeamFragment implements TeamPageLi
                 RealmMyTeam team = mRealm.createObject(RealmMyTeam.class, UUID.randomUUID().toString());
                 team.teamId = teamId;
                 team.title = libraries.get(se).title;
-                team.status = user.getParentCode();
+                team.status = user.parentCode;
                 team.resourceId = libraries.get(se).get_id();
                 team.docType = "resourceLink";
                 team.updated = true;
                 team.teamType = "local";
-                team.teamPlanetCode = user.getPlanetCode();
+                team.teamPlanetCode = user.planetCode;
             }
             mRealm.commitTransaction();
             showLibraryList();

@@ -73,7 +73,7 @@ public class EditAchievementFragment extends BaseContainerFragment implements Da
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
         user = new UserProfileDbHandler(getActivity()).getUserModel();
         achievementArray = new JsonArray();
-        achievement = mRealm.where(RealmAchievement.class).equalTo("_id", user.getId() + "@" + user.getPlanetCode()).findFirst();
+        achievement = mRealm.where(RealmAchievement.class).equalTo("_id", user.id + "@" + user.planetCode).findFirst();
         initializeData();
         setListeners();
         if (achievementArray != null) showAchievementAndInfo();
@@ -251,7 +251,7 @@ public class EditAchievementFragment extends BaseContainerFragment implements Da
     public void initializeData() {
         if (achievement == null) {
             if (!mRealm.isInTransaction()) mRealm.beginTransaction();
-            achievement = mRealm.createObject(RealmAchievement.class, user.getId() + "@" + user.getPlanetCode());
+            achievement = mRealm.createObject(RealmAchievement.class, user.id + "@" + user.planetCode);
             return;
         } else {
             achievementArray = achievement.getAchievementsArray();
@@ -261,12 +261,12 @@ public class EditAchievementFragment extends BaseContainerFragment implements Da
             fragmentEditAchievementBinding.etGoals.setText(achievement.goals);
             fragmentEditAchievementBinding.cbSendToNation.setChecked(Boolean.parseBoolean(achievement.sendToNation));
         }
-        fragmentEditAchievementBinding.txtDob.setText(TextUtils.isEmpty(user.getDob()) ? getString(R.string.birth_date) : TimeUtils.getFormatedDate(user.getDob(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"));
+        fragmentEditAchievementBinding.txtDob.setText(TextUtils.isEmpty(user.dob) ? getString(R.string.birth_date) : TimeUtils.getFormatedDate(user.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"));
         resourceArray = new JsonArray();
-        fragmentEditAchievementBinding.etFname.setText(user.getFirstName());
-        fragmentEditAchievementBinding.etMname.setText(user.getMiddleName());
-        fragmentEditAchievementBinding.etLname.setText(user.getLastName());
-        fragmentEditAchievementBinding.etBirthplace.setText(user.getBirthPlace());
+        fragmentEditAchievementBinding.etFname.setText(user.firstName);
+        fragmentEditAchievementBinding.etMname.setText(user.middleName);
+        fragmentEditAchievementBinding.etLname.setText(user.lastName);
+        fragmentEditAchievementBinding.etBirthplace.setText(user.birthPlace);
     }
 
     public CheckboxListView createResourceList(MyLibraryAlertdialogBinding myLibraryAlertdialogBinding, List<RealmMyLibrary> list, List<String> prevList) {

@@ -70,7 +70,7 @@ public class AdapterTask extends RecyclerView.Adapter<AdapterTask.ViewHolderTask
         if (!TextUtils.isEmpty(realmTeamTask.getAssignee())) {
             RealmUserModel model = realm.where(RealmUserModel.class).equalTo("id", realmTeamTask.getAssignee()).findFirst();
             if (model != null) {
-                rowTaskBinding.assignee.setText(context.getString(R.string.assigned_to_colon) + model.getName());
+                rowTaskBinding.assignee.setText(context.getString(R.string.assigned_to_colon) + model.name);
             }
         } else {
             rowTaskBinding.assignee.setText(R.string.no_assignee);

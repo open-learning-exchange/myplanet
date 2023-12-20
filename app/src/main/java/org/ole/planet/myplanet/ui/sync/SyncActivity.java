@@ -270,13 +270,13 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
             AndroidDecrypter decrypt = new AndroidDecrypter();
             RealmResults<RealmUserModel> db_users = mRealm.where(RealmUserModel.class).equalTo("name", username).findAll();
             for (RealmUserModel user : db_users) {
-                if (user.get_id().isEmpty()) {
-                    if (username.equals(user.getName()) && password.equals(user.getPassword())) {
+                if (user._id.isEmpty()) {
+                    if (username.equals(user.name) && password.equals(user.password)) {
                         saveUserInfoPref(settings, password, user);
                         return true;
                     }
                 } else {
-                    if (decrypt.AndroidDecrypter(username, password, user.getDerived_key(), user.getSalt())) {
+                    if (decrypt.AndroidDecrypter(username, password, user.derived_key, user.salt)) {
                         if (isManagerMode && !user.isManager()) return false;
                         saveUserInfoPref(settings, password, user);
                         return true;
@@ -669,9 +669,9 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
                     dialog.dismiss();
 
                     if (existingUser != null) {
-                        if (existingUser.get_id().contains("guest")) {
+                        if (existingUser._id.contains("guest")) {
                             showGuestDialog(username);
-                        } else if (existingUser.get_id().contains("org.couchdb.user:")) {
+                        } else if (existingUser._id.contains("org.couchdb.user:")) {
                             showUserAlreadyMemberDialog(username);
                         }
                     } else {
@@ -752,7 +752,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
                 prefData.setSAVEDUSERS1(existingUsers);
             }
         } else if(source == "member"){
-            String userProfile = profileDbHandler.getUserModel().getUserImage();
+            String userProfile = profileDbHandler.getUserModel().userImage;
             String fullName = profileDbHandler.getUserModel().getFullName();
 
             if (userProfile == null) {
@@ -760,7 +760,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
             }
 
             if (fullName.trim().length() == 0) {
-                fullName = profileDbHandler.getUserModel().getName();
+                fullName = profileDbHandler.getUserModel().name;
             }
 
             User newUser = new User(fullName, name, password, userProfile, "member");
@@ -1139,7 +1139,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
             LayoutChildLoginBinding layoutChildLoginBinding = LayoutChildLoginBinding.inflate(getLayoutInflater());
             new AlertDialog.Builder(this).setView(layoutChildLoginBinding.getRoot()).setTitle(R.string.please_enter_your_password).setPositiveButton(R.string.login, (dialogInterface, i) -> {
                 String password = layoutChildLoginBinding.etChildPassword.getText().toString();
-                if (authenticateUser(settings, userModel.getName(), password, false)) {
+                if (authenticateUser(settings, userModel.name, password, false)) {
                     Toast.makeText(getApplicationContext(), getString(R.string.thank_you), Toast.LENGTH_SHORT).show();
                     onLogin();
                 } else {
