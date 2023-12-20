@@ -961,5 +961,6 @@
     <string name="web_view">vista web</string>
     <string name="invalid_configuration">Configuraciones de servidor no válidas</string>
     <string name="date_reset">Restablecer fecha</string>
+    <string name="no_course_matched_filter">Ningún curso coincide con el filtro</string>
 
 </resources>

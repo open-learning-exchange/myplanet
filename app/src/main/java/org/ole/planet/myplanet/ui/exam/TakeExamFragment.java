@@ -114,7 +114,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         fragmentTakeExamBinding.llCheckbox.setVisibility(View.GONE);
         clearAnswer();
         if (sub.getAnswers().size() > currentIndex) {
-            ans = sub.getAnswers().get(currentIndex).getValue();
+            ans = sub.getAnswers().get(currentIndex).value;
         }
         if (question.getType().equalsIgnoreCase("select")) {
             fragmentTakeExamBinding.groupChoices.setVisibility(View.VISIBLE);
@@ -218,15 +218,15 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         RealmList<RealmAnswer> list = sub.getAnswers();
         RealmAnswer answer = createAnswer(list);
         RealmExamQuestion que = mRealm.copyFromRealm(questions.get(currentIndex));
-        answer.setQuestionId(que.getId());
-        answer.setValue(ans);
+        answer.questionId = que.getId();
+        answer.value = ans;
         answer.setValueChoices(listAns, isLastAnsvalid);
-        answer.setSubmissionId(sub.getId());
-        Submit_id = answer.getSubmissionId();
+        answer.submissionId = sub.getId();
+        Submit_id = answer.submissionId;
 
         if (que.getCorrectChoice().size() == 0) {
-            answer.setGrade(0);
-            answer.setMistakes(0);
+            answer.grade = 0;
+            answer.mistakes = 0;
             flag = true;
         } else {
             flag = checkCorrectAns(answer, que);
@@ -247,9 +247,9 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
 
     private boolean checkCorrectAns(RealmAnswer answer, RealmExamQuestion que) {
         boolean flag = false;
-        answer.setPassed(que.getCorrectChoice().contains(ans.toLowerCase()));
-        answer.setGrade(1);
-        int mistake = answer.getMistakes();
+        answer.isPassed = que.getCorrectChoice().contains(ans.toLowerCase());
+        answer.grade = 1;
+        int mistake = answer.mistakes;
         String[] selectedAns = listAns.values().toArray(new String[0]);
         String[] correctChoices = que.getCorrectChoice().toArray(new String[0]);
         if (!isEqual(selectedAns, correctChoices)) {
@@ -257,7 +257,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         } else {
             flag = true;
         }
-        answer.setMistakes(mistake);
+        answer.mistakes = mistake;
         return flag;
     }
 
