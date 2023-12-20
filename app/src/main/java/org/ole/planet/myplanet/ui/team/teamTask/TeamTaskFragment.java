@@ -120,7 +120,7 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
         t.setLink(new Gson().toJson(ob));
         JsonObject obsync = new JsonObject();
         obsync.addProperty("type", "local");
-        obsync.addProperty("planetCode", user.getPlanetCode());
+        obsync.addProperty("planetCode", user.planetCode);
         t.setSync(new Gson().toJson(obsync));
         mRealm.commitTransaction();
         if (fragmentTeamTaskBinding.rvTask.getAdapter() != null) {
@@ -139,7 +139,7 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
         showNoData(fragmentTeamTaskBinding.tvNodata, list.size());
         fragmentTeamTaskBinding.taskToggle.setOnCheckedChangeListener((group, checkedId) -> {
             if (checkedId == R.id.btn_my) {
-                list = mRealm.where(RealmTeamTask.class).equalTo("teamId", teamId).notEqualTo("status", "archived").equalTo("completed", false).equalTo("assignee", user.getId()).sort("deadline", Sort.DESCENDING).findAll();
+                list = mRealm.where(RealmTeamTask.class).equalTo("teamId", teamId).notEqualTo("status", "archived").equalTo("completed", false).equalTo("assignee", user.id).sort("deadline", Sort.DESCENDING).findAll();
             } else if (checkedId == R.id.btn_completed) {
                 list = mRealm.where(RealmTeamTask.class).equalTo("teamId", teamId).notEqualTo("status", "archived").equalTo("completed", true).sort("deadline", Sort.DESCENDING).findAll();
             } else {
@@ -193,10 +193,10 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
         alertUsersSpinnerBinding.spnUser.setAdapter(adapter);
         new AlertDialog.Builder(getActivity()).setTitle(R.string.select_member).setView(alertUsersSpinnerBinding.getRoot()).setCancelable(false).setPositiveButton(R.string.ok, (dialogInterface, i) -> {
             RealmUserModel user = ((RealmUserModel) alertUsersSpinnerBinding.spnUser.getSelectedItem());
-            String userId = user.getId();
+            String userId = user.id;
             if (!mRealm.isInTransaction()) mRealm.beginTransaction();
             realmTeamTask.setAssignee(userId);
-            Utilities.toast(getActivity(), getString(R.string.assign_task_to) + " " + user.getName());
+            Utilities.toast(getActivity(), getString(R.string.assign_task_to) + " " + user.name);
             mRealm.commitTransaction();
             adapter.notifyDataSetChanged();
         }).show();

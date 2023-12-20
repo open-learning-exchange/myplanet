@@ -66,12 +66,12 @@ public class UserInformationFragment extends BaseDialogFragment implements View.
     }
 
     private void initViews() {
-        fragmentUserInformationBinding.etEmail.setText(userModel.getEmail() + "");
-        fragmentUserInformationBinding.etFname.setText(userModel.getFirstName() + "");
-        fragmentUserInformationBinding.etLname.setText(userModel.getLastName() + "");
-        fragmentUserInformationBinding.etPhone.setText(userModel.getPhoneNumber() + "");
-        fragmentUserInformationBinding.txtDob.setText(userModel.getDob() + "");
-        dob = userModel.getDob();
+        fragmentUserInformationBinding.etEmail.setText(userModel.email + "");
+        fragmentUserInformationBinding.etFname.setText(userModel.firstName + "");
+        fragmentUserInformationBinding.etLname.setText(userModel.lastName + "");
+        fragmentUserInformationBinding.etPhone.setText(userModel.phoneNumber + "");
+        fragmentUserInformationBinding.txtDob.setText(userModel.dob + "");
+        dob = userModel.dob;
         fragmentUserInformationBinding.btnCancel.setOnClickListener(this);
         fragmentUserInformationBinding.btnSubmit.setOnClickListener(this);
         fragmentUserInformationBinding.txtDob.setOnClickListener(this);
@@ -108,20 +108,20 @@ public class UserInformationFragment extends BaseDialogFragment implements View.
         String level = fragmentUserInformationBinding.spnLevel.getSelectedItem().toString();
         String lang = fragmentUserInformationBinding.spnLang.getSelectedItem().toString();
         if (TextUtils.isEmpty(id)) {
-            String userId = userModel.getId();
+            String userId = userModel.id;
             String finalGender = gender;
             mRealm.executeTransactionAsync(realm -> {
                 RealmUserModel model = realm.where(RealmUserModel.class).equalTo("id", userId).findFirst();
                 if (model != null) {
-                    if (!TextUtils.isEmpty(fname)) model.setFirstName(fname);
-                    if (!TextUtils.isEmpty(lname)) model.setLastName(lname);
-                    if (!TextUtils.isEmpty(email)) model.setEmail(email);
-                    if (!TextUtils.isEmpty(lang)) model.setLanguage(lang);
-                    if (!TextUtils.isEmpty(phone)) model.setPhoneNumber(phone);
-                    if (!TextUtils.isEmpty(dob)) model.setBirthPlace(dob);
-                    if (!TextUtils.isEmpty(level)) model.setLevel(level);
-                    if (!TextUtils.isEmpty(finalGender)) model.setGender(finalGender);
-                    model.setUpdated(true);
+                    if (!TextUtils.isEmpty(fname)) model.firstName = fname;
+                    if (!TextUtils.isEmpty(lname)) model.lastName = lname;
+                    if (!TextUtils.isEmpty(email)) model.email = email;
+                    if (!TextUtils.isEmpty(lang)) model.language = lang;
+                    if (!TextUtils.isEmpty(phone)) model.phoneNumber = phone;
+                    if (!TextUtils.isEmpty(dob)) model.birthPlace = dob;
+                    if (!TextUtils.isEmpty(level)) model.level = level;
+                    if (!TextUtils.isEmpty(finalGender)) model.gender = finalGender;
+                    model.isUpdated = true;
                 }
             }, () -> {
                 Utilities.toast(MainApplication.context, getString(R.string.user_profile_updated));

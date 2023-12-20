@@ -184,7 +184,7 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
         submit.setSubmissionId(submit_id);
         submit.setExamId(exam.getId());
         submit.setCourseId(exam.getCourseId());
-        submit.setMemberId(user.getId());
+        submit.setMemberId(user.id);
         submit.setDate(date);
         submit.setUniqueId(unique_id);
         submit.setPhotoLocation(photo_path);
