@@ -87,8 +87,7 @@ jobs:
           ls -alR output
 
       - name: publish AAB to playstore
-        if: github.ref == 'refs/heads/master'
-        if: matrix.build == 'lite'
+        if: (github.ref == 'refs/heads/master') && (matrix.build == 'lite')
         uses: r0adkll/upload-google-play@v1.1.2
         with:
           serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
