@@ -169,11 +169,11 @@ public class MyTeamsDetailFragment extends BaseNewsFragment {
         }
         RealmTeamLog log = mRealm.createObject(RealmTeamLog.class, UUID.randomUUID().toString());
         log.setTeamId(teamId);
-        log.setUser(user.getName());
-        log.setCreatedOn(user.getPlanetCode());
+        log.setUser(user.name);
+        log.setCreatedOn(user.planetCode);
         log.setType("teamVisit");
         log.setTeamType(team.getTeamType());
-        log.setParentCode(user.getParentCode());
+        log.setParentCode(user.parentCode);
         log.setTime(new Date().getTime());
         mRealm.commitTransaction();
     }
@@ -254,12 +254,12 @@ public class MyTeamsDetailFragment extends BaseNewsFragment {
                 if (convertView == null)
                     convertView = LayoutInflater.from(getActivity()).inflate(android.R.layout.simple_list_item_1, parent, false);
                 TextView tv = convertView.findViewById(android.R.id.text1);
-                tv.setText(getItem(position).getName() + " (" + RealmTeamLog.getVisitCount(mRealm, getItem(position).getName(), teamId) + getString(R.string.visits) + ")");
+                tv.setText(getItem(position).name + " (" + RealmTeamLog.getVisitCount(mRealm, getItem(position).name, teamId) + getString(R.string.visits) + ")");
                 return convertView;
             }
         });
         listContent.setOnItemClickListener((adapterView, view, i, l) -> {
-            openFragment(data.get(i).getId(), new UserDetailFragment());
+            openFragment(data.get(i).id, new UserDetailFragment());
         });
     }
 

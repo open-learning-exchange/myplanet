@@ -55,18 +55,17 @@ class NewsDetailActivity : BaseActivity() {
 
     private fun initViews() {
         title = news?.userName
-        var msg: String = news!!.message
+        var msg: String? = news!!.message
 
-        if (news!!.imageUrls != null && news!!.imageUrls.size > 0) {
+        if (news!!.imageUrls != null && news!!.imageUrls!!.size > 0) {
             msg = loadLocalImage();
         } else {
             news?.imagesArray?.forEach {
                 val ob = it.asJsonObject
                 val resourceId = JsonUtils.getString("resourceId", ob.asJsonObject)
                 val markDown = JsonUtils.getString("markdown", ob.asJsonObject)
-                val library =
-                    realm.where(RealmMyLibrary::class.java).equalTo("_id", resourceId).findFirst()
-                msg = msg.replace(
+                val library = realm.where(RealmMyLibrary::class.java).equalTo("_id", resourceId).findFirst()
+                msg = msg?.replace(
                     markDown,
                     "<img style=\"float: right; padding: 10px 10px 10px 10px;\"  width=\"200px\" src=\"file://" + Utilities.SD_PATH + "/" + library?.id + "/" + library?.resourceLocalAddress + "\"/>",
                     false
@@ -74,7 +73,7 @@ class NewsDetailActivity : BaseActivity() {
             }
             loadImage()
         }
-        msg = msg.replace(
+        msg = msg!!.replace(
             "\n",
             "<div/><br/><div style=\" word-wrap: break-word;page-break-after: always;  word-spacing: 2px;\" >"
         )
@@ -89,13 +88,13 @@ class NewsDetailActivity : BaseActivity() {
     }
 
     private fun loadLocalImage(): String {
-        var msg: String = news!!.message
+        var msg: String? = news!!.message
         try {
-            val imgObject = Gson().fromJson(news!!.imageUrls[0], JsonObject::class.java)
+            val imgObject = Gson().fromJson(news!!.imageUrls!![0], JsonObject::class.java)
             activityNewsDetailBinding.img.visibility = View.VISIBLE
             Glide.with(this@NewsDetailActivity)
                 .load(File(JsonUtils.getString("imageUrl", imgObject))).into(activityNewsDetailBinding.img)
-            news!!.imageUrls.forEach {
+            news!!.imageUrls!!.forEach {
                 val imageObject = Gson().fromJson(it, JsonObject::class.java)
                 msg += "<br/><img width=\"50%\" src=\"file://" + JsonUtils.getString(
                     "imageUrl", imageObject
@@ -104,7 +103,7 @@ class NewsDetailActivity : BaseActivity() {
         } catch (e: Exception) {
             loadImage()
         }
-        return msg
+        return msg!!
     }
 
     private fun loadImage() {

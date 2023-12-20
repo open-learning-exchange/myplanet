@@ -43,7 +43,7 @@ class MyHealthFragment : Fragment() {
     lateinit var alertHealthListBinding: AlertHealthListBinding
     var profileDbHandler: UserProfileDbHandler? = null
     var userId: String? = null
-    var mRealm: Realm? = null
+    lateinit var mRealm: Realm
     var userModel: RealmUserModel? = null
     lateinit var userModelList: List<RealmUserModel>
     lateinit var adapter: UserListArrayAdapter
@@ -68,8 +68,8 @@ class MyHealthFragment : Fragment() {
             if (TextUtils.isEmpty(profileDbHandler!!.userModel._id)) profileDbHandler!!.userModel.id else profileDbHandler!!.userModel._id
         getHealthRecords(userId)
 
-        Utilities.log("ROLE " + profileDbHandler?.userModel?.roleAsString!!)
-        if (profileDbHandler?.userModel?.roleAsString!!.contains("health", true)) {
+        Utilities.log("ROLE " + profileDbHandler?.userModel?.getRoleAsString()!!)
+        if (profileDbHandler?.userModel?.getRoleAsString()!!.contains("health", true)) {
             fragmentVitalSignBinding.btnnewPatient.visibility = View.VISIBLE
             fragmentVitalSignBinding.btnnewPatient.setOnClickListener { selectPatient() }
             fragmentVitalSignBinding.fabAddMember.show(true)
@@ -86,8 +86,8 @@ class MyHealthFragment : Fragment() {
 
     private fun getHealthRecords(memberId: String?) {
         userId = memberId
-        userModel = mRealm!!.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
-        fragmentVitalSignBinding.lblHealthName.text = userModel!!.fullName
+        userModel = mRealm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
+        fragmentVitalSignBinding.lblHealthName.text = userModel!!.getFullName()
         fragmentVitalSignBinding.addNewRecord.setOnClickListener {
             startActivity(
                 Intent(activity, AddExaminationActivity::class.java).putExtra("userId", userId)

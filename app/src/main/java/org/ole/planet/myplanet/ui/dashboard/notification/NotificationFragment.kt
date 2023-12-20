@@ -97,8 +97,8 @@ class NotificationFragment : BottomSheetDialogFragment() {
         }
         notificationList.add(Notifications(R.drawable.baseline_storage_24, storageNotiText))
 
-        if (TextUtils.isEmpty(model.key) || model.roleAsString.contains("health")) {
-            if (!model.id.startsWith("guest")) {
+        if (TextUtils.isEmpty(model.key) || model.getRoleAsString().contains("health")) {
+            if (!model.id!!.startsWith("guest")) {
                 notificationList.add(
                     Notifications(
                         R.drawable.ic_myhealth, getString(R.string.health_record_not_available_click_to_sync)
