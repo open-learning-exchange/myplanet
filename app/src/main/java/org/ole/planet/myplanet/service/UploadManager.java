@@ -386,7 +386,7 @@ public class UploadManager extends FileUploadService {
             final RealmResults<RealmOfflineActivity> activities = realm.where(RealmOfflineActivity.class).isNull("_rev").equalTo("type", "login").findAll();
             for (RealmOfflineActivity act : activities) {
                 try {
-                    if (act.getUserId().startsWith("guest")) continue;
+                    if (act.userId.startsWith("guest")) continue;
                     JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/login_activities", RealmOfflineActivity.serializeLoginActivities(act, context)).execute().body();
                     act.changeRev(object);
                 } catch (IOException e) {
