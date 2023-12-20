@@ -107,7 +107,7 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 RealmUserModel userModel = mRealm.where(RealmUserModel.class).equalTo("id", news.userId).findFirst();
                 if (userModel != null && currentUser != null) {
                     viewHolder.rowNewsBinding.tvName.setText(userModel.toString());
-                    Utilities.loadImage(userModel.getUserImage(), viewHolder.rowNewsBinding.imgUser);
+                    Utilities.loadImage(userModel.userImage, viewHolder.rowNewsBinding.imgUser);
                     showHideButtons(userModel, holder);
                 } else {
                     viewHolder.rowNewsBinding.tvName.setText(news.userName);
@@ -117,7 +117,7 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 showShareButton(holder, news);
                 viewHolder.rowNewsBinding.tvMessage.setText(news.getMessageWithoutMarkdown());
                 viewHolder.rowNewsBinding.tvDate.setText(TimeUtils.formatDate(news.time));
-                if(Objects.equals(news.userId, currentUser.get_id())){
+                if(Objects.equals(news.userId, currentUser._id)){
                     viewHolder.rowNewsBinding.imgDelete.setOnClickListener(view -> new AlertDialog.Builder(context).setMessage(R.string.delete_record).setPositiveButton(R.string.ok, (dialogInterface, i) -> deletePost(news, context)).setNegativeButton(R.string.cancel, null).show());
                     viewHolder.rowNewsBinding.imgEdit.setOnClickListener(view -> showEditAlert(news.id, true));
                     viewHolder.rowNewsBinding.btnAddLabel.setVisibility(fromLogin ? View.GONE : View.VISIBLE);
@@ -290,7 +290,7 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     private void showHideButtons(RealmUserModel userModel, RecyclerView.ViewHolder holder) {
         ViewHolderNews viewHolder = (ViewHolderNews) holder;
-        if (currentUser.getId().equals(userModel.getId())) {
+        if (currentUser.id.equals(userModel.id)) {
             viewHolder.rowNewsBinding.llEditDelete.setVisibility(View.VISIBLE);
             viewHolder.rowNewsBinding.btnAddLabel.setVisibility(View.VISIBLE);
         } else {
@@ -353,7 +353,7 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             JsonArray array = new Gson().fromJson(news.viewIn, JsonArray.class);
             JsonObject ob = new JsonObject();
             ob.addProperty("section", "community");
-            ob.addProperty("_id", currentUser.getPlanetCode() + "@" + currentUser.getParentCode());
+            ob.addProperty("_id", currentUser.planetCode + "@" + currentUser.parentCode);
             ob.addProperty("sharedDate", Calendar.getInstance().getTimeInMillis());
             array.add(ob);
             if (!mRealm.isInTransaction()) mRealm.beginTransaction();

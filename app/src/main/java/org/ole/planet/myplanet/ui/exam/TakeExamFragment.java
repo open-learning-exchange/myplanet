@@ -62,7 +62,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         initExam();
         questions = mRealm.where(RealmExamQuestion.class).equalTo("examId", exam.getId()).findAll();
         fragmentTakeExamBinding.tvQuestionCount.setText(getString(R.string.Q1) + questions.size());
-        RealmQuery q = mRealm.where(RealmSubmission.class).equalTo("userId", user.getId()).equalTo("parentId", (!TextUtils.isEmpty(exam.getCourseId())) ? id + "@" + exam.getCourseId() : id).sort("startTime", Sort.DESCENDING);
+        RealmQuery q = mRealm.where(RealmSubmission.class).equalTo("userId", user.id).equalTo("parentId", (!TextUtils.isEmpty(exam.getCourseId())) ? id + "@" + exam.getCourseId() : id).sort("startTime", Sort.DESCENDING);
         if (type.equals("exam")) q = q.equalTo("status", "pending");
 
         sub = (RealmSubmission) q.findFirst();
@@ -90,7 +90,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         } else {
             sub.setParentId((!TextUtils.isEmpty(exam.getCourseId())) ? id + "@" + exam.getCourseId() : id);
         }
-        sub.setUserId(user.getId());
+        sub.setUserId(user.id);
         sub.setStatus("pending");
         sub.setType(type);
         sub.setStartTime(new Date().getTime());

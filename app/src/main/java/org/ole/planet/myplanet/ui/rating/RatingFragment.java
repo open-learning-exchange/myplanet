@@ -122,10 +122,10 @@ public class RatingFragment extends DialogFragment {
         ratingObject.comment = comment;
         ratingObject.rate = (int) rating;
         ratingObject.time = new Date().getTime();
-        ratingObject.userId = model.getId();
-        ratingObject.createdOn = model.getParentCode();
-        ratingObject.parentCode = model.getParentCode();
-        ratingObject.planetCode = model.getPlanetCode();
+        ratingObject.userId = model.id;
+        ratingObject.createdOn = model.parentCode;
+        ratingObject.parentCode = model.parentCode;
+        ratingObject.planetCode = model.planetCode;
         ratingObject.user = new Gson().toJson(model.serialize());
         ratingObject.type = type;
         ratingObject.item = id;

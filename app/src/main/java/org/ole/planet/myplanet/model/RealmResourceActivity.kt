@@ -59,7 +59,7 @@ open class RealmResourceActivity : RealmObject() {
                 Utilities.log("User is null")
                 return
             }
-            if (user.id.startsWith("guest")) {
+            if (user.id!!.startsWith("guest")) {
                 return
             }
             val activities = mRealm.createObject(
