@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.dashboard;
 
+import org.ole.planet.myplanet.base.BaseContainerFragment;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
@@ -366,7 +367,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     public void openLibraryDetailFragment(RealmMyLibrary library) {
         Fragment f = new LibraryDetailFragment();
         Bundle b = new Bundle();
-        b.putString("libraryId", library.getResource_id());
+        b.putString("libraryId", library.resourceId);
         b.putString("openFrom", "Dashboard");
         f.setArguments(b);
         openCallFragment(f);
@@ -428,12 +429,12 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             super.onBackPressed();
         }
 
-//        Fragment fragment = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
-//        if (fragment instanceof BaseContainerFragment) {
-//            ((BaseContainerFragment) fragment).handleBackPressed();
-//        } else {
-//            super.onBackPressed();
-//        }
+        Fragment fragment = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
+        if (fragment instanceof BaseContainerFragment) {
+            ((BaseContainerFragment) fragment).handleBackPressed();
+        } else {
+            super.onBackPressed();
+        }
     }
 
     @Override

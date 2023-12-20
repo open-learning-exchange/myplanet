@@ -80,12 +80,12 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
             Realm realm = new DatabaseService(context).getRealmInstance();
             realm.executeTransactionAsync(realm1 -> {
                 RealmMyPersonal myPersonal = realm1.createObject(RealmMyPersonal.class, UUID.randomUUID().toString());
-                myPersonal.setTitle(title);
-                myPersonal.setUserId(userId);
-                myPersonal.setUserName(userName);
-                myPersonal.setPath(path);
-                myPersonal.setDate(new Date().getTime());
-                myPersonal.setDescription(desc);
+                myPersonal.title = title;
+                myPersonal.userId = userId;
+                myPersonal.userName = userName;
+                myPersonal.path = path;
+                myPersonal.date = new Date().getTime();
+                myPersonal.description = desc;
             }, () -> Utilities.toast(MainApplication.context, context.getString(R.string.resource_saved_to_my_personal)));
         }).setNegativeButton(R.string.dismiss, null).show();
     }
