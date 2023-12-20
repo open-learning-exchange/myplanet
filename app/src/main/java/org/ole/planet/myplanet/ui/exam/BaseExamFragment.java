@@ -130,7 +130,7 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
         RealmCourseProgress progress = mRealm.where(RealmCourseProgress.class).equalTo("courseId", exam.getCourseId()).equalTo("stepNum", stepNumber).findFirst();
         if (progress != null) {
             if (!mRealm.isInTransaction()) mRealm.beginTransaction();
-            progress.setPassed(sub.getStatus().equals("graded"));
+            progress.passed = sub.getStatus().equals("graded");
             mRealm.commitTransaction();
         }
     }

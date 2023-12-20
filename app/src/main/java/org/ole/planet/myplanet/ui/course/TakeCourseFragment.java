@@ -72,7 +72,7 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        fragmentTakeCourseBinding.tvCourseTitle.setText(currentCourse.getCourseTitle());
+        fragmentTakeCourseBinding.tvCourseTitle.setText(currentCourse.courseTitle);
         steps = RealmCourseStep.getSteps(mRealm, courseId);
         if (steps == null || steps.size() == 0) {
             fragmentTakeCourseBinding.nextStep.setVisibility(View.GONE);
@@ -117,7 +117,7 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
     }
 
     private void setCourseData() {
-        fragmentTakeCourseBinding.tvStepTitle.setText(currentCourse.getCourseTitle());
+        fragmentTakeCourseBinding.tvStepTitle.setText(currentCourse.courseTitle);
         if (!currentCourse.getUserId().contains(userModel.getId())) {
             fragmentTakeCourseBinding.btnRemove.setVisibility(View.VISIBLE);
             fragmentTakeCourseBinding.btnRemove.setText(getString(R.string.join));
@@ -141,13 +141,13 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
     @Override
     public void onPageSelected(int position) {
         if (position > 0) {
-            fragmentTakeCourseBinding.tvStepTitle.setText(steps.get(position - 1).getStepTitle());
+            fragmentTakeCourseBinding.tvStepTitle.setText(steps.get(position - 1).stepTitle);
             Utilities.log("Po " + position + " " + steps.size());
             if ((position - 1) < steps.size()) changeNextButtonState(position);
         } else {
             fragmentTakeCourseBinding.nextStep.setClickable(true);
             fragmentTakeCourseBinding.nextStep.setTextColor(getResources().getColor(R.color.md_white_1000));
-            fragmentTakeCourseBinding.tvStepTitle.setText(currentCourse.getCourseTitle());
+            fragmentTakeCourseBinding.tvStepTitle.setText(currentCourse.courseTitle);
         }
         int i = RealmCourseProgress.getCurrentProgress(steps, mRealm, userModel.getId(), courseId);
         if (i < steps.size()) fragmentTakeCourseBinding.courseProgress.setSecondaryProgress(i + 1);
@@ -156,8 +156,8 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
     }
 
     private void changeNextButtonState(int position) {
-        Utilities.log(RealmSubmission.isStepCompleted(mRealm, steps.get(position - 1).getId(), userModel.getId()) + " is step completed");
-        if (RealmSubmission.isStepCompleted(mRealm, steps.get(position - 1).getId(), userModel.getId()) || !Constants.showBetaFeature(Constants.KEY_EXAM, getActivity())) {
+        Utilities.log(RealmSubmission.isStepCompleted(mRealm, steps.get(position - 1).id, userModel.getId()) + " is step completed");
+        if (RealmSubmission.isStepCompleted(mRealm, steps.get(position - 1).id, userModel.getId()) || !Constants.showBetaFeature(Constants.KEY_EXAM, getActivity())) {
             fragmentTakeCourseBinding.nextStep.setClickable(true);
             fragmentTakeCourseBinding.nextStep.setTextColor(getResources().getColor(R.color.md_white_1000));
         } else {

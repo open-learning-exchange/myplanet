@@ -200,7 +200,7 @@ public class AdapterNews extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             RealmMyLibrary library = mRealm.where(RealmMyLibrary.class).equalTo("_id", resourceId).findFirst();
             if (library != null) {
                 File basePath = context.getExternalFilesDir(null);
-                File imageFile = new File(basePath, "ole/" + library.getId() + "/" + library.getResourceLocalAddress());
+                File imageFile = new File(basePath, "ole/" + library.id + "/" + library.resourceLocalAddress);
 
                 if (imageFile.exists()) {
                     Glide.with(context).load(imageFile).into(viewHolder.rowNewsBinding.imgNews);

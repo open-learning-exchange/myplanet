@@ -64,9 +64,9 @@ public class AdapterMyPersonal extends RecyclerView.Adapter<AdapterMyPersonal.Vi
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolderMyPersonal holder, int position) {
-        rowMyPersonalBinding.title.setText(list.get(position).getTitle());
-        rowMyPersonalBinding.description.setText(list.get(position).getDescription());
-        rowMyPersonalBinding.date.setText(TimeUtils.getFormatedDate(list.get(position).getDate()));
+        rowMyPersonalBinding.title.setText(list.get(position).title);
+        rowMyPersonalBinding.description.setText(list.get(position).description);
+        rowMyPersonalBinding.date.setText(TimeUtils.getFormatedDate(list.get(position).date));
         rowMyPersonalBinding.imgDelete.setOnClickListener(view -> new AlertDialog.Builder(context).setMessage(R.string.delete_record).setPositiveButton(R.string.ok, (dialogInterface, i) -> {
             if (!realm.isInTransaction()) realm.beginTransaction();
             RealmMyPersonal personal = realm.where(RealmMyPersonal.class).equalTo("_id", list.get(position).get_id()).findFirst();
@@ -80,7 +80,7 @@ public class AdapterMyPersonal extends RecyclerView.Adapter<AdapterMyPersonal.Vi
             editPersonal(list.get(position));
         });
         holder.itemView.setOnClickListener(view -> {
-            openResource(list.get(position).getPath());
+            openResource(list.get(position).path);
         });
         rowMyPersonalBinding.imgUpload.setOnClickListener(v -> {
             if (listener != null) listener.onUpload(list.get(position));
@@ -125,8 +125,8 @@ public class AdapterMyPersonal extends RecyclerView.Adapter<AdapterMyPersonal.Vi
 
     private void editPersonal(RealmMyPersonal personal) {
         AlertMyPersonalBinding alertMyPersonalBinding = AlertMyPersonalBinding.inflate(LayoutInflater.from(context));
-        alertMyPersonalBinding.etDescription.setText(personal.getDescription());
-        alertMyPersonalBinding.etTitle.setText(personal.getTitle());
+        alertMyPersonalBinding.etDescription.setText(personal.description);
+        alertMyPersonalBinding.etTitle.setText(personal.title);
 
         new AlertDialog.Builder(context)
                 .setTitle(R.string.edit_personal)
@@ -142,8 +142,8 @@ public class AdapterMyPersonal extends RecyclerView.Adapter<AdapterMyPersonal.Vi
                     }
 
                     if (!realm.isInTransaction()) realm.beginTransaction();
-                    personal.setDescription(desc);
-                    personal.setTitle(title);
+                    personal.description = desc;
+                    personal.title = title;
                     realm.commitTransaction();
 
                     notifyDataSetChanged();
