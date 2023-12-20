@@ -173,7 +173,7 @@ public class MyTeamsDetailFragment extends BaseNewsFragment {
         log.createdOn = user.planetCode;
         log.type = "teamVisit";
         log.teamType = team.getTeamType();
-        log.parentCode = user.parentCode();
+        log.parentCode = user.parentCode;
         log.time = new Date().getTime();
         mRealm.commitTransaction();
     }
