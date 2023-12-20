@@ -74,10 +74,10 @@ public class NewsFragment extends BaseNewsFragment {
             fragmentNewsBinding.etMessage.setText("");
             HashMap<String, String> map = new HashMap<>();
             map.put("message", message);
-            map.put("viewInId", user.getPlanetCode() + "@" + user.getParentCode());
+            map.put("viewInId", user.planetCode + "@" + user.parentCode);
             map.put("viewInSection", "community");
             map.put("messageType", "sync");
-            map.put("messagePlanetCode", user.getPlanetCode());
+            map.put("messagePlanetCode", user.planetCode);
             RealmNews n = RealmNews.createNews(map, mRealm, user, imageList);
             imageList.clear();
             llImage.removeAllViews();
@@ -103,7 +103,7 @@ public class NewsFragment extends BaseNewsFragment {
                 JsonArray ar = new Gson().fromJson(news.viewIn, JsonArray.class);
                 for (JsonElement e : ar) {
                     JsonObject ob = e.getAsJsonObject();
-                    if (ob != null && ob.has("_id") && ob.get("_id").getAsString().equalsIgnoreCase(user != null ? user.getPlanetCode() + "@" + user.getParentCode() : "")) {
+                    if (ob != null && ob.has("_id") && ob.get("_id").getAsString().equalsIgnoreCase(user != null ? user.planetCode + "@" + user.parentCode : "")) {
                         list.add(news);
                     }
                 }

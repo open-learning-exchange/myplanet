@@ -83,7 +83,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         }
         user = mRealm.where(RealmUserModel.class).equalTo("id", userId).findFirst();
         if (pojo != null && !TextUtils.isEmpty(pojo.data)) {
-            health = new Gson().fromJson(AndroidDecrypter.decrypt(pojo.data, user.getKey(), user.getIv()), RealmMyHealth.class);
+            health = new Gson().fromJson(AndroidDecrypter.decrypt(pojo.data, user.key, user.iv), RealmMyHealth.class);
         }
 
         if (health == null) {
@@ -242,15 +242,15 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
 
         examination.profileId = health.userKey;
         examination.creatorId = health.userKey;
-        examination.gender = user.getGender();
+        examination.gender = user.gender;
 
-        examination.age = TimeUtils.getAge(user.getDob());
-        examination.isSelfExamination = currentUser.get_id().equals(pojo.get_id());
+        examination.age = TimeUtils.getAge(user.dob);
+        examination.isSelfExamination = currentUser._id.equals(pojo.get_id());
         examination.date = new Date().getTime();
-        examination.planetCode = user.getPlanetCode();
+        examination.planetCode = user.planetCode;
         RealmExamination sign = new RealmExamination();
         sign.setAllergies(activityAddExaminationBinding.etAllergies.getText().toString().trim());
-        sign.setCreatedBy(currentUser.get_id());
+        sign.setCreatedBy(currentUser._id);
         examination.bp = activityAddExaminationBinding.etBloodpressure.getText().toString().trim();
         examination.setTemperature(getFloat(activityAddExaminationBinding.etTemperature.getText().toString().trim()));
         examination.pulse = getInt(activityAddExaminationBinding.etPulseRate.getText().toString().trim());
@@ -274,7 +274,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         pojo.isUpdated = true;
         try {
             Utilities.log(new Gson().toJson(sign));
-            examination.data = AndroidDecrypter.encrypt(new Gson().toJson(sign), user.getKey(), user.getIv());
+            examination.data = AndroidDecrypter.encrypt(new Gson().toJson(sign), user.key, user.iv);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -338,11 +338,11 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         try {
             if (pojo == null) {
                 pojo = mRealm.createObject(RealmMyHealthPojo.class, userId);
-                pojo.userId = user.get_id();
+                pojo.userId = user._id;
             }
 //            if (TextUtils.isEmpty(pojo.getData())) {
             health.lastExamination = new Date().getTime();
-            pojo.data = AndroidDecrypter.encrypt(new Gson().toJson(health), user.getKey(), user.getIv());
+            pojo.data = AndroidDecrypter.encrypt(new Gson().toJson(health), user.key, user.iv);
 //            }
         } catch (Exception e) {
             e.printStackTrace();

@@ -228,8 +228,8 @@ public class Service {
                 RealmUserModel model = RealmUserModel.populateUsersTable(obj, realm, settings);
                 String keyString = AndroidDecrypter.generateKey();
                 String iv = AndroidDecrypter.generateIv();
-                model.setKey(keyString);
-                model.setIv(iv);
+                model.key = keyString;
+                model.iv = iv;
                 realm.commitTransaction();
                 if (model != null) {
                     Utilities.toast(MainApplication.context, "Not connected to planet , created user offline.");

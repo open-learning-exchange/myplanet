@@ -260,10 +260,10 @@ public class RealmMyTeam extends RealmObject {
         team.setDocType("request");
         team.setCreatedDate(new Date().getTime());
         team.setTeamType("sync");
-        team.setUser_id(userModel.getId());
+        team.setUser_id(userModel.id);
         team.setTeamId(teamId);
         team.setUpdated(true);
-        team.setTeamPlanetCode(userModel.getPlanetCode());
+        team.setTeamPlanetCode(userModel.planetCode);
         mRealm.commitTransaction();
     }
 
@@ -277,7 +277,7 @@ public class RealmMyTeam extends RealmObject {
 
     public static void leaveTeam(String teamId, RealmUserModel userModel, Realm mRealm) {
         if (!mRealm.isInTransaction()) mRealm.beginTransaction();
-        RealmMyTeam team = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("userId", userModel.getId()).findFirst();
+        RealmMyTeam team = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("userId", userModel.id).findFirst();
         team.deleteFromRealm();
         mRealm.commitTransaction();
     }
@@ -314,7 +314,7 @@ public class RealmMyTeam extends RealmObject {
         List<RealmUserModel> list = new ArrayList<>();
         for (RealmMyTeam team : myteam) {
             RealmUserModel model = mRealm.where(RealmUserModel.class).equalTo("id", team.getUser_id()).findFirst();
-            if (model != null && (model.getName().contains(user))) list.add(model);
+            if (model != null && (model.name.contains(user))) list.add(model);
         }
         return list;
     }
@@ -489,7 +489,7 @@ public class RealmMyTeam extends RealmObject {
     }
 
     public void leave(RealmUserModel user, Realm mRealm) {
-        List<RealmMyTeam> teams = mRealm.where(RealmMyTeam.class).equalTo("userId", user.getId()).equalTo("teamId", this._id).equalTo("docType", "membership").findAll();
+        List<RealmMyTeam> teams = mRealm.where(RealmMyTeam.class).equalTo("userId", user.id).equalTo("teamId", this._id).equalTo("docType", "membership").findAll();
         for (RealmMyTeam team : teams) {
             if (team != null) {
                 removeTeam(team, mRealm);

@@ -80,7 +80,7 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
 
     public void saveCourseProgress() {
         if (!mRealm.isInTransaction()) mRealm.beginTransaction();
-        RealmCourseProgress courseProgress = mRealm.where(RealmCourseProgress.class).equalTo("courseId", step.courseId).equalTo("userId", user.getId()).equalTo("stepNum", stepNumber).findFirst();
+        RealmCourseProgress courseProgress = mRealm.where(RealmCourseProgress.class).equalTo("courseId", step.courseId).equalTo("userId", user.id).equalTo("stepNum", stepNumber).findFirst();
         if (courseProgress == null) {
             courseProgress = mRealm.createObject(RealmCourseProgress.class, UUID.randomUUID().toString());
             courseProgress.createdDate = new Date().getTime();
@@ -92,10 +92,10 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
         if (stepExams.size() == 0) {
             courseProgress.passed = true;
         }
-        courseProgress.createdOn = user.getPlanetCode();
+        courseProgress.createdOn = user.planetCode;
         courseProgress.updatedDate = new Date().getTime();
-        courseProgress.parentCode = user.getParentCode();
-        courseProgress.userId = user.getId();
+        courseProgress.parentCode = user.parentCode;
+        courseProgress.userId = user.id;
         mRealm.commitTransaction();
     }
 
@@ -120,7 +120,7 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
         Markdown.INSTANCE.setMarkdownText(fragmentCourseStepBinding.description, markdownContentWithLocalPaths);
         fragmentCourseStepBinding.description.setMovementMethod(LinkMovementMethod.getInstance());
       
-        if (!RealmMyCourse.isMyCourse(user.getId(), step.courseId, mRealm)) {
+        if (!RealmMyCourse.isMyCourse(user.id, step.courseId, mRealm)) {
             fragmentCourseStepBinding.btnTakeTest.setVisibility(View.GONE);
         }
         setListeners();
@@ -160,7 +160,7 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
     public void setMenuVisibility(final boolean visible) {
         super.setMenuVisibility(visible);
         try {
-            if (visible && RealmMyCourse.isMyCourse(user.getId(), step.courseId, mRealm)) {
+            if (visible && RealmMyCourse.isMyCourse(user.id, step.courseId, mRealm)) {
                 saveCourseProgress();
             }
         } catch (Exception e) {

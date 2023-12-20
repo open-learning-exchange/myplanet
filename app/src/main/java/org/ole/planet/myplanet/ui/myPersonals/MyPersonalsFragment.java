@@ -60,7 +60,7 @@ public class MyPersonalsFragment extends Fragment implements OnSelectedMyPersona
 
     private void setAdapter() {
         RealmUserModel model = new UserProfileDbHandler(getActivity()).getUserModel();
-        List<RealmMyPersonal> realmMyPersonals = mRealm.where(RealmMyPersonal.class).equalTo("userId", model.getId()).findAll();
+        List<RealmMyPersonal> realmMyPersonals = mRealm.where(RealmMyPersonal.class).equalTo("userId", model.id).findAll();
         AdapterMyPersonal personalAdapter = new AdapterMyPersonal(getActivity(), realmMyPersonals);
         personalAdapter.setListener(this);
         personalAdapter.setRealm(mRealm);

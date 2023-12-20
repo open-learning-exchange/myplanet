@@ -104,7 +104,7 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
 
     @Override
     public void onRatingChanged() {
-        JsonObject object = RealmRating.getRatingsById(mRealm, "course", courses.courseId, user.getId());
+        JsonObject object = RealmRating.getRatingsById(mRealm, "course", courses.courseId, user.id);
         setRatings(object);
     }
 
