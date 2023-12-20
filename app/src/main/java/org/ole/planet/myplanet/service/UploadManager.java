@@ -211,7 +211,7 @@ public class UploadManager extends FileUploadService {
             List<RealmCourseProgress> data = realm.where(RealmCourseProgress.class).isNull("_id").findAll();
             for (RealmCourseProgress sub : data) {
                 try {
-                    if (sub.getUserId().startsWith("guest")) continue;
+                    if (sub.userId.startsWith("guest")) continue;
                     JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/courses_progress", RealmCourseProgress.serializeProgress(sub)).execute().body();
                     if (object != null) {
                         sub.set_id(JsonUtils.getString("id", object));

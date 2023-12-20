@@ -47,8 +47,8 @@ public class AdapterTeamResource extends RecyclerView.Adapter<AdapterTeamResourc
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolderTeamResource holder, int position) {
-        rowTeamResourceBinding.tvTitle.setText(list.get(position).getTitle());
-        rowTeamResourceBinding.tvDescription.setText(list.get(position).getDescription());
+        rowTeamResourceBinding.tvTitle.setText(list.get(position).title);
+        rowTeamResourceBinding.tvDescription.setText(list.get(position).description);
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) {
                 listener.openLibraryDetailFragment(list.get(position));

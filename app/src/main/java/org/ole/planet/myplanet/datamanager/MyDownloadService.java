@@ -202,8 +202,8 @@ public class MyDownloadService extends IntentService {
         mRealm.executeTransaction(realm -> {
             RealmMyLibrary obj = realm.where(RealmMyLibrary.class).equalTo("resourceLocalAddress", currentFileName).findFirst();
             if (obj != null) {
-                obj.setResourceOffline(true);
-                obj.setDownloadedRev(obj.get_rev());
+                obj.resourceOffline = true;
+                obj.downloadedRev = obj.get_rev();
             } else {
                 Utilities.log("object Is null");
             }
