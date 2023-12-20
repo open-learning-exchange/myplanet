@@ -65,7 +65,7 @@ public class TeamDetailFragment extends Fragment {
                 }
             });
         }
-        if (RealmMyTeam.isTeamLeader(teamId, user.getId(), mRealm)) {
+        if (RealmMyTeam.isTeamLeader(teamId, user.id, mRealm)) {
             fragmentTeamDetailBinding.btnLeave.setVisibility(View.GONE);
         }
         return fragmentTeamDetailBinding.getRoot();
@@ -86,11 +86,11 @@ public class TeamDetailFragment extends Fragment {
         Utilities.log("Crete team log");
         RealmTeamLog log = mRealm.createObject(RealmTeamLog.class, UUID.randomUUID().toString());
         log.teamId = teamId;
-        log.user = user.getName();
-        log.createdOn = user.getPlanetCode();
+        log.user = user.name;
+        log.createdOn = user.planetCode;
         log.type = "teamVisit";
         log.teamType = team.getTeamType();
-        log.parentCode = user.getParentCode();
+        log.parentCode = user.parentCode;
         log.time = new Date().getTime();
         mRealm.commitTransaction();
     }

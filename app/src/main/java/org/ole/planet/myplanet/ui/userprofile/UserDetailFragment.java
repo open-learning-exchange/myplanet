@@ -106,11 +106,11 @@ public class UserDetailFragment extends Fragment {
     private List<Detail> getList(RealmUserModel user, UserProfileDbHandler db) {
         List<Detail> list = new ArrayList<>();
         list.add(new Detail("Full Name", user.getFullName()));
-        list.add(new Detail("DOB", TimeUtils.getFormatedDate(user.getDob(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")));
-        list.add(new Detail("Email", user.getEmail()));
-        list.add(new Detail("Phone", user.getPhoneNumber()));
-        list.add(new Detail("Language", user.getLanguage()));
-        list.add(new Detail("Level", user.getLevel()));
+        list.add(new Detail("DOB", TimeUtils.getFormatedDate(user.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")));
+        list.add(new Detail("Email", user.email));
+        list.add(new Detail("Phone", user.phoneNumber));
+        list.add(new Detail("Language", user.language));
+        list.add(new Detail("Level", user.level));
         list.add(new Detail("Number of Visits", db.getOfflineVisits() + ""));
         list.add(new Detail("Last Login", Utilities.getRelativeTime(db.getLastVisit()) + ""));
         return list;

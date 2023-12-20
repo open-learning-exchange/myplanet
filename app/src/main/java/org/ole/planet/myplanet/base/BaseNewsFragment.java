@@ -70,7 +70,7 @@ public abstract class BaseNewsFragment extends BaseContainerFragment implements 
 
     @Override
     public void showReply(RealmNews news, boolean fromLogin) {
-        startActivity(new Intent(getActivity(), ReplyActivity.class).putExtra("id", news.getId()).putExtra("fromLogin", fromLogin));
+        startActivity(new Intent(getActivity(), ReplyActivity.class).putExtra("id", news.id).putExtra("fromLogin", fromLogin));
     }
 
     public abstract void setData(List<RealmNews> list);

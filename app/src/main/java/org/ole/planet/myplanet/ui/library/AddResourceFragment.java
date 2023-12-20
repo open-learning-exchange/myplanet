@@ -68,8 +68,8 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
         EditText etTitle = v.findViewById(R.id.et_title);
         EditText etDesc = v.findViewById(R.id.et_description);
         RealmUserModel realmUserModel = new UserProfileDbHandler(MainApplication.context).getUserModel();
-        String userId = realmUserModel.getId();
-        String userName = realmUserModel.getName();
+        String userId = realmUserModel.id;
+        String userName = realmUserModel.name;
         new AlertDialog.Builder(context).setTitle(R.string.enter_resource_detail).setView(v).setPositiveButton("Save", (dialogInterface, i) -> {
             String title = etTitle.getText().toString().trim();
             if (title.isEmpty()) {
@@ -80,12 +80,12 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
             Realm realm = new DatabaseService(context).getRealmInstance();
             realm.executeTransactionAsync(realm1 -> {
                 RealmMyPersonal myPersonal = realm1.createObject(RealmMyPersonal.class, UUID.randomUUID().toString());
-                myPersonal.setTitle(title);
-                myPersonal.setUserId(userId);
-                myPersonal.setUserName(userName);
-                myPersonal.setPath(path);
-                myPersonal.setDate(new Date().getTime());
-                myPersonal.setDescription(desc);
+                myPersonal.title = title;
+                myPersonal.userId = userId;
+                myPersonal.userName = userName;
+                myPersonal.path = path;
+                myPersonal.date = new Date().getTime();
+                myPersonal.description = desc;
             }, () -> Utilities.toast(MainApplication.context, context.getString(R.string.resource_saved_to_my_personal)));
         }).setNegativeButton(R.string.dismiss, null).show();
     }
