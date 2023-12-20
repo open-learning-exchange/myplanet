@@ -422,17 +422,17 @@ public class UploadManager extends FileUploadService {
             final RealmResults<RealmRating> activities = realm.where(RealmRating.class).equalTo("isUpdated", true).findAll();
             for (RealmRating act : activities) {
                 try {
-                    if (act.getUserId().startsWith("guest")) continue;
+                    if (act.userId.startsWith("guest")) continue;
                     Response<JsonObject> object;
-                    if (TextUtils.isEmpty(act.get_id())) {
+                    if (TextUtils.isEmpty(act._id)) {
                         object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/ratings", RealmRating.serializeRating(act)).execute();
                     } else {
-                        object = apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/ratings/" + act.get_id(), RealmRating.serializeRating(act)).execute();
+                        object = apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/ratings/" + act._id, RealmRating.serializeRating(act)).execute();
                     }
                     if (object.body() != null) {
-                        act.set_id(JsonUtils.getString("id", object.body()));
-                        act.set_rev(JsonUtils.getString("rev", object.body()));
-                        act.setUpdated(false);
+                        act._id = JsonUtils.getString("id", object.body());
+                        act._rev = JsonUtils.getString("rev", object.body());
+                        act.isUpdated = false;
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
