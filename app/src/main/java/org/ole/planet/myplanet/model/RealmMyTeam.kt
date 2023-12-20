@@ -194,7 +194,7 @@ open class RealmMyTeam : RealmObject() {
             if (!mRealm.isInTransaction) mRealm.beginTransaction()
             val team = mRealm.where(RealmMyTeam::class.java)
                 .equalTo("teamId", teamId)
-                .equalTo("userId", userModel.getId())
+                .equalTo("userId", userModel.id)
                 .findFirst()
             team?.deleteFromRealm()
             mRealm.commitTransaction()
@@ -246,7 +246,7 @@ open class RealmMyTeam : RealmObject() {
                 val model = mRealm.where(RealmUserModel::class.java)
                     .equalTo("id", team.userId)
                     .findFirst()
-                if (model != null && model.name.contains(user)) list.add(model)
+                if (model != null && model.name!!.contains(user)) list.add(model)
             }
             return list
         }
