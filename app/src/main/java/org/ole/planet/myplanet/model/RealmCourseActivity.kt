@@ -10,6 +10,7 @@ import java.util.UUID
 
 open class RealmCourseActivity : RealmObject() {
     @PrimaryKey
+    private var id: String? = null
     private var _id: String? = null
     @JvmField
     var createdOn: String? = null

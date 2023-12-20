@@ -97,19 +97,19 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
         if (holder instanceof ViewHolderLibrary) {
             ViewHolderLibrary viewHolder = (ViewHolderLibrary) holder;
             viewHolder.bind();
-            viewHolder.rowLibraryBinding.title.setText(libraryList.get(position).getTitle());
-            Utilities.log(libraryList.get(position).getDescription());
-            markwon.setMarkdown(viewHolder.rowLibraryBinding.description, libraryList.get(position).getDescription());
-            viewHolder.rowLibraryBinding.timesRated.setText(libraryList.get(position).getTimesRated() + context.getString(R.string.total));
+            viewHolder.rowLibraryBinding.title.setText(libraryList.get(position).title);
+            Utilities.log(libraryList.get(position).description);
+            markwon.setMarkdown(viewHolder.rowLibraryBinding.description, libraryList.get(position).description);
+            viewHolder.rowLibraryBinding.timesRated.setText(libraryList.get(position).timesRated + context.getString(R.string.total));
             viewHolder.rowLibraryBinding.checkbox.setChecked(selectedItems.contains(libraryList.get(position)));
-            viewHolder.rowLibraryBinding.rating.setText(TextUtils.isEmpty(libraryList.get(position).getAverageRating()) ? "0.0" : String.format("%.1f", Double.parseDouble(libraryList.get(position).getAverageRating())));
-            viewHolder.rowLibraryBinding.tvDate.setText(TimeUtils.formatDate(Long.parseLong(libraryList.get(position).getCreatedDate().trim()), "MMM dd, yyyy"));
+            viewHolder.rowLibraryBinding.rating.setText(TextUtils.isEmpty(libraryList.get(position).averageRating) ? "0.0" : String.format("%.1f", Double.parseDouble(libraryList.get(position).averageRating)));
+            viewHolder.rowLibraryBinding.tvDate.setText(TimeUtils.formatDate(Long.parseLong(libraryList.get(position).createdDate.trim()), "MMM dd, yyyy"));
 
             displayTagCloud(viewHolder.rowLibraryBinding.flexboxDrawable, position);
             holder.itemView.setOnClickListener(view -> openLibrary(libraryList.get(position)));
             viewHolder.rowLibraryBinding.ivDownloaded.setImageResource(libraryList.get(position).isResourceOffline() ? R.drawable.ic_eye : R.drawable.ic_download);
-            if (ratingMap.containsKey(libraryList.get(position).getResource_id())) {
-                JsonObject object = ratingMap.get(libraryList.get(position).getResource_id());
+            if (ratingMap.containsKey(libraryList.get(position).resourceId)) {
+                JsonObject object = ratingMap.get(libraryList.get(position).resourceId);
                 AdapterCourses.showRating(object, viewHolder.rowLibraryBinding.rating, viewHolder.rowLibraryBinding.timesRated, viewHolder.rowLibraryBinding.ratingBar);
             } else {
                 viewHolder.rowLibraryBinding.ratingBar.setRating(0);
@@ -154,7 +154,7 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private void displayTagCloud(FlexboxLayout flexboxDrawable, int position) {
         flexboxDrawable.removeAllViews();
         final ChipCloud chipCloud = new ChipCloud(context, flexboxDrawable, config);
-        List<RealmTag> tags = realm.where(RealmTag.class).equalTo("db", "resources").equalTo("linkId", libraryList.get(position).getId()).findAll();
+        List<RealmTag> tags = realm.where(RealmTag.class).equalTo("db", "resources").equalTo("linkId", libraryList.get(position).id).findAll();
         for (RealmTag tag : tags) {
             RealmTag parent = realm.where(RealmTag.class).equalTo("id", tag.getTagId()).findFirst();
             try {
@@ -185,9 +185,9 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private void sortLibraryListByTitle() {
         Collections.sort(libraryList, (library1, library2) -> {
             if (isTitleAscending) {
-                return library1.getTitle().compareToIgnoreCase(library2.getTitle());
+                return library1.title.compareToIgnoreCase(library2.title);
             } else {
-                return library2.getTitle().compareToIgnoreCase(library1.getTitle());
+                return library2.title.compareToIgnoreCase(library1.title);
             }
         });
     }
@@ -195,9 +195,9 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private void sortLibraryList() {
         Collections.sort(libraryList, (library1, library2) -> {
             if (isAscending) {
-                return library1.getCreatedDate().compareTo(library2.getCreatedDate());
+                return library1.createdDate.compareTo(library2.createdDate);
             } else {
-                return library2.getCreatedDate().compareTo(library1.getCreatedDate());
+                return library2.createdDate.compareTo(library1.createdDate);
             }
         });
     }
@@ -215,7 +215,7 @@ public class AdapterLibrary extends RecyclerView.Adapter<RecyclerView.ViewHolder
             this.rowLibraryBinding = rowLibraryBinding;
             rowLibraryBinding.ratingBar.setOnTouchListener((v1, event) -> {
                 if (event.getAction() == MotionEvent.ACTION_UP)
-                    homeItemClickListener.showRatingDialog("resource", libraryList.get(getAdapterPosition()).getResource_id(), libraryList.get(getAdapterPosition()).getTitle(), ratingChangeListener);
+                    homeItemClickListener.showRatingDialog("resource", libraryList.get(getAdapterPosition()).resourceId, libraryList.get(getAdapterPosition()).title, ratingChangeListener);
                 return true;
             });
         }

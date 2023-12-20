@@ -180,6 +180,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
             gradeLevel = spnGrade.getSelectedItem().toString().equals("All") ? "" : spnGrade.getSelectedItem().toString();
             subjectLevel = spnSubject.getSelectedItem().toString().equals("All") ? "" : spnSubject.getSelectedItem().toString();
             adapterCourses.setCourseList(filterCourseByTag(etSearch.getText().toString(), searchTags));
+            showNoFilter(tvMessage, adapterCourses.getItemCount());
         }
 
         @Override
@@ -204,11 +205,11 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         String msg = getString(R.string.success_you_have_added_the_following_courses);
         if (selectedItems.size() <= 5) {
             for (int i = 0; i < selectedItems.size(); i++) {
-                msg += " - " + selectedItems.get(i).getCourseTitle() + "\n";
+                msg += " - " + selectedItems.get(i).courseTitle + "\n";
             }
         } else {
             for (int i = 0; i < 5; i++) {
-                msg += " - " + selectedItems.get(i).getCourseTitle() + "\n";
+                msg += " - " + selectedItems.get(i).courseTitle + "\n";
             }
             msg += getString(R.string.and) + (selectedItems.size() - 5) + getString(R.string.more_course_s);
         }
