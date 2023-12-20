@@ -83,14 +83,14 @@ public class UserProfileFragment extends Fragment {
 
         fragmentUserProfileBinding.btProfilePic.setOnClickListener(v1 -> searchForPhoto());
         model = handler.getUserModel();
-        fragmentUserProfileBinding.txtName.setText(String.format("%s %s %s", model.getFirstName(), model.getMiddleName(), model.getLastName()));
+        fragmentUserProfileBinding.txtName.setText(String.format("%s %s %s", model.firstName, model.middleName, model.lastName));
         fragmentUserProfileBinding.txtEmail.setText(getString(R.string.email_colon)
-                + Utilities.checkNA(model.getEmail()));
-        String dob = TextUtils.isEmpty(model.getDob()) ? "N/A" : TimeUtils.getFormatedDate(model.getDob(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+                + Utilities.checkNA(model.email));
+        String dob = TextUtils.isEmpty(model.dob) ? "N/A" : TimeUtils.getFormatedDate(model.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
         fragmentUserProfileBinding.txtDob.setText(getString(R.string.date_of_birth) + dob);
-        if (!TextUtils.isEmpty(model.getUserImage())) {
+        if (!TextUtils.isEmpty(model.userImage)) {
             Glide.with(context)
-                .load(model.getUserImage())
+                .load(model.userImage)
                 .apply(new RequestOptions()
                 .placeholder(R.drawable.profile)
                 .error(R.drawable.profile))
@@ -111,7 +111,7 @@ public class UserProfileFragment extends Fragment {
             fragmentUserProfileBinding.image.setImageResource(R.drawable.profile);
         }
         final LinkedHashMap<String, String> map = new LinkedHashMap<String, String>();
-        map.put("Community Name", Utilities.checkNA(model.getPlanetCode()));
+        map.put("Community Name", Utilities.checkNA(model.planetCode));
         map.put("Last Login : ", Utilities.getRelativeTime(handler.getLastVisit()));
         map.put("Total Visits : ", handler.getOfflineVisits() + "");
         map.put("Most Opened Resource : ", Utilities.checkNA(handler.getMaxOpenedResource()));
@@ -175,7 +175,7 @@ public class UserProfileFragment extends Fragment {
             if (TextUtils.isEmpty(path)) {
                 path = FileUtils.getImagePath(requireActivity(), url);
             }
-            model.setUserImage(path);
+            model.userImage = path;
             mRealm.commitTransaction();
             fragmentUserProfileBinding.image.setImageURI(url);
             Utilities.log("Image Url = " + imageUrl);
@@ -190,15 +190,15 @@ public class UserProfileFragment extends Fragment {
 
     private void populateUserData(View v) {
         model = handler.getUserModel();
-        ((TextView) v.findViewById(R.id.txt_name)).setText(String.format("%s %s %s", model.getFirstName(), model.getMiddleName(), model.getLastName()));
+        ((TextView) v.findViewById(R.id.txt_name)).setText(String.format("%s %s %s", model.firstName, model.middleName, model.lastName));
         ((TextView) v.findViewById(R.id.txt_email)).setText(getString(R.string.email_colon)
-                + Utilities.checkNA(model.getEmail()));
-        String dob = TextUtils.isEmpty(model.getDob()) ? "N/A" : TimeUtils.getFormatedDate(model.getDob(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+                + Utilities.checkNA(model.email));
+        String dob = TextUtils.isEmpty(model.dob) ? "N/A" : TimeUtils.getFormatedDate(model.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
         ((TextView) v.findViewById(R.id.txt_dob)).setText(getString(R.string.date_of_birth) + dob);
 
-        if (!TextUtils.isEmpty(model.getUserImage())) {
+        if (!TextUtils.isEmpty(model.userImage)) {
             Glide.with(context)
-                    .load(model.getUserImage())
+                    .load(model.userImage)
                     .apply(new RequestOptions()
                             .placeholder(R.drawable.profile)
                             .error(R.drawable.profile))
@@ -220,7 +220,7 @@ public class UserProfileFragment extends Fragment {
         }
 
         final LinkedHashMap<String, String> map = new LinkedHashMap<String, String>();
-        map.put("Community Name", Utilities.checkNA(model.getPlanetCode()));
+        map.put("Community Name", Utilities.checkNA(model.planetCode));
         map.put("Last Login : ", Utilities.getRelativeTime(handler.getLastVisit()));
         map.put("Total Visits : ", handler.getOfflineVisits() + "");
         map.put("Most Opened Resource : ", Utilities.checkNA(handler.getMaxOpenedResource()));

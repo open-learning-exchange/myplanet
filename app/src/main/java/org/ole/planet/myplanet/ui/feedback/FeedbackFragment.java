@@ -58,7 +58,7 @@ public class FeedbackFragment extends DialogFragment implements View.OnClickList
         mRealm = databaseService.getRealmInstance();
         model = new UserProfileDbHandler(getActivity()).getUserModel();
         if (model != null) {
-            user = model.getName();
+            user = model.name;
         } else {
             user = "Anonymous";
         }

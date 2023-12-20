@@ -172,10 +172,10 @@ public class UploadManager extends FileUploadService {
         object.addProperty("title", JsonUtils.getString("fileName", imgObject));
         object.addProperty("createdDate", new Date().getTime());
         object.addProperty("filename", JsonUtils.getString("fileName", imgObject));
-        object.addProperty("addedBy", user.getId());
+        object.addProperty("addedBy", user.id);
         object.addProperty("private", true);
-        object.addProperty("resideOn", user.getParentCode());
-        object.addProperty("sourcePlanet", user.getPlanetCode());
+        object.addProperty("resideOn", user.parentCode);
+        object.addProperty("sourcePlanet", user.planetCode);
         JsonObject object1 = new JsonObject();
         object.addProperty("androidId", NetworkUtils.getUniqueIdentifier());
         object.addProperty("deviceName", NetworkUtils.getDeviceName());

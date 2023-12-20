@@ -67,9 +67,9 @@ public class AchievementFragment extends BaseContainerFragment {
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        achievement = mRealm.where(RealmAchievement.class).equalTo("_id", user.getId() + "@" + user.getPlanetCode()).findFirst();
-        fragmentAchievementBinding.tvFirstName.setText(user.getFirstName());
-        fragmentAchievementBinding.tvName.setText(String.format("%s %s %s", user.getFirstName(), user.getMiddleName(), user.getLastName()));
+        achievement = mRealm.where(RealmAchievement.class).equalTo("_id", user.id + "@" + user.planetCode).findFirst();
+        fragmentAchievementBinding.tvFirstName.setText(user.firstName);
+        fragmentAchievementBinding.tvName.setText(String.format("%s %s %s", user.firstName, user.middleName, user.lastName));
         if (achievement != null) {
             fragmentAchievementBinding.tvGoals.setText(achievement.goals);
             fragmentAchievementBinding.tvPurpose.setText(achievement.purpose);

@@ -98,7 +98,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         users = RealmMyTeam.getUsers(selectedTeamId, mRealm, "")
 
         val userList = (users as MutableList<RealmUserModel>?)?.map {
-            User(it.fullName ?: "", it.name ?: "", "", it.userImage ?: "", "team")
+            User(it.getFullName() ?: "", it.name ?: "", "", it.userImage ?: "", "team")
         } ?: emptyList()
 
         val existingUsers = prefData.getSAVEDUSERS().toMutableList()

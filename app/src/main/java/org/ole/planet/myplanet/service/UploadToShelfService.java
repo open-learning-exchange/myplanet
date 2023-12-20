@@ -61,40 +61,40 @@ public class UploadToShelfService {
             Utilities.log("USER LIST SIZE + " + userModels.size());
             for (RealmUserModel model : userModels) {
                 try {
-                    Response<JsonObject> res = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/_users/org.couchdb.user:" + model.getName()).execute();
+                    Response<JsonObject> res = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/_users/org.couchdb.user:" + model.name).execute();
                     if (res.body() == null) {
                         JsonObject obj = model.serialize();
-                        res = apiInterface.putDoc(null, "application/json", Utilities.getUrl() + "/_users/org.couchdb.user:" + model.getName(), obj).execute();
+                        res = apiInterface.putDoc(null, "application/json", Utilities.getUrl() + "/_users/org.couchdb.user:" + model.name, obj).execute();
                         if (res.body() != null) {
                             String id = res.body().get("id").getAsString();
                             String rev = res.body().get("rev").getAsString();
                             res = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/_users/" + id).execute();
                             if (res.body() != null) {
-                                model.set_id(id);
-                                model.set_rev(rev);
-                                model.setPassword_scheme(JsonUtils.getString("password_scheme", res.body()));
-                                model.setDerived_key(JsonUtils.getString("derived_key", res.body()));
-                                model.setSalt(JsonUtils.getString("salt", res.body()));
-                                model.setIterations(JsonUtils.getString("iterations", res.body()));
+                                model._id = id;
+                                model._rev = rev;
+                                model.password_scheme = JsonUtils.getString("password_scheme", res.body());
+                                model.derived_key = JsonUtils.getString("derived_key", res.body());
+                                model.salt = JsonUtils.getString("salt", res.body());
+                                model.iterations = JsonUtils.getString("iterations", res.body());
                                 if (saveKeyIv(apiInterface, model, obj))
                                     updateHealthData(realm, model);
                             }
                         }
-                    } else if (model.isUpdated()) {
+                    } else if (model.isUpdated) {
                         Utilities.log("UPDATED MODEL " + model.serialize());
                         JsonObject obj = model.serialize();
-                        res = apiInterface.putDoc(null, "application/json", Utilities.getUrl() + "/_users/org.couchdb.user:" + model.getName(), obj).execute();
+                        res = apiInterface.putDoc(null, "application/json", Utilities.getUrl() + "/_users/org.couchdb.user:" + model.name, obj).execute();
 
                         if (res.body() != null) {
                             Utilities.log(new Gson().toJson(res.body()));
                             String rev = res.body().get("rev").getAsString();
-                            model.set_rev(rev);
-                            model.setUpdated(false);
+                            model._rev = rev;
+                            model.isUpdated = false;
                         } else {
                             Utilities.log(res.errorBody().string());
                         }
                     } else {
-                        Utilities.toast(MainApplication.context, "User " + model.getName() + " already exist");
+                        Utilities.toast(MainApplication.context, "User " + model.name + " already exist");
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -109,14 +109,14 @@ public class UploadToShelfService {
     }
 
     private void updateHealthData(Realm realm, RealmUserModel model) {
-        List<RealmMyHealthPojo> list = realm.where(RealmMyHealthPojo.class).equalTo("_id", model.getId()).findAll();
+        List<RealmMyHealthPojo> list = realm.where(RealmMyHealthPojo.class).equalTo("_id", model.id).findAll();
         for (RealmMyHealthPojo p : list) {
-            p.userId = model.get_id();
+            p.userId = model._id;
         }
     }
 
     private static void changeUserSecurity(RealmUserModel model, JsonObject obj) {
-        String table = "userdb-" + Utilities.toHex(model.getPlanetCode()) + "-" + Utilities.toHex(model.getName());
+        String table = "userdb-" + Utilities.toHex(model.planetCode) + "-" + Utilities.toHex(model.name);
         String header = "Basic " + Base64.encodeToString((obj.get("name").getAsString() + ":" + obj.get("password").getAsString()).getBytes(), Base64.NO_WRAP);
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         Response<JsonObject> response;
@@ -145,13 +145,13 @@ public class UploadToShelfService {
     }
 
     public boolean saveKeyIv(ApiInterface apiInterface, RealmUserModel model, JsonObject obj) throws IOException {
-        String table = "userdb-" + Utilities.toHex(model.getPlanetCode()) + "-" + Utilities.toHex(model.getName());
+        String table = "userdb-" + Utilities.toHex(model.planetCode) + "-" + Utilities.toHex(model.name);
         String header = "Basic " + Base64.encodeToString((obj.get("name").getAsString() + ":" + obj.get("password").getAsString()).getBytes(), Base64.NO_WRAP);
         JsonObject ob = new JsonObject();
         String keyString = AndroidDecrypter.generateKey();
         String iv = AndroidDecrypter.generateIv();
-        if (!TextUtils.isEmpty(model.getIv())) iv = model.getIv();
-        if (!TextUtils.isEmpty(model.getKey())) keyString = model.getKey();
+        if (!TextUtils.isEmpty(model.iv)) iv = model.iv;
+        if (!TextUtils.isEmpty(model.key)) keyString = model.key;
         ob.addProperty("key", keyString);
         ob.addProperty("iv", iv);
         ob.addProperty("createdOn", new Date().getTime());
@@ -159,8 +159,8 @@ public class UploadToShelfService {
         while (!success) {
             Response response = apiInterface.postDoc(header, "application/json", Utilities.getUrl() + "/" + table, ob).execute();
             if (response.body() != null) {
-                model.setKey(keyString);
-                model.setIv(iv);
+                model.key = keyString;
+                model.iv = iv;
                 success = true;
             } else {
                 success = false;
@@ -196,11 +196,11 @@ public class UploadToShelfService {
             RealmResults<RealmUserModel> users = realm.where(RealmUserModel.class).isNotEmpty("_id").findAll();
             for (RealmUserModel model : users) {
                 try {
-                    if (model.getId().startsWith("guest")) continue;
-                    JsonObject jsonDoc = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/shelf/" + model.get_id()).execute().body();
-                    JsonObject object = getShelfData(realm, model.getId(), jsonDoc);
+                    if (model.id.startsWith("guest")) continue;
+                    JsonObject jsonDoc = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/shelf/" + model._id).execute().body();
+                    JsonObject object = getShelfData(realm, model.id, jsonDoc);
                     Utilities.log("JSON " + new Gson().toJson(jsonDoc));
-                    JsonObject d = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/shelf/" + model.getId()).execute().body();
+                    JsonObject d = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/shelf/" + model.id).execute().body();
                     object.addProperty("_rev", JsonUtils.getString("_rev", d));
                     apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/shelf/" + sharedPreferences.getString("userId", ""), object).execute().body();
                 } catch (Exception e) {
