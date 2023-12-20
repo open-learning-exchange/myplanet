@@ -26,20 +26,19 @@ import org.ole.planet.myplanet.utilities.CameraUtils;
 import org.ole.planet.myplanet.utilities.JsonParserUtils;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.KeyboardUtils;
+import org.ole.planet.myplanet.utilities.Markdown;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 
-import io.noties.markwon.Markwon;
 import io.realm.RealmList;
 import io.realm.RealmQuery;
 import io.realm.Sort;
 
 public class TakeExamFragment extends BaseExamFragment implements View.OnClickListener, CompoundButton.OnCheckedChangeListener, CameraUtils.ImageCaptureCallback {
     private FragmentTakeExamBinding fragmentTakeExamBinding;
-    Markwon markwon;
     boolean isCertified;
     NestedScrollView container;
 
@@ -50,7 +49,6 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
     public View onCreateView(LayoutInflater inflater, ViewGroup parent, Bundle savedInstanceState) {
         fragmentTakeExamBinding = FragmentTakeExamBinding.inflate(inflater, parent, false);
         listAns = new HashMap<>();
-        markwon = Markwon.create(getActivity());
         UserProfileDbHandler dbHandler = new UserProfileDbHandler(getActivity());
         user = dbHandler.getUserModel();
         return fragmentTakeExamBinding.getRoot();
@@ -128,7 +126,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
             showCheckBoxes(question, ans);
         }
         fragmentTakeExamBinding.tvHeader.setText(question.getHeader());
-        markwon.setMarkdown(fragmentTakeExamBinding.tvBody, question.getBody());
+        Markdown.INSTANCE.setMarkdownText(fragmentTakeExamBinding.tvBody, question.getBody());
         fragmentTakeExamBinding.btnSubmit.setOnClickListener(this);
     }
 
