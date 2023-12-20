@@ -119,11 +119,10 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     View positiveAction;
     String processedUrl;
     boolean isSync = false, forceSync = false;
-    Button btnSignIn, becomeMember, btnGuestLogin, btnLang;
-    TextView customDeviceName, lblVersion;
+    Button btnSignIn, becomeMember, btnGuestLogin, btnLang, openCommunity, btnFeedback;
+    TextView customDeviceName, lblVersion, tvAvailableSpace;
     SharedPreferences defaultPref;
     ImageButton imgBtnSetting;
-    SwitchCompat switchChildMode;
     Service service;
 
     @Override
@@ -169,29 +168,6 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         } else {
             spinner.setVisibility(View.GONE);
             intervalLabel.setVisibility(View.GONE);
-        }
-    }
-
-    public void setUpChildMode() {
-        try {
-            mRealm = Realm.getDefaultInstance();
-            if (!settings.getBoolean("isChild", false)) return;
-            RecyclerView rvTeams = findViewById(R.id.rv_teams);
-            TextView tvNodata = findViewById(R.id.tv_nodata);
-
-            List<RealmMyTeam> teams = mRealm.where(RealmMyTeam.class).isEmpty("teamId").findAll();
-            rvTeams.setLayoutManager(new GridLayoutManager(this, 3));
-            rvTeams.setAdapter(new AdapterTeam(this, teams, mRealm));
-            if (teams.size() > 0) {
-                tvNodata.setVisibility(View.GONE);
-            } else {
-                tvNodata.setText(R.string.no_team_available);
-                tvNodata.setVisibility(View.VISIBLE);
-            }
-        } finally {
-            if (mRealm != null && !mRealm.isClosed()) {
-                mRealm.close();
-            }
         }
     }
 
@@ -365,10 +341,6 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
 
             DialogUtils.showSnack(findViewById(android.R.id.content), getString(R.string.sync_completed));
 
-            if (settings.getBoolean("isChild", false)) {
-                setUpChildMode();
-            }
-
             NotificationUtil.cancellAll(this);
         });
     }
@@ -377,15 +349,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         if (!defaultPref.contains("beta_addImageToMessage")) {
             defaultPref.edit().putBoolean("beta_addImageToMessage", true).commit();
         }
-        if (!prefData.getTEAMMODE1()){
-            customDeviceName.setText(getCustomDeviceName());
-            switchChildMode.setChecked(settings.getBoolean("isChild", false));
-            switchChildMode.setOnCheckedChangeListener((compoundButton, b) -> {
-                inputName.setText("");
-                settings.edit().putBoolean("isChild", b).commit();
-                recreate();
-            });
-        }
+        customDeviceName.setText(getCustomDeviceName());
 
         btnSignIn.setOnClickListener(view -> {
             if(TextUtils.isEmpty(inputName.getText().toString())){
@@ -436,9 +400,9 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
                 }
                 return false;
             });
-            if (!prefData.getTEAMMODE1()) {
-                setUplanguageButton();
-            }
+
+            setUplanguageButton();
+
             if (defaultPref.getBoolean("saveUsernameAndPassword", false)) {
                 inputName.setText(settings.getString(getString(R.string.login_user), ""));
                 inputPassword.setText(settings.getString(getString(R.string.login_password), ""));
@@ -850,13 +814,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
                             String url = serverUrlProtocol.getText().toString() + serverUrl.getText().toString();
                             if (isUrlValid(url)) {
                                 prefData.setSELECTEDTEAMID1(selectedTeamId);
-                                if (!prefData.getTEAMMODE1()){
-                                    prefData.setTEAMMODE1(true);
-                                    Intent intent = new Intent(this, TeamLoginActivity.class);
-                                    startActivity(intent);
-                                } else if (prefData.getTEAMMODE1() && activity instanceof TeamLoginActivity) {
-                                    ((TeamLoginActivity) activity).getTeamMembers();
-                                }
+                                ((LoginActivity) activity).getTeamMembers();
                                 saveConfigAndContinue(dialog);
                             } else {
                                 saveConfigAndContinue(dialog);
@@ -1238,20 +1196,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
                 positiveAction.setEnabled(s.toString().trim().length() > 0 && URLUtil.isValidUrl(protocol + s.toString()));
         }
 
-        public void afterTextChanged(Editable editable) {
-            switch (view.getId()) {
-                case R.id.input_name:
-                    validateEditText(inputName, inputLayoutName, getString(R.string.err_msg_name));
-                    break;
-                case R.id.input_password:
-                    if(!prefData.getTEAMMODE1()) {
-                        validateEditText(inputPassword, inputLayoutPassword, getString(R.string.err_msg_password));
-                    }
-                    break;
-                default:
-                    break;
-            }
-        }
+        public void afterTextChanged(Editable editable) {}
     }
 
     @Override

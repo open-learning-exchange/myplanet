@@ -82,8 +82,8 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
             pojo = mRealm.where(RealmMyHealthPojo.class).equalTo("userId", userId).findFirst();
         }
         user = mRealm.where(RealmUserModel.class).equalTo("id", userId).findFirst();
-        if (pojo != null && !TextUtils.isEmpty(pojo.getData())) {
-            health = new Gson().fromJson(AndroidDecrypter.decrypt(pojo.getData(), user.getKey(), user.getIv()), RealmMyHealth.class);
+        if (pojo != null && !TextUtils.isEmpty(pojo.data)) {
+            health = new Gson().fromJson(AndroidDecrypter.decrypt(pojo.data, user.getKey(), user.getIv()), RealmMyHealth.class);
         }
 
         if (health == null) {
@@ -106,12 +106,12 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         if (getIntent().hasExtra("id")) {
             examination = mRealm.where(RealmMyHealthPojo.class).equalTo("_id", getIntent().getStringExtra("id")).findFirst();
             activityAddExaminationBinding.etTemperature.setText(examination.getTemperature() + "");
-            activityAddExaminationBinding.etPulseRate.setText(examination.getPulse() + "");
-            activityAddExaminationBinding.etBloodpressure.setText(examination.getBp() + "");
-            activityAddExaminationBinding.etHeight.setText(examination.getHeight() + "");
+            activityAddExaminationBinding.etPulseRate.setText(examination.pulse + "");
+            activityAddExaminationBinding.etBloodpressure.setText(examination.bp + "");
+            activityAddExaminationBinding.etHeight.setText(examination.height + "");
             activityAddExaminationBinding.etWeight.setText(examination.getWeight() + "");
-            activityAddExaminationBinding.etVision.setText(examination.getVision());
-            activityAddExaminationBinding.etHearing.setText(examination.getHearing());
+            activityAddExaminationBinding.etVision.setText(examination.vision);
+            activityAddExaminationBinding.etHearing.setText(examination.hearing);
             JsonObject encrypted = examination.getEncryptedDataAsJson(this.user);
             activityAddExaminationBinding.etObservation.setText(JsonUtils.getString(getString(R.string.note_), encrypted));
             activityAddExaminationBinding.etDiag.setText(JsonUtils.getString(getString(R.string.diagno), encrypted));
@@ -186,7 +186,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         String[] arr = getResources().getStringArray(R.array.diagnosis_list);
         List<String> mainList = Arrays.asList(arr);
         if (customDiag.isEmpty() && examination != null) {
-            JsonObject conditions = new Gson().fromJson(examination.getConditions(), JsonObject.class);
+            JsonObject conditions = new Gson().fromJson(examination.conditions, JsonObject.class);
             for (String s : conditions.keySet()) {
                 if (!mainList.contains(s) && JsonUtils.getBoolean(s, conditions)) {
                     chipCloud.addChip(s);
@@ -203,7 +203,7 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         for (String s : arr) {
             CheckBox c = new CheckBox(this);
             if (examination != null) {
-                JsonObject conditions = new Gson().fromJson(examination.getConditions(), JsonObject.class);
+                JsonObject conditions = new Gson().fromJson(examination.conditions, JsonObject.class);
                 c.setChecked(JsonUtils.getBoolean(s, conditions));
             }
             c.setPadding(DimenUtils.dpToPx(8), DimenUtils.dpToPx(8), DimenUtils.dpToPx(8), DimenUtils.dpToPx(8));
@@ -224,9 +224,9 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         if (!mRealm.isInTransaction()) mRealm.beginTransaction();
         health = new RealmMyHealth();
         RealmMyHealth.RealmMyHealthProfile profile = new RealmMyHealth.RealmMyHealthProfile();
-        health.setLastExamination(new Date().getTime());
-        health.setUserKey(AndroidDecrypter.generateKey());
-        health.setProfile(profile);
+        health.lastExamination = new Date().getTime();
+        health.userKey = AndroidDecrypter.generateKey();
+        health.profile = profile;
         mRealm.commitTransaction();
     }
 
@@ -237,44 +237,44 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         if (examination == null) {
             String userId = AndroidDecrypter.generateIv();
             examination = mRealm.createObject(RealmMyHealthPojo.class, userId);
-            examination.setUserId(userId);
+            examination.userId = userId;
         }
 
-        examination.setProfileId(health.getUserKey());
-        examination.setCreatorId(health.getUserKey());
-        examination.setGender(user.getGender());
+        examination.profileId = health.userKey;
+        examination.creatorId = health.userKey;
+        examination.gender = user.getGender();
 
-        examination.setAge(TimeUtils.getAge(user.getDob()));
-        examination.setSelfExamination(currentUser.get_id().equals(pojo.get_id()));
-        examination.setDate(new Date().getTime());
-        examination.setPlanetCode(user.getPlanetCode());
+        examination.age = TimeUtils.getAge(user.getDob());
+        examination.isSelfExamination = currentUser.get_id().equals(pojo.get_id());
+        examination.date = new Date().getTime();
+        examination.planetCode = user.getPlanetCode();
         RealmExamination sign = new RealmExamination();
         sign.setAllergies(activityAddExaminationBinding.etAllergies.getText().toString().trim());
         sign.setCreatedBy(currentUser.get_id());
-        examination.setBp(activityAddExaminationBinding.etBloodpressure.getText().toString().trim());
+        examination.bp = activityAddExaminationBinding.etBloodpressure.getText().toString().trim();
         examination.setTemperature(getFloat(activityAddExaminationBinding.etTemperature.getText().toString().trim()));
-        examination.setPulse(getInt(activityAddExaminationBinding.etPulseRate.getText().toString().trim()));
+        examination.pulse = getInt(activityAddExaminationBinding.etPulseRate.getText().toString().trim());
         examination.setWeight(getFloat(activityAddExaminationBinding.etWeight.getText().toString().trim()));
-        examination.setHeight(getFloat(activityAddExaminationBinding.etHeight.getText().toString().trim()));
+        examination.height = getFloat(activityAddExaminationBinding.etHeight.getText().toString().trim());
         getOtherConditions();
-        examination.setConditions(new Gson().toJson(mapConditions));
-        examination.setHearing(activityAddExaminationBinding.etHearing.getText().toString().trim());
+        examination.conditions = new Gson().toJson(mapConditions);
+        examination.hearing = activityAddExaminationBinding.etHearing.getText().toString().trim();
         sign.setImmunizations(activityAddExaminationBinding.etImmunization.getText().toString().trim());
         sign.setTests(activityAddExaminationBinding.etLabtest.getText().toString().trim());
         sign.setXrays(activityAddExaminationBinding.etXray.getText().toString().trim());
-        examination.setVision(activityAddExaminationBinding.etVision.getText().toString().trim());
+        examination.vision = activityAddExaminationBinding.etVision.getText().toString().trim();
         sign.setTreatments(activityAddExaminationBinding.etTreatments.getText().toString().trim());
         sign.setReferrals(activityAddExaminationBinding.etReferrals.getText().toString().trim());
         sign.setNotes(activityAddExaminationBinding.etObservation.getText().toString().trim());
         sign.setDiagnosis(activityAddExaminationBinding.etDiag.getText().toString().trim());
         sign.setMedications(activityAddExaminationBinding.etMedications.getText().toString().trim());
-        examination.setDate(new Date().getTime());
-        examination.setIsUpdated(true);
-        examination.setHasInfo(getHasInfo());
-        pojo.setIsUpdated(true);
+        examination.date = new Date().getTime();
+        examination.isUpdated = true;
+        examination.isHasInfo = getHasInfo();
+        pojo.isUpdated = true;
         try {
             Utilities.log(new Gson().toJson(sign));
-            examination.setData(AndroidDecrypter.encrypt(new Gson().toJson(sign), user.getKey(), user.getIv()));
+            examination.data = AndroidDecrypter.encrypt(new Gson().toJson(sign), user.getKey(), user.getIv());
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -338,11 +338,11 @@ public class AddExaminationActivity extends AppCompatActivity implements Compoun
         try {
             if (pojo == null) {
                 pojo = mRealm.createObject(RealmMyHealthPojo.class, userId);
-                pojo.setUserId(user.get_id());
+                pojo.userId = user.get_id();
             }
 //            if (TextUtils.isEmpty(pojo.getData())) {
-            health.setLastExamination(new Date().getTime());
-            pojo.setData(AndroidDecrypter.encrypt(new Gson().toJson(health), user.getKey(), user.getIv()));
+            health.lastExamination = new Date().getTime();
+            pojo.data = AndroidDecrypter.encrypt(new Gson().toJson(health), user.getKey(), user.getIv());
 //            }
         } catch (Exception e) {
             e.printStackTrace();
