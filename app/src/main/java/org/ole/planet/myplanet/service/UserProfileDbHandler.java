@@ -40,11 +40,11 @@ public class UserProfileDbHandler {
     public void onLogin() {
         if (!mRealm.isInTransaction()) mRealm.beginTransaction();
         RealmOfflineActivity offlineActivities = mRealm.copyToRealm(createUser());
-        offlineActivities.setType(KEY_LOGIN);
-        offlineActivities.set_rev(null);
-        offlineActivities.set_id(null);
-        offlineActivities.setDescription("Member login on offline application");
-        offlineActivities.setLoginTime(new Date().getTime());
+        offlineActivities.type = KEY_LOGIN;
+        offlineActivities._rev = null;
+        offlineActivities._id = null;
+        offlineActivities.description = "Member login on offline application";
+        offlineActivities.loginTime = new Date().getTime();
         mRealm.commitTransaction();
     }
 
@@ -54,7 +54,7 @@ public class UserProfileDbHandler {
         if (offlineActivities == null) {
             return;
         }
-        offlineActivities.setLogoutTime(new Date().getTime());
+        offlineActivities.logoutTime = new Date().getTime();
         mRealm.commitTransaction();
     }
 
@@ -67,10 +67,10 @@ public class UserProfileDbHandler {
     private RealmOfflineActivity createUser() {
         RealmOfflineActivity offlineActivities = mRealm.createObject(RealmOfflineActivity.class, UUID.randomUUID().toString());
         RealmUserModel model = getUserModel();
-        offlineActivities.setUserId(model.getId());
-        offlineActivities.setUserName(model.getName());
-        offlineActivities.setParentCode(model.getParentCode());
-        offlineActivities.setCreatedOn(model.getPlanetCode());
+        offlineActivities.userId = model.getId();
+        offlineActivities.userName = model.getName();
+        offlineActivities.parentCode = model.getParentCode();
+        offlineActivities.createdOn = model.getPlanetCode();
         return offlineActivities;
     }
 

@@ -95,12 +95,12 @@ public class NewsFragment extends BaseNewsFragment {
         List<RealmNews> allNews = mRealm.where(RealmNews.class).sort("time", Sort.DESCENDING).isEmpty("replyTo").equalTo("docType", "message", Case.INSENSITIVE).findAll();
         List<RealmNews> list = new ArrayList<>();
         for (RealmNews news : allNews) {
-            if (!TextUtils.isEmpty(news.getViewableBy()) && news.getViewableBy().equalsIgnoreCase("community")) {
+            if (!TextUtils.isEmpty(news.viewableBy) && news.viewableBy.equalsIgnoreCase("community")) {
                 list.add(news);
                 continue;
             }
-            if (!TextUtils.isEmpty(news.getViewIn())) {
-                JsonArray ar = new Gson().fromJson(news.getViewIn(), JsonArray.class);
+            if (!TextUtils.isEmpty(news.viewIn)) {
+                JsonArray ar = new Gson().fromJson(news.viewIn, JsonArray.class);
                 for (JsonElement e : ar) {
                     JsonObject ob = e.getAsJsonObject();
                     if (ob != null && ob.has("_id") && ob.get("_id").getAsString().equalsIgnoreCase(user != null ? user.getPlanetCode() + "@" + user.getParentCode() : "")) {

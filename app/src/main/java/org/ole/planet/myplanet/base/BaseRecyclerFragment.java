@@ -59,6 +59,12 @@ public abstract class BaseRecyclerFragment<LI> extends BaseRecyclerParentFragmen
         ((TextView) v).setText(R.string.no_data_available_please_check_and_try_again);
     }
 
+    public static void showNoFilter(View v, int count) {
+        if (v == null) return;
+        v.setVisibility(count == 0 ? View.VISIBLE : View.GONE);
+        ((TextView) v).setText(R.string.no_course_matched_filter);
+    }
+
     public abstract int getLayout();
 
     public abstract RecyclerView.Adapter getAdapter();
