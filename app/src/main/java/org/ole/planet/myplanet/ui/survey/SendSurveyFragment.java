@@ -69,7 +69,7 @@ public class SendSurveyFragment extends BaseDialogFragment {
         fragmentSendSurveyBinding.sendSurvey.setOnClickListener(view -> {
             for (int i = 0; i < fragmentSendSurveyBinding.listUsers.getSelectedItemsList().size(); i++) {
                 RealmUserModel u = users.get(i);
-                createSurveySubmission(u.getId());
+                createSurveySubmission(u.id);
             }
             Utilities.toast(getActivity(), getString(R.string.survey_sent_to_users));
             dismiss();

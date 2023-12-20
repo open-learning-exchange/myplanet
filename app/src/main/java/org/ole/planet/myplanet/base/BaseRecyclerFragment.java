@@ -119,13 +119,13 @@ public abstract class BaseRecyclerFragment<LI> extends BaseRecyclerParentFragmen
             RealmObject object = (RealmObject) selectedItems.get(i);
             if (object instanceof RealmMyLibrary) {
                 RealmMyLibrary myObject = mRealm.where(RealmMyLibrary.class).equalTo("resourceId", ((RealmMyLibrary) object).resourceId).findFirst();
-                RealmMyLibrary.createFromResource(myObject, mRealm, model.getId());
-                RealmRemovedLog.onAdd(mRealm, "resources", profileDbHandler.getUserModel().getId(), myObject.resourceId);
+                RealmMyLibrary.createFromResource(myObject, mRealm, model.id);
+                RealmRemovedLog.onAdd(mRealm, "resources", profileDbHandler.getUserModel().id, myObject.resourceId);
                 Utilities.toast(getActivity(), getString(R.string.added_to_my_library));
             } else {
                 RealmMyCourse myObject = RealmMyCourse.getMyCourse(mRealm, ((RealmMyCourse) object).courseId);
-                RealmMyCourse.createMyCourse(myObject, mRealm, model.getId());
-                RealmRemovedLog.onAdd(mRealm, "courses", profileDbHandler.getUserModel().getId(), myObject.courseId);
+                RealmMyCourse.createMyCourse(myObject, mRealm, model.id);
+                RealmRemovedLog.onAdd(mRealm, "courses", profileDbHandler.getUserModel().id, myObject.courseId);
                 Utilities.toast(getActivity(), getString(R.string.added_to_my_courses));
             }
         }
@@ -198,8 +198,8 @@ public abstract class BaseRecyclerFragment<LI> extends BaseRecyclerParentFragmen
             return (List<RealmMyLibrary>) getList(RealmMyLibrary.class);
         }
         List<RealmMyLibrary> list = (List<RealmMyLibrary>) getData(s, RealmMyLibrary.class);
-        if (isMyCourseLib) list = RealmMyLibrary.getMyLibraryByUserId(model.getId(), list);
-        else list = RealmMyLibrary.getOurLibrary(model.getId(), list);
+        if (isMyCourseLib) list = RealmMyLibrary.getMyLibraryByUserId(model.id, list);
+        else list = RealmMyLibrary.getOurLibrary(model.id, list);
         if (tags.size() == 0) return list;
         RealmList<RealmMyLibrary> libraries = new RealmList<>();
         for (RealmMyLibrary library : list) {
@@ -213,8 +213,8 @@ public abstract class BaseRecyclerFragment<LI> extends BaseRecyclerParentFragmen
             return applyCourseFilter((List<RealmMyCourse>) getList(RealmMyCourse.class));
         }
         List<RealmMyCourse> list = (List<RealmMyCourse>) getData(s, RealmMyCourse.class);
-        if (isMyCourseLib) list = RealmMyCourse.getMyCourseByUserId(model.getId(), list);
-        else list = RealmMyCourse.getOurCourse(model.getId(), list);
+        if (isMyCourseLib) list = RealmMyCourse.getMyCourseByUserId(model.id, list);
+        else list = RealmMyCourse.getOurCourse(model.id, list);
         if (tags.size() == 0) return list;
         RealmList<RealmMyCourse> courses = new RealmList<>();
         for (RealmMyCourse course : list) {

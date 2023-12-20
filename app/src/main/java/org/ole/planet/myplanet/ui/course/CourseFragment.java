@@ -58,8 +58,8 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
 
     @Override
     public RecyclerView.Adapter getAdapter() {
-        HashMap<String, JsonObject> map = RealmRating.getRatings(mRealm, "course", model.getId());
-        HashMap<String, JsonObject> progressMap = RealmCourseProgress.getCourseProgress(mRealm, model.getId());
+        HashMap<String, JsonObject> map = RealmRating.getRatings(mRealm, "course", model.id);
+        HashMap<String, JsonObject> progressMap = RealmCourseProgress.getCourseProgress(mRealm, model.id);
         adapterCourses = new AdapterCourses(getActivity(), getList(RealmMyCourse.class), map);
         adapterCourses.setProgressMap(progressMap);
         adapterCourses.setmRealm(mRealm);
@@ -280,10 +280,10 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         if (filterApplied()) {
             if (!mRealm.isInTransaction()) mRealm.beginTransaction();
             RealmSearchActivity activity = mRealm.createObject(RealmSearchActivity.class, UUID.randomUUID().toString());
-            activity.setUser(model.getName());
+            activity.setUser(model.name);
             activity.setTime(Calendar.getInstance().getTimeInMillis());
-            activity.setCreatedOn(model.getPlanetCode());
-            activity.setParentCode(model.getParentCode());
+            activity.setCreatedOn(model.planetCode);
+            activity.setParentCode(model.parentCode);
             activity.setText(etSearch.getText().toString());
             activity.setType("courses");
             JsonObject filter = new JsonObject();
