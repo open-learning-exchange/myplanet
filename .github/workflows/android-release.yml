@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - 'master'
-      - '2872-lite-broke'
   workflow_dispatch:
 
 jobs:
