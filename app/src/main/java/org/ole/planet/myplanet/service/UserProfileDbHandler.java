@@ -40,11 +40,11 @@ public class UserProfileDbHandler {
     public void onLogin() {
         if (!mRealm.isInTransaction()) mRealm.beginTransaction();
         RealmOfflineActivity offlineActivities = mRealm.copyToRealm(createUser());
-        offlineActivities.setType(KEY_LOGIN);
-        offlineActivities.set_rev(null);
-        offlineActivities.set_id(null);
-        offlineActivities.setDescription("Member login on offline application");
-        offlineActivities.setLoginTime(new Date().getTime());
+        offlineActivities.type = KEY_LOGIN;
+        offlineActivities._rev = null;
+        offlineActivities._id = null;
+        offlineActivities.description = "Member login on offline application";
+        offlineActivities.loginTime = new Date().getTime();
         mRealm.commitTransaction();
     }
 
@@ -54,7 +54,7 @@ public class UserProfileDbHandler {
         if (offlineActivities == null) {
             return;
         }
-        offlineActivities.setLogoutTime(new Date().getTime());
+        offlineActivities.logoutTime = new Date().getTime();
         mRealm.commitTransaction();
     }
 
@@ -67,10 +67,10 @@ public class UserProfileDbHandler {
     private RealmOfflineActivity createUser() {
         RealmOfflineActivity offlineActivities = mRealm.createObject(RealmOfflineActivity.class, UUID.randomUUID().toString());
         RealmUserModel model = getUserModel();
-        offlineActivities.setUserId(model.getId());
-        offlineActivities.setUserName(model.getName());
-        offlineActivities.setParentCode(model.getParentCode());
-        offlineActivities.setCreatedOn(model.getPlanetCode());
+        offlineActivities.userId = model.getId();
+        offlineActivities.userName = model.getName();
+        offlineActivities.parentCode = model.getParentCode();
+        offlineActivities.createdOn = model.getPlanetCode();
         return offlineActivities;
     }
 
@@ -103,10 +103,10 @@ public class UserProfileDbHandler {
         }
         if (!mRealm.isInTransaction()) mRealm.beginTransaction();
         RealmResourceActivity offlineActivities = mRealm.copyToRealm(createResourceUser(model));
-        offlineActivities.setType(type);
-        offlineActivities.setTitle(item.title);
-        offlineActivities.setResourceId(item.resourceId);
-        offlineActivities.setTime(new Date().getTime());
+        offlineActivities.type = type;
+        offlineActivities.title = item.title;
+        offlineActivities.resourceId = item.resourceId;
+        offlineActivities.time = new Date().getTime();
         mRealm.commitTransaction();
         Utilities.log("Set resource open");
     }
@@ -114,9 +114,9 @@ public class UserProfileDbHandler {
 
     private RealmResourceActivity createResourceUser(RealmUserModel model) {
         RealmResourceActivity offlineActivities = mRealm.createObject(RealmResourceActivity.class, UUID.randomUUID().toString());
-        offlineActivities.setUser(model.getName());
-        offlineActivities.setParentCode(model.getParentCode());
-        offlineActivities.setCreatedOn(model.getPlanetCode());
+        offlineActivities.user = model.getName();
+        offlineActivities.parentCode = model.getParentCode();
+        offlineActivities.createdOn = model.getPlanetCode();
         return offlineActivities;
     }
 
@@ -130,10 +130,10 @@ public class UserProfileDbHandler {
         Long maxCount = 0l;
         String maxOpenedResource = "";
         for (RealmResourceActivity realm_resourceActivities : result) {
-            Long count = mRealm.where(RealmResourceActivity.class).equalTo("user", fullName).equalTo("type", KEY_RESOURCE_OPEN).equalTo("resourceId", realm_resourceActivities.getResourceId()).count();
+            Long count = mRealm.where(RealmResourceActivity.class).equalTo("user", fullName).equalTo("type", KEY_RESOURCE_OPEN).equalTo("resourceId", realm_resourceActivities.resourceId).count();
             if (count > maxCount) {
                 maxCount = count;
-                maxOpenedResource = realm_resourceActivities.getTitle();
+                maxOpenedResource = realm_resourceActivities.title;
             }
         }
         return maxCount == 0 ? "" : maxOpenedResource + " opened " + maxCount + " times";

@@ -36,7 +36,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import io.realm.Case;
 import io.realm.Realm;
 import io.realm.RealmResults;
