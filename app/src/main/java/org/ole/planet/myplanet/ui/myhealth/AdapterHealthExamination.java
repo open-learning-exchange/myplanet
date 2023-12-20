@@ -62,7 +62,7 @@ public class AdapterHealthExamination extends RecyclerView.Adapter<AdapterHealth
         rowExaminationBinding.txtDate.setText(TimeUtils.formatDate(list.get(position).date, "MMM dd, yyyy"));
         JsonObject encrypted = list.get(position).getEncryptedDataAsJson(this.userModel);
         String createdBy = JsonUtils.getString("createdBy", encrypted);
-        if (!TextUtils.isEmpty(createdBy) && !TextUtils.equals(createdBy, userModel.getId())) {
+        if (!TextUtils.isEmpty(createdBy) && !TextUtils.equals(createdBy, userModel.id)) {
             RealmUserModel model = mRealm.where(RealmUserModel.class).equalTo("id", createdBy).findFirst();
             String name = "";
             if (model != null) {

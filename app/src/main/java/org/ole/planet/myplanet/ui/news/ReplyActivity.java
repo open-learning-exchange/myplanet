@@ -76,7 +76,7 @@ public class ReplyActivity extends AppCompatActivity implements AdapterNews.OnNe
 
     @Override
     public void showReply(RealmNews news, boolean fromLogin) {
-        startActivity(new Intent(this, ReplyActivity.class).putExtra("id", news.getId()));
+        startActivity(new Intent(this, ReplyActivity.class).putExtra("id", news.id));
     }
 
     @Override

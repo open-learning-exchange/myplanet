@@ -55,20 +55,20 @@ public class AdapterJoinedMember extends RecyclerView.Adapter<AdapterJoinedMembe
     public void onBindViewHolder(@NonNull ViewHolderUser holder, int position) {
         String[] overflowMenuOptions;
         if (list.get(position).toString().equals(" ")) {
-            rowJoinedUserBinding.tvTitle.setText(list.get(position).getName());
+            rowJoinedUserBinding.tvTitle.setText(list.get(position).name);
         } else {
             rowJoinedUserBinding.tvTitle.setText(list.get(position).toString());
         }
-        rowJoinedUserBinding.tvDescription.setText(list.get(position).getRoleAsString() + " (" + RealmTeamLog.getVisitCount(mRealm, list.get(position).getName(), teamId) + " " + context.getString(R.string.visits) + " )");
+        rowJoinedUserBinding.tvDescription.setText(list.get(position).getRoleAsString() + " (" + RealmTeamLog.getVisitCount(mRealm, list.get(position).name, teamId) + " " + context.getString(R.string.visits) + " )");
         Glide.with(context)
-              .load(list.get(position).getUserImage())
+              .load(list.get(position).userImage)
               .placeholder(R.drawable.profile)
               .error(R.drawable.profile)
               .into(rowJoinedUserBinding.memberImage);
-        boolean isLoggedInUserTeamLeader = this.teamLeaderId != null && this.teamLeaderId.equals(this.currentUser.getId());
+        boolean isLoggedInUserTeamLeader = this.teamLeaderId != null && this.teamLeaderId.equals(this.currentUser.id);
 
         // If the current user card is the logged in user/team leader
-        if (this.teamLeaderId.equals(list.get(position).getId())) {
+        if (this.teamLeaderId.equals(list.get(position).id)) {
             rowJoinedUserBinding.tvIsLeader.setVisibility(View.VISIBLE);
             rowJoinedUserBinding.tvIsLeader.setText("("+ R.string.team_leader +")");
         } else {
@@ -101,7 +101,7 @@ public class AdapterJoinedMember extends RecyclerView.Adapter<AdapterJoinedMembe
 
     private void makeLeader(RealmUserModel userModel, int position) {
         if (!mRealm.isInTransaction()) mRealm.beginTransaction();
-        RealmMyTeam team = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("userId", userModel.getId()).findFirst();
+        RealmMyTeam team = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("userId", userModel.id).findFirst();
         RealmMyTeam teamLeader = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("isLeader", true).findFirst();
         if (teamLeader != null) {
             teamLeader.setLeader(false);
@@ -117,7 +117,7 @@ public class AdapterJoinedMember extends RecyclerView.Adapter<AdapterJoinedMembe
 
     private void reject(RealmUserModel userModel, int position) {
         if (!mRealm.isInTransaction()) mRealm.beginTransaction();
-        RealmMyTeam team = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("userId", userModel.getId()).findFirst();
+        RealmMyTeam team = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("userId", userModel.id).findFirst();
         if (team != null) {
             team.deleteFromRealm();
         }
