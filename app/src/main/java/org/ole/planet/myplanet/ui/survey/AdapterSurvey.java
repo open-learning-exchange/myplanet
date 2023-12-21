@@ -47,17 +47,17 @@ public class AdapterSurvey extends RecyclerView.Adapter<AdapterSurvey.ViewHolder
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolderSurvey holder, final int position) {
-        rowSurveyBinding.tvTitle.setText(examList.get(position).getName());
-        rowSurveyBinding.startSurvey.setOnClickListener(view -> AdapterMySubmission.openSurvey(listener, examList.get(position).getId(), false));
+        rowSurveyBinding.tvTitle.setText(examList.get(position).name);
+        rowSurveyBinding.startSurvey.setOnClickListener(view -> AdapterMySubmission.openSurvey(listener, examList.get(position).id, false));
 
-        List<RealmExamQuestion> questions = mRealm.where(RealmExamQuestion.class).equalTo("examId", examList.get(position).getId()).findAll();
+        List<RealmExamQuestion> questions = mRealm.where(RealmExamQuestion.class).equalTo("examId", examList.get(position).id).findAll();
         if (questions.size() == 0) {
             rowSurveyBinding.sendSurvey.setVisibility(View.GONE);
             rowSurveyBinding.startSurvey.setVisibility(View.GONE);
         }
-        rowSurveyBinding.startSurvey.setText(examList.get(position).isFromNation() ? context.getString(R.string.take_survey) : context.getString(R.string.record_survey));
-        String noOfSubmission = RealmSubmission.getNoOfSubmissionByUser(examList.get(position).getId(), userId, mRealm);
-        String subDate = RealmSubmission.getRecentSubmissionDate(examList.get(position).getId(), userId, mRealm);
+        rowSurveyBinding.startSurvey.setText(examList.get(position).isFromNation ? context.getString(R.string.take_survey) : context.getString(R.string.record_survey));
+        String noOfSubmission = RealmSubmission.getNoOfSubmissionByUser(examList.get(position).id, userId, mRealm);
+        String subDate = RealmSubmission.getRecentSubmissionDate(examList.get(position).id, userId, mRealm);
         rowSurveyBinding.tvNoSubmissions.setText(noOfSubmission);
         rowSurveyBinding.tvDate.setText(subDate);
     }

@@ -337,15 +337,15 @@ public class UploadManager extends FileUploadService {
         mRealm.executeTransactionAsync(realm -> {
             List<RealmTeamTask> list = realm.where(RealmTeamTask.class).findAll();
             for (RealmTeamTask task : list) {
-                if (TextUtils.isEmpty(task.get_id()) || task.isUpdated()) {
+                if (TextUtils.isEmpty(task._id) || task.isUpdated) {
                     JsonObject object = null;
                     try {
                         object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/tasks", RealmTeamTask.serialize(realm, task)).execute().body();
                         if (object != null) {
                             String _rev = JsonUtils.getString("rev", object);
                             String _id = JsonUtils.getString("id", object);
-                            task.set_rev(_rev);
-                            task.set_id(_id);
+                            task._rev = _rev;
+                            task._id = _id;
                         }
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -405,8 +405,8 @@ public class UploadManager extends FileUploadService {
             try {
                 JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/team_activities", RealmTeamLog.serializeTeamActivities(log, context)).execute().body();
                 if (object != null) {
-                    log.set_id(JsonUtils.getString("id", object));
-                    log.set_rev(JsonUtils.getString("rev", object));
+                    log._id = JsonUtils.getString("id", object);
+                    log._rev = JsonUtils.getString("rev", object);
                 }
             } catch (IOException e) {
                 e.printStackTrace();
