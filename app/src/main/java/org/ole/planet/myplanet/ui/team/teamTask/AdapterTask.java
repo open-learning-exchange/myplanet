@@ -46,10 +46,10 @@ public class AdapterTask extends RecyclerView.Adapter<AdapterTask.ViewHolderTask
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolderTask holder, int position) {
-        rowTaskBinding.checkbox.setText(list.get(position).getTitle());
-        rowTaskBinding.checkbox.setChecked(list.get(position).isCompleted());
-        Utilities.log(list.get(position).getDeadline() + "");
-        rowTaskBinding.deadline.setText(context.getString(R.string.deadline_colon) + TimeUtils.formatDate(list.get(position).getDeadline()) + (list.get(position).isCompleted() ? context.getString(R.string.completed_colon) + TimeUtils.formatDate(list.get(position).getCompletedTime()) : ""));
+        rowTaskBinding.checkbox.setText(list.get(position).title);
+        rowTaskBinding.checkbox.setChecked(list.get(position).completed);
+        Utilities.log(list.get(position).deadline + "");
+        rowTaskBinding.deadline.setText(context.getString(R.string.deadline_colon) + TimeUtils.formatDate(list.get(position).deadline) + (list.get(position).completed ? context.getString(R.string.completed_colon) + TimeUtils.formatDate(list.get(position).completedTime) : ""));
         showAssignee(holder, list.get(position));
         rowTaskBinding.checkbox.setOnCheckedChangeListener((compoundButton, b) -> {
             if (listener != null) listener.onCheckChange(list.get(position), b);
@@ -63,12 +63,12 @@ public class AdapterTask extends RecyclerView.Adapter<AdapterTask.ViewHolderTask
         rowTaskBinding.deleteTask.setOnClickListener(view -> {
             if (listener != null) listener.onDelete(list.get(position));
         });
-        holder.itemView.setOnClickListener(view -> DialogUtils.showCloseAlert(context, list.get(position).getTitle(), list.get(position).getDescription()));
+        holder.itemView.setOnClickListener(view -> DialogUtils.showCloseAlert(context, list.get(position).title, list.get(position).description));
     }
 
     private void showAssignee(RecyclerView.ViewHolder holder, RealmTeamTask realmTeamTask) {
-        if (!TextUtils.isEmpty(realmTeamTask.getAssignee())) {
-            RealmUserModel model = realm.where(RealmUserModel.class).equalTo("id", realmTeamTask.getAssignee()).findFirst();
+        if (!TextUtils.isEmpty(realmTeamTask.assignee)) {
+            RealmUserModel model = realm.where(RealmUserModel.class).equalTo("id", realmTeamTask.assignee).findFirst();
             if (model != null) {
                 rowTaskBinding.assignee.setText(context.getString(R.string.assigned_to_colon) + model.name);
             }

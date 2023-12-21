@@ -68,7 +68,7 @@ public class AdapterMySubmission extends RecyclerView.Adapter<AdapterMySubmissio
         rowMysurveyBinding.date.setText(TimeUtils.getFormatedDate(list.get(position).startTime));
             showSubmittedBy(rowMysurveyBinding.submittedBy, position);
             if (examHashMap.containsKey(list.get(position).parentId))
-                rowMysurveyBinding.title.setText(examHashMap.get(list.get(position).parentId).getName());
+                rowMysurveyBinding.title.setText(examHashMap.get(list.get(position).parentId).name);
             holder.itemView.setOnClickListener(view -> {
                 if (type.equals("survey")) openSurvey(listener, list.get(position).id, true);
                 else openSubmissionDetail(listener, list.get(position).id);

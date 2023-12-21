@@ -51,9 +51,9 @@ public class SendSurveyFragment extends BaseDialogFragment {
         Realm mRealm = new DatabaseService(getActivity()).getRealmInstance();
         RealmStepExam exam = mRealm.where(RealmStepExam.class).equalTo("id", id).findFirst();
         mRealm.beginTransaction();
-        RealmSubmission sub = mRealm.where(RealmSubmission.class).equalTo("userId", userId).equalTo("parentId", (!TextUtils.isEmpty(exam.getCourseId())) ? id + "@" + exam.getCourseId() : id).sort("lastUpdateTime", Sort.DESCENDING).equalTo("status", "pending").findFirst();
+        RealmSubmission sub = mRealm.where(RealmSubmission.class).equalTo("userId", userId).equalTo("parentId", (!TextUtils.isEmpty(exam.courseId)) ? id + "@" + exam.courseId : id).sort("lastUpdateTime", Sort.DESCENDING).equalTo("status", "pending").findFirst();
         sub = RealmSubmission.createSubmission(sub, mRealm);
-        sub.parentId = (!TextUtils.isEmpty(exam.getCourseId())) ? id + "@" + exam.getCourseId() : id;
+        sub.parentId = (!TextUtils.isEmpty(exam.courseId)) ? id + "@" + exam.courseId : id;
         sub.userId = userId;
         sub.type = "survey";
         sub.status = "pending";

@@ -254,7 +254,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         List<RealmTag> li = new ArrayList<>();
         li.add(tag);
         searchTags = li;
-        tvSelected.setText(R.string.selected + tag.getName());
+        tvSelected.setText(R.string.selected + tag.name);
         adapterCourses.setCourseList((filterCourseByTag(etSearch.getText().toString(), li)));
         showNoData(tvMessage, adapterCourses.getItemCount());
     }

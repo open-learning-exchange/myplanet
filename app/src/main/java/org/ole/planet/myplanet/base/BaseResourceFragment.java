@@ -141,7 +141,7 @@ public abstract class BaseResourceFragment extends Fragment {
                 if (convertView == null)
                     convertView = LayoutInflater.from(getActivity()).inflate(android.R.layout.simple_list_item_1, null);
                 if (exams.containsKey(((RealmSubmission) getItem(position)).parentId))
-                    ((TextView) convertView).setText(exams.get(list.get(position).parentId).getName());
+                    ((TextView) convertView).setText(exams.get(list.get(position).parentId).name);
                 else {
                     ((TextView) convertView).setText(R.string.n_a);
                 }
@@ -280,7 +280,7 @@ public abstract class BaseResourceFragment extends Fragment {
     public void showTagText(List<RealmTag> list, TextView tvSelected) {
         StringBuilder selected = new StringBuilder(getString(R.string.selected));
         for (RealmTag tags : list) {
-            selected.append(tags.getName()).append(",");
+            selected.append(tags.name).append(",");
         }
         tvSelected.setText(selected.subSequence(0, selected.length() - 1));
     }
