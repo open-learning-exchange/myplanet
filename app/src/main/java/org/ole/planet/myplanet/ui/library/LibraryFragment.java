@@ -71,7 +71,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
 
     @Override
     public RecyclerView.Adapter getAdapter() {
-        map = RealmRating.getRatings(mRealm, "resource", model.getId());
+        map = RealmRating.getRatings(mRealm, "resource", model.id);
         adapterLibrary = new AdapterLibrary(getActivity(), getList(RealmMyLibrary.class), map, mRealm);
         adapterLibrary.setRatingChangeListener(this);
         adapterLibrary.setListener(this);
@@ -321,10 +321,10 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         if (filterApplied()) {
             if (!mRealm.isInTransaction()) mRealm.beginTransaction();
             RealmSearchActivity activity = mRealm.createObject(RealmSearchActivity.class, UUID.randomUUID().toString());
-            activity.setUser(model.getName());
+            activity.setUser(model.name);
             activity.setTime(Calendar.getInstance().getTimeInMillis());
-            activity.setCreatedOn(model.getPlanetCode());
-            activity.setParentCode(model.getParentCode());
+            activity.setCreatedOn(model.planetCode);
+            activity.setParentCode(model.parentCode);
             activity.setText(etSearch.getText().toString());
             activity.setType("resources");
             JsonObject filter = new JsonObject();

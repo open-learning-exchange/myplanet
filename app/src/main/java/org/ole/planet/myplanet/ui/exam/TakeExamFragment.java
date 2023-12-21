@@ -26,20 +26,19 @@ import org.ole.planet.myplanet.utilities.CameraUtils;
 import org.ole.planet.myplanet.utilities.JsonParserUtils;
 import org.ole.planet.myplanet.utilities.JsonUtils;
 import org.ole.planet.myplanet.utilities.KeyboardUtils;
+import org.ole.planet.myplanet.utilities.Markdown;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 
-import io.noties.markwon.Markwon;
 import io.realm.RealmList;
 import io.realm.RealmQuery;
 import io.realm.Sort;
 
 public class TakeExamFragment extends BaseExamFragment implements View.OnClickListener, CompoundButton.OnCheckedChangeListener, CameraUtils.ImageCaptureCallback {
     private FragmentTakeExamBinding fragmentTakeExamBinding;
-    Markwon markwon;
     boolean isCertified;
     NestedScrollView container;
 
@@ -50,7 +49,6 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
     public View onCreateView(LayoutInflater inflater, ViewGroup parent, Bundle savedInstanceState) {
         fragmentTakeExamBinding = FragmentTakeExamBinding.inflate(inflater, parent, false);
         listAns = new HashMap<>();
-        markwon = Markwon.create(getActivity());
         UserProfileDbHandler dbHandler = new UserProfileDbHandler(getActivity());
         user = dbHandler.getUserModel();
         return fragmentTakeExamBinding.getRoot();
@@ -60,13 +58,13 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         initExam();
-        questions = mRealm.where(RealmExamQuestion.class).equalTo("examId", exam.getId()).findAll();
+        questions = mRealm.where(RealmExamQuestion.class).equalTo("examId", exam.id).findAll();
         fragmentTakeExamBinding.tvQuestionCount.setText(getString(R.string.Q1) + questions.size());
-        RealmQuery q = mRealm.where(RealmSubmission.class).equalTo("userId", user.getId()).equalTo("parentId", (!TextUtils.isEmpty(exam.getCourseId())) ? id + "@" + exam.getCourseId() : id).sort("startTime", Sort.DESCENDING);
+        RealmQuery q = mRealm.where(RealmSubmission.class).equalTo("userId", user.id).equalTo("parentId", (!TextUtils.isEmpty(exam.courseId)) ? id + "@" + exam.courseId : id).sort("startTime", Sort.DESCENDING);
         if (type.equals("exam")) q = q.equalTo("status", "pending");
 
         sub = (RealmSubmission) q.findFirst();
-        String courseId = exam.getCourseId();
+        String courseId = exam.courseId;
         isCertified = RealmCertification.isCourseCertified(mRealm, courseId);
         if (questions.size() > 0) {
             createSubmission();
@@ -86,11 +84,11 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
 
         Utilities.log("Set parent id " + id);
         if (TextUtils.isEmpty(id)) {
-            sub.setParentId((!TextUtils.isEmpty(exam.getCourseId())) ? exam.getId() + "@" + exam.getCourseId() : exam.getId());
+            sub.setParentId((!TextUtils.isEmpty(exam.courseId)) ? exam.id + "@" + exam.courseId : exam.id);
         } else {
-            sub.setParentId((!TextUtils.isEmpty(exam.getCourseId())) ? id + "@" + exam.getCourseId() : id);
+            sub.setParentId((!TextUtils.isEmpty(exam.courseId)) ? id + "@" + exam.courseId : id);
         }
-        sub.setUserId(user.getId());
+        sub.setUserId(user.id);
         sub.setStatus("pending");
         sub.setType(type);
         sub.setStartTime(new Date().getTime());
@@ -114,21 +112,21 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         fragmentTakeExamBinding.llCheckbox.setVisibility(View.GONE);
         clearAnswer();
         if (sub.getAnswers().size() > currentIndex) {
-            ans = sub.getAnswers().get(currentIndex).getValue();
+            ans = sub.getAnswers().get(currentIndex).value;
         }
-        if (question.getType().equalsIgnoreCase("select")) {
+        if (question.type.equalsIgnoreCase("select")) {
             fragmentTakeExamBinding.groupChoices.setVisibility(View.VISIBLE);
             fragmentTakeExamBinding.etAnswer.setVisibility(View.GONE);
             selectQuestion(question, ans);
-        } else if (question.getType().equalsIgnoreCase("input") || question.getType().equalsIgnoreCase("textarea")) {
-            setMarkdownViewAndShowInput(fragmentTakeExamBinding.etAnswer, question.getType(), ans);
-        } else if (question.getType().equalsIgnoreCase("selectMultiple")) {
+        } else if (question.type.equalsIgnoreCase("input") || question.type.equalsIgnoreCase("textarea")) {
+            setMarkdownViewAndShowInput(fragmentTakeExamBinding.etAnswer, question.type, ans);
+        } else if (question.type.equalsIgnoreCase("selectMultiple")) {
             fragmentTakeExamBinding.llCheckbox.setVisibility(View.VISIBLE);
             fragmentTakeExamBinding.etAnswer.setVisibility(View.GONE);
             showCheckBoxes(question, ans);
         }
-        fragmentTakeExamBinding.tvHeader.setText(question.getHeader());
-        markwon.setMarkdown(fragmentTakeExamBinding.tvBody, question.getBody());
+        fragmentTakeExamBinding.tvHeader.setText(question.header);
+        Markdown.INSTANCE.setMarkdownText(fragmentTakeExamBinding.tvBody, question.body);
         fragmentTakeExamBinding.btnSubmit.setOnClickListener(this);
     }
 
@@ -147,14 +145,14 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
     }
 
     private void showCheckBoxes(RealmExamQuestion question, String oldAnswer) {
-        JsonArray choices = JsonParserUtils.getStringAsJsonArray(question.getChoices());
+        JsonArray choices = JsonParserUtils.getStringAsJsonArray(question.choices);
         for (int i = 0; i < choices.size(); i++) {
             addCompoundButton(choices.get(i).getAsJsonObject(), false, oldAnswer);
         }
     }
 
     private void selectQuestion(RealmExamQuestion question, String oldAnswer) {
-        JsonArray choices = JsonParserUtils.getStringAsJsonArray(question.getChoices());
+        JsonArray choices = JsonParserUtils.getStringAsJsonArray(question.choices);
         for (int i = 0; i < choices.size(); i++) {
             if (choices.get(i).isJsonObject()) {
                 addCompoundButton(choices.get(i).getAsJsonObject(), true, oldAnswer);
@@ -185,7 +183,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
     @Override
     public void onClick(View view) {
         if (view.getId() == R.id.btn_submit) {
-            String type = questions.get(currentIndex).getType();
+            String type = questions.get(currentIndex).type;
             showTextInput(type);
             if (showErrorMessage(getString(R.string.please_select_write_your_answer_to_continue))) {
                 return;
@@ -218,15 +216,15 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         RealmList<RealmAnswer> list = sub.getAnswers();
         RealmAnswer answer = createAnswer(list);
         RealmExamQuestion que = mRealm.copyFromRealm(questions.get(currentIndex));
-        answer.setQuestionId(que.getId());
-        answer.setValue(ans);
+        answer.questionId = que.id;
+        answer.value = ans;
         answer.setValueChoices(listAns, isLastAnsvalid);
-        answer.setSubmissionId(sub.getId());
-        Submit_id = answer.getSubmissionId();
+        answer.submissionId = sub.getId();
+        Submit_id = answer.submissionId;
 
         if (que.getCorrectChoice().size() == 0) {
-            answer.setGrade(0);
-            answer.setMistakes(0);
+            answer.grade = 0;
+            answer.mistakes = 0;
             flag = true;
         } else {
             flag = checkCorrectAns(answer, que);
@@ -247,9 +245,9 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
 
     private boolean checkCorrectAns(RealmAnswer answer, RealmExamQuestion que) {
         boolean flag = false;
-        answer.setPassed(que.getCorrectChoice().contains(ans.toLowerCase()));
-        answer.setGrade(1);
-        int mistake = answer.getMistakes();
+        answer.isPassed = que.getCorrectChoice().contains(ans.toLowerCase());
+        answer.grade = 1;
+        int mistake = answer.mistakes;
         String[] selectedAns = listAns.values().toArray(new String[0]);
         String[] correctChoices = que.getCorrectChoice().toArray(new String[0]);
         if (!isEqual(selectedAns, correctChoices)) {
@@ -257,7 +255,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         } else {
             flag = true;
         }
-        answer.setMistakes(mistake);
+        answer.mistakes = mistake;
         return flag;
     }
 

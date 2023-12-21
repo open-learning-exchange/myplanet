@@ -129,7 +129,7 @@ public abstract class BaseResourceFragment extends Fragment {
 
     public void showPendingSurveyDialog() {
         model = new UserProfileDbHandler(getActivity()).getUserModel();
-        List<RealmSubmission> list = mRealm.where(RealmSubmission.class).equalTo("userId", model.getId()).equalTo("status", "pending").equalTo("type", "survey").findAll();
+        List<RealmSubmission> list = mRealm.where(RealmSubmission.class).equalTo("userId", model.id).equalTo("status", "pending").equalTo("type", "survey").findAll();
         if (list.size() == 0) {
             return;
         }
@@ -141,7 +141,7 @@ public abstract class BaseResourceFragment extends Fragment {
                 if (convertView == null)
                     convertView = LayoutInflater.from(getActivity()).inflate(android.R.layout.simple_list_item_1, null);
                 if (exams.containsKey(((RealmSubmission) getItem(position)).getParentId()))
-                    ((TextView) convertView).setText(exams.get(list.get(position).getParentId()).getName());
+                    ((TextView) convertView).setText(exams.get(list.get(position).getParentId()).name);
                 else {
                     ((TextView) convertView).setText(R.string.n_a);
                 }
@@ -260,13 +260,13 @@ public abstract class BaseResourceFragment extends Fragment {
     public void removeFromShelf(RealmObject object) {
         if (object instanceof RealmMyLibrary) {
             RealmMyLibrary myObject = mRealm.where(RealmMyLibrary.class).equalTo("resourceId", ((RealmMyLibrary) object).resourceId).findFirst();
-            myObject.removeUserId(model.getId());
-            RealmRemovedLog.onRemove(mRealm, "resources", model.getId(), ((RealmMyLibrary) object).resourceId);
+            myObject.removeUserId(model.id);
+            RealmRemovedLog.onRemove(mRealm, "resources", model.id, ((RealmMyLibrary) object).resourceId);
             Utilities.toast(getActivity(), getString(R.string.removed_from_mylibrary));
         } else {
             RealmMyCourse myObject = RealmMyCourse.getMyCourse(mRealm, ((RealmMyCourse) object).courseId);
-            myObject.removeUserId(model.getId());
-            RealmRemovedLog.onRemove(mRealm, "courses", model.getId(), ((RealmMyCourse) object).courseId);
+            myObject.removeUserId(model.id);
+            RealmRemovedLog.onRemove(mRealm, "courses", model.id, ((RealmMyCourse) object).courseId);
             Utilities.toast(getActivity(), getString(R.string.removed_from_mycourse));
         }
     }

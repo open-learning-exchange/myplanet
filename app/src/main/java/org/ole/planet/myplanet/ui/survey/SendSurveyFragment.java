@@ -51,9 +51,9 @@ public class SendSurveyFragment extends BaseDialogFragment {
         Realm mRealm = new DatabaseService(getActivity()).getRealmInstance();
         RealmStepExam exam = mRealm.where(RealmStepExam.class).equalTo("id", id).findFirst();
         mRealm.beginTransaction();
-        RealmSubmission sub = mRealm.where(RealmSubmission.class).equalTo("userId", userId).equalTo("parentId", (!TextUtils.isEmpty(exam.getCourseId())) ? id + "@" + exam.getCourseId() : id).sort("lastUpdateTime", Sort.DESCENDING).equalTo("status", "pending").findFirst();
+        RealmSubmission sub = mRealm.where(RealmSubmission.class).equalTo("userId", userId).equalTo("parentId", (!TextUtils.isEmpty(exam.courseId)) ? id + "@" + exam.courseId : id).sort("lastUpdateTime", Sort.DESCENDING).equalTo("status", "pending").findFirst();
         sub = RealmSubmission.createSubmission(sub, mRealm);
-        sub.setParentId((!TextUtils.isEmpty(exam.getCourseId())) ? id + "@" + exam.getCourseId() : id);
+        sub.setParentId((!TextUtils.isEmpty(exam.courseId)) ? id + "@" + exam.courseId : id);
         sub.setUserId(userId);
         sub.setType("survey");
         sub.setStatus("pending");
@@ -69,7 +69,7 @@ public class SendSurveyFragment extends BaseDialogFragment {
         fragmentSendSurveyBinding.sendSurvey.setOnClickListener(view -> {
             for (int i = 0; i < fragmentSendSurveyBinding.listUsers.getSelectedItemsList().size(); i++) {
                 RealmUserModel u = users.get(i);
-                createSurveySubmission(u.getId());
+                createSurveySubmission(u.id);
             }
             Utilities.toast(getActivity(), getString(R.string.survey_sent_to_users));
             dismiss();

@@ -39,7 +39,6 @@ import org.ole.planet.myplanet.ui.viewer.*
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import java.io.File
-
 abstract class BaseContainerFragment : BaseResourceFragment() {
     var timesRated: TextView? = null
     var rating: TextView? = null
@@ -53,17 +52,14 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         super.onCreate(savedInstanceState)
         profileDbHandler = UserProfileDbHandler(requireActivity())
     }
-
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return super.onCreateView(inflater, container, savedInstanceState)
     }
-
     fun setRatings(`object`: JsonObject?) {
         if (`object` != null) {
             AdapterCourses.showRating(`object`, rating, timesRated, ratingBar)
         }
     }
-
     fun getUrlsAndStartDownload(
         lib: List<RealmMyLibrary?>, settings: SharedPreferences?, urls: ArrayList<String?>
     ) {
@@ -75,7 +71,6 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             activity, getString(R.string.no_images_to_download)
         )
     }
-
     fun initRatingView(
         type: String?, id: String?, title: String?, listener: OnRatingChangeListener?
     ) {
@@ -89,14 +84,12 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             true
         }
     }
-
     override fun onAttach(context: Context) {
         super.onAttach(context)
         if (context is OnHomeItemClickListener) {
             homeItemClickListener = context
         }
     }
-
     fun openIntent(items: RealmMyLibrary, typeClass: Class<*>?) {
         val fileOpenIntent = Intent(activity, typeClass)
         if (items.resourceLocalAddress!!.contains("ole/audio") || items.resourceLocalAddress!!.contains(
@@ -109,14 +102,12 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         }
         startActivity(fileOpenIntent)
     }
-
     fun openPdf(item: RealmMyLibrary) {
         val fileOpenIntent = Intent(activity, PDFReaderActivity::class.java)
         fileOpenIntent.putExtra("TOUCHED_FILE", item.id + "/" + item.resourceLocalAddress)
         fileOpenIntent.putExtra("resourceId", item.id)
         startActivity(fileOpenIntent)
     }
-
     fun openResource(items: RealmMyLibrary) {
         if (items.resourceOffline != null && items.isResourceOffline()) {
             openFileType(items, "offline")
@@ -129,7 +120,6 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_DOWNLOAD)
         }
     }
-
     fun checkFileExtension(items: RealmMyLibrary) {
         val filenameArray = items.resourceLocalAddress!!.split("\\.".toRegex()).toTypedArray()
         val extension = filenameArray[filenameArray.size - 1]
@@ -144,7 +134,6 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             checkMoreFileExtensions(extension, items)
         }
     }
-
     @RequiresApi(Build.VERSION_CODES.O)
     fun checkMoreFileExtensions(extension: String?, items: RealmMyLibrary) {
         when (extension) {
@@ -217,7 +206,6 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             checkFileExtension(items)
         }
     }
-
     open fun playVideo(videoType: String, items: RealmMyLibrary) {
         val intent = Intent(activity, VideoPlayerActivity::class.java)
         val bundle = Bundle()
@@ -240,7 +228,6 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         intent.putExtras(bundle)
         startActivity(intent)
     }
-
     fun showResourceList(downloadedResources: List<RealmMyLibrary>?) {
         val builderSingle = AlertDialog.Builder(requireActivity())
         builderSingle.setTitle(getString(R.string.select_resource_to_open))
@@ -269,7 +256,6 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         }
         builderSingle.setNegativeButton(R.string.dismiss, null).show()
     }
-
     fun setOpenResourceButton(downloadedResources: List<RealmMyLibrary>?, btnOpen: Button) {
         if (downloadedResources == null || downloadedResources.isEmpty()) {
             btnOpen.visibility = View.GONE
@@ -284,7 +270,6 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             }
         }
     }
-
     fun setResourceButton(resources: RealmResults<*>?, btnResources: Button) {
         if (resources == null || resources.size == 0) {
             btnResources.visibility = View.GONE

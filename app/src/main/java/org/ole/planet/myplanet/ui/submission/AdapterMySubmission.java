@@ -68,7 +68,7 @@ public class AdapterMySubmission extends RecyclerView.Adapter<AdapterMySubmissio
         rowMysurveyBinding.date.setText(TimeUtils.getFormatedDate(list.get(position).getStartTime()));
             showSubmittedBy(rowMysurveyBinding.submittedBy, position);
             if (examHashMap.containsKey(list.get(position).getParentId()))
-                rowMysurveyBinding.title.setText(examHashMap.get(list.get(position).getParentId()).getName());
+                rowMysurveyBinding.title.setText(examHashMap.get(list.get(position).getParentId()).name);
             holder.itemView.setOnClickListener(view -> {
                 if (type.equals("survey")) openSurvey(listener, list.get(position).getId(), true);
                 else openSubmissionDetail(listener, list.get(position).getId());
@@ -82,7 +82,7 @@ public class AdapterMySubmission extends RecyclerView.Adapter<AdapterMySubmissio
             submitted_by.setText(ob.optString("name"));
         } catch (Exception e) {
             RealmUserModel user = mRealm.where(RealmUserModel.class).equalTo("id", list.get(position).getUserId()).findFirst();
-            if (user != null) submitted_by.setText(user.getName());
+            if (user != null) submitted_by.setText(user.name);
         }
     }
 
