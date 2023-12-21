@@ -266,9 +266,9 @@ public class UploadManager extends FileUploadService {
                     if (object != null) {
                         String _rev = JsonUtils.getString("rev", object);
                         String _id = JsonUtils.getString("id", object);
-                        sub.setUploaded(true);
-                        sub.set_rev(_rev);
-                        sub.set_id(_id);
+                        sub.uploaded = true;
+                        sub._rev = _rev;
+                        sub._id = _id;
                         uploadAttachment(_id, _rev, sub, listener);
                         Utilities.log("Submitting photos to Realm");
                     }
