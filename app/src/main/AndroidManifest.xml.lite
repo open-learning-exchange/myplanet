@@ -45,7 +45,6 @@
         <activity
             android:name=".ui.sync.LoginActivity"
             android:exported="false" />
-        <activity android:name=".ui.chat.ChatActivity" />
         <activity
             android:name=".ui.userprofile.BecomeMemberActivity"
             android:theme="@style/AppTheme" />
