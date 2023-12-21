@@ -11,6 +11,7 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -69,7 +70,7 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         fragmentTeamTaskBinding = FragmentTeamTaskBinding.inflate(inflater, container, false);
         fragmentTeamTaskBinding.fab.setOnClickListener(view -> showTaskAlert(null));
         return fragmentTeamTaskBinding.getRoot();
@@ -80,11 +81,11 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
 
         datePicker = alertTaskBinding.tvPick;
         if (t != null) {
-            alertTaskBinding.etTask.setText(t.getTitle());
-            alertTaskBinding.etDescription.setText(t.getDescription());
-            datePicker.setText(TimeUtils.formatDate(t.getDeadline()));
+            alertTaskBinding.etTask.setText(t.title);
+            alertTaskBinding.etDescription.setText(t.description);
+            datePicker.setText(TimeUtils.formatDate(t.deadline));
             deadline = Calendar.getInstance();
-            deadline.setTime(new Date(t.getDeadline()));
+            deadline.setTime(new Date(t.deadline));
         }
 
         Calendar myCalendar = Calendar.getInstance();
@@ -110,18 +111,18 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
         boolean isCreate = (t == null);
         if (!mRealm.isInTransaction()) mRealm.beginTransaction();
         if (t == null) t = mRealm.createObject(RealmTeamTask.class, UUID.randomUUID().toString());
-        t.setTitle(task);
-        t.setDescription(desc);
-        t.setDeadline(deadline.getTimeInMillis());
-        t.setTeamId(teamId);
-        t.setUpdated(true);
+        t.title = task;
+        t.description = desc;
+        t.deadline = deadline.getTimeInMillis();
+        t.teamId = teamId;
+        t.isUpdated = true;
         JsonObject ob = new JsonObject();
         ob.addProperty("teams", teamId);
-        t.setLink(new Gson().toJson(ob));
+        t.link = new Gson().toJson(ob);
         JsonObject obsync = new JsonObject();
         obsync.addProperty("type", "local");
         obsync.addProperty("planetCode", user.planetCode);
-        t.setSync(new Gson().toJson(obsync));
+        t.sync = new Gson().toJson(obsync);
         mRealm.commitTransaction();
         if (fragmentTeamTaskBinding.rvTask.getAdapter() != null) {
             fragmentTeamTaskBinding.rvTask.getAdapter().notifyDataSetChanged();
@@ -159,9 +160,9 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
     public void onCheckChange(RealmTeamTask realmTeamTask, boolean b) {
         Utilities.log("CHECK CHANGED");
         if (!mRealm.isInTransaction()) mRealm.beginTransaction();
-        realmTeamTask.setCompleted(b);
-        realmTeamTask.setUpdated(true);
-        realmTeamTask.setCompletedTime(new Date().getTime());
+        realmTeamTask.completed = b;
+        realmTeamTask.isUpdated = true;
+        realmTeamTask.completedTime = new Date().getTime();
         mRealm.commitTransaction();
         try {
             fragmentTeamTaskBinding.rvTask.getAdapter().notifyDataSetChanged();
@@ -195,7 +196,7 @@ public class TeamTaskFragment extends BaseTeamFragment implements AdapterTask.On
             RealmUserModel user = ((RealmUserModel) alertUsersSpinnerBinding.spnUser.getSelectedItem());
             String userId = user.id;
             if (!mRealm.isInTransaction()) mRealm.beginTransaction();
-            realmTeamTask.setAssignee(userId);
+            realmTeamTask.assignee = userId;
             Utilities.toast(getActivity(), getString(R.string.assign_task_to) + " " + user.name);
             mRealm.commitTransaction();
             adapter.notifyDataSetChanged();

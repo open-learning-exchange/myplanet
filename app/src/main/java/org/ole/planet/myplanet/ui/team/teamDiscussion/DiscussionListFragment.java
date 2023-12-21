@@ -57,10 +57,10 @@ public class DiscussionListFragment extends BaseTeamFragment {
             RealmTeamNotification notification = realm.where(RealmTeamNotification.class).equalTo("type", "chat").equalTo("parentId", teamId).findFirst();
             if (notification == null) {
                 notification = realm.createObject(RealmTeamNotification.class, UUID.randomUUID().toString());
-                notification.setParentId(teamId);
-                notification.setType("chat");
+                notification.parentId = teamId;
+                notification.type = "chat";
             }
-            notification.setLastCount(count);
+            notification.lastCount = count;
         });
         changeLayoutManager(getResources().getConfiguration().orientation, fragmentDiscussionListBinding.rvDiscussion);
         showRecyclerView(realmNewsList);
