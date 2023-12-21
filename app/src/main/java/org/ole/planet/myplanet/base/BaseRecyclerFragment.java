@@ -149,7 +149,7 @@ public abstract class BaseRecyclerFragment<LI> extends BaseRecyclerParentFragmen
             mRealm.where(RealmCourseProgress.class).equalTo("courseId", ((RealmMyCourse) object).courseId).findAll().deleteAllFromRealm();
             List<RealmStepExam> examList = mRealm.where(RealmStepExam.class).equalTo("courseId", ((RealmMyCourse) object).courseId).findAll();
             for (RealmStepExam exam : examList) {
-                mRealm.where(RealmSubmission.class).equalTo("parentId", exam.getId()).notEqualTo("type", "survey").equalTo("uploaded", false).findAll().deleteAllFromRealm();
+                mRealm.where(RealmSubmission.class).equalTo("parentId", exam.id).notEqualTo("type", "survey").equalTo("uploaded", false).findAll().deleteAllFromRealm();
             }
         }
     }
@@ -162,7 +162,7 @@ public abstract class BaseRecyclerFragment<LI> extends BaseRecyclerParentFragmen
 
     private void checkAndAddToList(RealmMyCourse course, List<RealmMyCourse> courses, List<RealmTag> tags) {
         for (RealmTag tg : tags) {
-            long count = mRealm.where(RealmTag.class).equalTo("db", "courses").equalTo("tagId", tg.getId()).equalTo("linkId", course.courseId).count();
+            long count = mRealm.where(RealmTag.class).equalTo("db", "courses").equalTo("tagId", tg.id).equalTo("linkId", course.courseId).count();
             if (count > 0 && !courses.contains(course)) courses.add(course);
         }
     }
@@ -225,7 +225,7 @@ public abstract class BaseRecyclerFragment<LI> extends BaseRecyclerParentFragmen
 
     private void filter(List<RealmTag> tags, RealmMyLibrary library, RealmList<RealmMyLibrary> libraries) {
         for (RealmTag tg : tags) {
-            long count = mRealm.where(RealmTag.class).equalTo("db", "resources").equalTo("tagId", tg.getId()).equalTo("linkId", library.id).count();
+            long count = mRealm.where(RealmTag.class).equalTo("db", "resources").equalTo("tagId", tg.id).equalTo("linkId", library.id).count();
             if (count > 0 && !libraries.contains(library)) libraries.add(library);
         }
     }
