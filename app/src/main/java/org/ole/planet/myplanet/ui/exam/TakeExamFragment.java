@@ -84,18 +84,18 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
 
         Utilities.log("Set parent id " + id);
         if (TextUtils.isEmpty(id)) {
-            sub.setParentId((!TextUtils.isEmpty(exam.courseId)) ? exam.id + "@" + exam.courseId : exam.id);
+            sub.parentId = (!TextUtils.isEmpty(exam.courseId)) ? exam.id + "@" + exam.courseId : exam.id;
         } else {
-            sub.setParentId((!TextUtils.isEmpty(exam.courseId)) ? id + "@" + exam.courseId : id);
+            sub.parentId = (!TextUtils.isEmpty(exam.courseId)) ? id + "@" + exam.courseId : id;
         }
-        sub.setUserId(user.id);
-        sub.setStatus("pending");
-        sub.setType(type);
-        sub.setStartTime(new Date().getTime());
-        if (sub.getAnswers() != null) {
-            currentIndex = sub.getAnswers().size();
+        sub.userId = user.id;
+        sub.status = "pending";
+        sub.type = type;
+        sub.startTime = new Date().getTime();
+        if (sub.answers != null) {
+            currentIndex = sub.answers.size();
         }
-        if (sub.getAnswers().size() == questions.size() && sub.getType().equals("survey")) {
+        if (sub.answers.size() == questions.size() && sub.type.equals("survey")) {
             currentIndex = 0;
         }
         mRealm.commitTransaction();
@@ -111,8 +111,8 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         fragmentTakeExamBinding.groupChoices.setVisibility(View.GONE);
         fragmentTakeExamBinding.llCheckbox.setVisibility(View.GONE);
         clearAnswer();
-        if (sub.getAnswers().size() > currentIndex) {
-            ans = sub.getAnswers().get(currentIndex).value;
+        if (sub.answers.size() > currentIndex) {
+            ans = sub.answers.get(currentIndex).value;
         }
         if (question.type.equalsIgnoreCase("select")) {
             fragmentTakeExamBinding.groupChoices.setVisibility(View.VISIBLE);
@@ -212,14 +212,14 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
     private boolean updateAnsDb() {
         boolean flag;
         startTransaction();
-        sub.setStatus(currentIndex == questions.size() - 1 ? "requires grading" : "pending");
-        RealmList<RealmAnswer> list = sub.getAnswers();
+        sub.status = currentIndex == questions.size() - 1 ? "requires grading" : "pending";
+        RealmList<RealmAnswer> list = sub.answers;
         RealmAnswer answer = createAnswer(list);
         RealmExamQuestion que = mRealm.copyFromRealm(questions.get(currentIndex));
         answer.questionId = que.id;
         answer.value = ans;
         answer.setValueChoices(listAns, isLastAnsvalid);
-        answer.submissionId = sub.getId();
+        answer.submissionId = sub.id;
         Submit_id = answer.submissionId;
 
         if (que.getCorrectChoice().size() == 0) {
@@ -231,13 +231,13 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         }
         removeOldAnswer(list);
         list.add(currentIndex, answer);
-        sub.setAnswers(list);
+        sub.answers = list;
         mRealm.commitTransaction();
         return flag;
     }
 
     private void removeOldAnswer(RealmList<RealmAnswer> list) {
-        if (sub.getType().equals("survey") && list.size() > currentIndex) list.remove(currentIndex);
+        if (sub.type.equals("survey") && list.size() > currentIndex) list.remove(currentIndex);
         else if (list.size() > currentIndex && !isLastAnsvalid) {
             list.remove(currentIndex);
         }

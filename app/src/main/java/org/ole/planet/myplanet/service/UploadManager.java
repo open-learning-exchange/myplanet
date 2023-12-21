@@ -154,7 +154,7 @@ public class UploadManager extends FileUploadService {
             List<RealmSubmission> submissions = realm.where(RealmSubmission.class).findAll();
             for (RealmSubmission sub : submissions) {
                 try {
-                    if (sub.getAnswers().size() > 0) {
+                    if (sub.answers.size() > 0) {
                         RealmSubmission.continueResultUpload(sub, apiInterface, realm, context);
                     }
                 } catch (Exception e) {

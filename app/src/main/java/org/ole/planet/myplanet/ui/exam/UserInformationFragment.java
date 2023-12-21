@@ -152,8 +152,8 @@ public class UserInformationFragment extends BaseDialogFragment implements View.
 
     private void saveSubmission(JsonObject user) {
         if (!mRealm.isInTransaction()) mRealm.beginTransaction();
-        submissions.setUser(user.toString());
-        submissions.setStatus("complete");
+        submissions.user = user.toString();
+        submissions.status = "complete";
         mRealm.commitTransaction();
         if (isAdded()) {
             Objects.requireNonNull(getDialog()).dismiss();
