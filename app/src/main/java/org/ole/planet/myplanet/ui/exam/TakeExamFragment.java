@@ -114,19 +114,19 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         if (sub.getAnswers().size() > currentIndex) {
             ans = sub.getAnswers().get(currentIndex).value;
         }
-        if (question.getType().equalsIgnoreCase("select")) {
+        if (question.type.equalsIgnoreCase("select")) {
             fragmentTakeExamBinding.groupChoices.setVisibility(View.VISIBLE);
             fragmentTakeExamBinding.etAnswer.setVisibility(View.GONE);
             selectQuestion(question, ans);
-        } else if (question.getType().equalsIgnoreCase("input") || question.getType().equalsIgnoreCase("textarea")) {
-            setMarkdownViewAndShowInput(fragmentTakeExamBinding.etAnswer, question.getType(), ans);
-        } else if (question.getType().equalsIgnoreCase("selectMultiple")) {
+        } else if (question.type.equalsIgnoreCase("input") || question.type.equalsIgnoreCase("textarea")) {
+            setMarkdownViewAndShowInput(fragmentTakeExamBinding.etAnswer, question.type, ans);
+        } else if (question.type.equalsIgnoreCase("selectMultiple")) {
             fragmentTakeExamBinding.llCheckbox.setVisibility(View.VISIBLE);
             fragmentTakeExamBinding.etAnswer.setVisibility(View.GONE);
             showCheckBoxes(question, ans);
         }
-        fragmentTakeExamBinding.tvHeader.setText(question.getHeader());
-        Markdown.INSTANCE.setMarkdownText(fragmentTakeExamBinding.tvBody, question.getBody());
+        fragmentTakeExamBinding.tvHeader.setText(question.header);
+        Markdown.INSTANCE.setMarkdownText(fragmentTakeExamBinding.tvBody, question.body);
         fragmentTakeExamBinding.btnSubmit.setOnClickListener(this);
     }
 
@@ -145,14 +145,14 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
     }
 
     private void showCheckBoxes(RealmExamQuestion question, String oldAnswer) {
-        JsonArray choices = JsonParserUtils.getStringAsJsonArray(question.getChoices());
+        JsonArray choices = JsonParserUtils.getStringAsJsonArray(question.choices);
         for (int i = 0; i < choices.size(); i++) {
             addCompoundButton(choices.get(i).getAsJsonObject(), false, oldAnswer);
         }
     }
 
     private void selectQuestion(RealmExamQuestion question, String oldAnswer) {
-        JsonArray choices = JsonParserUtils.getStringAsJsonArray(question.getChoices());
+        JsonArray choices = JsonParserUtils.getStringAsJsonArray(question.choices);
         for (int i = 0; i < choices.size(); i++) {
             if (choices.get(i).isJsonObject()) {
                 addCompoundButton(choices.get(i).getAsJsonObject(), true, oldAnswer);
@@ -183,7 +183,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
     @Override
     public void onClick(View view) {
         if (view.getId() == R.id.btn_submit) {
-            String type = questions.get(currentIndex).getType();
+            String type = questions.get(currentIndex).type;
             showTextInput(type);
             if (showErrorMessage(getString(R.string.please_select_write_your_answer_to_continue))) {
                 return;
@@ -216,7 +216,7 @@ public class TakeExamFragment extends BaseExamFragment implements View.OnClickLi
         RealmList<RealmAnswer> list = sub.getAnswers();
         RealmAnswer answer = createAnswer(list);
         RealmExamQuestion que = mRealm.copyFromRealm(questions.get(currentIndex));
-        answer.questionId = que.getId();
+        answer.questionId = que.id;
         answer.value = ans;
         answer.setValueChoices(listAns, isLastAnsvalid);
         answer.submissionId = sub.getId();
