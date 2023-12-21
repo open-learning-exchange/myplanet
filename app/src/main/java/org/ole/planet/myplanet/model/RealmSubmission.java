@@ -141,8 +141,8 @@ public class RealmSubmission extends RealmObject {
             return true;
         }
 
-        Utilities.log("Is step completed " + exam.getId() + " " + userId);
-        return realm.where(RealmSubmission.class).equalTo("userId", userId).contains("parentId", exam.getId()).notEqualTo("status", "pending").findFirst() != null;
+        Utilities.log("Is step completed " + exam.id + " " + userId);
+        return realm.where(RealmSubmission.class).equalTo("userId", userId).contains("parentId", exam.id).notEqualTo("status", "pending").findFirst() != null;
     }
 
     public static RealmSubmission createSubmission(RealmSubmission sub, Realm mRealm) {
