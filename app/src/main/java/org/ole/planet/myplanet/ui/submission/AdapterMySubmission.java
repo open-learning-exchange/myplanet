@@ -64,24 +64,24 @@ public class AdapterMySubmission extends RecyclerView.Adapter<AdapterMySubmissio
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolderMySurvey holder, int position) {
-        rowMysurveyBinding.status.setText(list.get(position).getStatus());
-        rowMysurveyBinding.date.setText(TimeUtils.getFormatedDate(list.get(position).getStartTime()));
+        rowMysurveyBinding.status.setText(list.get(position).status);
+        rowMysurveyBinding.date.setText(TimeUtils.getFormatedDate(list.get(position).startTime));
             showSubmittedBy(rowMysurveyBinding.submittedBy, position);
-            if (examHashMap.containsKey(list.get(position).getParentId()))
-                rowMysurveyBinding.title.setText(examHashMap.get(list.get(position).getParentId()).name);
+            if (examHashMap.containsKey(list.get(position).parentId))
+                rowMysurveyBinding.title.setText(examHashMap.get(list.get(position).parentId).name);
             holder.itemView.setOnClickListener(view -> {
-                if (type.equals("survey")) openSurvey(listener, list.get(position).getId(), true);
-                else openSubmissionDetail(listener, list.get(position).getId());
+                if (type.equals("survey")) openSurvey(listener, list.get(position).id, true);
+                else openSubmissionDetail(listener, list.get(position).id);
             });
     }
 
     private void showSubmittedBy(TextView submitted_by, int position) {
         submitted_by.setVisibility(View.VISIBLE);
         try {
-            JSONObject ob = new JSONObject(list.get(position).getUser());
+            JSONObject ob = new JSONObject(list.get(position).user);
             submitted_by.setText(ob.optString("name"));
         } catch (Exception e) {
-            RealmUserModel user = mRealm.where(RealmUserModel.class).equalTo("id", list.get(position).getUserId()).findFirst();
+            RealmUserModel user = mRealm.where(RealmUserModel.class).equalTo("id", list.get(position).userId).findFirst();
             if (user != null) submitted_by.setText(user.name);
         }
     }

@@ -76,8 +76,8 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
             id = getArguments().getString("id");
             if (isMySurvey) {
                 sub = mRealm.where(RealmSubmission.class).equalTo("id", id).findFirst();
-                if (sub.getParentId().contains("@")) id = sub.getParentId().split("@")[0];
-                else id = sub.getParentId();
+                if (sub.parentId.contains("@")) id = sub.parentId.split("@")[0];
+                else id = sub.parentId;
             }
         }
     }
@@ -130,17 +130,17 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
         RealmCourseProgress progress = mRealm.where(RealmCourseProgress.class).equalTo("courseId", exam.courseId).equalTo("stepNum", stepNumber).findFirst();
         if (progress != null) {
             if (!mRealm.isInTransaction()) mRealm.beginTransaction();
-            progress.passed = sub.getStatus().equals("graded");
+            progress.passed = sub.status.equals("graded");
             mRealm.commitTransaction();
         }
     }
 
     private void showUserInfoDialog() {
         if (!isMySurvey && !exam.isFromNation) {
-            UserInformationFragment.getInstance(sub.getId()).show(getChildFragmentManager(), "");
+            UserInformationFragment.getInstance(sub.id).show(getChildFragmentManager(), "");
         } else {
             if (!mRealm.isInTransaction()) mRealm.beginTransaction();
-            sub.setStatus("complete");
+            sub.status = "complete";
             mRealm.commitTransaction();
             Utilities.toast(getActivity(), getString(R.string.thank_you_for_taking_this_survey));
             getActivity().onBackPressed();
