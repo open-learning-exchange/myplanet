@@ -33,7 +33,7 @@ public class SurveyFragment extends BaseRecyclerFragment<RealmStepExam> {
 
     @Override
     public RecyclerView.Adapter getAdapter() {
-        return new AdapterSurvey(getActivity(), getList(RealmStepExam.class, "name", Sort.ASCENDING), mRealm, model.getId());
+        return new AdapterSurvey(getActivity(), getList(RealmStepExam.class, "name", Sort.ASCENDING), mRealm, model.id);
     }
 
     @Override
@@ -51,9 +51,9 @@ public class SurveyFragment extends BaseRecyclerFragment<RealmStepExam> {
             public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
                 Utilities.log("i " + i);
                 if (i == 0) {
-                    recyclerView.setAdapter(new AdapterSurvey(getActivity(), getList(RealmStepExam.class, "name", Sort.ASCENDING), mRealm, model.getId()));
+                    recyclerView.setAdapter(new AdapterSurvey(getActivity(), getList(RealmStepExam.class, "name", Sort.ASCENDING), mRealm, model.id));
                 } else {
-                    recyclerView.setAdapter(new AdapterSurvey(getActivity(), getList(RealmStepExam.class, "name", Sort.DESCENDING), mRealm, model.getId()));
+                    recyclerView.setAdapter(new AdapterSurvey(getActivity(), getList(RealmStepExam.class, "name", Sort.DESCENDING), mRealm, model.id));
                 }
             }
 

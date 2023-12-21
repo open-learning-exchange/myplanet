@@ -88,10 +88,10 @@ public abstract class BaseResourceFragment extends Fragment {
         public void onReceive(Context context, Intent intent) {
             if (intent.getAction().equals(MESSAGE_PROGRESS) && prgDialog != null) {
                 Download download = intent.getParcelableExtra("download");
-                if (!download.isFailed()) {
+                if (!download.failed) {
                     setProgress(download);
                 } else {
-                    DialogUtils.showError(prgDialog, download.getMessage());
+                    DialogUtils.showError(prgDialog, download.message);
                 }
             }
         }
@@ -102,15 +102,17 @@ public abstract class BaseResourceFragment extends Fragment {
             @Override
             public void isAvailable() {
                 if (!db_myLibrary.isEmpty()) {
-                    LayoutInflater inflater = getLayoutInflater();
-                    convertView = inflater.inflate(R.layout.my_library_alertdialog, null);
-                    AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(getActivity());
-                    alertDialogBuilder.setView(convertView).setTitle(R.string.download_suggestion);
-                    alertDialogBuilder.setPositiveButton(R.string.download_selected, (dialogInterface, i) -> startDownload(DownloadUtils.downloadFiles(db_myLibrary, lv.getSelectedItemsList(), settings))).setNeutralButton(R.string.download_all, (dialogInterface, i) -> startDownload(DownloadUtils.downloadAllFiles(db_myLibrary, settings))).setNegativeButton(R.string.txt_cancel, null);
-                    AlertDialog alertDialog = alertDialogBuilder.create();
-                    createListView(db_myLibrary, alertDialog);
-                    alertDialog.show();
-                    (alertDialog).getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(lv.getSelectedItemsList().size() > 0);
+                    if (isAdded() && getActivity() != null) {
+                        LayoutInflater inflater = getActivity().getLayoutInflater();
+                        convertView = inflater.inflate(R.layout.my_library_alertdialog, null);
+                        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(getActivity());
+                        alertDialogBuilder.setView(convertView).setTitle(R.string.download_suggestion);
+                        alertDialogBuilder.setPositiveButton(R.string.download_selected, (dialogInterface, i) -> startDownload(DownloadUtils.downloadFiles(db_myLibrary, lv.getSelectedItemsList(), settings))).setNeutralButton(R.string.download_all, (dialogInterface, i) -> startDownload(DownloadUtils.downloadAllFiles(db_myLibrary, settings))).setNegativeButton(R.string.txt_cancel, null);
+                        AlertDialog alertDialog = alertDialogBuilder.create();
+                        createListView(db_myLibrary, alertDialog);
+                        alertDialog.show();
+                        (alertDialog).getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(lv.getSelectedItemsList().size() > 0);
+                    }
                 } else {
                     Utilities.toast(requireContext(), getString(R.string.no_resources_to_download));
                 }
@@ -127,7 +129,7 @@ public abstract class BaseResourceFragment extends Fragment {
 
     public void showPendingSurveyDialog() {
         model = new UserProfileDbHandler(getActivity()).getUserModel();
-        List<RealmSubmission> list = mRealm.where(RealmSubmission.class).equalTo("userId", model.getId()).equalTo("status", "pending").equalTo("type", "survey").findAll();
+        List<RealmSubmission> list = mRealm.where(RealmSubmission.class).equalTo("userId", model.id).equalTo("status", "pending").equalTo("type", "survey").findAll();
         if (list.size() == 0) {
             return;
         }
@@ -138,40 +140,44 @@ public abstract class BaseResourceFragment extends Fragment {
             public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
                 if (convertView == null)
                     convertView = LayoutInflater.from(getActivity()).inflate(android.R.layout.simple_list_item_1, null);
-                if (exams.containsKey(((RealmSubmission) getItem(position)).getParentId()))
-                    ((TextView) convertView).setText(exams.get(list.get(position).getParentId()).getName());
+                if (exams.containsKey(((RealmSubmission) getItem(position)).parentId))
+                    ((TextView) convertView).setText(exams.get(list.get(position).parentId).name);
                 else {
                     ((TextView) convertView).setText(R.string.n_a);
                 }
                 return convertView;
             }
         };
-        new AlertDialog.Builder(getActivity()).setTitle("Pending Surveys").setAdapter(arrayAdapter, (dialogInterface, i) -> AdapterMySubmission.openSurvey(homeItemClickListener, list.get(i).getId(), true)).setPositiveButton(R.string.dismiss, null).show();
+        new AlertDialog.Builder(getActivity()).setTitle("Pending Surveys").setAdapter(arrayAdapter, (dialogInterface, i) -> AdapterMySubmission.openSurvey(homeItemClickListener, list.get(i).id, true)).setPositiveButton(R.string.dismiss, null).show();
     }
 
     public void startDownload(ArrayList urls) {
-        new Service(getActivity()).isPlanetAvailable(new Service.PlanetAvailableListener() {
-            @Override
-            public void isAvailable() {
-                if (!urls.isEmpty()) {
-                    prgDialog.show();
-                    Utilities.openDownloadService(getActivity(), urls);
+        if (isAdded()) {
+            new Service(requireActivity()).isPlanetAvailable(new Service.PlanetAvailableListener() {
+                @Override
+                public void isAvailable() {
+                    if (!urls.isEmpty()) {
+                        prgDialog.show();
+                        Utilities.openDownloadService(getActivity(), urls);
+                    }
                 }
-            }
 
-            @Override
-            public void notAvailable() {
-                Utilities.toast(getActivity(), getString(R.string.device_not_connected_to_planet));
-            }
-        });
+                @Override
+                public void notAvailable() {
+                    if (isAdded()) {
+                        Utilities.toast(requireActivity(), getString(R.string.device_not_connected_to_planet));
+                    }
+                }
+            });
+        }
     }
 
     public void setProgress(Download download) {
-        prgDialog.setProgress(download.getProgress());
-        if (!TextUtils.isEmpty(download.getFileName())) {
-            prgDialog.setTitle(download.getFileName());
+        prgDialog.setProgress(download.progress);
+        if (!TextUtils.isEmpty(download.fileName)) {
+            prgDialog.setTitle(download.fileName);
         }
-        if (download.isCompleteAll()) {
+        if (download.completeAll) {
             DialogUtils.showError(prgDialog, getString(R.string.all_files_downloaded_successfully));
             onDownloadComplete();
         }
@@ -184,7 +190,7 @@ public abstract class BaseResourceFragment extends Fragment {
         lv = convertView.findViewById(R.id.alertDialog_listView);
         ArrayList<String> names = new ArrayList<>();
         for (int i = 0; i < db_myLibrary.size(); i++) {
-            names.add(db_myLibrary.get(i).getTitle());
+            names.add(db_myLibrary.get(i).title);
         }
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(getActivity().getBaseContext(), R.layout.rowlayout, R.id.checkBoxRowLayout, names);
         lv.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
@@ -253,14 +259,14 @@ public abstract class BaseResourceFragment extends Fragment {
 
     public void removeFromShelf(RealmObject object) {
         if (object instanceof RealmMyLibrary) {
-            RealmMyLibrary myObject = mRealm.where(RealmMyLibrary.class).equalTo("resourceId", ((RealmMyLibrary) object).getResource_id()).findFirst();
-            myObject.removeUserId(model.getId());
-            RealmRemovedLog.onRemove(mRealm, "resources", model.getId(), ((RealmMyLibrary) object).getResource_id());
+            RealmMyLibrary myObject = mRealm.where(RealmMyLibrary.class).equalTo("resourceId", ((RealmMyLibrary) object).resourceId).findFirst();
+            myObject.removeUserId(model.id);
+            RealmRemovedLog.onRemove(mRealm, "resources", model.id, ((RealmMyLibrary) object).resourceId);
             Utilities.toast(getActivity(), getString(R.string.removed_from_mylibrary));
         } else {
-            RealmMyCourse myObject = RealmMyCourse.getMyCourse(mRealm, ((RealmMyCourse) object).getCourseId());
-            myObject.removeUserId(model.getId());
-            RealmRemovedLog.onRemove(mRealm, "courses", model.getId(), ((RealmMyCourse) object).getCourseId());
+            RealmMyCourse myObject = RealmMyCourse.getMyCourse(mRealm, ((RealmMyCourse) object).courseId);
+            myObject.removeUserId(model.id);
+            RealmRemovedLog.onRemove(mRealm, "courses", model.id, ((RealmMyCourse) object).courseId);
             Utilities.toast(getActivity(), getString(R.string.removed_from_mycourse));
         }
     }
@@ -274,7 +280,7 @@ public abstract class BaseResourceFragment extends Fragment {
     public void showTagText(List<RealmTag> list, TextView tvSelected) {
         StringBuilder selected = new StringBuilder(getString(R.string.selected));
         for (RealmTag tags : list) {
-            selected.append(tags.getName()).append(",");
+            selected.append(tags.name).append(",");
         }
         tvSelected.setText(selected.subSequence(0, selected.length() - 1));
     }

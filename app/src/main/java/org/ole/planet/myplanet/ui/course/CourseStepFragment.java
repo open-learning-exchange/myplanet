@@ -1,7 +1,9 @@
 package org.ole.planet.myplanet.ui.course;
 
-
 import android.os.Bundle;
+import android.text.Spannable;
+import android.text.method.LinkMovementMethod;
+import android.text.style.URLSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -26,13 +28,14 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.exam.TakeExamFragment;
 import org.ole.planet.myplanet.utilities.CameraUtils;
 import org.ole.planet.myplanet.utilities.Constants;
+import org.ole.planet.myplanet.utilities.CustomClickableSpan;
+import org.ole.planet.myplanet.utilities.Markdown;
 
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
-
-import io.noties.markwon.Markwon;
-import io.noties.markwon.movement.MovementMethodPlugin;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import io.realm.Case;
 import io.realm.Realm;
 import io.realm.RealmResults;
@@ -47,7 +50,6 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
     List<RealmStepExam> stepExams;
     RealmUserModel user;
     int stepNumber;
-    private Markwon markwon;
 
     public CourseStepFragment() {
     }
@@ -60,9 +62,6 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
             stepNumber = getArguments().getInt("stepNumber");
         }
         setUserVisibleHint(false);
-        markwon = Markwon.builder(MainApplication.context)
-                .usePlugin(MovementMethodPlugin.none())
-                .build();
     }
 
     @Override
@@ -81,21 +80,22 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
 
     public void saveCourseProgress() {
         if (!mRealm.isInTransaction()) mRealm.beginTransaction();
-        RealmCourseProgress courseProgress = mRealm.where(RealmCourseProgress.class).equalTo("courseId", step.getCourseId()).equalTo("userId", user.getId()).equalTo("stepNum", stepNumber).findFirst();
+        RealmCourseProgress courseProgress = mRealm.where(RealmCourseProgress.class).equalTo("courseId", step.courseId).equalTo("userId", user.id).equalTo("stepNum", stepNumber).findFirst();
         if (courseProgress == null) {
             courseProgress = mRealm.createObject(RealmCourseProgress.class, UUID.randomUUID().toString());
-            courseProgress.setCreatedDate(new Date().getTime());
+            courseProgress.createdDate = new Date().getTime();
         }
-        courseProgress.setCourseId(step.getCourseId());
-        courseProgress.setStepNum(stepNumber);
+
+        courseProgress.courseId = step.courseId;
+        courseProgress.stepNum = stepNumber;
 
         if (stepExams.size() == 0) {
-            courseProgress.setPassed(true);
+            courseProgress.passed = true;
         }
-        courseProgress.setCreatedOn(user.getPlanetCode());
-        courseProgress.setUpdatedDate(new Date().getTime());
-        courseProgress.setParentCode(user.getParentCode());
-        courseProgress.setUserId(user.getId());
+        courseProgress.createdOn = user.planetCode;
+        courseProgress.updatedDate = new Date().getTime();
+        courseProgress.parentCode = user.parentCode;
+        courseProgress.userId = user.id;
         mRealm.commitTransaction();
     }
 
@@ -115,20 +115,39 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
         stepExams = mRealm.where(RealmStepExam.class).equalTo("stepId", stepId).findAll();
         if (resources != null) fragmentCourseStepBinding.btnResources.setText(getString(R.string.resources) + " ["+ resources.size() + "]");
         hideTestIfNoQuestion();
-        fragmentCourseStepBinding.tvTitle.setText(step.getStepTitle());
-        markwon.setMarkdown(fragmentCourseStepBinding.description, step.getDescription());
-        if (!RealmMyCourse.isMyCourse(user.getId(), step.getCourseId(), mRealm)) {
-            fragmentCourseStepBinding.btnTakeTest.setVisibility(View.INVISIBLE);
+        fragmentCourseStepBinding.tvTitle.setText(step.stepTitle);
+        String markdownContentWithLocalPaths = prependBaseUrlToImages(step.description, "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/");
+        Markdown.INSTANCE.setMarkdownText(fragmentCourseStepBinding.description, markdownContentWithLocalPaths);
+        fragmentCourseStepBinding.description.setMovementMethod(LinkMovementMethod.getInstance());
+      
+        if (!RealmMyCourse.isMyCourse(user.id, step.courseId, mRealm)) {
+            fragmentCourseStepBinding.btnTakeTest.setVisibility(View.GONE);
         }
         setListeners();
+
+        CharSequence textWithSpans = fragmentCourseStepBinding.description.getText();
+        if (textWithSpans instanceof Spannable) {
+            Spannable spannable = (Spannable) textWithSpans;
+            URLSpan[] urlSpans = spannable.getSpans(0, spannable.length(), URLSpan.class);
+
+            for (URLSpan urlSpan : urlSpans) {
+                int start = spannable.getSpanStart(urlSpan);
+                int end = spannable.getSpanEnd(urlSpan);
+
+                String dynamicTitle = spannable.subSequence(start, end).toString();
+
+                spannable.setSpan(new CustomClickableSpan(urlSpan.getURL(), dynamicTitle, getActivity()), start, end, spannable.getSpanFlags(urlSpan));
+                spannable.removeSpan(urlSpan);
+            }
+        }
     }
 
     private void hideTestIfNoQuestion() {
-        fragmentCourseStepBinding.btnTakeTest.setVisibility(View.INVISIBLE);
+        fragmentCourseStepBinding.btnTakeTest.setVisibility(View.GONE);
         if (stepExams != null && stepExams.size() > 0) {
-            String first_step_id = stepExams.get(0).getId();
+            String first_step_id = stepExams.get(0).id;
             RealmResults<RealmExamQuestion> questions = mRealm.where(RealmExamQuestion.class).equalTo("examId", first_step_id).findAll();
-            long submissionsCount = mRealm.where(RealmSubmission.class).contains("parentId", step.getCourseId()).notEqualTo("status", "pending", Case.INSENSITIVE).count();
+            long submissionsCount = mRealm.where(RealmSubmission.class).contains("parentId", step.courseId).notEqualTo("status", "pending", Case.INSENSITIVE).count();
 
             if (questions != null && questions.size() > 0) {
                 fragmentCourseStepBinding.btnTakeTest.setText((submissionsCount > 0 ? getString(R.string.retake_test) : getString(R.string.take_test)) + " [" + stepExams.size() + "]");
@@ -141,7 +160,7 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
     public void setMenuVisibility(final boolean visible) {
         super.setMenuVisibility(visible);
         try {
-            if (visible && RealmMyCourse.isMyCourse(user.getId(), step.getCourseId(), mRealm)) {
+            if (visible && RealmMyCourse.isMyCourse(user.id, step.courseId, mRealm)) {
                 saveCourseProgress();
             }
         } catch (Exception e) {
@@ -178,5 +197,22 @@ public class CourseStepFragment extends BaseContainerFragment implements CameraU
 
     @Override
     public void onImageCapture(String fileUri) {
+    }
+
+    public static String prependBaseUrlToImages(String markdownContent, String baseUrl) {
+        String pattern = "!\\[.*?\\]\\((.*?)\\)";
+        Pattern imagePattern = Pattern.compile(pattern);
+        Matcher matcher = imagePattern.matcher(markdownContent);
+
+        StringBuffer result = new StringBuffer();
+        while (matcher.find()) {
+            String relativePath = matcher.group(1);
+            String modifiedPath = relativePath.replaceFirst("resources/", "");
+            String fullUrl = baseUrl + modifiedPath;
+            matcher.appendReplacement(result, "<img src=" + fullUrl + " width=600 height=350/>");
+        }
+        matcher.appendTail(result);
+
+        return result.toString();
     }
 }

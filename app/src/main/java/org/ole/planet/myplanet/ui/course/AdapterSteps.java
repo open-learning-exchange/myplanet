@@ -69,11 +69,11 @@ public class AdapterSteps extends RecyclerView.Adapter<AdapterSteps.ViewHolder> 
 
         public void bind(int position) {
             RealmCourseStep step = list.get(position);
-            rowStepsBinding.tvTitle.setText(step.getStepTitle());
+            rowStepsBinding.tvTitle.setText(step.stepTitle);
             int size = 0;
-            RealmStepExam exam = realm.where(RealmStepExam.class).equalTo("stepId", step.getId()).findFirst();
+            RealmStepExam exam = realm.where(RealmStepExam.class).equalTo("stepId", step.id).findFirst();
             if (exam != null) {
-                size = exam.getNoOfQuestions();
+                size = exam.noOfQuestions;
             }
             rowStepsBinding.tvDescription.setText(context.getString(R.string.this_test_has) + size + context.getString(R.string.questions));
 

@@ -62,6 +62,13 @@ public class FinanceFragment extends BaseTeamFragment {
             fragmentFinanceBinding.rvFinance.setAdapter(adapterFinance);
             isAsc = !isAsc;
         });
+        fragmentFinanceBinding.btnReset.setOnClickListener(view -> {
+            list = mRealm.where(RealmMyTeam.class).notEqualTo("status", "archived").equalTo("teamId", teamId).equalTo("docType", "transaction").sort("date", Sort.DESCENDING).findAll();
+            adapterFinance = new AdapterFinance(getActivity(), list);
+            fragmentFinanceBinding.rvFinance.setLayoutManager(new LinearLayoutManager(getActivity()));
+            fragmentFinanceBinding.rvFinance.setAdapter(adapterFinance);
+            calculateTotal(list);
+        });
         return fragmentFinanceBinding.getRoot();
     }
 
@@ -78,6 +85,7 @@ public class FinanceFragment extends BaseTeamFragment {
             fragmentFinanceBinding.rvFinance.setAdapter(adapterFinance);
             calculateTotal(list);
         }, now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH)).show(getActivity().getFragmentManager(), "");
+
     }
 
     @Override
@@ -151,8 +159,8 @@ public class FinanceFragment extends BaseTeamFragment {
         team.setDescription(note);
         team.setTeamId(teamId);
         team.setAmount(Integer.parseInt(amount));
-        team.setParentCode(user.getParentCode());
-        team.setTeamPlanetCode(user.getPlanetCode());
+        team.setParentCode(user.parentCode);
+        team.setTeamPlanetCode(user.planetCode);
         team.setTeamType("sync");
         team.setDocType("transaction");
         team.setUpdated(true);

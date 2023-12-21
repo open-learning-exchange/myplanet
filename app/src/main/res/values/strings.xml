@@ -326,6 +326,7 @@
     <string name="weekly">Weekly</string>
     <string name="recurring_frequency">Recurring Frequency</string>
     <string name="filter_by_date">Date Filter</string>
+    <string name="date_reset">Date Reset</string>
     <string name="emergency_contact">Emergency Contact</string>
     <string name="contact">Contact</string>
     <string name="special_needs">Special Needs</string>
@@ -684,6 +685,7 @@
     <string name="select_resource_to_open">"Select resource to open : "</string>
     <string name="shared_to_community">Shared to community</string>
     <string name="no_data_available_please_check_and_try_again">No data available, please check and try again.</string>
+    <string name="no_course_matched_filter">No courses matched filter</string>
     <string name="added_to_my_library">Added to my library</string>
     <string name="added_to_my_courses">Added to my courses</string>
     <string name="do_you_want_to_stay_online">Do you want to stay online?</string>

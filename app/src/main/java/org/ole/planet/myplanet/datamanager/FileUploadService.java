@@ -25,22 +25,22 @@ import retrofit2.Response;
 
 public class FileUploadService {
     public void uploadAttachment(String id, String rev, RealmMyPersonal personal, SuccessListener listener) {
-        File f = new File(personal.getPath());
-        String name = FileUtils.getFileNameFromUrl(personal.getPath());
+        File f = new File(personal.path);
+        String name = FileUtils.getFileNameFromUrl(personal.path);
 
         upload_doc(id, rev, "%s/resources/%s/%s", f, name, listener);
     }
 
     public void uploadAttachment(String id, String rev, RealmMyLibrary personal, SuccessListener listener) {
-        File f = new File(personal.getResourceLocalAddress());
-        String name = FileUtils.getFileNameFromUrl(personal.getResourceLocalAddress());
+        File f = new File(personal.resourceLocalAddress);
+        String name = FileUtils.getFileNameFromUrl(personal.resourceLocalAddress);
 
         upload_doc(id, rev, "%s/resources/%s/%s", f, name, listener);
     }
 
     public void uploadAttachment(String id, String rev, RealmSubmitPhotos personal, SuccessListener listener) {
-        File f = new File(personal.getPhotoLocation());
-        String name = FileUtils.getFileNameFromUrl(personal.getPhotoLocation());
+        File f = new File(personal.photoLocation);
+        String name = FileUtils.getFileNameFromUrl(personal.photoLocation);
         upload_doc(id, rev, "%s/submissions/%s/%s", f, name, listener);
     }
 

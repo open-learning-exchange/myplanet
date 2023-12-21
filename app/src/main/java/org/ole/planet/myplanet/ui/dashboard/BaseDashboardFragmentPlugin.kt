@@ -64,7 +64,7 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
                 } else if (title == getString(R.string.help_wanted)) {
                     homeItemClickListener.openCallFragment(HelpWantedFragment())
                 } else if (title == getString(R.string.myhealth)) {
-                    if (!model.id.startsWith("guest")) {
+                    if (!model.id!!.startsWith("guest")) {
                         homeItemClickListener.openCallFragment(MyHealthFragment())
                     } else {
                         Utilities.toast(activity, getString(R.string.feature_not_available_for_guest_user))
@@ -120,7 +120,9 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
             itemMyLifeBinding.tvCount.visibility = View.GONE
         }
 
-        handleClickMyLife(title, v)
+        if (title != null) {
+            handleClickMyLife(title, v)
+        }
         return v
     }
 

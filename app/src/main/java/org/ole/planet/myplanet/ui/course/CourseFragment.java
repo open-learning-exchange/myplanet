@@ -45,7 +45,6 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
     CheckBox selectAll;
     Spinner spnGrade, spnSubject;
     List<RealmTag> searchTags;
-    Spinner spn;
     AlertDialog confirmation;
     private boolean allItemsSelected = false;
 
@@ -59,8 +58,8 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
 
     @Override
     public RecyclerView.Adapter getAdapter() {
-        HashMap<String, JsonObject> map = RealmRating.getRatings(mRealm, "course", model.getId());
-        HashMap<String, JsonObject> progressMap = RealmCourseProgress.getCourseProgress(mRealm, model.getId());
+        HashMap<String, JsonObject> map = RealmRating.getRatings(mRealm, "course", model.id);
+        HashMap<String, JsonObject> progressMap = RealmCourseProgress.getCourseProgress(mRealm, model.id);
         adapterCourses = new AdapterCourses(getActivity(), getList(RealmMyCourse.class), map);
         adapterCourses.setProgressMap(progressMap);
         adapterCourses.setmRealm(mRealm);
@@ -114,23 +113,6 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         changeButtonStatus();
         if (!isMyCourseLib) tvFragmentInfo.setText(R.string.our_courses);
         additionalSetup();
-
-        spn.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                if (i == 0) {
-                    adapterCourses.setCourseList(getList(RealmMyCourse.class, "createdDate", Sort.ASCENDING));
-                } else if (i == 1) {
-                    adapterCourses.setCourseList(getList(RealmMyCourse.class, "createdDate", Sort.DESCENDING));
-                } else {
-                    adapterCourses.setCourseList(getList(RealmMyCourse.class, "courseTitle"));
-                }
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> adapterView) {
-            }
-        });
     }
 
     public void additionalSetup() {
@@ -143,7 +125,6 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
     }
 
     private void initializeView() {
-        spn = getView().findViewById(R.id.spn_sort);
         tvAddToLib = getView().findViewById(R.id.tv_add);
         tvAddToLib.setOnClickListener(view -> {
             if (selectedItems.size() > 0) {
@@ -187,7 +168,6 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
             etSearch.setVisibility(View.GONE);
             tvAddToLib.setVisibility(View.GONE);
             getView().findViewById(R.id.filter).setVisibility(View.GONE);
-            spn.setVisibility(View.GONE);
             btnRemove.setVisibility(View.GONE);
             tvSelected.setVisibility(View.GONE);
         }
@@ -200,6 +180,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
             gradeLevel = spnGrade.getSelectedItem().toString().equals("All") ? "" : spnGrade.getSelectedItem().toString();
             subjectLevel = spnSubject.getSelectedItem().toString().equals("All") ? "" : spnSubject.getSelectedItem().toString();
             adapterCourses.setCourseList(filterCourseByTag(etSearch.getText().toString(), searchTags));
+            showNoFilter(tvMessage, adapterCourses.getItemCount());
         }
 
         @Override
@@ -224,11 +205,11 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         String msg = getString(R.string.success_you_have_added_the_following_courses);
         if (selectedItems.size() <= 5) {
             for (int i = 0; i < selectedItems.size(); i++) {
-                msg += " - " + selectedItems.get(i).getCourseTitle() + "\n";
+                msg += " - " + selectedItems.get(i).courseTitle + "\n";
             }
         } else {
             for (int i = 0; i < 5; i++) {
-                msg += " - " + selectedItems.get(i).getCourseTitle() + "\n";
+                msg += " - " + selectedItems.get(i).courseTitle + "\n";
             }
             msg += getString(R.string.and) + (selectedItems.size() - 5) + getString(R.string.more_course_s);
         }
@@ -273,7 +254,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         List<RealmTag> li = new ArrayList<>();
         li.add(tag);
         searchTags = li;
-        tvSelected.setText(R.string.selected + tag.getName());
+        tvSelected.setText(R.string.selected + tag.name);
         adapterCourses.setCourseList((filterCourseByTag(etSearch.getText().toString(), li)));
         showNoData(tvMessage, adapterCourses.getItemCount());
     }
@@ -299,10 +280,10 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         if (filterApplied()) {
             if (!mRealm.isInTransaction()) mRealm.beginTransaction();
             RealmSearchActivity activity = mRealm.createObject(RealmSearchActivity.class, UUID.randomUUID().toString());
-            activity.setUser(model.getName());
+            activity.setUser(model.name);
             activity.setTime(Calendar.getInstance().getTimeInMillis());
-            activity.setCreatedOn(model.getPlanetCode());
-            activity.setParentCode(model.getParentCode());
+            activity.setCreatedOn(model.planetCode);
+            activity.setParentCode(model.parentCode);
             activity.setText(etSearch.getText().toString());
             activity.setType("courses");
             JsonObject filter = new JsonObject();

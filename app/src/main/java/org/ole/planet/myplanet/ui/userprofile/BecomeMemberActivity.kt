@@ -263,14 +263,14 @@ class BecomeMemberActivity : BaseActivity() {
                 finish()
             }
 
+            val intent = Intent(this, LoginActivity::class.java)
             if (guest){
-                val intent = Intent(this, LoginActivity::class.java)
                 intent.putExtra("username", username)
                 intent.putExtra("guest", guest)
-                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                startActivity(intent)
-                finish()
             }
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            startActivity(intent)
+            finish()
         }
     }
 

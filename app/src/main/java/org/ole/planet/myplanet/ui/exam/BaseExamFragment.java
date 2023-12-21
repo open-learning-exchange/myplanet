@@ -76,8 +76,8 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
             id = getArguments().getString("id");
             if (isMySurvey) {
                 sub = mRealm.where(RealmSubmission.class).equalTo("id", id).findFirst();
-                if (sub.getParentId().contains("@")) id = sub.getParentId().split("@")[0];
-                else id = sub.getParentId();
+                if (sub.parentId.contains("@")) id = sub.parentId.split("@")[0];
+                else id = sub.parentId;
             }
         }
     }
@@ -127,20 +127,20 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
     }
 
     private void saveCourseProgress() {
-        RealmCourseProgress progress = mRealm.where(RealmCourseProgress.class).equalTo("courseId", exam.getCourseId()).equalTo("stepNum", stepNumber).findFirst();
+        RealmCourseProgress progress = mRealm.where(RealmCourseProgress.class).equalTo("courseId", exam.courseId).equalTo("stepNum", stepNumber).findFirst();
         if (progress != null) {
             if (!mRealm.isInTransaction()) mRealm.beginTransaction();
-            progress.setPassed(sub.getStatus().equals("graded"));
+            progress.passed = sub.status.equals("graded");
             mRealm.commitTransaction();
         }
     }
 
     private void showUserInfoDialog() {
-        if (!isMySurvey && !exam.isFromNation()) {
-            UserInformationFragment.getInstance(sub.getId()).show(getChildFragmentManager(), "");
+        if (!isMySurvey && !exam.isFromNation) {
+            UserInformationFragment.getInstance(sub.id).show(getChildFragmentManager(), "");
         } else {
             if (!mRealm.isInTransaction()) mRealm.beginTransaction();
-            sub.setStatus("complete");
+            sub.status = "complete";
             mRealm.commitTransaction();
             Utilities.toast(getActivity(), getString(R.string.thank_you_for_taking_this_survey));
             getActivity().onBackPressed();
@@ -181,15 +181,15 @@ public abstract class BaseExamFragment extends Fragment implements CameraUtils.I
     public void insert_into_submitPhotos(String submit_id) {
         mRealm.beginTransaction();
         RealmSubmitPhotos submit = mRealm.createObject(RealmSubmitPhotos.class, UUID.randomUUID().toString());
-        submit.setSubmissionId(submit_id);
-        submit.setExamId(exam.getId());
-        submit.setCourseId(exam.getCourseId());
-        submit.setMemberId(user.getId());
-        submit.setDate(date);
-        submit.setUniqueId(unique_id);
-        submit.setPhotoLocation(photo_path);
-        submit.setUploaded(false);
-        Utilities.log(submit.getPhotoLocation());
+        submit.submissionId = submit_id;
+        submit.examId = exam.id;
+        submit.courseId = exam.courseId;
+        submit.memberId = user.id;
+        submit.date = date;
+        submit.uniqueId = unique_id;
+        submit.photoLocation = photo_path;
+        submit.uploaded = false;
+        Utilities.log(submit.photoLocation);
         Utilities.log("insert_into_submitPhotos");
         mRealm.commitTransaction();
     }

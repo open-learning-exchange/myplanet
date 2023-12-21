@@ -9,11 +9,10 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
-import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
-import android.widget.Spinner;
+import android.widget.ImageButton;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
@@ -49,7 +48,6 @@ import java.util.UUID;
 import fisk.chipcloud.ChipCloud;
 import fisk.chipcloud.ChipCloudConfig;
 import fisk.chipcloud.ChipDeletedListener;
-import io.realm.Sort;
 
 public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implements OnLibraryItemSelected, ChipDeletedListener, TagClickListener, OnFilterListener {
     TextView tvAddToLib, tvSelected;
@@ -58,11 +56,11 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
     FlexboxLayout flexBoxTags;
     List<RealmTag> searchTags;
     ChipCloudConfig config;
-    Button clearTags, orderByTitle;
+    Button clearTags, orderByTitle, orderByDate;
     CheckBox selectAll;
-    Spinner spn;
     HashMap<String, JsonObject> map;
     AlertDialog confirmation;
+    ImageButton filter;
 
     public LibraryFragment() {}
 
@@ -73,7 +71,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
 
     @Override
     public RecyclerView.Adapter getAdapter() {
-        map = RealmRating.getRatings(mRealm, "resource", model.getId());
+        map = RealmRating.getRatings(mRealm, "resource", model.id);
         adapterLibrary = new AdapterLibrary(getActivity(), getList(RealmMyLibrary.class), map, mRealm);
         adapterLibrary.setRatingChangeListener(this);
         adapterLibrary.setListener(this);
@@ -83,7 +81,6 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        spn = getView().findViewById(R.id.spn_sort);
         searchTags = new ArrayList<>();
         config = Utilities.getCloudConfig().showClose(R.color.black_overlay);
         tvAddToLib = getView().findViewById(R.id.tv_add);
@@ -94,6 +91,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         flexBoxTags = getView().findViewById(R.id.flexbox_tags);
         selectAll = getView().findViewById(R.id.selectAll);
         tvDelete = getView().findViewById(R.id.tv_delete);
+        filter = getView().findViewById(R.id.filter);
 
         initArrays();
 
@@ -139,31 +137,12 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
 
         showNoData(tvMessage, adapterLibrary.getItemCount());
         clearTagsButton();
-        getView().findViewById(R.id.show_filter).setOnClickListener(v -> {
-            LibraryFilterFragment f = new LibraryFilterFragment();
-            f.setListener(this);
-            f.show(getChildFragmentManager(), "");
-        });
+
         KeyboardUtils.setupUI(getView().findViewById(R.id.my_library_parent_layout), getActivity());
         changeButtonStatus();
+        additionalSetup();
         tvFragmentInfo = getView().findViewById(R.id.tv_fragment_info);
-
-        spn.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                if (i == 0) {
-                    adapterLibrary.setLibraryList(getList(RealmMyLibrary.class, "createdDate", Sort.ASCENDING));
-                } else if (i == 1) {
-                    adapterLibrary.setLibraryList(getList(RealmMyLibrary.class, "createdDate", Sort.DESCENDING));
-                } else {
-                    adapterLibrary.setLibraryList(getList(RealmMyLibrary.class, "title"));
-                }
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> adapterView) {
-            }
-        });
+        if (isMyCourseLib) tvFragmentInfo.setText(R.string.txt_myLibrary);
         checkList();
         selectAll.setOnClickListener(view -> {
             boolean allSelected = selectedItems.size() ==  adapterLibrary.getLibraryList().size();
@@ -183,10 +162,9 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
             selectAll.setVisibility(View.GONE);
             etSearch.setVisibility(View.GONE);
             tvAddToLib.setVisibility(View.GONE);
-            spn.setVisibility(View.GONE);
             tvSelected.setVisibility(View.GONE);
             getView().findViewById(R.id.btn_collections).setVisibility(View.GONE);
-            getView().findViewById(R.id.show_filter).setVisibility(View.GONE);
+            getView().findViewById(R.id.filter).setVisibility(View.GONE);
             clearTags.setVisibility(View.GONE);
             tvDelete.setVisibility(View.GONE);
         }
@@ -204,11 +182,11 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         String msg = getString(R.string.success_you_have_added_these_resources_to_your_mylibrary);
         if (selectedItems.size() <= 5) {
             for (int i = 0; i < selectedItems.size(); i++) {
-                msg += " - " + selectedItems.get(i).getTitle() + "\n";
+                msg += " - " + selectedItems.get(i).title + "\n";
             }
         } else {
             for (int i = 0; i < 5; i++) {
-                msg += " - " + selectedItems.get(i).getTitle() + "\n";
+                msg += " - " + selectedItems.get(i).title + "\n";
             }
             msg += getString(R.string.and) + (selectedItems.size() - 5) + getString(R.string.more_resource_s);
         }
@@ -262,7 +240,7 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         List<RealmTag> li = new ArrayList<>();
         li.add(tag);
         searchTags = li;
-        tvSelected.setText(getString(R.string.selected) + tag.getName());
+        tvSelected.setText(getString(R.string.selected) + tag.name);
         adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag(etSearch.getText().toString(), li)));
         showNoData(tvMessage, adapterLibrary.getItemCount());
     }
@@ -343,10 +321,10 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
         if (filterApplied()) {
             if (!mRealm.isInTransaction()) mRealm.beginTransaction();
             RealmSearchActivity activity = mRealm.createObject(RealmSearchActivity.class, UUID.randomUUID().toString());
-            activity.setUser(model.getName());
+            activity.setUser(model.name);
             activity.setTime(Calendar.getInstance().getTimeInMillis());
-            activity.setCreatedOn(model.getPlanetCode());
-            activity.setParentCode(model.getParentCode());
+            activity.setCreatedOn(model.planetCode);
+            activity.setParentCode(model.parentCode);
             activity.setText(etSearch.getText().toString());
             activity.setType("resources");
             JsonObject filter = new JsonObject();
@@ -375,5 +353,21 @@ public class LibraryFragment extends BaseRecyclerFragment<RealmMyLibrary> implem
             transaction.addToBackStack(null);
             transaction.commit();
         }
+    }
+
+    public void additionalSetup() {
+        View bottomSheet = getView().findViewById(R.id.card_filter);
+        getView().findViewById(R.id.filter).setOnClickListener(view -> bottomSheet.setVisibility(bottomSheet.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE));
+        orderByDate = getView().findViewById(R.id.order_by_date_button);
+        orderByTitle = getView().findViewById(R.id.order_by_title_button);
+        getView().findViewById(R.id.filterCategories).setOnClickListener(v -> {
+            LibraryFilterFragment f = new LibraryFilterFragment();
+            f.setListener(this);
+            f.show(getChildFragmentManager(), "");
+            bottomSheet.setVisibility(View.GONE);
+        });
+
+        orderByDate.setOnClickListener(view -> adapterLibrary.toggleSortOrder());
+        orderByTitle.setOnClickListener(view -> adapterLibrary.toggleTitleSortOrder());
     }
 }

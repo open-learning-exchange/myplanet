@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.dashboard;
 
+import org.ole.planet.myplanet.base.BaseContainerFragment;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
@@ -103,7 +104,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             if(userProfileModel != null){
                 String name = userProfileModel.getFullName();
                 if (name.trim().length() == 0) {
-                    name = profileDbHandler.getUserModel().getName();
+                    name = profileDbHandler.getUserModel().name;
                 }
                 activityDashboardBinding.appBarBell.appTitleName.setText(name + "'s Planet");
             } else {
@@ -113,16 +114,16 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             throw new RuntimeException(err);
         }
         activityDashboardBinding.appBarBell.ivSetting.setOnClickListener(v -> startActivity(new Intent(this, SettingActivity.class)));
-        if (user.getRolesList().isEmpty() && !user.getUserAdmin()) {
+        if (user.rolesList.isEmpty() && !user.userAdmin) {
             navigationView.setVisibility(View.GONE);
             openCallFragment(new InactiveDashboardFragment(), "Dashboard");
             return;
         }
         navigationView.setOnNavigationItemSelectedListener(this);
-        navigationView.setVisibility(new UserProfileDbHandler(this).getUserModel().getShowTopbar() ? View.VISIBLE : View.GONE);
+        navigationView.setVisibility(new UserProfileDbHandler(this).getUserModel().isShowTopbar ? View.VISIBLE : View.GONE);
         headerResult = getAccountHeader();
         createDrawer();
-        if (!(user.getId().startsWith("guest") && profileDbHandler.getOfflineVisits() >= 3) && getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
+        if (!(user.id.startsWith("guest") && profileDbHandler.getOfflineVisits() >= 3) && getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
             result.openDrawer();
         }//Opens drawer by default
         result.getStickyFooter().setPadding(0, 0, 0, 0); // moves logout button to the very bottom of the drawer. Without it, the "logout" button suspends a little.
@@ -204,7 +205,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             logout();
             return;
         }
-        if(user.getId().startsWith("guest") && profileDbHandler.getOfflineVisits() >= 3 ){
+        if(user.id.startsWith("guest") && profileDbHandler.getOfflineVisits() >= 3 ){
 
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setTitle("Become a member");
@@ -219,7 +220,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             becomeMember.setOnClickListener(view -> {
                 boolean guest = true;
                 Intent intent = new Intent(this, BecomeMemberActivity.class);
-                intent.putExtra("username", profileDbHandler.getUserModel().getName());
+                intent.putExtra("username", profileDbHandler.getUserModel().name);
                 intent.putExtra("guest", guest);
                 setResult(Activity.RESULT_OK, intent);
                 startActivity(intent);
@@ -273,7 +274,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
-        if (user.getRolesList().isEmpty()) {
+        if (user.rolesList.isEmpty()) {
             menu.findItem(R.id.action_setting).setEnabled(false);
         }
         return super.onPrepareOptionsMenu(menu);
@@ -366,7 +367,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     public void openLibraryDetailFragment(RealmMyLibrary library) {
         Fragment f = new LibraryDetailFragment();
         Bundle b = new Bundle();
-        b.putString("libraryId", library.getResource_id());
+        b.putString("libraryId", library.resourceId);
         b.putString("openFrom", "Dashboard");
         f.setArguments(b);
         openCallFragment(f);
@@ -376,7 +377,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     public void sendSurvey(RealmStepExam current) {
         SendSurveyFragment f = new SendSurveyFragment();
         Bundle b = new Bundle();
-        b.putString("surveyId", current.getId());
+        b.putString("surveyId", current.id);
         f.setArguments(b);
 
         f.show(getSupportFragmentManager(), "");
@@ -424,6 +425,13 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             result.closeDrawer();
         } else if (fragments == 1) {
             finish();
+        } else {
+            super.onBackPressed();
+        }
+
+        Fragment fragment = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
+        if (fragment instanceof BaseContainerFragment) {
+            ((BaseContainerFragment) fragment).handleBackPressed();
         } else {
             super.onBackPressed();
         }

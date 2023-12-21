@@ -98,8 +98,8 @@ public class MyDownloadService extends IntentService {
         notificationManager.notify(0, notificationBuilder.build());
         Download d = new Download();
         completeAll = false;
-        d.setFailed(true);
-        d.setMessage(message);
+        d.failed = true;
+        d.message = message;
         sendIntent(d);
         stopSelf();
     }
@@ -119,11 +119,11 @@ public class MyDownloadService extends IntentService {
             int progress = (int) ((total * 100) / fileSize);
             long currentTime = System.currentTimeMillis() - startTime;
             Download download = new Download();
-            download.setFileName(FileUtils.getFileNameFromUrl(url));
-            download.setTotalFileSize(totalFileSize);
+            download.fileName = FileUtils.getFileNameFromUrl(url);
+            download.totalFileSize = totalFileSize;
             if (currentTime > 1000 * timeCount) {
-                download.setCurrentFileSize((int) current);
-                download.setProgress(progress);
+                download.currentFileSize= (int) current;
+                download.progress = progress;
                 sendNotification(download);
                 timeCount++;
             }
@@ -151,10 +151,10 @@ public class MyDownloadService extends IntentService {
     }
 
     private void sendNotification(Download download) {
-        download.setFileName("Downloading : " + FileUtils.getFileNameFromUrl(url));
+        download.fileName = "Downloading : " + FileUtils.getFileNameFromUrl(url);
         sendIntent(download);
-        notificationBuilder.setProgress(100, download.getProgress(), false);
-        notificationBuilder.setContentText("Downloading file " + download.getCurrentFileSize() + "/" + totalFileSize + " KB");
+        notificationBuilder.setProgress(100, download.progress, false);
+        notificationBuilder.setContentText("Downloading file " + download.currentFileSize + "/" + totalFileSize + " KB");
         notificationManager.notify(0, notificationBuilder.build());
     }
 
@@ -167,12 +167,12 @@ public class MyDownloadService extends IntentService {
     private void onDownloadComplete() {
         if (outputFile.length() > 0) changeOfflineStatus();
         Download download = new Download();
-        download.setFileName(FileUtils.getFileNameFromUrl(url));
-        download.setFileUrl(url);
-        download.setProgress(100);
+        download.fileName = FileUtils.getFileNameFromUrl(url);
+        download.fileUrl = url;
+        download.progress = 100;
         if (currentIndex == urls.size() - 1) {
             completeAll = true;
-            download.setCompleteAll(true);
+            download.completeAll = true;
         }
         sendIntent(download);
         notificationManager.cancel(0);
@@ -202,8 +202,8 @@ public class MyDownloadService extends IntentService {
         mRealm.executeTransaction(realm -> {
             RealmMyLibrary obj = realm.where(RealmMyLibrary.class).equalTo("resourceLocalAddress", currentFileName).findFirst();
             if (obj != null) {
-                obj.setResourceOffline(true);
-                obj.setDownloadedRev(obj.get_rev());
+                obj.resourceOffline = true;
+                obj.downloadedRev = obj.get_rev();
             } else {
                 Utilities.log("object Is null");
             }

@@ -960,5 +960,7 @@
     <string name="progress_bar">प्रगति पट्टि</string>
     <string name="web_view">वेब दृश्य</string>
     <string name="invalid_configuration">अमान्य सर्भर विन्यास</string>
+    <string name="date_reset">मिति रिसेट</string>
+    <string name="no_course_matched_filter">कुनै पनि पाठ्यक्रम मेल खाँदैन</string>
 
 </resources>

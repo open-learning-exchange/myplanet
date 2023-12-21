@@ -50,8 +50,8 @@ public class FeedbackDetailActivity extends AppCompatActivity {
         setTitle(R.string.feedback);
         realm = new DatabaseService(this).getRealmInstance();
         feedback = realm.where(RealmFeedback.class).equalTo("id", getIntent().getStringExtra("id")).findFirst();
-        if (!TextUtils.isEmpty(feedback.getOpenTime()))
-            activityFeedbackDetailBinding.tvDate.setText(TimeUtils.getFormatedDateWithTime(Long.parseLong(feedback.getOpenTime())));
+        if (!TextUtils.isEmpty(feedback.openTime))
+            activityFeedbackDetailBinding.tvDate.setText(TimeUtils.getFormatedDateWithTime(Long.parseLong(feedback.openTime)));
         else activityFeedbackDetailBinding.tvDate.setText(R.string.date_n_a);
         activityFeedbackDetailBinding.tvMessage.setText(TextUtils.isEmpty(feedback.getMessage()) ? "N/A" : feedback.getMessage());
         setUpReplies();
@@ -66,7 +66,7 @@ public class FeedbackDetailActivity extends AppCompatActivity {
         activityFeedbackDetailBinding.closeFeedback.setOnClickListener(view -> {
             realm.executeTransactionAsync(realm1 -> {
                 RealmFeedback feedback1 = realm1.where(RealmFeedback.class).equalTo("id", getIntent().getStringExtra("id")).findFirst();
-                feedback1.setStatus("Closed");
+                feedback1.status = "Closed";
             }, () -> {
                 updateForClosed();
             });
@@ -80,8 +80,8 @@ public class FeedbackDetailActivity extends AppCompatActivity {
                 JsonObject object = new JsonObject();
                 object.addProperty("message", message);
                 object.addProperty("time", new Date().getTime() + "");
-                object.addProperty("user", feedback.getOwner() + "");
-                String id = feedback.getId();
+                object.addProperty("user", feedback.owner + "");
+                String id = feedback.id;
                 addReply(object, id);
                 mAdapter = new RvFeedbackAdapter(feedback.getMessageList(), getApplicationContext());
                 activityFeedbackDetailBinding.rvFeedbackReply.setAdapter(mAdapter);
@@ -92,7 +92,7 @@ public class FeedbackDetailActivity extends AppCompatActivity {
     }
 
     public void updateForClosed() {
-        if (feedback.getStatus().equalsIgnoreCase("Closed")) {
+        if (feedback.status.equalsIgnoreCase("Closed")) {
             activityFeedbackDetailBinding.closeFeedback.setEnabled(false);
             activityFeedbackDetailBinding.replyFeedback.setEnabled(false);
             activityFeedbackDetailBinding.feedbackReplyEditText.setVisibility(View.INVISIBLE);
@@ -149,9 +149,9 @@ public class FeedbackDetailActivity extends AppCompatActivity {
 
         @Override
         public void onBindViewHolder(@NonNull ReplyViewHolder holder, int position) {
-            rowFeedbackReplyBinding.tvDate.setText(TimeUtils.getFormatedDateWithTime(Long.parseLong(replyList.get(position).getDate())));
-            rowFeedbackReplyBinding.tvUser.setText(replyList.get(position).getUser());
-            rowFeedbackReplyBinding.tvMessage.setText(replyList.get(position).getMessage());
+            rowFeedbackReplyBinding.tvDate.setText(TimeUtils.getFormatedDateWithTime(Long.parseLong(replyList.get(position).date)));
+            rowFeedbackReplyBinding.tvUser.setText(replyList.get(position).user);
+            rowFeedbackReplyBinding.tvMessage.setText(replyList.get(position).message);
         }
 
         @Override
