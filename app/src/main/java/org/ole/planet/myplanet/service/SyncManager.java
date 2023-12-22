@@ -130,6 +130,7 @@ public class SyncManager {
             TransactionSyncManager.syncDb(mRealm, "health");
             TransactionSyncManager.syncDb(mRealm, "certifications");
             TransactionSyncManager.syncDb(mRealm, "team_activities");
+            TransactionSyncManager.syncDb(mRealm, "chat_history");
             ManagerSync.getInstance().syncAdmin();
             resourceTransactionSync(listener);
             RealmResourceActivity.onSynced(mRealm, settings);

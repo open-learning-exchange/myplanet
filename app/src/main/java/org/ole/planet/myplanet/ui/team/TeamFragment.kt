@@ -107,7 +107,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
                             team.limit = 12
                             team.description = alertCreateTeamBinding.etDescription.text.toString()
                             team.createdBy = userId
-                            team.isUpdated = true
+                            team.updated = true
                             team.realm.commitTransaction()
                         }
                         Utilities.toast(activity, getString(R.string.team_created))
@@ -142,10 +142,10 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         team.createdBy = user._id
         team.teamId = ""
         team.isPublic = isPublic
-        team.user_id = user.id
+        team.userId = user.id
         team.parentCode = user.parentCode
         team.teamPlanetCode = user.planetCode
-        team.isUpdated = true
+        team.updated = true
 
         //create member ship
         val teamMemberObj =
@@ -157,7 +157,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         teamMemberObj.docType = "membership"
         teamMemberObj.isLeader = true
         teamMemberObj.teamType = type
-        teamMemberObj.isUpdated = true
+        teamMemberObj.updated = true
 
         mRealm!!.commitTransaction()
     }

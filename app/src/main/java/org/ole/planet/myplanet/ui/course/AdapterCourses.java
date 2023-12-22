@@ -19,6 +19,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.flexbox.FlexboxLayout;
 import com.google.gson.JsonObject;
 
+import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnCourseItemSelected;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
@@ -27,6 +28,7 @@ import org.ole.planet.myplanet.databinding.RowCourseBinding;
 import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmTag;
 import org.ole.planet.myplanet.utilities.JsonUtils;
+import org.ole.planet.myplanet.utilities.Markdown;
 import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
@@ -35,11 +37,11 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import fisk.chipcloud.ChipCloud;
 import fisk.chipcloud.ChipCloudConfig;
-import io.noties.markwon.Markwon;
-import io.noties.markwon.movement.MovementMethodPlugin;
 import io.realm.Realm;
 
 public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
@@ -54,7 +56,6 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private OnRatingChangeListener ratingChangeListener;
     private Realm mRealm;
     private ChipCloudConfig config;
-    private Markwon markwon;
     private boolean isAscending = true;
     private boolean isTitleAscending = true;
     private boolean areAllSelected = true;
@@ -63,9 +64,6 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
         this.map = map;
         this.context = context;
         this.courseList = courseList;
-        markwon = Markwon.builder(context)
-                .usePlugin(MovementMethodPlugin.none())
-                .build();
         this.selectedItems = new ArrayList<>();
         if (context instanceof OnHomeItemClickListener) {
             homeItemClickListener = (OnHomeItemClickListener) context;
@@ -156,7 +154,8 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
             viewHolder.bind(position);
             viewHolder.rowCourseBinding.title.setText(courseList.get(position).courseTitle);
             viewHolder.rowCourseBinding.description.setText(courseList.get(position).description);
-            markwon.setMarkdown(viewHolder.rowCourseBinding.description, courseList.get(position).description);
+            String markdownContentWithLocalPaths = prependBaseUrlToImages(courseList.get(position).description, "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/");
+            Markdown.INSTANCE.setMarkdownText(viewHolder.rowCourseBinding.description, markdownContentWithLocalPaths);
             setTextViewContent(viewHolder.rowCourseBinding.gradLevel, courseList.get(position).gradeLevel, viewHolder.rowCourseBinding.gradLevel, context.getString(R.string.grade_level_colon));
             setTextViewContent(viewHolder.rowCourseBinding.subjectLevel, courseList.get(position).subjectLevel, viewHolder.rowCourseBinding.subjectLevel, context.getString(R.string.subject_level_colon));
             viewHolder.rowCourseBinding.checkbox.setChecked(selectedItems.contains(courseList.get(position)));
@@ -165,7 +164,7 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
             try {
                 viewHolder.rowCourseBinding.tvDate.setText(TimeUtils.formatDate(Long.parseLong(courseList.get(position).createdDate.trim()), "MMM dd, yyyy"));
             } catch (Exception e) {
-
+                throw new RuntimeException(e);
             }
             viewHolder.rowCourseBinding.ratingBar.setOnTouchListener((v1, event) -> {
                 if (event.getAction() == MotionEvent.ACTION_UP)
@@ -224,13 +223,13 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     private void showTags(List<RealmTag> tags, ChipCloud chipCloud) {
         for (RealmTag tag : tags) {
-            RealmTag parent = mRealm.where(RealmTag.class).equalTo("id", tag.getTagId()).findFirst();
+            RealmTag parent = mRealm.where(RealmTag.class).equalTo("id", tag.tagId).findFirst();
             showChip(chipCloud, parent);
         }
     }
 
     private void showChip(ChipCloud chipCloud, RealmTag parent) {
-        chipCloud.addChip(((parent != null) ? parent.getName() : ""));
+        chipCloud.addChip(((parent != null) ? parent.name : ""));
         chipCloud.setListener((i, b, b1) -> {
             if (b1 && listener != null) {
                 listener.onTagClicked(parent);
@@ -325,5 +324,22 @@ public class AdapterCourses extends RecyclerView.Adapter<RecyclerView.ViewHolder
         public void bind(int position) {
             adapterPosition = position; // Store the adapter position
         }
+    }
+
+    public static String prependBaseUrlToImages(String markdownContent, String baseUrl) {
+        String pattern = "!\\[.*?\\]\\((.*?)\\)";
+        Pattern imagePattern = Pattern.compile(pattern);
+        Matcher matcher = imagePattern.matcher(markdownContent);
+
+        StringBuffer result = new StringBuffer();
+        while (matcher.find()) {
+            String relativePath = matcher.group(1);
+            String modifiedPath = relativePath.replaceFirst("resources/", "");
+            String fullUrl = baseUrl + modifiedPath;
+            matcher.appendReplacement(result, "<img src=" + fullUrl + " width=150 height=100/>");
+        }
+        matcher.appendTail(result);
+
+        return result.toString();
     }
 }

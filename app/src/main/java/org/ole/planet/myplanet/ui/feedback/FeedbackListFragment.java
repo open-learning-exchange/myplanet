@@ -47,7 +47,7 @@ public class FeedbackListFragment extends Fragment implements FeedbackFragment.O
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         fragmentFeedbackListBinding.rvFeedback.setLayoutManager(new LinearLayoutManager(getActivity()));
-        List<RealmFeedback> list = mRealm.where(RealmFeedback.class).equalTo("owner", userModel.getName()).findAll();
+        List<RealmFeedback> list = mRealm.where(RealmFeedback.class).equalTo("owner", userModel.name).findAll();
         if (userModel.isManager()) list = mRealm.where(RealmFeedback.class).findAll();
         AdapterFeedback adapterFeedback = new AdapterFeedback(getActivity(), list);
         fragmentFeedbackListBinding.rvFeedback.setAdapter(adapterFeedback);
@@ -62,7 +62,7 @@ public class FeedbackListFragment extends Fragment implements FeedbackFragment.O
     @Override
     public void onFeedbackSubmitted() {
         mRealm.executeTransactionAsync(realm -> {}, () -> {
-            RealmResults<RealmFeedback> updatedList = mRealm.where(RealmFeedback.class).equalTo("owner", userModel.getName()).findAll();
+            RealmResults<RealmFeedback> updatedList = mRealm.where(RealmFeedback.class).equalTo("owner", userModel.name).findAll();
             if (userModel.isManager()) updatedList = mRealm.where(RealmFeedback.class).findAll();
             AdapterFeedback adapterFeedback = new AdapterFeedback(getActivity(), updatedList);
             fragmentFeedbackListBinding.rvFeedback.setAdapter(adapterFeedback);

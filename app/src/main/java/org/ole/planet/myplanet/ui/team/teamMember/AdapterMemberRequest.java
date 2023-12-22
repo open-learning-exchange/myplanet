@@ -42,7 +42,7 @@ public class AdapterMemberRequest extends RecyclerView.Adapter<AdapterMemberRequ
     @Override
     public void onBindViewHolder(@NonNull ViewHolderUser holder, int position) {
         if (list.get(position).toString().equals(" ")) {
-            rowMemberRequestBinding.tvName.setText(list.get(position).getName());
+            rowMemberRequestBinding.tvName.setText(list.get(position).name);
         } else {
             rowMemberRequestBinding.tvName.setText(list.get(position).toString());
         }
@@ -55,11 +55,11 @@ public class AdapterMemberRequest extends RecyclerView.Adapter<AdapterMemberRequ
 
     private void acceptReject(RealmUserModel userModel, boolean isAccept, int position) {
         if (!mRealm.isInTransaction()) mRealm.beginTransaction();
-        RealmMyTeam team = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("userId", userModel.getId()).findFirst();
+        RealmMyTeam team = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("userId", userModel.id).findFirst();
         if (team != null) {
             if (isAccept) {
-                team.setDocType("membership");
-                team.setUpdated(true);
+                team.docType = "membership";
+                team.updated = true;
             } else {
                 team.deleteFromRealm();
             }
