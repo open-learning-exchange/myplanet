@@ -355,24 +355,20 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
                 inputPassword.setError(getString(R.string.err_msg_password));
             } else {
                 RealmUserModel user = mRealm.where(RealmUserModel.class).equalTo("name", inputName.getText().toString()).findFirst();
-                if (user != null) {
-                    if (user.isArchived) {
-                        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-                        builder.setMessage("member " + inputName.getText().toString() + " is archived");
-                        builder.setCancelable(false);
-                        builder.setPositiveButton("Ok", (dialog, which) -> {
-                            dialog.dismiss();
-                            inputName.setText("");
-                            inputPassword.setText("");
-                        });
-
-                        AlertDialog dialog = builder.create();
-                        dialog.show();
-                    } else {
-                        submitForm(inputName.getText().toString(), inputPassword.getText().toString());
-                    }
-                } else {
+                if (user == null || !user.isArchived) {
                     submitForm(inputName.getText().toString(), inputPassword.getText().toString());
+                } else {
+                    AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                    builder.setMessage("member " + inputName.getText().toString() + " is archived");
+                    builder.setCancelable(false);
+                    builder.setPositiveButton("Ok", (dialog, which) -> {
+                        dialog.dismiss();
+                        inputName.setText("");
+                        inputPassword.setText("");
+                    });
+
+                    AlertDialog dialog = builder.create();
+                    dialog.show();
                 }
             }
         });
