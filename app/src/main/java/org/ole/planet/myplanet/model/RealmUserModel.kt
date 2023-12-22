@@ -81,6 +81,8 @@ open class RealmUserModel : RealmObject() {
     var isUpdated = false
     @JvmField
     var isShowTopbar = false
+    @JvmField
+    var isArchived = false
     fun serialize(): JsonObject {
         val `object` = JsonObject()
         if (_id!!.isNotEmpty()) {
@@ -119,6 +121,7 @@ open class RealmUserModel : RealmObject() {
         `object`.addProperty("parentCode", parentCode)
         `object`.addProperty("planetCode", planetCode)
         `object`.addProperty("birthPlace", birthPlace)
+        `object`.addProperty("isArchived", isArchived)
         return `object`
     }
 
@@ -239,6 +242,7 @@ open class RealmUserModel : RealmObject() {
                 user.level = JsonUtils.getString("level", jsonDoc)
                 user.isShowTopbar = true
                 user.addImageUrl(jsonDoc, settings)
+                user.isArchived = JsonUtils.getBoolean("isArchived", jsonDoc)
                 if (!TextUtils.isEmpty(JsonUtils.getString("planetCode", jsonDoc))) {
                     settings.edit().putString("planetCode", JsonUtils.getString("planetCode", jsonDoc)).apply()
                 }

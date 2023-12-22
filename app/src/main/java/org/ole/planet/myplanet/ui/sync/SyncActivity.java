@@ -349,12 +349,27 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         customDeviceName.setText(getCustomDeviceName());
 
         btnSignIn.setOnClickListener(view -> {
-            if(TextUtils.isEmpty(inputName.getText().toString())){
+            if (TextUtils.isEmpty(inputName.getText().toString())) {
                 inputName.setError(getString(R.string.err_msg_name));
             } else if(TextUtils.isEmpty(inputPassword.getText().toString())){
                 inputPassword.setError(getString(R.string.err_msg_password));
-            }else{
-                submitForm(inputName.getText().toString(), inputPassword.getText().toString());
+            } else {
+                RealmUserModel user = mRealm.where(RealmUserModel.class).equalTo("name", inputName.getText().toString()).findFirst();
+                if (user.isArchived == true){
+                    AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                    builder.setMessage("member " + inputName.getText().toString() + " is archived");
+                    builder.setCancelable(false);
+                    builder.setPositiveButton("Ok", (dialog, which) -> {
+                        dialog.dismiss();
+                        inputName.setText("");
+                        inputPassword.setText("");
+                    });
+
+                    AlertDialog dialog = builder.create();
+                    dialog.show();
+                } else {
+                    submitForm(inputName.getText().toString(), inputPassword.getText().toString());
+                }
             }
         });
         if (!settings.contains("serverProtocol"))

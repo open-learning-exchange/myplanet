@@ -154,7 +154,7 @@ public class UploadManager extends FileUploadService {
             List<RealmSubmission> submissions = realm.where(RealmSubmission.class).findAll();
             for (RealmSubmission sub : submissions) {
                 try {
-                    if (sub.getAnswers().size() > 0) {
+                    if (sub.answers.size() > 0) {
                         RealmSubmission.continueResultUpload(sub, apiInterface, realm, context);
                     }
                 } catch (Exception e) {
@@ -266,9 +266,9 @@ public class UploadManager extends FileUploadService {
                     if (object != null) {
                         String _rev = JsonUtils.getString("rev", object);
                         String _id = JsonUtils.getString("id", object);
-                        sub.setUploaded(true);
-                        sub.set_rev(_rev);
-                        sub.set_id(_id);
+                        sub.uploaded = true;
+                        sub._rev = _rev;
+                        sub._id = _id;
                         uploadAttachment(_id, _rev, sub, listener);
                         Utilities.log("Submitting photos to Realm");
                     }

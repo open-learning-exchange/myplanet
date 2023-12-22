@@ -95,10 +95,10 @@ class BellDashboardFragment : BaseDashboardFragment() {
         for (sub in list) {
             val star =
                 LayoutInflater.from(activity).inflate(R.layout.image_start, null) as ImageView
-            val examId = if (sub.parentId.contains("@")) sub.parentId.split("@")
+            val examId = if (sub.parentId?.contains("@") == true) sub.parentId!!.split("@")
                 .toTypedArray()[0] else sub.parentId
             val courseId =
-                if (sub.parentId.contains("@")) sub.parentId.split("@").toTypedArray()[1] else ""
+                if (sub.parentId?.contains("@") == true) sub.parentId!!.split("@").toTypedArray()[1] else ""
             val questions =
                 mRealm.where(RealmExamQuestion::class.java).equalTo("examId", examId).count()
             setColor(questions, courseId, star)
