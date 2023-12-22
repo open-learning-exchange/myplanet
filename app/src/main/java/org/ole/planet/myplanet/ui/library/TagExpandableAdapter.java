@@ -44,8 +44,8 @@ public class TagExpandableAdapter extends BaseExpandableListAdapter {
 
     @Override
     public int getChildrenCount(int groupPosition) {
-        if (childMap.containsKey(tagList.get(groupPosition).getId())) {
-            return childMap.get(tagList.get(groupPosition).getId()).size();
+        if (childMap.containsKey(tagList.get(groupPosition).id)) {
+            return childMap.get(tagList.get(groupPosition).id).size();
         }
         return 0;
     }
@@ -57,8 +57,8 @@ public class TagExpandableAdapter extends BaseExpandableListAdapter {
 
     @Override
     public Object getChild(int groupPosition, int childPosition) {
-        if (childMap.containsKey(tagList.get(groupPosition).getId())) {
-            return childMap.get(tagList.get(groupPosition).getId()).get(childPosition);
+        if (childMap.containsKey(tagList.get(groupPosition).id)) {
+            return childMap.get(tagList.get(groupPosition).id).get(childPosition);
         }
         return null;
     }
@@ -80,7 +80,7 @@ public class TagExpandableAdapter extends BaseExpandableListAdapter {
 
     @Override
     public View getGroupView(final int groupPosition, final boolean isExpanded, View convertView, ViewGroup parent) {
-        String headerTitle = tagList.get(groupPosition).getName();
+        String headerTitle = tagList.get(groupPosition).name;
 
         RowAdapterNavigationParentBinding rowAdapterNavigationParentBinding;
         if (convertView == null) {
@@ -95,7 +95,7 @@ public class TagExpandableAdapter extends BaseExpandableListAdapter {
         createCheckbox(convertView, tagList.get(groupPosition));
         rowAdapterNavigationParentBinding.tvDrawerTitle.setText(headerTitle);
 
-        if (!childMap.containsKey(tagList.get(groupPosition).getId())) {
+        if (!childMap.containsKey(tagList.get(groupPosition).id)) {
             rowAdapterNavigationParentBinding.tvDrawerTitle1.setVisibility(View.VISIBLE);
             rowAdapterNavigationParentBinding.tvDrawerTitle.setVisibility(View.GONE);
             rowAdapterNavigationParentBinding.ivIndicators.setVisibility(View.GONE);
@@ -148,7 +148,7 @@ public class TagExpandableAdapter extends BaseExpandableListAdapter {
         }
 
         createCheckbox(convertView, tag);
-        rowAdapterNavigationChildBinding.tvDrawerTitle.setText(tag.getName());
+        rowAdapterNavigationChildBinding.tvDrawerTitle.setText(tag.name);
         rowAdapterNavigationChildBinding.tvDrawerTitle.setOnClickListener(v -> {
             if (clickListener != null) {
                 clickListener.onTagClicked(tag);

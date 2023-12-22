@@ -81,8 +81,8 @@ public class RatingFragment extends DialogFragment {
         model = mRealm.where(RealmUserModel.class).equalTo("id", settings.getString("userId", "")).findFirst();
         previousRating = mRealm.where(RealmRating.class).equalTo("type", type).equalTo("userId", settings.getString("userId", "")).equalTo("item", id).findFirst();
         if (previousRating != null) {
-            fragmentRatingBinding.ratingBar.setRating(previousRating.getRate());
-            fragmentRatingBinding.etComment.setText(previousRating.getComment());
+            fragmentRatingBinding.ratingBar.setRating(previousRating.rate);
+            fragmentRatingBinding.etComment.setText(previousRating.comment);
         }
         fragmentRatingBinding.ratingBar.setOnRatingBarChangeListener((ratingBar, rating, fromUser) -> {
             if (fromUser) {
@@ -118,17 +118,17 @@ public class RatingFragment extends DialogFragment {
     }
 
     private void setData(RealmUserModel model, RealmRating ratingObject, String comment, float rating) {
-        ratingObject.setUpdated(true);
-        ratingObject.setComment(comment);
-        ratingObject.setRate((int) rating);
-        ratingObject.setTime(new Date().getTime());
-        ratingObject.setUserId(model.getId());
-        ratingObject.setCreatedOn(model.getParentCode());
-        ratingObject.setParentCode(model.getParentCode());
-        ratingObject.setPlanetCode(model.getPlanetCode());
-        ratingObject.setUser(new Gson().toJson(model.serialize()));
-        ratingObject.setType(type);
-        ratingObject.setItem(id);
-        ratingObject.setTitle(title);
+        ratingObject.isUpdated = true;
+        ratingObject.comment = comment;
+        ratingObject.rate = (int) rating;
+        ratingObject.time = new Date().getTime();
+        ratingObject.userId = model.id;
+        ratingObject.createdOn = model.parentCode;
+        ratingObject.parentCode = model.parentCode;
+        ratingObject.planetCode = model.planetCode;
+        ratingObject.user = new Gson().toJson(model.serialize());
+        ratingObject.type = type;
+        ratingObject.item = id;
+        ratingObject.title = title;
     }
 }

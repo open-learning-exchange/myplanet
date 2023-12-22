@@ -73,7 +73,7 @@ public class AdapterSteps extends RecyclerView.Adapter<AdapterSteps.ViewHolder> 
             int size = 0;
             RealmStepExam exam = realm.where(RealmStepExam.class).equalTo("stepId", step.id).findFirst();
             if (exam != null) {
-                size = exam.getNoOfQuestions();
+                size = exam.noOfQuestions;
             }
             rowStepsBinding.tvDescription.setText(context.getString(R.string.this_test_has) + size + context.getString(R.string.questions));
 

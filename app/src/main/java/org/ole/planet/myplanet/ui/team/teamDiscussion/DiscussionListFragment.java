@@ -57,10 +57,10 @@ public class DiscussionListFragment extends BaseTeamFragment {
             RealmTeamNotification notification = realm.where(RealmTeamNotification.class).equalTo("type", "chat").equalTo("parentId", teamId).findFirst();
             if (notification == null) {
                 notification = realm.createObject(RealmTeamNotification.class, UUID.randomUUID().toString());
-                notification.setParentId(teamId);
-                notification.setType("chat");
+                notification.parentId = teamId;
+                notification.type = "chat";
             }
-            notification.setLastCount(count);
+            notification.lastCount = count;
         });
         changeLayoutManager(getResources().getConfiguration().orientation, fragmentDiscussionListBinding.rvDiscussion);
         showRecyclerView(realmNewsList);
@@ -70,10 +70,10 @@ public class DiscussionListFragment extends BaseTeamFragment {
         List<RealmNews> realmNewsList = mRealm.where(RealmNews.class).isEmpty("replyTo").sort("time", Sort.DESCENDING).findAll();
         List<RealmNews> list = new ArrayList<>();
         for (RealmNews news : realmNewsList) {
-            if (!TextUtils.isEmpty(news.getViewableBy()) && news.getViewableBy().equalsIgnoreCase("teams") && news.getViewableId().equalsIgnoreCase(team.get_id())) {
+            if (!TextUtils.isEmpty(news.viewableBy) && news.viewableBy.equalsIgnoreCase("teams") && news.viewableId.equalsIgnoreCase(team.get_id())) {
                 list.add(news);
-            } else if (!TextUtils.isEmpty(news.getViewIn())) {
-                JsonArray ar = new Gson().fromJson(news.getViewIn(), JsonArray.class);
+            } else if (!TextUtils.isEmpty(news.viewIn)) {
+                JsonArray ar = new Gson().fromJson(news.viewIn, JsonArray.class);
                 for (JsonElement e : ar) {
                     JsonObject ob = e.getAsJsonObject();
                     if (ob.get("_id").getAsString().equalsIgnoreCase(team.get_id())) {
