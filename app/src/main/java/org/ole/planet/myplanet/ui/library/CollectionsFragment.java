@@ -106,7 +106,7 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
             return;
         }
         for (RealmTag t : list) {
-            if (t.getName().toLowerCase().contains(charSequence.toLowerCase())) {
+            if (t.name.toLowerCase().contains(charSequence.toLowerCase())) {
                 filteredList.add(t);
             }
         }
@@ -131,7 +131,7 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
     }
 
     private void createChildMap(HashMap<String, List<RealmTag>> childMap, RealmTag t) {
-        for (String s : t.getAttachedTo()) {
+        for (String s : t.attachedTo) {
             List<RealmTag> l = new ArrayList<>();
             if (childMap.containsKey(s)) {
                 l = childMap.get(s);

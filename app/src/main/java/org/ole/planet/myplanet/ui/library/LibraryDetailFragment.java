@@ -104,17 +104,17 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
             }
             openResource(library);
         });
-        Utilities.log("user id " + profileDbHandler.getUserModel().getId() + " " + library.getUserId().contains(profileDbHandler.getUserModel().getId()));
-        boolean isAdd = !library.getUserId().contains(profileDbHandler.getUserModel().getId());
+        Utilities.log("user id " + profileDbHandler.getUserModel().id + " " + library.getUserId().contains(profileDbHandler.getUserModel().id));
+        boolean isAdd = !library.getUserId().contains(profileDbHandler.getUserModel().id);
         fragmentLibraryDetailBinding.btnRemove.setImageResource(isAdd ? R.drawable.ic_add_library : R.drawable.close_x);
         fragmentLibraryDetailBinding.btnRemove.setOnClickListener(view -> {
             if (!mRealm.isInTransaction()) mRealm.beginTransaction();
             if (isAdd) {
-                library.setUserId(profileDbHandler.getUserModel().getId());
-                RealmRemovedLog.onAdd(mRealm, "resources", profileDbHandler.getUserModel().getId(), libraryId);
+                library.setUserId(profileDbHandler.getUserModel().id);
+                RealmRemovedLog.onAdd(mRealm, "resources", profileDbHandler.getUserModel().id, libraryId);
             } else {
-                library.removeUserId(profileDbHandler.getUserModel().getId());
-                RealmRemovedLog.onRemove(mRealm, "resources", profileDbHandler.getUserModel().getId(), libraryId);
+                library.removeUserId(profileDbHandler.getUserModel().id);
+                RealmRemovedLog.onRemove(mRealm, "resources", profileDbHandler.getUserModel().id, libraryId);
             }
             Utilities.toast(getActivity(), getString(R.string.resources) + (isAdd ? getString(R.string.added_to) : getString(R.string.removed_from) + getString(R.string.my_library)));
             setLibraryData();
@@ -126,7 +126,7 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
 
     @Override
     public void onRatingChanged() {
-        JsonObject object = RealmRating.getRatingsById(mRealm, "resource", library.resourceId, userModel.getId());
+        JsonObject object = RealmRating.getRatingsById(mRealm, "resource", library.resourceId, userModel.id);
         setRatings(object);
     }
 }

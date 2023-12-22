@@ -72,8 +72,8 @@ class CourseProgressActivity : BaseActivity() {
                 var answers =
                         realm.where(RealmAnswer::class.java).equalTo("submissionId", it.id).findAll()
                 var examId = it.parentId
-                if (it.parentId.contains("@")) {
-                    examId = it.parentId.split("@")[0]
+                if (it.parentId?.contains("@") == true) {
+                    examId = it.parentId!!.split("@")[0]
                 }
                 var questions =
                         realm.where(RealmExamQuestion::class.java).equalTo("examId", examId).findAll();

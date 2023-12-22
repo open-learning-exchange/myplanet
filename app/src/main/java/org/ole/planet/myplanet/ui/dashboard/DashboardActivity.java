@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.dashboard;
 
+import org.ole.planet.myplanet.base.BaseContainerFragment;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
@@ -35,7 +36,6 @@ import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.Nameable;
 
 import org.ole.planet.myplanet.R;
-import org.ole.planet.myplanet.base.BaseContainerFragment;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
 import org.ole.planet.myplanet.databinding.ActivityDashboardBinding;
 import org.ole.planet.myplanet.databinding.CustomTabBinding;
@@ -44,7 +44,7 @@ import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.SettingActivity;
-import org.ole.planet.myplanet.ui.chat.ChatActivity;
+import org.ole.planet.myplanet.ui.chat.ChatHistoryListFragment;
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment;
 import org.ole.planet.myplanet.ui.course.CourseFragment;
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment;
@@ -104,7 +104,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             if(userProfileModel != null){
                 String name = userProfileModel.getFullName();
                 if (name.trim().length() == 0) {
-                    name = profileDbHandler.getUserModel().getName();
+                    name = profileDbHandler.getUserModel().name;
                 }
                 activityDashboardBinding.appBarBell.appTitleName.setText(name + "'s Planet");
             } else {
@@ -114,16 +114,16 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             throw new RuntimeException(err);
         }
         activityDashboardBinding.appBarBell.ivSetting.setOnClickListener(v -> startActivity(new Intent(this, SettingActivity.class)));
-        if (user.getRolesList().isEmpty() && !user.getUserAdmin()) {
+        if (user.rolesList.isEmpty() && !user.userAdmin) {
             navigationView.setVisibility(View.GONE);
             openCallFragment(new InactiveDashboardFragment(), "Dashboard");
             return;
         }
         navigationView.setOnNavigationItemSelectedListener(this);
-        navigationView.setVisibility(new UserProfileDbHandler(this).getUserModel().getShowTopbar() ? View.VISIBLE : View.GONE);
+        navigationView.setVisibility(new UserProfileDbHandler(this).getUserModel().isShowTopbar ? View.VISIBLE : View.GONE);
         headerResult = getAccountHeader();
         createDrawer();
-        if (!(user.getId().startsWith("guest") && profileDbHandler.getOfflineVisits() >= 3) && getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
+        if (!(user.id.startsWith("guest") && profileDbHandler.getOfflineVisits() >= 3) && getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
             result.openDrawer();
         }//Opens drawer by default
         result.getStickyFooter().setPadding(0, 0, 0, 0); // moves logout button to the very bottom of the drawer. Without it, the "logout" button suspends a little.
@@ -152,7 +152,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             public boolean onMenuItemClick(MenuItem item) {
                 switch (item.getItemId()) {
                     case R.id.action_chat:
-                        startActivity(new Intent(DashboardActivity.this, ChatActivity.class));
+                        openCallFragment(new ChatHistoryListFragment());
                         break;
                     case R.id.menu_goOnline:
                         wifiStatusSwitch();
@@ -205,7 +205,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             logout();
             return;
         }
-        if(user.getId().startsWith("guest") && profileDbHandler.getOfflineVisits() >= 3 ){
+        if(user.id.startsWith("guest") && profileDbHandler.getOfflineVisits() >= 3 ){
 
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setTitle("Become a member");
@@ -220,7 +220,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             becomeMember.setOnClickListener(view -> {
                 boolean guest = true;
                 Intent intent = new Intent(this, BecomeMemberActivity.class);
-                intent.putExtra("username", profileDbHandler.getUserModel().getName());
+                intent.putExtra("username", profileDbHandler.getUserModel().name);
                 intent.putExtra("guest", guest);
                 setResult(Activity.RESULT_OK, intent);
                 startActivity(intent);
@@ -274,7 +274,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
-        if (user.getRolesList().isEmpty()) {
+        if (user.rolesList.isEmpty()) {
             menu.findItem(R.id.action_setting).setEnabled(false);
         }
         return super.onPrepareOptionsMenu(menu);
@@ -377,7 +377,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     public void sendSurvey(RealmStepExam current) {
         SendSurveyFragment f = new SendSurveyFragment();
         Bundle b = new Bundle();
-        b.putString("surveyId", current.getId());
+        b.putString("surveyId", current.id);
         f.setArguments(b);
 
         f.show(getSupportFragmentManager(), "");
