@@ -250,7 +250,7 @@ open class RealmMyLibrary : RealmObject() {
             return getMyLibraryByUserId(settings.getString("userId", "--"), libs, mRealm)
         }
 
-        fun getMyLibraryByUserId(userId: String?, libs: List<RealmMyLibrary>, mRealm: Realm?): List<RealmMyLibrary> {
+        fun getMyLibraryByUserId(userId: String?, libs: List<RealmMyLibrary>, mRealm: Realm): List<RealmMyLibrary> {
             val libraries: MutableList<RealmMyLibrary> = ArrayList()
             val ids = RealmMyTeam.getResourceIdsByUser(userId, mRealm)
             for (item in libs) {

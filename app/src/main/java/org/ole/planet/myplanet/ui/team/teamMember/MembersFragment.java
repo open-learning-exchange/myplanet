@@ -15,7 +15,7 @@ public class MembersFragment extends BaseMemberFragment {
 
     @Override
     public List<RealmUserModel> getList() {
-        return RealmMyTeam.getRequestedMemeber(teamId, mRealm);
+        return RealmMyTeam.getRequestedMember(teamId, mRealm);
     }
 
     @Override

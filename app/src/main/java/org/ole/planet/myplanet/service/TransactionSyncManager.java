@@ -15,6 +15,7 @@ import org.ole.planet.myplanet.callback.SyncListener;
 import org.ole.planet.myplanet.datamanager.ApiClient;
 import org.ole.planet.myplanet.datamanager.ApiInterface;
 import org.ole.planet.myplanet.model.DocumentResponse;
+import org.ole.planet.myplanet.model.RealmChatHistory;
 import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.model.Rows;
@@ -110,6 +111,9 @@ public class TransactionSyncManager {
                         final Response<JsonObject> response = apiInterface.findDocs(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/" + table + "/_all_docs?include_docs=true", obj).execute();
                         if (response.body() != null) {
                             JsonArray arr = JsonUtils.getJsonArray("rows", response.body());
+                            if(table.equals("chat_history")) {
+                                insertToChat(arr, mRealm);
+                            }
                             insertDocs(arr, mRealm, table);
                         }
                         keys.clear();
@@ -118,6 +122,14 @@ public class TransactionSyncManager {
             } catch (IOException e) {
             }
         });
+    }
+
+    private static void insertToChat(JsonArray arr, Realm mRealm) {
+        for (JsonElement j : arr) {
+            JsonObject jsonDoc = j.getAsJsonObject();
+            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc);
+            RealmChatHistory.insert(mRealm, jsonDoc);
+        }
     }
 
     private static void insertDocs(JsonArray arr, Realm mRealm, String table) {
