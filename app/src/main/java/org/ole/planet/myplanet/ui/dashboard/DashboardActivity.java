@@ -114,7 +114,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             throw new RuntimeException(err);
         }
         activityDashboardBinding.appBarBell.ivSetting.setOnClickListener(v -> startActivity(new Intent(this, SettingActivity.class)));
-        if (user.rolesList.isEmpty() && !user.userAdmin) {
+        if (user != null && user.rolesList.isEmpty() && !user.userAdmin) {
             navigationView.setVisibility(View.GONE);
             openCallFragment(new InactiveDashboardFragment(), "Dashboard");
             return;
