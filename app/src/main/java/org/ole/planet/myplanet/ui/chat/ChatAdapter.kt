@@ -3,18 +3,24 @@ package org.ole.planet.myplanet.ui.chat
 import android.content.Context
 import android.os.Handler
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.databinding.ItemAiResponseMessageBinding
 import org.ole.planet.myplanet.databinding.ItemUserMessageBinding
 
-class ChatAdapter(private val chatList: ArrayList<String>, val context: Context) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+class ChatAdapter(private val chatList: ArrayList<String>, val context: Context, private val recyclerView: RecyclerView) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private lateinit var textUserMessageBinding: ItemUserMessageBinding
     private lateinit var textAiMessageBinding: ItemAiResponseMessageBinding
+    var responseSource: Int = RESPONSE_SOURCE_UNKNOWN
 
     private val VIEW_TYPE_QUERY = 1
     private val VIEW_TYPE_RESPONSE = 2
-
+    companion object {
+        const val RESPONSE_SOURCE_SHARED_VIEW_MODEL = 1
+        const val RESPONSE_SOURCE_NETWORK = 2
+        const val RESPONSE_SOURCE_UNKNOWN = 0
+    }
     class QueryViewHolder(private val textUserMessageBinding: ItemUserMessageBinding) : RecyclerView.ViewHolder(textUserMessageBinding.root) {
         fun bind(query: String) {
             textUserMessageBinding.textGchatMessageMe.text = query
@@ -22,13 +28,21 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context)
     }
 
     class ResponseViewHolder(private val textAiMessageBinding: ItemAiResponseMessageBinding) : RecyclerView.ViewHolder(textAiMessageBinding.root) {
-        fun bind(response: String) {
-            val typingDelayMillis = 10L
-            val typingAnimationDurationMillis = response.length * typingDelayMillis
-            textAiMessageBinding.textGchatMessageOther.text = ""
-            Handler().postDelayed({
-                animateTyping(response, typingDelayMillis)
-            }, typingAnimationDurationMillis)
+        fun bind(response: String, responseSource: Int) {
+            if(responseSource == RESPONSE_SOURCE_NETWORK){
+                val typingDelayMillis = 10L
+                val typingAnimationDurationMillis = response.length * typingDelayMillis
+                textAiMessageBinding.textGchatMessageOther.text = ""
+                Handler().postDelayed({
+                    animateTyping(response, typingDelayMillis)
+                }, typingAnimationDurationMillis)
+            } else if(responseSource == RESPONSE_SOURCE_SHARED_VIEW_MODEL){
+                if (response != "") {
+                    textAiMessageBinding.textGchatMessageOther.text = response
+                } else{
+                    textAiMessageBinding.textGchatMessageOther.visibility = View.GONE
+                }
+            }
         }
 
         private fun animateTyping(response: String, typingDelayMillis: Long) {
@@ -49,11 +63,26 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context)
     fun addQuery(query: String) {
         chatList.add(query)
         notifyItemInserted(chatList.size - 1)
+        scrollToLastItem()
     }
 
     fun addResponse(response: String) {
         chatList.add(response)
         notifyItemInserted(chatList.size - 1)
+        scrollToLastItem()
+    }
+
+    fun clearData() {
+        chatList.clear()
+        notifyDataSetChanged()
+        scrollToLastItem()
+    }
+
+    private fun scrollToLastItem() {
+        val lastPosition = chatList.size - 1
+        if (lastPosition >= 0) {
+            recyclerView.scrollToPosition(lastPosition)
+        }
     }
 
     override fun getItemViewType(position: Int): Int {
@@ -83,7 +112,7 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context)
             }
             VIEW_TYPE_RESPONSE -> {
                 val responseViewHolder = holder as ResponseViewHolder
-                responseViewHolder.bind(chatItem)
+                responseViewHolder.bind(chatItem, responseSource)
             }
             else -> throw IllegalArgumentException("Invalid view type")
         }

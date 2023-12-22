@@ -60,7 +60,7 @@ public class AddResourceActivity extends AppCompatActivity {
 
     private void initializeViews() {
         activityAddResourceBinding.fileUrl.setText(getString(R.string.file) + resourceUrl);
-        activityAddResourceBinding.tvAddedBy.setText(userModel.getName());
+        activityAddResourceBinding.tvAddedBy.setText(userModel.name);
         activityAddResourceBinding.tvLevels.setOnClickListener(view -> showMultiSelectList(getResources().getStringArray(R.array.array_levels), levels, view));
         activityAddResourceBinding.tvSubject.setOnClickListener(view -> showMultiSelectList(getResources().getStringArray(R.array.array_subjects), subjects, view));
         activityAddResourceBinding.tvResourceFor.setOnClickListener(view -> showMultiSelectList(getResources().getStringArray(R.array.array_resource_for), subjects, view));

@@ -31,7 +31,7 @@ public class LifeFragment extends BaseRecyclerFragment<RealmMyLife> implements O
 
     @Override
     public RecyclerView.Adapter getAdapter() {
-        List<RealmMyLife> myLifeList = RealmMyLife.getMyLifeByUserId(mRealm, model.getId());
+        List<RealmMyLife> myLifeList = RealmMyLife.getMyLifeByUserId(mRealm, model.id);
         adapterMyLife = new AdapterMyLife(getContext(), myLifeList, mRealm, this);
         return adapterMyLife;
     }

@@ -186,8 +186,8 @@ public class MainApplication extends Application {
         RealmApkLog log = mRealm.createObject(RealmApkLog.class, UUID.randomUUID().toString());
         RealmUserModel model = new UserProfileDbHandler(this).getUserModel();
         if (model != null) {
-            log.parentCode = model.getParentCode();
-            log.createdOn = model.getPlanetCode();
+            log.parentCode = model.parentCode;
+            log.createdOn = model.planetCode;
         }
         log.time = new Date().getTime() + "";
         log.page = "";

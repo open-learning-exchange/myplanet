@@ -61,7 +61,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     fun onLoaded(v: View) {
         profileDbHandler = UserProfileDbHandler(activity)
         model = profileDbHandler.userModel
-        fullName = profileDbHandler.userModel.fullName
+        fullName = profileDbHandler.userModel.getFullName()
         if (fullName?.trim().isNullOrBlank()) {
             fullName = profileDbHandler.userModel.name
 
@@ -87,7 +87,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         }
 
         v.findViewById<TextView>(R.id.txtVisits).text = "${profileDbHandler.offlineVisits} ${getString(R.string.visits)}"
-        v.findViewById<TextView>(R.id.txtRole).text = "- ${model.roleAsString}"
+        v.findViewById<TextView>(R.id.txtRole).text = "- ${model.getRoleAsString()}"
         v.findViewById<TextView>(R.id.txtFullName).text = fullName
     }
 
@@ -203,7 +203,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
                 name.setTypeface(null, Typeface.BOLD)
             }
             handleClick(ob._id, ob.name, TeamDetailFragment(), name)
-            showNotificationIcons(ob, v, userId)
+            showNotificationIcons(ob, v, userId!!)
             name.text = ob.name
             flexboxLayout.addView(v, params)
             count++
@@ -367,8 +367,8 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     override fun syncKeyId() {
         di = ProgressDialog(activity)
         di?.setMessage(getString(R.string.syncing_health_please_wait))
-        Utilities.log(model.roleAsString)
-        if (model.roleAsString.contains("health")) {
+        Utilities.log(model.getRoleAsString())
+        if (model.getRoleAsString().contains("health")) {
             TransactionSyncManager.syncAllHealthData(mRealm, settings, this)
         } else {
             TransactionSyncManager.syncKeyIv(mRealm, settings, this)
