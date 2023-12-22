@@ -38,7 +38,7 @@ public class TaskNotificationWorker extends Worker {
             List<RealmTeamTask> tasks = mRealm.where(RealmTeamTask.class)
                     .equalTo("completed", false)
                     .equalTo("assignee", user.id)
-                    .equalTo("notified", false)
+                    .equalTo("isNotified", false)
                     .between("deadline", current, tomorrow.getTimeInMillis())
                     .findAll();
 
