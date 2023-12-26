@@ -956,5 +956,6 @@
     <string name="web_view">عرض الويب</string>
     <string name="invalid_configuration">تكوينات الخادم غير صالحة</string>
     <string name="date_reset">إعادة ضبط التاريخ</string>
-  
+    <string name="no_course_matched_filter">لا توجد دورات تطابق الفلتر</string>
+
 </resources>
