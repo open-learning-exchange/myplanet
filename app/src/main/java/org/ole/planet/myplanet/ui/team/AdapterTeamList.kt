@@ -75,7 +75,7 @@ class AdapterTeamList(
 
     fun getBundle(team: RealmMyTeam): Bundle {
         val bundle = Bundle()
-        if (team.type.isEmpty()) bundle.putString("state", "teams") else bundle.putString(
+        if (team.type!!.isEmpty()) bundle.putString("state", "teams") else bundle.putString(
             "state", team.type + "s"
         )
         bundle.putString("item", team._id)
@@ -87,7 +87,7 @@ class AdapterTeamList(
         isMyTeam: Boolean, holder: RecyclerView.ViewHolder, position: Int
     ) {
         if (isMyTeam) {
-            if (RealmMyTeam.isTeamLeader(list[position].teamId, user.id, mRealm)) {
+            if (RealmMyTeam.isTeamLeader(list[position].teamId, user.id!!, mRealm)) {
                 itemTeamListBinding.joinLeave.text = "Leave"
                 itemTeamListBinding.joinLeave.setOnClickListener {
                     AlertDialog.Builder(context).setMessage(R.string.confirm_exit)
@@ -100,7 +100,7 @@ class AdapterTeamList(
                 itemTeamListBinding.joinLeave.visibility = View.GONE
                 return
             }
-        } else if (list[position].requested(user.id, mRealm)) {
+        } else if (list[position].requested(user.id!!, mRealm)) {
             itemTeamListBinding.joinLeave.text = context.getString(R.string.requested)
             itemTeamListBinding.joinLeave.isEnabled = false
         } else {

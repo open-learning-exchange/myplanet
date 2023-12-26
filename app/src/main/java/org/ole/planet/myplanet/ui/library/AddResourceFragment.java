@@ -38,6 +38,7 @@ import org.ole.planet.myplanet.model.RealmMyPersonal;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.AudioRecorderService;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
+import org.ole.planet.myplanet.ui.myPersonals.MyPersonalsFragment;
 import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
@@ -52,14 +53,14 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
     static final int REQUEST_VIDEO_CAPTURE = 1;
     static final int REQUEST_RECORD_SOUND = 0;
     static final int REQUEST_CAPTURE_PICTURE = 2;
-    int type = 0;
+    static int type = 0;
     TextView tvTime;
     FloatingActionButton floatingActionButton;
     AudioRecorderService audioRecorderService;
     File output;
     private Uri photoURI;
     private Uri videoUri;
-
+    private static MyPersonalsFragment myPersonalsFragment;
     public AddResourceFragment() {
     }
 
@@ -87,6 +88,11 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
                 myPersonal.date = new Date().getTime();
                 myPersonal.description = desc;
             }, () -> Utilities.toast(MainApplication.context, context.getString(R.string.resource_saved_to_my_personal)));
+            if (type == 1) {
+                if (myPersonalsFragment != null) {
+                    myPersonalsFragment.refreshFragment();
+                }
+            }
         }).setNegativeButton(R.string.dismiss, null).show();
     }
 
@@ -270,5 +276,9 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
         } else {
             showAlert(getActivity(), path);
         }
+    }
+
+    public void setMyPersonalsFragment(MyPersonalsFragment myPersonalsFragment) {
+        this.myPersonalsFragment = myPersonalsFragment;
     }
 }
