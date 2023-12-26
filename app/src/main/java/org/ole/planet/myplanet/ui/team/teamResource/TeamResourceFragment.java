@@ -61,7 +61,7 @@ public class TeamResourceFragment extends BaseTeamFragment implements TeamPageLi
         alertDialogBuilder.setTitle(R.string.select_resource);
         List<RealmMyLibrary> libraries = mRealm.where(RealmMyLibrary.class).not().in("_id", RealmMyTeam.getResourceIds(teamId, mRealm).toArray(new String[0])).findAll();
         alertDialogBuilder.setView(myLibraryAlertdialogBinding.getRoot()).setPositiveButton(R.string.add, (dialogInterface, i) -> {
-            ArrayList<Integer> selected = myLibraryAlertdialogBinding.alertDialogListView.getSelectedItemsList();
+            ArrayList<Integer> selected = myLibraryAlertdialogBinding.alertDialogListView.selectedItemsList;
             if (!mRealm.isInTransaction()) mRealm.beginTransaction();
             for (Integer se : selected) {
                 RealmMyTeam team = mRealm.createObject(RealmMyTeam.class, UUID.randomUUID().toString());
@@ -91,11 +91,11 @@ public class TeamResourceFragment extends BaseTeamFragment implements TeamPageLi
         ArrayAdapter<String> adapter = new ArrayAdapter<>(getActivity(), R.layout.rowlayout, R.id.checkBoxRowLayout, names);
         lv.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
         lv.setCheckChangeListener(() -> {
-            (alertDialog).getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(lv.getSelectedItemsList().size() > 0);
+            (alertDialog).getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(lv.selectedItemsList.size() > 0);
         });
         lv.setAdapter(adapter);
         alertDialog.show();
-        (alertDialog).getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(lv.getSelectedItemsList().size() > 0);
+        (alertDialog).getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(lv.selectedItemsList.size() > 0);
     }
 
     @Override
