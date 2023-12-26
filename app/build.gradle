@@ -104,7 +104,7 @@ dependencies {
     implementation 'com.github.jeancsanchez:jcplayer:2.7.2'
 
     implementation "com.google.dagger:hilt-android:2.49"
-    kapt "com.google.dagger:hilt-android-compiler:2.49"
+    kapt "com.google.dagger:hilt-android-compiler:2.50"
 
     implementation 'com.mikepenz:crossfader:1.6.0@aar'
     implementation 'com.mikepenz:crossfadedrawerlayout:1.1.0@aar'
