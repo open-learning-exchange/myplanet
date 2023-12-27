@@ -8,7 +8,6 @@ import android.view.ViewGroup;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
-import androidx.viewpager.widget.ViewPager;
 
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
@@ -89,7 +88,7 @@ public class TeamDetailFragment extends Fragment {
         log.user = user.name;
         log.createdOn = user.planetCode;
         log.type = "teamVisit";
-        log.teamType = team.getTeamType();
+        log.teamType = team.teamType;
         log.parentCode = user.parentCode;
         log.time = new Date().getTime();
         mRealm.commitTransaction();

@@ -235,7 +235,7 @@ public class EditAchievementFragment extends BaseContainerFragment implements Da
         CheckboxListView lv = createResourceList(myLibraryAlertdialogBinding, list, prevList);
         builder.setView(myLibraryAlertdialogView);
         builder.setPositiveButton("Ok", (dialogInterface, i) -> {
-            ArrayList<Integer> items = lv.getSelectedItemsList();
+            ArrayList<Integer> items = lv.selectedItemsList;
             resourceArray = new JsonArray();
             for (int ii : items) {
                 resourceArray.add(list.get(ii).serializeResource());
@@ -285,12 +285,12 @@ public class EditAchievementFragment extends BaseContainerFragment implements Da
                 RowlayoutBinding rowlayoutBinding = RowlayoutBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false);
                 CheckedTextView textView = rowlayoutBinding.getRoot();
                 textView.setText(getItem(position));
-                textView.setChecked(myLibraryAlertdialogBinding.alertDialogListView.getSelectedItemsList().contains(position));
-                myLibraryAlertdialogBinding.alertDialogListView.setItemChecked(position, myLibraryAlertdialogBinding.alertDialogListView.getSelectedItemsList().contains(position));
+                textView.setChecked(myLibraryAlertdialogBinding.alertDialogListView.selectedItemsList.contains(position));
+                myLibraryAlertdialogBinding.alertDialogListView.setItemChecked(position, myLibraryAlertdialogBinding.alertDialogListView.selectedItemsList.contains(position));
                 return textView;
             }
         };
-        myLibraryAlertdialogBinding.alertDialogListView.setSelectedItemsList(selected);
+        myLibraryAlertdialogBinding.alertDialogListView.selectedItemsList = selected;
         myLibraryAlertdialogBinding.alertDialogListView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
         myLibraryAlertdialogBinding.alertDialogListView.setAdapter(adapter);
         return myLibraryAlertdialogBinding.alertDialogListView;
