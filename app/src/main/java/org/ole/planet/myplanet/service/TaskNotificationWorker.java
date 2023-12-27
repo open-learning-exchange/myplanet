@@ -21,10 +21,7 @@ import io.realm.Realm;
 public class TaskNotificationWorker extends Worker {
     private Context context;
 
-    public TaskNotificationWorker(
-            @NonNull Context context,
-            @NonNull WorkerParameters workerParams
-    ) {
+    public TaskNotificationWorker(@NonNull Context context, @NonNull WorkerParameters workerParams) {
         super(context, workerParams);
         this.context = context;
     }
@@ -40,15 +37,15 @@ public class TaskNotificationWorker extends Worker {
         if (user != null) {
             List<RealmTeamTask> tasks = mRealm.where(RealmTeamTask.class)
                     .equalTo("completed", false)
-                    .equalTo("assignee", user.getId())
-                    .equalTo("notified", false)
+                    .equalTo("assignee", user.id)
+                    .equalTo("isNotified", false)
                     .between("deadline", current, tomorrow.getTimeInMillis())
                     .findAll();
 
             mRealm.beginTransaction();
             for (RealmTeamTask in : tasks) {
-                NotificationUtil.create(context, R.drawable.ole_logo, in.getTitle(), "Task expires on " + TimeUtils.formatDate(in.getDeadline()));
-                in.setNotified(true);
+                NotificationUtil.create(context, R.drawable.ole_logo, in.title, "Task expires on " + TimeUtils.formatDate(in.deadline));
+                in.isNotified = true;
             }
             mRealm.commitTransaction();
         }

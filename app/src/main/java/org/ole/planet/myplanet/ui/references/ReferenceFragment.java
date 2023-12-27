@@ -60,8 +60,8 @@ public class ReferenceFragment extends Fragment {
 
             @Override
             public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-                rowReferenceBinding.title.setText(list.get(position).getTitle());
-                rowReferenceBinding.icon.setImageResource(list.get(position).getIcon());
+                rowReferenceBinding.title.setText(list.get(position).title);
+                rowReferenceBinding.icon.setImageResource(list.get(position).icon);
                 rowReferenceBinding.getRoot().setOnClickListener(view -> {
                     if (position == 0)
                         startActivity(new Intent(getActivity(), OfflineMapActivity.class));

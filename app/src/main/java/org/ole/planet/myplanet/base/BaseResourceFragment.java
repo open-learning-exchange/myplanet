@@ -107,11 +107,11 @@ public abstract class BaseResourceFragment extends Fragment {
                         convertView = inflater.inflate(R.layout.my_library_alertdialog, null);
                         AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(getActivity());
                         alertDialogBuilder.setView(convertView).setTitle(R.string.download_suggestion);
-                        alertDialogBuilder.setPositiveButton(R.string.download_selected, (dialogInterface, i) -> startDownload(DownloadUtils.downloadFiles(db_myLibrary, lv.getSelectedItemsList(), settings))).setNeutralButton(R.string.download_all, (dialogInterface, i) -> startDownload(DownloadUtils.downloadAllFiles(db_myLibrary, settings))).setNegativeButton(R.string.txt_cancel, null);
+                        alertDialogBuilder.setPositiveButton(R.string.download_selected, (dialogInterface, i) -> startDownload(DownloadUtils.downloadFiles(db_myLibrary, lv.selectedItemsList, settings))).setNeutralButton(R.string.download_all, (dialogInterface, i) -> startDownload(DownloadUtils.downloadAllFiles(db_myLibrary, settings))).setNegativeButton(R.string.txt_cancel, null);
                         AlertDialog alertDialog = alertDialogBuilder.create();
                         createListView(db_myLibrary, alertDialog);
                         alertDialog.show();
-                        (alertDialog).getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(lv.getSelectedItemsList().size() > 0);
+                        (alertDialog).getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(lv.selectedItemsList.size() > 0);
                     }
                 } else {
                     Utilities.toast(requireContext(), getString(R.string.no_resources_to_download));
@@ -129,7 +129,7 @@ public abstract class BaseResourceFragment extends Fragment {
 
     public void showPendingSurveyDialog() {
         model = new UserProfileDbHandler(getActivity()).getUserModel();
-        List<RealmSubmission> list = mRealm.where(RealmSubmission.class).equalTo("userId", model.getId()).equalTo("status", "pending").equalTo("type", "survey").findAll();
+        List<RealmSubmission> list = mRealm.where(RealmSubmission.class).equalTo("userId", model.id).equalTo("status", "pending").equalTo("type", "survey").findAll();
         if (list.size() == 0) {
             return;
         }
@@ -140,15 +140,15 @@ public abstract class BaseResourceFragment extends Fragment {
             public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
                 if (convertView == null)
                     convertView = LayoutInflater.from(getActivity()).inflate(android.R.layout.simple_list_item_1, null);
-                if (exams.containsKey(((RealmSubmission) getItem(position)).getParentId()))
-                    ((TextView) convertView).setText(exams.get(list.get(position).getParentId()).getName());
+                if (exams.containsKey(((RealmSubmission) getItem(position)).parentId))
+                    ((TextView) convertView).setText(exams.get(list.get(position).parentId).name);
                 else {
                     ((TextView) convertView).setText(R.string.n_a);
                 }
                 return convertView;
             }
         };
-        new AlertDialog.Builder(getActivity()).setTitle("Pending Surveys").setAdapter(arrayAdapter, (dialogInterface, i) -> AdapterMySubmission.openSurvey(homeItemClickListener, list.get(i).getId(), true)).setPositiveButton(R.string.dismiss, null).show();
+        new AlertDialog.Builder(getActivity()).setTitle("Pending Surveys").setAdapter(arrayAdapter, (dialogInterface, i) -> AdapterMySubmission.openSurvey(homeItemClickListener, list.get(i).id, true)).setPositiveButton(R.string.dismiss, null).show();
     }
 
     public void startDownload(ArrayList urls) {
@@ -195,7 +195,7 @@ public abstract class BaseResourceFragment extends Fragment {
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(getActivity().getBaseContext(), R.layout.rowlayout, R.id.checkBoxRowLayout, names);
         lv.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
         lv.setCheckChangeListener(() -> {
-            (alertDialog).getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(lv.getSelectedItemsList().size() > 0);
+            (alertDialog).getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(lv.selectedItemsList.size() > 0);
         });
         lv.setAdapter(adapter);
     }
@@ -260,13 +260,13 @@ public abstract class BaseResourceFragment extends Fragment {
     public void removeFromShelf(RealmObject object) {
         if (object instanceof RealmMyLibrary) {
             RealmMyLibrary myObject = mRealm.where(RealmMyLibrary.class).equalTo("resourceId", ((RealmMyLibrary) object).resourceId).findFirst();
-            myObject.removeUserId(model.getId());
-            RealmRemovedLog.onRemove(mRealm, "resources", model.getId(), ((RealmMyLibrary) object).resourceId);
+            myObject.removeUserId(model.id);
+            RealmRemovedLog.onRemove(mRealm, "resources", model.id, ((RealmMyLibrary) object).resourceId);
             Utilities.toast(getActivity(), getString(R.string.removed_from_mylibrary));
         } else {
             RealmMyCourse myObject = RealmMyCourse.getMyCourse(mRealm, ((RealmMyCourse) object).courseId);
-            myObject.removeUserId(model.getId());
-            RealmRemovedLog.onRemove(mRealm, "courses", model.getId(), ((RealmMyCourse) object).courseId);
+            myObject.removeUserId(model.id);
+            RealmRemovedLog.onRemove(mRealm, "courses", model.id, ((RealmMyCourse) object).courseId);
             Utilities.toast(getActivity(), getString(R.string.removed_from_mycourse));
         }
     }
@@ -280,7 +280,7 @@ public abstract class BaseResourceFragment extends Fragment {
     public void showTagText(List<RealmTag> list, TextView tvSelected) {
         StringBuilder selected = new StringBuilder(getString(R.string.selected));
         for (RealmTag tags : list) {
-            selected.append(tags.getName()).append(",");
+            selected.append(tags.name).append(",");
         }
         tvSelected.setText(selected.subSequence(0, selected.length() - 1));
     }

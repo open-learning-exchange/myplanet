@@ -60,7 +60,7 @@ public class AddResourceActivity extends AppCompatActivity {
 
     private void initializeViews() {
         activityAddResourceBinding.fileUrl.setText(getString(R.string.file) + resourceUrl);
-        activityAddResourceBinding.tvAddedBy.setText(userModel.getName());
+        activityAddResourceBinding.tvAddedBy.setText(userModel.name);
         activityAddResourceBinding.tvLevels.setOnClickListener(view -> showMultiSelectList(getResources().getStringArray(R.array.array_levels), levels, view));
         activityAddResourceBinding.tvSubject.setOnClickListener(view -> showMultiSelectList(getResources().getStringArray(R.array.array_subjects), subjects, view));
         activityAddResourceBinding.tvResourceFor.setOnClickListener(view -> showMultiSelectList(getResources().getStringArray(R.array.array_resource_for), subjects, view));
@@ -126,7 +126,7 @@ public class AddResourceActivity extends AppCompatActivity {
         listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
         listView.setAdapter(adapter);
         new AlertDialog.Builder(this).setView(listView).setPositiveButton(R.string.ok, (dialogInterface, i) -> {
-            ArrayList<Integer> selected = listView.getSelectedItemsList();
+            ArrayList<Integer> selected = listView.selectedItemsList;
             items.clear();
             String selection = "";
             for (Integer index : selected) {

@@ -10,7 +10,10 @@ jobs:
   release:
     name: myPlanet release
     runs-on: ubuntu-latest
-
+    strategy:
+      fail-fast: false
+      matrix:
+        build: [default, lite]
     env:
       ANDROID_NDK_VERSION: "21.3.6528147"
       BUILD_TOOLS_VERSION: "30.0.2"
@@ -18,6 +21,22 @@ jobs:
     steps:
       - name: checkout repository code
         uses: actions/checkout@v4
+      - name: diff the code to get lite
+        run: |
+          if [[ "${{ matrix.build }}" == "lite" ]]; then
+            echo "lite"
+            ls -al \
+              app/build.gradle \
+              app/src/main/AndroidManifest.xml \
+              app/src/main/java/org/ole/planet/myplanet/base/BaseContainerFragment.kt \
+              app/src/main/java/org/ole/planet/myplanet/base/PermissionActivity.java \
+              app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardActivity.java
+            sed -i 's/\(versionName "[0-9.]\+\)"/\1-lite"/' app/build.gradle
+            cp app/src/main/AndroidManifest.xml.lite app/src/main/AndroidManifest.xml
+            cp app/src/main/java/org/ole/planet/myplanet/base/BaseContainerFragment.kt.lite app/src/main/java/org/ole/planet/myplanet/base/BaseContainerFragment.kt
+            cp app/src/main/java/org/ole/planet/myplanet/base/PermissionActivity.java.lite app/src/main/java/org/ole/planet/myplanet/base/PermissionActivity.java
+            cp app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardActivity.java.lite app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardActivity.java
+          fi
 
       - name: set more env
         run: echo "BRANCHNAME="${GITHUB_REF##*/} >> $GITHUB_ENV
@@ -67,7 +86,7 @@ jobs:
           ls -alR output
 
       - name: publish AAB to playstore
-        if: github.ref == 'refs/heads/master'
+        if: (github.ref == 'refs/heads/master') && (matrix.build == 'lite')
         uses: r0adkll/upload-google-play@v1.1.2
         with:
           serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
@@ -88,7 +107,7 @@ jobs:
 
       - name: upload APK and AAB as build artifact
         if: github.ref != 'refs/heads/master'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}
           path: output/*

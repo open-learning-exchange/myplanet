@@ -61,18 +61,18 @@ public class TeamResourceFragment extends BaseTeamFragment implements TeamPageLi
         alertDialogBuilder.setTitle(R.string.select_resource);
         List<RealmMyLibrary> libraries = mRealm.where(RealmMyLibrary.class).not().in("_id", RealmMyTeam.getResourceIds(teamId, mRealm).toArray(new String[0])).findAll();
         alertDialogBuilder.setView(myLibraryAlertdialogBinding.getRoot()).setPositiveButton(R.string.add, (dialogInterface, i) -> {
-            ArrayList<Integer> selected = myLibraryAlertdialogBinding.alertDialogListView.getSelectedItemsList();
+            ArrayList<Integer> selected = myLibraryAlertdialogBinding.alertDialogListView.selectedItemsList;
             if (!mRealm.isInTransaction()) mRealm.beginTransaction();
             for (Integer se : selected) {
                 RealmMyTeam team = mRealm.createObject(RealmMyTeam.class, UUID.randomUUID().toString());
-                team.setTeamId(teamId);
-                team.setTitle(libraries.get(se).title);
-                team.setSourcePlanet(user.getParentCode());
-                team.setResourceId(libraries.get(se).get_id());
-                team.setDocType("resourceLink");
-                team.setUpdated(true);
-                team.setTeamType("local");
-                team.setTeamPlanetCode(user.getPlanetCode());
+                team.teamId = teamId;
+                team.title = libraries.get(se).title;
+                team.status = user.parentCode;
+                team.resourceId = libraries.get(se).get_id();
+                team.docType = "resourceLink";
+                team.updated = true;
+                team.teamType = "local";
+                team.teamPlanetCode = user.planetCode;
             }
             mRealm.commitTransaction();
             showLibraryList();
@@ -91,11 +91,11 @@ public class TeamResourceFragment extends BaseTeamFragment implements TeamPageLi
         ArrayAdapter<String> adapter = new ArrayAdapter<>(getActivity(), R.layout.rowlayout, R.id.checkBoxRowLayout, names);
         lv.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
         lv.setCheckChangeListener(() -> {
-            (alertDialog).getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(lv.getSelectedItemsList().size() > 0);
+            (alertDialog).getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(lv.selectedItemsList.size() > 0);
         });
         lv.setAdapter(adapter);
         alertDialog.show();
-        (alertDialog).getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(lv.getSelectedItemsList().size() > 0);
+        (alertDialog).getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(lv.selectedItemsList.size() > 0);
     }
 
     @Override
