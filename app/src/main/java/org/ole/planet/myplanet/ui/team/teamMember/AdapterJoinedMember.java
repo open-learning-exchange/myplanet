@@ -40,7 +40,7 @@ public class AdapterJoinedMember extends RecyclerView.Adapter<AdapterJoinedMembe
         this.currentUser = new UserProfileDbHandler(context).getUserModel();
         RealmMyTeam leaderTeam = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("isLeader", true).findFirst();
         if (leaderTeam != null) {
-            this.teamLeaderId = leaderTeam.getUserId();
+            this.teamLeaderId = leaderTeam.userId;
         }
     }
 
@@ -104,10 +104,10 @@ public class AdapterJoinedMember extends RecyclerView.Adapter<AdapterJoinedMembe
         RealmMyTeam team = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("userId", userModel.id).findFirst();
         RealmMyTeam teamLeader = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("isLeader", true).findFirst();
         if (teamLeader != null) {
-            teamLeader.setLeader(false);
+            teamLeader.isLeader = false;
         }
         if (team != null) {
-            team.setLeader(true);
+            team.isLeader = true;
         }
 
         mRealm.commitTransaction();
