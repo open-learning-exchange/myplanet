@@ -1,6 +1,6 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 buildscript {
-    ext.kotlin_version = '1.9.21'
+    ext.kotlin_version = '1.9.22'
     ext {
         setup = [
                 compileSdk: 34,
@@ -20,7 +20,7 @@ buildscript {
     dependencies {
         classpath 'com.android.tools.build:gradle:8.2.0'
         classpath "io.realm:realm-gradle-plugin:10.17.0"
-        classpath "com.google.dagger:hilt-android-gradle-plugin:2.49"
+        classpath "com.google.dagger:hilt-android-gradle-plugin:2.50"
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
