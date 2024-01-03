@@ -49,7 +49,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
 
         service = Service(this)
 
-        tvAvailableSpace.text = FileUtils.getAvailableOverTotalMemoryFormattedString()
+        tvAvailableSpace.text = FileUtils.availableOverTotalMemoryFormattedString
         changeLogoColor()
         declareElements()
         declareMoreElements()
