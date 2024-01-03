@@ -52,7 +52,7 @@ class MyHealthFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View? {
         fragmentVitalSignBinding = FragmentVitalSignBinding.inflate(inflater, container, false)
-        mRealm = DatabaseService(activity).realmInstance
+        mRealm = DatabaseService(requireContext()).realmInstance
         return fragmentVitalSignBinding.root
     }
 
