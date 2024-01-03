@@ -45,6 +45,7 @@
                     android:drawableStart="@drawable/ic_edit"
                     android:drawablePadding="@dimen/padding_normal"
                     android:padding="@dimen/padding_normal"
+                    android:contentDescription="@string/edit_achievement"
                     android:text="@string/edit_achievement" />
 
 

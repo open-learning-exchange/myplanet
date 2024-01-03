@@ -6,8 +6,6 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmResults
-import kotlinx.android.synthetic.main.activity_course_progress.progressView
-import kotlinx.android.synthetic.main.activity_course_progress.rv_progress
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.databinding.ActivityCourseProgressBinding
@@ -38,22 +36,22 @@ class CourseProgressActivity : BaseActivity() {
         var courseProgress = RealmCourseProgress.getCourseProgress(realm, user.id)
         var progress = courseProgress[courseId]
         var course =
-            realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
+                realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
         if (progress != null) {
-            progressView.setProgress(
-                (progress["current"].asInt.div(progress["max"].asInt)) * 100, true
+            activityCourseProgressBinding.progressView.setProgress(
+                    (progress["current"].asInt.div(progress["max"].asInt)) * 100, true
             )
         }
         activityCourseProgressBinding.tvCourse.text = course!!.courseTitle
         activityCourseProgressBinding.tvProgress.text =
-            getString(R.string.progress) + courseProgress[courseId]!!["current"].asString + getString(R.string.of) + courseProgress[courseId]!!["max"].asString
+                getString(R.string.progress) + courseProgress[courseId]!!["current"].asString + getString(R.string.of) + courseProgress[courseId]!!["max"].asString
         activityCourseProgressBinding.rvProgress.layoutManager = GridLayoutManager(this, 4)
         showProgress()
     }
 
     private fun showProgress() {
         var steps =
-            realm.where(RealmCourseStep::class.java).contains("courseId", courseId).findAll()
+                realm.where(RealmCourseStep::class.java).contains("courseId", courseId).findAll()
         var array = JsonArray()
         steps.map {
             var ob = JsonObject()
@@ -62,23 +60,23 @@ class CourseProgressActivity : BaseActivity() {
             getExamObject(exams, ob)
             array.add(ob)
         }
-        rv_progress.adapter = AdapterProgressGrid(this, array)
+        activityCourseProgressBinding.rvProgress.adapter = AdapterProgressGrid(this, array)
 
     }
 
     private fun getExamObject(exams: RealmResults<RealmStepExam>, ob: JsonObject) {
         exams.forEach {
             var submissions = realm.where(RealmSubmission::class.java).equalTo("userId", user.id)
-                .contains("parentId", it.id).equalTo("type", "exam").findAll()
+                    .contains("parentId", it.id).equalTo("type", "exam").findAll()
             submissions.map {
                 var answers =
-                    realm.where(RealmAnswer::class.java).equalTo("submissionId", it.id).findAll()
+                        realm.where(RealmAnswer::class.java).equalTo("submissionId", it.id).findAll()
                 var examId = it.parentId
-                if (it.parentId.contains("@")) {
-                    examId = it.parentId.split("@")[0]
+                if (it.parentId?.contains("@") == true) {
+                    examId = it.parentId!!.split("@")[0]
                 }
                 var questions =
-                    realm.where(RealmExamQuestion::class.java).equalTo("examId", examId).findAll();
+                        realm.where(RealmExamQuestion::class.java).equalTo("examId", examId).findAll();
                 ob.addProperty("completed", questions.size == answers.size)
                 ob.addProperty("percentage", (answers.size.div(questions.size)) * 100)
                 ob.addProperty("status", it.status)

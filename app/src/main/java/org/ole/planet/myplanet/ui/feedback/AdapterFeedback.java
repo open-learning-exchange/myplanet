@@ -41,17 +41,17 @@ public class AdapterFeedback extends RecyclerView.Adapter<AdapterFeedback.ViewHo
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolderFeedback holder, int position) {
-        rowFeedbackBinding.tvTitle.setText(list.get(position).getTitle());
-        rowFeedbackBinding.tvType.setText(list.get(position).getType());
-        rowFeedbackBinding.tvPriority.setText(list.get(position).getPriority());
-        rowFeedbackBinding.tvStatus.setText(list.get(position).getStatus());
-        if ("yes".equalsIgnoreCase(list.get(position).getPriority()))
+        rowFeedbackBinding.tvTitle.setText(list.get(position).title);
+        rowFeedbackBinding.tvType.setText(list.get(position).type);
+        rowFeedbackBinding.tvPriority.setText(list.get(position).priority);
+        rowFeedbackBinding.tvStatus.setText(list.get(position).status);
+        if ("yes".equalsIgnoreCase(list.get(position).priority))
             rowFeedbackBinding.tvPriority.setBackground(context.getResources().getDrawable(R.drawable.bg_primary));
         else
             rowFeedbackBinding.tvPriority.setBackground(context.getResources().getDrawable(R.drawable.bg_grey));
-        rowFeedbackBinding.tvStatus.setBackground(context.getResources().getDrawable("open".equalsIgnoreCase(list.get(position).getStatus()) ? R.drawable.bg_primary : R.drawable.bg_grey));
-        rowFeedbackBinding.tvOpenDate.setText(TimeUtils.getFormatedDate(Long.parseLong(list.get(position).getOpenTime())));
-        rowFeedbackBinding.getRoot().setOnClickListener(v -> context.startActivity(new Intent(context, FeedbackDetailActivity.class).putExtra("id", list.get(position).getId())));
+        rowFeedbackBinding.tvStatus.setBackground(context.getResources().getDrawable("open".equalsIgnoreCase(list.get(position).status) ? R.drawable.bg_primary : R.drawable.bg_grey));
+        rowFeedbackBinding.tvOpenDate.setText(TimeUtils.getFormatedDate(Long.parseLong(list.get(position).openTime)));
+        rowFeedbackBinding.getRoot().setOnClickListener(v -> context.startActivity(new Intent(context, FeedbackDetailActivity.class).putExtra("id", list.get(position).id)));
     }
 
     @Override

@@ -14,18 +14,16 @@ import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.kizitonwose.calendarview.model.*
 import com.kizitonwose.calendarview.ui.DayBinder
 import com.kizitonwose.calendarview.ui.MonthHeaderFooterBinder
 import com.kizitonwose.calendarview.ui.ViewContainer
-import kotlinx.android.synthetic.main.calendar_day.view.*
-import kotlinx.android.synthetic.main.calendar_month.view.*
-import kotlinx.android.synthetic.main.fragment_enterprise_calendar.*
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AddMeetupBinding
+import org.ole.planet.myplanet.databinding.CalendarDayBinding
+import org.ole.planet.myplanet.databinding.CalendarMonthBinding
 import org.ole.planet.myplanet.databinding.FragmentEnterpriseCalendarBinding
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
@@ -44,7 +42,7 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
     lateinit var end: Calendar
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
+            inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View? {
         fragmentEnterpriseCalendarBinding = FragmentEnterpriseCalendarBinding.inflate(inflater, container, false)
         start = Calendar.getInstance()
@@ -58,7 +56,7 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
         if (arguments!!.getBoolean("fromLogin", false)) {
             fragmentEnterpriseCalendarBinding.addEvent.visibility = View.GONE
         } else if (user != null) {
-            if (user.isManager || user.isLeader) fragmentEnterpriseCalendarBinding.addEvent.visibility = View.VISIBLE
+            if (user.isManager() || user.isLeader()) fragmentEnterpriseCalendarBinding.addEvent.visibility = View.VISIBLE
             else fragmentEnterpriseCalendarBinding.addEvent.visibility = View.GONE
         } else {
             fragmentEnterpriseCalendarBinding.addEvent.visibility = View.GONE
@@ -73,42 +71,42 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
         setTimePicker(addMeetupBinding.tvEndTime)
 
         AlertDialog.Builder(requireActivity()).setView(addMeetupBinding.root)
-            .setPositiveButton("Save") { _, _ ->
-                val ttl = addMeetupBinding.etTitle.text.toString()
-                val desc = addMeetupBinding.etDescription.text.toString()
-                val loc = addMeetupBinding.etLocation.text.toString()
-                if (ttl.isEmpty()) {
-                    Utilities.toast(activity, getString(R.string.title_is_required))
-                } else if (desc.isEmpty()) {
-                    Utilities.toast(activity, getString(R.string.description_is_required))
-                } else if (start == null) {
-                    Utilities.toast(activity, getString(R.string.start_time_is_required))
-                } else {
-                    if (!mRealm.isInTransaction) mRealm.beginTransaction()
-                    val meetup =
-                        mRealm.createObject(RealmMeetup::class.java, UUID.randomUUID().toString())
-                    meetup.title = ttl
-                    meetup.description = desc
-                    meetup.meetupLocation = loc
-                    meetup.creator = user.id
-                    meetup.startDate = start.timeInMillis
-                    if (end != null) meetup.endDate = end.timeInMillis
-                    meetup.endTime = addMeetupBinding.tvEndTime.text.toString()
-                    meetup.startTime = addMeetupBinding.tvStartTime.text.toString()
-                    val rb = addMeetupBinding.rgRecuring.findViewById<RadioButton>(addMeetupBinding.rgRecuring.checkedRadioButtonId)
-                    if (rb != null) {
-                        meetup.recurring = rb.text.toString()
+                .setPositiveButton("Save") { _, _ ->
+                    val ttl = addMeetupBinding.etTitle.text.toString()
+                    val desc = addMeetupBinding.etDescription.text.toString()
+                    val loc = addMeetupBinding.etLocation.text.toString()
+                    if (ttl.isEmpty()) {
+                        Utilities.toast(activity, getString(R.string.title_is_required))
+                    } else if (desc.isEmpty()) {
+                        Utilities.toast(activity, getString(R.string.description_is_required))
+                    } else if (start == null) {
+                        Utilities.toast(activity, getString(R.string.start_time_is_required))
+                    } else {
+                        if (!mRealm.isInTransaction) mRealm.beginTransaction()
+                        val meetup =
+                                mRealm.createObject(RealmMeetup::class.java, UUID.randomUUID().toString())
+                        meetup.title = ttl
+                        meetup.description = desc
+                        meetup.meetupLocation = loc
+                        meetup.creator = user.id
+                        meetup.startDate = start.timeInMillis
+                        if (end != null) meetup.endDate = end.timeInMillis
+                        meetup.endTime = addMeetupBinding.tvEndTime.text.toString()
+                        meetup.startTime = addMeetupBinding.tvStartTime.text.toString()
+                        val rb = addMeetupBinding.rgRecuring.findViewById<RadioButton>(addMeetupBinding.rgRecuring.checkedRadioButtonId)
+                        if (rb != null) {
+                            meetup.recurring = rb.text.toString()
+                        }
+                        val ob = JsonObject()
+                        ob.addProperty("teams", teamId)
+                        meetup.links = Gson().toJson(ob)
+                        meetup.teamId = teamId
+                        mRealm.commitTransaction()
+                        Utilities.toast(activity, getString(R.string.meetup_added))
+                        fragmentEnterpriseCalendarBinding.rvCalendar.adapter?.notifyDataSetChanged()
+                        fragmentEnterpriseCalendarBinding.calendarView.notifyCalendarChanged()
                     }
-                    val ob = JsonObject()
-                    ob.addProperty("teams", teamId)
-                    meetup.links = Gson().toJson(ob)
-                    meetup.teamId = teamId
-                    mRealm.commitTransaction()
-                    Utilities.toast(activity, getString(R.string.meetup_added))
-                    fragmentEnterpriseCalendarBinding.rvCalendar.adapter?.notifyDataSetChanged()
-                    calendarView.notifyCalendarChanged()
-                }
-            }.setNegativeButton("Cancel", null).show()
+                }.setNegativeButton("Cancel", null).show()
     }
 
     private fun setDatePickerListener(view: TextView, date: Calendar?) {
@@ -129,9 +127,9 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
         val c = Calendar.getInstance()
         time.setOnClickListener {
             val timePickerDialog = TimePickerDialog(
-                activity, { _, hourOfDay, minute ->
-                    time.text = String.format("%02d:%02d", hourOfDay, minute)
-                }, c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), true
+                    activity, { _, hourOfDay, minute ->
+                time.text = String.format("%02d:%02d", hourOfDay, minute)
+            }, c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), true
             )
             timePickerDialog.show()
         }
@@ -142,32 +140,33 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
         super.onViewCreated(view, savedInstanceState)
         Utilities.log(teamId)
         list = mRealm.where(RealmMeetup::class.java).equalTo("teamId", teamId)
-            .greaterThanOrEqualTo("endDate", TimeUtils.currentDateLong()).findAll()
+                .greaterThanOrEqualTo("endDate", TimeUtils.currentDateLong()).findAll()
         fragmentEnterpriseCalendarBinding.rvCalendar.layoutManager = LinearLayoutManager(activity)
         fragmentEnterpriseCalendarBinding.rvCalendar.adapter = AdapterCalendar(activity, list)
-        calendarView.inDateStyle = InDateStyle.ALL_MONTHS
-        calendarView.outDateStyle = OutDateStyle.END_OF_ROW
-        calendarView.hasBoundaries = true
+        fragmentEnterpriseCalendarBinding.calendarView.inDateStyle = InDateStyle.ALL_MONTHS
+        fragmentEnterpriseCalendarBinding.calendarView.outDateStyle = OutDateStyle.END_OF_ROW
+        fragmentEnterpriseCalendarBinding.calendarView.hasBoundaries = true
         val currentMonth = YearMonth.now()
         val firstMonth = currentMonth.minusMonths(10)
         val lastMonth = currentMonth.plusMonths(10)
         val firstDayOfWeek = WeekFields.of(Locale.getDefault()).firstDayOfWeek
-        calendarView.setup(firstMonth, lastMonth, firstDayOfWeek)
-        calendarView.scrollToMonth(currentMonth)
+        fragmentEnterpriseCalendarBinding.calendarView.setup(firstMonth, lastMonth, firstDayOfWeek)
+        fragmentEnterpriseCalendarBinding.calendarView.scrollToMonth(currentMonth)
         setUpCalendar()
-        calendarView.monthHeaderBinder = object : MonthHeaderFooterBinder<MonthViewContainer> {
+        fragmentEnterpriseCalendarBinding.calendarView.monthHeaderBinder = object : MonthHeaderFooterBinder<MonthViewContainer> {
             override fun create(view: View) = MonthViewContainer(view)
             override fun bind(container: MonthViewContainer, month: CalendarMonth) {
                 container.textView.setTextColor(ContextCompat.getColor(requireContext(), R.color.colorPrimaryDark))
                 container.textView.text =
-                    "${month.yearMonth.month.name.lowercase(Locale.ROOT)
-                        .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() }} ${month.year}"
+                        "${month.yearMonth.month.name.lowercase(Locale.ROOT)
+                                .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() }} ${month.year}"
             }
         }
     }
 
     fun setUpCalendar() {
-        calendarView.dayBinder = object : DayBinder<DayViewContainer> {
+
+        fragmentEnterpriseCalendarBinding.calendarView.dayBinder = object : DayBinder<DayViewContainer> {
             override fun create(view: View) = DayViewContainer(view)
             override fun bind(container: DayViewContainer, day: CalendarDay) {
                 container.textView.text = day.date.dayOfMonth.toString()
@@ -185,7 +184,7 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
                 if (event != null) {
                     container.textView.setOnClickListener {
                         DialogUtils.showAlert(
-                            activity!!, event.title, event.description
+                                activity!!, event.title, event.description
                         )
                     }
                     container.textView.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.colorPrimaryDark))
@@ -198,8 +197,8 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
     private fun getEvent(time: Long): RealmMeetup? {
         for (realmMeetup in list) {
             if (time >= getTimeMills(realmMeetup.startDate, false) && time <= getTimeMills(
-                    realmMeetup.endDate, true
-                )
+                            realmMeetup.endDate, true
+                    )
             ) {
                 return realmMeetup
             }
@@ -217,10 +216,10 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
     }
 
     class DayViewContainer(view: View) : ViewContainer(view) {
-        val textView = view.calendarDayText
+        val textView = CalendarDayBinding.bind(view).calendarDayText
     }
 
     class MonthViewContainer(view: View) : ViewContainer(view) {
-        val textView = view.calendarMonthText
+        val textView = CalendarMonthBinding.bind(view).calendarMonthText
     }
 }

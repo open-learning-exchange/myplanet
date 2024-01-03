@@ -72,7 +72,7 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        fragmentTakeCourseBinding.tvCourseTitle.setText(currentCourse.getCourseTitle());
+        fragmentTakeCourseBinding.tvCourseTitle.setText(currentCourse.courseTitle);
         steps = RealmCourseStep.getSteps(mRealm, courseId);
         if (steps == null || steps.size() == 0) {
             fragmentTakeCourseBinding.nextStep.setVisibility(View.GONE);
@@ -82,7 +82,7 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
         fragmentTakeCourseBinding.viewPagerCourse.setAdapter(new CoursePagerAdapter(getChildFragmentManager(), courseId, RealmCourseStep.getStepIds(mRealm, courseId)));
         fragmentTakeCourseBinding.viewPagerCourse.addOnPageChangeListener(this);
         if (fragmentTakeCourseBinding.viewPagerCourse.getCurrentItem() == 0) {
-            fragmentTakeCourseBinding.previousStep.setTextColor(getResources().getColor(R.color.md_grey_500));
+            fragmentTakeCourseBinding.previousStep.setVisibility(View.GONE);
         }
 
         setCourseData();
@@ -94,10 +94,11 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
         fragmentTakeCourseBinding.nextStep.setOnClickListener(this);
         fragmentTakeCourseBinding.previousStep.setOnClickListener(this);
         fragmentTakeCourseBinding.btnRemove.setOnClickListener(this);
+        fragmentTakeCourseBinding.finishStep.setOnClickListener(this);
         fragmentTakeCourseBinding.courseProgress.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-                int currentProgress = RealmCourseProgress.getCurrentProgress(steps, mRealm, userModel.getId(), courseId);
+                int currentProgress = RealmCourseProgress.getCurrentProgress(steps, mRealm, userModel.id, courseId);
                 if (b && i <= currentProgress + 1) {
                     fragmentTakeCourseBinding.viewPagerCourse.setCurrentItem(i);
                 }
@@ -116,8 +117,8 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
     }
 
     private void setCourseData() {
-        fragmentTakeCourseBinding.tvStepTitle.setText(currentCourse.getCourseTitle());
-        if (!currentCourse.getUserId().contains(userModel.getId())) {
+        fragmentTakeCourseBinding.tvStepTitle.setText(currentCourse.courseTitle);
+        if (!currentCourse.getUserId().contains(userModel.id)) {
             fragmentTakeCourseBinding.btnRemove.setVisibility(View.VISIBLE);
             fragmentTakeCourseBinding.btnRemove.setText(getString(R.string.join));
             DialogUtils.getAlertDialog(getActivity(), getString(R.string.do_you_want_to_join_this_course), getString(R.string.join_this_course), (dialog, which) -> addRemoveCourse());
@@ -127,10 +128,10 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
         RealmCourseActivity.createActivity(mRealm, userModel, currentCourse);
         fragmentTakeCourseBinding.tvStep.setText(getString(R.string.step) + " 0/" + steps.size());
         if (steps != null) fragmentTakeCourseBinding.courseProgress.setMax(steps.size());
-        int i = RealmCourseProgress.getCurrentProgress(steps, mRealm, userModel.getId(), courseId);
+        int i = RealmCourseProgress.getCurrentProgress(steps, mRealm, userModel.id, courseId);
         if (i < steps.size()) fragmentTakeCourseBinding.courseProgress.setSecondaryProgress(i + 1);
         fragmentTakeCourseBinding.courseProgress.setProgress(i);
-        fragmentTakeCourseBinding.courseProgress.setVisibility(currentCourse.getUserId().contains(userModel.getId()) ? View.VISIBLE : View.GONE);
+        fragmentTakeCourseBinding.courseProgress.setVisibility(currentCourse.getUserId().contains(userModel.id) ? View.VISIBLE : View.GONE);
     }
 
     @Override
@@ -140,23 +141,23 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
     @Override
     public void onPageSelected(int position) {
         if (position > 0) {
-            fragmentTakeCourseBinding.tvStepTitle.setText(steps.get(position - 1).getStepTitle());
+            fragmentTakeCourseBinding.tvStepTitle.setText(steps.get(position - 1).stepTitle);
             Utilities.log("Po " + position + " " + steps.size());
             if ((position - 1) < steps.size()) changeNextButtonState(position);
         } else {
             fragmentTakeCourseBinding.nextStep.setClickable(true);
             fragmentTakeCourseBinding.nextStep.setTextColor(getResources().getColor(R.color.md_white_1000));
-            fragmentTakeCourseBinding.tvStepTitle.setText(currentCourse.getCourseTitle());
+            fragmentTakeCourseBinding.tvStepTitle.setText(currentCourse.courseTitle);
         }
-        int i = RealmCourseProgress.getCurrentProgress(steps, mRealm, userModel.getId(), courseId);
+        int i = RealmCourseProgress.getCurrentProgress(steps, mRealm, userModel.id, courseId);
         if (i < steps.size()) fragmentTakeCourseBinding.courseProgress.setSecondaryProgress(i + 1);
         fragmentTakeCourseBinding.courseProgress.setProgress(i);
         fragmentTakeCourseBinding.tvStep.setText(String.format("Step %d/%d", position, steps.size()));
     }
 
     private void changeNextButtonState(int position) {
-        Utilities.log(RealmSubmission.isStepCompleted(mRealm, steps.get(position - 1).getId(), userModel.getId()) + " is step completed");
-        if (RealmSubmission.isStepCompleted(mRealm, steps.get(position - 1).getId(), userModel.getId()) || !Constants.showBetaFeature(Constants.KEY_EXAM, getActivity())) {
+        Utilities.log(RealmSubmission.isStepCompleted(mRealm, steps.get(position - 1).id, userModel.id) + " is step completed");
+        if (RealmSubmission.isStepCompleted(mRealm, steps.get(position - 1).id, userModel.id) || !Constants.showBetaFeature(Constants.KEY_EXAM, getActivity())) {
             fragmentTakeCourseBinding.nextStep.setClickable(true);
             fragmentTakeCourseBinding.nextStep.setTextColor(getResources().getColor(R.color.md_white_1000));
         } else {
@@ -173,12 +174,16 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
     private void onClickNext() {
         if (fragmentTakeCourseBinding.viewPagerCourse.getCurrentItem() == steps.size()) {
             fragmentTakeCourseBinding.nextStep.setTextColor(getResources().getColor(R.color.md_grey_500));
+            fragmentTakeCourseBinding.nextStep.setVisibility(View.GONE);
+            fragmentTakeCourseBinding.finishStep.setVisibility(View.VISIBLE);
         }
     }
 
     private void onClickPrevious() {
         if (fragmentTakeCourseBinding.viewPagerCourse.getCurrentItem() - 1 == 0) {
-            fragmentTakeCourseBinding.previousStep.setTextColor(getResources().getColor(R.color.md_grey_500));
+            fragmentTakeCourseBinding.previousStep.setVisibility(View.GONE);
+            fragmentTakeCourseBinding.nextStep.setVisibility(View.VISIBLE);
+            fragmentTakeCourseBinding.finishStep.setVisibility(View.GONE);
         }
     }
 
@@ -188,7 +193,7 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
             case R.id.next_step:
                 if (isValidClickRight()) {
                     fragmentTakeCourseBinding.viewPagerCourse.setCurrentItem(fragmentTakeCourseBinding.viewPagerCourse.getCurrentItem() + 1);
-                    fragmentTakeCourseBinding.previousStep.setTextColor(getResources().getColor(R.color.md_white_1000));
+                    fragmentTakeCourseBinding.previousStep.setVisibility(View.VISIBLE);
                 }
                 onClickNext();
                 break;
@@ -198,6 +203,9 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
                     fragmentTakeCourseBinding.viewPagerCourse.setCurrentItem(fragmentTakeCourseBinding.viewPagerCourse.getCurrentItem() - 1);
                 }
                 break;
+            case R.id.finish_step:
+                getActivity().getSupportFragmentManager().popBackStack();
+                break;
             case R.id.btn_remove:
                 addRemoveCourse();
                 break;
@@ -206,14 +214,14 @@ public class TakeCourseFragment extends Fragment implements ViewPager.OnPageChan
 
     private void addRemoveCourse() {
         if (!mRealm.isInTransaction()) mRealm.beginTransaction();
-        if (currentCourse.getUserId().contains(userModel.getId())) {
-            currentCourse.removeUserId(userModel.getId());
-            RealmRemovedLog.onRemove(mRealm, "courses", userModel.getId(), courseId);
+        if (currentCourse.getUserId().contains(userModel.id)) {
+            currentCourse.removeUserId(userModel.id);
+            RealmRemovedLog.onRemove(mRealm, "courses", userModel.id, courseId);
         } else {
-            currentCourse.setUserId(userModel.getId());
-            RealmRemovedLog.onAdd(mRealm, "courses", userModel.getId(), courseId);
+            currentCourse.setUserId(userModel.id);
+            RealmRemovedLog.onAdd(mRealm, "courses", userModel.id, courseId);
         }
-        Utilities.toast(getActivity(), "Course " + (currentCourse.getUserId().contains(userModel.getId()) ? getString(R.string.added_to) : getString(R.string.removed_from)) + " " + getString(R.string.my_courses));
+        Utilities.toast(getActivity(), "Course " + (currentCourse.getUserId().contains(userModel.id) ? getString(R.string.added_to) : getString(R.string.removed_from)) + " " + getString(R.string.my_courses));
         setCourseData();
     }
 

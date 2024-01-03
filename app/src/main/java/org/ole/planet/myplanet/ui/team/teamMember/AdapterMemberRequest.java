@@ -1,17 +1,13 @@
 package org.ole.planet.myplanet.ui.team.teamMember;
 
 import android.content.Context;
+import android.view.LayoutInflater;
+import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.TextView;
-
-import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.databinding.RowMemberRequestBinding;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmUserModel;
 
@@ -19,7 +15,8 @@ import java.util.List;
 
 import io.realm.Realm;
 
-public class AdapterMemberRequest extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+public class AdapterMemberRequest extends RecyclerView.Adapter<AdapterMemberRequest.ViewHolderUser> {
+    private RowMemberRequestBinding rowMemberRequestBinding;
     private Context context;
     private List<RealmUserModel> list;
     private Realm mRealm;
@@ -37,34 +34,32 @@ public class AdapterMemberRequest extends RecyclerView.Adapter<RecyclerView.View
 
     @NonNull
     @Override
-    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View v = LayoutInflater.from(context).inflate(R.layout.row_member_request, parent, false);
-        return new ViewHolderUser(v);
+    public ViewHolderUser onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        rowMemberRequestBinding = RowMemberRequestBinding.inflate(LayoutInflater.from(context), parent, false);
+        return new ViewHolderUser(rowMemberRequestBinding);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-        if (holder instanceof ViewHolderUser) {
-            if (list.get(position).toString().equals(" ")) {
-                ((ViewHolderUser) holder).name.setText(list.get(position).getName());
-            } else {
-                ((ViewHolderUser) holder).name.setText(list.get(position).toString());
-            }
-            ((ViewHolderUser) holder).buttonAccept.setOnClickListener(view -> {
-                acceptReject(list.get(position), true, position);
-
-            });
-            ((ViewHolderUser) holder).buttonReject.setOnClickListener(view -> acceptReject(list.get(position), false, position));
+    public void onBindViewHolder(@NonNull ViewHolderUser holder, int position) {
+        if (list.get(position).toString().equals(" ")) {
+            rowMemberRequestBinding.tvName.setText(list.get(position).name);
+        } else {
+            rowMemberRequestBinding.tvName.setText(list.get(position).toString());
         }
+        rowMemberRequestBinding.btnAccept.setOnClickListener(view -> {
+            acceptReject(list.get(position), true, position);
+
+        });
+        rowMemberRequestBinding.btnReject.setOnClickListener(view -> acceptReject(list.get(position), false, position));
     }
 
     private void acceptReject(RealmUserModel userModel, boolean isAccept, int position) {
         if (!mRealm.isInTransaction()) mRealm.beginTransaction();
-        RealmMyTeam team = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("userId", userModel.getId()).findFirst();
+        RealmMyTeam team = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("userId", userModel.id).findFirst();
         if (team != null) {
             if (isAccept) {
-                team.setDocType("membership");
-                team.setUpdated(true);
+                team.docType = "membership";
+                team.updated = true;
             } else {
                 team.deleteFromRealm();
             }
@@ -79,15 +74,12 @@ public class AdapterMemberRequest extends RecyclerView.Adapter<RecyclerView.View
         return list.size();
     }
 
-    class ViewHolderUser extends RecyclerView.ViewHolder {
-        TextView name;
-        Button buttonAccept, buttonReject;
+    static class ViewHolderUser extends RecyclerView.ViewHolder {
+        RowMemberRequestBinding rowMemberRequestBinding;
 
-        public ViewHolderUser(View itemView) {
-            super(itemView);
-            name = itemView.findViewById(R.id.tv_name);
-            buttonAccept = itemView.findViewById(R.id.btn_accept);
-            buttonReject = itemView.findViewById(R.id.btn_reject);
+        public ViewHolderUser(RowMemberRequestBinding rowMemberRequestBinding) {
+            super(rowMemberRequestBinding.getRoot());
+            this.rowMemberRequestBinding = rowMemberRequestBinding;
         }
     }
 }

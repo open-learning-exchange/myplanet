@@ -67,15 +67,15 @@ public class AchievementFragment extends BaseContainerFragment {
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        achievement = mRealm.where(RealmAchievement.class).equalTo("_id", user.getId() + "@" + user.getPlanetCode()).findFirst();
-        fragmentAchievementBinding.tvFirstName.setText(user.getFirstName());
-        fragmentAchievementBinding.tvName.setText(String.format("%s %s %s", user.getFirstName(), user.getMiddleName(), user.getLastName()));
+        achievement = mRealm.where(RealmAchievement.class).equalTo("_id", user.id + "@" + user.planetCode).findFirst();
+        fragmentAchievementBinding.tvFirstName.setText(user.firstName);
+        fragmentAchievementBinding.tvName.setText(String.format("%s %s %s", user.firstName, user.middleName, user.lastName));
         if (achievement != null) {
-            fragmentAchievementBinding.tvGoals.setText(achievement.getGoals());
-            fragmentAchievementBinding.tvPurpose.setText(achievement.getPurpose());
-            fragmentAchievementBinding.tvAchievementHeader.setText(achievement.getAchievementsHeader());
+            fragmentAchievementBinding.tvGoals.setText(achievement.goals);
+            fragmentAchievementBinding.tvPurpose.setText(achievement.purpose);
+            fragmentAchievementBinding.tvAchievementHeader.setText(achievement.achievementsHeader);
             fragmentAchievementBinding.llAchievement.removeAllViews();
-            for (String s : achievement.getAchievements()) {
+            for (String s : achievement.achievements) {
                 rowAchievementBinding = RowAchievementBinding.inflate(LayoutInflater.from(MainApplication.context));
                 JsonElement ob = new Gson().fromJson(s, JsonElement.class);
                 if (ob instanceof JsonObject) {
@@ -90,7 +90,7 @@ public class AchievementFragment extends BaseContainerFragment {
                         });
                         for (RealmMyLibrary lib : libraries) {
                             layoutButtonPrimaryBinding = LayoutButtonPrimaryBinding.inflate(LayoutInflater.from(MainApplication.context));
-                            layoutButtonPrimaryBinding.getRoot().setText(lib.getTitle());
+                            layoutButtonPrimaryBinding.getRoot().setText(lib.title);
                             layoutButtonPrimaryBinding.getRoot().setCompoundDrawablesWithIntrinsicBounds(0, 0, (lib.isResourceOffline() ? R.drawable.ic_eye : R.drawable.ic_download), 0);
                             layoutButtonPrimaryBinding.getRoot().setOnClickListener(view -> {
                                 if (lib.isResourceOffline()) {
@@ -124,7 +124,7 @@ public class AchievementFragment extends BaseContainerFragment {
     }
 
     private void createAchievementList() {
-        for (String s : achievement.getAchievements()) {
+        for (String s : achievement.achievements) {
             rowAchievementBinding = RowAchievementBinding.inflate(LayoutInflater.from(MainApplication.context));
             JsonElement ob = new Gson().fromJson(s, JsonElement.class);
             if (ob instanceof JsonObject) {
@@ -138,7 +138,7 @@ public class AchievementFragment extends BaseContainerFragment {
                 });
                 for (RealmMyLibrary lib : libraries) {
                     layoutButtonPrimaryBinding = LayoutButtonPrimaryBinding.inflate(LayoutInflater.from(MainApplication.context));
-                    layoutButtonPrimaryBinding.getRoot().setText(lib.getTitle());
+                    layoutButtonPrimaryBinding.getRoot().setText(lib.title);
                     layoutButtonPrimaryBinding.getRoot().setCompoundDrawablesWithIntrinsicBounds(0, 0, (lib.isResourceOffline() ? R.drawable.ic_eye : R.drawable.ic_download), 0);
                     layoutButtonPrimaryBinding.getRoot().setOnClickListener(view -> {
                         if (lib.isResourceOffline()) {

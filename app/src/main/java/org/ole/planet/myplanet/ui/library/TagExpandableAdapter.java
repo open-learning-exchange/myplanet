@@ -1,17 +1,17 @@
 package org.ole.planet.myplanet.ui.library;
 
 import android.content.Context;
-
-import androidx.appcompat.widget.AppCompatImageView;
-
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseExpandableListAdapter;
 import android.widget.CheckBox;
-import android.widget.TextView;
+
+import androidx.appcompat.widget.AppCompatImageView;
 
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.databinding.RowAdapterNavigationChildBinding;
+import org.ole.planet.myplanet.databinding.RowAdapterNavigationParentBinding;
 import org.ole.planet.myplanet.model.RealmTag;
 
 import java.util.ArrayList;
@@ -44,8 +44,8 @@ public class TagExpandableAdapter extends BaseExpandableListAdapter {
 
     @Override
     public int getChildrenCount(int groupPosition) {
-        if (childMap.containsKey(tagList.get(groupPosition).getId())) {
-            return childMap.get(tagList.get(groupPosition).getId()).size();
+        if (childMap.containsKey(tagList.get(groupPosition).id)) {
+            return childMap.get(tagList.get(groupPosition).id).size();
         }
         return 0;
     }
@@ -57,8 +57,8 @@ public class TagExpandableAdapter extends BaseExpandableListAdapter {
 
     @Override
     public Object getChild(int groupPosition, int childPosition) {
-        if (childMap.containsKey(tagList.get(groupPosition).getId())) {
-            return childMap.get(tagList.get(groupPosition).getId()).get(childPosition);
+        if (childMap.containsKey(tagList.get(groupPosition).id)) {
+            return childMap.get(tagList.get(groupPosition).id).get(childPosition);
         }
         return null;
     }
@@ -80,29 +80,35 @@ public class TagExpandableAdapter extends BaseExpandableListAdapter {
 
     @Override
     public View getGroupView(final int groupPosition, final boolean isExpanded, View convertView, ViewGroup parent) {
-        String headerTitle = tagList.get(groupPosition).getName();
-        convertView = inflateView(parent, R.layout.row_adapter_navigation_parent);
-        AppCompatImageView ivIndicator = convertView.findViewById(R.id.iv_indicators);
-        TextView drawerTitle = convertView.findViewById(R.id.tv_drawer_title);
+        String headerTitle = tagList.get(groupPosition).name;
 
-        TextView nonChildTitle = convertView.findViewById(R.id.tv_drawer_title_1);
-        nonChildTitle.setText(headerTitle);
-        createCheckbox(convertView, tagList.get(groupPosition));
-        drawerTitle.setText(headerTitle);
-
-        if (!childMap.containsKey(tagList.get(groupPosition).getId())) {
-            nonChildTitle.setVisibility(View.VISIBLE);
-            drawerTitle.setVisibility(View.GONE);
-            ivIndicator.setVisibility(View.GONE);
-            nonChildTitle.setOnClickListener(v -> clickListener.onTagClicked(tagList.get(groupPosition)));
+        RowAdapterNavigationParentBinding rowAdapterNavigationParentBinding;
+        if (convertView == null) {
+            rowAdapterNavigationParentBinding = RowAdapterNavigationParentBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false);
+            convertView = rowAdapterNavigationParentBinding.getRoot();
+            convertView.setTag(rowAdapterNavigationParentBinding);
         } else {
-            drawerTitle.setVisibility(View.VISIBLE);
-            nonChildTitle.setOnClickListener(null);
-            nonChildTitle.setVisibility(View.GONE);
-            ivIndicator.setVisibility(View.VISIBLE);
-            setExpandedIcon(isExpanded, ivIndicator);
-            drawerTitle.setOnClickListener(v -> clickListener.onTagClicked(tagList.get(groupPosition)));
+            rowAdapterNavigationParentBinding = (RowAdapterNavigationParentBinding) convertView.getTag();
         }
+
+        rowAdapterNavigationParentBinding.tvDrawerTitle1.setText(headerTitle);
+        createCheckbox(convertView, tagList.get(groupPosition));
+        rowAdapterNavigationParentBinding.tvDrawerTitle.setText(headerTitle);
+
+        if (!childMap.containsKey(tagList.get(groupPosition).id)) {
+            rowAdapterNavigationParentBinding.tvDrawerTitle1.setVisibility(View.VISIBLE);
+            rowAdapterNavigationParentBinding.tvDrawerTitle.setVisibility(View.GONE);
+            rowAdapterNavigationParentBinding.ivIndicators.setVisibility(View.GONE);
+            rowAdapterNavigationParentBinding.tvDrawerTitle1.setOnClickListener(v -> clickListener.onTagClicked(tagList.get(groupPosition)));
+        } else {
+            rowAdapterNavigationParentBinding.tvDrawerTitle.setVisibility(View.VISIBLE);
+            rowAdapterNavigationParentBinding.tvDrawerTitle1.setOnClickListener(null);
+            rowAdapterNavigationParentBinding.tvDrawerTitle1.setVisibility(View.GONE);
+            rowAdapterNavigationParentBinding.ivIndicators.setVisibility(View.VISIBLE);
+            setExpandedIcon(isExpanded, rowAdapterNavigationParentBinding.ivIndicators);
+            rowAdapterNavigationParentBinding.tvDrawerTitle.setOnClickListener(v -> clickListener.onTagClicked(tagList.get(groupPosition)));
+        }
+
         return convertView;
     }
 
@@ -131,15 +137,24 @@ public class TagExpandableAdapter extends BaseExpandableListAdapter {
     @Override
     public View getChildView(final int groupPosition, final int childPosition, boolean isLastChild, View convertView, ViewGroup parent) {
         RealmTag tag = (RealmTag) getChild(groupPosition, childPosition);
-        convertView = inflateView(parent, R.layout.row_adapter_navigation_child);
-        TextView tvDrawerTitle = convertView.findViewById(R.id.tv_drawer_title);
+
+        RowAdapterNavigationChildBinding rowAdapterNavigationChildBinding;
+        if (convertView == null) {
+            rowAdapterNavigationChildBinding = RowAdapterNavigationChildBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false);
+            convertView = rowAdapterNavigationChildBinding.getRoot();
+            convertView.setTag(rowAdapterNavigationChildBinding);
+        } else {
+            rowAdapterNavigationChildBinding = (RowAdapterNavigationChildBinding) convertView.getTag();
+        }
+
         createCheckbox(convertView, tag);
-        tvDrawerTitle.setText(tag.getName());
-        tvDrawerTitle.setOnClickListener(v -> {
+        rowAdapterNavigationChildBinding.tvDrawerTitle.setText(tag.name);
+        rowAdapterNavigationChildBinding.tvDrawerTitle.setOnClickListener(v -> {
             if (clickListener != null) {
                 clickListener.onTagClicked(tag);
             }
         });
+
         return convertView;
     }
 

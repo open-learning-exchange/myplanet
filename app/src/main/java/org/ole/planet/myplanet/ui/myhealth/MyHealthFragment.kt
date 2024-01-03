@@ -21,9 +21,10 @@ import com.google.gson.Gson
 import io.realm.Case
 import io.realm.Realm
 import io.realm.Sort
-import kotlinx.android.synthetic.main.alert_health_list.view.*
-import kotlinx.android.synthetic.main.fragment_vital_sign.*
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.databinding.AlertHealthListBinding
+import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
+import org.ole.planet.myplanet.databinding.FragmentVitalSignBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmMyHealthPojo
@@ -31,16 +32,18 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
-import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Utilities
 
 /**
  * A simple [Fragment] subclass.
  */
 class MyHealthFragment : Fragment() {
+    lateinit var fragmentVitalSignBinding : FragmentVitalSignBinding
+    lateinit var alertMyPersonalBinding: AlertMyPersonalBinding
+    lateinit var alertHealthListBinding: AlertHealthListBinding
     var profileDbHandler: UserProfileDbHandler? = null
     var userId: String? = null
-    var mRealm: Realm? = null
+    lateinit var mRealm: Realm
     var userModel: RealmUserModel? = null
     lateinit var userModelList: List<RealmUserModel>
     lateinit var adapter: UserListArrayAdapter
@@ -48,63 +51,51 @@ class MyHealthFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View? {
-        val v = inflater.inflate(R.layout.fragment_vital_sign, container, false)
+        fragmentVitalSignBinding = FragmentVitalSignBinding.inflate(inflater, container, false)
         mRealm = DatabaseService(activity).realmInstance
-        return v
+        return fragmentVitalSignBinding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        alertMyPersonalBinding = AlertMyPersonalBinding.inflate(LayoutInflater.from(context))
 
-        val v = layoutInflater.inflate(R.layout.alert_users_spinner, null)
-
-        rv_records!!.addItemDecoration(
-            DividerItemDecoration(
-                activity, DividerItemDecoration.VERTICAL
-            )
+        fragmentVitalSignBinding.rvRecords.addItemDecoration(
+            DividerItemDecoration(activity, DividerItemDecoration.VERTICAL)
         )
-        profileDbHandler = UserProfileDbHandler(v.context)
+        profileDbHandler = UserProfileDbHandler(alertMyPersonalBinding.root.context)
         userId =
             if (TextUtils.isEmpty(profileDbHandler!!.userModel._id)) profileDbHandler!!.userModel.id else profileDbHandler!!.userModel._id
         getHealthRecords(userId)
 
-        Utilities.log("ROLE " + profileDbHandler?.userModel?.roleAsString!!)
-        if (profileDbHandler?.userModel?.roleAsString!!.contains("health", true)) {
-            btnnew_patient.visibility = View.VISIBLE
-            btnnew_patient.setOnClickListener { selectPatient() }
-            fab_add_member.show(true)
-            fab_add_member.visibility = View.VISIBLE
+        Utilities.log("ROLE " + profileDbHandler?.userModel?.getRoleAsString()!!)
+        if (profileDbHandler?.userModel?.getRoleAsString()!!.contains("health", true)) {
+            fragmentVitalSignBinding.btnnewPatient.visibility = View.VISIBLE
+            fragmentVitalSignBinding.btnnewPatient.setOnClickListener { selectPatient() }
+            fragmentVitalSignBinding.fabAddMember.show(true)
+            fragmentVitalSignBinding.fabAddMember.visibility = View.VISIBLE
         } else {
-            btnnew_patient.visibility = View.GONE
-            fab_add_member.hide(true)
-            fab_add_member.visibility = View.GONE
+            fragmentVitalSignBinding.btnnewPatient.visibility = View.GONE
+            fragmentVitalSignBinding.fabAddMember.hide(true)
+            fragmentVitalSignBinding.fabAddMember.visibility = View.GONE
         }
-        fab_add_member.setOnClickListener {
-            startActivity(
-                Intent(
-                    activity, BecomeMemberActivity::class.java
-                )
-            )
+        fragmentVitalSignBinding.fabAddMember.setOnClickListener {
+            startActivity(Intent(activity, BecomeMemberActivity::class.java))
         }
-
     }
 
     private fun getHealthRecords(memberId: String?) {
         userId = memberId
-        userModel = mRealm!!.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
-        lblHealthName!!.text = userModel!!.fullName
-        add_new_record.setOnClickListener {
+        userModel = mRealm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
+        fragmentVitalSignBinding.lblHealthName.text = userModel!!.getFullName()
+        fragmentVitalSignBinding.addNewRecord.setOnClickListener {
             startActivity(
-                Intent(
-                    activity, AddExaminationActivity::class.java
-                ).putExtra("userId", userId)
+                Intent(activity, AddExaminationActivity::class.java).putExtra("userId", userId)
             )
         }
-        update_health.setOnClickListener {
+        fragmentVitalSignBinding.updateHealth.setOnClickListener {
             startActivity(
-                Intent(
-                    activity, AddMyHealthActivity::class.java
-                ).putExtra("userId", userId)
+                Intent(activity, AddMyHealthActivity::class.java).putExtra("userId", userId)
             )
         }
         showRecords()
@@ -116,30 +107,23 @@ class MyHealthFragment : Fragment() {
         adapter = UserListArrayAdapter(
             requireActivity(), android.R.layout.simple_list_item_1, userModelList
         )
-        val alertHealth = LayoutInflater.from(activity).inflate(R.layout.alert_health_list, null)
-        val btnAddMember = alertHealth.btn_add_member
-        val etSearch = alertHealth.et_search
-        val spnSort = alertHealth.spn_sort
-        btnAddMember.setOnClickListener {
-            startActivity(
-                Intent(
-                    requireContext(), BecomeMemberActivity::class.java
-                )
-            )
+        alertHealthListBinding = AlertHealthListBinding.inflate(LayoutInflater.from(context))
+        alertHealthListBinding.btnAddMember.setOnClickListener {
+            startActivity(Intent(requireContext(), BecomeMemberActivity::class.java))
         }
-        val lv = alertHealth.list
-        setTextWatcher(etSearch, btnAddMember, lv)
-        lv.adapter = adapter
-        lv.onItemClickListener =
+
+        setTextWatcher(alertHealthListBinding.etSearch, alertHealthListBinding.btnAddMember, alertHealthListBinding.list)
+        alertHealthListBinding.list.adapter = adapter
+        alertHealthListBinding.list.onItemClickListener =
             OnItemClickListener { _: AdapterView<*>?, _: View, i: Int, _: Long ->
-                val selected = lv.adapter.getItem(i) as RealmUserModel
+                val selected = alertHealthListBinding.list.adapter.getItem(i) as RealmUserModel
                 userId = if (selected._id.isNullOrEmpty()) selected.id else selected._id
                 getHealthRecords(userId)
                 dialog!!.dismiss()
             }
-        sortList(spnSort, lv);
+        sortList(alertHealthListBinding.spnSort, alertHealthListBinding.list);
         dialog = AlertDialog.Builder(requireActivity())
-            .setTitle(getString(R.string.select_health_member)).setView(alertHealth)
+            .setTitle(getString(R.string.select_health_member)).setView(alertHealthListBinding.root)
             .setCancelable(false).setNegativeButton(R.string.dismiss, null).create()
         dialog?.show()
     }
@@ -220,13 +204,13 @@ class MyHealthFragment : Fragment() {
     }
 
     private fun showRecords() {
-        layout_user_detail.visibility = View.VISIBLE
-        tv_message.visibility = View.GONE
-        txt_full_name.text =
+        fragmentVitalSignBinding.layoutUserDetail.visibility = View.VISIBLE
+        fragmentVitalSignBinding.tvMessage.visibility = View.GONE
+        fragmentVitalSignBinding.txtFullName.text =
             """${userModel?.firstName} ${userModel?.middleName} ${userModel?.lastName}"""
-        txt_email.text = Utilities.checkNA(userModel!!.email)
-        txt_language.text = Utilities.checkNA(userModel!!.language)
-        txt_dob.text = Utilities.checkNA(userModel!!.dob)
+        fragmentVitalSignBinding.txtEmail.text = Utilities.checkNA(userModel!!.email)
+        fragmentVitalSignBinding.txtLanguage.text = Utilities.checkNA(userModel!!.language)
+        fragmentVitalSignBinding.txtDob.text = Utilities.checkNA(userModel!!.dob)
         var mh = mRealm!!.where(RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
         if (mh == null) {
             mh = mRealm!!.where(RealmMyHealthPojo::class.java).equalTo("userId", userId).findFirst()
@@ -234,31 +218,31 @@ class MyHealthFragment : Fragment() {
         if (mh != null) {
             val mm = getHealthProfile(mh)
             if (mm == null) {
-                rv_records.adapter = null
+                fragmentVitalSignBinding.rvRecords.adapter = null
                 Utilities.toast(activity, getString(R.string.health_record_not_available))
                 return
             }
             val myHealths = mm.profile
-            txt_other_need.text = Utilities.checkNA(myHealths.notes)
-            txt_special_needs.text = Utilities.checkNA(myHealths.specialNeeds)
-            txt_birth_place.text = Utilities.checkNA(userModel?.birthPlace)
-            txt_emergency_contact!!.text = ("${getString(R.string.name_colon)} ${Utilities.checkNA(myHealths.emergencyContactName)} ${getString(R.string.type)} ${Utilities.checkNA(myHealths.emergencyContactName)} ${getString(R.string.contact_colon)} ${Utilities.checkNA(myHealths.emergencyContact)}").trimIndent()
+            fragmentVitalSignBinding.txtOtherNeed.text = Utilities.checkNA(myHealths?.notes)
+            fragmentVitalSignBinding.txtSpecialNeeds.text = Utilities.checkNA(myHealths?.specialNeeds)
+            fragmentVitalSignBinding.txtBirthPlace.text = Utilities.checkNA(userModel?.birthPlace)
+            fragmentVitalSignBinding.txtEmergencyContact.text = ("${getString(R.string.name_colon)} ${Utilities.checkNA(myHealths?.emergencyContactName)} ${getString(R.string.type)} ${Utilities.checkNA(myHealths?.emergencyContactName)} ${getString(R.string.contact_colon)} ${Utilities.checkNA(myHealths?.emergencyContact)}").trimIndent()
             val list = getExaminations(mm)
 
             val adap = AdapterHealthExamination(activity, list, mh, userModel)
             adap.setmRealm(mRealm)
-            rv_records.apply {
+            fragmentVitalSignBinding.rvRecords.apply {
                 layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
                 isNestedScrollingEnabled = false
                 adapter = adap
             }
-            rv_records.post { rv_records!!.scrollToPosition(list.size - 1) }
+            fragmentVitalSignBinding.rvRecords.post { fragmentVitalSignBinding.rvRecords.scrollToPosition(list.size - 1) }
         } else {
-            txt_other_need!!.text = ""
-            txt_special_needs!!.text = ""
-            txt_birth_place!!.text = ""
-            txt_emergency_contact!!.text = ""
-            rv_records!!.adapter = null
+            fragmentVitalSignBinding.txtOtherNeed.text       = ""
+            fragmentVitalSignBinding.txtSpecialNeeds.text    = ""
+            fragmentVitalSignBinding.txtBirthPlace.text      = ""
+            fragmentVitalSignBinding.txtEmergencyContact.text= ""
+            fragmentVitalSignBinding.rvRecords.adapter = null
         }
     }
 

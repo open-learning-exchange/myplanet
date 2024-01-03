@@ -12,29 +12,34 @@
         android:orientation="vertical">
 
         <include
+            android:id="@+id/cardProfileBell"
             layout="@layout/card_profile_bell"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 
         <include
+            android:id="@+id/homeCardLibrary"
             layout="@layout/home_card_library"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1" />
 
         <include
+            android:id="@+id/homeCardCourses"
             layout="@layout/home_card_courses"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1" />
 
         <include
+            android:id="@+id/homeCardTeams"
             layout="@layout/home_card_teams"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1" />
 
         <include
+            android:id="@+id/homeCardMeetups"
             layout="@layout/home_card_meetups"
             android:layout_width="match_parent"
             android:layout_height="0dp"
@@ -42,6 +47,7 @@
             android:visibility="gone" />
 
         <include
+            android:id="@+id/homeCardMyLife"
             layout="@layout/home_card_mylife"
             android:layout_width="match_parent"
             android:layout_height="0dp"

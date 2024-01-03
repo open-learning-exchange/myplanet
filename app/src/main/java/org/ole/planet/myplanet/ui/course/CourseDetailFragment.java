@@ -1,12 +1,10 @@
 package org.ole.planet.myplanet.ui.course;
 
-
-import static org.ole.planet.myplanet.MainApplication.context;
-
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -14,6 +12,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.google.gson.JsonObject;
 
+import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.base.BaseContainerFragment;
 import org.ole.planet.myplanet.callback.OnRatingChangeListener;
 import org.ole.planet.myplanet.databinding.FragmentCourseDetailBinding;
@@ -25,11 +24,10 @@ import org.ole.planet.myplanet.model.RealmRating;
 import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
+import org.ole.planet.myplanet.utilities.Markdown;
 
 import java.util.List;
 
-import io.noties.markwon.Markwon;
-import io.noties.markwon.movement.MovementMethodPlugin;
 import io.realm.Realm;
 import io.realm.RealmResults;
 
@@ -40,7 +38,6 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
     RealmMyCourse courses;
     RealmUserModel user;
     String id;
-    private Markwon markwon;
 
     public CourseDetailFragment() {
     }
@@ -51,9 +48,6 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
         if (getArguments() != null) {
             id = getArguments().getString("courseId");
         }
-        markwon = Markwon.builder(context)
-                .usePlugin(MovementMethodPlugin.none())
-                .build();
     }
 
     @Override
@@ -69,7 +63,7 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        initRatingView("course", courses.getCourseId(), courses.getCourseTitle(), this);
+        initRatingView("course", courses.courseId, courses.courseTitle, this);
         setCourseData();
     }
 
@@ -79,11 +73,12 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
     }
 
     private void setCourseData() {
-        fragmentCourseDetailBinding.subjectLevel.setText(courses.getSubjectLevel());
-        fragmentCourseDetailBinding.method.setText(courses.getMethod());
-        fragmentCourseDetailBinding.gradeLevel.setText(courses.getGradeLevel());
-        fragmentCourseDetailBinding.language.setText(courses.getLanguageOfInstruction());
-        markwon.setMarkdown(fragmentCourseDetailBinding.description, courses.getDescription());
+        setTextViewVisibility(fragmentCourseDetailBinding.subjectLevel, courses.subjectLevel, fragmentCourseDetailBinding.ltSubjectLevel);
+        setTextViewVisibility(fragmentCourseDetailBinding.method, courses.method, fragmentCourseDetailBinding.ltMethod);
+        setTextViewVisibility(fragmentCourseDetailBinding.gradeLevel, courses.gradeLevel, fragmentCourseDetailBinding.ltGradeLevel);
+        setTextViewVisibility(fragmentCourseDetailBinding.language, courses.languageOfInstruction, fragmentCourseDetailBinding.ltLanguage);
+        String markdownContentWithLocalPaths = CourseStepFragment.prependBaseUrlToImages(courses.description, "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/");
+        Markdown.INSTANCE.setMarkdownText(fragmentCourseDetailBinding.description, markdownContentWithLocalPaths);
         fragmentCourseDetailBinding.noOfExams.setText(RealmStepExam.getNoOfExam(mRealm, id) + "");
         final RealmResults resources = mRealm.where(RealmMyLibrary.class).equalTo("courseId", id).equalTo("resourceOffline", false).isNotNull("resourceLocalAddress").findAll();
         setResourceButton(resources, fragmentCourseDetailBinding.btnResources);
@@ -93,15 +88,23 @@ public class CourseDetailFragment extends BaseContainerFragment implements OnRat
         setStepsList();
     }
 
+    private void setTextViewVisibility(TextView textView, String content, View layout) {
+        if (content.isEmpty()) {
+            layout.setVisibility(View.GONE);
+        } else {
+            textView.setText(content);
+        }
+    }
+
     private void setStepsList() {
-        List<RealmCourseStep> steps = RealmCourseStep.getSteps(mRealm, courses.getCourseId());
+        List<RealmCourseStep> steps = RealmCourseStep.getSteps(mRealm, courses.courseId);
         fragmentCourseDetailBinding.stepsList.setLayoutManager(new LinearLayoutManager(getActivity()));
         fragmentCourseDetailBinding.stepsList.setAdapter(new AdapterSteps(getActivity(), steps, mRealm));
     }
 
     @Override
     public void onRatingChanged() {
-        JsonObject object = RealmRating.getRatingsById(mRealm, "course", courses.getCourseId(), user.getId());
+        JsonObject object = RealmRating.getRatingsById(mRealm, "course", courses.courseId, user.id);
         setRatings(object);
     }
 

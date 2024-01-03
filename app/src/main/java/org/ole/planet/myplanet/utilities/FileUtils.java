@@ -60,8 +60,13 @@ public class FileUtils {
     private static File createFilePath(String folder, String filename) {
         File directory = new File(folder);
         if (!directory.exists()) {
-            if (!directory.mkdirs()) {
-                throw new RuntimeException("Failed to create directory: " + directory.getAbsolutePath());
+            try {
+                if (!directory.mkdirs()) {
+                    throw new IOException("Failed to create directory: " + directory.getAbsolutePath());
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+                throw new RuntimeException("Failed to create directory: " + directory.getAbsolutePath(), e);
             }
         }
         Utilities.log("Return file " + folder + "/" + filename);

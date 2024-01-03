@@ -13,6 +13,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="right"
+            android:layout_marginEnd="@dimen/_10dp"
             android:gravity="right">
 
             <Button
@@ -58,7 +59,9 @@
             <TextView
                 android:id="@+id/description"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/_10dp"
+                android:layout_marginEnd="@dimen/_10dp" />
         </LinearLayout>
     </LinearLayout>
 

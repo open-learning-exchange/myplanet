@@ -1,39 +1,33 @@
 package org.ole.planet.myplanet.ui.library;
 
 import android.os.Bundle;
-
-import androidx.annotation.Nullable;
-import androidx.appcompat.widget.AppCompatImageButton;
-
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.LinearLayout;
-import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.annotation.Nullable;
 
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseContainerFragment;
 import org.ole.planet.myplanet.callback.OnRatingChangeListener;
+import org.ole.planet.myplanet.databinding.FragmentLibraryDetailBinding;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmRating;
 import org.ole.planet.myplanet.model.RealmRemovedLog;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
-import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import io.realm.Realm;
 
 public class LibraryDetailFragment extends BaseContainerFragment implements OnRatingChangeListener {
-    TextView author, pubishedBy, title, media, subjects, license, language, resource, type;
-    AppCompatImageButton download, remove;
+    private FragmentLibraryDetailBinding fragmentLibraryDetailBinding;
     String libraryId;
     DatabaseService dbService;
     Realm mRealm;
@@ -56,51 +50,37 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
 
     @Override
     public void onDownloadComplete() {
-        download.setImageResource(R.drawable.ic_play);
+        fragmentLibraryDetailBinding.btnDownload.setImageResource(R.drawable.ic_play);
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         super.onCreateView(inflater, container, savedInstanceState);
+        fragmentLibraryDetailBinding = FragmentLibraryDetailBinding.inflate(inflater, container, false);
         View v = inflater.inflate(R.layout.fragment_library_detail, container, false);
         dbService = new DatabaseService(getActivity());
         mRealm = dbService.getRealmInstance();
         userModel = new UserProfileDbHandler(getActivity()).getUserModel();
         library = mRealm.where(RealmMyLibrary.class).equalTo("resourceId", libraryId).findFirst();
-        initView(v);
-        return v;
+        return fragmentLibraryDetailBinding.getRoot();
     }
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        initRatingView("resource", library.getResource_id(), library.getTitle(), LibraryDetailFragment.this);
+        initRatingView("resource", library.resourceId, library.title, LibraryDetailFragment.this);
         setLibraryData();
     }
 
-    private void initView(View v) {
-        author = v.findViewById(R.id.tv_author);
-        title = v.findViewById(R.id.tv_title);
-        pubishedBy = v.findViewById(R.id.tv_published);
-        media = v.findViewById(R.id.tv_media);
-        subjects = v.findViewById(R.id.tv_subject);
-        language = v.findViewById(R.id.tv_language);
-        license = v.findViewById(R.id.tv_license);
-        resource = v.findViewById(R.id.tv_resource);
-        type = v.findViewById(R.id.tv_type);
-        download = v.findViewById(R.id.btn_download);
-        remove = v.findViewById(R.id.btn_remove);
-    }
-
     private void setLibraryData() {
-        title.setText(String.format("%s%s", openFrom.isEmpty() ? "" : openFrom + "-", library.getTitle()));
-        author.setText(library.getAuthor());
-        pubishedBy.setText(library.getPublisher());
-        media.setText(library.getMediaType());
-        subjects.setText(library.getSubjectsAsString());
-        language.setText(library.getLanguage());
-        license.setText(library.getLinkToLicense());
-        resource.setText(RealmMyLibrary.listToString(library.getResourceFor()));
+        fragmentLibraryDetailBinding.tvTitle.setText(String.format("%s%s", openFrom.isEmpty() ? "" : openFrom + "-", library.title));
+        fragmentLibraryDetailBinding.tvAuthor.setText(library.author);
+        fragmentLibraryDetailBinding.tvPublished.setText(library.getPublisher());
+        fragmentLibraryDetailBinding.tvMedia.setText(library.mediaType);
+        fragmentLibraryDetailBinding.tvSubject.setText(library.getSubjectsAsString());
+        fragmentLibraryDetailBinding.tvLanguage.setText(library.language);
+        fragmentLibraryDetailBinding.tvLicense.setText(library.linkToLicense);
+        fragmentLibraryDetailBinding.tvResource.setText(RealmMyLibrary.listToString(library.resourceFor));
         profileDbHandler.setResourceOpenCount(library);
         try {
             onRatingChanged();
@@ -108,42 +88,45 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
             ex.printStackTrace();
         }
 
-        download.setVisibility(TextUtils.isEmpty(library.getResourceLocalAddress()) ? View.GONE : View.VISIBLE);
-        download.setImageResource(library.getResourceOffline() == null || library.isResourceOffline() ? R.drawable.ic_eye : R.drawable.ic_download);
-        if (FileUtils.getFileExtension(library.getResourceLocalAddress()).equals("mp4")) {
-            download.setImageResource(R.drawable.ic_play);
+        fragmentLibraryDetailBinding.btnDownload.setVisibility(TextUtils.isEmpty(library.resourceLocalAddress) ? View.GONE : View.VISIBLE);
+        fragmentLibraryDetailBinding.btnDownload.setImageResource(!library.resourceOffline || library.isResourceOffline() ? R.drawable.ic_eye : R.drawable.ic_download);
+        if (FileUtils.getFileExtension(library.resourceLocalAddress).equals("mp4")) {
+            fragmentLibraryDetailBinding.btnDownload.setImageResource(R.drawable.ic_play);
         }
         setClickListeners();
     }
 
     public void setClickListeners() {
-        download.setOnClickListener(view -> {
-            if (TextUtils.isEmpty(library.getResourceLocalAddress())) {
+        fragmentLibraryDetailBinding.btnDownload.setOnClickListener(view -> {
+            if (TextUtils.isEmpty(library.resourceLocalAddress)) {
                 Toast.makeText(getActivity(), getString(R.string.link_not_available), Toast.LENGTH_LONG).show();
                 return;
             }
             openResource(library);
         });
-        Utilities.log("user id " + profileDbHandler.getUserModel().getId() + " " + library.getUserId().contains(profileDbHandler.getUserModel().getId()));
-        boolean isAdd = !library.getUserId().contains(profileDbHandler.getUserModel().getId());
-        remove.setImageResource(isAdd ? R.drawable.ic_add_library : R.drawable.close_x);
-        remove.setOnClickListener(view -> {
+        Utilities.log("user id " + profileDbHandler.getUserModel().id + " " + library.getUserId().contains(profileDbHandler.getUserModel().id));
+        boolean isAdd = !library.getUserId().contains(profileDbHandler.getUserModel().id);
+        fragmentLibraryDetailBinding.btnRemove.setImageResource(isAdd ? R.drawable.ic_add_library : R.drawable.close_x);
+        fragmentLibraryDetailBinding.btnRemove.setOnClickListener(view -> {
             if (!mRealm.isInTransaction()) mRealm.beginTransaction();
             if (isAdd) {
-                library.setUserId(profileDbHandler.getUserModel().getId());
-                RealmRemovedLog.onAdd(mRealm, "resources", profileDbHandler.getUserModel().getId(), libraryId);
+                library.setUserId(profileDbHandler.getUserModel().id);
+                RealmRemovedLog.onAdd(mRealm, "resources", profileDbHandler.getUserModel().id, libraryId);
             } else {
-                library.removeUserId(profileDbHandler.getUserModel().getId());
-                RealmRemovedLog.onRemove(mRealm, "resources", profileDbHandler.getUserModel().getId(), libraryId);
+                library.removeUserId(profileDbHandler.getUserModel().id);
+                RealmRemovedLog.onRemove(mRealm, "resources", profileDbHandler.getUserModel().id, libraryId);
             }
             Utilities.toast(getActivity(), getString(R.string.resources) + (isAdd ? getString(R.string.added_to) : getString(R.string.removed_from) + getString(R.string.my_library)));
             setLibraryData();
         });
+        fragmentLibraryDetailBinding.btnBack.setOnClickListener(view ->
+                getActivity().onBackPressed()
+        );
     }
 
     @Override
     public void onRatingChanged() {
-        JsonObject object = RealmRating.getRatingsById(mRealm, "resource", library.getResource_id(), userModel.getId());
+        JsonObject object = RealmRating.getRatingsById(mRealm, "resource", library.resourceId, userModel.id);
         setRatings(object);
     }
 }

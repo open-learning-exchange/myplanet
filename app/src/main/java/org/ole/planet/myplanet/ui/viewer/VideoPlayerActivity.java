@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.exoplayer2.DefaultLoadControl;
@@ -61,9 +62,10 @@ public class VideoPlayerActivity extends AppCompatActivity implements AuthSessio
         }
     }
 
-    public void setAuthSession(Map<String, List<String>> responseHeader) {
+    @Override
+    public void setAuthSession(@NonNull Map<String, ? extends List<String>> responseHeader) {
         Utilities.log("Error " + new Gson().toJson(responseHeader));
-        String headerauth[] = responseHeader.get("Set-Cookie").get(0).split(";");
+        String[] headerauth = responseHeader.get("Set-Cookie").get(0).split(";");
         auth = headerauth[0];
         runOnUiThread(() -> streamVideoFromUrl(videoURL, auth));
     }

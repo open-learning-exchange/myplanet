@@ -1,5 +1,8 @@
 package org.ole.planet.myplanet.ui.dashboard;
 
+import org.ole.planet.myplanet.base.BaseContainerFragment;
+import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
@@ -13,6 +16,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -33,12 +37,14 @@ import com.mikepenz.materialdrawer.model.interfaces.Nameable;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener;
+import org.ole.planet.myplanet.databinding.ActivityDashboardBinding;
+import org.ole.planet.myplanet.databinding.CustomTabBinding;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
 import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
 import org.ole.planet.myplanet.ui.SettingActivity;
-import org.ole.planet.myplanet.ui.chat.ChatActivity;
+import org.ole.planet.myplanet.ui.chat.ChatHistoryListFragment;
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment;
 import org.ole.planet.myplanet.ui.course.CourseFragment;
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment;
@@ -48,6 +54,7 @@ import org.ole.planet.myplanet.ui.survey.SendSurveyFragment;
 import org.ole.planet.myplanet.ui.survey.SurveyFragment;
 import org.ole.planet.myplanet.ui.sync.DashboardElementActivity;
 import org.ole.planet.myplanet.ui.team.TeamFragment;
+import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity;
 import org.ole.planet.myplanet.utilities.BottomNavigationViewHelper;
 import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.KeyboardUtils;
@@ -57,11 +64,11 @@ import org.ole.planet.myplanet.utilities.Utilities;
 import java.util.ArrayList;
 
 public class DashboardActivity extends DashboardElementActivity implements OnHomeItemClickListener, BottomNavigationView.OnNavigationItemSelectedListener {
+    private ActivityDashboardBinding activityDashboardBinding;
     public static final String MESSAGE_PROGRESS = "message_progress";
     AccountHeader headerResult;
     RealmUserModel user;
     private Drawer result = null;
-    private Toolbar mTopToolbar, bellToolbar;
     TabLayout.Tab menul;
     TabLayout.Tab menuh;
     TabLayout.Tab menuc;
@@ -69,9 +76,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     TabLayout.Tab menuco;
     TabLayout.Tab menut;
     TabLayout tl;
-    View begin;
     DrawerLayout dl;
-    ImageView img;
     @Override
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(LocaleHelper.onAttach(base));
@@ -81,49 +86,45 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         checkUser();
-        setContentView(R.layout.activity_dashboard);
-        KeyboardUtils.setupUI(findViewById(R.id.activity_dashboard_parent_layout), DashboardActivity.this);
-        img = findViewById(R.id.img_logo);
-        begin = findViewById(R.id.menu_library);
-        mTopToolbar = findViewById(R.id.my_toolbar);
-        bellToolbar = findViewById(R.id.bell_toolbar);
-        setSupportActionBar(mTopToolbar);
+        activityDashboardBinding = ActivityDashboardBinding.inflate(getLayoutInflater());
+        setContentView(activityDashboardBinding.getRoot());
+        KeyboardUtils.setupUI(activityDashboardBinding.activityDashboardParentLayout, DashboardActivity.this);
+        setSupportActionBar(activityDashboardBinding.myToolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(false);
         getSupportActionBar().setTitle(R.string.app_project_name);
-        mTopToolbar.setTitleTextColor(Color.WHITE);
-        mTopToolbar.setSubtitleTextColor(Color.WHITE);
-        navigationView = findViewById(R.id.top_bar_navigation);
+        activityDashboardBinding.myToolbar.setTitleTextColor(Color.WHITE);
+        activityDashboardBinding.myToolbar.setSubtitleTextColor(Color.WHITE);
+        navigationView = activityDashboardBinding.topBarNavigation;
         BottomNavigationViewHelper.disableShiftMode(navigationView);
-        bellToolbar.inflateMenu(R.menu.menu_bell_dashboard);
+        activityDashboardBinding.appBarBell.bellToolbar.inflateMenu(R.menu.menu_bell_dashboard);
         tl = findViewById(R.id.tab_layout);
-        TextView appName = findViewById(R.id.app_title_name);
+
         try {
             RealmUserModel userProfileModel = profileDbHandler.getUserModel();
             if(userProfileModel != null){
                 String name = userProfileModel.getFullName();
                 if (name.trim().length() == 0) {
-                    name = profileDbHandler.getUserModel().getName();
+                    name = profileDbHandler.getUserModel().name;
                 }
-                appName.setText(name + "'s Planet");
+                activityDashboardBinding.appBarBell.appTitleName.setText(name + "'s Planet");
             } else {
-                appName.setText(getString(R.string.app_project_name));
+                activityDashboardBinding.appBarBell.appTitleName.setText(getString(R.string.app_project_name));
             }
         } catch (Exception err) {
             throw new RuntimeException(err);
         }
-        findViewById(R.id.iv_setting).setOnClickListener(v -> startActivity(new Intent(this, SettingActivity.class)));
-        if (user.getRolesList().isEmpty() && !user.getUserAdmin()) {
+        activityDashboardBinding.appBarBell.ivSetting.setOnClickListener(v -> startActivity(new Intent(this, SettingActivity.class)));
+        if (user != null && user.rolesList.isEmpty() && !user.userAdmin) {
             navigationView.setVisibility(View.GONE);
             openCallFragment(new InactiveDashboardFragment(), "Dashboard");
             return;
         }
         navigationView.setOnNavigationItemSelectedListener(this);
-        navigationView.setVisibility(new UserProfileDbHandler(this).getUserModel().getShowTopbar() ? View.VISIBLE : View.GONE);
+        navigationView.setVisibility(new UserProfileDbHandler(this).getUserModel().isShowTopbar ? View.VISIBLE : View.GONE);
         headerResult = getAccountHeader();
         createDrawer();
-        if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
+        if (!(user.id.startsWith("guest") && profileDbHandler.getOfflineVisits() >= 3) && getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
             result.openDrawer();
-
         }//Opens drawer by default
         result.getStickyFooter().setPadding(0, 0, 0, 0); // moves logout button to the very bottom of the drawer. Without it, the "logout" button suspends a little.
         result.getActionBarDrawerToggle().setDrawerIndicatorEnabled(true);
@@ -140,18 +141,18 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             }
         } else {
             openCallFragment(new BellDashboardFragment());
-            bellToolbar.setVisibility(View.VISIBLE);
+            activityDashboardBinding.appBarBell.bellToolbar.setVisibility(View.VISIBLE);
         }
 
-        findViewById(R.id.iv_sync).setOnClickListener(view -> syncNow());
-        findViewById(R.id.img_logo).setOnClickListener(view -> result.openDrawer());
+        activityDashboardBinding.appBarBell.ivSync.setOnClickListener(view -> syncNow());
+        activityDashboardBinding.appBarBell.imgLogo.setOnClickListener(view -> result.openDrawer());
 
-        bellToolbar.setOnMenuItemClickListener(new Toolbar.OnMenuItemClickListener() {
+        activityDashboardBinding.appBarBell.bellToolbar.setOnMenuItemClickListener(new Toolbar.OnMenuItemClickListener() {
             @Override
             public boolean onMenuItemClick(MenuItem item) {
                 switch (item.getItemId()) {
                     case R.id.action_chat:
-                        startActivity(new Intent(DashboardActivity.this, ChatActivity.class));
+                        openCallFragment(new ChatHistoryListFragment());
                         break;
                     case R.id.menu_goOnline:
                         wifiStatusSwitch();
@@ -166,10 +167,10 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
                         startActivity(new Intent(DashboardActivity.this, SettingActivity.class));
                         break;
                     case R.id.action_disclaimer:
-                        startActivity(new Intent(DashboardActivity.this, DisclaimerActivity.class));
+                        openCallFragment(new DisclaimerFragment());
                         break;
                     case R.id.action_about:
-                        startActivity(new Intent(DashboardActivity.this, AboutActivity.class));
+                        openCallFragment(new AboutFragment());
                         break;
                     case R.id.action_logout:
                         logout();
@@ -193,7 +194,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     }
 
     private void hideWifi() {
-        Menu nav_Menu = bellToolbar.getMenu();
+        Menu nav_Menu = activityDashboardBinding.appBarBell.bellToolbar.getMenu();
         nav_Menu.findItem(R.id.menu_goOnline).setVisible((Constants.showBetaFeature(Constants.KEY_SYNC, this)));
     }
 
@@ -204,8 +205,30 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             logout();
             return;
         }
-        if (user.getId().startsWith("guest")) {
-            getTheme().applyStyle(R.style.GuestStyle, true);
+        if(user.id.startsWith("guest") && profileDbHandler.getOfflineVisits() >= 3 ){
+
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("Become a member");
+            builder.setMessage("Trial period ended! Kindly complete registration to continue");
+            builder.setCancelable(false);
+            builder.setPositiveButton("Become a member", null);
+            builder.setNegativeButton("Logout", null);
+            AlertDialog dialog = builder.create();
+            dialog.show();
+            Button becomeMember = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            Button logout = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
+            becomeMember.setOnClickListener(view -> {
+                boolean guest = true;
+                Intent intent = new Intent(this, BecomeMemberActivity.class);
+                intent.putExtra("username", profileDbHandler.getUserModel().name);
+                intent.putExtra("guest", guest);
+                setResult(Activity.RESULT_OK, intent);
+                startActivity(intent);
+            });
+            logout.setOnClickListener(view -> {
+                dialog.dismiss();
+                logout();
+            });
         }
     }
 
@@ -228,27 +251,30 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             }
         });
         for (int i = 0; i < tabLayout.getTabCount(); i++) {
-            View v = LayoutInflater.from(this).inflate(R.layout.custom_tab, null);
-            TextView title = v.findViewById(R.id.title);
-            ImageView icon = v.findViewById(R.id.icon);
+            CustomTabBinding customTabBinding = CustomTabBinding.inflate(LayoutInflater.from(this));
+            TextView title = customTabBinding.title;
+            ImageView icon = customTabBinding.icon;
+
             title.setText(tabLayout.getTabAt(i).getText());
             icon.setImageResource(R.drawable.ic_home);
             icon.setImageDrawable(tabLayout.getTabAt(i).getIcon());
-            tabLayout.getTabAt(i).setCustomView(v);
+
+            tabLayout.getTabAt(i).setCustomView(customTabBinding.getRoot());
         }
+
         tabLayout.setTabIndicatorFullWidth(false);
 
     }
 
     private void UITheme() {
-        bellToolbar.setVisibility(View.VISIBLE);
-        mTopToolbar.setVisibility(View.GONE);
+        activityDashboardBinding.appBarBell.bellToolbar.setVisibility(View.VISIBLE);
+        activityDashboardBinding.myToolbar.setVisibility(View.GONE);
         navigationView.setVisibility(View.GONE);
     }
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
-        if (user.getRolesList().isEmpty()) {
+        if (user.rolesList.isEmpty()) {
             menu.findItem(R.id.action_setting).setEnabled(false);
         }
         return super.onPrepareOptionsMenu(menu);
@@ -259,19 +285,18 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
                 .withActivity(DashboardActivity.this)
                 .withTextColor(getResources().getColor(R.color.bg_white))
                 .withHeaderBackground(R.drawable.ole_logo)
-                .withHeaderBackgroundScaleType(ImageView.ScaleType.FIT_XY)
                 .withDividerBelowHeader(false)
                 .build();
 
         ImageView headerBackground = header.getHeaderBackgroundView();
-        headerBackground.setPadding(20, 12, 20, 12); // Add padding values as per your requirement
+        headerBackground.setPadding(30, 60, 30, 60);
         headerBackground.setColorFilter(getResources().getColor(R.color.md_white_1000), PorterDuff.Mode.SRC_IN);
         return header;
     }
 
     private void createDrawer() {
-        com.mikepenz.materialdrawer.holder.DimenHolder dimenHolder = com.mikepenz.materialdrawer.holder.DimenHolder.fromDp(200);
-        result = new DrawerBuilder().withActivity(this).withFullscreen(true).withSliderBackgroundColor(getResources().getColor(R.color.colorPrimary)).withToolbar(mTopToolbar).withAccountHeader(headerResult).withHeaderHeight(dimenHolder).addDrawerItems(getDrawerItems()).addStickyDrawerItems(getDrawerItemsFooter()).withOnDrawerItemClickListener((view, position, drawerItem) -> {
+        com.mikepenz.materialdrawer.holder.DimenHolder dimenHolder = com.mikepenz.materialdrawer.holder.DimenHolder.fromDp(160);
+        result = new DrawerBuilder().withActivity(this).withFullscreen(true).withSliderBackgroundColor(getResources().getColor(R.color.colorPrimary)).withToolbar(activityDashboardBinding.myToolbar).withAccountHeader(headerResult).withHeaderHeight(dimenHolder).addDrawerItems(getDrawerItems()).addStickyDrawerItems(getDrawerItemsFooter()).withOnDrawerItemClickListener((view, position, drawerItem) -> {
             if (drawerItem != null) {
                 menuAction(((Nameable) drawerItem).getName().getTextRes());
             }
@@ -311,9 +336,6 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             case R.string.enterprises:
                 openEnterpriseFragment();
                 break;
-            case R.string.menu_feedback:
-                openMyFragment(new FeedbackListFragment());
-                break;
             case R.string.menu_logout:
                 logout();
                 break;
@@ -345,7 +367,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     public void openLibraryDetailFragment(RealmMyLibrary library) {
         Fragment f = new LibraryDetailFragment();
         Bundle b = new Bundle();
-        b.putString("libraryId", library.getResource_id());
+        b.putString("libraryId", library.resourceId);
         b.putString("openFrom", "Dashboard");
         f.setArguments(b);
         openCallFragment(f);
@@ -355,7 +377,7 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     public void sendSurvey(RealmStepExam current) {
         SendSurveyFragment f = new SendSurveyFragment();
         Bundle b = new Bundle();
-        b.putString("surveyId", current.getId());
+        b.putString("surveyId", current.id);
         f.setArguments(b);
 
         f.show(getSupportFragmentManager(), "");
@@ -379,10 +401,9 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
     @NonNull
     private IDrawerItem[] getDrawerItemsFooter() {
         ArrayList<Drawable> menuImageListFooter = new ArrayList<>();
-        menuImageListFooter.add(getResources().getDrawable(R.drawable.feedback));
         menuImageListFooter.add(getResources().getDrawable(R.drawable.logout));
 
-        return new IDrawerItem[]{changeUX(R.string.menu_feedback, menuImageListFooter.get(0)), changeUX(R.string.menu_logout, menuImageListFooter.get(1)),};
+        return new IDrawerItem[]{changeUX(R.string.menu_logout, menuImageListFooter.get(0)),};
     }
 
     public PrimaryDrawerItem changeUX(int iconText, Drawable drawable) {
@@ -404,6 +425,13 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
             result.closeDrawer();
         } else if (fragments == 1) {
             finish();
+        } else {
+            super.onBackPressed();
+        }
+
+        Fragment fragment = getSupportFragmentManager().findFragmentById(R.id.fragment_container);
+        if (fragment instanceof BaseContainerFragment) {
+            ((BaseContainerFragment) fragment).handleBackPressed();
         } else {
             super.onBackPressed();
         }

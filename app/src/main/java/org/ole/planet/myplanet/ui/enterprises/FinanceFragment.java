@@ -62,6 +62,13 @@ public class FinanceFragment extends BaseTeamFragment {
             fragmentFinanceBinding.rvFinance.setAdapter(adapterFinance);
             isAsc = !isAsc;
         });
+        fragmentFinanceBinding.btnReset.setOnClickListener(view -> {
+            list = mRealm.where(RealmMyTeam.class).notEqualTo("status", "archived").equalTo("teamId", teamId).equalTo("docType", "transaction").sort("date", Sort.DESCENDING).findAll();
+            adapterFinance = new AdapterFinance(getActivity(), list);
+            fragmentFinanceBinding.rvFinance.setLayoutManager(new LinearLayoutManager(getActivity()));
+            fragmentFinanceBinding.rvFinance.setAdapter(adapterFinance);
+            calculateTotal(list);
+        });
         return fragmentFinanceBinding.getRoot();
     }
 
@@ -78,6 +85,7 @@ public class FinanceFragment extends BaseTeamFragment {
             fragmentFinanceBinding.rvFinance.setAdapter(adapterFinance);
             calculateTotal(list);
         }, now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH)).show(getActivity().getFragmentManager(), "");
+
     }
 
     @Override
@@ -101,10 +109,10 @@ public class FinanceFragment extends BaseTeamFragment {
         int debit = 0;
         int credit = 0;
         for (RealmMyTeam team : list) {
-            if ("credit".equalsIgnoreCase(team.getType().toLowerCase())) {
-                credit += team.getAmount();
+            if ("credit".equalsIgnoreCase(team.type.toLowerCase())) {
+                credit += team.amount;
             } else {
-                debit += team.getAmount();
+                debit += team.amount;
             }
         }
         int total = credit - debit;
@@ -144,18 +152,18 @@ public class FinanceFragment extends BaseTeamFragment {
 
     private void createTransactionObject(Realm realm, String type, String note, String amount, Calendar date) {
         RealmMyTeam team = realm.createObject(RealmMyTeam.class, UUID.randomUUID().toString());
-        team.setStatus("active");
-        team.setDate(date.getTimeInMillis());
-        if (type != null) team.setTeamType(type);
-        team.setType(type);
-        team.setDescription(note);
-        team.setTeamId(teamId);
-        team.setAmount(Integer.parseInt(amount));
-        team.setParentCode(user.getParentCode());
-        team.setTeamPlanetCode(user.getPlanetCode());
-        team.setTeamType("sync");
-        team.setDocType("transaction");
-        team.setUpdated(true);
+        team.status = "active";
+        team.date = date.getTimeInMillis();
+        if (type != null) team.teamType = type;
+        team.type = type;
+        team.description = note;
+        team.teamId = teamId;
+        team.amount = Integer.parseInt(amount);
+        team.parentCode = user.parentCode;
+        team.teamPlanetCode = user.planetCode;
+        team.teamType = "sync";
+        team.docType = "transaction";
+        team.updated = true;
     }
 
     private View setUpAlertUi() {

@@ -12,6 +12,8 @@ import com.google.android.material.textfield.TextInputLayout;
 import com.google.gson.Gson;
 
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.databinding.ActivityAddExaminationBinding;
+import org.ole.planet.myplanet.databinding.ActivityAddMyHealthBinding;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmMyHealth;
 import org.ole.planet.myplanet.model.RealmMyHealthPojo;
@@ -23,9 +25,8 @@ import org.ole.planet.myplanet.utilities.Utilities;
 import io.realm.Realm;
 
 public class AddMyHealthActivity extends AppCompatActivity {
+    private ActivityAddMyHealthBinding activityAddMyHealthBinding;
     Realm realm;
-    TextInputLayout fname, mname, lname, email, phone, birthplace, birthdate, emergencyNumber, contact, specialNeed, otherNeed;
-    Spinner contactType;
     RealmMyHealthPojo healthPojo;
     RealmUserModel userModelB;
     String userId;
@@ -35,7 +36,8 @@ public class AddMyHealthActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_add_my_health);
+        activityAddMyHealthBinding = ActivityAddMyHealthBinding.inflate(getLayoutInflater());
+        setContentView(activityAddMyHealthBinding.getRoot());
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setHomeButtonEnabled(true);
         realm = new DatabaseService(this).getRealmInstance();
@@ -45,8 +47,8 @@ public class AddMyHealthActivity extends AppCompatActivity {
             healthPojo = realm.where(RealmMyHealthPojo.class).equalTo("userId", userId).findFirst();
         }
         userModelB = realm.where(RealmUserModel.class).equalTo("id", userId).findFirst();
-        key = userModelB.getKey();
-        iv = userModelB.getIv();
+        key = userModelB.key;
+        iv = userModelB.iv;
         findViewById(R.id.btn_submit).setOnClickListener(view -> {
             createMyHealth();
             Utilities.toast(AddMyHealthActivity.this, getString(R.string.my_health_saved_successfully));
@@ -57,70 +59,59 @@ public class AddMyHealthActivity extends AppCompatActivity {
     private void createMyHealth() {
         if (!realm.isInTransaction()) realm.beginTransaction();
         RealmMyHealth.RealmMyHealthProfile health = new RealmMyHealth.RealmMyHealthProfile();
-        userModelB.setFirstName(fname.getEditText().getText().toString().trim());
-        userModelB.setMiddleName(mname.getEditText().getText().toString().trim());
-        userModelB.setLastName(lname.getEditText().getText().toString().trim());
-        userModelB.setEmail(email.getEditText().getText().toString().trim());
-        userModelB.setDob(birthdate.getEditText().getText().toString().trim());
-        userModelB.setBirthPlace(birthplace.getEditText().getText().toString().trim());
-        userModelB.setPhoneNumber(phone.getEditText().getText().toString().trim());
-        health.setEmergencyContactName(emergencyNumber.getEditText().getText().toString().trim());
-        health.setEmergencyContact(contact.getEditText().getText().toString().trim());
-        health.setEmergencyContactType(contactType.getSelectedItem().toString());
-        health.setSpecialNeeds(specialNeed.getEditText().getText().toString().trim());
-        health.setNotes(otherNeed.getEditText().getText().toString().trim());
+        userModelB.firstName = activityAddMyHealthBinding.etFname.getEditText().getText().toString().trim();
+        userModelB.middleName = activityAddMyHealthBinding.etMname.getEditText().getText().toString().trim();
+        userModelB.lastName = activityAddMyHealthBinding.etLname.getEditText().getText().toString().trim();
+        userModelB.email = activityAddMyHealthBinding.etEmail.getEditText().getText().toString().trim();
+        userModelB.dob = activityAddMyHealthBinding.etBirthdate.getEditText().getText().toString().trim();
+        userModelB.birthPlace = activityAddMyHealthBinding.etBirthplace.getEditText().getText().toString().trim();
+        userModelB.phoneNumber = activityAddMyHealthBinding.etPhone.getEditText().getText().toString().trim();
+        health.emergencyContactName = activityAddMyHealthBinding.etEmergency.getEditText().getText().toString().trim();
+        health.emergencyContact = activityAddMyHealthBinding.etContact.getEditText().getText().toString().trim();
+        health.emergencyContactType = activityAddMyHealthBinding.spnContactType.getSelectedItem().toString();
+        health.specialNeeds = activityAddMyHealthBinding.etSpecialNeed.getEditText().getText().toString().trim();
+        health.notes = activityAddMyHealthBinding.etOtherNeed.getEditText().getText().toString().trim();
         if (myHealth == null) {
             myHealth = new RealmMyHealth();
         }
-        if (TextUtils.isEmpty(myHealth.getUserKey())) {
-            myHealth.setUserKey(AndroidDecrypter.generateKey());
+        if (TextUtils.isEmpty(myHealth.userKey)) {
+            myHealth.userKey = AndroidDecrypter.generateKey();
         }
-        myHealth.setProfile(health);
+        myHealth.profile = health;
         if (healthPojo == null) {
             healthPojo = realm.createObject(RealmMyHealthPojo.class, userId);
         }
-        healthPojo.setIsUpdated(true);
-        healthPojo.setUserId(userModelB.get_id());
+        healthPojo.isUpdated = true;
+        healthPojo.userId = userModelB._id;
         try {
-            healthPojo.setData(AndroidDecrypter.encrypt(new Gson().toJson(myHealth), key, iv));
+            healthPojo.data = AndroidDecrypter.encrypt(new Gson().toJson(myHealth), key, iv);
         } catch (Exception e) {
+            e.printStackTrace();
         }
         realm.commitTransaction();
         finish();
     }
 
     private void initViews() {
-        fname = findViewById(R.id.et_fname);
-        mname = findViewById(R.id.et_mname);
-        lname = findViewById(R.id.et_lname);
-        email = findViewById(R.id.et_email);
-        phone = findViewById(R.id.et_phone);
-        birthplace = findViewById(R.id.et_birthplace);
-        birthdate = findViewById(R.id.et_birthdate);
-        emergencyNumber = findViewById(R.id.et_emergency);
-        contact = findViewById(R.id.et_contact);
-        specialNeed = findViewById(R.id.et_special_need);
-        otherNeed = findViewById(R.id.et_other_need);
-        contactType = findViewById(R.id.spn_contact_type);
         populate();
     }
 
     public void populate() {
-        if (healthPojo != null && !TextUtils.isEmpty(healthPojo.getData())) {
-            myHealth = new Gson().fromJson(AndroidDecrypter.decrypt(healthPojo.getData(), userModelB.getKey(), userModelB.getIv()), RealmMyHealth.class);
-            RealmMyHealth.RealmMyHealthProfile health = myHealth.getProfile();
-            emergencyNumber.getEditText().setText(health.getEmergencyContactName());
-            specialNeed.getEditText().setText(health.getSpecialNeeds());
-            otherNeed.getEditText().setText(health.getNotes());
+        if (healthPojo != null && !TextUtils.isEmpty(healthPojo.data)) {
+            myHealth = new Gson().fromJson(AndroidDecrypter.decrypt(healthPojo.data, userModelB.key, userModelB.iv), RealmMyHealth.class);
+            RealmMyHealth.RealmMyHealthProfile health = myHealth.profile;
+            activityAddMyHealthBinding.etEmergency.getEditText().setText(health.emergencyContactName);
+            activityAddMyHealthBinding.etSpecialNeed.getEditText().setText(health.specialNeeds);
+            activityAddMyHealthBinding.etOtherNeed.getEditText().setText(health.notes);
         }
         if (userModelB != null) {
-            fname.getEditText().setText(userModelB.getFirstName());
-            mname.getEditText().setText(userModelB.getMiddleName());
-            lname.getEditText().setText(userModelB.getLastName());
-            email.getEditText().setText(userModelB.getEmail());
-            phone.getEditText().setText(userModelB.getPhoneNumber());
-            birthdate.getEditText().setText(userModelB.getDob());
-            birthplace.getEditText().setText(userModelB.getBirthPlace());
+            activityAddMyHealthBinding.etFname.getEditText().setText(userModelB.firstName);
+            activityAddMyHealthBinding.etMname.getEditText().setText(userModelB.middleName);
+            activityAddMyHealthBinding.etLname.getEditText().setText(userModelB.lastName);
+            activityAddMyHealthBinding.etEmail.getEditText().setText(userModelB.email);
+            activityAddMyHealthBinding.etPhone.getEditText().setText(userModelB.phoneNumber);
+            activityAddMyHealthBinding.etBirthdate.getEditText().setText(userModelB.dob);
+            activityAddMyHealthBinding.etBirthplace.getEditText().setText(userModelB.birthPlace);
         }
     }
 

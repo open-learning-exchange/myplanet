@@ -12,10 +12,9 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import io.realm.Realm
-import kotlinx.android.synthetic.main.fragment_notification.ic_back
-import kotlinx.android.synthetic.main.fragment_notification.rv_notifications
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.NotificationCallback
+import org.ole.planet.myplanet.databinding.FragmentNotificationBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.Notifications
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -26,6 +25,7 @@ import org.ole.planet.myplanet.utilities.FileUtils.getTotalAvailableMemoryRatio
 import java.util.Calendar
 
 class NotificationFragment : BottomSheetDialogFragment() {
+    lateinit var fragmentNotificationBinding: FragmentNotificationBinding
     public lateinit var callback: NotificationCallback
     public lateinit var resourceList: List<RealmMyLibrary>
     public var mRealm: Realm? = null
@@ -44,7 +44,8 @@ class NotificationFragment : BottomSheetDialogFragment() {
         }
         mRealm = DatabaseService(requireActivity()).realmInstance
         resourceList = emptyList()
-        return inflater.inflate(R.layout.fragment_notification, container, false)
+        fragmentNotificationBinding = FragmentNotificationBinding.inflate(inflater, container, false)
+        return fragmentNotificationBinding.root
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
@@ -65,7 +66,7 @@ class NotificationFragment : BottomSheetDialogFragment() {
         var model = UserProfileDbHandler(activity).userModel
         val surveyList = mRealm!!.where(RealmSubmission::class.java).equalTo("userId", model.id)
             .equalTo("status", "pending").equalTo("type", "survey").findAll()
-        ic_back.setOnClickListener {
+        fragmentNotificationBinding.icBack.setOnClickListener {
             dismiss()
         }
         val tasks: List<RealmTeamTask> =
@@ -96,8 +97,8 @@ class NotificationFragment : BottomSheetDialogFragment() {
         }
         notificationList.add(Notifications(R.drawable.baseline_storage_24, storageNotiText))
 
-        if (TextUtils.isEmpty(model.key) || model.roleAsString.contains("health")) {
-            if (!model.id.startsWith("guest")) {
+        if (TextUtils.isEmpty(model.key) || model.getRoleAsString().contains("health")) {
+            if (!model.id!!.startsWith("guest")) {
                 notificationList.add(
                     Notifications(
                         R.drawable.ic_myhealth, getString(R.string.health_record_not_available_click_to_sync)
@@ -106,8 +107,8 @@ class NotificationFragment : BottomSheetDialogFragment() {
             }
         }
 
-        rv_notifications.layoutManager = LinearLayoutManager(requireActivity())
-        rv_notifications.adapter =
+        fragmentNotificationBinding.rvNotifications.layoutManager = LinearLayoutManager(requireActivity())
+        fragmentNotificationBinding.rvNotifications.adapter =
             AdapterNotification(requireActivity(), notificationList, callback)
     }
 }

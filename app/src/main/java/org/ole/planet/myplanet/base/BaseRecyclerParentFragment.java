@@ -20,7 +20,7 @@ public class BaseRecyclerParentFragment<LI> extends BaseResourceFragment {
         } else if (isMyCourseLib) {
             return getMyLibItems(c);
         } else {
-            return c == RealmMyLibrary.class ? RealmMyLibrary.getOurLibrary(model.getId(), mRealm.where(c).equalTo("isPrivate", false).findAll()) : RealmMyCourse.getOurCourse(model.getId(), mRealm.where(c).isNotEmpty("courseTitle").findAll());
+            return c == RealmMyLibrary.class ? RealmMyLibrary.getOurLibrary(model.id, mRealm.where(c).equalTo("isPrivate", false).findAll()) : RealmMyCourse.getOurCourse(model.id, mRealm.where(c).isNotEmpty("courseTitle").findAll());
         }
     }
 
@@ -34,21 +34,21 @@ public class BaseRecyclerParentFragment<LI> extends BaseResourceFragment {
         } else if (isMyCourseLib) {
             return getMyLibItems(c, orderBy);
         } else {
-            return c == RealmMyLibrary.class ? RealmMyLibrary.getOurLibrary(model.getId(), mRealm.where(c).sort(orderBy, sort).equalTo("isPrivate", false).findAll()) : RealmMyCourse.getOurCourse(model.getId(), mRealm.where(c).sort(orderBy, sort).findAll());
+            return c == RealmMyLibrary.class ? RealmMyLibrary.getOurLibrary(model.id, mRealm.where(c).sort(orderBy, sort).equalTo("isPrivate", false).findAll()) : RealmMyCourse.getOurCourse(model.id, mRealm.where(c).sort(orderBy, sort).findAll());
         }
     }
 
     private List<LI> getMyLibItems(Class c) {
         if (c == RealmMyLibrary.class)
-            return RealmMyLibrary.getMyLibraryByUserId(model.getId(), mRealm.where(c).findAll());
-        else return RealmMyCourse.getMyCourseByUserId(model.getId(), mRealm.where(c).findAll());
+            return RealmMyLibrary.getMyLibraryByUserId(model.id, mRealm.where(c).findAll());
+        else return RealmMyCourse.getMyCourseByUserId(model.id, mRealm.where(c).findAll());
     }
 
     private List<LI> getMyLibItems(Class c, String orderBy) {
         if (c == RealmMyLibrary.class)
-            return RealmMyLibrary.getMyLibraryByUserId(model.getId(), mRealm.where(c).sort(orderBy).findAll());
+            return RealmMyLibrary.getMyLibraryByUserId(model.id, mRealm.where(c).sort(orderBy).findAll());
         else
-            return RealmMyCourse.getMyCourseByUserId(model.getId(), mRealm.where(c).sort(orderBy).findAll());
+            return RealmMyCourse.getMyCourseByUserId(model.id, mRealm.where(c).sort(orderBy).findAll());
     }
 
     public JsonArray getJsonArrayFromList(Set<String> list) {

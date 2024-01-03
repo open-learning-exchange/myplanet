@@ -5,6 +5,7 @@
     <string name="action_settings">सेटिङ्स</string>
     <string name="hint_name">प्रयोगकर्तानाम</string>
     <string name="hint_password">पासवर्ड</string>
+    <string name="btn_back">पछाडी जाउ</string>
     <string name="btn_sign_in">साइन इन गर्नुहोस्</string>
     <string name="btn_sync">सिङ्क</string>
     <string name="btn_sync_save">सुरक्षित गर्नुहोस्</string>
@@ -18,7 +19,7 @@
     <string name="radio_http">HTTP</string>
     <string name="radio_https">HTTPS</string>
     <string name="title_activity_dashboard">ड्यासबोर्ड</string>
-    <string name="menu_myplanet">My Planet</string>
+    <string name="menu_myplanet">myPlanet</string>
     <string name="menu_home">होम</string>
     <string name="menu_library">पुस्तकालय</string>
     <string name="menu_courses">पाठ्यक्रमहरू</string>
@@ -945,10 +946,21 @@
     <string name="ai_chat">AI Chat</string>
     <string name="kindly_give_a_rating">कृपया मूल्याङ्कन दिनुहोस्</string>
     <string name="must_start_with_letter_or_number">पात्र वा नम्बरसँग सुरु गर्नु पर्दछ</string>
-    <string name="only_letters_numbers_and_are_allowed">केवल अक्षर, नम्बर, "_" , ".", र "-" पाएको छ</string>
+    <string name="only_letters_numbers_and_are_allowed">केवल अक्षरहरू a- z, नम्बर र "_" , "." , "-" पार्स्याद छ</string>
     <string name="unselect_all">सबै चयन गर्दिन</string>
     <string name="select_all">सबै चयन गर्नुहोस्</string>
     <string name="request_failed_please_retry">अनुरोध असफल भयो, कृपया पुन: प्रयास गर्नुहोस्</string>
     <string name="confirm_removal">हटाउनु हेरदैछ</string>
+    <string name="returning_user">पुनराबृत्ति गर्ने प्रयोगकर्ता</string>
+    <string name="send_to_nation">तपाइको उपलब्धिहरूलाई देशसँग साझा गर्न अनुमति दिनुहोस्</string>
+    <string name="jcplayer_description">आडियो प्लेयर</string>
+    <string name="image_resource">तस्वीर स्रोत</string>
+    <string name="play_audio">आडियो प्ले गर्नुहोस्</string>
+    <string name="video_player">भिडियो प्लेयर</string>
+    <string name="progress_bar">प्रगति पट्टि</string>
+    <string name="web_view">वेब दृश्य</string>
+    <string name="invalid_configuration">अमान्य सर्भर विन्यास</string>
+    <string name="date_reset">मिति रिसेट</string>
+    <string name="no_course_matched_filter">कुनै पनि पाठ्यक्रम मेल खाँदैन</string>
 
 </resources>

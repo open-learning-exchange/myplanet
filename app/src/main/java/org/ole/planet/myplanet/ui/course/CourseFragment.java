@@ -1,8 +1,8 @@
 package org.ole.planet.myplanet.ui.course;
 
-
 import android.app.AlertDialog;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
@@ -12,13 +12,12 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
-
 import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.RecyclerView;
-
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseRecyclerFragment;
 import org.ole.planet.myplanet.callback.OnCourseItemSelected;
@@ -31,13 +30,11 @@ import org.ole.planet.myplanet.model.RealmTag;
 import org.ole.planet.myplanet.ui.library.CollectionsFragment;
 import org.ole.planet.myplanet.utilities.KeyboardUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
-
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
-
 import io.realm.Sort;
 
 public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implements OnCourseItemSelected, TagClickListener {
@@ -48,7 +45,6 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
     CheckBox selectAll;
     Spinner spnGrade, spnSubject;
     List<RealmTag> searchTags;
-    Spinner spn;
     AlertDialog confirmation;
     private boolean allItemsSelected = false;
 
@@ -62,8 +58,8 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
 
     @Override
     public RecyclerView.Adapter getAdapter() {
-        HashMap<String, JsonObject> map = RealmRating.getRatings(mRealm, "course", model.getId());
-        HashMap<String, JsonObject> progressMap = RealmCourseProgress.getCourseProgress(mRealm, model.getId());
+        HashMap<String, JsonObject> map = RealmRating.getRatings(mRealm, "course", model.id);
+        HashMap<String, JsonObject> progressMap = RealmCourseProgress.getCourseProgress(mRealm, model.id);
         adapterCourses = new AdapterCourses(getActivity(), getList(RealmMyCourse.class), map);
         adapterCourses.setProgressMap(progressMap);
         adapterCourses.setmRealm(mRealm);
@@ -102,15 +98,8 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
                 .setMessage(R.string.are_you_sure_you_want_to_delete_these_courses)
                 .setPositiveButton(R.string.yes, (dialogInterface, i) -> {
                     deleteSelected(true);
-                    if (adapterCourses.getCourseList().size() == 0) {
-                        selectAll.setVisibility(View.GONE);
-                        etSearch.setVisibility(View.GONE);
-                        tvAddToLib.setVisibility(View.GONE);
-                        getView().findViewById(R.id.filter).setVisibility(View.GONE);
-                        spn.setVisibility(View.GONE);
-                        btnRemove.setVisibility(View.GONE);
-                        tvSelected.setVisibility(View.GONE);
-                    }
+                    CourseFragment newFragment = new CourseFragment();
+                    recreateFragment(newFragment);
                 })
                 .setNegativeButton(R.string.no, null).show());
         getView().findViewById(R.id.btn_collections).setOnClickListener(view -> {
@@ -124,23 +113,6 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         changeButtonStatus();
         if (!isMyCourseLib) tvFragmentInfo.setText(R.string.our_courses);
         additionalSetup();
-
-        spn.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
-                if (i == 0) {
-                    adapterCourses.setCourseList(getList(RealmMyCourse.class, "createdDate", Sort.ASCENDING));
-                } else if (i == 1) {
-                    adapterCourses.setCourseList(getList(RealmMyCourse.class, "createdDate", Sort.DESCENDING));
-                } else {
-                    adapterCourses.setCourseList(getList(RealmMyCourse.class, "courseTitle"));
-                }
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> adapterView) {
-            }
-        });
     }
 
     public void additionalSetup() {
@@ -153,7 +125,6 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
     }
 
     private void initializeView() {
-        spn = getView().findViewById(R.id.spn_sort);
         tvAddToLib = getView().findViewById(R.id.tv_add);
         tvAddToLib.setOnClickListener(view -> {
             if (selectedItems.size() > 0) {
@@ -162,15 +133,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
                 addToMyList();
                 selectedItems.clear();
                 tvAddToLib.setEnabled(false);  // selectedItems will always have a size of 0
-                if (adapterCourses.getCourseList().size() == 0) {
-                    selectAll.setVisibility(View.GONE);
-                    etSearch.setVisibility(View.GONE);
-                    tvAddToLib.setVisibility(View.GONE);
-                    getView().findViewById(R.id.filter).setVisibility(View.GONE);
-                    spn.setVisibility(View.GONE);
-                    btnRemove.setVisibility(View.GONE);
-                    tvSelected.setVisibility(View.GONE);
-                }
+                checkList();
             }
         });
         etSearch = getView().findViewById(R.id.et_search);
@@ -184,20 +147,30 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         spnGrade.setOnItemSelectedListener(itemSelectedListener);
         spnSubject.setOnItemSelectedListener(itemSelectedListener);
         selectAll = getView().findViewById(R.id.selectAll);
+        checkList();
+
+        selectAll.setOnClickListener(view -> {
+            boolean allSelected = selectedItems.size() == adapterCourses.getCourseList().size();
+            adapterCourses.selectAllItems(!allSelected);
+            if (allSelected) {
+                selectAll.setChecked(false);
+                selectAll.setText(getString(R.string.select_all));
+            } else {
+                selectAll.setChecked(true);
+                selectAll.setText(getString(R.string.unselect_all));
+            }
+        });
+    }
+
+    private void checkList() {
         if (adapterCourses.getCourseList().size() == 0) {
             selectAll.setVisibility(View.GONE);
             etSearch.setVisibility(View.GONE);
             tvAddToLib.setVisibility(View.GONE);
             getView().findViewById(R.id.filter).setVisibility(View.GONE);
-            spn.setVisibility(View.GONE);
             btnRemove.setVisibility(View.GONE);
             tvSelected.setVisibility(View.GONE);
         }
-        selectAll.setOnClickListener(view -> {
-            boolean allSelected = selectedItems.size() == adapterCourses.getCourseList().size();
-            adapterCourses.selectAllItems(!allSelected);
-            selectAll.setText(allSelected ? getString(R.string.select_all) : getString(R.string.unselect_all));
-        });
     }
 
     private AdapterView.OnItemSelectedListener itemSelectedListener = new AdapterView.OnItemSelectedListener() {
@@ -207,11 +180,11 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
             gradeLevel = spnGrade.getSelectedItem().toString().equals("All") ? "" : spnGrade.getSelectedItem().toString();
             subjectLevel = spnSubject.getSelectedItem().toString().equals("All") ? "" : spnSubject.getSelectedItem().toString();
             adapterCourses.setCourseList(filterCourseByTag(etSearch.getText().toString(), searchTags));
+            showNoFilter(tvMessage, adapterCourses.getItemCount());
         }
 
         @Override
         public void onNothingSelected(AdapterView<?> adapterView) {
-
         }
     };
 
@@ -232,18 +205,22 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         String msg = getString(R.string.success_you_have_added_the_following_courses);
         if (selectedItems.size() <= 5) {
             for (int i = 0; i < selectedItems.size(); i++) {
-                msg += " - " + selectedItems.get(i).getCourseTitle() + "\n";
+                msg += " - " + selectedItems.get(i).courseTitle + "\n";
             }
         } else {
             for (int i = 0; i < 5; i++) {
-                msg += " - " + selectedItems.get(i).getCourseTitle() + "\n";
+                msg += " - " + selectedItems.get(i).courseTitle + "\n";
             }
             msg += getString(R.string.and) + (selectedItems.size() - 5) + getString(R.string.more_course_s);
         }
         msg += getString(R.string.return_to_the_home_tab_to_access_mycourses);
         builder.setMessage(msg);
         builder.setCancelable(true);
-        builder.setPositiveButton(R.string.ok, (dialog, id) -> dialog.cancel());
+        builder.setPositiveButton(R.string.ok, (dialog, id) -> {
+            dialog.cancel();
+            CourseFragment newFragment = new CourseFragment();
+            recreateFragment(newFragment);
+        });
         return builder.create();
     }
 
@@ -261,9 +238,15 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         showNoData(tvMessage, adapterCourses.getItemCount());
     }
 
-    private void changeButtonStatus() {
+    public void changeButtonStatus() {
         tvAddToLib.setEnabled(selectedItems.size() > 0);
-        selectAll.setText(adapterCourses.areAllSelected() ? getString(R.string.unselect_all) : getString(R.string.select_all));
+        if (adapterCourses.areAllSelected()) {
+            selectAll.setChecked(true);
+            selectAll.setText(getString(R.string.unselect_all));
+        } else {
+            selectAll.setChecked(false);
+            selectAll.setText(getString(R.string.select_all));
+        }
     }
 
     @Override
@@ -271,7 +254,7 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         List<RealmTag> li = new ArrayList<>();
         li.add(tag);
         searchTags = li;
-        tvSelected.setText(R.string.selected + tag.getName());
+        tvSelected.setText(R.string.selected + tag.name);
         adapterCourses.setCourseList((filterCourseByTag(etSearch.getText().toString(), li)));
         showNoData(tvMessage, adapterCourses.getItemCount());
     }
@@ -297,10 +280,10 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
         if (filterApplied()) {
             if (!mRealm.isInTransaction()) mRealm.beginTransaction();
             RealmSearchActivity activity = mRealm.createObject(RealmSearchActivity.class, UUID.randomUUID().toString());
-            activity.setUser(model.getName());
+            activity.setUser(model.name);
             activity.setTime(Calendar.getInstance().getTimeInMillis());
-            activity.setCreatedOn(model.getPlanetCode());
-            activity.setParentCode(model.getParentCode());
+            activity.setCreatedOn(model.planetCode);
+            activity.setParentCode(model.parentCode);
             activity.setText(etSearch.getText().toString());
             activity.setType("courses");
             JsonObject filter = new JsonObject();
@@ -316,5 +299,22 @@ public class CourseFragment extends BaseRecyclerFragment<RealmMyCourse> implemen
     public void onPause() {
         super.onPause();
         saveSearchActivity();
+    }
+
+    public void recreateFragment(Fragment fragment) {
+        if(isMyCourseLib){
+            Bundle args = new Bundle();
+            args.putBoolean("isMyCourseLib", true);
+            fragment.setArguments(args);
+            FragmentTransaction transaction = getFragmentManager().beginTransaction();
+            transaction.replace(R.id.fragment_container, fragment);
+            transaction.addToBackStack(null);
+            transaction.commit();
+        } else{
+            FragmentTransaction transaction = getFragmentManager().beginTransaction();
+            transaction.replace(R.id.fragment_container, fragment);
+            transaction.addToBackStack(null);
+            transaction.commit();
+        }
     }
 }

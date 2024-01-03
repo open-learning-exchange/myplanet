@@ -7,11 +7,9 @@ import com.bumptech.glide.Glide
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.realm.Realm
-import kotlinx.android.synthetic.main.activity_news_detail.img
-import kotlinx.android.synthetic.main.activity_news_detail.toolbar
-import kotlinx.android.synthetic.main.content_news_detail.tv_detail
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
+import org.ole.planet.myplanet.databinding.ActivityNewsDetailBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
@@ -25,12 +23,14 @@ import java.util.Date
 import java.util.UUID
 
 class NewsDetailActivity : BaseActivity() {
+    lateinit var activityNewsDetailBinding: ActivityNewsDetailBinding
     var news: RealmNews? = null
     lateinit var realm: Realm
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_news_detail)
-        setSupportActionBar(toolbar)
+        activityNewsDetailBinding = ActivityNewsDetailBinding.inflate(layoutInflater)
+        setContentView(activityNewsDetailBinding.root)
+        setSupportActionBar(activityNewsDetailBinding.toolbar)
         initActionBar()
         realm = DatabaseService(this).realmInstance
         var id = intent.getStringExtra("newsId")
@@ -55,18 +55,17 @@ class NewsDetailActivity : BaseActivity() {
 
     private fun initViews() {
         title = news?.userName
-        var msg: String = news!!.message
+        var msg: String? = news!!.message
 
-        if (news!!.imageUrls != null && news!!.imageUrls.size > 0) {
+        if (news!!.imageUrls != null && news!!.imageUrls!!.size > 0) {
             msg = loadLocalImage();
         } else {
             news?.imagesArray?.forEach {
                 val ob = it.asJsonObject
                 val resourceId = JsonUtils.getString("resourceId", ob.asJsonObject)
                 val markDown = JsonUtils.getString("markdown", ob.asJsonObject)
-                val library =
-                    realm.where(RealmMyLibrary::class.java).equalTo("_id", resourceId).findFirst()
-                msg = msg.replace(
+                val library = realm.where(RealmMyLibrary::class.java).equalTo("_id", resourceId).findFirst()
+                msg = msg?.replace(
                     markDown,
                     "<img style=\"float: right; padding: 10px 10px 10px 10px;\"  width=\"200px\" src=\"file://" + Utilities.SD_PATH + "/" + library?.id + "/" + library?.resourceLocalAddress + "\"/>",
                     false
@@ -74,12 +73,12 @@ class NewsDetailActivity : BaseActivity() {
             }
             loadImage()
         }
-        msg = msg.replace(
+        msg = msg!!.replace(
             "\n",
             "<div/><br/><div style=\" word-wrap: break-word;page-break-after: always;  word-spacing: 2px;\" >"
         )
-        tv_detail.settings.layoutAlgorithm = WebSettings.LayoutAlgorithm.SINGLE_COLUMN;
-        tv_detail.loadDataWithBaseURL(
+        activityNewsDetailBinding.tvDetail.settings.layoutAlgorithm = WebSettings.LayoutAlgorithm.SINGLE_COLUMN;
+        activityNewsDetailBinding.tvDetail.loadDataWithBaseURL(
             null,
             "<html><body><div style=\" word-wrap: break-word;  word-spacing: 2px;\" >$msg</div></body></html>",
             "text/html",
@@ -89,13 +88,13 @@ class NewsDetailActivity : BaseActivity() {
     }
 
     private fun loadLocalImage(): String {
-        var msg: String = news!!.message
+        var msg: String? = news!!.message
         try {
-            val imgObject = Gson().fromJson(news!!.imageUrls[0], JsonObject::class.java)
-            img.visibility = View.VISIBLE
+            val imgObject = Gson().fromJson(news!!.imageUrls!![0], JsonObject::class.java)
+            activityNewsDetailBinding.img.visibility = View.VISIBLE
             Glide.with(this@NewsDetailActivity)
-                .load(File(JsonUtils.getString("imageUrl", imgObject))).into(img)
-            news!!.imageUrls.forEach {
+                .load(File(JsonUtils.getString("imageUrl", imgObject))).into(activityNewsDetailBinding.img)
+            news!!.imageUrls!!.forEach {
                 val imageObject = Gson().fromJson(it, JsonObject::class.java)
                 msg += "<br/><img width=\"50%\" src=\"file://" + JsonUtils.getString(
                     "imageUrl", imageObject
@@ -104,7 +103,7 @@ class NewsDetailActivity : BaseActivity() {
         } catch (e: Exception) {
             loadImage()
         }
-        return msg
+        return msg!!
     }
 
     private fun loadImage() {
@@ -116,11 +115,11 @@ class NewsDetailActivity : BaseActivity() {
             if (library != null) {
                 Glide.with(this)
                     .load(File(Utilities.SD_PATH, library.id + "/" + library.resourceLocalAddress))
-                    .into(img)
-                img.visibility = View.VISIBLE
+                    .into(activityNewsDetailBinding.img)
+                activityNewsDetailBinding.img.visibility = View.VISIBLE
                 return
             }
         }
-        img.visibility = View.GONE
+        activityNewsDetailBinding.img.visibility = View.GONE
     }
 }

@@ -1,21 +1,19 @@
 package org.ole.planet.myplanet.ui.mymeetup;
 
 import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
-import android.widget.Button;
-import android.widget.LinearLayout;
-import android.widget.ListView;
-import android.widget.TextView;
-
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.databinding.FragmentMyMeetupDetailBinding;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmMeetup;
 import org.ole.planet.myplanet.model.RealmUserModel;
@@ -29,13 +27,11 @@ import io.realm.Realm;
 import io.realm.RealmResults;
 
 public class MyMeetupDetailFragment extends Fragment implements View.OnClickListener {
-    LinearLayout llContent;
+    private FragmentMyMeetupDetailBinding fragmentMyMeetupDetailBinding;
     RealmMeetup meetups;
     Realm mRealm;
     String meetUpId;
-    TextView title;
-    Button btnLeave;
-    Button btnInvite;
+
     UserProfileDbHandler profileDbHandler;
     RealmUserModel user;
     ListView listUsers;
@@ -56,20 +52,17 @@ public class MyMeetupDetailFragment extends Fragment implements View.OnClickList
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View v = inflater.inflate(R.layout.fragment_my_meetup_detail, container, false);
-        listDesc = v.findViewById(R.id.list_desc);
-        listUsers = v.findViewById(R.id.list_users);
-        tvJoined = v.findViewById(R.id.tv_joined);
-        btnInvite = v.findViewById(R.id.btn_invite);
-        btnInvite.setVisibility(Constants.showBetaFeature(Constants.KEY_MEETUPS, getActivity()) ? View.VISIBLE : View.GONE);
-        btnLeave = v.findViewById(R.id.btn_leave);
-        btnLeave.setVisibility(Constants.showBetaFeature(Constants.KEY_MEETUPS, getActivity()) ? View.VISIBLE : View.GONE);
-        btnLeave.setOnClickListener(this);
-        title = v.findViewById(R.id.meetup_title);
+        fragmentMyMeetupDetailBinding = FragmentMyMeetupDetailBinding.inflate(inflater, container, false);
+        listDesc = fragmentMyMeetupDetailBinding.getRoot().findViewById(R.id.list_desc);
+        listUsers = fragmentMyMeetupDetailBinding.getRoot().findViewById(R.id.list_users);
+        tvJoined = fragmentMyMeetupDetailBinding.getRoot().findViewById(R.id.tv_joined);
+        fragmentMyMeetupDetailBinding.btnInvite.setVisibility(Constants.showBetaFeature(Constants.KEY_MEETUPS, getActivity()) ? View.VISIBLE : View.GONE);
+        fragmentMyMeetupDetailBinding.btnLeave.setVisibility(Constants.showBetaFeature(Constants.KEY_MEETUPS, getActivity()) ? View.VISIBLE : View.GONE);
+        fragmentMyMeetupDetailBinding.btnLeave.setOnClickListener(this);
         mRealm = new DatabaseService(getActivity()).getRealmInstance();
         profileDbHandler = new UserProfileDbHandler(getActivity());
         user = mRealm.copyFromRealm(profileDbHandler.getUserModel());
-        return v;
+        return fragmentMyMeetupDetailBinding.getRoot();
     }
 
     @Override
@@ -88,7 +81,7 @@ public class MyMeetupDetailFragment extends Fragment implements View.OnClickList
     }
 
     private void setUpData() {
-        title.setText(meetups.getTitle());
+        fragmentMyMeetupDetailBinding.meetupTitle.setText(meetups.title);
         final HashMap<String, String> map = RealmMeetup.getHashMap(meetups);
         final ArrayList<String> keys = new ArrayList<>(map.keySet());
         listDesc.setAdapter(new ArrayAdapter<String>(getActivity(), R.layout.row_description, keys) {
@@ -114,13 +107,14 @@ public class MyMeetupDetailFragment extends Fragment implements View.OnClickList
 
     private void leaveJoinMeetUp() {
         mRealm.executeTransaction(realm -> {
-            if (meetups.getUserId().isEmpty()) {
-                meetups.setUserId(user.getId());
-                btnLeave.setText(R.string.leave);
+            if (meetups.userId.isEmpty()) {
+                meetups.userId = user.id;
+                fragmentMyMeetupDetailBinding.btnLeave.setText(R.string.leave);
             } else {
-                meetups.setUserId("");
-                btnLeave.setText(R.string.join);
+                meetups.userId = "";
+                fragmentMyMeetupDetailBinding.btnLeave.setText(R.string.join);
             }
         });
     }
 }
+

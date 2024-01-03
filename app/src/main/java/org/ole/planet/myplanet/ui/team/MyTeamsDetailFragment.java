@@ -6,7 +6,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.google.android.material.tabs.TabLayout;
-import com.google.android.material.textfield.TextInputLayout;
 
 import androidx.fragment.app.Fragment;
 import androidx.appcompat.app.AlertDialog;
@@ -17,7 +16,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -25,6 +23,8 @@ import android.widget.TextView;
 import org.json.JSONArray;
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.base.BaseNewsFragment;
+import org.ole.planet.myplanet.databinding.AlertInputBinding;
+import org.ole.planet.myplanet.databinding.FragmentMyTeamsDetailBinding;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmMyCourse;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
@@ -48,12 +48,13 @@ import java.util.UUID;
 import io.realm.RealmResults;
 
 public class MyTeamsDetailFragment extends BaseNewsFragment {
-    TextView tvTitle, tvDescription;
+    private FragmentMyTeamsDetailBinding fragmentMyTeamsDetailBinding;
+    TextView tvDescription;
     RealmUserModel user;
     String teamId;
     RealmMyTeam team;
-    Button btnLeave;
-    Button btnInvite;
+//    Button btnLeave;
+//    Button btnInvite;
     ListView listContent;
     TabLayout tabLayout;
     DatabaseService dbService;
@@ -76,37 +77,37 @@ public class MyTeamsDetailFragment extends BaseNewsFragment {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View v = inflater.inflate(R.layout.fragment_my_teams_detail, container, false);
+        fragmentMyTeamsDetailBinding = FragmentMyTeamsDetailBinding.inflate(inflater, container, false);
+        View v = fragmentMyTeamsDetailBinding.getRoot();
         initializeViews(v);
         dbService = new DatabaseService(getActivity());
         mRealm = dbService.getRealmInstance();
         user = mRealm.copyFromRealm(profileDbHandler.getUserModel());
         team = mRealm.where(RealmMyTeam.class).equalTo("_id", teamId).findFirst();
-        return v;
+        return fragmentMyTeamsDetailBinding.getRoot();
     }
 
     private void initializeViews(View v) {
-        btnLeave = v.findViewById(R.id.btn_leave);
         llRv = v.findViewById(R.id.ll_rv);
-        btnLeave.setVisibility(Constants.showBetaFeature(Constants.KEY_MEETUPS, getActivity()) ? View.VISIBLE : View.GONE);
-        btnInvite = v.findViewById(R.id.btn_invite);
-        btnInvite.setVisibility(Constants.showBetaFeature(Constants.KEY_MEETUPS, getActivity()) ? View.VISIBLE : View.GONE);
         rvDiscussion = v.findViewById(R.id.rv_discussion);
         tvDescription = v.findViewById(R.id.description);
         tabLayout = v.findViewById(R.id.tab_layout);
         listContent = v.findViewById(R.id.list_content);
-        tvTitle = v.findViewById(R.id.title);
+
+        fragmentMyTeamsDetailBinding.btnInvite.setVisibility(Constants.showBetaFeature(Constants.KEY_MEETUPS, getActivity()) ? View.VISIBLE : View.GONE);
+        fragmentMyTeamsDetailBinding.btnLeave.setVisibility(Constants.showBetaFeature(Constants.KEY_MEETUPS, getActivity()) ? View.VISIBLE : View.GONE);
         v.findViewById(R.id.add_message).setOnClickListener(view -> {
             showAddMessage();
         });
     }
 
     private void showAddMessage() {
-        View v = getLayoutInflater().inflate(R.layout.alert_input, null);
-        TextInputLayout layout = v.findViewById(R.id.tl_input);
-        layout.setHint(getString(R.string.enter_message));
-        new AlertDialog.Builder(getActivity()).setView(v).setTitle(R.string.add_message).setPositiveButton(R.string.save, (dialogInterface, i) -> {
-            String msg = layout.getEditText().getText().toString().trim();
+        AlertInputBinding alertInputBinding = AlertInputBinding.inflate(getLayoutInflater());
+//        View v = getLayoutInflater().inflate(R.layout.alert_input, null);
+//        TextInputLayout layout = v.findViewById(R.id.tl_input);
+        alertInputBinding.tlInput.setHint(getString(R.string.enter_message));
+        new AlertDialog.Builder(getActivity()).setView(alertInputBinding.getRoot()).setTitle(R.string.add_message).setPositiveButton(R.string.save, (dialogInterface, i) -> {
+            String msg = alertInputBinding.tlInput.getEditText().getText().toString().trim();
             if (msg.isEmpty()) {
                 Utilities.toast(getActivity(), String.valueOf(R.string.message_is_required));
                 return;
@@ -115,8 +116,8 @@ public class MyTeamsDetailFragment extends BaseNewsFragment {
             map.put("viewableBy", "teams");
             map.put("viewableId", teamId);
             map.put("message", msg);
-            map.put("messageType", team.getTeamType());
-            map.put("messagePlanetCode", team.getTeamPlanetCode());
+            map.put("messageType", team.teamType);
+            map.put("messagePlanetCode", team.teamPlanetCode);
             RealmNews.createNews(map, mRealm, user, imageList);
             rvDiscussion.getAdapter().notifyDataSetChanged();
         }).setNegativeButton(R.string.cancel, null).show();
@@ -125,20 +126,20 @@ public class MyTeamsDetailFragment extends BaseNewsFragment {
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        tvTitle.setText(team.getName());
-        tvDescription.setText(team.getDescription());
+        fragmentMyTeamsDetailBinding.title.setText(team.name);
+        tvDescription.setText(team.description);
         setTeamList();
     }
 
     private void setTeamList() {
         List<RealmUserModel> users = RealmMyTeam.getUsers(teamId, mRealm, "");
         createTeamLog();
-        List<RealmUserModel> reqUsers = getRequestedTeamList(team.getRequests());
-        List<RealmNews> realmNewsList = mRealm.where(RealmNews.class).isEmpty("replyTo").equalTo("viewableBy", "teams").equalTo("viewableId", team.get_id()).findAll();
+        List<RealmUserModel> reqUsers = getRequestedTeamList(team.requests);
+        List<RealmNews> realmNewsList = mRealm.where(RealmNews.class).isEmpty("replyTo").equalTo("viewableBy", "teams").equalTo("viewableId", team._id).findAll();
         rvDiscussion.setLayoutManager(new LinearLayoutManager(getActivity()));
         showRecyclerView(realmNewsList);
         listContent.setVisibility(View.GONE);
-        RealmResults<RealmMyCourse> courses = mRealm.where(RealmMyCourse.class).in("id", team.getCourses().toArray(new String[0])).findAll();
+        RealmResults<RealmMyCourse> courses = mRealm.where(RealmMyCourse.class).in("id", team.courses.toArray(new String[0])).findAll();
         libraries = mRealm.where(RealmMyLibrary.class).in("id", RealmMyTeam.getResourceIds(teamId, mRealm).toArray(new String[0])).findAll();
 
         tabLayout.getTabAt(1).setText(String.format(getString(R.string.joined_members_colon) + " (%s)", users.size()));
@@ -163,18 +164,18 @@ public class MyTeamsDetailFragment extends BaseNewsFragment {
             mRealm.beginTransaction();
         }
         RealmTeamLog log = mRealm.createObject(RealmTeamLog.class, UUID.randomUUID().toString());
-        log.setTeamId(teamId);
-        log.setUser(user.getName());
-        log.setCreatedOn(user.getPlanetCode());
-        log.setType("teamVisit");
-        log.setTeamType(team.getTeamType());
-        log.setParentCode(user.getParentCode());
-        log.setTime(new Date().getTime());
+        log.teamId = teamId;
+        log.user = user.name;
+        log.createdOn = user.planetCode;
+        log.type = "teamVisit";
+        log.teamType = team.teamType;
+        log.parentCode = user.parentCode;
+        log.time = new Date().getTime();
         mRealm.commitTransaction();
     }
 
     private void showRecyclerView(List<RealmNews> realmNewsList) {
-        AdapterNews adapterNews = new AdapterNews(getActivity(), realmNewsList, user, null);
+        AdapterNews adapterNews = new AdapterNews(getActivity(), realmNewsList, user, null, true);
         adapterNews.setmRealm(mRealm);
         adapterNews.setListener(this);
         rvDiscussion.setAdapter(adapterNews);
@@ -213,8 +214,8 @@ public class MyTeamsDetailFragment extends BaseNewsFragment {
             if (homeItemClickListener != null) {
                 LibraryDetailFragment f = new LibraryDetailFragment();
                 Bundle b = new Bundle();
-                b.putString("libraryId", libraries.get(i).getId());
-                b.putString("openFrom", team.getTeamType() + "-" + team.getTitle());
+                b.putString("libraryId", libraries.get(i).id);
+                b.putString("openFrom", team.teamType + "-" + team.title);
                 f.setArguments(b);
                 homeItemClickListener.openCallFragment(f);
             }
@@ -227,7 +228,7 @@ public class MyTeamsDetailFragment extends BaseNewsFragment {
         listContent.setAdapter(new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, courses));
         listContent.setOnItemClickListener((adapterView, view, i, l) -> {
             if (homeItemClickListener != null) {
-                openFragment(courses.get(i).getCourseId(), new TakeCourseFragment());
+                openFragment(courses.get(i).courseId, new TakeCourseFragment());
             }
         });
     }
@@ -249,12 +250,12 @@ public class MyTeamsDetailFragment extends BaseNewsFragment {
                 if (convertView == null)
                     convertView = LayoutInflater.from(getActivity()).inflate(android.R.layout.simple_list_item_1, parent, false);
                 TextView tv = convertView.findViewById(android.R.id.text1);
-                tv.setText(getItem(position).getName() + " (" + RealmTeamLog.getVisitCount(mRealm, getItem(position).getName(), teamId) + getString(R.string.visits) + ")");
+                tv.setText(getItem(position).name + " (" + RealmTeamLog.getVisitCount(mRealm, getItem(position).name, teamId) + getString(R.string.visits) + ")");
                 return convertView;
             }
         });
         listContent.setOnItemClickListener((adapterView, view, i, l) -> {
-            openFragment(data.get(i).getId(), new UserDetailFragment());
+            openFragment(data.get(i).id, new UserDetailFragment());
         });
     }
 

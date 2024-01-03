@@ -9,7 +9,6 @@ import android.text.TextUtils;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 
@@ -96,7 +95,7 @@ public class SyncManager {
             if (TransactionSyncManager.authenticate()) {
                 startSync();
             } else {
-                handleException("Invalid name or password");
+                handleException(context.getString(R.string.invalid_configuration));
                 destroy();
             }
         });
@@ -131,6 +130,7 @@ public class SyncManager {
             TransactionSyncManager.syncDb(mRealm, "health");
             TransactionSyncManager.syncDb(mRealm, "certifications");
             TransactionSyncManager.syncDb(mRealm, "team_activities");
+            TransactionSyncManager.syncDb(mRealm, "chat_history");
             ManagerSync.getInstance().syncAdmin();
             resourceTransactionSync(listener);
             RealmResourceActivity.onSynced(mRealm, settings);
@@ -191,8 +191,8 @@ public class SyncManager {
         mRealm.executeTransaction(realm -> {
             try {
                 DocumentResponse res = apiInterface.getDocuments(Utilities.getHeader(), Utilities.getUrl() + "/shelf/_all_docs").execute().body();
-                for (int i = 0; i < res.getRows().size(); i++) {
-                    shelfDoc = res.getRows().get(i);
+                for (int i = 0; i < res.rows.size(); i++) {
+                    shelfDoc = res.rows.get(i);
                     populateShelfItems(apiInterface, realm);
                 }
             } catch (IOException e) {
@@ -204,7 +204,7 @@ public class SyncManager {
     private void populateShelfItems(ApiInterface apiInterface, Realm mRealm) {
         try {
             this.mRealm = mRealm;
-            JsonObject jsonDoc = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/shelf/" + shelfDoc.getId()).execute().body();
+            JsonObject jsonDoc = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/shelf/" + shelfDoc.id).execute().body();
             Utilities.log(new Gson().toJson(jsonDoc));
             for (int i = 0; i < Constants.shelfDataList.size(); i++) {
                 Constants.ShelfData shelfData = Constants.shelfDataList.get(i);
@@ -224,7 +224,7 @@ public class SyncManager {
     }
 
     private void triggerInsert(String categroryId, String categoryDBName) {
-        stringArray[0] = shelfDoc.getId();
+        stringArray[0] = shelfDoc.id;
         stringArray[1] = categroryId;
         stringArray[2] = categoryDBName;
     }

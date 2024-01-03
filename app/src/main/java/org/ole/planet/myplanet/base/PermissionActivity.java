@@ -28,6 +28,13 @@ public abstract class PermissionActivity extends AppCompatActivity {
         return result == PackageManager.PERMISSION_GRANTED;
     }
 
+    public static boolean hasInstallPermission(android.content.Context context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            return context.getPackageManager().canRequestPackageInstalls();
+        }
+        return true;
+    }
+
     public void checkUsagesPermission() {
         if (!getUsagesPermission(this)) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -68,31 +75,32 @@ public abstract class PermissionActivity extends AppCompatActivity {
             permissions.add(Manifest.permission.CAMERA);
         }
 
-        if (!checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
-            permissions.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
-        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (!checkPermission(Manifest.permission.READ_MEDIA_IMAGES)) {
+                permissions.add(Manifest.permission.READ_MEDIA_IMAGES);
+            }
 
-        if (!checkPermission(Manifest.permission.READ_EXTERNAL_STORAGE)) {
-            permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE);
-        }
+            if (!checkPermission(Manifest.permission.READ_MEDIA_VIDEO)) {
+                permissions.add(Manifest.permission.READ_MEDIA_VIDEO);
+            }
 
-        if (!checkPermission(Manifest.permission.READ_MEDIA_IMAGES)) {
-            permissions.add(Manifest.permission.READ_MEDIA_IMAGES);
-        }
+            if (!checkPermission(Manifest.permission.READ_MEDIA_AUDIO)) {
+                permissions.add(Manifest.permission.READ_MEDIA_AUDIO);
+            }
+        } else {
+            if (!checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+                permissions.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+            }
 
-        if (!checkPermission(Manifest.permission.READ_MEDIA_VIDEO)) {
-            permissions.add(Manifest.permission.READ_MEDIA_VIDEO);
-        }
-
-        if (!checkPermission(Manifest.permission.READ_MEDIA_AUDIO)) {
-            permissions.add(Manifest.permission.READ_MEDIA_AUDIO);
+            if (!checkPermission(Manifest.permission.READ_EXTERNAL_STORAGE)) {
+                permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE);
+            }
         }
 
         if (!permissions.isEmpty()) {
             String[] permissionsArray = permissions.toArray(new String[0]);
             ActivityCompat.requestPermissions(this, permissionsArray, PERMISSION_REQUEST_CODE_FILE);
         } else {
-            // All permissions are already granted
             Toast.makeText(this, R.string.permissions_granted, Toast.LENGTH_SHORT).show();
         }
     }
@@ -101,9 +109,7 @@ public abstract class PermissionActivity extends AppCompatActivity {
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == PERMISSION_REQUEST_CODE_FILE) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                Toast.makeText(this, R.string.permissions_granted, Toast.LENGTH_SHORT).show();
-            } else {
+            if (grantResults.length > 0 && grantResults[0] != PackageManager.PERMISSION_GRANTED) {
                 Toast.makeText(this, R.string.permissions_denied, Toast.LENGTH_SHORT).show();
             }
         }

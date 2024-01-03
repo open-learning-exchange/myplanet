@@ -15,6 +15,7 @@ import org.ole.planet.myplanet.callback.SyncListener;
 import org.ole.planet.myplanet.datamanager.ApiClient;
 import org.ole.planet.myplanet.datamanager.ApiInterface;
 import org.ole.planet.myplanet.model.DocumentResponse;
+import org.ole.planet.myplanet.model.RealmChatHistory;
 import org.ole.planet.myplanet.model.RealmStepExam;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.model.Rows;
@@ -53,7 +54,7 @@ public class TransactionSyncManager {
             Utilities.log("Sync");
             RealmResults<RealmUserModel> users = realm.where(RealmUserModel.class).isNotEmpty("_id").findAll();
             for (RealmUserModel userModel : users) {
-                Utilities.log("Sync " + userModel.getName());
+                Utilities.log("Sync " + userModel.name);
                 syncHealthData(userModel, header);
             }
 
@@ -61,17 +62,17 @@ public class TransactionSyncManager {
     }
 
     private static void syncHealthData(RealmUserModel userModel, String header) {
-        String table = "userdb-" + Utilities.toHex(userModel.getPlanetCode()) + "-" + Utilities.toHex(userModel.getName());
+        String table = "userdb-" + Utilities.toHex(userModel.planetCode) + "-" + Utilities.toHex(userModel.name);
         ApiInterface apiInterface = ApiClient.getClient().create(ApiInterface.class);
         Response response;
         try {
             response = apiInterface.getDocuments(header, Utilities.getUrl() + "/" + table + "/_all_docs").execute();
             DocumentResponse ob = (DocumentResponse) response.body();
-            if (ob != null && ob.getRows().size() > 0) {
-                Rows r = ob.getRows().get(0);
-                JsonObject jsonDoc = apiInterface.getJsonObject(header, Utilities.getUrl() + "/" + table + "/" + r.getId()).execute().body();
-                userModel.setKey(JsonUtils.getString("key", jsonDoc));
-                userModel.setIv(JsonUtils.getString("iv", jsonDoc));
+            if (ob != null && ob.rows.size() > 0) {
+                Rows r = ob.rows.get(0);
+                JsonObject jsonDoc = apiInterface.getJsonObject(header, Utilities.getUrl() + "/" + table + "/" + r.id).execute().body();
+                userModel.key = JsonUtils.getString("key", jsonDoc);
+                userModel.iv = JsonUtils.getString("iv", jsonDoc);
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -83,9 +84,9 @@ public class TransactionSyncManager {
         RealmUserModel model = new UserProfileDbHandler(MainApplication.context).getUserModel();
         String userName = settings.getString("loginUserName", "");
         String password = settings.getString("loginUserPassword", "");
-        String table = "userdb-" + Utilities.toHex(model.getPlanetCode()) + "-" + Utilities.toHex(model.getName());
+        String table = "userdb-" + Utilities.toHex(model.planetCode) + "-" + Utilities.toHex(model.name);
         String header = "Basic " + Base64.encodeToString((userName + ":" + password).getBytes(), Base64.NO_WRAP);
-        String id = model.getId();
+        String id = model.id;
         mRealm.executeTransactionAsync(realm -> {
             RealmUserModel userModel = realm.where(RealmUserModel.class).equalTo("id", id).findFirst();
             syncHealthData(userModel, header);
@@ -110,6 +111,9 @@ public class TransactionSyncManager {
                         final Response<JsonObject> response = apiInterface.findDocs(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/" + table + "/_all_docs?include_docs=true", obj).execute();
                         if (response.body() != null) {
                             JsonArray arr = JsonUtils.getJsonArray("rows", response.body());
+                            if(table.equals("chat_history")) {
+                                insertToChat(arr, mRealm);
+                            }
                             insertDocs(arr, mRealm, table);
                         }
                         keys.clear();
@@ -118,6 +122,14 @@ public class TransactionSyncManager {
             } catch (IOException e) {
             }
         });
+    }
+
+    private static void insertToChat(JsonArray arr, Realm mRealm) {
+        for (JsonElement j : arr) {
+            JsonObject jsonDoc = j.getAsJsonObject();
+            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc);
+            RealmChatHistory.insert(mRealm, jsonDoc);
+        }
     }
 
     private static void insertDocs(JsonArray arr, Realm mRealm, String table) {

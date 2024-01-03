@@ -43,6 +43,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:src="@drawable/ic_mic"
+            android:contentDescription="@string/record_audio"
             app:fab_label="Record Audio" />
 
         <com.github.clans.fab.FloatingActionButton
@@ -50,6 +51,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:src="@drawable/ic_play_white"
+            android:contentDescription="@string/play_audio"
             app:fab_label="Play Audio" />
     </com.github.clans.fab.FloatingActionMenu>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

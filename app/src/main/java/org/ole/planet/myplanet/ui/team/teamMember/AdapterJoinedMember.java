@@ -4,8 +4,6 @@ import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
@@ -14,22 +12,18 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 
 import org.ole.planet.myplanet.R;
-import org.ole.planet.myplanet.databinding.ItemTitleDescBinding;
 import org.ole.planet.myplanet.databinding.RowJoinedUserBinding;
-import org.ole.planet.myplanet.databinding.RowOtherInfoBinding;
 import org.ole.planet.myplanet.model.RealmMyTeam;
 import org.ole.planet.myplanet.model.RealmTeamLog;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
-import org.ole.planet.myplanet.ui.userprofile.AdapterOtherInfo;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.util.List;
 
-import de.hdodenhof.circleimageview.CircleImageView;
 import io.realm.Realm;
 
-public class AdapterJoinedMember extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+public class AdapterJoinedMember extends RecyclerView.Adapter<AdapterJoinedMember.ViewHolderUser> {
     private RowJoinedUserBinding rowJoinedUserBinding;
     private Context context;
     private List<RealmUserModel> list;
@@ -46,45 +40,41 @@ public class AdapterJoinedMember extends RecyclerView.Adapter<RecyclerView.ViewH
         this.currentUser = new UserProfileDbHandler(context).getUserModel();
         RealmMyTeam leaderTeam = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("isLeader", true).findFirst();
         if (leaderTeam != null) {
-            this.teamLeaderId = leaderTeam.getUserId();
+            this.teamLeaderId = leaderTeam.userId;
         }
     }
 
     @NonNull
     @Override
-    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+    public ViewHolderUser onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         rowJoinedUserBinding = RowJoinedUserBinding.inflate(LayoutInflater.from(context), parent, false);
         return new ViewHolderUser(rowJoinedUserBinding);
-//        View v = LayoutInflater.from(context).inflate(R.layout.row_joined_user, parent, false);
-//        return new ViewHolderUser(v);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-        if (holder instanceof ViewHolderUser) {
-            String[] overflowMenuOptions;
-            if (list.get(position).toString().equals(" ")) {
-                rowJoinedUserBinding.tvTitle.setText(list.get(position).getName());
-            } else {
-                rowJoinedUserBinding.tvTitle.setText(list.get(position).toString());
-            }
-            rowJoinedUserBinding.tvDescription.setText(list.get(position).getRoleAsString() + " (" + RealmTeamLog.getVisitCount(mRealm, list.get(position).getName(), teamId) + " " + context.getString(R.string.visits) + " )");
-              Glide.with(context)
-                    .load(list.get(position).getUserImage())
-                    .placeholder(R.drawable.profile)
-                    .error(R.drawable.profile)
-                    .into(rowJoinedUserBinding.memberImage);
-            boolean isLoggedInUserTeamLeader = this.teamLeaderId != null && this.teamLeaderId.equals(this.currentUser.getId());
+    public void onBindViewHolder(@NonNull ViewHolderUser holder, int position) {
+        String[] overflowMenuOptions;
+        if (list.get(position).toString().equals(" ")) {
+            rowJoinedUserBinding.tvTitle.setText(list.get(position).name);
+        } else {
+            rowJoinedUserBinding.tvTitle.setText(list.get(position).toString());
+        }
+        rowJoinedUserBinding.tvDescription.setText(list.get(position).getRoleAsString() + " (" + RealmTeamLog.getVisitCount(mRealm, list.get(position).name, teamId) + " " + context.getString(R.string.visits) + " )");
+        Glide.with(context)
+              .load(list.get(position).userImage)
+              .placeholder(R.drawable.profile)
+              .error(R.drawable.profile)
+              .into(rowJoinedUserBinding.memberImage);
+        boolean isLoggedInUserTeamLeader = this.teamLeaderId != null && this.teamLeaderId.equals(this.currentUser.id);
 
-            // If the current user card is the logged in user/team leader
-            if (this.teamLeaderId.equals(list.get(position).getId())) {
-                rowJoinedUserBinding.tvIsLeader.setVisibility(View.VISIBLE);
-                rowJoinedUserBinding.tvIsLeader.setText("("+ R.string.team_leader +")");
-            } else {
-                rowJoinedUserBinding.tvIsLeader.setVisibility(View.GONE);
-                overflowMenuOptions = new String[]{context.getString(R.string.remove), context.getString(R.string.make_leader)};
-                checkUserAndShowOverflowMenu((ViewHolderUser) holder, position, overflowMenuOptions, isLoggedInUserTeamLeader);
-            }
+        // If the current user card is the logged in user/team leader
+        if (this.teamLeaderId.equals(list.get(position).id)) {
+            rowJoinedUserBinding.tvIsLeader.setVisibility(View.VISIBLE);
+            rowJoinedUserBinding.tvIsLeader.setText("("+ R.string.team_leader +")");
+        } else {
+            rowJoinedUserBinding.tvIsLeader.setVisibility(View.GONE);
+            overflowMenuOptions = new String[]{context.getString(R.string.remove), context.getString(R.string.make_leader)};
+            checkUserAndShowOverflowMenu((ViewHolderUser) holder, position, overflowMenuOptions, isLoggedInUserTeamLeader);
         }
     }
 
@@ -111,13 +101,13 @@ public class AdapterJoinedMember extends RecyclerView.Adapter<RecyclerView.ViewH
 
     private void makeLeader(RealmUserModel userModel, int position) {
         if (!mRealm.isInTransaction()) mRealm.beginTransaction();
-        RealmMyTeam team = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("userId", userModel.getId()).findFirst();
+        RealmMyTeam team = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("userId", userModel.id).findFirst();
         RealmMyTeam teamLeader = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("isLeader", true).findFirst();
         if (teamLeader != null) {
-            teamLeader.setLeader(false);
+            teamLeader.isLeader = false;
         }
         if (team != null) {
-            team.setLeader(true);
+            team.isLeader = true;
         }
 
         mRealm.commitTransaction();
@@ -127,7 +117,7 @@ public class AdapterJoinedMember extends RecyclerView.Adapter<RecyclerView.ViewH
 
     private void reject(RealmUserModel userModel, int position) {
         if (!mRealm.isInTransaction()) mRealm.beginTransaction();
-        RealmMyTeam team = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("userId", userModel.getId()).findFirst();
+        RealmMyTeam team = mRealm.where(RealmMyTeam.class).equalTo("teamId", teamId).equalTo("userId", userModel.id).findFirst();
         if (team != null) {
             team.deleteFromRealm();
         }
@@ -142,7 +132,7 @@ public class AdapterJoinedMember extends RecyclerView.Adapter<RecyclerView.ViewH
         return list.size();
     }
 
-    class ViewHolderUser extends RecyclerView.ViewHolder {
+    static class ViewHolderUser extends RecyclerView.ViewHolder {
         public RowJoinedUserBinding rowJoinedUserBinding;
 
         public ViewHolderUser(RowJoinedUserBinding rowJoinedUserBinding) {

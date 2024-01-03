@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.library;
 
 import static android.app.Activity.RESULT_OK;
 
-import android.app.Activity;
 import android.app.Dialog;
 import android.content.ContentValues;
 import android.content.Context;
@@ -23,7 +22,6 @@ import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
-import androidx.core.content.FileProvider;
 
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
@@ -33,11 +31,14 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import org.jetbrains.annotations.NotNull;
 import org.ole.planet.myplanet.MainApplication;
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.databinding.AlertSoundRecorderBinding;
+import org.ole.planet.myplanet.databinding.FragmentAddResourceBinding;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmMyPersonal;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.AudioRecorderService;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
+import org.ole.planet.myplanet.ui.myPersonals.MyPersonalsFragment;
 import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
@@ -48,17 +49,18 @@ import java.util.UUID;
 import io.realm.Realm;
 
 public class AddResourceFragment extends BottomSheetDialogFragment {
+    private FragmentAddResourceBinding fragmentAddResourceBinding;
     static final int REQUEST_VIDEO_CAPTURE = 1;
     static final int REQUEST_RECORD_SOUND = 0;
     static final int REQUEST_CAPTURE_PICTURE = 2;
-    int type = 0;
+    static int type = 0;
     TextView tvTime;
     FloatingActionButton floatingActionButton;
     AudioRecorderService audioRecorderService;
     File output;
     private Uri photoURI;
     private Uri videoUri;
-
+    private static MyPersonalsFragment myPersonalsFragment;
     public AddResourceFragment() {
     }
 
@@ -67,8 +69,8 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
         EditText etTitle = v.findViewById(R.id.et_title);
         EditText etDesc = v.findViewById(R.id.et_description);
         RealmUserModel realmUserModel = new UserProfileDbHandler(MainApplication.context).getUserModel();
-        String userId = realmUserModel.getId();
-        String userName = realmUserModel.getName();
+        String userId = realmUserModel.id;
+        String userName = realmUserModel.name;
         new AlertDialog.Builder(context).setTitle(R.string.enter_resource_detail).setView(v).setPositiveButton("Save", (dialogInterface, i) -> {
             String title = etTitle.getText().toString().trim();
             if (title.isEmpty()) {
@@ -79,13 +81,18 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
             Realm realm = new DatabaseService(context).getRealmInstance();
             realm.executeTransactionAsync(realm1 -> {
                 RealmMyPersonal myPersonal = realm1.createObject(RealmMyPersonal.class, UUID.randomUUID().toString());
-                myPersonal.setTitle(title);
-                myPersonal.setUserId(userId);
-                myPersonal.setUserName(userName);
-                myPersonal.setPath(path);
-                myPersonal.setDate(new Date().getTime());
-                myPersonal.setDescription(desc);
+                myPersonal.title = title;
+                myPersonal.userId = userId;
+                myPersonal.userName = userName;
+                myPersonal.path = path;
+                myPersonal.date = new Date().getTime();
+                myPersonal.description = desc;
             }, () -> Utilities.toast(MainApplication.context, context.getString(R.string.resource_saved_to_my_personal)));
+            if (type == 1) {
+                if (myPersonalsFragment != null) {
+                    myPersonalsFragment.refreshFragment();
+                }
+            }
         }).setNegativeButton(R.string.dismiss, null).show();
     }
 
@@ -113,29 +120,36 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View v = inflater.inflate(R.layout.fragment_add_resource, container, false);
-        v.findViewById(R.id.ll_record_video).setOnClickListener(view -> dispatchTakeVideoIntent());
-        v.findViewById(R.id.ll_record_audio).setOnClickListener(view -> {
+        fragmentAddResourceBinding = FragmentAddResourceBinding.inflate(inflater, container, false);
+        fragmentAddResourceBinding.llRecordVideo.setOnClickListener(view -> dispatchTakeVideoIntent());
+        fragmentAddResourceBinding.llRecordAudio.setOnClickListener(view -> {
             showAudioRecordAlert();
         });
-        v.findViewById(R.id.ll_capture_image).setOnClickListener(view -> takePhoto());
-        v.findViewById(R.id.ll_draft).setOnClickListener(view -> FileUtils.openOleFolder(this, 100));
-        return v;
+        fragmentAddResourceBinding.llCaptureImage.setOnClickListener(view -> takePhoto());
+        fragmentAddResourceBinding.llDraft.setOnClickListener(view -> FileUtils.openOleFolder(this, 100));
+        return fragmentAddResourceBinding.getRoot();
     }
 
     private void showAudioRecordAlert() {
-        View v = LayoutInflater.from(getActivity()).inflate(R.layout.alert_sound_recorder, null);
-        tvTime = v.findViewById(R.id.tv_time);
-        floatingActionButton = v.findViewById(R.id.fab_record);
-        AlertDialog dialog = new AlertDialog.Builder(getActivity()).setTitle("Record Audio").setView(v).setCancelable(false).create();
+        AlertSoundRecorderBinding alertSoundRecorderBinding = AlertSoundRecorderBinding.inflate(LayoutInflater.from(getActivity()));
+        tvTime = alertSoundRecorderBinding.tvTime;
+        floatingActionButton = alertSoundRecorderBinding.fabRecord;
+        AlertDialog dialog = new AlertDialog.Builder(getActivity())
+                .setTitle("Record Audio")
+                .setView(alertSoundRecorderBinding.getRoot())
+                .setCancelable(false)
+                .create();
+
         createAudioRecorderService(dialog);
-        floatingActionButton.setOnClickListener(view -> {
+
+        alertSoundRecorderBinding.fabRecord.setOnClickListener(view -> {
             if (!audioRecorderService.isRecording()) {
                 audioRecorderService.startRecording();
             } else {
                 audioRecorderService.stopRecording();
             }
         });
+
         dialog.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.dismiss), (dialogInterface, i) -> {
             if (audioRecorderService != null && audioRecorderService.isRecording()) {
                 audioRecorderService.forceStop();
@@ -253,9 +267,7 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
                 return cursor.getString(columnIndex);
             }
         }
-
         return "";
-
     }
 
     private void addResource(String path) {
@@ -264,5 +276,9 @@ public class AddResourceFragment extends BottomSheetDialogFragment {
         } else {
             showAlert(getActivity(), path);
         }
+    }
+
+    public void setMyPersonalsFragment(MyPersonalsFragment myPersonalsFragment) {
+        this.myPersonalsFragment = myPersonalsFragment;
     }
 }

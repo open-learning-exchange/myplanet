@@ -62,15 +62,15 @@ public abstract class ProcessUserDataActivity extends PermissionActivity impleme
     }
 
     public void checkDownloadResult(Download download, ProgressDialog progressDialog) {
-        if (!download.isFailed()) {
-            progressDialog.setMessage(getString(R.string.downloading) + download.getProgress() + "% " + getString(R.string.complete));
-            if (download.isCompleteAll()) {
+        if (!download.failed) {
+            progressDialog.setMessage(getString(R.string.downloading) + download.progress + "% " + getString(R.string.complete));
+            if (download.completeAll) {
                 progressDialog.dismiss();
-                FileUtils.installApk(this, download.getFileUrl());
+                FileUtils.installApk(this, download.fileUrl);
             }
         } else {
             progressDialog.dismiss();
-            DialogUtils.showError(progressDialog, download.getMessage());
+            DialogUtils.showError(progressDialog, download.message);
         }
     }
 
@@ -169,13 +169,13 @@ public abstract class ProcessUserDataActivity extends PermissionActivity impleme
     public void saveUserInfoPref(SharedPreferences settings, String password, RealmUserModel user) {
         this.settings = settings;
         SharedPreferences.Editor editor = settings.edit();
-        editor.putString("userId", user.getId());
-        editor.putString("name", user.getName());
+        editor.putString("userId", user.id);
+        editor.putString("name", user.name);
         editor.putString("password", password);
-        editor.putString("firstName", user.getFirstName());
-        editor.putString("lastName", user.getLastName());
-        editor.putString("middleName", user.getMiddleName());
-        editor.putBoolean("isUserAdmin", user.getUserAdmin());
+        editor.putString("firstName", user.firstName);
+        editor.putString("lastName", user.lastName);
+        editor.putString("middleName", user.middleName);
+        editor.putBoolean("isUserAdmin", user.userAdmin);
         editor.putLong("lastLogin", System.currentTimeMillis());
         editor.commit();
     }
