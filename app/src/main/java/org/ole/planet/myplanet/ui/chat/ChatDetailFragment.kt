@@ -24,7 +24,7 @@ import org.ole.planet.myplanet.datamanager.ApiClient
 import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmChatHistory
-import org.ole.planet.myplanet.model.RealmChatHistory.addConversationToChatHistory
+import org.ole.planet.myplanet.model.RealmChatHistory.Companion.addConversationToChatHistory
 import org.ole.planet.myplanet.utilities.Utilities
 import retrofit2.Call
 import retrofit2.Callback
@@ -42,7 +42,7 @@ class ChatDetailFragment : Fragment() {
         super.onCreate(savedInstanceState)
         sharedViewModel = ViewModelProvider(requireActivity())[ChatViewModel::class.java]
     }
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentChatDetailBinding = FragmentChatDetailBinding.inflate(inflater, container, false)
         return fragmentChatDetailBinding.root
     }
@@ -87,7 +87,7 @@ class ChatDetailFragment : Fragment() {
             }
         }
 
-        fragmentChatDetailBinding.editGchatMessage.setOnKeyListener { _, keyCode, event ->
+        fragmentChatDetailBinding.editGchatMessage.setOnKeyListener { _, _, event ->
             if (event.action == KeyEvent.ACTION_DOWN) {
                 if (event.keyCode == KeyEvent.KEYCODE_ENTER && event.isShiftPressed) {
                     // Insert a new line when Shift + Enter is pressed
@@ -101,7 +101,6 @@ class ChatDetailFragment : Fragment() {
             }
             false
         }
-
 
         fragmentChatDetailBinding.editGchatMessage.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -121,9 +120,13 @@ class ChatDetailFragment : Fragment() {
                 for (conversation in conversations) {
                     val query = conversation.query
                     val response = conversation.response
-                    mAdapter.addQuery(query)
+                    if (query != null) {
+                        mAdapter.addQuery(query)
+                    }
                     mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_SHARED_VIEW_MODEL
-                    mAdapter.addResponse(response)
+                    if (response != null) {
+                        mAdapter.addResponse(response)
+                    }
                 }
             }
         }

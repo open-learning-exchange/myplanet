@@ -126,7 +126,7 @@ public class AddResourceActivity extends AppCompatActivity {
         listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
         listView.setAdapter(adapter);
         new AlertDialog.Builder(this).setView(listView).setPositiveButton(R.string.ok, (dialogInterface, i) -> {
-            ArrayList<Integer> selected = listView.getSelectedItemsList();
+            ArrayList<Integer> selected = listView.selectedItemsList;
             items.clear();
             String selection = "";
             for (Integer index : selected) {
