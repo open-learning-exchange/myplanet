@@ -21,7 +21,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.utilities.FileUtils.getTotalAvailableMemoryRatio
+import org.ole.planet.myplanet.utilities.FileUtils
 import java.util.Calendar
 
 class NotificationFragment : BottomSheetDialogFragment() {
@@ -85,7 +85,7 @@ class NotificationFragment : BottomSheetDialogFragment() {
         notificationList.add(Notifications(R.drawable.ic_dictionary, getString(R.string.download_dictionary)))
         notificationList.add(Notifications(R.drawable.task_pending, "${tasks.size} ${getString(R.string.tasks_due)}"))
 
-        var storageRatio = getTotalAvailableMemoryRatio()
+        var storageRatio = FileUtils.totalAvailableMemoryRatio
         var storageNotiText: String
         if (storageRatio <= 10) {
             storageNotiText =
