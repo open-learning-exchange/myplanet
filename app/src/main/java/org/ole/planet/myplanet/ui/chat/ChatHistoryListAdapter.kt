@@ -25,10 +25,10 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
 
     fun filter(query: String) {
         filteredChatHistory = chatHistory.filter { chat ->
-            if (chat.conversations != null && chat.conversations.isNotEmpty()) {
-                chat.conversations[0]?.query?.contains(query, ignoreCase = true) == true
+            if (chat.conversations != null && chat.conversations!!.isNotEmpty()) {
+                chat.conversations!![0]?.query?.contains(query, ignoreCase = true) == true
             } else {
-                chat.title.contains(query, ignoreCase = true)
+                chat.title!!.contains(query, ignoreCase = true)
             }
         }
         notifyDataSetChanged()
@@ -45,17 +45,17 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val viewHolderChat = holder as ViewHolderChat
-        if (filteredChatHistory[position].conversations != null && filteredChatHistory[position].conversations.isNotEmpty()) {
-            viewHolderChat.rowChatHistoryBinding.chatTitle.text = filteredChatHistory[position].conversations[0]!!.query
+        if (filteredChatHistory[position].conversations != null && filteredChatHistory[position].conversations!!.isNotEmpty()) {
+            viewHolderChat.rowChatHistoryBinding.chatTitle.text = filteredChatHistory[position].conversations?.get(0)!!.query
         } else {
             viewHolderChat.rowChatHistoryBinding.chatTitle.text = filteredChatHistory[position].title
         }
 
         viewHolderChat.rowChatHistoryBinding.root.setOnClickListener {
             chatHistoryItemClickListener?.onChatHistoryItemClicked(
-                filteredChatHistory[position].conversations,
+                filteredChatHistory[position].conversations!!,
                 filteredChatHistory[position]._id.toString(),
-                filteredChatHistory[position]._rev
+                filteredChatHistory[position]._rev!!
             )
         }
     }

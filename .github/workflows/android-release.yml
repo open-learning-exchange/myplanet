@@ -29,12 +29,12 @@ jobs:
               app/build.gradle \
               app/src/main/AndroidManifest.xml \
               app/src/main/java/org/ole/planet/myplanet/base/BaseContainerFragment.kt \
-              app/src/main/java/org/ole/planet/myplanet/base/PermissionActivity.java \
+              app/src/main/java/org/ole/planet/myplanet/base/PermissionActivity.kt \
               app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardActivity.java
             sed -i 's/\(versionName "[0-9.]\+\)"/\1-lite"/' app/build.gradle
             cp app/src/main/AndroidManifest.xml.lite app/src/main/AndroidManifest.xml
             cp app/src/main/java/org/ole/planet/myplanet/base/BaseContainerFragment.kt.lite app/src/main/java/org/ole/planet/myplanet/base/BaseContainerFragment.kt
-            cp app/src/main/java/org/ole/planet/myplanet/base/PermissionActivity.java.lite app/src/main/java/org/ole/planet/myplanet/base/PermissionActivity.java
+            cp app/src/main/java/org/ole/planet/myplanet/base/PermissionActivity.kt.lite app/src/main/java/org/ole/planet/myplanet/base/PermissionActivity.kt
             cp app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardActivity.java.lite app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardActivity.java
           fi
 
@@ -107,7 +107,7 @@ jobs:
 
       - name: upload APK and AAB as build artifact
         if: github.ref != 'refs/heads/master'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}
           path: output/*

@@ -70,7 +70,7 @@ public class TransactionSyncManager {
             DocumentResponse ob = (DocumentResponse) response.body();
             if (ob != null && ob.rows.size() > 0) {
                 Rows r = ob.rows.get(0);
-                JsonObject jsonDoc = apiInterface.getJsonObject(header, Utilities.getUrl() + "/" + table + "/" + r.getId()).execute().body();
+                JsonObject jsonDoc = apiInterface.getJsonObject(header, Utilities.getUrl() + "/" + table + "/" + r.id).execute().body();
                 userModel.key = JsonUtils.getString("key", jsonDoc);
                 userModel.iv = JsonUtils.getString("iv", jsonDoc);
             }

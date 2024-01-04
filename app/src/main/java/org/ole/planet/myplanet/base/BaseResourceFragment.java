@@ -107,11 +107,11 @@ public abstract class BaseResourceFragment extends Fragment {
                         convertView = inflater.inflate(R.layout.my_library_alertdialog, null);
                         AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(getActivity());
                         alertDialogBuilder.setView(convertView).setTitle(R.string.download_suggestion);
-                        alertDialogBuilder.setPositiveButton(R.string.download_selected, (dialogInterface, i) -> startDownload(DownloadUtils.downloadFiles(db_myLibrary, lv.getSelectedItemsList(), settings))).setNeutralButton(R.string.download_all, (dialogInterface, i) -> startDownload(DownloadUtils.downloadAllFiles(db_myLibrary, settings))).setNegativeButton(R.string.txt_cancel, null);
+                        alertDialogBuilder.setPositiveButton(R.string.download_selected, (dialogInterface, i) -> startDownload(DownloadUtils.downloadFiles(db_myLibrary, lv.selectedItemsList, settings))).setNeutralButton(R.string.download_all, (dialogInterface, i) -> startDownload(DownloadUtils.downloadAllFiles(db_myLibrary, settings))).setNegativeButton(R.string.txt_cancel, null);
                         AlertDialog alertDialog = alertDialogBuilder.create();
                         createListView(db_myLibrary, alertDialog);
                         alertDialog.show();
-                        (alertDialog).getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(lv.getSelectedItemsList().size() > 0);
+                        (alertDialog).getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(lv.selectedItemsList.size() > 0);
                     }
                 } else {
                     Utilities.toast(requireContext(), getString(R.string.no_resources_to_download));
@@ -195,7 +195,7 @@ public abstract class BaseResourceFragment extends Fragment {
         ArrayAdapter<String> adapter = new ArrayAdapter<String>(getActivity().getBaseContext(), R.layout.rowlayout, R.id.checkBoxRowLayout, names);
         lv.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
         lv.setCheckChangeListener(() -> {
-            (alertDialog).getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(lv.getSelectedItemsList().size() > 0);
+            (alertDialog).getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(lv.selectedItemsList.size() > 0);
         });
         lv.setAdapter(adapter);
     }
