@@ -1094,7 +1094,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
             mRealm = Realm.getDefaultInstance();
             AlertDialog.Builder builder = DialogUtils.getUpdateDialog(this, info, progressDialog);
             if (cancelable || NetworkUtils.getCustomDeviceName(this).endsWith("###")) {
-//                builder.setNegativeButton(R.string.update_later, (dialogInterface, i) -> continueSyncProcess());
+                builder.setNegativeButton(R.string.update_later, (dialogInterface, i) -> continueSyncProcess(false, true));
             } else {
                 mRealm.executeTransactionAsync(realm -> realm.deleteAll());
             }
@@ -1122,7 +1122,6 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
 
     @Override
     public void onError(String msg, boolean block) {
-        Log.d("called", "called");
         Utilities.toast(this, msg);
         if (msg.startsWith("Config")) {
             settingDialog(this);
@@ -1136,8 +1135,6 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     }
 
     public void continueSyncProcess(boolean forceSync, boolean isSync) {
-        Log.d("forceSync", String.valueOf(forceSync));
-        Log.d("isSync", String.valueOf(isSync));
         Utilities.log("Upload : Continue sync process");
         try {
             if (isSync) {

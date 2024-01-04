@@ -146,7 +146,6 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
 
         activityDashboardBinding.appBarBell.ivSync.setOnClickListener(view ->
                 continueSyncProcess(true, false)
-//                syncNow()
         );
         activityDashboardBinding.appBarBell.imgLogo.setOnClickListener(view -> result.openDrawer());
 
@@ -161,7 +160,6 @@ public class DashboardActivity extends DashboardElementActivity implements OnHom
                         wifiStatusSwitch();
                         break;
                     case R.id.action_sync:
-//                        syncNow();
                         continueSyncProcess(true, false);
                         break;
                     case R.id.action_feedback:

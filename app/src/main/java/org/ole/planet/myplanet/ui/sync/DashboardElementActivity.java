@@ -118,16 +118,8 @@ public abstract class DashboardElementActivity extends SyncActivity implements F
             startActivity(new Intent(this, SettingActivity.class));
         } else if (id == R.id.action_sync) {
             continueSyncProcess(true, false);
-//            syncNow();
         }
         return super.onOptionsItemSelected(item);
-    }
-
-    protected void syncNow() {
-        settings.edit().putBoolean(Constants.KEY_LOGIN, false).commit();
-        startActivity(new Intent(this, LoginActivity.class).putExtra("forceSync", true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP));
-        doubleBackToExitPressedOnce = true;
-        finish();
     }
 
     @SuppressLint("RestrictedApi")
