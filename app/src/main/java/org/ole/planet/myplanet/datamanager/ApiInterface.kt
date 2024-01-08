@@ -34,7 +34,7 @@ interface ApiInterface {
     fun postDoc(@Header("Authorization") header: String?, @Header("Content-Type") c: String?, @Url url: String?, @Body s: JsonObject?): Call<JsonObject>
 
     @PUT
-    fun uploadResource(@HeaderMap headerMap: Map<String?, String>, @Url url: String?, @Body body: RequestBody?): Call<JsonObject>
+    fun uploadResource(@HeaderMap headerMap: Map<String, String>, @Url url: String?, @Body body: RequestBody?): Call<JsonObject>
 
     @PUT
     fun putDoc(@Header("Authorization") header: String?, @Header("Content-Type") c: String?, @Url url: String?, @Body s: JsonObject?): Call<JsonObject>
