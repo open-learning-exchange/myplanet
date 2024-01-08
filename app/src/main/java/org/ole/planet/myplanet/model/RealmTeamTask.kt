@@ -9,6 +9,7 @@ import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.utilities.JsonUtils
 
 open class RealmTeamTask : RealmObject() {
+    @JvmField
     @PrimaryKey
     var id: String? = null
     @JvmField
@@ -45,6 +46,7 @@ open class RealmTeamTask : RealmObject() {
     }
 
     companion object {
+        @JvmStatic
         fun insert(mRealm: Realm, obj: JsonObject?) {
             var task = mRealm.where(RealmTeamTask::class.java).equalTo("_id", JsonUtils.getString("_id", obj)).findFirst()
             if (task == null) {
