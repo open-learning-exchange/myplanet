@@ -48,7 +48,7 @@ class MyDownloadService : IntentService("Download Service") {
             stopSelf()
         }
         notificationBuilder = NotificationCompat.Builder(this, "11")
-        NotificationUtil.setChannel(notificationManager)
+        NotificationUtil.setChannel(notificationManager!!)
         val noti = notificationBuilder!!.setSmallIcon(R.mipmap.ic_launcher).setContentTitle("OLE Download")
             .setContentText("Downloading File...").setAutoCancel(true).build()
         notificationManager!!.notify(0, noti)
