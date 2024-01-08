@@ -98,7 +98,7 @@ open class RealmMyTeam : RealmObject() {
                 myTeams.resourceId = JsonUtils.getString("resourceId", doc)
                 myTeams.teamType = JsonUtils.getString("teamType", doc)
                 myTeams.route = JsonUtils.getString("route", doc)
-                myTeams.teamType = JsonUtils.getString("type", doc)
+                myTeams.type = JsonUtils.getString("type", doc)
                 myTeams.services = JsonUtils.getString("services", doc)
                 myTeams.rules = JsonUtils.getString("rules", doc)
                 myTeams.parentCode = JsonUtils.getString("parentCode", doc)
