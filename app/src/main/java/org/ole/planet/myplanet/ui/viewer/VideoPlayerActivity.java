@@ -5,22 +5,20 @@ import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.exoplayer2.DefaultLoadControl;
 import com.google.android.exoplayer2.ExoPlayerFactory;
 import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
-import com.google.android.exoplayer2.extractor.ExtractorsFactory;
 import com.google.android.exoplayer2.source.ExtractorMediaSource;
 import com.google.android.exoplayer2.source.MediaSource;
-import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection;
+import com.google.android.exoplayer2.source.ProgressiveMediaSource;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
 import com.google.android.exoplayer2.trackselection.TrackSelector;
-import com.google.android.exoplayer2.upstream.BandwidthMeter;
 import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DataSpec;
-import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
 import com.google.android.exoplayer2.upstream.FileDataSource;
 import com.google.android.exoplayer2.upstream.HttpDataSource;
@@ -64,9 +62,10 @@ public class VideoPlayerActivity extends AppCompatActivity implements AuthSessio
         }
     }
 
-    public void setAuthSession(Map<String, List<String>> responseHeader) {
+    @Override
+    public void setAuthSession(@NonNull Map<String, ? extends List<String>> responseHeader) {
         Utilities.log("Error " + new Gson().toJson(responseHeader));
-        String headerauth[] = responseHeader.get("Set-Cookie").get(0).split(";");
+        String[] headerauth = responseHeader.get("Set-Cookie").get(0).split(";");
         auth = headerauth[0];
         runOnUiThread(() -> streamVideoFromUrl(videoURL, auth));
     }
@@ -77,17 +76,14 @@ public class VideoPlayerActivity extends AppCompatActivity implements AuthSessio
     }
 
     public void streamVideoFromUrl(String videoUrl, String auth) {
-
-        BandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
-        TrackSelector trackSelector = new DefaultTrackSelector(new AdaptiveTrackSelection.Factory(bandwidthMeter));
-        exoPlayer = ExoPlayerFactory.newSimpleInstance(this, trackSelector);
+        TrackSelector trackSelectorDef = new DefaultTrackSelector();
+        exoPlayer= ExoPlayerFactory.newSimpleInstance(this, trackSelectorDef);
 
         Uri videoUri = Uri.parse(videoUrl);
 
         HttpDataSource.Factory defaultHttpDataSourceFactory = new DefaultHttpDataSourceFactory("ExoPlayer", null);
         defaultHttpDataSourceFactory.setDefaultRequestProperty("Cookie", auth);
-        ExtractorsFactory extractorsFactory = new DefaultExtractorsFactory();
-        MediaSource mediaSource = new ExtractorMediaSource(videoUri, defaultHttpDataSourceFactory, extractorsFactory, null, null);
+        MediaSource mediaSource = new ProgressiveMediaSource.Factory(defaultHttpDataSourceFactory).createMediaSource(videoUri);
 
         activityExoPlayerVideoBinding.exoPlayerSimple.setPlayer(exoPlayer);
         exoPlayer.prepare(mediaSource);
