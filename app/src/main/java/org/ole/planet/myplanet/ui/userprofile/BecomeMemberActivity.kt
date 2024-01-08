@@ -255,13 +255,18 @@ class BecomeMemberActivity : BaseActivity() {
             roles.add("learner")
             obj.add("roles", roles)
             activityBecomeMemberBinding.pbar.visibility = View.VISIBLE
-            Service(this).becomeMember(mRealm, obj) { res ->
-                runOnUiThread {
-                    activityBecomeMemberBinding.pbar.visibility = View.GONE
-                    Utilities.toast(this, res)
+//            Service(this).becomeMember(mRealm, obj) {
+//
+//            }
+            Service(this).becomeMember(mRealm, obj, object : Service.CreateUserCallback {
+                override fun onSuccess(res: String) {
+                    runOnUiThread {
+                        activityBecomeMemberBinding.pbar.visibility = View.GONE
+                        Utilities.toast(this@BecomeMemberActivity, res)
+                    }
+                    finish()
                 }
-                finish()
-            }
+            })
 
             val intent = Intent(this, LoginActivity::class.java)
             if (guest){

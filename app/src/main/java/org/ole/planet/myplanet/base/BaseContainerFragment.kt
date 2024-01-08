@@ -27,7 +27,7 @@ import com.google.gson.JsonObject
 import io.realm.RealmResults
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.base.PermissionActivity.hasInstallPermission
+import org.ole.planet.myplanet.base.PermissionActivity.Companion.hasInstallPermission
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.model.RealmMyLibrary
