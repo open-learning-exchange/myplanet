@@ -45,7 +45,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         fragmentTeamBinding = FragmentTeamBinding.inflate(inflater, container, false)
-        mRealm = DatabaseService(activity).realmInstance
+        mRealm = DatabaseService(requireContext()).realmInstance
         user = UserProfileDbHandler(requireActivity()).userModel
         fragmentTeamBinding.addTeam.setOnClickListener { createTeamAlert(null) }
         return fragmentTeamBinding.root
