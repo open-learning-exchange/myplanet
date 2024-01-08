@@ -92,7 +92,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     override fun forceDownloadNewsImages() {
-        if (mRealm == null) mRealm = DatabaseService(activity).realmInstance
+        if (mRealm == null) mRealm = DatabaseService(requireContext()).realmInstance
         Utilities.toast(activity, getString(R.string.please_select_starting_date))
         val now = Calendar.getInstance()
         val dpd = DatePickerDialog(
@@ -245,7 +245,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     private fun setUpMyLife(userId: String) {
-        val realm = DatabaseService(context).realmInstance
+        val realm = DatabaseService(requireContext()).realmInstance
         val realmObjects = RealmMyLife.getMyLifeByUserId(mRealm, settings)
         if (realmObjects.isEmpty()) {
             if (!realm.isInTransaction) realm.beginTransaction()
@@ -302,7 +302,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             .setOnClickListener { homeItemClickListener.openCallFragment(UserProfileFragment()) }
         view.findViewById<View>(R.id.txtFullName)
             .setOnClickListener { homeItemClickListener.openCallFragment(UserProfileFragment()) }
-        dbService = DatabaseService(activity)
+        dbService = DatabaseService(requireContext())
         mRealm = dbService?.realmInstance
         myLibraryDiv(view)
         initializeFlexBoxView(view, R.id.flexboxLayoutCourse, RealmMyCourse::class.java)
@@ -394,18 +394,15 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             mRealm!!.where(RealmTeamTask::class.java).equalTo("assignee", model.id)
                 .equalTo("completed", false)
                 .greaterThan("deadline", Calendar.getInstance().timeInMillis).findAll()
-        if (tasks.size == 0) {
+        if (tasks.isEmpty()) {
             Utilities.toast(requireContext(), getString(R.string.no_due_tasks))
             return
         }
-        var adapter = ArrayAdapter<RealmTeamTask>(
+        val adapter = ArrayAdapter(
             requireContext(), android.R.layout.simple_expandable_list_item_1, tasks
         )
         AlertDialog.Builder(requireContext()).setTitle(getString(R.string.due_tasks))
-            .setAdapter(adapter, object : DialogInterface.OnClickListener {
-                override fun onClick(p0: DialogInterface?, p1: Int) {
-                    var task = adapter.getItem(p1);
-                }
-            }).setNegativeButton(R.string.dismiss, null).show();
+            .setAdapter(adapter
+            ) { p0, p1 -> var task = adapter.getItem(p1); }.setNegativeButton(R.string.dismiss, null).show();
     }
 }
