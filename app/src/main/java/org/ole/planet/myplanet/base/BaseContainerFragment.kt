@@ -114,6 +114,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             profileDbHandler?.setResourceOpenCount(items, KEY_RESOURCE_DOWNLOAD)
         }
     }
+    @RequiresApi(Build.VERSION_CODES.O)
     fun checkFileExtension(items: RealmMyLibrary) {
         val filenameArray = items.resourceLocalAddress!!.split("\\.".toRegex()).toTypedArray()
         val extension = filenameArray[filenameArray.size - 1]
@@ -184,6 +185,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         startActivityForResult(intent, INSTALL_UNKNOWN_SOURCES_REQUEST_CODE)
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     fun openFileType(items: RealmMyLibrary, videotype: String) {
         val mimetype = Utilities.getMimeType(items.resourceLocalAddress)
         Utilities.log("Mime type $mimetype")
