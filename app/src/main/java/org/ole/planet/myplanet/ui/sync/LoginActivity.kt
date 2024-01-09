@@ -1,8 +1,10 @@
 package org.ole.planet.myplanet.ui.sync
 
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
+import androidx.annotation.RequiresApi
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
@@ -27,6 +29,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     private var backPressedTime: Long = 0
     private val BACK_PRESSED_INTERVAL: Long = 2000
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         activityLoginBinding = ActivityLoginBinding.inflate(layoutInflater)
