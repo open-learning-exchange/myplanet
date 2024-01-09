@@ -33,9 +33,9 @@ class ManagerSync private constructor(context: Context) {
     fun login(userName: String, password: String, listener: SyncListener) {
         listener.onSyncStarted()
         Utilities.log(Utilities.getUrl() + "/org.couchdb.user:" + userName)
-        val apiInterface = ApiClient.getClient().create(ApiInterface::class.java)
-        apiInterface.getJsonObject("Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP), String.format("%s/_users/%s", Utilities.getUrl(), "org.couchdb.user:$userName"))
-            .enqueue(object : Callback<JsonObject?> {
+        val apiInterface = ApiClient.client?.create(ApiInterface::class.java)
+        apiInterface?.getJsonObject("Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP), String.format("%s/_users/%s", Utilities.getUrl(), "org.couchdb.user:$userName"))
+            ?.enqueue(object : Callback<JsonObject?> {
                 override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
                     if (response.isSuccessful && response.body() != null) {
                         val jsonDoc = response.body()
@@ -67,9 +67,8 @@ class ManagerSync private constructor(context: Context) {
         val selector = JsonObject()
         selector.addProperty("isUserAdmin", true)
         `object`.add("selector", selector)
-        val apiInterface = ApiClient.getClient().create(ApiInterface::class.java)
-        val allDocs = apiInterface.findDocs(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/_users/_find", `object`)
-        allDocs.enqueue(object : Callback<JsonObject?> {
+        val apiInterface = ApiClient.client?.create(ApiInterface::class.java)
+        apiInterface?.findDocs(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/_users/_find", `object`)?.enqueue(object : Callback<JsonObject?> {
             override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
                 if (response.body() != null) {
                     val array = JsonUtils.getJsonArray("docs", response.body())

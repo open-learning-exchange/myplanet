@@ -34,7 +34,7 @@ import java.io.IOException
 
 class Service(private val context: Context) {
     private val preferences: SharedPreferences = context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE)
-    private val retrofitInterface: ApiInterface = ApiClient.getClient().create(ApiInterface::class.java)
+    private val retrofitInterface: ApiInterface = ApiClient.client!!.create(ApiInterface::class.java)
 
     fun healthAccess(listener: SuccessListener) {
         retrofitInterface.healthAccess(Utilities.getHealthAccessUrl(preferences)).enqueue(object : Callback<ResponseBody> {

@@ -148,10 +148,8 @@ class ChatDetailFragment : Fragment() {
         fragmentChatDetailBinding.editGchatMessage.isEnabled = false
         fragmentChatDetailBinding.imageGchatLoading.visibility = View.VISIBLE
 
-        val apiInterface = ApiClient.getClient().create(ApiInterface::class.java)
-        val call = apiInterface.chatGpt(Utilities.getHostUrl(), content)
-
-        call.enqueue(object : Callback<ChatModel> {
+        val apiInterface = ApiClient.client?.create(ApiInterface::class.java)
+        apiInterface?.chatGpt(Utilities.getHostUrl(), content)?.enqueue(object : Callback<ChatModel> {
             override fun onResponse(call: Call<ChatModel>, response: Response<ChatModel>) {
                 val responseBody = response.body()
                 if (response.isSuccessful && responseBody != null) {
@@ -257,10 +255,8 @@ class ChatDetailFragment : Fragment() {
         fragmentChatDetailBinding.editGchatMessage.isEnabled = false
         fragmentChatDetailBinding.imageGchatLoading.visibility = View.VISIBLE
 
-        val apiInterface = ApiClient.getClient().create(ApiInterface::class.java)
-        val call = apiInterface.chatGpt(Utilities.getHostUrl(), content)
-
-        call.enqueue(object : Callback<ChatModel> {
+        val apiInterface = ApiClient.client?.create(ApiInterface::class.java)
+        apiInterface?.chatGpt(Utilities.getHostUrl(), content)?.enqueue(object : Callback<ChatModel> {
             override fun onResponse(call: Call<ChatModel>, response: Response<ChatModel>) {
                 val responseBody = response.body()
                 if (response.isSuccessful && responseBody != null) {

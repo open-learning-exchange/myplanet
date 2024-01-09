@@ -43,13 +43,13 @@ open class FileUploadService {
     }
 
     private fun upload_doc(id: String, rev: String, format: String, f: File, name: String, listener: SuccessListener) {
-        val apiInterface = ApiClient.getClient().create(ApiInterface::class.java)
+        val apiInterface = ApiClient.client?.create(ApiInterface::class.java)
         try {
             val connection = f.toURL().openConnection()
             val mimeType = connection.contentType
             val body = RequestBody.create(MediaType.parse("application/octet"), FileUtils.fullyReadFileToBytes(f))
             val url = String.format(format, Utilities.getUrl(), id, name)
-            apiInterface.uploadResource(getHeaderMap(mimeType, rev), url, body).enqueue(object : Callback<JsonObject?> {
+            apiInterface?.uploadResource(getHeaderMap(mimeType, rev), url, body)?.enqueue(object : Callback<JsonObject?> {
                 override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
                     onDataReceived(response.body(), listener)
                 }
