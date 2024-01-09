@@ -48,7 +48,7 @@ class MyDownloadService : IntentService("Download Service") {
             stopSelf()
         }
         notificationBuilder = NotificationCompat.Builder(this, "11")
-        NotificationUtil.setChannel(notificationManager)
+        NotificationUtil.setChannel(notificationManager!!)
         val noti = notificationBuilder!!.setSmallIcon(R.mipmap.ic_launcher).setContentTitle("OLE Download")
             .setContentText("Downloading File...").setAutoCancel(true).build()
         notificationManager!!.notify(0, noti)
@@ -63,25 +63,28 @@ class MyDownloadService : IntentService("Download Service") {
 
     private fun initDownload() {
         Utilities.log("File url $url")
-        val retrofitInterface = ApiClient.getClient().create(ApiInterface::class.java)
-        request = retrofitInterface.downloadFile(Utilities.getHeader(), url)
-        try {
-            val r = request?.execute()
-            if (r != null) {
-                if (r.code() == 200) {
-                    val responseBody = r.body()
-                    if (!checkStorage(responseBody!!.contentLength())) {
-                        downloadFile(responseBody)
+        val retrofitInterface = ApiClient.client?.create(ApiInterface::class.java)
+        if (retrofitInterface != null) {
+            request = retrofitInterface.downloadFile(Utilities.getHeader(), url)
+            try {
+                val r = request?.execute()
+                if (r != null) {
+                    if (r.code() == 200) {
+                        val responseBody = r.body()
+                        if (!checkStorage(responseBody!!.contentLength())) {
+                            downloadFile(responseBody)
+                        }
+                    } else {
+                        downloadFiled(if (r.code() == 404) "File Not found " else "Connection failed")
                     }
-                } else {
-                    downloadFiled(if (r.code() == 404) "File Not found " else "Connection failed")
                 }
+            } catch (e: IOException) {
+                e.printStackTrace()
+                e.localizedMessage?.let { downloadFiled(it) }
+                e.printStackTrace()
             }
-        } catch (e: IOException) {
-            e.printStackTrace()
-            e.localizedMessage?.let { downloadFiled(it) }
-            e.printStackTrace()
         }
+
     }
 
     private fun downloadFiled(message: String) {

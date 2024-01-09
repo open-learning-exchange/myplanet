@@ -9,17 +9,15 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.exoplayer2.DefaultLoadControl;
-import com.google.android.exoplayer2.ExoPlayerFactory;
+import com.google.android.exoplayer2.MediaItem;
 import com.google.android.exoplayer2.SimpleExoPlayer;
-import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory;
-import com.google.android.exoplayer2.source.ExtractorMediaSource;
 import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.ProgressiveMediaSource;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
 import com.google.android.exoplayer2.trackselection.TrackSelector;
 import com.google.android.exoplayer2.upstream.DataSource;
 import com.google.android.exoplayer2.upstream.DataSpec;
-import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
+import com.google.android.exoplayer2.upstream.DefaultHttpDataSource;
 import com.google.android.exoplayer2.upstream.FileDataSource;
 import com.google.android.exoplayer2.upstream.HttpDataSource;
 import com.google.gson.Gson;
@@ -30,6 +28,7 @@ import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.AuthSessionUpdater;
 import org.ole.planet.myplanet.utilities.Utilities;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -76,14 +75,20 @@ public class VideoPlayerActivity extends AppCompatActivity implements AuthSessio
     }
 
     public void streamVideoFromUrl(String videoUrl, String auth) {
-        TrackSelector trackSelectorDef = new DefaultTrackSelector();
-        exoPlayer= ExoPlayerFactory.newSimpleInstance(this, trackSelectorDef);
+        TrackSelector trackSelectorDef = new DefaultTrackSelector(this);
+        exoPlayer = new SimpleExoPlayer.Builder(this).setTrackSelector(trackSelectorDef).build();
 
         Uri videoUri = Uri.parse(videoUrl);
 
-        HttpDataSource.Factory defaultHttpDataSourceFactory = new DefaultHttpDataSourceFactory("ExoPlayer", null);
-        defaultHttpDataSourceFactory.setDefaultRequestProperty("Cookie", auth);
-        MediaSource mediaSource = new ProgressiveMediaSource.Factory(defaultHttpDataSourceFactory).createMediaSource(videoUri);
+        Map<String, String> requestProperties = new HashMap<>();
+        requestProperties.put("Cookie", auth);
+
+        HttpDataSource.Factory defaultHttpDataSourceFactory = new DefaultHttpDataSource.Factory()
+                .setUserAgent("ExoPlayer")
+                .setAllowCrossProtocolRedirects(true)
+                .setDefaultRequestProperties(requestProperties);
+
+        MediaSource mediaSource = new ProgressiveMediaSource.Factory(defaultHttpDataSourceFactory).createMediaSource(MediaItem.fromUri(videoUri));
 
         activityExoPlayerVideoBinding.exoPlayerSimple.setPlayer(exoPlayer);
         exoPlayer.prepare(mediaSource);
@@ -92,7 +97,10 @@ public class VideoPlayerActivity extends AppCompatActivity implements AuthSessio
 
     public void prepareExoPlayerFromFileUri(String uristring) {
         Uri uri = Uri.parse(uristring);
-        exoPlayer = ExoPlayerFactory.newSimpleInstance(this, new DefaultTrackSelector(), new DefaultLoadControl());
+        exoPlayer = new SimpleExoPlayer.Builder(this)
+                .setTrackSelector(new DefaultTrackSelector(this))
+                .setLoadControl(new DefaultLoadControl())
+                .build();
 
         DataSpec dataSpec = new DataSpec(uri);
         final FileDataSource fileDataSource = new FileDataSource();
@@ -103,7 +111,7 @@ public class VideoPlayerActivity extends AppCompatActivity implements AuthSessio
         }
 
         DataSource.Factory factory = () -> fileDataSource;
-        MediaSource audioSource = new ExtractorMediaSource(fileDataSource.getUri(), factory, new DefaultExtractorsFactory(), null, null);
+        MediaSource audioSource = new ProgressiveMediaSource.Factory(factory).createMediaSource(MediaItem.fromUri(fileDataSource.getUri()));
 
         activityExoPlayerVideoBinding.exoPlayerSimple.setPlayer(exoPlayer);
         exoPlayer.prepare(audioSource);
