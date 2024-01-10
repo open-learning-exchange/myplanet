@@ -87,6 +87,8 @@ public class UserProfileFragment extends Fragment {
         fragmentUserProfileBinding.txtEmail.setText(getString(R.string.email_colon)
                 + Utilities.checkNA(model.email));
         String dob = TextUtils.isEmpty(model.dob) ? "N/A" : TimeUtils.getFormatedDate(model.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+        fragmentUserProfileBinding.txtLanguage.setText(getString(R.string.language_colon) + Utilities.checkNA(model.language));
+        fragmentUserProfileBinding.txtLevel.setText("Level colon: " + Utilities.checkNA(model.level));
         fragmentUserProfileBinding.txtDob.setText(getString(R.string.date_of_birth) + dob);
         if (!TextUtils.isEmpty(model.userImage)) {
             Glide.with(context)
