@@ -4,6 +4,7 @@ package org.ole.planet.myplanet.ui.userprofile;
 import static android.app.Activity.RESULT_OK;
 import static org.ole.planet.myplanet.MainApplication.context;
 
+import android.app.Dialog;
 import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
@@ -13,6 +14,8 @@ import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -31,6 +34,7 @@ import com.bumptech.glide.request.RequestOptions;
 import com.bumptech.glide.request.target.Target;
 
 import org.ole.planet.myplanet.R;
+import org.ole.planet.myplanet.databinding.EditProfileDialogBinding;
 import org.ole.planet.myplanet.databinding.FragmentAchievementBinding;
 import org.ole.planet.myplanet.databinding.FragmentUserProfileBinding;
 import org.ole.planet.myplanet.databinding.ItemTitleDescBinding;
@@ -43,9 +47,12 @@ import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
+import java.util.List;
 
 import io.realm.Realm;
 
@@ -112,6 +119,79 @@ public class UserProfileFragment extends Fragment {
         } else {
             fragmentUserProfileBinding.image.setImageResource(R.drawable.profile);
         }
+
+        fragmentUserProfileBinding.btEditProfile.setOnClickListener(v -> {
+            Dialog dialog = new Dialog(requireContext());
+            dialog.setCancelable(false);
+            EditProfileDialogBinding editProfileDialogBinding = EditProfileDialogBinding.inflate(LayoutInflater.from(requireContext()));
+            dialog.setContentView(editProfileDialogBinding.getRoot());
+            dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            editProfileDialogBinding.firstName.setText(model.firstName);
+            editProfileDialogBinding.middleName.setText(model.middleName);
+            editProfileDialogBinding.lastName.setText(model.lastName);
+            editProfileDialogBinding.email.setText(model.email);
+            editProfileDialogBinding.phoneNumber.setText(model.phoneNumber);
+            String dob1 = TextUtils.isEmpty(model.dob) ? "N/A" : TimeUtils.getFormatedDate(model.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+            editProfileDialogBinding.dateOfBirth.setText(dob1);
+
+            ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(requireContext(), R.array.language, android.R.layout.simple_spinner_item);
+            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            editProfileDialogBinding.language.setAdapter(adapter);
+
+            if (model.language != null) {
+                String[] languages = getResources().getStringArray(R.array.language);
+                List<String> languageList = Arrays.asList(languages);
+                int languagePosition = languageList.indexOf(model.language);
+                if (languagePosition >= 0) {
+                    editProfileDialogBinding.language.setSelection(languagePosition);
+                }
+            }
+
+            editProfileDialogBinding.language.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                    String selectedLanguage = parent.getItemAtPosition(position).toString();
+                    // Handle the language selection
+                    // For example, update the model or UI based on the selected language
+                }
+
+                @Override
+                public void onNothingSelected(AdapterView<?> parent) {
+                    // Handle the case when nothing is selected
+                }
+            });
+
+            String[] levels = getResources().getStringArray(R.array.subject_level);
+            List<String> levelList = new ArrayList<>(Arrays.asList(levels));
+            levelList.remove("All");
+
+            ArrayAdapter<String> levelAdapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, levelList);
+            levelAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            editProfileDialogBinding.level.setAdapter(levelAdapter);
+
+            if (model.level != null) {
+                int levelPosition = levelList.indexOf(model.level);
+                if (levelPosition >= 0) {
+                    editProfileDialogBinding.level.setSelection(levelPosition);
+                }
+            }
+
+            editProfileDialogBinding.level.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                    String selectedLevel = parent.getItemAtPosition(position).toString();
+                    // For example, update the model or UI based on the selected language
+                }
+
+                @Override
+                public void onNothingSelected(AdapterView<?> parent) {
+                    // Handle the case when nothing is selected
+                }
+            });
+
+
+            dialog.show();
+        });
         final LinkedHashMap<String, String> map = new LinkedHashMap<String, String>();
         map.put("Community Name", Utilities.checkNA(model.planetCode));
         map.put("Last Login : ", Utilities.getRelativeTime(handler.getLastVisit()));
