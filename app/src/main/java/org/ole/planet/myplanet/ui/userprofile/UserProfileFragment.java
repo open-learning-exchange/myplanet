@@ -4,8 +4,11 @@ package org.ole.planet.myplanet.ui.userprofile;
 import static android.app.Activity.RESULT_OK;
 import static org.ole.planet.myplanet.MainApplication.context;
 
+import android.app.DatePickerDialog;
 import android.app.Dialog;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
@@ -16,8 +19,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -32,16 +33,16 @@ import com.bumptech.glide.load.engine.GlideException;
 import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.request.RequestOptions;
 import com.bumptech.glide.request.target.Target;
+import com.google.android.material.snackbar.Snackbar;
 
 import org.ole.planet.myplanet.R;
 import org.ole.planet.myplanet.databinding.EditProfileDialogBinding;
-import org.ole.planet.myplanet.databinding.FragmentAchievementBinding;
 import org.ole.planet.myplanet.databinding.FragmentUserProfileBinding;
-import org.ole.planet.myplanet.databinding.ItemTitleDescBinding;
 import org.ole.planet.myplanet.databinding.RowStatBinding;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmUserModel;
 import org.ole.planet.myplanet.service.UserProfileDbHandler;
+import org.ole.planet.myplanet.ui.sync.SyncActivity;
 import org.ole.planet.myplanet.utilities.FileUtils;
 import org.ole.planet.myplanet.utilities.TimeUtils;
 import org.ole.planet.myplanet.utilities.Utilities;
@@ -49,10 +50,12 @@ import org.ole.planet.myplanet.utilities.Utilities;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.Calendar;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
 
 import io.realm.Realm;
 
@@ -60,15 +63,18 @@ public class UserProfileFragment extends Fragment {
     private FragmentUserProfileBinding fragmentUserProfileBinding;
     private RowStatBinding rowStatBinding;
     UserProfileDbHandler handler;
+    private SharedPreferences settings;
     DatabaseService realmService;
     Realm mRealm;
     RealmUserModel model;
     File output;
-
     static final int IMAGE_TO_USE = 100;
     static String imageUrl = "";
-
     int type = 0;
+    String selectedGender = null;
+    String selectedLevel = null;
+    String selectedLanguage = null;
+    String date = null;
 
     public UserProfileFragment() {
     }
@@ -84,6 +90,7 @@ public class UserProfileFragment extends Fragment {
         fragmentUserProfileBinding = FragmentUserProfileBinding.inflate(inflater, container, false);
         handler = new UserProfileDbHandler(getActivity());
         realmService = new DatabaseService(getActivity());
+        settings = context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE);
         mRealm = realmService.getRealmInstance();
         fragmentUserProfileBinding.rvStat.setLayoutManager(new LinearLayoutManager(getActivity()));
         fragmentUserProfileBinding.rvStat.setNestedScrollingEnabled(false);
@@ -91,11 +98,11 @@ public class UserProfileFragment extends Fragment {
         fragmentUserProfileBinding.btProfilePic.setOnClickListener(v1 -> searchForPhoto());
         model = handler.getUserModel();
         fragmentUserProfileBinding.txtName.setText(String.format("%s %s %s", model.firstName, model.middleName, model.lastName));
-        fragmentUserProfileBinding.txtEmail.setText(getString(R.string.email_colon)
-                + Utilities.checkNA(model.email));
+        fragmentUserProfileBinding.txtGender.setText("Gender: " + Utilities.checkNA(model.gender));
+        fragmentUserProfileBinding.txtEmail.setText(getString(R.string.email_colon) + Utilities.checkNA(model.email));
         String dob = TextUtils.isEmpty(model.dob) ? "N/A" : TimeUtils.getFormatedDate(model.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
         fragmentUserProfileBinding.txtLanguage.setText(getString(R.string.language_colon) + Utilities.checkNA(model.language));
-        fragmentUserProfileBinding.txtLevel.setText("Level colon: " + Utilities.checkNA(model.level));
+        fragmentUserProfileBinding.txtLevel.setText("Level: " + Utilities.checkNA(model.level));
         fragmentUserProfileBinding.txtDob.setText(getString(R.string.date_of_birth) + dob);
         if (!TextUtils.isEmpty(model.userImage)) {
             Glide.with(context)
@@ -103,7 +110,7 @@ public class UserProfileFragment extends Fragment {
                 .apply(new RequestOptions()
                 .placeholder(R.drawable.profile)
                 .error(R.drawable.profile))
-                .listener(new RequestListener<Drawable>() {
+                .listener(new RequestListener<>() {
                     @Override
                     public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
                         fragmentUserProfileBinding.image.setImageResource(R.drawable.profile);
@@ -125,7 +132,7 @@ public class UserProfileFragment extends Fragment {
             dialog.setCancelable(false);
             EditProfileDialogBinding editProfileDialogBinding = EditProfileDialogBinding.inflate(LayoutInflater.from(requireContext()));
             dialog.setContentView(editProfileDialogBinding.getRoot());
-            dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            Objects.requireNonNull(dialog.getWindow()).setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
             editProfileDialogBinding.firstName.setText(model.firstName);
             editProfileDialogBinding.middleName.setText(model.middleName);
             editProfileDialogBinding.lastName.setText(model.lastName);
@@ -134,25 +141,32 @@ public class UserProfileFragment extends Fragment {
             String dob1 = TextUtils.isEmpty(model.dob) ? "N/A" : TimeUtils.getFormatedDate(model.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
             editProfileDialogBinding.dateOfBirth.setText(dob1);
 
-            ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(requireContext(), R.array.language, android.R.layout.simple_spinner_item);
+            String[] languages = getResources().getStringArray(R.array.language);
+            List<CharSequence> languageList = new ArrayList<>(Arrays.asList(languages));
+            languageList.add(0, "Language");
+
+            ArrayAdapter<CharSequence> adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, languageList);
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+
             editProfileDialogBinding.language.setAdapter(adapter);
 
             if (model.language != null) {
-                String[] languages = getResources().getStringArray(R.array.language);
-                List<String> languageList = Arrays.asList(languages);
-                int languagePosition = languageList.indexOf(model.language);
+                String[] language = getResources().getStringArray(R.array.language);
+                List<String> languageLists = Arrays.asList(language);
+
+                int languagePosition = languageLists.indexOf(model.language);
+
                 if (languagePosition >= 0) {
-                    editProfileDialogBinding.language.setSelection(languagePosition);
+                    editProfileDialogBinding.language.setSelection(languagePosition + 1);
                 }
+            } else {
+                editProfileDialogBinding.language.setSelection(0);
             }
 
             editProfileDialogBinding.language.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                 @Override
                 public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                    String selectedLanguage = parent.getItemAtPosition(position).toString();
-                    // Handle the language selection
-                    // For example, update the model or UI based on the selected language
+                    selectedLanguage = parent.getItemAtPosition(position).toString();
                 }
 
                 @Override
@@ -165,6 +179,7 @@ public class UserProfileFragment extends Fragment {
             List<String> levelList = new ArrayList<>(Arrays.asList(levels));
             levelList.remove("All");
 
+            levelList.add(0, "Level");
             ArrayAdapter<String> levelAdapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_spinner_item, levelList);
             levelAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
             editProfileDialogBinding.level.setAdapter(levelAdapter);
@@ -172,15 +187,16 @@ public class UserProfileFragment extends Fragment {
             if (model.level != null) {
                 int levelPosition = levelList.indexOf(model.level);
                 if (levelPosition >= 0) {
-                    editProfileDialogBinding.level.setSelection(levelPosition);
+                    editProfileDialogBinding.level.setSelection(levelPosition + 1);
                 }
+            } else {
+                editProfileDialogBinding.level.setSelection(0);
             }
 
             editProfileDialogBinding.level.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                 @Override
                 public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                    String selectedLevel = parent.getItemAtPosition(position).toString();
-                    // For example, update the model or UI based on the selected language
+                    selectedLevel = parent.getItemAtPosition(position).toString();
                 }
 
                 @Override
@@ -189,7 +205,58 @@ public class UserProfileFragment extends Fragment {
                 }
             });
 
+            if ("male".equalsIgnoreCase(model.gender)) {
+                editProfileDialogBinding.rbMale.setChecked(true);
+            } else if ("female".equalsIgnoreCase(model.gender)) {
+                editProfileDialogBinding.rbFemale.setChecked(true);
+            }
 
+            editProfileDialogBinding.dateOfBirth.setOnClickListener(v14 -> {
+                Calendar now = Calendar.getInstance();
+                DatePickerDialog dpd = new DatePickerDialog(requireContext(), (view, year, monthOfYear, dayOfMonth) -> {
+                    String dob2 = String.format(Locale.US, "%04d-%02d-%02d", year, monthOfYear + 1, dayOfMonth);
+                    date = String.format(Locale.US, "%04d-%02d-%02dT00:00:00.000Z", year, monthOfYear + 1, dayOfMonth);
+                    editProfileDialogBinding.dateOfBirth.setText(dob2);
+                }, now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH)
+                );
+                dpd.getDatePicker().setMaxDate(now.getTimeInMillis());
+                dpd.show();
+            });
+
+            editProfileDialogBinding.btnSave.setOnClickListener(v13 -> {
+                if (TextUtils.isEmpty(editProfileDialogBinding.firstName.getText().toString().trim())) {
+                    editProfileDialogBinding.firstName.setError("first name required");
+                } else if (TextUtils.isEmpty(editProfileDialogBinding.middleName.getText().toString().trim())) {
+                    editProfileDialogBinding.middleName.setError("middle name is required");
+                } else if (TextUtils.isEmpty(editProfileDialogBinding.lastName.getText().toString().trim())) {
+                    editProfileDialogBinding.lastName.setError("last name is required");
+                } else if (TextUtils.isEmpty(editProfileDialogBinding.email.getText().toString().trim())) {
+                    editProfileDialogBinding.email.setError("email name is required");
+                } else if (TextUtils.isEmpty(editProfileDialogBinding.phoneNumber.getText().toString().trim())) {
+                    editProfileDialogBinding.phoneNumber.setError("phone number is required");
+                } else if (getResources().getString(R.string.birth_date).equals(editProfileDialogBinding.dateOfBirth.getText().toString())) {
+                    editProfileDialogBinding.dateOfBirth.setError("date of birth is required");
+                } else if (editProfileDialogBinding.rdGender.getCheckedRadioButtonId() == -1) {
+                    Snackbar.make(editProfileDialogBinding.getRoot(), "gender not picked", Snackbar.LENGTH_SHORT).show();
+                } else {
+                    if (editProfileDialogBinding.rbMale.isChecked()) {
+                        selectedGender = "male";
+                    } else if (editProfileDialogBinding.rbFemale.isChecked()) {
+                        selectedGender = "female";
+                    }
+                    Realm realm = Realm.getDefaultInstance();
+                    String userId = settings.getString("userId", "");
+
+                    RealmUserModel.updateUserDetails(realm, userId, editProfileDialogBinding.firstName.getText().toString(),
+                            editProfileDialogBinding.lastName.getText().toString(), editProfileDialogBinding.middleName.getText().toString(),
+                            editProfileDialogBinding.email.getText().toString(), editProfileDialogBinding.phoneNumber.getText().toString(),
+                            selectedLevel, selectedLanguage, selectedGender, date);
+                    realm.close();
+                    dialog.dismiss();
+                }
+            });
+
+            editProfileDialogBinding.btnCancel.setOnClickListener(v12 -> dialog.dismiss());
             dialog.show();
         });
         final LinkedHashMap<String, String> map = new LinkedHashMap<String, String>();
@@ -345,4 +412,10 @@ public class UserProfileFragment extends Fragment {
             }
         });
     }
+
+    private void showDatePickerDialog() {
+
+    }
+
+
 }
