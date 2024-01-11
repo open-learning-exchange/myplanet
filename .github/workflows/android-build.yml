@@ -44,6 +44,7 @@ jobs:
           cache: 'gradle'
       - name: install NDK
         run: |
+          tree ${ANDROID_SDK_ROOT} -f | grep zipalign
           set -x
           echo "ANDROID_HOME is set to: ${ANDROID_HOME}"
           echo "ANDROID_SDK_ROOT is set to: ${ANDROID_SDK_ROOT}"
