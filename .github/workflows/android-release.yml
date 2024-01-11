@@ -67,6 +67,7 @@ jobs:
           fi
           set +x
           chmod +x ./gradlew
+          tree ${ANDROID_SDK_ROOT} | grep zipalign
 
       - name: build release APK and AAB
         run: |
