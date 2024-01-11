@@ -88,8 +88,8 @@ public class UploadManager extends FileUploadService {
                     JsonObject object = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/myplanet_activities", RealmNewsLog.serialize(news)).execute().body();
                     Utilities.log("Team upload " + new Gson().toJson(object));
                     if (object != null) {
-                        news.set_id(JsonUtils.getString("id", object));
-                        news.set_rev(JsonUtils.getString("rev", object));
+                        news._id = JsonUtils.getString("id", object);
+                        news._rev = JsonUtils.getString("rev", object);
                     }
                 } catch (IOException e) {
                     e.printStackTrace();

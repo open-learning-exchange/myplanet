@@ -126,6 +126,7 @@ open class RealmNews : RealmObject() {
         }
 
     companion object {
+        @JvmStatic
         fun insert(mRealm: Realm, doc: JsonObject?) {
             Utilities.log("sync nnews " + Gson().toJson(doc))
             var news = mRealm.where(RealmNews::class.java).equalTo("_id", JsonUtils.getString("_id", doc)).findFirst()
@@ -218,6 +219,7 @@ open class RealmNews : RealmObject() {
             return news
         }
 
+        @JvmStatic
         fun getViewInJson(map: HashMap<String?, String>): String {
             val viewInArray = JsonArray()
             if (!TextUtils.isEmpty(map["viewInId"])) {
