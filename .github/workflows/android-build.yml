@@ -49,7 +49,8 @@ jobs:
           echo "ANDROID_SDK_ROOT is set to: ${ANDROID_SDK_ROOT}"
           echo "ANDROID_NDK_VERSION is set to: ${ANDROID_NDK_VERSION}"
           #SDK_MANAGER_COMMAND="${ANDROID_HOME}/tools/bin/sdkmanager --install \"ndk;${ANDROID_NDK_VERSION}\" --sdk_root=${ANDROID_SDK_ROOT}"
-          SDK_MANAGER_COMMAND="${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --install \"ndk;${ANDROID_NDK_VERSION}\" --sdk_root=${ANDROID_SDK_ROOT}"
+          SDK_MANAGER_COMMAND="${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager  --list
+          #SDK_MANAGER_COMMAND="${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --install \"ndk;${ANDROID_NDK_VERSION}\" --sdk_root=${ANDROID_SDK_ROOT}"
           echo "y" | sudo ${SDK_MANAGER_COMMAND} 2>&1
           if [ $? -ne 0 ]; then
               echo "SDK Manager command failed"
