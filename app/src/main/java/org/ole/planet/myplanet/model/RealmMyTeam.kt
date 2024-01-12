@@ -76,7 +76,7 @@ open class RealmMyTeam : RealmObject() {
 
     companion object {
         @JvmStatic
-        fun insertMyTeams(userId: String, doc: JsonObject, mRealm: Realm) {
+        fun insertMyTeams(doc: JsonObject, mRealm: Realm) {
             val teamId = JsonUtils.getString("_id", doc)
             var myTeams = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
             if (myTeams == null) {
@@ -172,7 +172,7 @@ open class RealmMyTeam : RealmObject() {
 
         @JvmStatic
         fun insert(mRealm: Realm, doc: JsonObject) {
-            insertMyTeams("", doc, mRealm)
+            insertMyTeams(doc, mRealm)
         }
 
         @JvmStatic
