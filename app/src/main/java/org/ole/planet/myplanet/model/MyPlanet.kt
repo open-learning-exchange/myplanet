@@ -84,14 +84,14 @@ class MyPlanet : Serializable {
                 val mUsageStatsManager = MainApplication.context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
                 val queryUsageStats = mUsageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, cal.timeInMillis, System.currentTimeMillis())
                 for (s in queryUsageStats) {
-                    addStats(s, arr, context, pref)
+                    addStats(s, arr, context)
                 }
             }
             return arr
         }
 
         @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-        private fun addStats(s: UsageStats, arr: JsonArray, context: Context, pref: SharedPreferences) {
+        private fun addStats(s: UsageStats, arr: JsonArray, context: Context) {
             if (s.packageName == MainApplication.context.packageName) {
                 val `object` = JsonObject()
                 `object`.addProperty("lastTimeUsed", if (s.lastTimeUsed > 0) s.lastTimeUsed else 0)
