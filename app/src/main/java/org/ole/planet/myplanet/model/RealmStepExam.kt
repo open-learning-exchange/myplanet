@@ -108,7 +108,7 @@ open class RealmStepExam : RealmObject() {
             `object`.addProperty("totalMarks", exam.createdDate)
             `object`.addProperty("createdBy", exam.createdBy)
             val question = mRealm.where(RealmExamQuestion::class.java).equalTo("examId", exam.id).findAll()
-            `object`.add("questions", RealmExamQuestion.serializeQuestions(mRealm, question))
+            `object`.add("questions", RealmExamQuestion.serializeQuestions(question))
             return `object`
         }
 
