@@ -450,7 +450,7 @@ public class UploadManager extends FileUploadService {
             for (RealmNews act : activities) {
                 try {
                     if (act.userId.startsWith("guest")) continue;
-                    JsonObject object = RealmNews.serializeNews(act, userModel);
+                    JsonObject object = RealmNews.serializeNews(act);
                     JsonArray image = act.getImagesArray();
                     RealmUserModel user = realm.where(RealmUserModel.class).equalTo("id", pref.getString("userId", "")).findFirst();
                     if (act.imageUrls != null) {

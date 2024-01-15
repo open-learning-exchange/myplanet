@@ -257,13 +257,13 @@ public class SyncManager {
                 RealmMyLibrary.insertMyLibrary(stringArray[0], resourceDoc, mRealm);
                 break;
             case "meetups":
-                RealmMeetup.insertMyMeetups(stringArray[0], resourceDoc, mRealm);
+                RealmMeetup.insertMyMeetups();
                 break;
             case "courses":
                 RealmMyCourse.insertMyCourses(stringArray[0], resourceDoc, mRealm);
                 break;
             case "teams":
-                RealmMyTeam.insertMyTeams(stringArray[0], resourceDoc, mRealm);
+                RealmMyTeam.insertMyTeams(resourceDoc, mRealm);
                 break;
         }
     }

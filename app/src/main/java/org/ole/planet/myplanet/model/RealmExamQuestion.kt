@@ -96,7 +96,7 @@ open class RealmExamQuestion : RealmObject() {
         }
 
         @JvmStatic
-        fun serializeQuestions(mRealm: Realm?, question: RealmResults<RealmExamQuestion>): JsonArray {
+        fun serializeQuestions(question: RealmResults<RealmExamQuestion>): JsonArray {
             val array = JsonArray()
             for (que in question) {
                 val `object` = JsonObject()
