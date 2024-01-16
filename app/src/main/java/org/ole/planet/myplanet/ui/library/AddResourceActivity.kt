@@ -24,8 +24,8 @@ import java.util.UUID
 
 class AddResourceActivity : AppCompatActivity() {
     private lateinit var activityAddResourceBinding: ActivityAddResourceBinding
-    var mRealm: Realm? = null
-    var userModel: RealmUserModel? = null
+    private lateinit var mRealm: Realm
+    private lateinit var userModel: RealmUserModel
     var subjects: RealmList<String>? = null
     var levels: RealmList<String>? = null
     private var resourceFor: RealmList<String>? = null
@@ -47,12 +47,12 @@ class AddResourceActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        if (mRealm != null && !mRealm!!.isClosed) mRealm!!.close()
+        if (mRealm != null && !mRealm.isClosed) mRealm.close()
     }
 
     private fun initializeViews() {
-        activityAddResourceBinding.fileUrl.text = getString(R.string.file) + resourceUrl
-        activityAddResourceBinding.tvAddedBy.text = userModel!!.name
+        activityAddResourceBinding.fileUrl.text = "${getString(R.string.file)} $resourceUrl"
+        activityAddResourceBinding.tvAddedBy.text = userModel.name
         activityAddResourceBinding.tvLevels.setOnClickListener { view: View ->
             showMultiSelectList(resources.getStringArray(R.array.array_levels), levels, view)
         }
@@ -69,7 +69,7 @@ class AddResourceActivity : AppCompatActivity() {
     private fun saveResource() {
         val title = activityAddResourceBinding.etTitle.text.toString().trim { it <= ' ' }
         if (!validate(title)) return
-        mRealm!!.executeTransactionAsync(Realm.Transaction { realm: Realm ->
+        mRealm.executeTransactionAsync(Realm.Transaction { realm: Realm ->
             val id = UUID.randomUUID().toString()
             val resource = realm.createObject(RealmMyLibrary::class.java, id)
             resource.title = title

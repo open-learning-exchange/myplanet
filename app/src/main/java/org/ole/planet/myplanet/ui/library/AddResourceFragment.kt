@@ -40,7 +40,7 @@ import java.util.Date
 import java.util.UUID
 
 class AddResourceFragment : BottomSheetDialogFragment() {
-    private var fragmentAddResourceBinding: FragmentAddResourceBinding? = null
+    private lateinit var fragmentAddResourceBinding: FragmentAddResourceBinding
     var tvTime: TextView? = null
     var floatingActionButton: FloatingActionButton? = null
     private var audioRecorderService: AudioRecorderService? = null
@@ -68,11 +68,11 @@ class AddResourceFragment : BottomSheetDialogFragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentAddResourceBinding = FragmentAddResourceBinding.inflate(inflater, container, false)
-        fragmentAddResourceBinding!!.llRecordVideo.setOnClickListener { dispatchTakeVideoIntent() }
-        fragmentAddResourceBinding!!.llRecordAudio.setOnClickListener { showAudioRecordAlert() }
-        fragmentAddResourceBinding!!.llCaptureImage.setOnClickListener { takePhoto() }
-        fragmentAddResourceBinding!!.llDraft.setOnClickListener { openOleFolder(this, 100) }
-        return fragmentAddResourceBinding!!.root
+        fragmentAddResourceBinding.llRecordVideo.setOnClickListener { dispatchTakeVideoIntent() }
+        fragmentAddResourceBinding.llRecordAudio.setOnClickListener { showAudioRecordAlert() }
+        fragmentAddResourceBinding.llCaptureImage.setOnClickListener { takePhoto() }
+        fragmentAddResourceBinding.llDraft.setOnClickListener { openOleFolder(this, 100) }
+        return fragmentAddResourceBinding.root
     }
 
     private fun showAudioRecordAlert() {
