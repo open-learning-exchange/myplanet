@@ -82,7 +82,7 @@ open class RealmTag : RealmObject() {
         }
 
         @JvmStatic
-        fun getTagsArray(list: MutableList<RealmTag?>?): JsonArray {
+        fun getTagsArray(list: List<RealmTag?>?): JsonArray {
             val array = JsonArray()
             if (list != null) {
                 for (t in list) {

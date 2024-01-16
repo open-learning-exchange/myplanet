@@ -268,6 +268,7 @@ class LibraryFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSe
         return b
     }
 
+
     override fun getSelectedFilter(): Map<String, Set<String>> {
         val b: MutableMap<String, Set<String>> = HashMap()
         b["languages"] = languages
