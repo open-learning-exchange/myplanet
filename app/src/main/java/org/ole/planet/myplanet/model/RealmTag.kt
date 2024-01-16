@@ -82,10 +82,14 @@ open class RealmTag : RealmObject() {
         }
 
         @JvmStatic
-        fun getTagsArray(list: List<RealmTag>): JsonArray {
+        fun getTagsArray(list: MutableList<RealmTag?>?): JsonArray {
             val array = JsonArray()
-            for (t in list) {
-                array.add(t._id)
+            if (list != null) {
+                for (t in list) {
+                    if (t != null) {
+                        array.add(t._id)
+                    }
+                }
             }
             return array
         }
