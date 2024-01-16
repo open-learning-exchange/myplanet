@@ -123,7 +123,7 @@ public class CollectionsFragment extends DialogFragment implements TagExpandable
             createChildMap(childMap, t);
         }
         fragmentCollectionsBinding.listTags.setGroupIndicator(null);
-        adapter = new TagExpandableAdapter(getActivity(), list, childMap, selectedItemsList);
+        adapter = new TagExpandableAdapter(list, childMap, selectedItemsList);
         adapter.setSelectMultiple(true);
         adapter.setClickListener(this);
         fragmentCollectionsBinding.listTags.setAdapter(adapter);
