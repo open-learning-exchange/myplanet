@@ -21,25 +21,25 @@ import org.ole.planet.myplanet.utilities.CheckboxListView
 import java.util.UUID
 
 class TeamResourceFragment : BaseTeamFragment(), TeamPageListener {
-    private var fragmentTeamResourceBinding: FragmentTeamResourceBinding? = null
+    private lateinit var fragmentTeamResourceBinding: FragmentTeamResourceBinding
     private var adapterLibrary: AdapterTeamResource? = null
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentTeamResourceBinding = FragmentTeamResourceBinding.inflate(inflater, container, false)
-        return fragmentTeamResourceBinding!!.root
+        return fragmentTeamResourceBinding.root
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
         showLibraryList()
-        fragmentTeamResourceBinding!!.fabAddResource.setOnClickListener { showResourceListDialog() }
+        fragmentTeamResourceBinding.fabAddResource.setOnClickListener { showResourceListDialog() }
     }
 
     private fun showLibraryList() {
         val libraries: List<RealmMyLibrary> = mRealm.where(RealmMyLibrary::class.java).`in`("id", getResourceIds(teamId, mRealm).toTypedArray<String>()).findAll()
         adapterLibrary = AdapterTeamResource(requireActivity(), libraries, mRealm, teamId, settings)
-        fragmentTeamResourceBinding!!.rvResource.layoutManager = GridLayoutManager(activity, 3)
-        fragmentTeamResourceBinding!!.rvResource.adapter = adapterLibrary
-        showNoData(fragmentTeamResourceBinding!!.tvNodata, adapterLibrary!!.itemCount)
+        fragmentTeamResourceBinding.rvResource.layoutManager = GridLayoutManager(activity, 3)
+        fragmentTeamResourceBinding.rvResource.adapter = adapterLibrary
+        showNoData(fragmentTeamResourceBinding.tvNodata, adapterLibrary!!.itemCount)
     }
 
     private fun showResourceListDialog() {
