@@ -108,7 +108,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
         t.link = Gson().toJson(ob)
         val obsync = JsonObject()
         obsync.addProperty("type", "local")
-        obsync.addProperty("planetCode", user.planetCode)
+        obsync.addProperty("planetCode", user!!.planetCode)
         t.sync = Gson().toJson(obsync)
         mRealm.commitTransaction()
         if (fragmentTeamTaskBinding.rvTask.adapter != null) {
@@ -129,7 +129,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
                 R.id.btn_my -> {
                     mRealm.where(RealmTeamTask::class.java).equalTo("teamId", teamId)
                         .notEqualTo("status", "archived").equalTo("completed", false)
-                        .equalTo("assignee", user.id).sort("deadline", Sort.DESCENDING).findAll()
+                        .equalTo("assignee", user!!.id).sort("deadline", Sort.DESCENDING).findAll()
                 }
                 R.id.btn_completed -> {
                     mRealm.where(RealmTeamTask::class.java).equalTo("teamId", teamId)
@@ -180,7 +180,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
 
     override fun onClickMore(realmTeamTask: RealmTeamTask?) {
         val alertUsersSpinnerBinding = AlertUsersSpinnerBinding.inflate(LayoutInflater.from(MainApplication.context))
-        val userList: List<RealmUserModel> = getJoinedMember(teamId, mRealm)
+        val userList: List<RealmUserModel> = getJoinedMember(teamId!!, mRealm)
         val adapter: ArrayAdapter<RealmUserModel> = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, userList)
         alertUsersSpinnerBinding.spnUser.adapter = adapter
         AlertDialog.Builder(requireActivity()).setTitle(R.string.select_member)

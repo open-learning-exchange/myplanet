@@ -8,7 +8,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 
 class MembersFragment : BaseMemberFragment() {
     override fun getList(): List<RealmUserModel> {
-        return getRequestedMember(teamId, mRealm)
+        return getRequestedMember(teamId!!, mRealm)
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {

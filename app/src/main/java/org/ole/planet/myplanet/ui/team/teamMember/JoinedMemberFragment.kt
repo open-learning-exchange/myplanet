@@ -8,11 +8,11 @@ import org.ole.planet.myplanet.model.RealmUserModel
 
 class JoinedMemberFragment : BaseMemberFragment() {
     override fun getList(): List<RealmUserModel> {
-        return getJoinedMember(teamId, mRealm)
+        return getJoinedMember(teamId!!, mRealm)
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
-        return AdapterJoinedMember(requireActivity(), list, mRealm, teamId)
+        return AdapterJoinedMember(requireActivity(), list, mRealm, teamId!!)
     }
 
     override fun getLayoutManager(): RecyclerView.LayoutManager {

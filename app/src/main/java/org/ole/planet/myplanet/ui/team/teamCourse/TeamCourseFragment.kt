@@ -18,10 +18,12 @@ class TeamCourseFragment : BaseTeamFragment() {
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
-        val courses = mRealm.where(RealmMyCourse::class.java).`in`("id", team.courses!!.toTypedArray<String>()).findAll()
-        val adapterTeamCourse = AdapterTeamCourse(requireActivity(), courses, mRealm, teamId, settings)
+        val courses = mRealm.where(RealmMyCourse::class.java).`in`("id", team!!.courses!!.toTypedArray<String>()).findAll()
+        val adapterTeamCourse = settings?.let { AdapterTeamCourse(requireActivity(), courses, mRealm, teamId, it) }
         fragmentTeamCourseBinding.rvCourse.layoutManager = LinearLayoutManager(activity)
         fragmentTeamCourseBinding.rvCourse.adapter = adapterTeamCourse
-        showNoData(fragmentTeamCourseBinding.tvNodata, adapterTeamCourse.itemCount)
+        if (adapterTeamCourse != null) {
+            showNoData(fragmentTeamCourseBinding.tvNodata, adapterTeamCourse.itemCount)
+        }
     }
 }
