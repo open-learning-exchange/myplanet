@@ -77,7 +77,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         timesRated = requireView().findViewById(R.id.times_rated)
         rating = requireView().findViewById(R.id.tv_rating)
         ratingBar = requireView().findViewById(R.id.rating_bar)
-        ratingBar?.setOnTouchListener { vi: View?, e: MotionEvent ->
+        ratingBar?.setOnTouchListener { _: View?, e: MotionEvent ->
             if (e.action == MotionEvent.ACTION_UP) homeItemClickListener.showRatingDialog(
                 type, id, title, listener
             )

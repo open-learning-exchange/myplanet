@@ -1,7 +1,5 @@
 package org.ole.planet.myplanet.ui.sync;
 
-import static org.ole.planet.myplanet.ui.dashboard.DashboardFragment.PREFS_NAME;
-
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
@@ -20,7 +18,6 @@ import android.view.MenuItem;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
@@ -46,7 +43,7 @@ import org.ole.planet.myplanet.utilities.Constants;
 import org.ole.planet.myplanet.utilities.SharedPrefManager;
 import org.ole.planet.myplanet.utilities.Utilities;
 
-public abstract class DashboardElementActivity extends AppCompatActivity implements FragmentManager.OnBackStackChangedListener {
+public abstract class DashboardElementActivity extends SyncActivity implements FragmentManager.OnBackStackChangedListener {
     public BottomNavigationView navigationView;
 
     public UserProfileDbHandler profileDbHandler;
@@ -120,16 +117,9 @@ public abstract class DashboardElementActivity extends AppCompatActivity impleme
         } else if (id == R.id.action_setting) {
             startActivity(new Intent(this, SettingActivity.class));
         } else if (id == R.id.action_sync) {
-            syncNow();
+            continueSyncProcess(true, false);
         }
         return super.onOptionsItemSelected(item);
-    }
-
-    protected void syncNow() {
-        settings.edit().putBoolean(Constants.KEY_LOGIN, false).commit();
-        startActivity(new Intent(this, LoginActivity.class).putExtra("forceSync", true).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP));
-        doubleBackToExitPressedOnce = true;
-        finish();
     }
 
     @SuppressLint("RestrictedApi")

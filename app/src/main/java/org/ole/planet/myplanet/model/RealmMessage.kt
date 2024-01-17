@@ -28,6 +28,6 @@ open class RealmMessage : RealmObject() {
             return array
         }
 
-        fun insertFeedback(mRealm: Realm?, act: JsonObject?) {}
+        fun insertFeedback(mRealm: Realm?) {}
     }
 }
