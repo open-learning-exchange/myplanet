@@ -79,7 +79,7 @@ open class RealmMeetup : RealmObject() {
         }
 
         @JvmStatic
-        fun insertMyMeetups(userId: String?, resourceDoc: JsonObject?, mRealm: Realm?) {}
+        fun insertMyMeetups() {}
         @JvmStatic
         fun getMyMeetUpIds(realm: Realm, userId: String?): JsonArray {
             val meetups = realm.where(RealmMeetup::class.java).isNotEmpty("userId")

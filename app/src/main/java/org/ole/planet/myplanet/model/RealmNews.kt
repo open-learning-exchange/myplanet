@@ -160,7 +160,7 @@ open class RealmNews : RealmObject() {
         }
 
         @JvmStatic
-        fun serializeNews(news: RealmNews, user: RealmUserModel?): JsonObject {
+        fun serializeNews(news: RealmNews): JsonObject {
             val `object` = JsonObject()
             `object`.addProperty("message", news.message)
             if (news.get_id() != null) `object`.addProperty("_id", news.get_id())

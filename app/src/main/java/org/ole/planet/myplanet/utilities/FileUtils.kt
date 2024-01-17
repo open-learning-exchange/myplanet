@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.utilities
 
+import android.app.usage.StorageStatsManager
 import android.content.Context
 import android.content.Intent
 import android.database.Cursor
@@ -7,10 +8,12 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.os.StatFs
+import android.os.storage.StorageManager
 import android.provider.MediaStore
 import android.text.TextUtils
 import android.util.Log
 import android.webkit.MimeTypeMap
+import androidx.annotation.RequiresApi
 import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
 import org.ole.planet.myplanet.BuildConfig
@@ -24,6 +27,7 @@ import java.io.IOException
 import java.io.InputStream
 import java.io.InputStreamReader
 import java.io.OutputStream
+import java.util.UUID
 
 object FileUtils {
     val SD_PATH = MainApplication.context.getExternalFilesDir(null).toString() + "/ole"
@@ -354,40 +358,61 @@ object FileUtils {
     }
 
     @JvmStatic
-    val totalAvailableMemory: Long
-        get() {
-            val internalAvailableMemory = availableInternalMemorySize
-            val externalAvailableMemory = availableExternalMemorySize
-            // Temporary Check till we find a better way to do it
-            return if (internalAvailableMemory == externalAvailableMemory) {
-                internalAvailableMemory
-            } else internalAvailableMemory + externalAvailableMemory
-        }
-    @JvmStatic
     val totalMemoryCapacity: Long
-        get() {
-            val internalTotalMemory = totalInternalMemorySize
-            val externalTotalMemory = totalExternalMemorySize
-            // Temporary Check till we find a better way to do it
-            return if (internalTotalMemory == externalTotalMemory) {
-                internalTotalMemory
-            } else internalTotalMemory + externalTotalMemory
-        }
+        @RequiresApi(Build.VERSION_CODES.O)
+        get() = getStorageStats(MainApplication.context).first
+
+    @JvmStatic
+    val totalAvailableMemory: Long
+        @RequiresApi(Build.VERSION_CODES.O)
+        get() = getStorageStats(MainApplication.context).second
+
     @JvmStatic
     val totalAvailableMemoryRatio: Long
-        get() = Math.round(totalAvailableMemory.toDouble() / totalMemoryCapacity.toDouble() * 100)
+        @RequiresApi(Build.VERSION_CODES.O)
+        get() {
+            val total = totalMemoryCapacity
+            val available = totalAvailableMemory
+            return Math.round(available.toDouble() / total.toDouble() * 100)
+        }
+
     @JvmStatic
     val availableOverTotalMemoryFormattedString: String
-        /**
-         * A method that returns a formatted string
-         * of the format "Available Space / Total Space".
-         * param None
-         *
-         * @return Available space and total space
-         */
+        @RequiresApi(Build.VERSION_CODES.O)
         get() {
+            val context = MainApplication.context
             val available = totalAvailableMemory
             val total = totalMemoryCapacity
-            return MainApplication.context.getString(R.string.available_space_colon) + formatSize(available) + "/" + formatSize(total)
+            return context.getString(R.string.available_space_colon) + formatSize(available) + "/" + formatSize(total)
         }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun getStorageStats(context: Context): Pair<Long, Long> {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            val storageStatsManager =
+                context.getSystemService(Context.STORAGE_STATS_SERVICE) as StorageStatsManager
+            val storageManager = context.getSystemService(Context.STORAGE_SERVICE) as StorageManager
+            val storageVolume = storageManager.primaryStorageVolume
+
+            // Get UUID of the internal storage
+            val uuid =
+                storageVolume.uuid?.let { UUID.fromString(it) } ?: StorageManager.UUID_DEFAULT
+
+            // Get the total bytes and available bytes
+            val totalBytes = storageStatsManager.getTotalBytes(uuid)
+            val availableBytes = storageStatsManager.getFreeBytes(uuid)
+
+            return Pair(totalBytes, availableBytes)
+        } else {
+            val path = Environment.getDataDirectory()
+            val stat = StatFs(path.path)
+            val blockSize = stat.blockSizeLong
+            val totalBlocks = stat.blockCountLong
+            val availableBlocks = stat.availableBlocksLong
+
+            val totalBytes = blockSize * totalBlocks
+            val availableBytes = blockSize * availableBlocks
+            return Pair(totalBytes, availableBytes)
+        }
+    }
 }
