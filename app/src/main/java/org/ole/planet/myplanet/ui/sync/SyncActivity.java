@@ -122,6 +122,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     SharedPreferences defaultPref;
     ImageButton imgBtnSetting;
     Service service;
+    String fallbackLanguage;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -453,9 +454,18 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         String[] languages = getResources().getStringArray(R.array.language);
         SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
         String systemLanguage = Resources.getSystem().getConfiguration().locale.getLanguage();
-        pref.edit().putString("app_language", systemLanguage).apply();
-        String currentLanguageKey = pref.getString("app_language", "en");
-        int index = Arrays.asList(languageKey).indexOf(currentLanguageKey);
+
+        List<String> languageKeyList = Arrays.asList(languageKey);
+        int index;
+        if (languageKeyList.contains(systemLanguage)) {
+            pref.edit().putString("app_language", systemLanguage).apply();
+            index = languageKeyList.indexOf(systemLanguage);
+        } else {
+            fallbackLanguage = "en";
+            pref.edit().putString("app_language", fallbackLanguage).apply();
+            index = languageKeyList.indexOf(fallbackLanguage);
+        }
+
         btnLang.setText(languages[index]);
         btnLang.setOnClickListener(view -> new AlertDialog.Builder(this)
                 .setTitle(R.string.select_language)
@@ -464,7 +474,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
                     dialog.dismiss();
                     int selectedPosition = ((AlertDialog) dialog).getListView().getCheckedItemPosition();
                     String selectedLanguageKey = languageKey[selectedPosition];
-                    if (!selectedLanguageKey.equals(currentLanguageKey)) {
+                    if (!selectedLanguageKey.equals(pref.getString("app_language", fallbackLanguage))) {
                         LocaleHelper.setLocale(this, selectedLanguageKey);
                         pref.edit().putString("app_language", selectedLanguageKey).apply();
                         recreate();
@@ -473,7 +483,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
                 .setNegativeButton(R.string.cancel, null)
                 .show());
     }
-
+    
     public void submitForm(String name, String password) {
         if (forceSyncTrigger()) {
             return;
