@@ -8,7 +8,6 @@ import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
-import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.drawable.AnimationDrawable;
 import android.os.Build;
@@ -453,17 +452,10 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         String[] languageKey = getResources().getStringArray(R.array.language_keys);
         String[] languages = getResources().getStringArray(R.array.language);
         SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
+        String systemLanguage = Resources.getSystem().getConfiguration().locale.getLanguage();
+        pref.edit().putString("app_language", systemLanguage).apply();
         String currentLanguageKey = pref.getString("app_language", "en");
-        Locale deviceLocale = Locale.getDefault();
-        String languageCode = deviceLocale.getLanguage();
-        Log.d("LanguageCode", "Device Language Code: " + languageCode);
-
-        pref.edit().putString("app_language", languageCode).apply();
         int index = Arrays.asList(languageKey).indexOf(currentLanguageKey);
-        Log.d("LanguageSetup", "Current Language Key: " + currentLanguageKey);
-        Log.d("LanguageIndex", "Index: " + languages[index]);
-        Log.d("LanguageDebug", "Index for " + currentLanguageKey + " : " + index);
-
         btnLang.setText(languages[index]);
         btnLang.setOnClickListener(view -> new AlertDialog.Builder(this)
                 .setTitle(R.string.select_language)
