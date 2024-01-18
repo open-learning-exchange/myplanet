@@ -80,37 +80,6 @@ public class MainApplication extends Application {
         // Set up other periodic works using WorkManager
         scheduleStayOnlineWork(5 * 60);
         scheduleTaskNotificationWork(60);
-        setAppLocale();
-    }
-
-    public static void setAppLocale() {
-        Locale deviceLocale = Locale.getDefault();
-        String languageCode = deviceLocale.getLanguage();
-        Log.d("LanguageCode", "Device Language Code: " + Locale.getDefault().getLanguage());
-        Log.d("LanguageDisplay", "Device Language Code: " + Locale.getDefault().getDisplayLanguage());
-
-        String[] supportedLanguages = {"en", "ar", "es", "fr", "ne", "so"};
-        boolean isSupported = false;
-
-        for (String lang : supportedLanguages) {
-            if (lang.equals(languageCode)) {
-                isSupported = true;
-                break;
-            }
-        }
-
-        Locale appLocale;
-        if (isSupported) {
-            appLocale = deviceLocale;
-        } else {
-            appLocale = new Locale("en");
-        }
-
-        Resources resources = context.getResources();
-        Configuration configuration = resources.getConfiguration();
-        Locale.setDefault(appLocale);
-        configuration.setLocale(appLocale);
-        resources.updateConfiguration(configuration, resources.getDisplayMetrics());
     }
 
     private void scheduleAutoSyncWork(int syncInterval) {
