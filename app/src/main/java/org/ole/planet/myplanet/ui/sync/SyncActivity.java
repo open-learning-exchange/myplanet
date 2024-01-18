@@ -835,8 +835,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
             serverUrlProtocol = dialogServerUrlBinding.inputServerUrlProtocol;
             dialogServerUrlBinding.deviceName.setText(NetworkUtils.getDeviceName());
             MaterialDialog.Builder builder = new MaterialDialog.Builder(this);
-            builder.title(R.string.action_settings)
-                    .customView(dialogServerUrlBinding.getRoot(), true)
+            builder.customView(dialogServerUrlBinding.getRoot(), true)
                     .positiveText(R.string.btn_sync)
                     .negativeText(R.string.btn_sync_cancel)
                     .neutralText(R.string.btn_sync_save)
@@ -935,7 +934,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         binding.switchServerUrl.setVisibility(show ? View.VISIBLE : View.GONE);
         binding.ltProtocol.setVisibility(show ? View.VISIBLE : View.GONE);
         binding.ltIntervalLabel.setVisibility(show ? View.VISIBLE : View.GONE);
-        binding.ltSyncSwitch.setVisibility(show ? View.VISIBLE : View.GONE);
+        binding.syncSwitch.setVisibility(show ? View.VISIBLE : View.GONE);
         binding.ltDeviceName.setVisibility(show ? View.VISIBLE : View.GONE);
 
         if (show) {

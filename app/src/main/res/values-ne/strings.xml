@@ -533,7 +533,7 @@
     <string name="courses_colon">कोर्सहरू:</string>
     <string name="title">शीर्षक</string>
     <string name="source">स्रोत</string>
-    <string name="cloud_url">बादली यूआरएल</string>
+    <string name="cloud_url">cloud</string>
     <string name="interval">अन्तराल</string>
     <string name="autosync">अटोसिङ्क</string>
     <string name="autosync_off">अटोसिङ्क बन्द छ!</string>

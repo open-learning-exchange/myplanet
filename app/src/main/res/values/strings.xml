@@ -584,7 +584,7 @@
     <string name="login_user">loginUserName</string>
     <string name="login_password">loginUserPassword</string>
     <string name="no_team_available">No team / enterprise available</string>
-    <string name="last_sync_date">"Last Sync Date: "</string>
+    <string name="last_sync_date">"last sync: "</string>
     <string name="no_assignee">No assignee</string>
     <string name="note_">notes</string>
     <string name="diagno">diagnosis</string>
@@ -623,7 +623,7 @@
     <string name="courses_colon">Courses:</string>
     <string name="title">Title</string>
     <string name="source">Source</string>
-    <string name="cloud_url">Cloud Url</string>
+    <string name="cloud_url">cloud</string>
     <string name="interval">Interval</string>
     <string name="autosync">Autosync</string>
     <string name="autosync_off">Autosync Off!</string>

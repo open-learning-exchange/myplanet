@@ -533,7 +533,7 @@
     <string name="courses_colon">Cours :</string>
     <string name="title">Titre</string>
     <string name="source">Source</string>
-    <string name="cloud_url">URL du Cloud</string>
+    <string name="cloud_url">cloud</string>
     <string name="interval">Intervalle</string>
     <string name="autosync">Synchronisation automatique</string>
     <string name="autosync_off">Désactivée</string>
