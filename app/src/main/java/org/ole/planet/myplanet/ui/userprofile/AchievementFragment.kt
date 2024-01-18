@@ -96,7 +96,7 @@ class AchievementFragment : BaseContainerFragment() {
                         rowAchievementBinding!!.tvTitle.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0)
                         createAchievementList()
                         fragmentAchievementBinding.rvOtherInfo.layoutManager = LinearLayoutManager(MainApplication.context)
-                        fragmentAchievementBinding.rvOtherInfo.adapter = AdapterOtherInfo(MainApplication.context, achievement!!.getreferences())
+                        fragmentAchievementBinding.rvOtherInfo.adapter = achievement!!.getreferences()?.let { AdapterOtherInfo(MainApplication.context, it) }
                     }
                     mRealm.addChangeListener {
                         if (fragmentAchievementBinding.llAchievement != null) fragmentAchievementBinding.llAchievement.removeAllViews()
@@ -108,7 +108,7 @@ class AchievementFragment : BaseContainerFragment() {
                 fragmentAchievementBinding.llAchievement.addView(rowAchievementBinding!!.root)
             }
             fragmentAchievementBinding.rvOtherInfo.layoutManager = LinearLayoutManager(MainApplication.context)
-            fragmentAchievementBinding.rvOtherInfo.adapter = AdapterOtherInfo(MainApplication.context, achievement!!.getreferences())
+            fragmentAchievementBinding.rvOtherInfo.adapter = achievement!!.getreferences()?.let { AdapterOtherInfo(MainApplication.context, it) }
         }
     }
 
