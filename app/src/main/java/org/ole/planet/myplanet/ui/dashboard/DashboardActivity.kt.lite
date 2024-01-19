@@ -29,7 +29,6 @@ import com.mikepenz.materialdrawer.model.PrimaryDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.Nameable
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.ActivityDashboardBinding
 import org.ole.planet.myplanet.databinding.CustomTabBinding
@@ -55,8 +54,10 @@ import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.Utilities
+//import org.ole.planet.myplanet.base.BaseContainerFragment
 
-class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, BottomNavigationView.OnNavigationItemSelectedListener {
+class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener,
+    BottomNavigationView.OnNavigationItemSelectedListener {
     private lateinit var activityDashboardBinding: ActivityDashboardBinding
     private var headerResult: AccountHeader? = null
     var user: RealmUserModel? = null
@@ -105,7 +106,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
         activityDashboardBinding.appBarBell.ivSetting.setOnClickListener {
             startActivity(Intent(this, SettingActivity::class.java))
         }
-        if ((user != null) && user!!.rolesList!!.isEmpty() && !user!!.userAdmin!!) {
+        if (user!!.rolesList!!.isEmpty() && !user!!.userAdmin!!) {
             navigationView.visibility = View.GONE
             openCallFragment(InactiveDashboardFragment(), "Dashboard")
             return
@@ -347,14 +348,14 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
         }
 
     private fun changeUX(iconText: Int, drawable: Drawable?): PrimaryDrawerItem {
-            return PrimaryDrawerItem().withName(iconText)
-                .withIcon(drawable)
-                .withTextColor(ContextCompat.getColor(this, R.color.textColorPrimary))
-                .withSelectedTextColor(ContextCompat.getColor(this, R.color.primary_dark))
-                .withIconColor(ContextCompat.getColor(this, R.color.textColorPrimary))
-                .withSelectedIconColor(ContextCompat.getColor(this, R.color.primary_dark))
-                .withSelectedColor(ContextCompat.getColor(this, R.color.textColorPrimary))
-                .withIconTintingEnabled(true)
+        return PrimaryDrawerItem().withName(iconText)
+            .withIcon(drawable)
+            .withTextColor(ContextCompat.getColor(this, R.color.textColorPrimary))
+            .withSelectedTextColor(ContextCompat.getColor(this, R.color.primary_dark))
+            .withIconColor(ContextCompat.getColor(this, R.color.textColorPrimary))
+            .withSelectedIconColor(ContextCompat.getColor(this, R.color.primary_dark))
+            .withSelectedColor(ContextCompat.getColor(this, R.color.textColorPrimary))
+            .withIconTintingEnabled(true)
     }
 
     override fun onBackPressed() {
@@ -366,12 +367,13 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
         } else {
             super.onBackPressed()
         }
-        val fragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
-        if (fragment is BaseContainerFragment) {
-            fragment.handleBackPressed()
-        } else {
-            super.onBackPressed()
-        }
+
+//        val fragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
+//        if (fragment is BaseContainerFragment) {
+//            fragment.handleBackPressed()
+//        } else {
+//            super.onBackPressed()
+//        }
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
