@@ -483,7 +483,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
                 .setNegativeButton(R.string.cancel, null)
                 .show());
     }
-    
+
     public void submitForm(String name, String password) {
         if (forceSyncTrigger()) {
             return;
