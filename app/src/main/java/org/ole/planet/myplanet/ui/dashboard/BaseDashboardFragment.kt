@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.dashboard
 
 import android.app.DatePickerDialog
 import android.app.ProgressDialog
-import android.content.DialogInterface
 import android.content.Intent
 import android.graphics.Typeface
 import android.text.TextUtils
@@ -53,10 +52,10 @@ import java.util.UUID
 
 open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCallback,
     SyncListener {
-    var fullName: String? = null
+    private var fullName: String? = null
     var dbService: DatabaseService? = null
-    var params = LinearLayout.LayoutParams(250, 100)
-    var di: ProgressDialog? = null
+    private var params = LinearLayout.LayoutParams(250, 100)
+    private var di: ProgressDialog? = null
 
     fun onLoaded(v: View) {
         profileDbHandler = UserProfileDbHandler(activity)
@@ -128,17 +127,16 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     private fun myLibraryDiv(view: View) {
         view.findViewById<FlexboxLayout>(R.id.flexboxLayout).flexDirection = FlexDirection.ROW
         val dbMylibrary = RealmMyLibrary.getMyLibraryByUserId(mRealm, settings)
-        if (dbMylibrary.size == 0) {
+        if (dbMylibrary.isEmpty()) {
             view.findViewById<TextView>(R.id.count_library).visibility = View.GONE
         } else {
             view.findViewById<TextView>(R.id.count_library).text = dbMylibrary.size.toString() + ""
         }
-        var itemCnt = 0
-        for (items in dbMylibrary) {
+        for ((itemCnt, items) in dbMylibrary.withIndex()) {
             val itemLibraryHomeBinding = ItemLibraryHomeBinding.inflate(LayoutInflater.from(activity))
             val v = itemLibraryHomeBinding.root
 
-            setTextColor(itemLibraryHomeBinding.title, itemCnt, RealmMyLibrary::class.java)
+            setTextColor(itemLibraryHomeBinding.title, itemCnt)
 
             val colorResId = if (itemCnt % 2 == 0) R.color.md_white_1000 else R.color.md_grey_300
             val color = context?.let { ContextCompat.getColor(it, colorResId) }
@@ -153,7 +151,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
             myLibraryItemClickAction(itemLibraryHomeBinding.title, items)
             view.findViewById<FlexboxLayout>(R.id.flexboxLayout).addView(v, params)
-            itemCnt++
         }
     }
 
@@ -167,35 +164,35 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         val dbMycourses: List<RealmObject>
         val userId = settings.getString("userId", "--")
         setUpMyLife(userId!!)
-        dbMycourses = (if (c == RealmMyCourse::class.java) {
-            RealmMyCourse.getMyByUserId(mRealm, settings)
-        } else if (c == RealmMyTeam::class.java) {
-            val i = myTeamInit(flexboxLayout)
-            setCountText(i, RealmMyTeam::class.java, view)
-            return
-        } else if (c == RealmMyLife::class.java) {
-            myLifeListInit(flexboxLayout)
-            return
-        } else {
-            mRealm.where(c as Class<RealmObject>).contains("userId", userId, Case.INSENSITIVE)
-                .findAll()
-        }) as List<RealmObject>
+        dbMycourses = (
+                when (c) {
+                    RealmMyCourse::class.java -> { RealmMyCourse.getMyByUserId(mRealm, settings) }
+                    RealmMyTeam::class.java -> {
+                        val i = myTeamInit(flexboxLayout)
+                        setCountText(i, RealmMyTeam::class.java, view)
+                        return
+                    }
+                    RealmMyLife::class.java -> {
+                        myLifeListInit(flexboxLayout)
+                        return
+                    }
+                    else -> {
+                        mRealm.where(c as Class<RealmObject>).contains("userId", userId, Case.INSENSITIVE).findAll()
+                    }
+                }) as List<RealmObject>
         setCountText(dbMycourses.size, c, view)
         val myCoursesTextViewArray = arrayOfNulls<TextView>(dbMycourses.size)
-        var itemCnt = 0
-        for (items in dbMycourses) {
-            setTextViewProperties(myCoursesTextViewArray, itemCnt, items, c)
-            myCoursesTextViewArray[itemCnt]?.let { setTextColor(it, itemCnt, c) }
+        for ((itemCnt, items) in dbMycourses.withIndex()) {
+            setTextViewProperties(myCoursesTextViewArray, itemCnt, items)
+            myCoursesTextViewArray[itemCnt]?.let { setTextColor(it, itemCnt) }
             flexboxLayout.addView(myCoursesTextViewArray[itemCnt], params)
-            itemCnt++
         }
     }
 
     private fun myTeamInit(flexboxLayout: FlexboxLayout): Int {
         val dbMyTeam = RealmMyTeam.getMyTeamsByUserId(mRealm, settings)
         val userId = UserProfileDbHandler(activity).userModel.id
-        var count = 0
-        for (ob in dbMyTeam) {
+        for ((count, ob) in dbMyTeam.withIndex()) {
             val v = LayoutInflater.from(activity).inflate(R.layout.item_home_my_team, flexboxLayout, false)
             val name = v.findViewById<TextView>(R.id.tv_name)
             setBackgroundColor(v, count)
@@ -206,7 +203,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             showNotificationIcons(ob, v, userId!!)
             name.text = ob.name
             flexboxLayout.addView(v, params)
-            count++
         }
         return dbMyTeam.size
     }
@@ -237,10 +233,8 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             RealmMyLife.getMyLifeByUserId(mRealm, settings)
         dbMylife = ArrayList()
         for (item in rawMylife) if (item.isVisible) dbMylife.add(item)
-        var itemCnt = 0
-        for (items in dbMylife) {
+        for ((itemCnt, items) in dbMylife.withIndex()) {
             flexboxLayout.addView(getLayout(itemCnt, items), params)
-            itemCnt++
         }
     }
 
@@ -279,12 +273,16 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     private fun setCountText(countText: Int, c: Class<*>, v: View) {
-        if (c == RealmMyCourse::class.java) {
-            updateCountText(countText, v.findViewById(R.id.count_course))
-        } else if (c == RealmMeetup::class.java) {
-            updateCountText(countText, v.findViewById(R.id.count_meetup))
-        } else if (c == RealmMyTeam::class.java) {
-            updateCountText(countText, v.findViewById(R.id.count_team))
+        when (c) {
+            RealmMyCourse::class.java -> {
+                updateCountText(countText, v.findViewById(R.id.count_course))
+            }
+            RealmMeetup::class.java -> {
+                updateCountText(countText, v.findViewById(R.id.count_meetup))
+            }
+            RealmMyTeam::class.java -> {
+                updateCountText(countText, v.findViewById(R.id.count_team))
+            }
         }
     }
 
@@ -327,18 +325,13 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     override fun showUserResourceDialog() {
-        var userModelList: List<RealmUserModel>
+        val userModelList: List<RealmUserModel>
         var dialog: AlertDialog? = null
 
-        userModelList = mRealm!!.where(RealmUserModel::class.java)
-                .sort("joinDate", Sort.DESCENDING).findAll()
+        userModelList = mRealm!!.where(RealmUserModel::class.java).sort("joinDate", Sort.DESCENDING).findAll()
 
-        var adapter = UserListArrayAdapter(
-                requireActivity(), android.R.layout.simple_list_item_1, userModelList
-        )
-
+        val adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, userModelList)
         val alertHealthListBinding = AlertHealthListBinding.inflate(LayoutInflater.from(activity))
-
         alertHealthListBinding.etSearch.visibility = View.GONE
         alertHealthListBinding.spnSort.visibility = View.GONE
 
@@ -403,6 +396,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         )
         AlertDialog.Builder(requireContext()).setTitle(getString(R.string.due_tasks))
             .setAdapter(adapter
-            ) { p0, p1 -> var task = adapter.getItem(p1); }.setNegativeButton(R.string.dismiss, null).show();
+            ) { _, p1 -> var task = adapter.getItem(p1); }.setNegativeButton(R.string.dismiss, null).show()
     }
 }

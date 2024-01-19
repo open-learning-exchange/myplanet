@@ -1,8 +1,6 @@
 package org.ole.planet.myplanet.ui.dashboard
 
-import android.content.DialogInterface
 import android.os.Bundle
-import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -13,7 +11,6 @@ import androidx.fragment.app.Fragment
 import io.realm.Case
 import org.json.JSONException
 import org.json.JSONObject
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentHomeBellBinding
 import org.ole.planet.myplanet.model.RealmCertification
@@ -35,7 +32,7 @@ import java.util.Date
 class BellDashboardFragment : BaseDashboardFragment() {
     private lateinit var fragmentHomeBellBinding: FragmentHomeBellBinding
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentHomeBellBinding = FragmentHomeBellBinding.inflate(inflater, container, false)
 
         val view = fragmentHomeBellBinding.root
@@ -51,9 +48,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         fragmentHomeBellBinding.cardProfileBell.txtCommunityName.text = model.planetCode
         (activity as DashboardActivity?)?.supportActionBar?.hide()
         fragmentHomeBellBinding.addResource.setOnClickListener {
-            AddResourceFragment().show(
-                childFragmentManager, getString(R.string.add_res)
-            )
+            AddResourceFragment().show(childFragmentManager, getString(R.string.add_res))
         }
         showBadges()
         

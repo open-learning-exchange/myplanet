@@ -8,10 +8,8 @@ import org.ole.planet.myplanet.callback.NotificationCallback
 import org.ole.planet.myplanet.databinding.RowNotificationBinding
 import org.ole.planet.myplanet.model.Notifications
 
-class AdapterNotification(
-    var context: Context, var list: List<Notifications>, var callback: NotificationCallback
-) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-    lateinit var rowNotificationBinding: RowNotificationBinding
+class AdapterNotification(var context: Context, var list: List<Notifications>, var callback: NotificationCallback) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+    private lateinit var rowNotificationBinding: RowNotificationBinding
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         rowNotificationBinding = RowNotificationBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ViewHolderNotification(rowNotificationBinding)
@@ -39,7 +37,7 @@ class AdapterNotification(
         }
     }
 
-    class ViewHolderNotification(rowNotificationBinding: RowNotificationBinding) : RecyclerView.ViewHolder(rowNotificationBinding.getRoot()) {
+    class ViewHolderNotification(rowNotificationBinding: RowNotificationBinding) : RecyclerView.ViewHolder(rowNotificationBinding.root) {
         private var rowNotificationBinding: RowNotificationBinding
 
         init {

@@ -44,7 +44,7 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         }
     }
 
-    fun handleClickMyLife(title: String, v: View) {
+    private fun handleClickMyLife(title: String, v: View) {
         v.setOnClickListener {
             if (homeItemClickListener != null) {
                 if (title == getString(R.string.submission)) {
@@ -76,27 +76,29 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         }
     }
 
-    fun setTextViewProperties(
-        textViewArray: Array<TextView?>, itemCnt: Int, obj: RealmObject?, c: Class<*>?
-    ) {
+    fun setTextViewProperties(textViewArray: Array<TextView?>, itemCnt: Int, obj: RealmObject?) {
         textViewArray[itemCnt] = TextView(context)
         textViewArray[itemCnt]?.setPadding(20, 10, 20, 10)
         textViewArray[itemCnt]?.textAlignment = View.TEXT_ALIGNMENT_CENTER
         textViewArray[itemCnt]?.gravity = Gravity.CENTER_VERTICAL or Gravity.CENTER_HORIZONTAL
-        if (obj is RealmMyLibrary) {
-            textViewArray[itemCnt]?.text = obj.title
-        } else if (obj is RealmMyCourse) {
-            textViewArray[itemCnt]?.let {
-                handleClick(obj.courseId, obj.courseTitle, TakeCourseFragment(), it)
+        when (obj) {
+            is RealmMyLibrary -> {
+                textViewArray[itemCnt]?.text = obj.title
             }
-        } else if (obj is RealmMeetup) {
-            textViewArray[itemCnt]?.let {
-                handleClick(obj.meetupId, obj.title, MyMeetupDetailFragment(), it)
+            is RealmMyCourse -> {
+                textViewArray[itemCnt]?.let {
+                    handleClick(obj.courseId, obj.courseTitle, TakeCourseFragment(), it)
+                }
+            }
+            is RealmMeetup -> {
+                textViewArray[itemCnt]?.let {
+                    handleClick(obj.meetupId, obj.title, MyMeetupDetailFragment(), it)
+                }
             }
         }
     }
 
-    fun setTextColor(textView: TextView, itemCnt: Int, c: Class<*>?) {
+    fun setTextColor(textView: TextView, itemCnt: Int) {
         textView.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
         setBackgroundColor(textView, itemCnt)
     }
