@@ -8,6 +8,7 @@ import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.res.Resources;
 import android.graphics.drawable.AnimationDrawable;
 import android.os.Build;
 import android.os.Bundle;
@@ -121,6 +122,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     SharedPreferences defaultPref;
     ImageButton imgBtnSetting;
     Service service;
+    String fallbackLanguage;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -415,7 +417,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
                 return false;
             });
 
-            setUplanguageButton();
+            setUpLanguageButton();
 
             if (defaultPref.getBoolean("saveUsernameAndPassword", false)) {
                 inputName.setText(settings.getString(getString(R.string.login_user), ""));
@@ -449,21 +451,39 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         }
     }
 
-    private void setUplanguageButton() {
+    private void setUpLanguageButton() {
         String[] languageKey = getResources().getStringArray(R.array.language_keys);
         String[] languages = getResources().getStringArray(R.array.language);
         SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
-        int index = Arrays.asList(languageKey).indexOf(pref.getString("app_language", "en"));
+        String systemLanguage = Resources.getSystem().getConfiguration().locale.getLanguage();
+
+        List<String> languageKeyList = Arrays.asList(languageKey);
+        int index;
+        if (languageKeyList.contains(systemLanguage)) {
+            pref.edit().putString("app_language", systemLanguage).apply();
+            index = languageKeyList.indexOf(systemLanguage);
+        } else {
+            fallbackLanguage = "en";
+            pref.edit().putString("app_language", fallbackLanguage).apply();
+            index = languageKeyList.indexOf(fallbackLanguage);
+        }
+
         btnLang.setText(languages[index]);
-        btnLang.setOnClickListener(view -> {
-            new AlertDialog.Builder(this).setTitle(R.string.select_language).setSingleChoiceItems(getResources().getStringArray(R.array.language), index, null).setPositiveButton(R.string.ok, (dialog, whichButton) -> {
-                dialog.dismiss();
-                int selectedPosition = ((AlertDialog) dialog).getListView().getCheckedItemPosition();
-                String lang = languageKey[selectedPosition];
-                LocaleHelper.setLocale(this, lang);
-                recreate();
-            }).setNegativeButton(R.string.cancel, null).show();
-        });
+        btnLang.setOnClickListener(view -> new AlertDialog.Builder(this)
+                .setTitle(R.string.select_language)
+                .setSingleChoiceItems(languages, index, null)
+                .setPositiveButton(R.string.ok, (dialog, whichButton) -> {
+                    dialog.dismiss();
+                    int selectedPosition = ((AlertDialog) dialog).getListView().getCheckedItemPosition();
+                    String selectedLanguageKey = languageKey[selectedPosition];
+                    if (!selectedLanguageKey.equals(pref.getString("app_language", fallbackLanguage))) {
+                        LocaleHelper.setLocale(this, selectedLanguageKey);
+                        pref.edit().putString("app_language", selectedLanguageKey).apply();
+                        recreate();
+                    }
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .show());
     }
 
     public void submitForm(String name, String password) {

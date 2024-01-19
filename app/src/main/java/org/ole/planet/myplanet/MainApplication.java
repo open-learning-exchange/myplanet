@@ -76,7 +76,6 @@ public class MainApplication extends Application {
         // Set up other periodic works using WorkManager
         scheduleStayOnlineWork(5 * 60);
         scheduleTaskNotificationWork(60);
-
     }
 
     private void scheduleAutoSyncWork(int syncInterval) {
