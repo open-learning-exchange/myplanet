@@ -31,7 +31,7 @@ class FeedbackDetailActivity : AppCompatActivity() {
     private lateinit var activityFeedbackDetailBinding: ActivityFeedbackDetailBinding
     private var mAdapter: RecyclerView.Adapter<*>? = null
     private var layoutManager: RecyclerView.LayoutManager? = null
-    var feedback: RealmFeedback? = null
+    private lateinit var feedback: RealmFeedback
     var realm: Realm? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -42,15 +42,15 @@ class FeedbackDetailActivity : AppCompatActivity() {
         supportActionBar!!.setDisplayHomeAsUpEnabled(true)
         setTitle(R.string.feedback)
         realm = DatabaseService(this).realmInstance
-        feedback = realm!!.where(RealmFeedback::class.java).equalTo("id", intent.getStringExtra("id")).findFirst()
-        if (!TextUtils.isEmpty(feedback!!.openTime))
-            activityFeedbackDetailBinding.tvDate.text = getFormatedDateWithTime(feedback!!.openTime!!.toLong())
+        feedback = realm!!.where(RealmFeedback::class.java).equalTo("id", intent.getStringExtra("id")).findFirst()!!
+        if (!TextUtils.isEmpty(feedback.openTime))
+            activityFeedbackDetailBinding.tvDate.text = getFormatedDateWithTime(feedback.openTime!!.toLong())
         else
             activityFeedbackDetailBinding.tvDate.setText(R.string.date_n_a)
-        activityFeedbackDetailBinding.tvMessage.text = if (TextUtils.isEmpty(feedback!!.message))
+        activityFeedbackDetailBinding.tvMessage.text = if (TextUtils.isEmpty(feedback.message))
             "N/A"
         else
-            feedback!!.message
+            feedback.message
         setUpReplies()
     }
 
@@ -58,7 +58,7 @@ class FeedbackDetailActivity : AppCompatActivity() {
         activityFeedbackDetailBinding.rvFeedbackReply.setHasFixedSize(true)
         layoutManager = LinearLayoutManager(this)
         activityFeedbackDetailBinding.rvFeedbackReply.layoutManager = layoutManager
-        mAdapter = RvFeedbackAdapter(feedback!!.messageList, applicationContext)
+        mAdapter = RvFeedbackAdapter(feedback.messageList, applicationContext)
         activityFeedbackDetailBinding.rvFeedbackReply.adapter = mAdapter
         activityFeedbackDetailBinding.closeFeedback.setOnClickListener {
             realm!!.executeTransactionAsync(Realm.Transaction { realm1: Realm ->
@@ -75,10 +75,10 @@ class FeedbackDetailActivity : AppCompatActivity() {
                 val `object` = JsonObject()
                 `object`.addProperty("message", message)
                 `object`.addProperty("time", Date().time.toString() + "")
-                `object`.addProperty("user", feedback!!.owner + "")
-                val id = feedback!!.id
+                `object`.addProperty("user", feedback.owner + "")
+                val id = feedback.id
                 addReply(`object`, id)
-                mAdapter = RvFeedbackAdapter(feedback!!.messageList, applicationContext)
+                mAdapter = RvFeedbackAdapter(feedback.messageList, applicationContext)
                 activityFeedbackDetailBinding.rvFeedbackReply.adapter = mAdapter
                 activityFeedbackDetailBinding.feedbackReplyEditText.setText("")
                 activityFeedbackDetailBinding.feedbackReplyEditText.clearFocus()
@@ -87,7 +87,7 @@ class FeedbackDetailActivity : AppCompatActivity() {
     }
 
     private fun updateForClosed() {
-        if (feedback!!.status.equals("Closed", ignoreCase = true)) {
+        if (feedback.status.equals("Closed", ignoreCase = true)) {
             activityFeedbackDetailBinding.closeFeedback.isEnabled = false
             activityFeedbackDetailBinding.replyFeedback.isEnabled = false
             activityFeedbackDetailBinding.feedbackReplyEditText.visibility = View.INVISIBLE
@@ -114,7 +114,7 @@ class FeedbackDetailActivity : AppCompatActivity() {
             }
         }, Realm.Transaction.OnSuccess {
             updateForClosed()
-            mAdapter = RvFeedbackAdapter(feedback!!.messageList, applicationContext)
+            mAdapter = RvFeedbackAdapter(feedback.messageList, applicationContext)
             activityFeedbackDetailBinding.rvFeedbackReply.adapter = mAdapter
         })
     }
