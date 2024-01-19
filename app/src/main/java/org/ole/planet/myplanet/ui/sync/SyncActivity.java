@@ -333,10 +333,12 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     public void onSyncComplete() {
         progressDialog.dismiss();
         runOnUiThread(() -> {
-            syncIconDrawable = (AnimationDrawable) syncIcon.getDrawable();
-            syncIconDrawable.stop();
-            syncIconDrawable.selectDrawable(0);
-            syncIcon.invalidateDrawable(syncIconDrawable);
+            if (syncIconDrawable != null && syncIcon != null) {
+                syncIconDrawable = (AnimationDrawable) syncIcon.getDrawable();
+                syncIconDrawable.stop();
+                syncIconDrawable.selectDrawable(0);
+                syncIcon.invalidateDrawable(syncIconDrawable);
+            }
 
             DialogUtils.showSnack(findViewById(android.R.id.content), getString(R.string.sync_completed));
 
@@ -1100,8 +1102,10 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         DialogUtils.showSnack(btnSignIn, s);
         settings.edit().putLong("lastUsageUploaded", new Date().getTime()).commit();
 
-        // Update last sync text
-        lblLastSyncDate.setText(getString(R.string.last_sync) + Utilities.getRelativeTime(new Date().getTime()) + " >>");
+        if (lblLastSyncDate != null) {
+            // Update last sync text
+            lblLastSyncDate.setText(getString(R.string.last_sync) + Utilities.getRelativeTime(new Date().getTime()) + " >>");
+        }
     }
 
     @Override
@@ -1110,7 +1114,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
             mRealm = Realm.getDefaultInstance();
             AlertDialog.Builder builder = DialogUtils.getUpdateDialog(this, info, progressDialog);
             if (cancelable || NetworkUtils.getCustomDeviceName(this).endsWith("###")) {
-                builder.setNegativeButton(R.string.update_later, (dialogInterface, i) -> continueSyncProcess());
+                builder.setNegativeButton(R.string.update_later, (dialogInterface, i) -> continueSyncProcess(false, true));
             } else {
                 mRealm.executeTransactionAsync(realm -> realm.deleteAll());
             }
@@ -1143,14 +1147,14 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
             settingDialog(this);
         }
         progressDialog.dismiss();
-        if (!block) continueSyncProcess();
+        if (!block) continueSyncProcess(false, true);
         else {
             syncIconDrawable.stop();
             syncIconDrawable.selectDrawable(0);
         }
     }
 
-    public void continueSyncProcess() {
+    public void continueSyncProcess(boolean forceSync, boolean isSync) {
         Utilities.log("Upload : Continue sync process");
         try {
             if (isSync) {
