@@ -15,7 +15,7 @@ import org.ole.planet.myplanet.utilities.Constants
 class DisclaimerFragment : Fragment() {
     private lateinit var fragmentDisclaimerBinding: FragmentDisclaimerBinding
     @RequiresApi(Build.VERSION_CODES.N)
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentDisclaimerBinding = FragmentDisclaimerBinding.inflate(inflater, container, false)
         fragmentDisclaimerBinding.tvDisclaimer.text = Html.fromHtml(getString(Constants.DISCLAIMER), HtmlCompat.FROM_HTML_MODE_LEGACY)
         return fragmentDisclaimerBinding.root

@@ -22,32 +22,28 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 
 class MyActivityFragment : Fragment() {
-    lateinit var fragmentMyActivityBinding : FragmentMyActivityBinding
-    lateinit var realm: Realm;
-    override fun onCreateView(
-            inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
-    ): View? {
+    private lateinit var fragmentMyActivityBinding : FragmentMyActivityBinding
+    lateinit var realm: Realm
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentMyActivityBinding = FragmentMyActivityBinding.inflate(inflater, container, false)
         return fragmentMyActivityBinding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        var userModel = UserProfileDbHandler(requireActivity()).userModel
+        val userModel = UserProfileDbHandler(requireActivity()).userModel
         realm = DatabaseService(requireActivity()).realmInstance
-        var calendar = Calendar.getInstance()
+        val calendar = Calendar.getInstance()
 
         calendar.set(Calendar.YEAR, calendar.get(Calendar.YEAR) - 1)
-        var resourceActivity =
-                realm.where(RealmOfflineActivity::class.java).equalTo("userId", userModel.id)
-                        .between("loginTime", calendar.timeInMillis, Calendar.getInstance().timeInMillis)
-                        .findAll()
+        val resourceActivity = realm.where(RealmOfflineActivity::class.java).equalTo("userId", userModel.id)
+            .between("loginTime", calendar.timeInMillis, Calendar.getInstance().timeInMillis)
+            .findAll()
 
-        var countMap = HashMap<String, Int>();
-        var format = SimpleDateFormat("MMM")
+        val countMap = HashMap<String, Int>()
+        val format = SimpleDateFormat("MMM")
         resourceActivity.forEach {
-
-            var d = format.format(it.loginTime)
+            val d = format.format(it.loginTime)
             Utilities.log(d)
             if (countMap.containsKey(d)) {
                 countMap[d] = countMap[d]!!.plus(1)
@@ -56,22 +52,24 @@ class MyActivityFragment : Fragment() {
             }
         }
         Utilities.log("${resourceActivity.size} size map : ${countMap.size} ")
-        var entries = ArrayList<BarEntry>()
-        var i = 0;
+        val entries = ArrayList<BarEntry>()
+        var i = 0
         for (entry in countMap.keys) {
-            var key = format.parse(entry)
-            var en = BarEntry(key.month.toFloat(), countMap[entry]!!.toFloat())
-            entries.add(en)
+            val key = format.parse(entry)
+            val en = key?.month?.let { BarEntry(it.toFloat(), countMap[entry]!!.toFloat()) }
+            if (en != null) {
+                entries.add(en)
+            }
             i = i.plus(1)
         }
-        var e = Gson().toJson(countMap)
-        Utilities.log("$e")
+        val e = Gson().toJson(countMap)
+        Utilities.log(e)
         Utilities.log("${entries.size} size")
         val dataSet = BarDataSet(entries, "No of login ")
 
         val lineData = BarData(dataSet)
         fragmentMyActivityBinding.chart.data = lineData
-        var d = Description()
+        val d = Description()
         d.text = "Login Activity chart"
         fragmentMyActivityBinding.chart.description = d
         fragmentMyActivityBinding.chart.xAxis.valueFormatter = object : ValueFormatter() {
@@ -83,7 +81,7 @@ class MyActivityFragment : Fragment() {
         fragmentMyActivityBinding.chart.invalidate()
     }
 
-    public fun getMonth(month: Int): String {
-        return DateFormatSymbols().months[month];
+    fun getMonth(month: Int): String {
+        return DateFormatSymbols().months[month]
     }
 }

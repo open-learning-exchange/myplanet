@@ -16,7 +16,7 @@ import org.ole.planet.myplanet.utilities.Constants
 class AboutFragment : Fragment() {
     private lateinit var fragmentAboutBinding: FragmentAboutBinding
     @RequiresApi(Build.VERSION_CODES.N)
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentAboutBinding = FragmentAboutBinding.inflate(inflater, container, false)
         val versionString = "${resources.getText(org.ole.planet.myplanet.R.string.version)}: ${resources.getText(org.ole.planet.myplanet.R.string.app_version)}"
         val aboutText = getString(Constants.ABOUT)
