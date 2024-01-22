@@ -111,7 +111,6 @@ abstract class PermissionActivity : AppCompatActivity() {
 
     companion object {
         const val PERMISSION_REQUEST_CODE_FILE = 111
-
         @JvmStatic
         fun hasInstallPermission(context: Context): Boolean {
             return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
