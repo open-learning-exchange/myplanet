@@ -25,10 +25,7 @@ abstract class PermissionActivity : AppCompatActivity() {
     @RequiresApi(Build.VERSION_CODES.M)
     fun checkUsagesPermission() {
         if (!getUsagesPermission(this)) {
-            Utilities.toast(
-                this,
-                getString(R.string.please_allow_usages_permission_to_myplanet_app)
-            )
+            Utilities.toast(this, getString(R.string.please_allow_usages_permission_to_myplanet_app))
             startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
         }
     }
@@ -61,7 +58,7 @@ abstract class PermissionActivity : AppCompatActivity() {
         if (!checkPermission(Manifest.permission.CAMERA)) {
             permissions.add(Manifest.permission.CAMERA)
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             if (!checkPermission(Manifest.permission.READ_MEDIA_IMAGES)) {
                 permissions.add(Manifest.permission.READ_MEDIA_IMAGES)
             }
@@ -87,11 +84,7 @@ abstract class PermissionActivity : AppCompatActivity() {
         }
     }
 
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<String>,
-        grantResults: IntArray
-    ) {
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == PERMISSION_REQUEST_CODE_FILE) {
             if (grantResults.isNotEmpty() && grantResults[0] != PackageManager.PERMISSION_GRANTED) {
