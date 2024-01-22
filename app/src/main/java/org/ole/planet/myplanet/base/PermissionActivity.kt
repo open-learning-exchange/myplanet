@@ -38,15 +38,24 @@ abstract class PermissionActivity : AppCompatActivity() {
 
     @RequiresApi(Build.VERSION_CODES.M)
     fun getUsagesPermission(context: Context): Boolean {
-        var granted = false
-        val appOps = context.getSystemService(APP_OPS_SERVICE) as AppOpsManager
-        val mode = appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), context.packageName)
-        granted = if (mode == AppOpsManager.MODE_DEFAULT) {
+        val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
+        var mode = -1
+        try {
+            val method = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                AppOpsManager::class.java.getMethod("unsafeCheckOpNoThrow", String::class.java, Int::class.javaPrimitiveType, String::class.java)
+            } else {
+                AppOpsManager::class.java.getMethod("checkOpNoThrow", String::class.java, Int::class.javaPrimitiveType, String::class.java)
+            }
+            mode = method.invoke(appOps, AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), context.packageName) as Int
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        return if (mode == AppOpsManager.MODE_DEFAULT) {
             context.checkCallingOrSelfPermission(Manifest.permission.PACKAGE_USAGE_STATS) == PackageManager.PERMISSION_GRANTED
         } else {
             mode == AppOpsManager.MODE_ALLOWED
         }
-        return granted
     }
 
     @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
@@ -95,6 +104,7 @@ abstract class PermissionActivity : AppCompatActivity() {
 
     companion object {
         const val PERMISSION_REQUEST_CODE_FILE = 111
+
         @JvmStatic
         fun hasInstallPermission(context: Context): Boolean {
             return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
