@@ -204,7 +204,7 @@ class MyHealthFragment : Fragment() {
             fragmentVitalSignBinding.txtEmergencyContact.text = ("${getString(R.string.name_colon)} ${Utilities.checkNA(myHealths?.emergencyContactName)} ${getString(R.string.type)} ${Utilities.checkNA(myHealths?.emergencyContactName)} ${getString(R.string.contact_colon)} ${Utilities.checkNA(myHealths?.emergencyContact)}").trimIndent()
             val list = getExaminations(mm)
 
-            val adap = AdapterHealthExamination(activity, list, mh, userModel)
+            val adap = AdapterHealthExamination(requireActivity(), list, mh, userModel!!)
             adap.setmRealm(mRealm)
             fragmentVitalSignBinding.rvRecords.apply {
                 layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
