@@ -22,7 +22,7 @@ import java.util.UUID
 
 class TeamDetailFragment : Fragment() {
     private lateinit var fragmentTeamDetailBinding: FragmentTeamDetailBinding
-    var mRealm: Realm? = null
+    private lateinit var mRealm: Realm
     var team: RealmMyTeam? = null
     var teamId: String? = null
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -31,7 +31,7 @@ class TeamDetailFragment : Fragment() {
         teamId = requireArguments().getString("id")
         val user = UserProfileDbHandler(activity).userModel
         mRealm = DatabaseService(requireActivity()).realmInstance
-        team = mRealm!!.where(RealmMyTeam::class.java).equalTo("_id", requireArguments().getString("id")).findFirst()
+        team = mRealm.where(RealmMyTeam::class.java).equalTo("_id", requireArguments().getString("id")).findFirst()
         fragmentTeamDetailBinding.viewPager.adapter = TeamPagerAdapter(childFragmentManager, team!!, isMyTeam)
         fragmentTeamDetailBinding.tabLayout.setupWithViewPager(fragmentTeamDetailBinding.viewPager)
         if (!isMyTeam) {
@@ -40,7 +40,7 @@ class TeamDetailFragment : Fragment() {
             fragmentTeamDetailBinding.btnLeave.setOnClickListener {
                 AlertDialog.Builder(requireContext()).setMessage(R.string.confirm_exit)
                     .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                        team!!.leave(user, mRealm!!)
+                        team!!.leave(user, mRealm)
                         Utilities.toast(activity, getString(R.string.left_team))
                         fragmentTeamDetailBinding.viewPager.adapter = TeamPagerAdapter(childFragmentManager, team!!, false)
                         fragmentTeamDetailBinding.llActionButtons.visibility = View.GONE
@@ -55,7 +55,7 @@ class TeamDetailFragment : Fragment() {
                 }
             }
         }
-        if (isTeamLeader(teamId, user.id!!, mRealm!!)) {
+        if (isTeamLeader(teamId, user.id!!, mRealm)) {
             fragmentTeamDetailBinding.btnLeave.visibility = View.GONE
         }
         return fragmentTeamDetailBinding.root
@@ -69,11 +69,11 @@ class TeamDetailFragment : Fragment() {
     private fun createTeamLog() {
         val user = UserProfileDbHandler(activity).userModel
         if (team == null) return
-        if (!mRealm!!.isInTransaction) {
-            mRealm!!.beginTransaction()
+        if (!mRealm.isInTransaction) {
+            mRealm.beginTransaction()
         }
         Utilities.log("Crete team log")
-        val log = mRealm!!.createObject(RealmTeamLog::class.java, UUID.randomUUID().toString())
+        val log = mRealm.createObject(RealmTeamLog::class.java, UUID.randomUUID().toString())
         log.teamId = teamId
         log.user = user.name
         log.createdOn = user.planetCode
@@ -81,6 +81,6 @@ class TeamDetailFragment : Fragment() {
         log.teamType = team!!.teamType
         log.parentCode = user.parentCode
         log.time = Date().time
-        mRealm!!.commitTransaction()
+        mRealm.commitTransaction()
     }
 }

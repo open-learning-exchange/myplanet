@@ -15,12 +15,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.Utilities
 import io.realm.Realm
 
-class AdapterTeam(
-    private val context: Context,
-    private val list: List<RealmMyTeam>,
-    private val mRealm: Realm
-) : RecyclerView.Adapter<AdapterTeam.ViewHolderTeam>() {
-
+class AdapterTeam(private val context: Context, private val list: List<RealmMyTeam>, private val mRealm: Realm) : RecyclerView.Adapter<AdapterTeam.ViewHolderTeam>() {
     private var teamSelectedListener: OnTeamSelectedListener? = null
     private var listener: OnUserSelectedListener? = context as? OnUserSelectedListener
     private var users: List<RealmUserModel> = emptyList()

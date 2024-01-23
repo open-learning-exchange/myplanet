@@ -44,18 +44,19 @@ import java.util.Date
 import java.util.UUID
 
 class MyTeamsDetailFragment : BaseNewsFragment() {
-    private var fragmentMyTeamsDetailBinding: FragmentMyTeamsDetailBinding? = null
+    private lateinit var fragmentMyTeamsDetailBinding: FragmentMyTeamsDetailBinding
     var tvDescription: TextView? = null
     var user: RealmUserModel? = null
     var teamId: String? = null
     var team: RealmMyTeam? = null
     var listContent: ListView? = null
-    var tabLayout: TabLayout? = null
+    private var tabLayout: TabLayout? = null
     var dbService: DatabaseService? = null
-    var rvDiscussion: RecyclerView? = null
+    private var rvDiscussion: RecyclerView? = null
     var llRv: LinearLayout? = null
-    var isMyTeam = false
-    var libraries: RealmResults<RealmMyLibrary>? = null
+    private var isMyTeam = false
+    private var libraries: RealmResults<RealmMyLibrary>? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) {
@@ -66,13 +67,13 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentMyTeamsDetailBinding = FragmentMyTeamsDetailBinding.inflate(inflater, container, false)
-        val v: View = fragmentMyTeamsDetailBinding!!.root
+        val v: View = fragmentMyTeamsDetailBinding.root
         initializeViews(v)
         dbService = DatabaseService(requireActivity())
         mRealm = dbService!!.realmInstance
         user = mRealm.copyFromRealm(profileDbHandler.userModel)
         team = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
-        return fragmentMyTeamsDetailBinding!!.root
+        return fragmentMyTeamsDetailBinding.root
     }
 
     private fun initializeViews(v: View) {
@@ -81,8 +82,8 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
         tvDescription = v.findViewById(R.id.description)
         tabLayout = v.findViewById(R.id.tab_layout)
         listContent = v.findViewById(R.id.list_content)
-        fragmentMyTeamsDetailBinding!!.btnInvite.visibility = if (showBetaFeature(Constants.KEY_MEETUPS, activity)) View.VISIBLE else View.GONE
-        fragmentMyTeamsDetailBinding!!.btnLeave.visibility = if (showBetaFeature(Constants.KEY_MEETUPS, activity)) View.VISIBLE else View.GONE
+        fragmentMyTeamsDetailBinding.btnInvite.visibility = if (showBetaFeature(Constants.KEY_MEETUPS, activity)) View.VISIBLE else View.GONE
+        fragmentMyTeamsDetailBinding.btnLeave.visibility = if (showBetaFeature(Constants.KEY_MEETUPS, activity)) View.VISIBLE else View.GONE
         v.findViewById<View>(R.id.add_message).setOnClickListener { showAddMessage() }
     }
 
@@ -110,7 +111,7 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
-        fragmentMyTeamsDetailBinding!!.title.text = team!!.name
+        fragmentMyTeamsDetailBinding.title.text = team!!.name
         tvDescription!!.text = team!!.description
         setTeamList()
     }
@@ -204,7 +205,7 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
     private fun setCourseList(tab: TabLayout.Tab, courses: RealmResults<RealmMyCourse>) {
         hideRv(tab, String.format(getString(R.string.courses_colon) + " (%s)", courses.size))
         listContent!!.adapter = ArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, courses)
-        listContent!!.onItemClickListener = AdapterView.OnItemClickListener { adapterView: AdapterView<*>?, view: View?, i: Int, l: Long ->
+        listContent!!.onItemClickListener = AdapterView.OnItemClickListener { _: AdapterView<*>?, _: View?, i: Int, _: Long ->
             if (homeItemClickListener != null) {
                 openFragment(courses[i]!!.courseId, TakeCourseFragment())
             }

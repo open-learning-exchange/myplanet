@@ -48,6 +48,7 @@ class TeamPagerAdapter(fm: FragmentManager?, team: RealmMyTeam, private val isIn
         return list[position]
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun getItem(position: Int): Fragment {
         val f: Fragment? = if (!isInMyTeam) {
             if (position == 0) PlanFragment() else {
