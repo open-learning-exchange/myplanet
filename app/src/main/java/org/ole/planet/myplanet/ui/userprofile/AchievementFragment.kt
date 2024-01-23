@@ -29,9 +29,9 @@ import org.ole.planet.myplanet.utilities.Utilities
 class AchievementFragment : BaseContainerFragment() {
     private lateinit var fragmentAchievementBinding: FragmentAchievementBinding
     private lateinit var rowAchievementBinding: RowAchievementBinding
-    private var layoutButtonPrimaryBinding: LayoutButtonPrimaryBinding? = null
+    private lateinit var layoutButtonPrimaryBinding: LayoutButtonPrimaryBinding
     private lateinit var aRealm: Realm
-    var user: RealmUserModel? = null
+    lateinit var user: RealmUserModel
     var listener: OnHomeItemClickListener? = null
     private var achievement: RealmAchievement? = null
     override fun onAttach(context: Context) {
@@ -51,9 +51,9 @@ class AchievementFragment : BaseContainerFragment() {
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
-        achievement = aRealm.where(RealmAchievement::class.java).equalTo("_id", user!!.id + "@" + user!!.planetCode).findFirst()
-        fragmentAchievementBinding.tvFirstName.text = user!!.firstName
-        fragmentAchievementBinding.tvName.text = String.format("%s %s %s", user!!.firstName, user!!.middleName, user!!.lastName)
+        achievement = aRealm.where(RealmAchievement::class.java).equalTo("_id", user.id + "@" + user.planetCode).findFirst()
+        fragmentAchievementBinding.tvFirstName.text = user.firstName
+        fragmentAchievementBinding.tvName.text = String.format("%s %s %s", user.firstName, user.middleName, user.lastName)
         if (achievement != null) {
             fragmentAchievementBinding.tvGoals.text = achievement!!.goals
             fragmentAchievementBinding.tvPurpose.text = achievement!!.purpose
@@ -70,18 +70,19 @@ class AchievementFragment : BaseContainerFragment() {
                     if (getString("description", ob.getAsJsonObject()).isNotEmpty() && libraries.size > 0) {
                         rowAchievementBinding.llRow.setOnClickListener {
                             rowAchievementBinding.llDesc.visibility = if (rowAchievementBinding.llDesc.visibility == View.GONE) View.VISIBLE else View.GONE
-                            rowAchievementBinding.tvTitle.setCompoundDrawablesWithIntrinsicBounds(
-                                0, 0,
-                                if (rowAchievementBinding.llDesc.visibility == View.GONE) R.drawable.ic_down
-                                else R.drawable.ic_up, 0)
+                            rowAchievementBinding.tvTitle.setCompoundDrawablesWithIntrinsicBounds(0, 0,
+                                if (rowAchievementBinding.llDesc.visibility == View.GONE) R.drawable.ic_down else R.drawable.ic_up, 0
+                            )
                         }
                         for (lib in libraries) {
                             layoutButtonPrimaryBinding = LayoutButtonPrimaryBinding.inflate(LayoutInflater.from(MainApplication.context))
-                            layoutButtonPrimaryBinding!!.root.text = lib.title
-                            layoutButtonPrimaryBinding!!.root.setCompoundDrawablesWithIntrinsicBounds(0, 0,
-                                if (lib.isResourceOffline()) R.drawable.ic_eye
-                                else R.drawable.ic_download, 0)
-                            layoutButtonPrimaryBinding!!.root.setOnClickListener {
+                            layoutButtonPrimaryBinding.root.text = lib.title
+                            layoutButtonPrimaryBinding.root.setCompoundDrawablesWithIntrinsicBounds(0, 0,
+                                if (lib.isResourceOffline())
+                                    R.drawable.ic_eye
+                                else
+                                    R.drawable.ic_download, 0)
+                            layoutButtonPrimaryBinding.root.setOnClickListener {
                                 if (lib.isResourceOffline()) {
                                     openResource(lib)
                                 } else {
@@ -90,27 +91,31 @@ class AchievementFragment : BaseContainerFragment() {
                                     startDownload(a)
                                 }
                             }
-                            rowAchievementBinding.flexboxResources.addView(layoutButtonPrimaryBinding!!.root)
+                            rowAchievementBinding.flexboxResources.addView(
+                                layoutButtonPrimaryBinding.root
+                            )
                         }
                     } else {
                         rowAchievementBinding.tvTitle.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0)
                         createAchievementList()
                         fragmentAchievementBinding.rvOtherInfo.layoutManager = LinearLayoutManager(MainApplication.context)
-                        fragmentAchievementBinding.rvOtherInfo.adapter = achievement!!.getreferences()?.let { AdapterOtherInfo(MainApplication.context, it) }
+                        fragmentAchievementBinding.rvOtherInfo.adapter = AdapterOtherInfo(MainApplication.context, achievement!!.getreferences()!!)
                     }
                     aRealm.addChangeListener {
-                        if (fragmentAchievementBinding.llAchievement != null) fragmentAchievementBinding.llAchievement.removeAllViews()
+                        if (fragmentAchievementBinding.llAchievement != null)
+                            fragmentAchievementBinding.llAchievement.removeAllViews()
                         createAchievementList()
                     }
                 } else {
                     rowAchievementBinding.root.visibility = View.GONE
                 }
-                if (fragmentAchievementBinding.llAchievement != null && isAdded) {
-                    fragmentAchievementBinding.llAchievement.addView(rowAchievementBinding.root)
+                if (rowAchievementBinding.root.parent != null) {
+                    (rowAchievementBinding.root.parent as ViewGroup).removeView(rowAchievementBinding.root)
                 }
+                fragmentAchievementBinding.llAchievement.addView(rowAchievementBinding.root)
             }
             fragmentAchievementBinding.rvOtherInfo.layoutManager = LinearLayoutManager(MainApplication.context)
-            fragmentAchievementBinding.rvOtherInfo.adapter = achievement!!.getreferences()?.let { AdapterOtherInfo(MainApplication.context, it) }
+            fragmentAchievementBinding.rvOtherInfo.adapter = AdapterOtherInfo(MainApplication.context, achievement!!.getreferences()!!)
         }
     }
 
@@ -125,19 +130,22 @@ class AchievementFragment : BaseContainerFragment() {
                 val libraries = getList(ob.getAsJsonArray("resources"))
                 rowAchievementBinding.llRow.setOnClickListener {
                     rowAchievementBinding.llDesc.visibility = if (rowAchievementBinding.llDesc.visibility == View.GONE) View.VISIBLE else View.GONE
-                    rowAchievementBinding.tvTitle.setCompoundDrawablesWithIntrinsicBounds(
-                        0, 0,
-                        if (rowAchievementBinding.llDesc.visibility == View.GONE) R.drawable.ic_down else R.drawable.ic_up, 0
-                    )
+                    rowAchievementBinding.tvTitle.setCompoundDrawablesWithIntrinsicBounds(0, 0,
+                        if (rowAchievementBinding.llDesc.visibility == View.GONE)
+                            R.drawable.ic_down
+                        else
+                            R.drawable.ic_up, 0)
                 }
                 for (lib in libraries) {
                     layoutButtonPrimaryBinding = LayoutButtonPrimaryBinding.inflate(LayoutInflater.from(MainApplication.context))
-                    layoutButtonPrimaryBinding!!.root.text = lib.title
-                    layoutButtonPrimaryBinding!!.root.setCompoundDrawablesWithIntrinsicBounds(
-                        0, 0,
-                        if (lib.isResourceOffline()) R.drawable.ic_eye else R.drawable.ic_download, 0
+                    layoutButtonPrimaryBinding.root.text = lib.title
+                    layoutButtonPrimaryBinding.root.setCompoundDrawablesWithIntrinsicBounds(
+                        0,
+                        0,
+                        if (lib.isResourceOffline()) R.drawable.ic_eye else R.drawable.ic_download,
+                        0
                     )
-                    layoutButtonPrimaryBinding!!.root.setOnClickListener {
+                    layoutButtonPrimaryBinding.root.setOnClickListener {
                         if (lib.isResourceOffline()) {
                             openResource(lib)
                         } else {
@@ -146,14 +154,15 @@ class AchievementFragment : BaseContainerFragment() {
                             startDownload(a)
                         }
                     }
-                    rowAchievementBinding.flexboxResources.addView(layoutButtonPrimaryBinding!!.root)
+                    if (layoutButtonPrimaryBinding.root.parent != null) {
+                        (layoutButtonPrimaryBinding.root.parent as ViewGroup).removeView(layoutButtonPrimaryBinding.root)
+                    }
+                    rowAchievementBinding.flexboxResources.addView(layoutButtonPrimaryBinding.root)
                 }
             } else {
                 rowAchievementBinding.root.visibility = View.GONE
             }
-            if (fragmentAchievementBinding.llAchievement != null && isAdded) {
-                fragmentAchievementBinding.llAchievement.addView(rowAchievementBinding.root)
-            }
+            fragmentAchievementBinding.llAchievement.addView(rowAchievementBinding.root)
         }
     }
 
