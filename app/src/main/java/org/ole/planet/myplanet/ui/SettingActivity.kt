@@ -4,6 +4,7 @@ import android.app.ProgressDialog
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.preference.ListPreference
 import android.preference.Preference
@@ -12,6 +13,7 @@ import android.preference.Preference.OnPreferenceClickListener
 import android.preference.PreferenceFragment
 import android.preference.SwitchPreference
 import android.view.MenuItem
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import io.realm.Realm
@@ -64,6 +66,7 @@ class SettingActivity : AppCompatActivity() {
         var profileDbHandler: UserProfileDbHandler? = null
         var user: RealmUserModel? = null
         var dialog: ProgressDialog? = null
+        @RequiresApi(Build.VERSION_CODES.O)
         override fun onCreate(savedInstanceState: Bundle?) {
             super.onCreate(savedInstanceState)
             addPreferencesFromResource(R.xml.pref)
@@ -91,7 +94,7 @@ class SettingActivity : AppCompatActivity() {
             preference.onPreferenceClickListener = OnPreferenceClickListener {
                 AlertDialog.Builder(activity).setTitle(R.string.are_you_sure)
                     .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                        BaseResourceFragment.settings.edit().clear().apply()
+                        BaseResourceFragment.settings?.edit()?.clear()?.apply()
                         mRealm.executeTransactionAsync(
                             Realm.Transaction { realm: Realm -> realm.deleteAll() },
                             Realm.Transaction.OnSuccess {

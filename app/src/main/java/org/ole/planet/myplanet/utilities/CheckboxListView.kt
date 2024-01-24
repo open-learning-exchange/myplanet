@@ -16,7 +16,7 @@ class CheckboxListView : ListView, AdapterView.OnItemClickListener {
         onItemClickListener = this
     }
 
-    interface CheckChangeListener {
+    fun interface CheckChangeListener {
         fun onCheckChange()
     }
 

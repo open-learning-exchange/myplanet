@@ -39,11 +39,12 @@ import org.ole.planet.myplanet.ui.viewer.*
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import java.io.File
+
 abstract class BaseContainerFragment : BaseResourceFragment() {
     var timesRated: TextView? = null
     var rating: TextView? = null
     var ratingBar: AppCompatRatingBar? = null
-    lateinit var profileDbHandler: UserProfileDbHandler
+    override var profileDbHandler: UserProfileDbHandler? = null
     private val INSTALL_UNKNOWN_SOURCES_REQUEST_CODE = 112
     var hasInstallPermission = hasInstallPermission(MainApplication.context)
     private var currentLibrary: RealmMyLibrary? = null
@@ -52,9 +53,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         super.onCreate(savedInstanceState)
         profileDbHandler = UserProfileDbHandler(requireActivity())
     }
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        return super.onCreateView(inflater, container, savedInstanceState)
-    }
+
     fun setRatings(`object`: JsonObject?) {
         if (`object` != null) {
             AdapterCourses.showRating(`object`, rating, timesRated, ratingBar)
@@ -67,18 +66,16 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             val url = Utilities.getUrl(library, settings)
             if (!FileUtils.checkFileExist(url) && !TextUtils.isEmpty(url)) urls.add(url)
         }
-        if (!urls.isEmpty()) startDownload(urls) else Utilities.toast(
+        if (urls.isNotEmpty()) startDownload(urls) else Utilities.toast(
             activity, getString(R.string.no_images_to_download)
         )
     }
-    fun initRatingView(
-        type: String?, id: String?, title: String?, listener: OnRatingChangeListener?
-    ) {
+    fun initRatingView(type: String?, id: String?, title: String?, listener: OnRatingChangeListener?) {
         timesRated = requireView().findViewById(R.id.times_rated)
         rating = requireView().findViewById(R.id.tv_rating)
         ratingBar = requireView().findViewById(R.id.rating_bar)
         ratingBar?.setOnTouchListener { _: View?, e: MotionEvent ->
-            if (e.action == MotionEvent.ACTION_UP) homeItemClickListener.showRatingDialog(
+            if (e.action == MotionEvent.ACTION_UP) homeItemClickListener?.showRatingDialog(
                 type, id, title, listener
             )
             true
@@ -92,10 +89,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
     fun openIntent(items: RealmMyLibrary, typeClass: Class<*>?) {
         val fileOpenIntent = Intent(activity, typeClass)
-        if (items.resourceLocalAddress!!.contains("ole/audio") || items.resourceLocalAddress!!.contains(
-                "ole/video"
-            )
-        ) {
+        if (items.resourceLocalAddress!!.contains("ole/audio") || items.resourceLocalAddress!!.contains("ole/video")) {
             fileOpenIntent.putExtra("TOUCHED_FILE", items.resourceLocalAddress)
         } else {
             fileOpenIntent.putExtra("TOUCHED_FILE", items.id + "/" + items.resourceLocalAddress)
@@ -117,9 +111,10 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             val arrayList = ArrayList<String>()
             arrayList.add(Utilities.getUrl(items, settings))
             startDownload(arrayList)
-            profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_DOWNLOAD)
+            profileDbHandler?.setResourceOpenCount(items, KEY_RESOURCE_DOWNLOAD)
         }
     }
+    @RequiresApi(Build.VERSION_CODES.O)
     fun checkFileExtension(items: RealmMyLibrary) {
         val filenameArray = items.resourceLocalAddress!!.split("\\.".toRegex()).toTypedArray()
         val extension = filenameArray[filenameArray.size - 1]
@@ -190,6 +185,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         startActivityForResult(intent, INSTALL_UNKNOWN_SOURCES_REQUEST_CODE)
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     fun openFileType(items: RealmMyLibrary, videotype: String) {
         val mimetype = Utilities.getMimeType(items.resourceLocalAddress)
         Utilities.log("Mime type $mimetype")
@@ -199,7 +195,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             return
         }
         if (profileDbHandler == null) profileDbHandler = UserProfileDbHandler(activity)
-        profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_OPEN)
+        profileDbHandler!!.setResourceOpenCount(items, KEY_RESOURCE_OPEN)
         if (mimetype.startsWith("video")) {
             playVideo(videotype, items)
         } else {
@@ -218,17 +214,14 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             if (items.resourceRemoteAddress == null && items.resourceLocalAddress != null) {
                 bundle.putString("videoURL", items.resourceLocalAddress)
             } else {
-                bundle.putString(
-                    "videoURL",
-                    "" + Uri.fromFile(File("" + FileUtils.getSDPathFromUrl(items.resourceRemoteAddress)))
-                )
+                bundle.putString("videoURL", "" + Uri.fromFile(File("" + FileUtils.getSDPathFromUrl(items.resourceRemoteAddress))))
             }
             bundle.putString("Auth", "")
         }
         intent.putExtras(bundle)
         startActivity(intent)
     }
-    fun showResourceList(downloadedResources: List<RealmMyLibrary>?) {
+    private fun showResourceList(downloadedResources: List<RealmMyLibrary>?) {
         val builderSingle = AlertDialog.Builder(requireActivity())
         builderSingle.setTitle(getString(R.string.select_resource_to_open))
         val arrayAdapter: ArrayAdapter<RealmMyLibrary?> = object : ArrayAdapter<RealmMyLibrary?>(
@@ -240,12 +233,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                     .inflate(android.R.layout.select_dialog_item, parent, false)
                 val tv = convertView as TextView
                 val library = getItem(position)
-                tv.setCompoundDrawablesWithIntrinsicBounds(
-                    0,
-                    0,
-                    if (library!!.isResourceOffline()) R.drawable.ic_eye else R.drawable.ic_download,
-                    0
-                )
+                tv.setCompoundDrawablesWithIntrinsicBounds(0, 0, if (library!!.isResourceOffline()) R.drawable.ic_eye else R.drawable.ic_download, 0)
                 tv.text = library.title
                 return tv
             }
@@ -257,11 +245,11 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         builderSingle.setNegativeButton(R.string.dismiss, null).show()
     }
     fun setOpenResourceButton(downloadedResources: List<RealmMyLibrary>?, btnOpen: Button) {
-        if (downloadedResources == null || downloadedResources.isEmpty()) {
+        if (downloadedResources.isNullOrEmpty()) {
             btnOpen.visibility = View.GONE
         } else {
             btnOpen.visibility = View.VISIBLE
-            btnOpen.setOnClickListener { view: View? ->
+            btnOpen.setOnClickListener {
                 if (downloadedResources.size == 1) {
                     openResource(downloadedResources[0])
                 } else {

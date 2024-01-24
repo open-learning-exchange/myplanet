@@ -81,7 +81,8 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
         fragmentLibraryDetailBinding.tvLanguage.setText(library.language);
         fragmentLibraryDetailBinding.tvLicense.setText(library.linkToLicense);
         fragmentLibraryDetailBinding.tvResource.setText(RealmMyLibrary.listToString(library.resourceFor));
-        profileDbHandler.setResourceOpenCount(library);
+
+        getProfileDbHandler().setResourceOpenCount(library);
         try {
             onRatingChanged();
         } catch (Exception ex) {
@@ -104,24 +105,22 @@ public class LibraryDetailFragment extends BaseContainerFragment implements OnRa
             }
             openResource(library);
         });
-        Utilities.log("user id " + profileDbHandler.getUserModel().id + " " + library.getUserId().contains(profileDbHandler.getUserModel().id));
-        boolean isAdd = !library.getUserId().contains(profileDbHandler.getUserModel().id);
+        Utilities.log("user id " + getProfileDbHandler().getUserModel().id + " " + library.getUserId().contains(getProfileDbHandler().getUserModel().id));
+        boolean isAdd = !library.getUserId().contains(getProfileDbHandler().getUserModel().id);
         fragmentLibraryDetailBinding.btnRemove.setImageResource(isAdd ? R.drawable.ic_add_library : R.drawable.close_x);
         fragmentLibraryDetailBinding.btnRemove.setOnClickListener(view -> {
             if (!mRealm.isInTransaction()) mRealm.beginTransaction();
             if (isAdd) {
-                library.setUserId(profileDbHandler.getUserModel().id);
-                RealmRemovedLog.onAdd(mRealm, "resources", profileDbHandler.getUserModel().id, libraryId);
+                library.setUserId(getProfileDbHandler().getUserModel().id);
+                RealmRemovedLog.onAdd(mRealm, "resources", getProfileDbHandler().getUserModel().id, libraryId);
             } else {
-                library.removeUserId(profileDbHandler.getUserModel().id);
-                RealmRemovedLog.onRemove(mRealm, "resources", profileDbHandler.getUserModel().id, libraryId);
+                library.removeUserId(getProfileDbHandler().getUserModel().id);
+                RealmRemovedLog.onRemove(mRealm, "resources", getProfileDbHandler().getUserModel().id, libraryId);
             }
             Utilities.toast(getActivity(), getString(R.string.resources) + (isAdd ? getString(R.string.added_to) : getString(R.string.removed_from) + getString(R.string.my_library)));
             setLibraryData();
         });
-        fragmentLibraryDetailBinding.btnBack.setOnClickListener(view ->
-                getActivity().onBackPressed()
-        );
+        fragmentLibraryDetailBinding.btnBack.setOnClickListener(view -> getActivity().onBackPressed());
     }
 
     @Override
