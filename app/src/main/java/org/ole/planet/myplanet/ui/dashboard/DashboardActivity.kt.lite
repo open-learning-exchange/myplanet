@@ -56,8 +56,7 @@ import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.Utilities
 //import org.ole.planet.myplanet.base.BaseContainerFragment
 
-class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener,
-    BottomNavigationView.OnNavigationItemSelectedListener {
+class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, BottomNavigationView.OnNavigationItemSelectedListener {
     private lateinit var activityDashboardBinding: ActivityDashboardBinding
     private var headerResult: AccountHeader? = null
     var user: RealmUserModel? = null
