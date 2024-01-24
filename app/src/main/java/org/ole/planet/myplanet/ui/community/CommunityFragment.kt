@@ -47,10 +47,10 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
         mRealm = DatabaseService(requireActivity()).realmInstance
         user = UserProfileDbHandler(requireActivity()).userModel
         fragmentCommunityBinding.btnLibrary.setOnClickListener {
-            homeItemClickListener.openCallFragment(LibraryFragment())
+            homeItemClickListener?.openCallFragment(LibraryFragment())
         }
         val list =
-            mRealm.where(RealmNews::class.java).equalTo("docType", "message", Case.INSENSITIVE)
+            mRealm!!.where(RealmNews::class.java).equalTo("docType", "message", Case.INSENSITIVE)
                 .equalTo("viewableBy", "community", Case.INSENSITIVE)
                 .equalTo("createdOn", user?.planetCode, Case.INSENSITIVE).isEmpty("replyTo")
                 .sort("time", Sort.DESCENDING).findAll()
@@ -58,7 +58,7 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
         changeLayoutManager(orientation)
 
         Utilities.log("list size " + list.size)
-        var adapter = AdapterNews(activity, list, user, null, true)
+        val adapter = AdapterNews(activity, list, user, null, true)
         adapter.setListener(this)
         adapter.setFromLogin(requireArguments().getBoolean("fromLogin", false))
         adapter.setmRealm(mRealm)
