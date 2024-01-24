@@ -62,24 +62,12 @@ public abstract class DashboardElementActivity extends SyncActivity implements F
 
     public void onClickTabItems(int position) {
         switch (position) {
-            case 0:
-                openCallFragment(new BellDashboardFragment(), "dashboard");
-                break;
-            case 1:
-                openCallFragment(new LibraryFragment(), "library");
-                break;
-            case 2:
-                openCallFragment(new CourseFragment(), "course");
-                break;
-            case 4:
-                openEnterpriseFragment();
-                break;
-            case 3:
-                openCallFragment(new TeamFragment(), "survey");
-                break;
-            case 5:
-                openCallFragment(new CommunityTabFragment(), "community");
-                break;
+            case 0 -> openCallFragment(new BellDashboardFragment(), "dashboard");
+            case 1 -> openCallFragment(new LibraryFragment(), "library");
+            case 2 -> openCallFragment(new CourseFragment(), "course");
+            case 4 -> openEnterpriseFragment();
+            case 3 -> openCallFragment(new TeamFragment(), "survey");
+            case 5 -> openCallFragment(new CommunityTabFragment(), "community");
         }
     }
 
