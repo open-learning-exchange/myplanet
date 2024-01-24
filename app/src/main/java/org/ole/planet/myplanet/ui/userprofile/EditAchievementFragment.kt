@@ -48,23 +48,23 @@ import kotlin.plus
 
 class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDateSetListener {
     private lateinit var fragmentEditAchievementBinding: FragmentEditAchievementBinding
-    private var editAttachementBinding: EditAttachementBinding? = null
+    private lateinit var editAttachementBinding: EditAttachementBinding
     private var editOtherInfoBinding: EditOtherInfoBinding? = null
     private var alertReferenceBinding: AlertReferenceBinding? = null
     private var alertAddAttachmentBinding: AlertAddAttachmentBinding? = null
     private lateinit var myLibraryAlertdialogBinding: MyLibraryAlertdialogBinding
-    var mRealm: Realm? = null
+    private lateinit var eRealm: Realm
     var user: RealmUserModel? = null
-    private var achievement: RealmAchievement? = null
+    private lateinit var achievement: RealmAchievement
     private var referenceArray: JsonArray? = null
-    private var achievementArray: JsonArray? = null
+    private lateinit var achievementArray: JsonArray
     private var resourceArray: JsonArray? = null
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentEditAchievementBinding = FragmentEditAchievementBinding.inflate(inflater, container, false)
-        mRealm = DatabaseService(requireActivity()).realmInstance
+        eRealm = DatabaseService(requireActivity()).realmInstance
         user = UserProfileDbHandler(activity).userModel
         achievementArray = JsonArray()
-        achievement = mRealm.where(RealmAchievement::class.java).equalTo("_id", user!!.id + "@" + user!!.planetCode).findFirst()
+        achievement = eRealm.where(RealmAchievement::class.java).equalTo("_id", user!!.id + "@" + user!!.planetCode).findFirst()!!
         initializeData()
         setListeners()
         if (achievementArray != null) showAchievementAndInfo()
@@ -74,11 +74,11 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
 
     private fun setListeners() {
         fragmentEditAchievementBinding.btnUpdate.setOnClickListener {
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
+            if (!eRealm.isInTransaction) eRealm.beginTransaction()
             setUserInfo()
             setAchievementInfo()
             requireActivity().onBackPressed()
-            mRealm.commitTransaction()
+            eRealm.commitTransaction()
         }
         fragmentEditAchievementBinding.btnCancel.setOnClickListener { requireActivity().onBackPressed() }
         fragmentEditAchievementBinding.btnAchievement.setOnClickListener {
@@ -98,21 +98,21 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     private fun showAchievementAndInfo() {
         val config = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.single)
         fragmentEditAchievementBinding.llAttachment.removeAllViews()
-        for (e in achievementArray!!) {
+        for (e in achievementArray) {
             editAttachementBinding = EditAttachementBinding.inflate(LayoutInflater.from(activity))
-            editAttachementBinding!!.tvTitle.text = e.asJsonObject["title"].asString
-            val flexboxLayout = editAttachementBinding!!.flexbox
+            editAttachementBinding.tvTitle.text = e.asJsonObject["title"].asString
+            val flexboxLayout = editAttachementBinding.flexbox
             flexboxLayout.removeAllViews()
             val chipCloud = ChipCloud(activity, flexboxLayout, config)
             for (element in e.asJsonObject.getAsJsonArray("resources")) {
                 chipCloud.addChip(element.asJsonObject["title"].asString)
             }
-            editAttachementBinding!!.ivDelete.setOnClickListener {
-                achievementArray!!.remove(e)
+            editAttachementBinding.ivDelete.setOnClickListener {
+                achievementArray.remove(e)
                 showAchievementAndInfo()
             }
-            editAttachementBinding!!.edit.setOnClickListener { showAddachievementAlert(e.asJsonObject) }
-            val editAttachementView: View = editAttachementBinding!!.root
+            editAttachementBinding.edit.setOnClickListener { showAddachievementAlert(e.asJsonObject) }
+            val editAttachementView: View = editAttachementBinding.root
             fragmentEditAchievementBinding.llAttachment.addView(editAttachementView)
         }
     }
@@ -204,7 +204,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
                     Toast.makeText(activity, getString(R.string.title_is_required), Toast.LENGTH_SHORT).show()
                     return@setPositiveButton
                 }
-                if (`object` != null) achievementArray!!.remove(`object`)
+                if (`object` != null) achievementArray.remove(`object`)
                 saveAchievement(desc, title)
             }.setNegativeButton(getString(R.string.cancel), null).show()
     }
@@ -231,14 +231,14 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         `object`.addProperty("title", title)
         `object`.addProperty("date", date)
         `object`.add("resources", resourceArray)
-        achievementArray!!.add(`object`)
+        achievementArray.add(`object`)
         showAchievementAndInfo()
     }
 
     private fun showResourseListDialog(prevList: List<String?>) {
         val builder = AlertDialog.Builder(requireActivity())
         builder.setTitle(R.string.select_resources)
-        val list: List<RealmMyLibrary> = mRealm.where(RealmMyLibrary::class.java).findAll()
+        val list: List<RealmMyLibrary> = eRealm.where(RealmMyLibrary::class.java).findAll()
         myLibraryAlertdialogBinding = MyLibraryAlertdialogBinding.inflate(LayoutInflater.from(activity))
         val myLibraryAlertdialogView: View = myLibraryAlertdialogBinding.root
         val lv = createResourceList(myLibraryAlertdialogBinding, list, prevList)
@@ -258,17 +258,17 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
 
     private fun initializeData() {
         if (achievement == null) {
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
-            achievement = mRealm.createObject(RealmAchievement::class.java, user!!.id + "@" + user!!.planetCode)
+            if (!eRealm.isInTransaction) eRealm.beginTransaction()
+            achievement = eRealm.createObject(RealmAchievement::class.java, user!!.id + "@" + user!!.planetCode)
             return
         } else {
-            achievementArray = achievement!!.achievementsArray
-            referenceArray = achievement!!.getreferencesArray()
-            fragmentEditAchievementBinding.etAchievement.setText(achievement!!.achievementsHeader)
-            fragmentEditAchievementBinding.etPurpose.setText(achievement!!.purpose)
-            fragmentEditAchievementBinding.etGoals.setText(achievement!!.goals)
+            achievementArray = achievement.achievementsArray
+            referenceArray = achievement.getreferencesArray()
+            fragmentEditAchievementBinding.etAchievement.setText(achievement.achievementsHeader)
+            fragmentEditAchievementBinding.etPurpose.setText(achievement.purpose)
+            fragmentEditAchievementBinding.etGoals.setText(achievement.goals)
             fragmentEditAchievementBinding.cbSendToNation.isChecked = Boolean.parseBoolean(
-                achievement!!.sendToNation
+                achievement.sendToNation
             )
         }
         fragmentEditAchievementBinding.txtDob.text = if (TextUtils.isEmpty(user!!.dob)) getString(R.string.birth_date)
@@ -305,11 +305,11 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
 
     private fun setUserInfo() {}
     private fun setAchievementInfo() {
-        achievement!!.achievementsHeader = fragmentEditAchievementBinding.etAchievement.text.toString().trim { it <= ' ' }
-        achievement!!.goals = fragmentEditAchievementBinding.etGoals.text.toString().trim { it <= ' ' }
-        achievement!!.purpose = fragmentEditAchievementBinding.etPurpose.text.toString().trim { it <= ' ' }
-        achievement!!.setAchievements(achievementArray!!)
-        achievement!!.setreferences(referenceArray)
-        achievement!!.sendToNation = fragmentEditAchievementBinding.cbSendToNation.isChecked.toString() + ""
+        achievement.achievementsHeader = fragmentEditAchievementBinding.etAchievement.text.toString().trim { it <= ' ' }
+        achievement.goals = fragmentEditAchievementBinding.etGoals.text.toString().trim { it <= ' ' }
+        achievement.purpose = fragmentEditAchievementBinding.etPurpose.text.toString().trim { it <= ' ' }
+        achievement.setAchievements(achievementArray)
+        achievement.setreferences(referenceArray)
+        achievement.sendToNation = fragmentEditAchievementBinding.cbSendToNation.isChecked.toString() + ""
     }
 }

@@ -28,9 +28,9 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 class AchievementFragment : BaseContainerFragment() {
     private lateinit var fragmentAchievementBinding: FragmentAchievementBinding
-    private var rowAchievementBinding: RowAchievementBinding? = null
+    private lateinit var rowAchievementBinding: RowAchievementBinding
     private var layoutButtonPrimaryBinding: LayoutButtonPrimaryBinding? = null
-    var mRealm: Realm? = null
+    private lateinit var aRealm: Realm
     var user: RealmUserModel? = null
     var listener: OnHomeItemClickListener? = null
     private var achievement: RealmAchievement? = null
@@ -41,7 +41,7 @@ class AchievementFragment : BaseContainerFragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentAchievementBinding = FragmentAchievementBinding.inflate(inflater, container, false)
-        mRealm = DatabaseService(MainApplication.context).realmInstance
+        aRealm = DatabaseService(MainApplication.context).realmInstance
         user = UserProfileDbHandler(MainApplication.context).userModel
         fragmentAchievementBinding.btnEdit.setOnClickListener {
             if (listener != null) listener!!.openCallFragment(EditAchievementFragment())
@@ -51,7 +51,7 @@ class AchievementFragment : BaseContainerFragment() {
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
-        achievement = mRealm.where(RealmAchievement::class.java).equalTo("_id", user!!.id + "@" + user!!.planetCode).findFirst()
+        achievement = aRealm.where(RealmAchievement::class.java).equalTo("_id", user!!.id + "@" + user!!.planetCode).findFirst()
         fragmentAchievementBinding.tvFirstName.text = user!!.firstName
         fragmentAchievementBinding.tvName.text = String.format("%s %s %s", user!!.firstName, user!!.middleName, user!!.lastName)
         if (achievement != null) {
@@ -63,16 +63,16 @@ class AchievementFragment : BaseContainerFragment() {
                 rowAchievementBinding = RowAchievementBinding.inflate(LayoutInflater.from(MainApplication.context))
                 val ob = Gson().fromJson(s, JsonElement::class.java)
                 if (ob is JsonObject) {
-                    rowAchievementBinding!!.tvDescription.text = getString("description", ob.getAsJsonObject())
-                    rowAchievementBinding!!.tvDate.text = getString("date", ob.getAsJsonObject())
-                    rowAchievementBinding!!.tvTitle.text = getString("title", ob.getAsJsonObject())
+                    rowAchievementBinding.tvDescription.text = getString("description", ob.getAsJsonObject())
+                    rowAchievementBinding.tvDate.text = getString("date", ob.getAsJsonObject())
+                    rowAchievementBinding.tvTitle.text = getString("title", ob.getAsJsonObject())
                     val libraries = getList(ob.getAsJsonArray("resources"))
                     if (getString("description", ob.getAsJsonObject()).isNotEmpty() && libraries.size > 0) {
-                        rowAchievementBinding!!.llRow.setOnClickListener {
-                            rowAchievementBinding!!.llDesc.visibility = if (rowAchievementBinding!!.llDesc.visibility == View.GONE) View.VISIBLE else View.GONE
-                            rowAchievementBinding!!.tvTitle.setCompoundDrawablesWithIntrinsicBounds(
+                        rowAchievementBinding.llRow.setOnClickListener {
+                            rowAchievementBinding.llDesc.visibility = if (rowAchievementBinding.llDesc.visibility == View.GONE) View.VISIBLE else View.GONE
+                            rowAchievementBinding.tvTitle.setCompoundDrawablesWithIntrinsicBounds(
                                 0, 0,
-                                if (rowAchievementBinding!!.llDesc.visibility == View.GONE) R.drawable.ic_down
+                                if (rowAchievementBinding.llDesc.visibility == View.GONE) R.drawable.ic_down
                                 else R.drawable.ic_up, 0)
                         }
                         for (lib in libraries) {
@@ -90,22 +90,24 @@ class AchievementFragment : BaseContainerFragment() {
                                     startDownload(a)
                                 }
                             }
-                            rowAchievementBinding!!.flexboxResources.addView(layoutButtonPrimaryBinding!!.root)
+                            rowAchievementBinding.flexboxResources.addView(layoutButtonPrimaryBinding!!.root)
                         }
                     } else {
-                        rowAchievementBinding!!.tvTitle.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0)
+                        rowAchievementBinding.tvTitle.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0)
                         createAchievementList()
                         fragmentAchievementBinding.rvOtherInfo.layoutManager = LinearLayoutManager(MainApplication.context)
                         fragmentAchievementBinding.rvOtherInfo.adapter = achievement!!.getreferences()?.let { AdapterOtherInfo(MainApplication.context, it) }
                     }
-                    mRealm.addChangeListener {
+                    aRealm.addChangeListener {
                         if (fragmentAchievementBinding.llAchievement != null) fragmentAchievementBinding.llAchievement.removeAllViews()
                         createAchievementList()
                     }
                 } else {
-                    rowAchievementBinding!!.root.visibility = View.GONE
+                    rowAchievementBinding.root.visibility = View.GONE
                 }
-                fragmentAchievementBinding.llAchievement.addView(rowAchievementBinding!!.root)
+                if (fragmentAchievementBinding.llAchievement != null && isAdded) {
+                    fragmentAchievementBinding.llAchievement.addView(rowAchievementBinding.root)
+                }
             }
             fragmentAchievementBinding.rvOtherInfo.layoutManager = LinearLayoutManager(MainApplication.context)
             fragmentAchievementBinding.rvOtherInfo.adapter = achievement!!.getreferences()?.let { AdapterOtherInfo(MainApplication.context, it) }
@@ -117,15 +119,15 @@ class AchievementFragment : BaseContainerFragment() {
             rowAchievementBinding = RowAchievementBinding.inflate(LayoutInflater.from(MainApplication.context))
             val ob = Gson().fromJson(s, JsonElement::class.java)
             if (ob is JsonObject) {
-                rowAchievementBinding!!.tvDescription.text = getString("description", ob.getAsJsonObject())
-                rowAchievementBinding!!.tvDate.text = getString("date", ob.getAsJsonObject())
-                rowAchievementBinding!!.tvTitle.text = getString("title", ob.getAsJsonObject())
+                rowAchievementBinding.tvDescription.text = getString("description", ob.getAsJsonObject())
+                rowAchievementBinding.tvDate.text = getString("date", ob.getAsJsonObject())
+                rowAchievementBinding.tvTitle.text = getString("title", ob.getAsJsonObject())
                 val libraries = getList(ob.getAsJsonArray("resources"))
-                rowAchievementBinding!!.llRow.setOnClickListener {
-                    rowAchievementBinding!!.llDesc.visibility = if (rowAchievementBinding!!.llDesc.visibility == View.GONE) View.VISIBLE else View.GONE
-                    rowAchievementBinding!!.tvTitle.setCompoundDrawablesWithIntrinsicBounds(
+                rowAchievementBinding.llRow.setOnClickListener {
+                    rowAchievementBinding.llDesc.visibility = if (rowAchievementBinding.llDesc.visibility == View.GONE) View.VISIBLE else View.GONE
+                    rowAchievementBinding.tvTitle.setCompoundDrawablesWithIntrinsicBounds(
                         0, 0,
-                        if (rowAchievementBinding!!.llDesc.visibility == View.GONE) R.drawable.ic_down else R.drawable.ic_up, 0
+                        if (rowAchievementBinding.llDesc.visibility == View.GONE) R.drawable.ic_down else R.drawable.ic_up, 0
                     )
                 }
                 for (lib in libraries) {
@@ -144,12 +146,14 @@ class AchievementFragment : BaseContainerFragment() {
                             startDownload(a)
                         }
                     }
-                    rowAchievementBinding!!.flexboxResources.addView(layoutButtonPrimaryBinding!!.root)
+                    rowAchievementBinding.flexboxResources.addView(layoutButtonPrimaryBinding!!.root)
                 }
             } else {
-                rowAchievementBinding!!.root.visibility = View.GONE
+                rowAchievementBinding.root.visibility = View.GONE
             }
-            fragmentAchievementBinding.llAchievement.addView(rowAchievementBinding!!.root)
+            if (fragmentAchievementBinding.llAchievement != null && isAdded) {
+                fragmentAchievementBinding.llAchievement.addView(rowAchievementBinding.root)
+            }
         }
     }
 
@@ -157,7 +161,7 @@ class AchievementFragment : BaseContainerFragment() {
         val libraries = ArrayList<RealmMyLibrary>()
         for (e in array) {
             val id = e.asJsonObject["_id"].asString
-            val li = mRealm.where(RealmMyLibrary::class.java).equalTo("id", id).findFirst()
+            val li = aRealm.where(RealmMyLibrary::class.java).equalTo("id", id).findFirst()
             if (li != null) libraries.add(li)
         }
         return libraries
