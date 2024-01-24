@@ -50,9 +50,9 @@ class CourseFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelec
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
-        val map = getRatings(mRealm, "course", model.id)
-        val progressMap = getCourseProgress(mRealm, model.id)
-        adapterCourses = AdapterCourses(requireActivity(), getList(RealmMyCourse::class.java) as List<RealmMyCourse?>, map)
+        val map = mRealm?.let { getRatings(it, "course", model?.id) }
+        val progressMap = mRealm?.let { getCourseProgress(it, model?.id) }
+        adapterCourses = map?.let { AdapterCourses(requireActivity(), getList(RealmMyCourse::class.java) as List<RealmMyCourse?>, it) }
         adapterCourses!!.setProgressMap(progressMap)
         adapterCourses!!.setmRealm(mRealm)
         adapterCourses!!.setListener(this)
@@ -79,10 +79,10 @@ class CourseFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelec
             override fun afterTextChanged(s: Editable) {}
         })
 
-        btnRemove!!.setOnClickListener { V: View? ->
+        btnRemove!!.setOnClickListener {
             AlertDialog.Builder(this.context)
                 .setMessage(R.string.are_you_sure_you_want_to_delete_these_courses)
-                .setPositiveButton(R.string.yes) { _: DialogInterface?, i: Int ->
+                .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
                     deleteSelected(true)
                     val newFragment = CourseFragment()
                     recreateFragment(newFragment)
@@ -90,7 +90,7 @@ class CourseFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelec
                 .setNegativeButton(R.string.no, null).show()
         }
 
-        requireView().findViewById<View>(R.id.btn_collections).setOnClickListener { view: View? ->
+        requireView().findViewById<View>(R.id.btn_collections).setOnClickListener {
             val f = CollectionsFragment.getInstance(searchTags, "courses")
             f.setListener(this)
             f.show(childFragmentManager, "")
@@ -176,7 +176,7 @@ class CourseFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelec
     }
 
     private fun clearTags() {
-        requireView().findViewById<View>(R.id.btn_clear_tags).setOnClickListener { vi: View? ->
+        requireView().findViewById<View>(R.id.btn_clear_tags).setOnClickListener {
             searchTags!!.clear()
             etSearch!!.setText("")
             tvSelected!!.text = ""
@@ -219,7 +219,7 @@ class CourseFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelec
     override fun onTagClicked(tag: RealmTag?) {
         if (!searchTags!!.contains(tag)) searchTags!!.add(tag)
         adapterCourses!!.setCourseList(filterCourseByTag(etSearch!!.text.toString(), searchTags))
-        showTagText(searchTags, tvSelected)
+        tvSelected?.let { showTagText(searchTags!!, it) }
         showNoData(tvMessage, adapterCourses!!.itemCount)
     }
 
@@ -261,12 +261,12 @@ class CourseFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelec
 
     private fun saveSearchActivity() {
         if (filterApplied()) {
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
-            val activity = mRealm.createObject(RealmSearchActivity::class.java, UUID.randomUUID().toString())
-            activity.user = model.name!!
+            if (!mRealm?.isInTransaction!!) mRealm!!.beginTransaction()
+            val activity = mRealm!!.createObject(RealmSearchActivity::class.java, UUID.randomUUID().toString())
+            activity.user = model?.name!!
             activity.time = Calendar.getInstance().timeInMillis
-            activity.createdOn = model.planetCode!!
-            activity.parentCode = model.parentCode!!
+            activity.createdOn = model!!.planetCode!!
+            activity.parentCode = model!!.parentCode!!
             activity.text = etSearch!!.text.toString()
             activity.type = "courses"
             val filter = JsonObject()
@@ -275,7 +275,7 @@ class CourseFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelec
             filter.addProperty("doc.gradeLevel", gradeLevel)
             filter.addProperty("doc.subjectLevel", subjectLevel)
             activity.filter = Gson().toJson(filter)
-            mRealm.commitTransaction()
+            mRealm!!.commitTransaction()
         }
     }
 
