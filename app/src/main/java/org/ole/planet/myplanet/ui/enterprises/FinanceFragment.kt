@@ -25,9 +25,9 @@ import java.util.Locale
 import java.util.UUID
 
 class FinanceFragment : BaseTeamFragment() {
-    private var fragmentFinanceBinding: FragmentFinanceBinding? = null
+    private lateinit var fragmentFinanceBinding: FragmentFinanceBinding
     private var addTransactionBinding: AddTransactionBinding? = null
-    var mRealm: Realm? = null
+    private lateinit var fRealm: Realm
     private var adapterFinance: AdapterFinance? = null
     var date: Calendar? = null
     var list: RealmResults<RealmMyTeam>? = null
@@ -45,28 +45,28 @@ class FinanceFragment : BaseTeamFragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentFinanceBinding = FragmentFinanceBinding.inflate(inflater, container, false)
-        mRealm = DatabaseService(requireActivity()).realmInstance
+        fRealm = DatabaseService(requireActivity()).realmInstance
         date = Calendar.getInstance()
-        fragmentFinanceBinding!!.btnFilter.setOnClickListener { showDatePickerDialog() }
-        fragmentFinanceBinding!!.llDate.setOnClickListener {
-            fragmentFinanceBinding!!.imgDate.rotation = fragmentFinanceBinding!!.imgDate.rotation + 180
-            list = mRealm.where(RealmMyTeam::class.java).notEqualTo("status", "archived")
+        fragmentFinanceBinding.btnFilter.setOnClickListener { showDatePickerDialog() }
+        fragmentFinanceBinding.llDate.setOnClickListener {
+            fragmentFinanceBinding.imgDate.rotation = fragmentFinanceBinding.imgDate.rotation + 180
+            list = fRealm.where(RealmMyTeam::class.java).notEqualTo("status", "archived")
                 .equalTo("teamId", teamId).equalTo("docType", "transaction")
                 .sort("date", if (isAsc) Sort.DESCENDING else Sort.ASCENDING).findAll()
             adapterFinance = AdapterFinance(requireActivity(), list as RealmResults<RealmMyTeam>)
-            fragmentFinanceBinding!!.rvFinance.adapter = adapterFinance
+            fragmentFinanceBinding.rvFinance.adapter = adapterFinance
             isAsc = !isAsc
         }
-        fragmentFinanceBinding!!.btnReset.setOnClickListener {
-            list = mRealm.where(RealmMyTeam::class.java).notEqualTo("status", "archived")
+        fragmentFinanceBinding.btnReset.setOnClickListener {
+            list = fRealm.where(RealmMyTeam::class.java).notEqualTo("status", "archived")
                 .equalTo("teamId", teamId).equalTo("docType", "transaction")
                 .sort("date", Sort.DESCENDING).findAll()
             adapterFinance = AdapterFinance(requireActivity(), list as RealmResults<RealmMyTeam>)
-            fragmentFinanceBinding!!.rvFinance.layoutManager = LinearLayoutManager(activity)
-            fragmentFinanceBinding!!.rvFinance.adapter = adapterFinance
+            fragmentFinanceBinding.rvFinance.layoutManager = LinearLayoutManager(activity)
+            fragmentFinanceBinding.rvFinance.adapter = adapterFinance
             calculateTotal(list)
         }
-        return fragmentFinanceBinding!!.root
+        return fragmentFinanceBinding.root
     }
 
     private fun showDatePickerDialog() {
@@ -77,12 +77,12 @@ class FinanceFragment : BaseTeamFragment() {
             start[year, monthOfYear] = dayOfMonth
             end[yearEnd, monthOfYearEnd] = dayOfMonthEnd
             Utilities.log("" + start.timeInMillis + " " + end.timeInMillis)
-            list = mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId)
+            list = fRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId)
                 .equalTo("docType", "transaction")
                 .between("date", start.timeInMillis, end.timeInMillis).sort("date", Sort.DESCENDING)
                 .findAll()
             adapterFinance = AdapterFinance(requireActivity(), list as RealmResults<RealmMyTeam>)
-            fragmentFinanceBinding!!.rvFinance.adapter = adapterFinance
+            fragmentFinanceBinding.rvFinance.adapter = adapterFinance
             calculateTotal(list)
         }, now[Calendar.YEAR], now[Calendar.MONTH], now[Calendar.DAY_OF_MONTH]).show(
             requireActivity().fragmentManager, ""
@@ -92,19 +92,19 @@ class FinanceFragment : BaseTeamFragment() {
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
         if (user.isManager() || user.isLeader()) {
-            fragmentFinanceBinding!!.addTransaction.visibility = View.VISIBLE
+            fragmentFinanceBinding.addTransaction.visibility = View.VISIBLE
         } else {
-            fragmentFinanceBinding!!.addTransaction.visibility = View.GONE
+            fragmentFinanceBinding.addTransaction.visibility = View.GONE
         }
-        fragmentFinanceBinding!!.addTransaction.setOnClickListener { addTransaction() }
-        list = mRealm.where(RealmMyTeam::class.java).notEqualTo("status", "archived")
+        fragmentFinanceBinding.addTransaction.setOnClickListener { addTransaction() }
+        list = fRealm.where(RealmMyTeam::class.java).notEqualTo("status", "archived")
             .equalTo("teamId", teamId).equalTo("docType", "transaction")
             .sort("date", Sort.DESCENDING).findAll()
         adapterFinance = AdapterFinance(requireActivity(), list as RealmResults<RealmMyTeam>)
-        fragmentFinanceBinding!!.rvFinance.layoutManager = LinearLayoutManager(activity)
-        fragmentFinanceBinding!!.rvFinance.adapter = adapterFinance
+        fragmentFinanceBinding.rvFinance.layoutManager = LinearLayoutManager(activity)
+        fragmentFinanceBinding.rvFinance.adapter = adapterFinance
         calculateTotal(list)
-        showNoData(fragmentFinanceBinding!!.tvNodata, list!!.size)
+        showNoData(fragmentFinanceBinding.tvNodata, list!!.size)
     }
 
     private fun calculateTotal(list: List<RealmMyTeam>?) {
@@ -118,10 +118,10 @@ class FinanceFragment : BaseTeamFragment() {
             }
         }
         val total = credit - debit
-        fragmentFinanceBinding!!.tvDebit.text = debit.toString() + ""
-        fragmentFinanceBinding!!.tvCredit.text = credit.toString() + ""
-        fragmentFinanceBinding!!.tvBalance.text = total.toString() + ""
-        if (total >= 0) fragmentFinanceBinding!!.balanceCaution.visibility = View.GONE
+        fragmentFinanceBinding.tvDebit.text = "$debit"
+        fragmentFinanceBinding.tvCredit.text = "$credit"
+        fragmentFinanceBinding.tvBalance.text = "$total"
+        if (total >= 0) fragmentFinanceBinding.balanceCaution.visibility = View.GONE
     }
 
     private fun addTransaction() {
@@ -138,12 +138,12 @@ class FinanceFragment : BaseTeamFragment() {
                 } else if (date == null) {
                     Utilities.toast(activity, getString(R.string.date_is_required))
                 } else {
-                    mRealm.executeTransactionAsync(Realm.Transaction { realm: Realm ->
+                    fRealm.executeTransactionAsync(Realm.Transaction { realm: Realm ->
                         createTransactionObject(realm, type, note, amount, date!!)
                     }, Realm.Transaction.OnSuccess {
                         Utilities.toast(activity, getString(R.string.transaction_added))
                         adapterFinance!!.notifyDataSetChanged()
-                        showNoData(fragmentFinanceBinding!!.tvNodata, adapterFinance!!.itemCount)
+                        showNoData(fragmentFinanceBinding.tvNodata, adapterFinance!!.itemCount)
                         calculateTotal(list)
                     })
                 }
