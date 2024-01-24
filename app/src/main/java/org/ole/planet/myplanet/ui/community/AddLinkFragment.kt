@@ -27,22 +27,23 @@ class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedL
     }
 
     lateinit var mRealm: Realm
-    var selectedTeam: RealmMyTeam? = null;
+    var selectedTeam: RealmMyTeam? = null
 
     override fun onItemSelected(p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long) {
-
-        val query =
-            mRealm.where(RealmMyTeam::class.java).isEmpty("teamId").isNotEmpty("name").equalTo(
-                "type",
-                if (fragmentAddLinkBinding.spnLink.selectedItem.toString().equals("Enterprises")) "enterprise" else ""
-            ).notEqualTo("status", "archived").findAll()
+        val query = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId").isNotEmpty("name").equalTo(             "type",
+            if (fragmentAddLinkBinding.spnLink.selectedItem.toString() == "Enterprises") "enterprise"
+            else ""
+        ).notEqualTo("status", "archived").findAll()
         fragmentAddLinkBinding.rvList.layoutManager = LinearLayoutManager(requireActivity())
-        Utilities.log("SIZE ${query}")
+        Utilities.log("SIZE $query")
         val adapter = AdapterTeam(requireActivity(), query, mRealm)
-        adapter.setTeamSelectedListener { team ->
-            this.selectedTeam = team;
-            Utilities.toast(requireActivity(), """Selected ${team.name}""")
-        }
+        adapter.setTeamSelectedListener(object : AdapterTeam.OnTeamSelectedListener {
+            override fun onSelectedTeam(team: RealmMyTeam) {
+                this@AddLinkFragment.selectedTeam = team
+                Utilities.toast(requireActivity(), "Selected ${team.name}")
+            }
+        })
+
         fragmentAddLinkBinding.rvList.adapter = adapter
     }
 
@@ -59,9 +60,7 @@ class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedL
         return bottomSheetDialog
     }
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
-    ): View? {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentAddLinkBinding = FragmentAddLinkBinding.inflate(inflater, container, false)
         return fragmentAddLinkBinding.root
     }
@@ -71,9 +70,9 @@ class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedL
         mRealm = DatabaseService(requireActivity()).realmInstance
         fragmentAddLinkBinding.spnLink.onItemSelectedListener = this
         fragmentAddLinkBinding.btnSave.setOnClickListener {
-            var type = fragmentAddLinkBinding.spnLink?.selectedItem.toString()
-            var title = fragmentAddLinkBinding.etName?.text.toString()
-            if (title.isNullOrEmpty()) {
+            val type = fragmentAddLinkBinding.spnLink.selectedItem.toString()
+            val title = fragmentAddLinkBinding.etName.text.toString()
+            if (title.isEmpty()) {
                 Utilities.toast(requireActivity(), getString(R.string.title_is_required))
                 return@setOnClickListener
             }
@@ -83,7 +82,7 @@ class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedL
             }
 
             mRealm.executeTransaction {
-                var team = it.createObject(RealmMyTeam::class.java, UUID.randomUUID().toString())
+                val team = it.createObject(RealmMyTeam::class.java, UUID.randomUUID().toString())
                 team.docType = "link"
                 team.updated = true
                 team.title = title

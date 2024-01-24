@@ -53,10 +53,10 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
     }
 
     private fun showHideFab() {
-        if (arguments!!.getBoolean("fromLogin", false)) {
+        if (requireArguments().getBoolean("fromLogin", false)) {
             fragmentEnterpriseCalendarBinding.addEvent.visibility = View.GONE
         } else if (user != null) {
-            if (user.isManager() || user.isLeader()) fragmentEnterpriseCalendarBinding.addEvent.visibility = View.VISIBLE
+            if (user!!.isManager() || user!!.isLeader()) fragmentEnterpriseCalendarBinding.addEvent.visibility = View.VISIBLE
             else fragmentEnterpriseCalendarBinding.addEvent.visibility = View.GONE
         } else {
             fragmentEnterpriseCalendarBinding.addEvent.visibility = View.GONE
@@ -88,7 +88,7 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
                         meetup.title = ttl
                         meetup.description = desc
                         meetup.meetupLocation = loc
-                        meetup.creator = user.id
+                        meetup.creator = user?.id
                         meetup.startDate = start.timeInMillis
                         if (end != null) meetup.endDate = end.timeInMillis
                         meetup.endTime = addMeetupBinding.tvEndTime.text.toString()
