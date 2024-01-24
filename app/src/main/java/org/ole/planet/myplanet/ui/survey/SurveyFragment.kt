@@ -20,7 +20,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>() {
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
-        return AdapterSurvey(requireActivity(), getList(RealmStepExam::class.java, "name", Sort.ASCENDING) as List<RealmStepExam>, mRealm, model.id!!)
+        return AdapterSurvey(requireActivity(), getList(RealmStepExam::class.java, "name", Sort.ASCENDING) as List<RealmStepExam>, mRealm!!, model?.id!!)
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
@@ -33,9 +33,9 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>() {
             override fun onItemSelected(adapterView: AdapterView<*>?, view: View, i: Int, l: Long) {
                 Utilities.log("i $i")
                 if (i == 0) {
-                    recyclerView.adapter = AdapterSurvey(activity!!, getList(RealmStepExam::class.java, "name", Sort.ASCENDING) as List<RealmStepExam>, mRealm, model.id!!)
+                    recyclerView.adapter = AdapterSurvey(activity!!, getList(RealmStepExam::class.java, "name", Sort.ASCENDING) as List<RealmStepExam>, mRealm!!, model?.id!!)
                 } else {
-                    recyclerView.adapter = AdapterSurvey(activity!!, getList(RealmStepExam::class.java, "name", Sort.DESCENDING) as List<RealmStepExam>, mRealm, model.id!!)
+                    recyclerView.adapter = AdapterSurvey(activity!!, getList(RealmStepExam::class.java, "name", Sort.DESCENDING) as List<RealmStepExam>, mRealm!!, model?.id!!)
                 }
             }
 
