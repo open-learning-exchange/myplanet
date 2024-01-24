@@ -59,9 +59,9 @@ class LibraryFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSe
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
-        map = getRatings(mRealm, "resource", model.id)
+        map = getRatings(mRealm!!, "resource", model?.id)
         val libraryList = getList(RealmMyLibrary::class.java) as List<RealmMyLibrary?>
-        adapterLibrary = AdapterLibrary(requireActivity(), libraryList, map!!, mRealm)
+        adapterLibrary = AdapterLibrary(requireActivity(), libraryList, map!!, mRealm!!)
         adapterLibrary!!.setRatingChangeListener(this)
         adapterLibrary!!.setListener(this)
         return adapterLibrary!!
@@ -207,7 +207,7 @@ class LibraryFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSe
         if (!searchTags!!.contains(realmTag)) searchTags!!.add(realmTag)
         chipCloud.addChips(searchTags)
         adapterLibrary!!.setLibraryList(applyFilter(filterLibraryByTag(etSearch!!.text.toString(), searchTags)))
-        showTagText(searchTags, tvSelected)
+        showTagText(searchTags!!, tvSelected!!)
         showNoData(tvMessage, adapterLibrary!!.itemCount)
     }
 
@@ -289,12 +289,12 @@ class LibraryFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSe
 
     private fun saveSearchActivity() {
         if (filterApplied()) {
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
-            val activity = mRealm.createObject(RealmSearchActivity::class.java, UUID.randomUUID().toString())
-            activity.user = model.name!!
+            if (!mRealm?.isInTransaction!!) mRealm!!.beginTransaction()
+            val activity = mRealm!!.createObject(RealmSearchActivity::class.java, UUID.randomUUID().toString())
+            activity.user = model?.name!!
             activity.time = Calendar.getInstance().timeInMillis
-            activity.createdOn = model.planetCode!!
-            activity.parentCode = model.parentCode!!
+            activity.createdOn = model!!.planetCode!!
+            activity.parentCode = model!!.parentCode!!
             activity.text = etSearch!!.text.toString()
             activity.type = "resources"
             val filter = JsonObject()
@@ -304,7 +304,7 @@ class LibraryFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSe
             filter.add("level", getJsonArrayFromList(levels))
             filter.add("mediaType", getJsonArrayFromList(mediums))
             activity.filter = Gson().toJson(filter)
-            mRealm.commitTransaction()
+            mRealm!!.commitTransaction()
         }
     }
 
