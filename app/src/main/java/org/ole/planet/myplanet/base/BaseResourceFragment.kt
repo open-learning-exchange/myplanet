@@ -42,7 +42,6 @@ import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.CheckboxListView
-import org.ole.planet.myplanet.utilities.CheckboxListView.CheckChangeListener
 import org.ole.planet.myplanet.utilities.DialogUtils.getProgressDialog
 import org.ole.planet.myplanet.utilities.DialogUtils.showError
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
@@ -71,11 +70,11 @@ abstract class BaseResourceFragment : Fragment() {
         }
     }
 
-    var stateReceiver: BroadcastReceiver = object : BroadcastReceiver() {
+    private var stateReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             AlertDialog.Builder(activity!!).setMessage(R.string.do_you_want_to_stay_online)
                 .setPositiveButton(R.string.yes, null)
-                .setNegativeButton(R.string.no) { _: DialogInterface?, i: Int ->
+                .setNegativeButton(R.string.no) { _: DialogInterface?, _: Int ->
                     val wifi = MainApplication.context.getSystemService(Context.WIFI_SERVICE) as WifiManager
                     wifi.setWifiEnabled(false)
                 }.show()
@@ -95,37 +94,49 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     protected fun showDownloadDialog(db_myLibrary: List<RealmMyLibrary?>) {
-        Service(MainApplication.context).isPlanetAvailable(object : PlanetAvailableListener {
-            override fun isAvailable() {
-                if (db_myLibrary.isNotEmpty()) {
-                    if (isAdded && activity != null) {
-                        val inflater = activity!!.layoutInflater
-                        convertView = inflater.inflate(R.layout.my_library_alertdialog, null)
-                        val alertDialogBuilder = AlertDialog.Builder(activity!!)
-                        alertDialogBuilder.setView(convertView)
-                            .setTitle(R.string.download_suggestion)
-                        alertDialogBuilder.setPositiveButton(R.string.download_selected) { _: DialogInterface?, i: Int ->
-                            startDownload(downloadFiles(db_myLibrary, lv!!.selectedItemsList, settings))
-                        }
-                            .setNeutralButton(R.string.download_all) { _: DialogInterface?, i: Int ->
-                                startDownload(downloadAllFiles(db_myLibrary, settings))
+        if (isAdded) {
+            Service(MainApplication.context).isPlanetAvailable(object : PlanetAvailableListener {
+                override fun isAvailable() {
+                    if (db_myLibrary.isNotEmpty()) {
+                        if (isAdded && activity != null) {
+                            val inflater = activity!!.layoutInflater
+                            convertView = inflater.inflate(R.layout.my_library_alertdialog, null)
+                            val alertDialogBuilder = AlertDialog.Builder(activity!!)
+                            alertDialogBuilder.setView(convertView)
+                                .setTitle(R.string.download_suggestion)
+                            alertDialogBuilder.setPositiveButton(R.string.download_selected) { _: DialogInterface?, _: Int ->
+                                startDownload(
+                                    downloadFiles(
+                                        db_myLibrary,
+                                        lv!!.selectedItemsList,
+                                        settings
+                                    )
+                                )
                             }
-                            .setNegativeButton(R.string.txt_cancel, null)
-                        val alertDialog = alertDialogBuilder.create()
-                        createListView(db_myLibrary, alertDialog)
-                        alertDialog.show()
-                        alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = lv!!.selectedItemsList.size > 0
+                                .setNeutralButton(R.string.download_all) { _: DialogInterface?, _: Int ->
+                                    startDownload(downloadAllFiles(db_myLibrary, settings))
+                                }
+                                .setNegativeButton(R.string.txt_cancel, null)
+                            val alertDialog = alertDialogBuilder.create()
+                            createListView(db_myLibrary, alertDialog)
+                            alertDialog.show()
+                            alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled =
+                                lv!!.selectedItemsList.size > 0
+                        }
+                    } else {
+                        Utilities.toast(
+                            requireContext(),
+                            getString(R.string.no_resources_to_download)
+                        )
                     }
-                } else {
-                    Utilities.toast(requireContext(), getString(R.string.no_resources_to_download))
                 }
-            }
 
-            override fun notAvailable() {
-                Utilities.toast(requireContext(), getString(R.string.planet_not_available))
-                Utilities.log("Planet not available")
-            }
-        })
+                override fun notAvailable() {
+                    Utilities.toast(requireContext(), getString(R.string.planet_not_available))
+                    Utilities.log("Planet not available")
+                }
+            })
+        }
     }
 
     fun showPendingSurveyDialog() {
