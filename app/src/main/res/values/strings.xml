@@ -2,7 +2,7 @@
 <resources>
     <string name="app_name">My Planet</string>
     <string name="app_project_name">myPlanet</string>
-    <string name="action_settings">Settings</string>
+    <string name="action_settings">settings</string>
     <string name="hint_name">Username</string>
     <string name="hint_password">Password</string>
     <string name="btn_back">Back</string>
@@ -13,11 +13,11 @@
     <string name="err_msg_name">Enter your username</string>
     <string name="err_msg_password">Enter the password</string>
     <string name="err_msg_login">Username and/or password do not match</string>
-    <string name="hint_serverURl">Planet Server Address (Eg. 192.168.2.1)</string>
-    <string name="hint_serverPin">Server Pin (Get this pin from administrator)</string>
+    <string name="hint_serverURl">planet server address (eg. 192.168.2.1)</string>
+    <string name="hint_serverPin">server pin (get this pin from administrator)</string>
     <string name="radio_protocol">Protocol:</string>
-    <string name="radio_http">HTTP</string>
-    <string name="radio_https">HTTPS</string>
+    <string name="radio_http">http</string>
+    <string name="radio_https">https</string>
     <string name="title_activity_dashboard">Dashboard</string>
     <string name="menu_myplanet">myPlanet</string>
     <string name="menu_home">Home</string>
@@ -361,7 +361,7 @@
     <string name="diagnosis_note">Diagnosis Notes</string>
     <string name="menu_community">Community</string>
     <string name="library">Library</string>
-    <string name="device_name">Device Name</string>
+    <string name="device_name">device name</string>
     <string name="enter_title">Enter title</string>
     <string name="add_link">Add Link</string>
     <string name="chat">Chat</string>
@@ -584,7 +584,7 @@
     <string name="login_user">loginUserName</string>
     <string name="login_password">loginUserPassword</string>
     <string name="no_team_available">No team / enterprise available</string>
-    <string name="last_sync_date">"Last Sync Date: "</string>
+    <string name="last_sync_date">"last sync: "</string>
     <string name="no_assignee">No assignee</string>
     <string name="note_">notes</string>
     <string name="diagno">diagnosis</string>
@@ -623,9 +623,9 @@
     <string name="courses_colon">Courses:</string>
     <string name="title">Title</string>
     <string name="source">Source</string>
-    <string name="cloud_url">Cloud Url</string>
-    <string name="interval">Interval</string>
-    <string name="autosync">Autosync</string>
+    <string name="cloud_url">cloud</string>
+    <string name="interval">interval</string>
+    <string name="autosync">autosync</string>
     <string name="autosync_off">Autosync Off!</string>
     <string name="autosync_on">Autosync On</string>
     <string name="attached_resources">Attached resources:</string>
