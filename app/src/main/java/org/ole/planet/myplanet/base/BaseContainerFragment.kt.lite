@@ -49,22 +49,22 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 //    private val INSTALL_UNKNOWN_SOURCES_REQUEST_CODE = 112
 //    var hasInstallPermission = hasInstallPermission(MainApplication.context)
 //    private var currentLibrary: RealmMyLibrary? = null
-    private lateinit var installApkLauncher: ActivityResultLauncher<Intent>
+//    private lateinit var installApkLauncher: ActivityResultLauncher<Intent>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         profileDbHandler = UserProfileDbHandler(requireActivity())
-        installApkLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == Activity.RESULT_OK) {
-                if (currentLibrary != null) {
-                    installApk(currentLibrary!!)
-                    currentLibrary = null
-                }
-            } else {
-                Utilities.toast(requireActivity(), getString(R.string.permissions_denied))
-            }
-        }
-    }
+//        installApkLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+//            if (result.resultCode == Activity.RESULT_OK) {
+//                if (currentLibrary != null) {
+//                    installApk(currentLibrary!!)
+//                    currentLibrary = null
+//                }
+//            } else {
+//                Utilities.toast(requireActivity(), getString(R.string.permissions_denied))
+//            }
+//        }
+   }
 
     fun setRatings(`object`: JsonObject?) {
         if (`object` != null) {
