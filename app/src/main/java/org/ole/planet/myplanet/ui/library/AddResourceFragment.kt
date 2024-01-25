@@ -11,7 +11,6 @@ import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
 import android.text.TextUtils
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -36,7 +35,6 @@ import org.ole.planet.myplanet.service.AudioRecorderService
 import org.ole.planet.myplanet.service.AudioRecorderService.AudioRecordListener
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.myPersonals.MyPersonalsFragment
-import org.ole.planet.myplanet.utilities.FileUtils.openOleFolder
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Date
 import java.util.UUID
@@ -72,17 +70,11 @@ class AddResourceFragment : BottomSheetDialogFragment() {
 
         openFolderLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
             if (uri != null) {
-                val filePath = getRealPathFromUri(uri)
-                if (filePath != null) {
-                    startIntent(Uri.parse(filePath), REQUEST_FILE_SELECTION)
-                } else {
-                    Utilities.toast(activity, "Unable to get file path")
-                }
+                startIntent(uri, REQUEST_FILE_SELECTION)
             } else {
-                Utilities.toast(activity, "No file selected")
+                Utilities.toast(activity, "no file selected")
             }
         }
-
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
@@ -187,8 +179,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
         if (requestCode == REQUEST_CAPTURE_PICTURE || requestCode == REQUEST_VIDEO_CAPTURE) {
             path = getRealPathFromUri(uri)
         }
-//        path = getRealPathFromUri(uri)
-        Log.d("AddResourceFragment", "startIntent: $path")
+
         if (!path.isNullOrEmpty()) {
             addResource(path)
         } else {
