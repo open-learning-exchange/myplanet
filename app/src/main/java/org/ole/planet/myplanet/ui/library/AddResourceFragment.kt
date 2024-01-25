@@ -76,7 +76,6 @@ class AddResourceFragment : BottomSheetDialogFragment() {
                 if (filePath != null) {
                     startIntent(Uri.parse(filePath), REQUEST_FILE_SELECTION)
                 } else {
-                    // Unable to get the file path
                     Utilities.toast(activity, "Unable to get file path")
                 }
             } else {
