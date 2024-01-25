@@ -19,6 +19,8 @@ import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatRatingBar
@@ -47,10 +49,21 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     private val INSTALL_UNKNOWN_SOURCES_REQUEST_CODE = 112
     var hasInstallPermission = hasInstallPermission(MainApplication.context)
     private var currentLibrary: RealmMyLibrary? = null
+    private lateinit var installApkLauncher: ActivityResultLauncher<Intent>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         profileDbHandler = UserProfileDbHandler(requireActivity())
+        installApkLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                if (currentLibrary != null) {
+                    installApk(currentLibrary!!)
+                    currentLibrary = null
+                }
+            } else {
+                Utilities.toast(requireActivity(), getString(R.string.permissions_denied))
+            }
+        }
     }
 
     fun setRatings(`object`: JsonObject?) {
@@ -114,7 +127,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         }
     }
     @RequiresApi(Build.VERSION_CODES.O)
-    fun checkFileExtension(items: RealmMyLibrary) {
+    private fun checkFileExtension(items: RealmMyLibrary) {
         val filenameArray = items.resourceLocalAddress!!.split("\\.".toRegex()).toTypedArray()
         val extension = filenameArray[filenameArray.size - 1]
         val mimetype = Utilities.getMimeType(items.resourceLocalAddress)
@@ -129,7 +142,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         }
     }
     @RequiresApi(Build.VERSION_CODES.O)
-    fun checkMoreFileExtensions(extension: String?, items: RealmMyLibrary) {
+    private fun checkMoreFileExtensions(extension: String?, items: RealmMyLibrary) {
         when (extension) {
             "txt" -> openIntent(items, TextFileViewerActivity::class.java)
             "md" -> openIntent(items, MarkdownViewerActivity::class.java)
@@ -181,11 +194,11 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     private fun requestInstallPermission() {
         val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES)
         intent.data = Uri.parse("package:" + MainApplication.context.packageName)
-        startActivityForResult(intent, INSTALL_UNKNOWN_SOURCES_REQUEST_CODE)
+        installApkLauncher.launch(intent)
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    fun openFileType(items: RealmMyLibrary, videotype: String) {
+    private fun openFileType(items: RealmMyLibrary, videotype: String) {
         val mimetype = Utilities.getMimeType(items.resourceLocalAddress)
         Utilities.log("Mime type $mimetype")
         Utilities.log("Mime type " + items.resourceLocalAddress)
@@ -267,21 +280,6 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 if (resources.size > 0) showDownloadDialog(
                     resources as List<RealmMyLibrary>
                 )
-            }
-        }
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == INSTALL_UNKNOWN_SOURCES_REQUEST_CODE) {
-            if (resultCode == Activity.RESULT_OK) {
-                if (currentLibrary != null) {
-                    installApk(currentLibrary!!)
-                    currentLibrary = null
-                }
-            } else {
-                Utilities.toast(requireActivity(), getString(R.string.permissions_denied))
             }
         }
     }

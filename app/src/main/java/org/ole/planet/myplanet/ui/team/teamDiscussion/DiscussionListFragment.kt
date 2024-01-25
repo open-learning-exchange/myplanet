@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.team.teamDiscussion
 
 import android.content.DialogInterface
+import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
 import android.text.TextUtils
@@ -87,7 +88,10 @@ class DiscussionListFragment : BaseTeamFragment() {
     private fun showAddMessage() {
         val binding = AlertInputBinding.inflate(layoutInflater)
         val layout = binding.tlInput
-        binding.addNewsImage.setOnClickListener { openOleFolder(this, 100) }
+        binding.addNewsImage.setOnClickListener {
+            val openFolderIntent: Intent = openOleFolder()
+            openFolderLauncher.launch(openFolderIntent)
+        }
         binding.llImage.visibility = if (showBetaFeature(Constants.KEY_NEWSADDIMAGE, activity)) View.VISIBLE else View.GONE
         layout.hint = getString(R.string.enter_message)
         AlertDialog.Builder(requireActivity())

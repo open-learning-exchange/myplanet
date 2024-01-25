@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.library
 
-import android.app.Activity
 import android.app.Dialog
 import android.content.ContentValues
 import android.content.Context
@@ -12,12 +11,15 @@ import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
 import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.TextView
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
@@ -47,11 +49,41 @@ class AddResourceFragment : BottomSheetDialogFragment() {
     private var myPersonalsFragment: MyPersonalsFragment? = null
     private var photoURI: Uri? = null
     private var videoUri: Uri? = null
+    private lateinit var captureImageLauncher: ActivityResultLauncher<Uri>
+    private lateinit var captureVideoLauncher: ActivityResultLauncher<Uri>
+    private lateinit var openFolderLauncher: ActivityResultLauncher<String>
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) {
             type = requireArguments().getInt("type", 0)
         }
+
+        captureImageLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { isSuccess ->
+            if (isSuccess) {
+                startIntent(photoURI, REQUEST_CAPTURE_PICTURE)
+            }
+        }
+
+        captureVideoLauncher = registerForActivityResult(ActivityResultContracts.CaptureVideo()) { isSuccess ->
+            if (isSuccess) {
+                startIntent(videoUri, REQUEST_VIDEO_CAPTURE)
+            }
+        }
+
+        openFolderLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+            if (uri != null) {
+                val filePath = getRealPathFromUri(uri)
+                if (filePath != null) {
+                    startIntent(Uri.parse(filePath), REQUEST_FILE_SELECTION)
+                } else {
+                    // Unable to get the file path
+                    Utilities.toast(activity, "Unable to get file path")
+                }
+            } else {
+                Utilities.toast(activity, "No file selected")
+            }
+        }
+
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
@@ -71,7 +103,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
         fragmentAddResourceBinding.llRecordVideo.setOnClickListener { dispatchTakeVideoIntent() }
         fragmentAddResourceBinding.llRecordAudio.setOnClickListener { showAudioRecordAlert() }
         fragmentAddResourceBinding.llCaptureImage.setOnClickListener { takePhoto() }
-        fragmentAddResourceBinding.llDraft.setOnClickListener { openOleFolder(this, 100) }
+        fragmentAddResourceBinding.llDraft.setOnClickListener { openFolderLauncher.launch("*/*") }
         return fragmentAddResourceBinding.root
     }
 
@@ -125,9 +157,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
         val takeVideoIntent = Intent(MediaStore.ACTION_VIDEO_CAPTURE)
         videoUri = createVideoFileUri()
         takeVideoIntent.putExtra(MediaStore.EXTRA_OUTPUT, videoUri)
-        if (takeVideoIntent.resolveActivity(requireActivity().packageManager) != null) {
-            startActivityForResult(takeVideoIntent, REQUEST_VIDEO_CAPTURE)
-        }
+        captureVideoLauncher.launch(videoUri)
     }
 
     private fun createVideoFileUri(): Uri? {
@@ -142,30 +172,15 @@ class AddResourceFragment : BottomSheetDialogFragment() {
     }
 
     private fun takePhoto() {
-        val values = ContentValues()
-        values.put(MediaStore.Images.Media.TITLE, "Photo_" + UUID.randomUUID().toString())
-        values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            values.put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/ole/photo")
+        val values = ContentValues().apply {
+            put(MediaStore.Images.Media.TITLE, "Photo_" + UUID.randomUUID().toString())
+            put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/ole/photo")
+            }
         }
         photoURI = requireActivity().contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
-        val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-        intent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI)
-        if (intent.resolveActivity(requireActivity().packageManager) != null) {
-            startActivityForResult(intent, REQUEST_CAPTURE_PICTURE)
-        }
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        if (resultCode == Activity.RESULT_OK) {
-            var uri: Uri? = null
-            if (requestCode == REQUEST_CAPTURE_PICTURE) {
-                uri = photoURI
-            } else if (requestCode == REQUEST_VIDEO_CAPTURE) {
-                uri = videoUri
-            }
-            startIntent(uri, requestCode)
-        }
+        photoURI?.let { captureImageLauncher.launch(it) }
     }
 
     private fun startIntent(uri: Uri?, requestCode: Int) {
@@ -173,6 +188,8 @@ class AddResourceFragment : BottomSheetDialogFragment() {
         if (requestCode == REQUEST_CAPTURE_PICTURE || requestCode == REQUEST_VIDEO_CAPTURE) {
             path = getRealPathFromUri(uri)
         }
+//        path = getRealPathFromUri(uri)
+        Log.d("AddResourceFragment", "startIntent: $path")
         if (!path.isNullOrEmpty()) {
             addResource(path)
         } else {
@@ -214,6 +231,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
     companion object {
         const val REQUEST_VIDEO_CAPTURE = 1
         const val REQUEST_CAPTURE_PICTURE = 2
+        const val REQUEST_FILE_SELECTION = 3
         var type = 0
         private val myPersonalsFragment: MyPersonalsFragment? = null
         fun showAlert(context: Context?, path: String?) {

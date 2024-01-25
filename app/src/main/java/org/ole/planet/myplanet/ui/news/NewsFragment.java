@@ -1,8 +1,10 @@
 package org.ole.planet.myplanet.ui.news;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
@@ -10,6 +12,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.gson.Gson;
@@ -34,22 +37,23 @@ import org.ole.planet.myplanet.utilities.KeyboardUtils;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 
 import io.realm.Case;
 import io.realm.Sort;
 
+@RequiresApi(api = Build.VERSION_CODES.O)
 public class NewsFragment extends BaseNewsFragment {
     private FragmentNewsBinding fragmentNewsBinding;
     RealmUserModel user;
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         fragmentNewsBinding = FragmentNewsBinding.inflate(inflater, container, false);
         llImage = fragmentNewsBinding.llImages;
-        mRealm = new DatabaseService(getActivity()).getRealmInstance();
+        mRealm = new DatabaseService(requireActivity()).getRealmInstance();
         user = new UserProfileDbHandler(getActivity()).getUserModel();
-        KeyboardUtils.setupUI(fragmentNewsBinding.newsFragmentParentLayout, getActivity());
+        KeyboardUtils.setupUI(fragmentNewsBinding.newsFragmentParentLayout, requireActivity());
         fragmentNewsBinding.btnAddStory.setOnClickListener(view -> {
             fragmentNewsBinding.llAddNews.setVisibility(fragmentNewsBinding.llAddNews.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE);
             fragmentNewsBinding.btnAddStory.setText(fragmentNewsBinding.llAddNews.getVisibility() == View.VISIBLE ? getString(R.string.hide_add_story) : getString(R.string.add_story));
@@ -86,7 +90,8 @@ public class NewsFragment extends BaseNewsFragment {
         });
         fragmentNewsBinding.addNewsImage.setOnClickListener(v -> {
             llImage = v.findViewById(R.id.ll_images);
-            FileUtils.openOleFolder(this, 100);
+            Intent openFolderIntent = FileUtils.openOleFolder();
+            openFolderLauncher.launch(openFolderIntent);
         });
         fragmentNewsBinding.addNewsImage.setVisibility(Constants.showBetaFeature(Constants.KEY_NEWSADDIMAGE, getActivity()) ? View.VISIBLE : View.GONE);
     }
