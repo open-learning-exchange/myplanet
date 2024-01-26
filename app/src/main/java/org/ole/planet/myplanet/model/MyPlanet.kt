@@ -20,10 +20,10 @@ import java.util.Date
 class MyPlanet : Serializable {
     @JvmField
     var planetVersion: String? = null
-    @JvmField
-    var latestapk: String? = null
-    @JvmField
-    var minapk: String? = null
+//    @JvmField
+//    var latestapk: String? = null
+//    @JvmField
+//    var minapk: String? = null
     @JvmField
     var minapkcode = 0
     @JvmField
@@ -50,7 +50,7 @@ class MyPlanet : Serializable {
             postJSON.addProperty("parentCode", model.parentCode)
             postJSON.addProperty("createdOn", model.planetCode)
             postJSON.addProperty("type", "usages")
-            postJSON.add("usages", getTabletUsages(context, pref))
+            postJSON.add("usages", getTabletUsages(context))
             return postJSON
         }
 
@@ -75,7 +75,7 @@ class MyPlanet : Serializable {
         }
 
         @JvmStatic
-        fun getTabletUsages(context: Context, pref: SharedPreferences): JsonArray {
+        fun getTabletUsages(context: Context): JsonArray {
             val cal = Calendar.getInstance()
             val settings = MainApplication.context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE)
             cal.timeInMillis = settings.getLong("lastUsageUploaded", 0)
