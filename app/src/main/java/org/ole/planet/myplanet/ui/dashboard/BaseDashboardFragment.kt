@@ -397,7 +397,8 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             requireContext(), android.R.layout.simple_expandable_list_item_1, tasks
         )
         AlertDialog.Builder(requireContext()).setTitle(getString(R.string.due_tasks))
-            .setAdapter(adapter
-            ) { _, p1 -> var task = adapter.getItem(p1); }.setNegativeButton(R.string.dismiss, null).show();
+            .setAdapter(adapter) { _, p1 ->
+//                var task = adapter.getItem(p1);
+            }.setNegativeButton(R.string.dismiss, null).show();
     }
 }
