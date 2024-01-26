@@ -41,7 +41,6 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     var timesRated: TextView? = null
     var rating: TextView? = null
     var ratingBar: AppCompatRatingBar? = null
-    override var profileDbHandler: UserProfileDbHandler? = null
 //    private val INSTALL_UNKNOWN_SOURCES_REQUEST_CODE = 112
 //    var hasInstallPermission = hasInstallPermission(MainApplication.context)
 //    private var currentLibrary: RealmMyLibrary? = null
