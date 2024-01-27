@@ -193,7 +193,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             Utilities.toast(activity, getString(R.string.unable_to_open_resource))
             return
         }
-        if (profileDbHandler == null) profileDbHandler = UserProfileDbHandler(activity)
+        profileDbHandler = UserProfileDbHandler(activity)
         profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_OPEN)
         if (mimetype.startsWith("video")) {
             playVideo(videotype, items)
