@@ -49,18 +49,12 @@ import org.ole.planet.myplanet.utilities.DownloadUtils.downloadFiles
 import org.ole.planet.myplanet.utilities.Utilities
 
 abstract class BaseResourceFragment : Fragment() {
-    @JvmField
     var homeItemClickListener: OnHomeItemClickListener? = null
-    @JvmField
-    var model: RealmUserModel? = null
-    @JvmField
-    var mRealm: Realm? = null
-    open var profileDbHandler: UserProfileDbHandler? = null
-    @JvmField
+    lateinit var model: RealmUserModel
+    lateinit var mRealm: Realm
+    lateinit var profileDbHandler: UserProfileDbHandler
     var editor: SharedPreferences.Editor? = null
-    @JvmField
     var lv: CheckboxListView? = null
-    @JvmField
     var convertView: View? = null
 
     private var receiver: BroadcastReceiver = object : BroadcastReceiver() {
@@ -141,14 +135,14 @@ abstract class BaseResourceFragment : Fragment() {
 
     fun showPendingSurveyDialog() {
         model = UserProfileDbHandler(activity).userModel
-        val list: List<RealmSubmission> = mRealm!!.where(RealmSubmission::class.java)
-            .equalTo("userId", model!!.id)
+        val list: List<RealmSubmission> = mRealm.where(RealmSubmission::class.java)
+            .equalTo("userId", model.id)
             .equalTo("status", "pending").equalTo("type", "survey")
             .findAll()
         if (list.isEmpty()) {
             return
         }
-        val exams = getExamMap(mRealm!!, list)
+        val exams = getExamMap(mRealm, list)
         val arrayAdapter: ArrayAdapter<*> = object : ArrayAdapter<Any?>(requireActivity(), android.R.layout.simple_list_item_1, list) {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
                 var convertView = convertView
@@ -272,14 +266,14 @@ abstract class BaseResourceFragment : Fragment() {
 
     fun removeFromShelf(`object`: RealmObject) {
         if (`object` is RealmMyLibrary) {
-            val myObject = mRealm!!.where(RealmMyLibrary::class.java).equalTo("resourceId", `object`.resourceId).findFirst()
-            myObject!!.removeUserId(model!!.id)
-            onRemove(mRealm!!, "resources", model!!.id!!, `object`.resourceId!!)
+            val myObject = mRealm.where(RealmMyLibrary::class.java).equalTo("resourceId", `object`.resourceId).findFirst()
+            myObject!!.removeUserId(model.id)
+            onRemove(mRealm, "resources", model.id!!, `object`.resourceId!!)
             Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
         } else {
-            val myObject = getMyCourse(mRealm!!, (`object` as RealmMyCourse).courseId)
-            myObject!!.removeUserId(model!!.id)
-            onRemove(mRealm!!, "courses", model!!.id!!, `object`.courseId!!)
+            val myObject = getMyCourse(mRealm, (`object` as RealmMyCourse).courseId)
+            myObject!!.removeUserId(model.id)
+            onRemove(mRealm, "courses", model.id!!, `object`.courseId!!)
             Utilities.toast(activity, getString(R.string.removed_from_mycourse))
         }
     }
@@ -298,11 +292,8 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     companion object {
-        @JvmField
         var settings: SharedPreferences? = null
-        @JvmField
         var auth = ""
-        @JvmField
         var prgDialog: ProgressDialog? = null
     }
 }

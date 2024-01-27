@@ -27,7 +27,7 @@ class AddMyHealthActivity : AppCompatActivity() {
     var userId: String? = null
     var key: String? = null
     var iv: String? = null
-    var myHealth: RealmMyHealth? = null
+    private var myHealth: RealmMyHealth? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         activityAddMyHealthBinding = ActivityAddMyHealthBinding.inflate(layoutInflater)
