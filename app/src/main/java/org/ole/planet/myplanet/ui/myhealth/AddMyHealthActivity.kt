@@ -119,6 +119,8 @@ class AddMyHealthActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        if (realm != null) realm.close()
+        if (this::realm.isInitialized && !realm.isClosed) {
+            realm.close()
+        }
     }
 }
