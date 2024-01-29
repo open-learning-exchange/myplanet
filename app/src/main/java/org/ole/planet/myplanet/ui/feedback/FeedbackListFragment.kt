@@ -42,7 +42,9 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
 
     override fun onDestroy() {
         super.onDestroy()
-        if (!mRealm.isClosed) mRealm.close()
+        if (this::mRealm.isInitialized && !mRealm.isClosed) {
+            mRealm.close()
+        }
     }
 
     override fun onFeedbackSubmitted() {

@@ -41,10 +41,9 @@ import org.ole.planet.myplanet.utilities.Utilities
 import java.io.File
 
 abstract class BaseContainerFragment : BaseResourceFragment() {
-    var timesRated: TextView? = null
+    private var timesRated: TextView? = null
     var rating: TextView? = null
-    var ratingBar: AppCompatRatingBar? = null
-    override var profileDbHandler: UserProfileDbHandler? = null
+    private var ratingBar: AppCompatRatingBar? = null
     private val INSTALL_UNKNOWN_SOURCES_REQUEST_CODE = 112
     var hasInstallPermission = hasInstallPermission(MainApplication.context)
     private var currentLibrary: RealmMyLibrary? = null
@@ -87,7 +86,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             homeItemClickListener = context
         }
     }
-    fun openIntent(items: RealmMyLibrary, typeClass: Class<*>?) {
+    private fun openIntent(items: RealmMyLibrary, typeClass: Class<*>?) {
         val fileOpenIntent = Intent(activity, typeClass)
         if (items.resourceLocalAddress!!.contains("ole/audio") || items.resourceLocalAddress!!.contains("ole/video")) {
             fileOpenIntent.putExtra("TOUCHED_FILE", items.resourceLocalAddress)
@@ -96,14 +95,14 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         }
         startActivity(fileOpenIntent)
     }
-    fun openPdf(item: RealmMyLibrary) {
+    private fun openPdf(item: RealmMyLibrary) {
         val fileOpenIntent = Intent(activity, PDFReaderActivity::class.java)
         fileOpenIntent.putExtra("TOUCHED_FILE", item.id + "/" + item.resourceLocalAddress)
         fileOpenIntent.putExtra("resourceId", item.id)
         startActivity(fileOpenIntent)
     }
     fun openResource(items: RealmMyLibrary) {
-        if (items.resourceOffline != null && items.isResourceOffline()) {
+        if (items.isResourceOffline()) {
             openFileType(items, "offline")
         } else if (FileUtils.getFileExtension(items.resourceLocalAddress) == "mp4") {
             openFileType(items, "online")
@@ -111,7 +110,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             val arrayList = ArrayList<String>()
             arrayList.add(Utilities.getUrl(items, settings))
             startDownload(arrayList)
-            profileDbHandler?.setResourceOpenCount(items, KEY_RESOURCE_DOWNLOAD)
+            profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_DOWNLOAD)
         }
     }
     @RequiresApi(Build.VERSION_CODES.O)
@@ -194,8 +193,8 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             Utilities.toast(activity, getString(R.string.unable_to_open_resource))
             return
         }
-        if (profileDbHandler == null) profileDbHandler = UserProfileDbHandler(activity)
-        profileDbHandler!!.setResourceOpenCount(items, KEY_RESOURCE_OPEN)
+        profileDbHandler = UserProfileDbHandler(activity)
+        profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_OPEN)
         if (mimetype.startsWith("video")) {
             playVideo(videotype, items)
         } else {
