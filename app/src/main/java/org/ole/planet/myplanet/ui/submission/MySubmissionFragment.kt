@@ -42,8 +42,8 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
         return fragmentMySubmissionBinding.root
     }
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         mRealm = DatabaseService(requireActivity()).realmInstance
         fragmentMySubmissionBinding.rvMysurvey.layoutManager = LinearLayoutManager(activity)
         fragmentMySubmissionBinding.rvMysurvey.addItemDecoration(
