@@ -42,7 +42,6 @@ import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.CheckboxListView
-import org.ole.planet.myplanet.utilities.CheckboxListView.CheckChangeListener
 import org.ole.planet.myplanet.utilities.DialogUtils.getProgressDialog
 import org.ole.planet.myplanet.utilities.DialogUtils.showError
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
@@ -50,18 +49,12 @@ import org.ole.planet.myplanet.utilities.DownloadUtils.downloadFiles
 import org.ole.planet.myplanet.utilities.Utilities
 
 abstract class BaseResourceFragment : Fragment() {
-    @JvmField
     var homeItemClickListener: OnHomeItemClickListener? = null
-    @JvmField
-    var model: RealmUserModel? = null
-    @JvmField
-    var mRealm: Realm? = null
-    open var profileDbHandler: UserProfileDbHandler? = null
-    @JvmField
+    lateinit var model: RealmUserModel
+    lateinit var mRealm: Realm
+    lateinit var profileDbHandler: UserProfileDbHandler
     var editor: SharedPreferences.Editor? = null
-    @JvmField
     var lv: CheckboxListView? = null
-    @JvmField
     var convertView: View? = null
 
     private var receiver: BroadcastReceiver = object : BroadcastReceiver() {
@@ -71,11 +64,11 @@ abstract class BaseResourceFragment : Fragment() {
         }
     }
 
-    var stateReceiver: BroadcastReceiver = object : BroadcastReceiver() {
+    private var stateReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             AlertDialog.Builder(activity!!).setMessage(R.string.do_you_want_to_stay_online)
                 .setPositiveButton(R.string.yes, null)
-                .setNegativeButton(R.string.no) { _: DialogInterface?, i: Int ->
+                .setNegativeButton(R.string.no) { _: DialogInterface?, _: Int ->
                     val wifi = MainApplication.context.getSystemService(Context.WIFI_SERVICE) as WifiManager
                     wifi.setWifiEnabled(false)
                 }.show()
@@ -95,49 +88,61 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     protected fun showDownloadDialog(db_myLibrary: List<RealmMyLibrary?>) {
-        Service(MainApplication.context).isPlanetAvailable(object : PlanetAvailableListener {
-            override fun isAvailable() {
-                if (db_myLibrary.isNotEmpty()) {
-                    if (isAdded && activity != null) {
-                        val inflater = activity!!.layoutInflater
-                        convertView = inflater.inflate(R.layout.my_library_alertdialog, null)
-                        val alertDialogBuilder = AlertDialog.Builder(activity!!)
-                        alertDialogBuilder.setView(convertView)
-                            .setTitle(R.string.download_suggestion)
-                        alertDialogBuilder.setPositiveButton(R.string.download_selected) { _: DialogInterface?, i: Int ->
-                            startDownload(downloadFiles(db_myLibrary, lv!!.selectedItemsList, settings))
-                        }
-                            .setNeutralButton(R.string.download_all) { _: DialogInterface?, i: Int ->
-                                startDownload(downloadAllFiles(db_myLibrary, settings))
+        if (isAdded) {
+            Service(MainApplication.context).isPlanetAvailable(object : PlanetAvailableListener {
+                override fun isAvailable() {
+                    if (db_myLibrary.isNotEmpty()) {
+                        if (isAdded && activity != null) {
+                            val inflater = activity!!.layoutInflater
+                            convertView = inflater.inflate(R.layout.my_library_alertdialog, null)
+                            val alertDialogBuilder = AlertDialog.Builder(activity!!)
+                            alertDialogBuilder.setView(convertView)
+                                .setTitle(R.string.download_suggestion)
+                            alertDialogBuilder.setPositiveButton(R.string.download_selected) { _: DialogInterface?, _: Int ->
+                                startDownload(
+                                    downloadFiles(
+                                        db_myLibrary,
+                                        lv!!.selectedItemsList,
+                                        settings
+                                    )
+                                )
                             }
-                            .setNegativeButton(R.string.txt_cancel, null)
-                        val alertDialog = alertDialogBuilder.create()
-                        createListView(db_myLibrary, alertDialog)
-                        alertDialog.show()
-                        alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = lv!!.selectedItemsList.size > 0
+                                .setNeutralButton(R.string.download_all) { _: DialogInterface?, _: Int ->
+                                    startDownload(downloadAllFiles(db_myLibrary, settings))
+                                }
+                                .setNegativeButton(R.string.txt_cancel, null)
+                            val alertDialog = alertDialogBuilder.create()
+                            createListView(db_myLibrary, alertDialog)
+                            alertDialog.show()
+                            alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled =
+                                lv!!.selectedItemsList.size > 0
+                        }
+                    } else {
+                        Utilities.toast(
+                            requireContext(),
+                            getString(R.string.no_resources_to_download)
+                        )
                     }
-                } else {
-                    Utilities.toast(requireContext(), getString(R.string.no_resources_to_download))
                 }
-            }
 
-            override fun notAvailable() {
-                Utilities.toast(requireContext(), getString(R.string.planet_not_available))
-                Utilities.log("Planet not available")
-            }
-        })
+                override fun notAvailable() {
+                    Utilities.toast(requireContext(), getString(R.string.planet_not_available))
+                    Utilities.log("Planet not available")
+                }
+            })
+        }
     }
 
     fun showPendingSurveyDialog() {
         model = UserProfileDbHandler(activity).userModel
-        val list: List<RealmSubmission> = mRealm!!.where(RealmSubmission::class.java)
-            .equalTo("userId", model!!.id)
+        val list: List<RealmSubmission> = mRealm.where(RealmSubmission::class.java)
+            .equalTo("userId", model.id)
             .equalTo("status", "pending").equalTo("type", "survey")
             .findAll()
         if (list.isEmpty()) {
             return
         }
-        val exams = getExamMap(mRealm!!, list)
+        val exams = getExamMap(mRealm, list)
         val arrayAdapter: ArrayAdapter<*> = object : ArrayAdapter<Any?>(requireActivity(), android.R.layout.simple_list_item_1, list) {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
                 var convertView = convertView
@@ -261,14 +266,14 @@ abstract class BaseResourceFragment : Fragment() {
 
     fun removeFromShelf(`object`: RealmObject) {
         if (`object` is RealmMyLibrary) {
-            val myObject = mRealm!!.where(RealmMyLibrary::class.java).equalTo("resourceId", `object`.resourceId).findFirst()
-            myObject!!.removeUserId(model!!.id)
-            onRemove(mRealm!!, "resources", model!!.id!!, `object`.resourceId!!)
+            val myObject = mRealm.where(RealmMyLibrary::class.java).equalTo("resourceId", `object`.resourceId).findFirst()
+            myObject!!.removeUserId(model.id)
+            onRemove(mRealm, "resources", model.id!!, `object`.resourceId!!)
             Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
         } else {
-            val myObject = getMyCourse(mRealm!!, (`object` as RealmMyCourse).courseId)
-            myObject!!.removeUserId(model!!.id)
-            onRemove(mRealm!!, "courses", model!!.id!!, `object`.courseId!!)
+            val myObject = getMyCourse(mRealm, (`object` as RealmMyCourse).courseId)
+            myObject!!.removeUserId(model.id)
+            onRemove(mRealm, "courses", model.id!!, `object`.courseId!!)
             Utilities.toast(activity, getString(R.string.removed_from_mycourse))
         }
     }
@@ -287,11 +292,8 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     companion object {
-        @JvmField
         var settings: SharedPreferences? = null
-        @JvmField
         var auth = ""
-        @JvmField
         var prgDialog: ProgressDialog? = null
     }
 }
