@@ -257,13 +257,13 @@ class AdapterCourses(private val context: Context, private var courseList: List<
             }
             rowCourseBinding.courseProgress.setOnSeekBarChangeListener(object : OnSeekBarChangeListener {
                 override fun onProgressChanged(seekBar: SeekBar, i: Int, b: Boolean) {
-                    val position = getAdapterPosition()
+                    val position = bindingAdapterPosition
                     if (position != RecyclerView.NO_POSITION && position < courseList.size) {
-                        if (progressMap!!.containsKey(courseList[getAdapterPosition()]!!.courseId)) {
-                            val ob = progressMap!![courseList[getAdapterPosition()]!!.courseId]
+                        if (progressMap!!.containsKey(courseList[bindingAdapterPosition]!!.courseId)) {
+                            val ob = progressMap!![courseList[bindingAdapterPosition]!!.courseId]
                             val current = getInt("current", ob)
                             if (b && i <= current + 1) {
-                                openCourse(courseList[getAdapterPosition()], seekBar.progress)
+                                openCourse(courseList[bindingAdapterPosition], seekBar.progress)
                             }
                         }
                     }
