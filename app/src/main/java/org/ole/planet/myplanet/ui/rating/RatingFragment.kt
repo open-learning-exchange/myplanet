@@ -55,8 +55,8 @@ class RatingFragment : DialogFragment() {
         return fragmentRatingBinding.root
     }
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         model = mRealm.where(RealmUserModel::class.java)
             .equalTo("id", settings.getString("userId", "")).findFirst()
         previousRating = mRealm.where(RealmRating::class.java).equalTo("type", type)
