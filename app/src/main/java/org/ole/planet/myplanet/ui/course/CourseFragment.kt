@@ -289,12 +289,12 @@ class CourseFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelec
             val args = Bundle()
             args.putBoolean("isMyCourseLib", true)
             fragment.arguments = args
-            val transaction = requireFragmentManager().beginTransaction()
+            val transaction = parentFragmentManager.beginTransaction()
             transaction.replace(R.id.fragment_container, fragment)
             transaction.addToBackStack(null)
             transaction.commit()
         } else {
-            val transaction = requireFragmentManager().beginTransaction()
+            val transaction = parentFragmentManager.beginTransaction()
             transaction.replace(R.id.fragment_container, fragment)
             transaction.addToBackStack(null)
             transaction.commit()
