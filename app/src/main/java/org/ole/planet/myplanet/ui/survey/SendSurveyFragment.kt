@@ -52,8 +52,8 @@ class SendSurveyFragment : BaseDialogFragment() {
         mRealm.commitTransaction()
     }
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         val users: List<RealmUserModel> = mRealm.where(RealmUserModel::class.java).findAll()
         initListView(users)
         fragmentSendSurveyBinding.sendSurvey.setOnClickListener {
