@@ -41,7 +41,9 @@ class UserProfileFragment : Fragment() {
 
     override fun onDestroy() {
         super.onDestroy()
-        mRealm.close()
+        if (this::mRealm.isInitialized) {
+            mRealm.close()
+        }
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -126,7 +128,7 @@ class UserProfileFragment : Fragment() {
                     it.beginTransaction()
                 }
                 val path = FileUtils.getRealPathFromURI(requireActivity(), url)
-                model?.userImage = path
+                model.userImage = path
                 it.commitTransaction()
             }
             fragmentUserProfileBinding.image.setImageURI(url)

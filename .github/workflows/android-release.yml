@@ -42,7 +42,7 @@ jobs:
         run: echo "BRANCHNAME="${GITHUB_REF##*/} >> $GITHUB_ENV
 
       - name: expose version from build.gradle
-        uses: dogi/expose-android-build.gradle-version-code-and-name@v1.0.1
+        uses: dogi/expose-android-build.gradle-version-code-and-name@v1.0.2
         with:
           expose-version-name: 'true'
           expose-version-code: 'true'

@@ -62,7 +62,7 @@ class SettingActivity : AppCompatActivity() {
     }
 
     class SettingFragment : PreferenceFragmentCompat() {
-        var profileDbHandler: UserProfileDbHandler? = null
+        lateinit var profileDbHandler: UserProfileDbHandler
         var user: RealmUserModel? = null
         var dialog: ProgressDialog? = null
 
@@ -70,7 +70,7 @@ class SettingActivity : AppCompatActivity() {
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
             setPreferencesFromResource(R.xml.pref, rootKey)
             profileDbHandler = UserProfileDbHandler(requireActivity())
-            user = profileDbHandler!!.userModel
+            user = profileDbHandler.userModel
             dialog = ProgressDialog(requireActivity())
             setBetaToggleOn()
             setAutoSyncToggleOn()
@@ -139,10 +139,10 @@ class SettingActivity : AppCompatActivity() {
             val beta = findPreference<SwitchPreference>("beta_function")
             val course = findPreference<SwitchPreference>("beta_course")
             val achievement = findPreference<SwitchPreference>("beta_achievement")
-            val rating = findPreference<SwitchPreference>("beta_rating")
-            val myHealth = findPreference<SwitchPreference>("beta_myHealth")
-            val healthWorker = findPreference<SwitchPreference>("beta_healthWorker")
-            val newsAddImage = findPreference<SwitchPreference>("beta_addImageToMessage")
+//            val rating = findPreference<SwitchPreference>("beta_rating")
+//            val myHealth = findPreference<SwitchPreference>("beta_myHealth")
+//            val healthWorker = findPreference<SwitchPreference>("beta_healthWorker")
+//            val newsAddImage = findPreference<SwitchPreference>("beta_addImageToMessage")
 
             if (beta != null) {
                 beta.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, _: Any? ->
@@ -185,7 +185,9 @@ class SettingActivity : AppCompatActivity() {
 
         override fun onDestroy() {
             super.onDestroy()
-            profileDbHandler!!.onDestory()
+            if (this::profileDbHandler.isInitialized) {
+                profileDbHandler.onDestory()
+            }
         }
     }
 

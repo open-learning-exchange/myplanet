@@ -6,7 +6,6 @@ import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.Sort
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourseByUserId
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.isMyCourse
 import org.ole.planet.myplanet.utilities.JsonUtils
@@ -94,8 +93,7 @@ open class RealmCourseProgress : RealmObject() {
 
         @JvmStatic
         fun getCurrentProgress(steps: List<RealmCourseStep?>, mRealm: Realm, userId: String?, courseId: String?): Int {
-            var i: Int
-            i = 0
+            var i = 0
             while (i < steps.size) {
                 val progress = mRealm.where(RealmCourseProgress::class.java).equalTo("stepNum", i + 1).equalTo("userId", userId).equalTo("courseId", courseId)
                     .findFirst()

@@ -51,7 +51,7 @@ public class Utilities {
     }
 
     public static String getUrl(RealmMyLibrary library, SharedPreferences settings) {
-        return getUrl(library.resourceId, library.resourceLocalAddress, settings);
+        return getUrl(library.resourceId, library.resourceLocalAddress);
 
     }
 
@@ -59,12 +59,12 @@ public class Utilities {
         return (!TextUtils.isEmpty(target) && Patterns.EMAIL_ADDRESS.matcher(target).matches());
     }
 
-    public static String getUrl(String id, String file, SharedPreferences settings) {
+    public static String getUrl(String id, String file) {
         return getUrl() + "/resources/" + id + "/" + file;
     }
 
 
-    public static String getUserImageUrl(String userId, String imageName, SharedPreferences settings) {
+    public static String getUserImageUrl(String userId, String imageName) {
         return getUrl() + "/_users/" + userId + "/" + imageName;
     }
 
@@ -206,7 +206,7 @@ public class Utilities {
     }
 
     public static String getMimeType(String url) {
-        String type = null;
+        String type;
         String extension = FileUtils.getFileExtension(url);
         type = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
         return type;
