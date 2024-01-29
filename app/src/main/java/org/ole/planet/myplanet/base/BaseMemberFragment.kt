@@ -23,8 +23,8 @@ abstract class BaseMemberFragment : BaseTeamFragment() {
         return v
     }
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         rvMember!!.layoutManager = layoutManager
         rvMember!!.adapter = adapter
         showNoData(tvNodata, list.size)
