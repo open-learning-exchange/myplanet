@@ -23,8 +23,8 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>() {
         return AdapterSurvey(requireActivity(), getList(RealmStepExam::class.java, "name", Sort.ASCENDING) as List<RealmStepExam>, mRealm!!, model?.id!!)
     }
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         spn = requireView().findViewById(R.id.spn_sort)
         addNewServey = requireView().findViewById(R.id.fab_add_new_survey)
         addNewServey.setOnClickListener { }
