@@ -26,8 +26,8 @@ class HelpWantedFragment : Fragment() {
         return fragmentHelpWantedBinding.root
     }
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         val boldName = "<b>" + getString(R.string.name_colon) + "</b>"
         val boldEmail = "<b>" + getString(R.string.email_colon) + "</b>"
         val boldPhone = "<b>" + getString(R.string.phone_number_colon) + "</b>"
