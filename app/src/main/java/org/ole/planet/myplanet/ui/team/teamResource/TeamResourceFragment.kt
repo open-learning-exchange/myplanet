@@ -28,8 +28,8 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener {
         return fragmentTeamResourceBinding.root
     }
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         showLibraryList()
         fragmentTeamResourceBinding.fabAddResource.setOnClickListener { showResourceListDialog() }
     }

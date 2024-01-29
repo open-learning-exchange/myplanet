@@ -91,8 +91,8 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         }
     }
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         step = cRealm.where(RealmCourseStep::class.java).equalTo("id", stepId).findFirst()
         resources = cRealm.where(RealmMyLibrary::class.java).equalTo("stepId", stepId).findAll()
         stepExams = cRealm.where(RealmStepExam::class.java).equalTo("stepId", stepId).findAll()

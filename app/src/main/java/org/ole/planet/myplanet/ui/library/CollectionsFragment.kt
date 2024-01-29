@@ -48,8 +48,8 @@ class CollectionsFragment : DialogFragment(), OnClickTagItem, CompoundButton.OnC
         return fragmentCollectionsBinding!!.root
     }
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         setListAdapter()
         setListeners()
     }
