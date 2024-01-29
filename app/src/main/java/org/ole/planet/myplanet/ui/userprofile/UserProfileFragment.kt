@@ -9,6 +9,7 @@ import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -99,8 +100,8 @@ class UserProfileFragment : Fragment() {
                 rowStatBinding.tvTitle.visibility = View.VISIBLE
                 rowStatBinding.tvDescription.text = map[keys[position]]
                 if (position % 2 == 0) {
-                    rowStatBinding.root.setBackgroundColor(resources.getColor(R.color.bg_white))
-                    rowStatBinding.root.setBackgroundColor(resources.getColor(R.color.md_grey_300))
+                    rowStatBinding.root.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.bg_white))
+                    rowStatBinding.root.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.md_grey_300))
                 }
             }
 
