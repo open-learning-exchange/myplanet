@@ -27,7 +27,7 @@ class AddMyHealthActivity : AppCompatActivity() {
     var userId: String? = null
     var key: String? = null
     var iv: String? = null
-    var myHealth: RealmMyHealth? = null
+    private var myHealth: RealmMyHealth? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         activityAddMyHealthBinding = ActivityAddMyHealthBinding.inflate(layoutInflater)
@@ -119,6 +119,8 @@ class AddMyHealthActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        if (realm != null) realm.close()
+        if (this::realm.isInitialized && !realm.isClosed) {
+            realm.close()
+        }
     }
 }
