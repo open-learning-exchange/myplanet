@@ -7,17 +7,12 @@ import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getRequestedMember
 import org.ole.planet.myplanet.model.RealmUserModel
 
 class MembersFragment : BaseMemberFragment() {
-    override fun getList(): List<RealmUserModel> {
-        return getRequestedMember(teamId!!, mRealm)
-    }
+    override val list: List<RealmUserModel>
+        get() = getRequestedMember(teamId!!, mRealm)
 
-    override fun getAdapter(): RecyclerView.Adapter<*> {
-        val adapterMemberRequest = AdapterMemberRequest(requireActivity(), list, mRealm)
-        adapterMemberRequest.setTeamId(teamId)
-        return adapterMemberRequest
-    }
+    override val adapter: RecyclerView.Adapter<*>
+        get() = AdapterMemberRequest(requireActivity(), list, mRealm).apply { setTeamId(teamId!!) }
 
-    override fun getLayoutManager(): RecyclerView.LayoutManager {
-        return GridLayoutManager(activity, 3)
-    }
+    override val layoutManager: RecyclerView.LayoutManager
+        get() = GridLayoutManager(activity, 3)
 }
