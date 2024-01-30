@@ -88,7 +88,7 @@ class DiscussionListFragment : BaseTeamFragment() {
         val binding = AlertInputBinding.inflate(layoutInflater)
         val layout = binding.tlInput
         binding.addNewsImage.setOnClickListener { openOleFolder(this, 100) }
-        binding.llImage.visibility = if (showBetaFeature(Constants.KEY_NEWSADDIMAGE, activity)) View.VISIBLE else View.GONE
+        binding.llImage.visibility = if (showBetaFeature(Constants.KEY_NEWSADDIMAGE, requireContext())) View.VISIBLE else View.GONE
         layout.hint = getString(R.string.enter_message)
         AlertDialog.Builder(requireActivity())
             .setView(binding.root)

@@ -139,7 +139,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
 
     private fun changeNextButtonState(position: Int) {
         Utilities.log(isStepCompleted(mRealm!!, steps!![position - 1]!!.id, userModel!!.id!!).toString() + " is step completed")
-        if (isStepCompleted(mRealm!!, steps!![position - 1]!!.id, userModel!!.id!!) || !showBetaFeature(Constants.KEY_EXAM, activity)) {
+        if (isStepCompleted(mRealm!!, steps!![position - 1]!!.id, userModel!!.id!!) || !showBetaFeature(Constants.KEY_EXAM, requireContext())) {
             fragmentTakeCourseBinding!!.nextStep.isClickable = true
             fragmentTakeCourseBinding!!.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
         } else {

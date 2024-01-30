@@ -1,7 +1,7 @@
 package org.ole.planet.myplanet.utilities
 
 import android.content.Context
-import android.preference.PreferenceManager
+import androidx.preference.PreferenceManager
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmCertification
@@ -86,7 +86,7 @@ object Constants {
     }
 
     @JvmStatic
-    fun showBetaFeature(s: String, context: Context?): Boolean {
+    fun showBetaFeature(s: String, context: Context): Boolean {
         val preferences = PreferenceManager.getDefaultSharedPreferences(context)
         Utilities.log("$s beta")
         Utilities.log(preferences.getBoolean("beta_function", false).toString() + " beta")
@@ -96,7 +96,7 @@ object Constants {
     }
 
     @JvmStatic
-    fun autoSynFeature(s: String?, context: Context?): Boolean {
+    fun autoSynFeature(s: String?, context: Context): Boolean {
         val preferences = PreferenceManager.getDefaultSharedPreferences(context)
         return preferences.getBoolean(s, false)
     }
