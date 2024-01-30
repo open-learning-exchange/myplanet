@@ -49,11 +49,11 @@ class AchievementFragment : BaseContainerFragment() {
         return fragmentAchievementBinding.root
     }
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
-        achievement = aRealm.where(RealmAchievement::class.java).equalTo("_id", user.id + "@" + user.planetCode).findFirst()
-        fragmentAchievementBinding.tvFirstName.text = user.firstName
-        fragmentAchievementBinding.tvName.text = String.format("%s %s %s", user.firstName, user.middleName, user.lastName)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        achievement = aRealm.where(RealmAchievement::class.java).equalTo("_id", user!!.id + "@" + user!!.planetCode).findFirst()
+        fragmentAchievementBinding.tvFirstName.text = user!!.firstName
+        fragmentAchievementBinding.tvName.text = String.format("%s %s %s", user!!.firstName, user!!.middleName, user!!.lastName)
         if (achievement != null) {
             fragmentAchievementBinding.tvGoals.text = achievement!!.goals
             fragmentAchievementBinding.tvPurpose.text = achievement!!.purpose

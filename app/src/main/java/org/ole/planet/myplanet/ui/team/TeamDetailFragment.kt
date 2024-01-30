@@ -61,8 +61,8 @@ class TeamDetailFragment : Fragment() {
         return fragmentTeamDetailBinding.root
     }
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         createTeamLog()
     }
 

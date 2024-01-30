@@ -41,8 +41,8 @@ class UserDetailFragment : Fragment() {
 
     data class Detail(val title: String, val description: String)
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         user?.let { user ->
             val list = getList(user, db)
             fragmentUserDetailBinding.rvUserDetail.adapter = object : RecyclerView.Adapter<ViewHolderUserDetail>() {
