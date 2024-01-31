@@ -422,10 +422,12 @@ open class RealmMyLibrary : RealmObject() {
         }
 
         @JvmStatic
-        fun listToString(list: RealmList<String?>): String {
+        fun listToString(list: RealmList<String>?): String {
             val s = StringBuilder()
-            for (tag in list) {
-                s.append(tag).append(", ")
+            if (list != null) {
+                for (tag in list) {
+                    s.append(tag).append(", ")
+                }
             }
             return s.toString()
         }

@@ -1,0 +1,261 @@
+package org.ole.planet.myplanet.ui.library
+
+import android.app.Dialog
+import android.content.ContentValues
+import android.content.Context
+import android.content.DialogInterface
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.os.Bundle
+import android.os.Environment
+import android.provider.MediaStore
+import android.text.TextUtils
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.EditText
+import android.widget.FrameLayout
+import android.widget.TextView
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
+import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import com.google.android.material.floatingactionbutton.FloatingActionButton
+import io.realm.Realm
+import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.databinding.AlertSoundRecorderBinding
+import org.ole.planet.myplanet.databinding.FragmentAddResourceBinding
+import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.model.RealmMyPersonal
+import org.ole.planet.myplanet.service.AudioRecorderService
+import org.ole.planet.myplanet.service.AudioRecorderService.AudioRecordListener
+import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.myPersonals.MyPersonalsFragment
+import org.ole.planet.myplanet.utilities.Utilities
+import java.util.Date
+import java.util.UUID
+
+class AddResourceFragment : BottomSheetDialogFragment() {
+    private lateinit var fragmentAddResourceBinding: FragmentAddResourceBinding
+    var tvTime: TextView? = null
+    var floatingActionButton: FloatingActionButton? = null
+    private var audioRecorderService: AudioRecorderService? = null
+    private var myPersonalsFragment: MyPersonalsFragment? = null
+    private var photoURI: Uri? = null
+    private var videoUri: Uri? = null
+    private lateinit var captureImageLauncher: ActivityResultLauncher<Uri>
+    private lateinit var captureVideoLauncher: ActivityResultLauncher<Uri>
+    private lateinit var openFolderLauncher: ActivityResultLauncher<String>
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        if (arguments != null) {
+            type = requireArguments().getInt("type", 0)
+        }
+
+        captureImageLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { isSuccess ->
+            if (isSuccess) {
+                startIntent(photoURI, REQUEST_CAPTURE_PICTURE)
+            }
+        }
+
+        captureVideoLauncher = registerForActivityResult(ActivityResultContracts.CaptureVideo()) { isSuccess ->
+            if (isSuccess) {
+                startIntent(videoUri, REQUEST_VIDEO_CAPTURE)
+            }
+        }
+
+        openFolderLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+            if (uri != null) {
+                startIntent(uri, REQUEST_FILE_SELECTION)
+            } else {
+                Utilities.toast(activity, "no file selected")
+            }
+        }
+    }
+
+    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
+        val bottomSheetDialog = super.onCreateDialog(savedInstanceState) as BottomSheetDialog
+        bottomSheetDialog.setOnShowListener { d: DialogInterface ->
+            val dialog = d as BottomSheetDialog
+            val bottomSheet = dialog.findViewById<FrameLayout>(com.google.android.material.R.id.design_bottom_sheet)
+            BottomSheetBehavior.from(bottomSheet!!).state = BottomSheetBehavior.STATE_EXPANDED
+            BottomSheetBehavior.from(bottomSheet).skipCollapsed = true
+            BottomSheetBehavior.from(bottomSheet).setHideable(true)
+        }
+        return bottomSheetDialog
+    }
+
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+        fragmentAddResourceBinding = FragmentAddResourceBinding.inflate(inflater, container, false)
+        fragmentAddResourceBinding.llRecordVideo.setOnClickListener { dispatchTakeVideoIntent() }
+        fragmentAddResourceBinding.llRecordAudio.setOnClickListener { showAudioRecordAlert() }
+        fragmentAddResourceBinding.llCaptureImage.setOnClickListener { takePhoto() }
+        fragmentAddResourceBinding.llDraft.setOnClickListener { openFolderLauncher.launch("*/*") }
+        return fragmentAddResourceBinding.root
+    }
+
+    private fun showAudioRecordAlert() {
+        val alertSoundRecorderBinding = AlertSoundRecorderBinding.inflate(LayoutInflater.from(activity))
+        tvTime = alertSoundRecorderBinding.tvTime
+        floatingActionButton = alertSoundRecorderBinding.fabRecord
+        val dialog = AlertDialog.Builder(requireActivity())
+            .setTitle("Record Audio")
+            .setView(alertSoundRecorderBinding.root)
+            .setCancelable(false)
+            .create()
+        createAudioRecorderService(dialog)
+        alertSoundRecorderBinding.fabRecord.setOnClickListener {
+            if (!audioRecorderService!!.isRecording()) {
+                audioRecorderService!!.startRecording()
+            } else {
+                audioRecorderService!!.stopRecording()
+            }
+        }
+        dialog.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.dismiss)) { _: DialogInterface?, _: Int ->
+            if (audioRecorderService != null && audioRecorderService!!.isRecording()) {
+                audioRecorderService!!.forceStop()
+            }
+            dialog.dismiss()
+        }
+        dialog.show()
+    }
+
+    private fun createAudioRecorderService(dialog: AlertDialog) {
+        audioRecorderService = AudioRecorderService().setAudioRecordListener(object : AudioRecordListener {
+            override fun onRecordStarted() {
+                tvTime!!.setText(R.string.recording_audio)
+                floatingActionButton!!.setImageResource(R.drawable.ic_stop)
+            }
+
+            override fun onRecordStopped(outputFile: String) {
+                tvTime!!.text = ""
+                dialog.dismiss()
+                audioStartIntent(outputFile)
+                floatingActionButton!!.setImageResource(R.drawable.ic_mic)
+            }
+
+            override fun onError(error: String) {
+                Utilities.toast(activity, error)
+            }
+        })
+    }
+
+    private fun dispatchTakeVideoIntent() {
+        val takeVideoIntent = Intent(MediaStore.ACTION_VIDEO_CAPTURE)
+        videoUri = createVideoFileUri()
+        takeVideoIntent.putExtra(MediaStore.EXTRA_OUTPUT, videoUri)
+        captureVideoLauncher.launch(videoUri)
+    }
+
+    private fun createVideoFileUri(): Uri? {
+        val values = ContentValues()
+        values.put(MediaStore.Video.Media.TITLE, "Video_" + UUID.randomUUID().toString())
+        values.put(MediaStore.Video.Media.MIME_TYPE, "video/mp4")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            values.put(MediaStore.Video.Media.RELATIVE_PATH, Environment.DIRECTORY_MOVIES + "/ole/video")
+        }
+        videoUri = requireActivity().contentResolver.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values)
+        return videoUri
+    }
+
+    private fun takePhoto() {
+        val values = ContentValues().apply {
+            put(MediaStore.Images.Media.TITLE, "Photo_" + UUID.randomUUID().toString())
+            put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/ole/photo")
+            }
+        }
+        photoURI = requireActivity().contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+        photoURI?.let { captureImageLauncher.launch(it) }
+    }
+
+    private fun startIntent(uri: Uri?, requestCode: Int) {
+        var path: String? = null
+        if (requestCode == REQUEST_CAPTURE_PICTURE || requestCode == REQUEST_VIDEO_CAPTURE) {
+            path = getRealPathFromUri(uri)
+        }
+
+        if (!path.isNullOrEmpty()) {
+            addResource(path)
+        } else {
+            Utilities.toast(activity, getString(R.string.invalid_resource_url))
+        }
+    }
+
+    private fun audioStartIntent(path: String) {
+        if (!TextUtils.isEmpty(path)) {
+            addResource(path)
+        } else {
+            Utilities.toast(activity, getString(R.string.invalid_resource_url))
+        }
+    }
+
+    private fun getRealPathFromUri(uri: Uri?): String {
+        val projection = arrayOf(MediaStore.Images.Media.DATA)
+        requireActivity().contentResolver.query(uri!!, projection, null, null, null).use { cursor ->
+            if (cursor != null && cursor.moveToFirst()) {
+                val columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
+                return cursor.getString(columnIndex)
+            }
+        }
+        return ""
+    }
+
+    private fun addResource(path: String) {
+        if (type == 0) {
+            startActivity(Intent(activity, AddResourceActivity::class.java).putExtra("resource_local_url", path))
+        } else {
+            showAlert(activity, path)
+        }
+    }
+
+    fun setMyPersonalsFragment(myPersonalsFragment: MyPersonalsFragment) {
+        this.myPersonalsFragment = myPersonalsFragment
+    }
+
+    companion object {
+        const val REQUEST_VIDEO_CAPTURE = 1
+        const val REQUEST_CAPTURE_PICTURE = 2
+        const val REQUEST_FILE_SELECTION = 3
+        var type = 0
+        private val myPersonalsFragment: MyPersonalsFragment? = null
+        fun showAlert(context: Context?, path: String?) {
+            val v = LayoutInflater.from(context).inflate(R.layout.alert_my_personal, null)
+            val etTitle = v.findViewById<EditText>(R.id.et_title)
+            val etDesc = v.findViewById<EditText>(R.id.et_description)
+            val realmUserModel = UserProfileDbHandler(MainApplication.context).userModel
+            val userId = realmUserModel.id
+            val userName = realmUserModel.name
+            AlertDialog.Builder(context!!).setTitle(R.string.enter_resource_detail).setView(v)
+                .setPositiveButton("Save") { _: DialogInterface?, _: Int ->
+                    val title = etTitle.text.toString().trim { it <= ' ' }
+                    if (title.isEmpty()) {
+                        Utilities.toast(context, R.string.title_is_required.toString())
+                        return@setPositiveButton
+                    }
+                    val desc = etDesc.text.toString().trim { it <= ' ' }
+                    val realm = DatabaseService(context).realmInstance
+                    realm.executeTransactionAsync(
+                        Realm.Transaction { realm1: Realm -> val myPersonal = realm1.createObject(RealmMyPersonal::class.java, UUID.randomUUID().toString())
+                            myPersonal.title = title
+                            myPersonal.userId = userId
+                            myPersonal.userName = userName
+                            myPersonal.path = path
+                            myPersonal.date = Date().time
+                            myPersonal.description = desc
+                        },
+                        Realm.Transaction.OnSuccess {
+                            Utilities.toast(MainApplication.context, context.getString(R.string.resource_saved_to_my_personal))
+                        })
+                    if (type == 1) {
+                        myPersonalsFragment?.refreshFragment()
+                    }
+                }.setNegativeButton(R.string.dismiss, null).show()
+        }
+    }
+}
