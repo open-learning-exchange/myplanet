@@ -4,7 +4,7 @@ import android.os.Bundle
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentStatePagerAdapter
-import org.ole.planet.myplanet.MainApplication.context
+import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.ui.enterprises.EnterpriseCalendarFragment
 import org.ole.planet.myplanet.ui.enterprises.FinanceFragment
