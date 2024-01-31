@@ -160,13 +160,13 @@ open class RealmUserModel : RealmObject() {
 
     fun isManager(): Boolean {
         val roles = getRoles()
-        val isManager = roles.toString().toLowerCase(Locale.ROOT).contains("manager") || userAdmin ?: false
+        val isManager = roles.toString().lowercase(Locale.ROOT).contains("manager") || userAdmin ?: false
         return isManager
     }
 
     fun isLeader(): Boolean {
         val roles = getRoles()
-        return roles.toString().toLowerCase().contains("leader")
+        return roles.toString().lowercase(Locale.ROOT).contains("leader")
     }
 
     override fun toString(): String {

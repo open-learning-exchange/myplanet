@@ -9,7 +9,6 @@ import android.net.wifi.WifiManager
 import android.os.Build
 import android.provider.Settings
 import android.text.TextUtils
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.context
 import org.ole.planet.myplanet.ui.dashboard.DashboardFragment
 import java.net.NetworkInterface
@@ -101,9 +100,9 @@ object NetworkUtils {
         val manufacturer = Build.MANUFACTURER
         val model = Build.MODEL
         return if (model.startsWith(manufacturer)) {
-            model.toUpperCase(Locale.ROOT)
+            model.uppercase(Locale.ROOT)
         } else {
-            "$manufacturer $model".toUpperCase(Locale.ROOT)
+            "$manufacturer $model".uppercase(Locale.ROOT)
         }
     }
 
