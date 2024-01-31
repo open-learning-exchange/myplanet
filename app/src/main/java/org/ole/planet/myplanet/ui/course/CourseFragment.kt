@@ -50,9 +50,11 @@ class CourseFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelec
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
-        val map = mRealm?.let { getRatings(it, "course", model?.id) }
-        val progressMap = mRealm?.let { getCourseProgress(it, model?.id) }
-        adapterCourses = map?.let { AdapterCourses(requireActivity(), getList(RealmMyCourse::class.java) as List<RealmMyCourse?>, it) }!!
+        val map = getRatings(mRealm, "course", model.id)
+        val progressMap = getCourseProgress(mRealm, model.id)
+        adapterCourses = AdapterCourses(requireActivity(), getList(RealmMyCourse::class.java) as List<RealmMyCourse?>,
+            map
+        )
         adapterCourses.setProgressMap(progressMap)
         adapterCourses.setmRealm(mRealm)
         adapterCourses.setListener(this)
@@ -261,12 +263,12 @@ class CourseFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelec
 
     private fun saveSearchActivity() {
         if (filterApplied()) {
-            if (!mRealm?.isInTransaction!!) mRealm!!.beginTransaction()
-            val activity = mRealm!!.createObject(RealmSearchActivity::class.java, UUID.randomUUID().toString())
-            activity.user = model?.name!!
+            if (!mRealm.isInTransaction) mRealm.beginTransaction()
+            val activity = mRealm.createObject(RealmSearchActivity::class.java, UUID.randomUUID().toString())
+            activity.user = model.name!!
             activity.time = Calendar.getInstance().timeInMillis
-            activity.createdOn = model!!.planetCode!!
-            activity.parentCode = model!!.parentCode!!
+            activity.createdOn = model.planetCode!!
+            activity.parentCode = model.parentCode!!
             activity.text = etSearch.text.toString()
             activity.type = "courses"
             val filter = JsonObject()
@@ -275,7 +277,7 @@ class CourseFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelec
             filter.addProperty("doc.gradeLevel", gradeLevel)
             filter.addProperty("doc.subjectLevel", subjectLevel)
             activity.filter = Gson().toJson(filter)
-            mRealm!!.commitTransaction()
+            mRealm.commitTransaction()
         }
     }
 

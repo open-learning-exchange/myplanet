@@ -50,7 +50,7 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
             homeItemClickListener?.openCallFragment(LibraryFragment())
         }
         val list =
-            mRealm!!.where(RealmNews::class.java).equalTo("docType", "message", Case.INSENSITIVE)
+            mRealm.where(RealmNews::class.java).equalTo("docType", "message", Case.INSENSITIVE)
                 .equalTo("viewableBy", "community", Case.INSENSITIVE)
                 .equalTo("createdOn", user?.planetCode, Case.INSENSITIVE).isEmpty("replyTo")
                 .sort("time", Sort.DESCENDING).findAll()
