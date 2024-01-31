@@ -45,8 +45,8 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         return fragmentCourseDetailBinding!!.root
     }
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         initRatingView("course", courses!!.courseId, courses!!.courseTitle, this)
         setCourseData()
     }

@@ -34,8 +34,8 @@ class DiscussionListFragment : BaseTeamFragment() {
         return fragmentDiscussionListBinding.root
     }
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         val realmNewsList = news
         val count = realmNewsList.size
         mRealm.executeTransactionAsync { realm: Realm ->
