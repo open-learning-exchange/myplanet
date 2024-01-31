@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.community
 
 import android.os.Bundle
 import android.os.Handler
+import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -20,8 +21,8 @@ import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 
 class ServicesFragment : Fragment() {
     private lateinit var fragmentServicesBinding: FragmentServicesBinding
-    var mRealm: Realm? = null;
-    var user: RealmUserModel? = null;
+    var mRealm: Realm? = null
+    var user: RealmUserModel? = null
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View? {
@@ -36,7 +37,7 @@ class ServicesFragment : Fragment() {
         fragmentServicesBinding.fab.setOnClickListener {
             var bottomSheetDialog: BottomSheetDialogFragment = AddLinkFragment()
             bottomSheetDialog.show(childFragmentManager, "")
-            Handler().postDelayed({
+            Handler(Looper.getMainLooper()).postDelayed({
                 bottomSheetDialog.dialog?.setOnDismissListener {
                     setRecyclerView()
                 }
@@ -56,7 +57,7 @@ class ServicesFragment : Fragment() {
         fragmentServicesBinding.llServices.removeAllViews()
         links.forEach { team ->
             var b: TextView =
-                LayoutInflater.from(activity).inflate(R.layout.button_single, null) as TextView;
+                LayoutInflater.from(activity).inflate(R.layout.button_single, null) as TextView
             b.setPadding(8, 8, 8, 8)
             b.text = team.title
             b.setOnClickListener {
