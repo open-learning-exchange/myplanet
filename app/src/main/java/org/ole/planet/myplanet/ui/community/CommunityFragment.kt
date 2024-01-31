@@ -37,7 +37,7 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
     var user: RealmUserModel? = null
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         fragmentCommunityBinding = FragmentCommunityBinding.inflate(inflater, container, false)
         return fragmentCommunityBinding.root
     }

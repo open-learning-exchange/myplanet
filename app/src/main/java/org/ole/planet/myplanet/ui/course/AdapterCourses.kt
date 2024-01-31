@@ -196,7 +196,7 @@ class AdapterCourses(private val context: Context, private var courseList: List<
 
     private fun showChip(chipCloud: ChipCloud, parent: RealmTag?) {
         chipCloud.addChip(if (parent != null) parent.name else "")
-        chipCloud.setListener { i: Int, b: Boolean, b1: Boolean ->
+        chipCloud.setListener { _: Int, _: Boolean, b1: Boolean ->
             if (b1 && listener != null) {
                 listener!!.onTagClicked(parent)
             }
