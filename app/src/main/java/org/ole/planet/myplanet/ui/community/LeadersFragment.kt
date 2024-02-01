@@ -16,14 +16,14 @@ class LeadersFragment : Fragment() {
     private lateinit var fragmentMembersBinding: FragmentMembersBinding
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         fragmentMembersBinding = FragmentMembersBinding.inflate(inflater, container, false)
         return fragmentMembersBinding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        var mRealm = DatabaseService(requireActivity()).realmInstance;
+        val mRealm = DatabaseService(requireActivity()).realmInstance
         val leaders = mRealm.where(RealmMyTeam::class.java).equalTo("isLeader", true).findAll()
         if (leaders.isEmpty()) {
             fragmentMembersBinding.tvNodata.text = getString(R.string.no_data_available)

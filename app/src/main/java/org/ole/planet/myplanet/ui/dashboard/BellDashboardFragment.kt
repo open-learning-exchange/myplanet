@@ -45,21 +45,21 @@ class BellDashboardFragment : BaseDashboardFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         fragmentHomeBellBinding.cardProfileBell.txtDate.text = TimeUtils.formatDate(Date().time)
-        fragmentHomeBellBinding.cardProfileBell.txtCommunityName.text = model!!.planetCode
+        fragmentHomeBellBinding.cardProfileBell.txtCommunityName.text = model.planetCode
         (activity as DashboardActivity?)?.supportActionBar?.hide()
         fragmentHomeBellBinding.addResource.setOnClickListener {
             AddResourceFragment().show(childFragmentManager, getString(R.string.add_res))
         }
         showBadges()
         
-        val noOfSurvey = RealmSubmission.getNoOfSurveySubmissionByUser(model!!.id, mRealm!!)
+        val noOfSurvey = RealmSubmission.getNoOfSurveySubmissionByUser(model.id, mRealm)
         if (noOfSurvey >= 1){
             val title: String = if (noOfSurvey > 1 ) {
                 "surveys"
             } else{
                 "survey"
             }
-            val itemsQuery = mRealm!!.where(RealmSubmission::class.java).equalTo("userId", model!!.id)
+            val itemsQuery = mRealm.where(RealmSubmission::class.java).equalTo("userId", model.id)
                 .equalTo("type", "survey").equalTo("status", "pending", Case.INSENSITIVE)
                 .findAll()
             val courseTitles = itemsQuery.map { it.parent }
@@ -86,7 +86,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     private fun showBadges() {
         fragmentHomeBellBinding.cardProfileBell.llBadges.removeAllViews()
-        val list = RealmCourseProgress.getPassedCourses(mRealm!!, settings?.getString("userId", ""))
+        val list = RealmCourseProgress.getPassedCourses(mRealm, settings?.getString("userId", ""))
         for (sub in list) {
             val star =
                 LayoutInflater.from(activity).inflate(R.layout.image_start, null) as ImageView
@@ -95,14 +95,14 @@ class BellDashboardFragment : BaseDashboardFragment() {
             val courseId =
                 if (sub.parentId?.contains("@") == true) sub.parentId!!.split("@").toTypedArray()[1] else ""
             val questions =
-                mRealm!!.where(RealmExamQuestion::class.java).equalTo("examId", examId).count()
+                mRealm.where(RealmExamQuestion::class.java).equalTo("examId", examId).count()
             setColor(questions, courseId, star)
             fragmentHomeBellBinding.cardProfileBell.llBadges.addView(star)
         }
     }
 
     private fun setColor(questions: Long, courseId: String, star: ImageView) =
-        if (RealmCertification.isCourseCertified(mRealm!!, courseId)) {
+        if (RealmCertification.isCourseCertified(mRealm, courseId)) {
             star.setColorFilter(ContextCompat.getColor(requireContext(), R.color.colorPrimary))
         } else {
             star.setColorFilter(ContextCompat.getColor(requireContext(), R.color.md_blue_grey_300))

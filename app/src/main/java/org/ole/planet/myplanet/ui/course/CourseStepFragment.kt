@@ -61,7 +61,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         dbService = DatabaseService(requireActivity())
         cRealm = dbService.realmInstance
         user = UserProfileDbHandler(activity).userModel
-        fragmentCourseStepBinding.btnTakeTest.visibility = if (showBetaFeature(Constants.KEY_EXAM, activity)) View.VISIBLE else View.GONE
+        fragmentCourseStepBinding.btnTakeTest.visibility = if (showBetaFeature(Constants.KEY_EXAM, requireContext())) View.VISIBLE else View.GONE
         return fragmentCourseStepBinding.root
     }
 

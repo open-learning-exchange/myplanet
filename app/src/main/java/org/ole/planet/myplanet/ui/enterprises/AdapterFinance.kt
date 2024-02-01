@@ -9,6 +9,7 @@ import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.LinearLayout
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.RealmResults
 import org.ole.planet.myplanet.R
@@ -64,7 +65,7 @@ class AdapterFinance(private val context: Context, private val list: RealmResult
         if (position % 2 < 1) {
             val border = GradientDrawable()
             border.setColor(-0x1) //white background
-            border.setStroke(1, context.resources.getColor(R.color.black_overlay))
+            border.setStroke(1, ContextCompat.getColor(context, R.color.black_overlay))
             border.gradientType = GradientDrawable.LINEAR_GRADIENT
             val layers = arrayOf<Drawable>(border)
             val layerDrawable = LayerDrawable(layers)

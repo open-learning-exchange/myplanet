@@ -34,7 +34,7 @@ class DashboardFragment : BaseDashboardFragment() {
         fragmentHomeBinding.cardProfile.tvSubmission.setOnClickListener {
             homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("exam"))
         }
-        fragmentHomeBinding.cardProfile.tvAchievement.visibility = if (showBetaFeature(Constants.KEY_ACHIEVEMENT, activity)) View.VISIBLE else View.GONE
+        fragmentHomeBinding.cardProfile.tvAchievement.visibility = if (showBetaFeature(Constants.KEY_ACHIEVEMENT, requireContext())) View.VISIBLE else View.GONE
         fragmentHomeBinding.cardProfile.tvAchievement.setOnClickListener {
             homeItemClickListener?.openCallFragment(AchievementFragment())
         }

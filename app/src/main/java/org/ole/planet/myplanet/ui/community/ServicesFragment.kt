@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.community
 
 import android.os.Bundle
 import android.os.Handler
+import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -20,11 +21,11 @@ import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 
 class ServicesFragment : Fragment() {
     private lateinit var fragmentServicesBinding: FragmentServicesBinding
-    var mRealm: Realm? = null;
-    var user: RealmUserModel? = null;
+    var mRealm: Realm? = null
+    var user: RealmUserModel? = null
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         fragmentServicesBinding = FragmentServicesBinding.inflate(inflater, container, false)
         return fragmentServicesBinding.root
     }
@@ -34,9 +35,9 @@ class ServicesFragment : Fragment() {
         mRealm = DatabaseService(requireActivity()).realmInstance
         user = UserProfileDbHandler(requireActivity()).userModel
         fragmentServicesBinding.fab.setOnClickListener {
-            var bottomSheetDialog: BottomSheetDialogFragment = AddLinkFragment()
+            val bottomSheetDialog: BottomSheetDialogFragment = AddLinkFragment()
             bottomSheetDialog.show(childFragmentManager, "")
-            Handler().postDelayed({
+            Handler(Looper.getMainLooper()).postDelayed({
                 bottomSheetDialog.dialog?.setOnDismissListener {
                     setRecyclerView()
                 }
@@ -55,8 +56,7 @@ class ServicesFragment : Fragment() {
         val links = mRealm!!.where(RealmMyTeam::class.java).equalTo("docType", "link").findAll()
         fragmentServicesBinding.llServices.removeAllViews()
         links.forEach { team ->
-            var b: TextView =
-                LayoutInflater.from(activity).inflate(R.layout.button_single, null) as TextView;
+            val b: TextView = LayoutInflater.from(activity).inflate(R.layout.button_single, null) as TextView
             b.setPadding(8, 8, 8, 8)
             b.text = team.title
             b.setOnClickListener {
@@ -65,8 +65,7 @@ class ServicesFragment : Fragment() {
                     if (route.size >= 3) {
                         val f = TeamDetailFragment()
                         val c = Bundle()
-                        var teamObject =
-                            mRealm!!.where(RealmMyTeam::class.java).equalTo("_id", route[3]).findFirst()
+                        val teamObject = mRealm!!.where(RealmMyTeam::class.java).equalTo("_id", route[3]).findFirst()
                         c.putString("id", route[3])
                         c.putBoolean("isMyTeam", teamObject!!.isMyTeam(user?.id, mRealm!!))
                         f.arguments = c
