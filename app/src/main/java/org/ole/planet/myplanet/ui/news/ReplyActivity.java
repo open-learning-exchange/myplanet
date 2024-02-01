@@ -10,16 +10,18 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 
+import androidx.activity.result.ActivityResult;
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
 import org.ole.planet.myplanet.R;
-import org.ole.planet.myplanet.databinding.ActivityFeedbackDetailBinding;
 import org.ole.planet.myplanet.databinding.ActivityReplyBinding;
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmNews;
@@ -45,6 +47,7 @@ public class ReplyActivity extends AppCompatActivity implements AdapterNews.OnNe
     RealmUserModel user;
     protected RealmList<String> imageList;
     protected LinearLayout llImage;
+    private ActivityResultLauncher<Intent> openFolderLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,6 +64,12 @@ public class ReplyActivity extends AppCompatActivity implements AdapterNews.OnNe
         activityReplyBinding.rvReply.setLayoutManager(new LinearLayoutManager(this));
         activityReplyBinding.rvReply.setNestedScrollingEnabled(false);
         showData(id);
+        openFolderLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+            if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                Uri url = result.getData().getData();
+                handleImageSelection(url);
+            }
+        });
     }
 
     private void showData(String id) {
@@ -85,27 +94,22 @@ public class ReplyActivity extends AppCompatActivity implements AdapterNews.OnNe
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         Uri uri = Uri.parse(Utilities.SD_PATH);
         intent.setDataAndType(uri, "*/*");
-        startActivityForResult(Intent.createChooser(intent, "Open folder"), 102);
+        openFolderLauncher.launch(Intent.createChooser(intent, "Open folder"));
     }
 
-    @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (resultCode == RESULT_OK) {
-            Uri url = data.getData();
-            String path = FileUtils.getRealPathFromURI(this, url);
-            if (TextUtils.isEmpty(path)) {
-                path = FileUtils.getImagePath(this, url);
-            }
-            JsonObject object = new JsonObject();
-            object.addProperty("imageUrl", path);
-            object.addProperty("fileName", FileUtils.getFileNameFromUrl(path));
-            imageList.add(new Gson().toJson(object));
-            try {
-                showSelectedImages();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+    private void handleImageSelection(Uri url) {
+        String path = FileUtils.getRealPathFromURI(this, url);
+        if (TextUtils.isEmpty(path)) {
+            path = FileUtils.getImagePath(this, url);
+        }
+        JsonObject object = new JsonObject();
+        object.addProperty("imageUrl", path);
+        object.addProperty("fileName", FileUtils.getFileNameFromUrl(path));
+        imageList.add(new Gson().toJson(object));
+        try {
+            showSelectedImages();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 

@@ -33,18 +33,18 @@ import java.util.Calendar
 import java.util.UUID
 
 class CourseFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelected, TagClickListener {
-    private var tvAddToLib: TextView? = null
-    private var tvSelected: TextView? = null
-    var etSearch: EditText? = null
-    var adapterCourses: AdapterCourses? = null
-    private var btnRemove: Button? = null
-    private var orderByDate: Button? = null
-    private var orderByTitle: Button? = null
-    private var selectAll: CheckBox? = null
-    var spnGrade: Spinner? = null
-    var spnSubject: Spinner? = null
+    private lateinit var tvAddToLib: TextView
+    private lateinit var tvSelected: TextView
+    private lateinit var etSearch: EditText
+    private lateinit var adapterCourses: AdapterCourses
+    private lateinit var btnRemove: Button
+    private lateinit var orderByDate: Button
+    private lateinit var orderByTitle: Button
+    private lateinit var selectAll: CheckBox
+    lateinit var spnGrade: Spinner
+    lateinit var spnSubject: Spinner
     var searchTags: MutableList<RealmTag?>? = null
-    private var confirmation: AlertDialog? = null
+    private lateinit var confirmation: AlertDialog
     override fun getLayout(): Int {
         return R.layout.fragment_my_course
     }
@@ -52,34 +52,34 @@ class CourseFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelec
     override fun getAdapter(): RecyclerView.Adapter<*> {
         val map = mRealm?.let { getRatings(it, "course", model?.id) }
         val progressMap = mRealm?.let { getCourseProgress(it, model?.id) }
-        adapterCourses = map?.let { AdapterCourses(requireActivity(), getList(RealmMyCourse::class.java) as List<RealmMyCourse?>, it) }
-        adapterCourses!!.setProgressMap(progressMap)
-        adapterCourses!!.setmRealm(mRealm)
-        adapterCourses!!.setListener(this)
-        adapterCourses!!.setRatingChangeListener(this)
-        return adapterCourses!!
+        adapterCourses = map?.let { AdapterCourses(requireActivity(), getList(RealmMyCourse::class.java) as List<RealmMyCourse?>, it) }!!
+        adapterCourses.setProgressMap(progressMap)
+        adapterCourses.setmRealm(mRealm)
+        adapterCourses.setListener(this)
+        adapterCourses.setRatingChangeListener(this)
+        return adapterCourses
     }
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         searchTags = ArrayList()
         initializeView()
         if (isMyCourseLib) {
             tvDelete.setText(R.string.archive)
-            btnRemove!!.visibility = View.VISIBLE
+            btnRemove.visibility = View.VISIBLE
         }
 
-        etSearch!!.addTextChangedListener(object : TextWatcher {
+        etSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-                adapterCourses!!.setCourseList(filterCourseByTag(etSearch!!.text.toString(), searchTags))
-                showNoData(tvMessage, adapterCourses!!.itemCount)
+                adapterCourses.setCourseList(filterCourseByTag(etSearch.text.toString(), searchTags))
+                showNoData(tvMessage, adapterCourses.itemCount)
             }
 
             override fun afterTextChanged(s: Editable) {}
         })
 
-        btnRemove!!.setOnClickListener {
+        btnRemove.setOnClickListener {
             AlertDialog.Builder(this.context)
                 .setMessage(R.string.are_you_sure_you_want_to_delete_these_courses)
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
@@ -97,7 +97,7 @@ class CourseFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelec
         }
 
         clearTags()
-        showNoData(tvMessage, adapterCourses!!.itemCount)
+        showNoData(tvMessage, adapterCourses.itemCount)
         setupUI(requireView().findViewById(R.id.my_course_parent_layout), requireActivity())
         changeButtonStatus()
         if (!isMyCourseLib) tvFragmentInfo.setText(R.string.our_courses)
@@ -111,19 +111,19 @@ class CourseFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelec
         }
         orderByDate = requireView().findViewById(R.id.order_by_date_button)
         orderByTitle = requireView().findViewById(R.id.order_by_title_button)
-        orderByDate!!.setOnClickListener { adapterCourses!!.toggleSortOrder() }
-        orderByTitle!!.setOnClickListener { adapterCourses!!.toggleTitleSortOrder() }
+        orderByDate.setOnClickListener { adapterCourses.toggleSortOrder() }
+        orderByTitle.setOnClickListener { adapterCourses.toggleTitleSortOrder() }
     }
 
     private fun initializeView() {
         tvAddToLib = requireView().findViewById(R.id.tv_add)
-        tvAddToLib!!.setOnClickListener {
+        tvAddToLib.setOnClickListener {
             if (selectedItems.size > 0) {
                 confirmation = createAlertDialog()
-                confirmation!!.show()
+                confirmation.show()
                 addToMyList()
                 selectedItems.clear()
-                tvAddToLib!!.isEnabled = false // selectedItems will always have a size of 0
+                tvAddToLib.isEnabled = false // selectedItems will always have a size of 0
                 checkList()
             }
         }
@@ -135,41 +135,41 @@ class CourseFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelec
         tvMessage = requireView().findViewById(R.id.tv_message)
         requireView().findViewById<View>(R.id.tl_tags).visibility = View.GONE
         tvFragmentInfo = requireView().findViewById(R.id.tv_fragment_info)
-        spnGrade!!.onItemSelectedListener = itemSelectedListener
-        spnSubject!!.onItemSelectedListener = itemSelectedListener
+        spnGrade.onItemSelectedListener = itemSelectedListener
+        spnSubject.onItemSelectedListener = itemSelectedListener
         selectAll = requireView().findViewById(R.id.selectAll)
         checkList()
-        selectAll!!.setOnClickListener {
-            val allSelected = selectedItems.size == adapterCourses!!.getCourseList().size
-            adapterCourses!!.selectAllItems(!allSelected)
+        selectAll.setOnClickListener {
+            val allSelected = selectedItems.size == adapterCourses.getCourseList().size
+            adapterCourses.selectAllItems(!allSelected)
             if (allSelected) {
-                selectAll!!.isChecked = false
-                selectAll!!.text = getString(R.string.select_all)
+                selectAll.isChecked = false
+                selectAll.text = getString(R.string.select_all)
             } else {
-                selectAll!!.isChecked = true
-                selectAll!!.text = getString(R.string.unselect_all)
+                selectAll.isChecked = true
+                selectAll.text = getString(R.string.unselect_all)
             }
         }
     }
 
     private fun checkList() {
-        if (adapterCourses!!.getCourseList().isEmpty()) {
-            selectAll!!.visibility = View.GONE
-            etSearch!!.visibility = View.GONE
-            tvAddToLib!!.visibility = View.GONE
+        if (adapterCourses.getCourseList().isEmpty()) {
+            selectAll.visibility = View.GONE
+            etSearch.visibility = View.GONE
+            tvAddToLib.visibility = View.GONE
             requireView().findViewById<View>(R.id.filter).visibility = View.GONE
-            btnRemove!!.visibility = View.GONE
-            tvSelected!!.visibility = View.GONE
+            btnRemove.visibility = View.GONE
+            tvSelected.visibility = View.GONE
         }
     }
 
     private val itemSelectedListener: AdapterView.OnItemSelectedListener = object : AdapterView.OnItemSelectedListener {
         override fun onItemSelected(adapterView: AdapterView<*>?, view: View, i: Int, l: Long) {
             Utilities.log("On item selected")
-            gradeLevel = if (spnGrade!!.selectedItem.toString() == "All") "" else spnGrade!!.selectedItem.toString()
-            subjectLevel = if (spnSubject!!.selectedItem.toString() == "All") "" else spnSubject!!.selectedItem.toString()
-            adapterCourses!!.setCourseList(filterCourseByTag(etSearch!!.text.toString(), searchTags))
-            showNoFilter(tvMessage, adapterCourses!!.itemCount)
+            gradeLevel = if (spnGrade.selectedItem.toString() == "All") "" else spnGrade.selectedItem.toString()
+            subjectLevel = if (spnSubject.selectedItem.toString() == "All") "" else spnSubject.selectedItem.toString()
+            adapterCourses.setCourseList(filterCourseByTag(etSearch.text.toString(), searchTags))
+            showNoFilter(tvMessage, adapterCourses.itemCount)
         }
 
         override fun onNothingSelected(adapterView: AdapterView<*>?) {}
@@ -178,12 +178,12 @@ class CourseFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelec
     private fun clearTags() {
         requireView().findViewById<View>(R.id.btn_clear_tags).setOnClickListener {
             searchTags!!.clear()
-            etSearch!!.setText("")
-            tvSelected!!.text = ""
-            adapterCourses!!.setCourseList(filterCourseByTag("", searchTags))
-            showNoData(tvMessage, adapterCourses!!.itemCount)
-            spnGrade!!.setSelection(0)
-            spnSubject!!.setSelection(0)
+            etSearch.setText("")
+            tvSelected.text = ""
+            adapterCourses.setCourseList(filterCourseByTag("", searchTags))
+            showNoData(tvMessage, adapterCourses.itemCount)
+            spnGrade.setSelection(0)
+            spnSubject.setSelection(0)
         }
     }
 
@@ -218,19 +218,19 @@ class CourseFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelec
 
     override fun onTagClicked(tag: RealmTag?) {
         if (!searchTags!!.contains(tag)) searchTags!!.add(tag)
-        adapterCourses!!.setCourseList(filterCourseByTag(etSearch!!.text.toString(), searchTags))
-        tvSelected?.let { showTagText(searchTags!!, it) }
-        showNoData(tvMessage, adapterCourses!!.itemCount)
+        adapterCourses.setCourseList(filterCourseByTag(etSearch.text.toString(), searchTags))
+        showTagText(searchTags!!, tvSelected)
+        showNoData(tvMessage, adapterCourses.itemCount)
     }
 
     private fun changeButtonStatus() {
-        tvAddToLib!!.isEnabled = selectedItems.size > 0
-        if (adapterCourses!!.areAllSelected()) {
-            selectAll!!.isChecked = true
-            selectAll!!.text = getString(R.string.unselect_all)
+        tvAddToLib.isEnabled = selectedItems.size > 0
+        if (adapterCourses.areAllSelected()) {
+            selectAll.isChecked = true
+            selectAll.text = getString(R.string.unselect_all)
         } else {
-            selectAll!!.isChecked = false
-            selectAll!!.text = getString(R.string.select_all)
+            selectAll.isChecked = false
+            selectAll.text = getString(R.string.select_all)
         }
     }
 
@@ -238,16 +238,16 @@ class CourseFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelec
         val li: MutableList<RealmTag?> = ArrayList()
         li.add(tag)
         searchTags = li
-        tvSelected!!.text = R.string.selected.toString() + tag!!.name
-        adapterCourses!!.setCourseList(filterCourseByTag(etSearch!!.text.toString(), li))
-        showNoData(tvMessage, adapterCourses!!.itemCount)
+        tvSelected.text = R.string.selected.toString() + tag!!.name
+        adapterCourses.setCourseList(filterCourseByTag(etSearch.text.toString(), li))
+        showNoData(tvMessage, adapterCourses.itemCount)
     }
 
     override fun onOkClicked(list: List<RealmTag?>?) {
         if (list!!.isEmpty()) {
             searchTags!!.clear()
-            adapterCourses!!.setCourseList(filterCourseByTag(etSearch!!.text.toString(), searchTags))
-            showNoData(tvMessage, adapterCourses!!.itemCount)
+            adapterCourses.setCourseList(filterCourseByTag(etSearch.text.toString(), searchTags))
+            showNoData(tvMessage, adapterCourses.itemCount)
         } else {
             for (tag in list) {
                 onTagClicked(tag)
@@ -256,7 +256,7 @@ class CourseFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelec
     }
 
     private fun filterApplied(): Boolean {
-        return !(searchTags!!.isEmpty() && gradeLevel.isEmpty() && subjectLevel.isEmpty() && etSearch!!.text.toString().isEmpty())
+        return !(searchTags!!.isEmpty() && gradeLevel.isEmpty() && subjectLevel.isEmpty() && etSearch.text.toString().isEmpty())
     }
 
     private fun saveSearchActivity() {
@@ -267,7 +267,7 @@ class CourseFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelec
             activity.time = Calendar.getInstance().timeInMillis
             activity.createdOn = model!!.planetCode!!
             activity.parentCode = model!!.parentCode!!
-            activity.text = etSearch!!.text.toString()
+            activity.text = etSearch.text.toString()
             activity.type = "courses"
             val filter = JsonObject()
 

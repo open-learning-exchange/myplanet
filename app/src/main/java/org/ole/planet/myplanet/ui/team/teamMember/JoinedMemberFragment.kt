@@ -7,15 +7,10 @@ import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMember
 import org.ole.planet.myplanet.model.RealmUserModel
 
 class JoinedMemberFragment : BaseMemberFragment() {
-    override fun getList(): List<RealmUserModel> {
-        return getJoinedMember(teamId!!, mRealm)
-    }
-
-    override fun getAdapter(): RecyclerView.Adapter<*> {
-        return AdapterJoinedMember(requireActivity(), list, mRealm, teamId!!)
-    }
-
-    override fun getLayoutManager(): RecyclerView.LayoutManager {
-        return GridLayoutManager(activity, 3)
-    }
+    override val list: List<RealmUserModel>
+        get() = getJoinedMember(teamId!!, mRealm)
+    override val adapter: RecyclerView.Adapter<*>
+        get() = AdapterJoinedMember(requireActivity(), list, mRealm, teamId!!)
+    override val layoutManager: RecyclerView.LayoutManager
+        get() = GridLayoutManager(activity, 3)
 }

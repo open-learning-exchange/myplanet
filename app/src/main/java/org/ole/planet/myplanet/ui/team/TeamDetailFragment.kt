@@ -51,7 +51,7 @@ class TeamDetailFragment : Fragment() {
                 fragmentTeamDetailBinding.viewPager.currentItem = 6
                 MainApplication.showDownload = false
                 if (MainApplication.listener != null) {
-                    MainApplication.listener.onAddDocument()
+                    MainApplication.listener!!.onAddDocument()
                 }
             }
         }
@@ -61,8 +61,8 @@ class TeamDetailFragment : Fragment() {
         return fragmentTeamDetailBinding.root
     }
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         createTeamLog()
     }
 

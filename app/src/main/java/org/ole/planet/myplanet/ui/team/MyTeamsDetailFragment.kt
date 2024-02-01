@@ -109,8 +109,8 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
             }.setNegativeButton(R.string.cancel, null).show()
     }
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         fragmentMyTeamsDetailBinding.title.text = team!!.name
         tvDescription!!.text = team!!.description
         setTeamList()
