@@ -13,27 +13,42 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.TimeUtils
 
-class UserListArrayAdapter(activity: Activity, val view: Int, var list: List<RealmUserModel>) :
-    ArrayAdapter<RealmUserModel>(activity, view, list) {
+class UserListArrayAdapter(activity: Activity, val view: Int, var list: List<RealmUserModel>) : ArrayAdapter<RealmUserModel>(activity, view, list) {
+    private class ViewHolder {
+        var tvName: TextView? = null
+        var joined: TextView? = null
+        var image: ImageView? = null
+    }
+
     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-        var v: View? = LayoutInflater.from(context).inflate(R.layout.item_user, parent, false)
-        val tvName = v?.findViewById<TextView>(R.id.txt_name)
-        val joined = v?.findViewById<TextView>(R.id.txt_joined)
-        val image = v?.findViewById<ImageView>(R.id.iv_user)
+        val holder: ViewHolder
+        var convertViewVar = convertView
+
+        if (convertViewVar == null) {
+            convertViewVar = LayoutInflater.from(context).inflate(R.layout.item_user, parent, false)
+            holder = ViewHolder()
+            holder.tvName = convertViewVar.findViewById(R.id.txt_name)
+            holder.joined = convertViewVar.findViewById(R.id.txt_joined)
+            holder.image = convertViewVar.findViewById(R.id.iv_user)
+            convertViewVar.tag = holder
+        } else {
+            holder = convertViewVar.tag as ViewHolder
+        }
+
         val um = getItem(position)
-        tvName?.text = "${um?.getFullName()} (${um?.name})"
-        joined?.text = "${context.getString(R.string.joined_colon)} ${TimeUtils.formatDate(um!!.joinDate)}"
+        holder.tvName?.text = "${um?.getFullName()} (${um?.name})"
+        holder.joined?.text = "${context.getString(R.string.joined_colon)} ${TimeUtils.formatDate(um!!.joinDate)}"
 
         if (!TextUtils.isEmpty(um.userImage)) {
             Glide.with(context)
                 .load(um.userImage)
                 .placeholder(R.drawable.profile)
                 .error(R.drawable.profile)
-                .into(image!!)
+                .into(holder.image!!)
         } else {
-            image?.setImageResource(R.drawable.profile)
+            holder.image?.setImageResource(R.drawable.profile)
         }
 
-        return v!!;
+        return convertViewVar!!
     }
 }

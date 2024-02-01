@@ -220,11 +220,11 @@ object FileUtils {
     }
 
     @JvmStatic
-    fun openOleFolder(context: Fragment, request: Int) {
+    fun openOleFolder(): Intent {
         val intent = Intent(Intent.ACTION_GET_CONTENT)
-        val uri = Uri.parse(Utilities.SD_PATH)
+        val uri = Uri.parse(Utilities.SD_PATH)  // Ensure Utilities.SD_PATH is the correct path
         intent.setDataAndType(uri, "*/*")
-        context.startActivityForResult(Intent.createChooser(intent, "Open folder"), request)
+        return Intent.createChooser(intent, "Open folder")
     }
 
     @JvmStatic

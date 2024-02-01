@@ -65,8 +65,8 @@ class BellDashboardFragment : BaseDashboardFragment() {
             val courseTitles = itemsQuery.map { it.parent }
             val surveyNames = courseTitles.map { json ->
                 try {
-                    val jsonObject = JSONObject(json)
-                    jsonObject.getString("name")
+                    val jsonObject = json?.let { JSONObject(it) }
+                    jsonObject?.getString("name")
                 } catch (e: JSONException) {
                     e.printStackTrace()
                 }

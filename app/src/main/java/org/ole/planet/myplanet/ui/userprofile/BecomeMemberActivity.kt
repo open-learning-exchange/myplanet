@@ -21,7 +21,6 @@ import org.ole.planet.myplanet.databinding.ActivityBecomeMemberBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.NetworkUtils
@@ -56,9 +55,9 @@ class BecomeMemberActivity : BaseActivity() {
         supportActionBar?.setHomeButtonEnabled(true)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         var mRealm: Realm = DatabaseService(this).realmInstance;
-        var user = UserProfileDbHandler(this).userModel;
+//        var user = UserProfileDbHandler(this).userModel;
         val languages = resources.getStringArray(R.array.language)
-        val adapter = ArrayAdapter<String>(this, R.layout.become_a_member_spinner_layout, languages)
+        val adapter = ArrayAdapter(this, R.layout.become_a_member_spinner_layout, languages)
         activityBecomeMemberBinding.spnLang.adapter = adapter
         activityBecomeMemberBinding.txtDob.setOnClickListener {
             showDatePickerDialog()
@@ -83,7 +82,7 @@ class BecomeMemberActivity : BaseActivity() {
 
                 val firstChar = if (input.isNotEmpty()) input[0] else '\u0000'
                 var hasInvalidCharacters = false
-                var hasSpecialCharacters = false
+                var hasSpecialCharacters: Boolean
                 var hasDiacriticCharacters = false
 
                 val normalizedText = Normalizer.normalize(s, Normalizer.Form.NFD)
