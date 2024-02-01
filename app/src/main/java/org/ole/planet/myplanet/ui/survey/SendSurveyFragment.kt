@@ -24,6 +24,9 @@ class SendSurveyFragment : BaseDialogFragment() {
     private lateinit var fragmentSendSurveyBinding: FragmentSendSurveyBinding
     lateinit var mRealm: Realm
     var dbService: DatabaseService? = null
+    override val key: String
+        get() = "surveyId"
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentSendSurveyBinding = FragmentSendSurveyBinding.inflate(inflater, container, false)
         dbService = DatabaseService(requireActivity())
@@ -70,9 +73,5 @@ class SendSurveyFragment : BaseDialogFragment() {
         val adapter = ArrayAdapter(requireActivity(), R.layout.rowlayout, R.id.checkBoxRowLayout, users)
         fragmentSendSurveyBinding.listUsers.choiceMode = ListView.CHOICE_MODE_MULTIPLE
         fragmentSendSurveyBinding.listUsers.adapter = adapter
-    }
-
-    override fun getKey(): String {
-        return "surveyId"
     }
 }
