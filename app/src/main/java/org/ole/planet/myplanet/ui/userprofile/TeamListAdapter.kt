@@ -5,7 +5,7 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import org.ole.planet.myplanet.MainApplication.context
+import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.UserListItemBinding
 import org.ole.planet.myplanet.model.User

@@ -10,6 +10,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -39,11 +41,33 @@ class UserProfileFragment : Fragment() {
     private lateinit var mRealm: Realm
     private lateinit var model: RealmUserModel
     private var imageUrl = ""
+    private lateinit var pickImageLauncher: ActivityResultLauncher<Intent>
 
     override fun onDestroy() {
         super.onDestroy()
         if (this::mRealm.isInitialized) {
             mRealm.close()
+        }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        pickImageLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == RESULT_OK && result.data != null) {
+                val url = result.data?.data
+                imageUrl = url.toString()
+
+                mRealm.let {
+                    if (!it.isInTransaction) {
+                        it.beginTransaction()
+                    }
+                    val path = FileUtils.getRealPathFromURI(requireActivity(), url)
+                    model.userImage = path
+                    it.commitTransaction()
+                }
+                fragmentUserProfileBinding.image.setImageURI(url)
+                Utilities.log("Image Url = $imageUrl")
+            }
         }
     }
 
@@ -115,26 +139,7 @@ class UserProfileFragment : Fragment() {
 
     private fun searchForPhoto() {
         val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI)
-        startActivityForResult(intent, IMAGE_TO_USE)
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == IMAGE_TO_USE && resultCode == RESULT_OK) {
-            val url = data?.data
-            imageUrl = url.toString()
-
-            mRealm.let {
-                if (!it.isInTransaction) {
-                    it.beginTransaction()
-                }
-                val path = FileUtils.getRealPathFromURI(requireActivity(), url)
-                model.userImage = path
-                it.commitTransaction()
-            }
-            fragmentUserProfileBinding.image.setImageURI(url)
-            Utilities.log("Image Url = $imageUrl")
-        }
+        pickImageLauncher.launch(intent)
     }
 
     companion object {

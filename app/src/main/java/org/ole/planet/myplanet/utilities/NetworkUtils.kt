@@ -9,7 +9,7 @@ import android.net.wifi.WifiManager
 import android.os.Build
 import android.provider.Settings
 import android.text.TextUtils
-import org.ole.planet.myplanet.MainApplication.context
+import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.ui.dashboard.DashboardFragment
 import java.net.NetworkInterface
 import java.util.Collections
