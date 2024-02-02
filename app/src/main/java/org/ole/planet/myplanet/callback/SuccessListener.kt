@@ -1,5 +1,5 @@
 package org.ole.planet.myplanet.callback
 
-interface SuccessListener {
+fun interface SuccessListener {
     fun onSuccess(success: String?)
 }
