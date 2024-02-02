@@ -28,6 +28,10 @@ import com.mikepenz.materialdrawer.holder.DimenHolder
 import com.mikepenz.materialdrawer.model.PrimaryDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.Nameable
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
@@ -58,7 +62,6 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, BottomNavigationView.OnNavigationItemSelectedListener {
     private lateinit var activityDashboardBinding: ActivityDashboardBinding
-    private var headerResult: AccountHeader? = null
     var user: RealmUserModel? = null
     private var result: Drawer? = null
     private var menul: TabLayout.Tab? = null
@@ -78,85 +81,84 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
         checkUser()
         activityDashboardBinding = ActivityDashboardBinding.inflate(layoutInflater)
         setContentView(activityDashboardBinding.root)
-        setupUI(activityDashboardBinding.activityDashboardParentLayout, this@DashboardActivity)
-        setSupportActionBar(activityDashboardBinding.myToolbar)
-        supportActionBar!!.setDisplayHomeAsUpEnabled(false)
-        supportActionBar!!.setTitle(R.string.app_project_name)
-        activityDashboardBinding.myToolbar.setTitleTextColor(Color.WHITE)
-        activityDashboardBinding.myToolbar.setSubtitleTextColor(Color.WHITE)
-        navigationView = activityDashboardBinding.topBarNavigation
-        disableShiftMode(navigationView)
-        activityDashboardBinding.appBarBell.bellToolbar.inflateMenu(R.menu.menu_bell_dashboard)
-        tl = findViewById(R.id.tab_layout)
-        try {
-            val userProfileModel = profileDbHandler.userModel
-            if (userProfileModel != null) {
-                var name: String? = userProfileModel.getFullName()
-                if (name!!.trim { it <= ' ' }.isEmpty()) {
-                    name = profileDbHandler.userModel.name
-                }
-                activityDashboardBinding.appBarBell.appTitleName.text = "$name's Planet"
-            } else {
-                activityDashboardBinding.appBarBell.appTitleName.text = getString(R.string.app_project_name)
+        activityDashboardBinding.root.post {
+            setupUI(activityDashboardBinding.activityDashboardParentLayout, this@DashboardActivity)
+            setSupportActionBar(activityDashboardBinding.myToolbar)
+            supportActionBar!!.setDisplayHomeAsUpEnabled(false)
+            supportActionBar!!.setTitle(R.string.app_project_name)
+            activityDashboardBinding.myToolbar.setTitleTextColor(Color.WHITE)
+            activityDashboardBinding.myToolbar.setSubtitleTextColor(Color.WHITE)
+            navigationView = activityDashboardBinding.topBarNavigation
+            disableShiftMode(navigationView)
+            activityDashboardBinding.appBarBell.bellToolbar.inflateMenu(R.menu.menu_bell_dashboard)
+            tl = findViewById(R.id.tab_layout)
+            activityDashboardBinding.appBarBell.ivSetting.setOnClickListener {
+                startActivity(Intent(this, SettingActivity::class.java))
             }
-        } catch (err: Exception) {
-            throw RuntimeException(err)
+
+            navigationView.setOnNavigationItemSelectedListener(this)
+            navigationView.visibility = if (UserProfileDbHandler(this).userModel.isShowTopbar) View.VISIBLE else View.GONE
+            createDrawer()
+            if (!(user!!.id!!.startsWith("guest") && profileDbHandler.offlineVisits >= 3) && resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
+                result!!.openDrawer()
+            }
+            result!!.stickyFooter.setPadding(0, 0, 0, 0) // moves logout button to the very bottom of the drawer. Without it, the "logout" button suspends a little.
+            result!!.actionBarDrawerToggle.isDrawerIndicatorEnabled = true
+            dl = result!!.drawerLayout
+            window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN)
+            result!!.drawerLayout.fitsSystemWindows = false
+            topbarSetting()
+            if (intent != null && intent.hasExtra("fragmentToOpen")) {
+                val fragmentToOpen = intent.getStringExtra("fragmentToOpen")
+                if (("feedbackList" == fragmentToOpen)) {
+                    openMyFragment(FeedbackListFragment())
+                }
+            } else {
+                openCallFragment(BellDashboardFragment())
+                activityDashboardBinding.appBarBell.bellToolbar.visibility = View.VISIBLE
+            }
+            activityDashboardBinding.appBarBell.ivSync.setOnClickListener {
+                continueSyncProcess(true, false)
+            }
+            activityDashboardBinding.appBarBell.imgLogo.setOnClickListener { result!!.openDrawer() }
+            activityDashboardBinding.appBarBell.bellToolbar.setOnMenuItemClickListener { item ->
+                when (item.itemId) {
+                    R.id.action_chat -> openCallFragment(ChatHistoryListFragment())
+                    R.id.menu_goOnline -> wifiStatusSwitch()
+                    R.id.action_sync -> continueSyncProcess(true, false)
+                    R.id.action_feedback -> openCallFragment(FeedbackListFragment())
+                    R.id.action_settings -> startActivity(Intent(this@DashboardActivity, SettingActivity::class.java))
+                    R.id.action_disclaimer -> openCallFragment(DisclaimerFragment())
+                    R.id.action_about -> openCallFragment(AboutFragment())
+                    R.id.action_logout -> logout()
+                    else -> {}
+                }
+                true
+            }
+            menuh = tl!!.getTabAt(0)
+            menul = tl!!.getTabAt(1)
+            menuc = tl!!.getTabAt(2)
+            menut = tl!!.getTabAt(3)
+            menue = tl!!.getTabAt(4)
+            menuco = tl!!.getTabAt(5)
+            hideWifi()
         }
-        activityDashboardBinding.appBarBell.ivSetting.setOnClickListener {
-            startActivity(Intent(this, SettingActivity::class.java))
+
+        GlobalScope.launch(Dispatchers.IO) {
+            val userName = profileDbHandler.userName
+            withContext(Dispatchers.Main) {
+                val displayName = if (userName!!.trim().isEmpty()) getString(R.string.app_project_name) else "$userName's Planet"
+                activityDashboardBinding.appBarBell.appTitleName.text = displayName
+            }
         }
+
         if ((user != null) && user!!.rolesList!!.isEmpty() && !user!!.userAdmin!!) {
             navigationView.visibility = View.GONE
             openCallFragment(InactiveDashboardFragment(), "Dashboard")
             return
         }
-        navigationView.setOnNavigationItemSelectedListener(this)
-        navigationView.visibility = if (UserProfileDbHandler(this).userModel.isShowTopbar) View.VISIBLE else View.GONE
-        headerResult = accountHeader
-        createDrawer()
-        if (!(user!!.id!!.startsWith("guest") && profileDbHandler.offlineVisits >= 3) && resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
-            result!!.openDrawer()
-        } //Opens drawer by default
-        result!!.stickyFooter.setPadding(0, 0, 0, 0) // moves logout button to the very bottom of the drawer. Without it, the "logout" button suspends a little.
-        result!!.actionBarDrawerToggle.isDrawerIndicatorEnabled = true
-        dl = result!!.drawerLayout
-        window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN)
-        result!!.drawerLayout.fitsSystemWindows = false
-        topbarSetting()
-        if (intent != null && intent.hasExtra("fragmentToOpen")) {
-            val fragmentToOpen = intent.getStringExtra("fragmentToOpen")
-            if (("feedbackList" == fragmentToOpen)) {
-                openMyFragment(FeedbackListFragment())
-            }
-        } else {
-            openCallFragment(BellDashboardFragment())
-            activityDashboardBinding.appBarBell.bellToolbar.visibility = View.VISIBLE
-        }
-        activityDashboardBinding.appBarBell.ivSync.setOnClickListener {
-            continueSyncProcess(true, false)
-        }
-        activityDashboardBinding.appBarBell.imgLogo.setOnClickListener { result!!.openDrawer() }
-        activityDashboardBinding.appBarBell.bellToolbar.setOnMenuItemClickListener { item ->
-            when (item.itemId) {
-                R.id.action_chat -> openCallFragment(ChatHistoryListFragment())
-                R.id.menu_goOnline -> wifiStatusSwitch()
-                R.id.action_sync -> continueSyncProcess(true, false)
-                R.id.action_feedback -> openCallFragment(FeedbackListFragment())
-                R.id.action_settings -> startActivity(Intent(this@DashboardActivity, SettingActivity::class.java))
-                R.id.action_disclaimer -> openCallFragment(DisclaimerFragment())
-                R.id.action_about -> openCallFragment(AboutFragment())
-                R.id.action_logout -> logout()
-                else -> {}
-            }
-            true
-        }
-        menuh = tl!!.getTabAt(0)
-        menul = tl!!.getTabAt(1)
-        menuc = tl!!.getTabAt(2)
-        menut = tl!!.getTabAt(3)
-        menue = tl!!.getTabAt(4)
-        menuco = tl!!.getTabAt(5)
-        hideWifi()
+
+
     }
 
     private fun hideWifi() {
@@ -236,26 +238,25 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
         return super.onPrepareOptionsMenu(menu)
     }
 
-    private val accountHeader: AccountHeader
-        get() {
-            val header = AccountHeaderBuilder()
-                .withActivity(this@DashboardActivity)
-                .withTextColor(ContextCompat.getColor(this, R.color.bg_white))
-                .withHeaderBackground(R.drawable.ole_logo)
-                .withDividerBelowHeader(false)
-                .build()
-            val headerBackground = header.headerBackgroundView
-            headerBackground.setPadding(30, 60, 30, 60)
-            headerBackground.setColorFilter(ContextCompat.getColor(this, R.color.md_white_1000), PorterDuff.Mode.SRC_IN)
-            return header
-        }
+    private val headerResult: AccountHeader by lazy {
+        AccountHeaderBuilder()
+            .withActivity(this)
+            .withTextColor(ContextCompat.getColor(this, R.color.bg_white))
+            .withHeaderBackground(R.drawable.ole_logo)
+            .withDividerBelowHeader(false)
+            .build().apply {
+                headerBackgroundView.setPadding(30, 60, 30, 60)
+                headerBackgroundView.setColorFilter(ContextCompat.getColor(this@DashboardActivity, R.color.md_white_1000), PorterDuff.Mode.SRC_IN)
+            }
+    }
 
     private fun createDrawer() {
         val dimenHolder = DimenHolder.fromDp(160)
         result = DrawerBuilder().withActivity(this).withFullscreen(true)
             .withSliderBackgroundColor(ContextCompat.getColor(this, R.color.colorPrimary))
             .withToolbar(activityDashboardBinding.myToolbar)
-            .withAccountHeader((headerResult)!!).withHeaderHeight(dimenHolder)
+            .withAccountHeader(headerResult) // Use headerResult directly here
+            .withHeaderHeight(dimenHolder)
             .addDrawerItems(*drawerItems).addStickyDrawerItems(*drawerItemsFooter)
             .withOnDrawerItemClickListener { _: View?, _: Int, drawerItem: IDrawerItem<*, *>? ->
                 if (drawerItem != null) {

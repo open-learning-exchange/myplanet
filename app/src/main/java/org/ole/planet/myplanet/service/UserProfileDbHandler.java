@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.service;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.util.Log;
 
 import org.ole.planet.myplanet.datamanager.DatabaseService;
 import org.ole.planet.myplanet.model.RealmMyLibrary;
@@ -36,6 +37,23 @@ public class UserProfileDbHandler {
     public RealmUserModel getUserModel() {
         return mRealm.where(RealmUserModel.class).equalTo("id", settings.getString("userId", "")).findFirst();
     }
+
+    // Inside UserProfileDbHandler
+    public String getUserName() {
+        String userId = settings.getString("userId", "");
+        // Execute the query in a way that's safe across threads. This might involve opening a temporary Realm instance.
+        try (Realm realm = Realm.getDefaultInstance()) {
+            RealmUserModel user = realm.where(RealmUserModel.class).equalTo("id", userId).findFirst();
+            if (user != null) {
+                // IMPORTANT: Copy the data out of Realm object
+                return realm.copyFromRealm(user).name;
+            }
+        } catch (Exception e) {
+            Log.e("UserProfileDbHandler", "Error fetching user name", e);
+        }
+        return ""; // Return a default or null if not found or an error occurs
+    }
+
 
     public void onLogin() {
         if (!mRealm.isInTransaction()) mRealm.beginTransaction();
