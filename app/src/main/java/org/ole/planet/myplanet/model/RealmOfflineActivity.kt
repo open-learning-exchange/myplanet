@@ -71,6 +71,7 @@ open class RealmOfflineActivity : RealmObject() {
                 .findFirst()
         }
 
+        @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject?) {
             var activities = mRealm.where(RealmOfflineActivity::class.java)
                 .equalTo("_id", JsonUtils.getString("_id", act))
