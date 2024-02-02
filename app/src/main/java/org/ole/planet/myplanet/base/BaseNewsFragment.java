@@ -1,23 +1,27 @@
 package org.ole.planet.myplanet.base;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
-
-import androidx.annotation.Nullable;
-import androidx.recyclerview.widget.GridLayoutManager;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
 import android.provider.MediaStore;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.google.gson.Gson;
@@ -38,8 +42,7 @@ import java.util.List;
 import io.realm.Realm;
 import io.realm.RealmList;
 
-import static android.app.Activity.RESULT_OK;
-
+@RequiresApi(api = Build.VERSION_CODES.O)
 public abstract class BaseNewsFragment extends BaseContainerFragment implements AdapterNews.OnNewsItemClickListener {
     public Realm mRealm;
     public OnHomeItemClickListener homeItemClickListener;
@@ -47,12 +50,44 @@ public abstract class BaseNewsFragment extends BaseContainerFragment implements 
     protected RealmList<String> imageList;
     protected LinearLayout llImage;
     protected AdapterNews adapterNews;
+    protected ActivityResultLauncher<Intent> openFolderLauncher;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         imageList = new RealmList<>();
         profileDbHandler = new UserProfileDbHandler(getActivity());
+        openFolderLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+            if (result.getResultCode() == Activity.RESULT_OK) {
+                Intent data = result.getData();
+                Uri url;
+                String path;
+                url = data.getData();
+                path = FileUtils.getRealPathFromURI(requireActivity(), url);
+                if (TextUtils.isEmpty(path)) {
+                    path = getImagePath(url);
+                }
+                JsonObject object = new JsonObject();
+                object.addProperty("imageUrl", path);
+                object.addProperty("fileName", FileUtils.getFileNameFromUrl(path));
+                imageList.add(new Gson().toJson(object));
+                try {
+                    llImage.removeAllViews();
+                    llImage.setVisibility(View.VISIBLE);
+                    for (String img : imageList) {
+                        JsonObject ob = new Gson().fromJson(img, JsonObject.class);
+                        View inflater = LayoutInflater.from(getActivity()).inflate(R.layout.image_thumb, null);
+                        ImageView imgView = inflater.findViewById(R.id.thumb);
+                        Glide.with(requireActivity()).load(new File(JsonUtils.getString("imageUrl", ob))).into(imgView);
+                        llImage.addView(inflater);
+                    }
+                    if (result.getResultCode() == 102)
+                        adapterNews.setImageList(imageList);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
     }
 
     @Override
@@ -94,37 +129,6 @@ public abstract class BaseNewsFragment extends BaseContainerFragment implements 
         return path;
     }
 
-    @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (resultCode == RESULT_OK) {
-            Uri url = null;
-            String path = "";
-            url = data.getData();
-            path = FileUtils.getRealPathFromURI(getActivity(), url);
-            if (TextUtils.isEmpty(path)) {
-                path = getImagePath(url);
-            }
-            JsonObject object = new JsonObject();
-            object.addProperty("imageUrl", path);
-            object.addProperty("fileName", FileUtils.getFileNameFromUrl(path));
-            imageList.add(new Gson().toJson(object));
-            try {
-                llImage.removeAllViews();
-                llImage.setVisibility(View.VISIBLE);
-                for (String img : imageList) {
-                    JsonObject ob = new Gson().fromJson(img, JsonObject.class);
-                    View inflater = LayoutInflater.from(getActivity()).inflate(R.layout.image_thumb, null);
-                    ImageView imgView = inflater.findViewById(R.id.thumb);
-                    Glide.with(getActivity()).load(new File(JsonUtils.getString("imageUrl", ob))).into(imgView);
-                    llImage.addView(inflater);
-                }
-                if (requestCode == 102) adapterNews.setImageList(imageList);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
     public void changeLayoutManager(int orientation, RecyclerView recyclerView) {
         if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
             recyclerView.setLayoutManager(new GridLayoutManager(getActivity(), 2));
@@ -136,6 +140,7 @@ public abstract class BaseNewsFragment extends BaseContainerFragment implements 
     @Override
     public void addImage(LinearLayout llImage) {
         this.llImage = llImage;
-        FileUtils.openOleFolder(this, 102);
+        Intent openFolderIntent = FileUtils.openOleFolder();
+        openFolderLauncher.launch(openFolderIntent);
     }
 }

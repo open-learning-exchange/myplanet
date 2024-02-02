@@ -17,7 +17,7 @@ class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
     private lateinit var fragmentTeamDetailBinding: FragmentTeamDetailBinding
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         fragmentTeamDetailBinding = FragmentTeamDetailBinding.inflate(inflater, container, false)
         return fragmentTeamDetailBinding.root
     }
@@ -29,11 +29,11 @@ class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
 
     private fun initCommunityTab() {
         fragmentTeamDetailBinding.llActionButtons.visibility = View.GONE
-        var settings = requireActivity().getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE)
-        var sPlanetcode = settings.getString("planetCode", "")
-        var sParentcode = settings.getString("parentCode", "")
+        val settings = requireActivity().getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE)
+        val sPlanetcode = settings.getString("planetCode", "")
+        val sParentcode = settings.getString("parentCode", "")
         fragmentTeamDetailBinding.viewPager.adapter =
-            CommunityPagerAdapter(childFragmentManager, sPlanetcode + "@" + sParentcode, true)
+            CommunityPagerAdapter(childFragmentManager, "$sPlanetcode@$sParentcode", true)
         fragmentTeamDetailBinding.title.text = sPlanetcode
         fragmentTeamDetailBinding.title.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
         fragmentTeamDetailBinding.subtitle.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))

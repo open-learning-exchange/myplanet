@@ -9,7 +9,7 @@ import org.ole.planet.myplanet.databinding.RowMemberRequestBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUserModel
 
-class AdapterMemberRequest(private val context: Context, private val list: List<RealmUserModel>, private val mRealm: Realm) : RecyclerView.Adapter<AdapterMemberRequest.ViewHolderUser>() {
+class AdapterMemberRequest(private val context: Context, private val list: MutableList<RealmUserModel>, private val mRealm: Realm) : RecyclerView.Adapter<AdapterMemberRequest.ViewHolderUser>() {
     private lateinit var rowMemberRequestBinding: RowMemberRequestBinding
     private var teamId: String? = null
     fun setTeamId(teamId: String?) {
@@ -48,10 +48,12 @@ class AdapterMemberRequest(private val context: Context, private val list: List<
             }
         }
         mRealm.commitTransaction()
-        list.toMutableList().removeAt(position)
-        notifyDataSetChanged()
-    }
 
+        list.removeAt(position)
+        notifyItemRemoved(position)
+        notifyItemRangeChanged(position, list.size)
+    }
+    
     override fun getItemCount(): Int {
         return list.size
     }

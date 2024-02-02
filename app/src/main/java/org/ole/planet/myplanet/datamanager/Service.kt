@@ -105,7 +105,7 @@ class Service(private val context: Context) {
                                     call: Call<ResponseBody>,
                                     response: Response<ResponseBody>
                                 ) {
-                                    var responses: String? = null
+                                    val responses: String?
                                     try {
                                         responses = Gson().fromJson(
                                             response.body()!!.string(),

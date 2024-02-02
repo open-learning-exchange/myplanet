@@ -4,7 +4,7 @@ import android.media.MediaRecorder
 import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
-import org.ole.planet.myplanet.MainApplication.context
+import org.ole.planet.myplanet.MainApplication.Companion.context
 import java.io.File
 import java.util.UUID
 
