@@ -65,8 +65,8 @@ class BellDashboardFragment : BaseDashboardFragment() {
             val courseTitles = itemsQuery.map { it.parent }
             val surveyNames = courseTitles.map { json ->
                 try {
-                    val jsonObject = JSONObject(json)
-                    jsonObject.getString("name")
+                    val jsonObject = json?.let { JSONObject(it) }
+                    jsonObject?.getString("name")
                 } catch (e: JSONException) {
                     e.printStackTrace()
                 }
@@ -77,7 +77,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
             val surveyNamesArray = surveyNames.map { it as CharSequence }.toTypedArray()
             alertDialog.setItems(surveyNamesArray, null)
             alertDialog.setPositiveButton("OK") { dialog, _ ->
-                homeItemClickListener.openCallFragment(MySubmissionFragment.newInstance("survey"))
+                homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("survey"))
                 dialog.dismiss()
             }
             alertDialog.show()
@@ -86,7 +86,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     private fun showBadges() {
         fragmentHomeBellBinding.cardProfileBell.llBadges.removeAllViews()
-        val list = RealmCourseProgress.getPassedCourses(mRealm, settings.getString("userId", ""))
+        val list = RealmCourseProgress.getPassedCourses(mRealm, settings?.getString("userId", ""))
         for (sub in list) {
             val star =
                 LayoutInflater.from(activity).inflate(R.layout.image_start, null) as ImageView
@@ -109,14 +109,14 @@ class BellDashboardFragment : BaseDashboardFragment() {
         }
 
     private fun declareElements() {
-        fragmentHomeBellBinding.homeCardTeams.llHomeTeam.setOnClickListener { homeItemClickListener.openCallFragment(TeamFragment()) }
+        fragmentHomeBellBinding.homeCardTeams.llHomeTeam.setOnClickListener { homeItemClickListener?.openCallFragment(TeamFragment()) }
         fragmentHomeBellBinding.homeCardLibrary.myLibraryImageButton.setOnClickListener { openHelperFragment(LibraryFragment()) }
         fragmentHomeBellBinding.homeCardCourses.myCoursesImageButton.setOnClickListener { openHelperFragment(CourseFragment()) }
         fragmentHomeBellBinding.fabMyProgress.setOnClickListener { openHelperFragment(MyProgressFragment()) }
         fragmentHomeBellBinding.fabMyActivity.setOnClickListener { openHelperFragment(MyActivityFragment()) }
         fragmentHomeBellBinding.fabSurvey.setOnClickListener { openHelperFragment(SurveyFragment()) }
         fragmentHomeBellBinding.cardProfileBell.fabFeedback.setOnClickListener { openHelperFragment(FeedbackListFragment()) }
-        fragmentHomeBellBinding.homeCardMyLife.myLifeImageButton.setOnClickListener { homeItemClickListener.openCallFragment(LifeFragment()) }
+        fragmentHomeBellBinding.homeCardMyLife.myLifeImageButton.setOnClickListener { homeItemClickListener?.openCallFragment(LifeFragment()) }
         fragmentHomeBellBinding.fabNotification.setOnClickListener { showNotificationFragment() }
     }
 
@@ -124,7 +124,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         val b = Bundle()
         b.putBoolean("isMyCourseLib", true)
         f.arguments = b
-        homeItemClickListener.openCallFragment(f)
+        homeItemClickListener?.openCallFragment(f)
     }
 
     companion object {

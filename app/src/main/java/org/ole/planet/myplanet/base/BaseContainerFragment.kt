@@ -19,6 +19,8 @@ import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatRatingBar
@@ -39,22 +41,31 @@ import org.ole.planet.myplanet.ui.viewer.*
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import java.io.File
+
 abstract class BaseContainerFragment : BaseResourceFragment() {
-    var timesRated: TextView? = null
+    private var timesRated: TextView? = null
     var rating: TextView? = null
-    var ratingBar: AppCompatRatingBar? = null
-    lateinit var profileDbHandler: UserProfileDbHandler
+    private var ratingBar: AppCompatRatingBar? = null
     private val INSTALL_UNKNOWN_SOURCES_REQUEST_CODE = 112
     var hasInstallPermission = hasInstallPermission(MainApplication.context)
     private var currentLibrary: RealmMyLibrary? = null
+    private lateinit var installApkLauncher: ActivityResultLauncher<Intent>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         profileDbHandler = UserProfileDbHandler(requireActivity())
+        installApkLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                if (currentLibrary != null) {
+                    installApk(currentLibrary!!)
+                    currentLibrary = null
+                }
+            } else {
+                Utilities.toast(requireActivity(), getString(R.string.permissions_denied))
+            }
+        }
     }
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        return super.onCreateView(inflater, container, savedInstanceState)
-    }
+
     fun setRatings(`object`: JsonObject?) {
         if (`object` != null) {
             AdapterCourses.showRating(`object`, rating, timesRated, ratingBar)
@@ -67,18 +78,16 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             val url = Utilities.getUrl(library, settings)
             if (!FileUtils.checkFileExist(url) && !TextUtils.isEmpty(url)) urls.add(url)
         }
-        if (!urls.isEmpty()) startDownload(urls) else Utilities.toast(
+        if (urls.isNotEmpty()) startDownload(urls) else Utilities.toast(
             activity, getString(R.string.no_images_to_download)
         )
     }
-    fun initRatingView(
-        type: String?, id: String?, title: String?, listener: OnRatingChangeListener?
-    ) {
+    fun initRatingView(type: String?, id: String?, title: String?, listener: OnRatingChangeListener?) {
         timesRated = requireView().findViewById(R.id.times_rated)
         rating = requireView().findViewById(R.id.tv_rating)
         ratingBar = requireView().findViewById(R.id.rating_bar)
         ratingBar?.setOnTouchListener { _: View?, e: MotionEvent ->
-            if (e.action == MotionEvent.ACTION_UP) homeItemClickListener.showRatingDialog(
+            if (e.action == MotionEvent.ACTION_UP) homeItemClickListener?.showRatingDialog(
                 type, id, title, listener
             )
             true
@@ -90,26 +99,23 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             homeItemClickListener = context
         }
     }
-    fun openIntent(items: RealmMyLibrary, typeClass: Class<*>?) {
+    private fun openIntent(items: RealmMyLibrary, typeClass: Class<*>?) {
         val fileOpenIntent = Intent(activity, typeClass)
-        if (items.resourceLocalAddress!!.contains("ole/audio") || items.resourceLocalAddress!!.contains(
-                "ole/video"
-            )
-        ) {
+        if (items.resourceLocalAddress!!.contains("ole/audio") || items.resourceLocalAddress!!.contains("ole/video")) {
             fileOpenIntent.putExtra("TOUCHED_FILE", items.resourceLocalAddress)
         } else {
             fileOpenIntent.putExtra("TOUCHED_FILE", items.id + "/" + items.resourceLocalAddress)
         }
         startActivity(fileOpenIntent)
     }
-    fun openPdf(item: RealmMyLibrary) {
+    private fun openPdf(item: RealmMyLibrary) {
         val fileOpenIntent = Intent(activity, PDFReaderActivity::class.java)
         fileOpenIntent.putExtra("TOUCHED_FILE", item.id + "/" + item.resourceLocalAddress)
         fileOpenIntent.putExtra("resourceId", item.id)
         startActivity(fileOpenIntent)
     }
     fun openResource(items: RealmMyLibrary) {
-        if (items.resourceOffline != null && items.isResourceOffline()) {
+        if (items.isResourceOffline()) {
             openFileType(items, "offline")
         } else if (FileUtils.getFileExtension(items.resourceLocalAddress) == "mp4") {
             openFileType(items, "online")
@@ -120,7 +126,8 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_DOWNLOAD)
         }
     }
-    fun checkFileExtension(items: RealmMyLibrary) {
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun checkFileExtension(items: RealmMyLibrary) {
         val filenameArray = items.resourceLocalAddress!!.split("\\.".toRegex()).toTypedArray()
         val extension = filenameArray[filenameArray.size - 1]
         val mimetype = Utilities.getMimeType(items.resourceLocalAddress)
@@ -135,7 +142,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         }
     }
     @RequiresApi(Build.VERSION_CODES.O)
-    fun checkMoreFileExtensions(extension: String?, items: RealmMyLibrary) {
+    private fun checkMoreFileExtensions(extension: String?, items: RealmMyLibrary) {
         when (extension) {
             "txt" -> openIntent(items, TextFileViewerActivity::class.java)
             "md" -> openIntent(items, MarkdownViewerActivity::class.java)
@@ -187,10 +194,11 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     private fun requestInstallPermission() {
         val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES)
         intent.data = Uri.parse("package:" + MainApplication.context.packageName)
-        startActivityForResult(intent, INSTALL_UNKNOWN_SOURCES_REQUEST_CODE)
+        installApkLauncher.launch(intent)
     }
 
-    fun openFileType(items: RealmMyLibrary, videotype: String) {
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun openFileType(items: RealmMyLibrary, videotype: String) {
         val mimetype = Utilities.getMimeType(items.resourceLocalAddress)
         Utilities.log("Mime type $mimetype")
         Utilities.log("Mime type " + items.resourceLocalAddress)
@@ -198,7 +206,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             Utilities.toast(activity, getString(R.string.unable_to_open_resource))
             return
         }
-        if (profileDbHandler == null) profileDbHandler = UserProfileDbHandler(activity)
+        profileDbHandler = UserProfileDbHandler(activity)
         profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_OPEN)
         if (mimetype.startsWith("video")) {
             playVideo(videotype, items)
@@ -218,17 +226,14 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             if (items.resourceRemoteAddress == null && items.resourceLocalAddress != null) {
                 bundle.putString("videoURL", items.resourceLocalAddress)
             } else {
-                bundle.putString(
-                    "videoURL",
-                    "" + Uri.fromFile(File("" + FileUtils.getSDPathFromUrl(items.resourceRemoteAddress)))
-                )
+                bundle.putString("videoURL", "" + Uri.fromFile(File("" + FileUtils.getSDPathFromUrl(items.resourceRemoteAddress))))
             }
             bundle.putString("Auth", "")
         }
         intent.putExtras(bundle)
         startActivity(intent)
     }
-    fun showResourceList(downloadedResources: List<RealmMyLibrary>?) {
+    private fun showResourceList(downloadedResources: List<RealmMyLibrary>?) {
         val builderSingle = AlertDialog.Builder(requireActivity())
         builderSingle.setTitle(getString(R.string.select_resource_to_open))
         val arrayAdapter: ArrayAdapter<RealmMyLibrary?> = object : ArrayAdapter<RealmMyLibrary?>(
@@ -240,12 +245,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                     .inflate(android.R.layout.select_dialog_item, parent, false)
                 val tv = convertView as TextView
                 val library = getItem(position)
-                tv.setCompoundDrawablesWithIntrinsicBounds(
-                    0,
-                    0,
-                    if (library!!.isResourceOffline()) R.drawable.ic_eye else R.drawable.ic_download,
-                    0
-                )
+                tv.setCompoundDrawablesWithIntrinsicBounds(0, 0, if (library!!.isResourceOffline()) R.drawable.ic_eye else R.drawable.ic_download, 0)
                 tv.text = library.title
                 return tv
             }
@@ -257,11 +257,11 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         builderSingle.setNegativeButton(R.string.dismiss, null).show()
     }
     fun setOpenResourceButton(downloadedResources: List<RealmMyLibrary>?, btnOpen: Button) {
-        if (downloadedResources == null || downloadedResources.isEmpty()) {
+        if (downloadedResources.isNullOrEmpty()) {
             btnOpen.visibility = View.GONE
         } else {
             btnOpen.visibility = View.VISIBLE
-            btnOpen.setOnClickListener { view: View? ->
+            btnOpen.setOnClickListener {
                 if (downloadedResources.size == 1) {
                     openResource(downloadedResources[0])
                 } else {
@@ -280,21 +280,6 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 if (resources.size > 0) showDownloadDialog(
                     resources as List<RealmMyLibrary>
                 )
-            }
-        }
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == INSTALL_UNKNOWN_SOURCES_REQUEST_CODE) {
-            if (resultCode == Activity.RESULT_OK) {
-                if (currentLibrary != null) {
-                    installApk(currentLibrary!!)
-                    currentLibrary = null
-                }
-            } else {
-                Utilities.toast(requireActivity(), getString(R.string.permissions_denied))
             }
         }
     }

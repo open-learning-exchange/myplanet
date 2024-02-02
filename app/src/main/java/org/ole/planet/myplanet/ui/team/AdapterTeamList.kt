@@ -20,14 +20,9 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.utilities.TimeUtils
 
-class AdapterTeamList(
-    private val context: Context,
-    private val list: List<RealmMyTeam>,
-    private val mRealm: Realm,
-    fragmentManager: FragmentManager
-) : RecyclerView.Adapter<AdapterTeamList.ViewHolderTeam>() {
+class AdapterTeamList(private val context: Context, private val list: List<RealmMyTeam>, private val mRealm: Realm, fragmentManager: FragmentManager) : RecyclerView.Adapter<AdapterTeamList.ViewHolderTeam>() {
     private lateinit var itemTeamListBinding: ItemTeamListBinding
-    private val user: RealmUserModel
+    private val user: RealmUserModel = UserProfileDbHandler(context).userModel
     private var type: String? = ""
     private val fragmentManager: FragmentManager
     private var teamListener: OnClickTeamItem? = null
@@ -73,7 +68,7 @@ class AdapterTeamList(
         itemTeamListBinding.editTeam.setOnClickListener { teamListener!!.onEditTeam(list[position]) }
     }
 
-    fun getBundle(team: RealmMyTeam): Bundle {
+    private fun getBundle(team: RealmMyTeam): Bundle {
         val bundle = Bundle()
         if (team.type!!.isEmpty()) bundle.putString("state", "teams") else bundle.putString(
             "state", team.type + "s"
@@ -83,9 +78,7 @@ class AdapterTeamList(
         return bundle
     }
 
-    private fun showActionButton(
-        isMyTeam: Boolean, holder: RecyclerView.ViewHolder, position: Int
-    ) {
+    private fun showActionButton(isMyTeam: Boolean, holder: RecyclerView.ViewHolder, position: Int) {
         if (isMyTeam) {
             if (RealmMyTeam.isTeamLeader(list[position].teamId, user.id!!, mRealm)) {
                 itemTeamListBinding.joinLeave.text = "Leave"
@@ -124,7 +117,6 @@ class AdapterTeamList(
     class ViewHolderTeam(itemTeamListBinding: ItemTeamListBinding) : RecyclerView.ViewHolder(itemTeamListBinding.root)
 
     init {
-        user = UserProfileDbHandler(context).userModel
         this.fragmentManager = fragmentManager
     }
 }

@@ -25,7 +25,7 @@ import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private var fragmentCourseDetailBinding: FragmentCourseDetailBinding? = null
     var dbService: DatabaseService? = null
-    var mRealm: Realm? = null
+    private lateinit var cRealm: Realm
     var courses: RealmMyCourse? = null
     var user: RealmUserModel? = null
     var id: String? = null
@@ -39,14 +39,14 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentCourseDetailBinding = FragmentCourseDetailBinding.inflate(inflater, container, false)
         dbService = DatabaseService(requireActivity())
-        mRealm = dbService!!.realmInstance
-        courses = mRealm.where(RealmMyCourse::class.java).equalTo("courseId", id).findFirst()
+        cRealm = dbService!!.realmInstance
+        courses = cRealm.where(RealmMyCourse::class.java).equalTo("courseId", id).findFirst()
         user = UserProfileDbHandler(activity).userModel
         return fragmentCourseDetailBinding!!.root
     }
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         initRatingView("course", courses!!.courseId, courses!!.courseTitle, this)
         setCourseData()
     }
@@ -58,10 +58,10 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         setTextViewVisibility(fragmentCourseDetailBinding!!.language, courses!!.languageOfInstruction, fragmentCourseDetailBinding!!.ltLanguage)
         val markdownContentWithLocalPaths = CourseStepFragment.prependBaseUrlToImages(courses!!.description, "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/")
         setMarkdownText(fragmentCourseDetailBinding!!.description, markdownContentWithLocalPaths)
-        fragmentCourseDetailBinding!!.noOfExams.text = getNoOfExam(mRealm, id).toString() + ""
-        val resources: RealmResults<*> = mRealm.where(RealmMyLibrary::class.java).equalTo("courseId", id).equalTo("resourceOffline", false).isNotNull("resourceLocalAddress").findAll()
+        fragmentCourseDetailBinding!!.noOfExams.text = getNoOfExam(cRealm, id).toString() + ""
+        val resources: RealmResults<*> = cRealm.where(RealmMyLibrary::class.java).equalTo("courseId", id).equalTo("resourceOffline", false).isNotNull("resourceLocalAddress").findAll()
         setResourceButton(resources, fragmentCourseDetailBinding!!.btnResources)
-        val downloadedResources: List<RealmMyLibrary> = mRealm.where(RealmMyLibrary::class.java).equalTo("resourceOffline", true).equalTo("courseId", id).isNotNull("resourceLocalAddress").findAll()
+        val downloadedResources: List<RealmMyLibrary> = cRealm.where(RealmMyLibrary::class.java).equalTo("resourceOffline", true).equalTo("courseId", id).isNotNull("resourceLocalAddress").findAll()
         setOpenResourceButton(downloadedResources, fragmentCourseDetailBinding!!.btnOpen)
         onRatingChanged()
         setStepsList()
@@ -76,13 +76,13 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     }
 
     private fun setStepsList() {
-        val steps = getSteps(mRealm, courses!!.courseId)
+        val steps = getSteps(cRealm, courses!!.courseId)
         fragmentCourseDetailBinding!!.stepsList.layoutManager = LinearLayoutManager(activity)
-        fragmentCourseDetailBinding!!.stepsList.adapter = AdapterSteps(requireActivity(), steps, mRealm)
+        fragmentCourseDetailBinding!!.stepsList.adapter = AdapterSteps(requireActivity(), steps, cRealm)
     }
 
     override fun onRatingChanged() {
-        val `object` = getRatingsById(mRealm, "course", courses!!.courseId, user!!.id)
+        val `object` = getRatingsById(cRealm, "course", courses!!.courseId, user!!.id)
         setRatings(`object`)
     }
 

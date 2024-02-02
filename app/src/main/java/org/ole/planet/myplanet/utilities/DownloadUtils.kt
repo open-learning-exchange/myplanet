@@ -14,10 +14,10 @@ object DownloadUtils {
     }
 
     @JvmStatic
-    fun downloadFiles(db_myLibrary: List<RealmMyLibrary?>, selectedItems: ArrayList<Int?>, settings: SharedPreferences?): ArrayList<String> {
+    fun downloadFiles(db_myLibrary: List<RealmMyLibrary?>, selectedItems: ArrayList<Int>, settings: SharedPreferences?): ArrayList<String> {
         val urls = ArrayList<String>()
         for (i in selectedItems.indices) {
-            urls.add(Utilities.getUrl(db_myLibrary[selectedItems[i]!!], settings))
+            urls.add(Utilities.getUrl(db_myLibrary[selectedItems[i]], settings))
         }
         return urls
     }

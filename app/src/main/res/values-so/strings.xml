@@ -16,8 +16,8 @@
     <string name="hint_serverURl">Cinwaanka Server-ka meeraha (Tusaale 192.168.2.1) </string>
     <string name="hint_serverPin">Biinanka server-ka (Ka hel biinka maamulaha) </string>
     <string name="radio_protocol">Protocol:</string>
-    <string name="radio_http">HTTP</string>
-    <string name="radio_https">HTTPS</string>
+    <string name="radio_http">http</string>
+    <string name="radio_https">https</string>
     <string name="title_activity_dashboard">dashboard</string>
     <string name="menu_myplanet">myPlanet</string>
     <string name="menu_home">Guriga</string>
@@ -533,7 +533,7 @@
     <string name="courses_colon">Koorsadayaasha:</string>
     <string name="title">Cinwaanka</string>
     <string name="source">Soo Saar</string>
-    <string name="cloud_url">URL-ka Nabadgelyada</string>
+    <string name="cloud_url">cloud</string>
     <string name="interval">Dhibic</string>
     <string name="autosync">Iskaashiga Hore</string>
     <string name="autosync_off">Iskaashiga Off!</string>

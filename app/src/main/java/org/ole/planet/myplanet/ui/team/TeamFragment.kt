@@ -27,8 +27,8 @@ import java.util.Date
 
 class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     private lateinit var fragmentTeamBinding: FragmentTeamBinding
-    lateinit var alertCreateTeamBinding: AlertCreateTeamBinding
-    var mRealm: Realm? = null
+    private lateinit var alertCreateTeamBinding: AlertCreateTeamBinding
+    private lateinit var mRealm: Realm
     var type: String? = null
     var user: RealmUserModel? = null
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -43,7 +43,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         Utilities.log("Team fragment")
     }
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentTeamBinding = FragmentTeamBinding.inflate(inflater, container, false)
         mRealm = DatabaseService(requireContext()).realmInstance
         user = UserProfileDbHandler(requireActivity()).userModel
@@ -55,7 +55,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         alertCreateTeamBinding = AlertCreateTeamBinding.inflate(LayoutInflater.from(context))
         if (TextUtils.equals(type, "enterprise")) {
             alertCreateTeamBinding.spnTeamType.visibility = View.GONE
-            alertCreateTeamBinding.etDescription.hint = getString(R.string.entMission);
+            alertCreateTeamBinding.etDescription.hint = getString(R.string.entMission)
             alertCreateTeamBinding.etName.hint = getString(R.string.enter_enterprise_s_name)
         } else {
             alertCreateTeamBinding.etServices.visibility = View.GONE
@@ -122,11 +122,11 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         dialog.show()
     }
 
-    fun createTeam(name: String?, type: String?, map: HashMap<String, String>, isPublic: Boolean) {
+    private fun createTeam(name: String?, type: String?, map: HashMap<String, String>, isPublic: Boolean) {
         val user = UserProfileDbHandler(activity).userModel
-        if (!mRealm!!.isInTransaction) mRealm!!.beginTransaction()
-        var teamId = AndroidDecrypter.generateIv();
-        val team = mRealm!!.createObject(RealmMyTeam::class.java, teamId)
+        if (!mRealm.isInTransaction) mRealm.beginTransaction()
+        val teamId = AndroidDecrypter.generateIv()
+        val team = mRealm.createObject(RealmMyTeam::class.java, teamId)
         team.status = "active"
         team.createdDate = Date().time
         if (TextUtils.equals(this.type, "enterprise")) {
@@ -149,7 +149,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
 
         //create member ship
         val teamMemberObj =
-            mRealm!!.createObject(RealmMyTeam::class.java, AndroidDecrypter.generateIv())
+            mRealm.createObject(RealmMyTeam::class.java, AndroidDecrypter.generateIv())
         teamMemberObj.userId = user._id
         teamMemberObj.teamId = teamId
         teamMemberObj.teamPlanetCode = user.planetCode
@@ -159,12 +159,14 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         teamMemberObj.teamType = type
         teamMemberObj.updated = true
 
-        mRealm!!.commitTransaction()
+        mRealm.commitTransaction()
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        if (mRealm != null && !mRealm!!.isClosed) mRealm!!.close()
+        if (this::mRealm.isInitialized && !mRealm.isClosed) {
+            mRealm.close()
+        }
     }
 
     override fun onResume() {
@@ -179,11 +181,11 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         fragmentTeamBinding.etSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
             override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {
-                val query = mRealm!!.where(RealmMyTeam::class.java).isEmpty("teamId")
+                val query = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId")
                     .notEqualTo("status", "archived")
                     .contains("name", charSequence.toString(), Case.INSENSITIVE)
                 val adapterTeamList = AdapterTeamList(
-                    activity as Context, getList(query), mRealm!!, childFragmentManager
+                    activity as Context, getList(query), mRealm, childFragmentManager
                 )
                 adapterTeamList.setTeamListener(this@TeamFragment)
                 fragmentTeamBinding.rvTeamList.adapter = adapterTeamList
@@ -204,10 +206,10 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     }
 
     private fun setTeamList() {
-        val query = mRealm!!.where(RealmMyTeam::class.java).isEmpty("teamId")
+        val query = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId")
             .notEqualTo("status", "archived")
         val adapterTeamList =
-            activity?.let { AdapterTeamList(it, getList(query), mRealm!!, childFragmentManager) }
+            activity?.let { AdapterTeamList(it, getList(query), mRealm, childFragmentManager) }
         adapterTeamList?.setType(type)
         adapterTeamList?.setTeamListener(this@TeamFragment)
         requireView().findViewById<View>(R.id.type).visibility =

@@ -37,17 +37,17 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
     var user: RealmUserModel? = null
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         fragmentCommunityBinding = FragmentCommunityBinding.inflate(inflater, container, false)
         return fragmentCommunityBinding.root
     }
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         mRealm = DatabaseService(requireActivity()).realmInstance
         user = UserProfileDbHandler(requireActivity()).userModel
         fragmentCommunityBinding.btnLibrary.setOnClickListener {
-            homeItemClickListener.openCallFragment(LibraryFragment())
+            homeItemClickListener?.openCallFragment(LibraryFragment())
         }
         val list =
             mRealm.where(RealmNews::class.java).equalTo("docType", "message", Case.INSENSITIVE)
@@ -58,7 +58,7 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
         changeLayoutManager(orientation)
 
         Utilities.log("list size " + list.size)
-        var adapter = AdapterNews(activity, list, user, null, true)
+        val adapter = AdapterNews(activity, list, user, null, true)
         adapter.setListener(this)
         adapter.setFromLogin(requireArguments().getBoolean("fromLogin", false))
         adapter.setmRealm(mRealm)
