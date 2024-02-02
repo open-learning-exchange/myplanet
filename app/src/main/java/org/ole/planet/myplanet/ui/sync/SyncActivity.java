@@ -30,7 +30,6 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.RadioGroup;
 import android.widget.Spinner;
-import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -983,6 +982,17 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
                     }
                 }
                 binding.team.setAdapter(teamAdapter);
+                String lastSelection = prefData.getSELECTEDTEAMID1();
+                if (lastSelection != null && !lastSelection.isEmpty()) {
+                    for (int i = 0; i < teams.size(); i++) {
+                        RealmMyTeam team = teams.get(i);
+                        if (team._id != null && team._id.equals(lastSelection) && team.isValid()) {
+                            int lastSelectedPosition = i + 1;
+                            binding.team.setSelection(lastSelectedPosition);
+                            break;
+                        }
+                    }
+                }
                 binding.team.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                     @Override
                     public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
