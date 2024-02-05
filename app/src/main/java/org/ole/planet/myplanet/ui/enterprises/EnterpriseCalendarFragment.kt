@@ -142,7 +142,7 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
         list = mRealm.where(RealmMeetup::class.java).equalTo("teamId", teamId)
                 .greaterThanOrEqualTo("endDate", TimeUtils.currentDateLong()).findAll()
         fragmentEnterpriseCalendarBinding.rvCalendar.layoutManager = LinearLayoutManager(activity)
-        fragmentEnterpriseCalendarBinding.rvCalendar.adapter = AdapterCalendar(activity, list)
+        fragmentEnterpriseCalendarBinding.rvCalendar.adapter = AdapterCalendar(list)
         fragmentEnterpriseCalendarBinding.calendarView.inDateStyle = InDateStyle.ALL_MONTHS
         fragmentEnterpriseCalendarBinding.calendarView.outDateStyle = OutDateStyle.END_OF_ROW
         fragmentEnterpriseCalendarBinding.calendarView.hasBoundaries = true

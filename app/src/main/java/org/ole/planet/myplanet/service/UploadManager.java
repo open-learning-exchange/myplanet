@@ -119,7 +119,7 @@ public class UploadManager extends FileUploadService {
                     JsonObject object = response.body();
                     if (object != null) {
                         JsonArray usages = object.getAsJsonArray("usages");
-                        usages.addAll(MyPlanet.getTabletUsages(context, pref));
+                        usages.addAll(MyPlanet.getTabletUsages(context));
                         object.add("usages", usages);
                     } else {
                         object = MyPlanet.getMyPlanetActivities(context, pref, model);

@@ -123,37 +123,42 @@ class AdapterCourses(private val context: Context, private var courseList: List<
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         if (holder is ViewHoldercourse) {
             holder.bind(position)
-            holder.rowCourseBinding.title.text = courseList[position]!!.courseTitle
-            holder.rowCourseBinding.description.text = courseList[position]!!.description
-            val markdownContentWithLocalPaths = prependBaseUrlToImages(courseList[position]!!.description, "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/")
-            setMarkdownText(holder.rowCourseBinding.description, markdownContentWithLocalPaths)
-            setTextViewContent(holder.rowCourseBinding.gradLevel, courseList[position]!!.gradeLevel, holder.rowCourseBinding.gradLevel, context.getString(R.string.grade_level_colon))
-            setTextViewContent(holder.rowCourseBinding.subjectLevel, courseList[position]!!.subjectLevel, holder.rowCourseBinding.subjectLevel, context.getString(R.string.subject_level_colon))
-            holder.rowCourseBinding.checkbox.isChecked = selectedItems.contains(courseList[position])
-            holder.rowCourseBinding.courseProgress.max = courseList[position]!!.getnumberOfSteps()
-            displayTagCloud(holder.rowCourseBinding.flexboxDrawable, position)
-            try {
-                holder.rowCourseBinding.tvDate.text = formatDate(courseList[position]!!.createdDate!!.trim { it <= ' ' }.toLong(), "MMM dd, yyyy")
-            } catch (e: Exception) {
-                throw RuntimeException(e)
+            val course = courseList[position]
+            if (course != null) {
+                holder.rowCourseBinding.title.text = course.courseTitle
+                holder.rowCourseBinding.description.text = course.description
+                val markdownContentWithLocalPaths = prependBaseUrlToImages(
+                    course.description, "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/"
+                )
+                setMarkdownText(holder.rowCourseBinding.description, markdownContentWithLocalPaths)
+                setTextViewContent(holder.rowCourseBinding.gradLevel, course.gradeLevel, holder.rowCourseBinding.gradLevel, context.getString(R.string.grade_level_colon))
+                setTextViewContent(holder.rowCourseBinding.subjectLevel, course.subjectLevel, holder.rowCourseBinding.subjectLevel, context.getString(R.string.subject_level_colon))
+                holder.rowCourseBinding.checkbox.isChecked = selectedItems.contains(course)
+                holder.rowCourseBinding.courseProgress.max = course.getnumberOfSteps()
+                displayTagCloud(holder.rowCourseBinding.flexboxDrawable, position)
+                try {
+                    holder.rowCourseBinding.tvDate.text = formatDate(course.createdDate!!.trim { it <= ' ' }.toLong(), "MMM dd, yyyy")
+                } catch (e: Exception) {
+                    throw RuntimeException(e)
+                }
+                holder.rowCourseBinding.ratingBar.setOnTouchListener { _: View?, event: MotionEvent ->
+                    if (event.action == MotionEvent.ACTION_UP) homeItemClickListener!!.showRatingDialog("course", course.courseId, course.courseTitle, ratingChangeListener)
+                    true
+                }
+                holder.rowCourseBinding.checkbox.setOnClickListener { view: View ->
+                    Utilities.handleCheck((view as CheckBox).isChecked, position, selectedItems as ArrayList<*>, courseList)
+                    if (listener != null) listener!!.onSelectedListChange(selectedItems)
+                }
+                showProgressAndRating(position, holder)
             }
-            holder.rowCourseBinding.ratingBar.setOnTouchListener { _: View?, event: MotionEvent ->
-                if (event.action == MotionEvent.ACTION_UP) homeItemClickListener!!.showRatingDialog("course", courseList[position]!!.courseId, courseList[position]!!.courseTitle, ratingChangeListener)
-                true
-            }
-            holder.rowCourseBinding.checkbox.setOnClickListener { view: View ->
-                Utilities.handleCheck((view as CheckBox).isChecked, position, selectedItems as ArrayList<*>, courseList)
-                if (listener != null) listener!!.onSelectedListChange(selectedItems)
-            }
-            showProgressAndRating(position, holder)
         }
     }
 
-    private fun setTextViewContent(textView: TextView, content: String?, layout: View, prefix: String) {
-        if (content!!.isEmpty()) {
-            layout.visibility = View.GONE
+    private fun setTextViewContent(textView: TextView?, content: String?, layout: View?, prefix: String) {
+        if (content.isNullOrEmpty()) {
+            layout?.visibility = View.GONE
         } else {
-            textView.text = prefix + content
+            textView?.text = prefix + content
         }
     }
 
@@ -191,7 +196,7 @@ class AdapterCourses(private val context: Context, private var courseList: List<
 
     private fun showChip(chipCloud: ChipCloud, parent: RealmTag?) {
         chipCloud.addChip(if (parent != null) parent.name else "")
-        chipCloud.setListener { i: Int, b: Boolean, b1: Boolean ->
+        chipCloud.setListener { _: Int, _: Boolean, b1: Boolean ->
             if (b1 && listener != null) {
                 listener!!.onTagClicked(parent)
             }
@@ -252,13 +257,13 @@ class AdapterCourses(private val context: Context, private var courseList: List<
             }
             rowCourseBinding.courseProgress.setOnSeekBarChangeListener(object : OnSeekBarChangeListener {
                 override fun onProgressChanged(seekBar: SeekBar, i: Int, b: Boolean) {
-                    val position = getAdapterPosition()
+                    val position = bindingAdapterPosition
                     if (position != RecyclerView.NO_POSITION && position < courseList.size) {
-                        if (progressMap!!.containsKey(courseList[getAdapterPosition()]!!.courseId)) {
-                            val ob = progressMap!![courseList[getAdapterPosition()]!!.courseId]
+                        if (progressMap!!.containsKey(courseList[bindingAdapterPosition]!!.courseId)) {
+                            val ob = progressMap!![courseList[bindingAdapterPosition]!!.courseId]
                             val current = getInt("current", ob)
                             if (b && i <= current + 1) {
-                                openCourse(courseList[getAdapterPosition()], seekBar.progress)
+                                openCourse(courseList[bindingAdapterPosition], seekBar.progress)
                             }
                         }
                     }

@@ -82,8 +82,8 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
         tvDescription = v.findViewById(R.id.description)
         tabLayout = v.findViewById(R.id.tab_layout)
         listContent = v.findViewById(R.id.list_content)
-        fragmentMyTeamsDetailBinding.btnInvite.visibility = if (showBetaFeature(Constants.KEY_MEETUPS, activity)) View.VISIBLE else View.GONE
-        fragmentMyTeamsDetailBinding.btnLeave.visibility = if (showBetaFeature(Constants.KEY_MEETUPS, activity)) View.VISIBLE else View.GONE
+        fragmentMyTeamsDetailBinding.btnInvite.visibility = if (showBetaFeature(Constants.KEY_MEETUPS, requireContext())) View.VISIBLE else View.GONE
+        fragmentMyTeamsDetailBinding.btnLeave.visibility = if (showBetaFeature(Constants.KEY_MEETUPS, requireContext())) View.VISIBLE else View.GONE
         v.findViewById<View>(R.id.add_message).setOnClickListener { showAddMessage() }
     }
 
@@ -109,8 +109,8 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
             }.setNegativeButton(R.string.cancel, null).show()
     }
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         fragmentMyTeamsDetailBinding.title.text = team!!.name
         tvDescription!!.text = team!!.description
         setTeamList()

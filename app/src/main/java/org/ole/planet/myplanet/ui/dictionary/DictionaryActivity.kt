@@ -20,21 +20,21 @@ import java.util.UUID
 
 class DictionaryActivity : BaseActivity() {
     lateinit var fragmentDictionaryBinding: FragmentDictionaryBinding
-    lateinit var mRealm: Realm;
-    var list: RealmResults<RealmDictionary>? = null;
+    lateinit var mRealm: Realm
+    var list: RealmResults<RealmDictionary>? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         fragmentDictionaryBinding = FragmentDictionaryBinding.inflate(layoutInflater)
         setContentView(fragmentDictionaryBinding.root)
         initActionBar()
         title = getString(R.string.dictionary)
-        mRealm = DatabaseService(this).realmInstance;
+        mRealm = DatabaseService(this).realmInstance
         list = mRealm.where(RealmDictionary::class.java)?.findAll()
         fragmentDictionaryBinding.tvResult.text = "${getString(R.string.list_size)} ${list?.size}"
         Utilities.log("${FileUtils.checkFileExist(Constants.DICTIONARY_URL)} file")
         if (FileUtils.checkFileExist(Constants.DICTIONARY_URL)) {
             Utilities.log("List " + list?.size)
-            insertDictionary();
+            insertDictionary()
         } else {
             val list = ArrayList<String>()
             list.add(Constants.DICTIONARY_URL)
@@ -45,12 +45,11 @@ class DictionaryActivity : BaseActivity() {
 
     private fun insertDictionary() {
         if (list?.size == 0) {
-            var data =
-                FileUtils.getStringFromFile(FileUtils.getSDPathFromUrl(Constants.DICTIONARY_URL))
-            var json = Gson().fromJson(data, JsonArray::class.java)
-            mRealm.executeTransactionAsync { it ->
+            val data = FileUtils.getStringFromFile(FileUtils.getSDPathFromUrl(Constants.DICTIONARY_URL))
+            val json = Gson().fromJson(data, JsonArray::class.java)
+            mRealm.executeTransactionAsync {
                 json.forEach { js ->
-                    var doc = js.asJsonObject
+                    val doc = js.asJsonObject
                     var dict = it.where(RealmDictionary::class.java)
                         ?.equalTo("id", UUID.randomUUID().toString())?.findFirst()
                     if (dict == null) {
@@ -75,8 +74,7 @@ class DictionaryActivity : BaseActivity() {
 
     private fun setClickListener() {
         fragmentDictionaryBinding.btnSearch.setOnClickListener {
-            var dict = mRealm.where(RealmDictionary::class.java)
-                ?.equalTo("word", fragmentDictionaryBinding.etSearch.text.toString(), Case.INSENSITIVE)?.findFirst()
+            val dict = mRealm.where(RealmDictionary::class.java)?.equalTo("word", fragmentDictionaryBinding.etSearch.text.toString(), Case.INSENSITIVE)?.findFirst()
             if (dict != null) {
                 fragmentDictionaryBinding.tvResult.text = HtmlCompat.fromHtml(
                     "Definition of '<b>" + dict.word + "</b>'<br/><br/>\n " + "<b>" + dict.definition + "\n</b><br/><br/><br/>" + "<b>Synonym : </b>" + dict.synonym + "\n<br/><br/>" + "<b>Antonoym : </b>" + dict.antonoym + "\n<br/>",
