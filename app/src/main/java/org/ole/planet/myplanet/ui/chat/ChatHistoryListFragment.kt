@@ -41,7 +41,7 @@ class ChatHistoryListFragment : Fragment() {
 
         fragmentChatHistoryListBinding.newChat.setOnClickListener {
             val chatHistoryListFragment = ChatHistoryListFragment()
-            val transaction = requireFragmentManager().beginTransaction()
+            val transaction = parentFragmentManager.beginTransaction()
             transaction.replace(R.id.fragment_container, chatHistoryListFragment)
             transaction.addToBackStack(null)
             transaction.commit()

@@ -5,11 +5,13 @@ import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import com.google.gson.stream.JsonReader;
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.Utilities
+import java.io.StringReader
 
 open class RealmFeedback : RealmObject() {
     @JvmField
@@ -65,10 +67,13 @@ open class RealmFeedback : RealmObject() {
 
     val messageList: List<FeedbackReply>?
         get() {
-            val parser = JsonParser()
             if (TextUtils.isEmpty(messages)) return null
             val feedbackReplies: MutableList<FeedbackReply> = ArrayList()
-            val e = parser.parse(messages)
+
+            val stringReader = StringReader(messages)
+            val jsonReader = JsonReader(stringReader)
+
+            val e = JsonParser.parseReader(jsonReader)
             val ar = e.asJsonArray
             if (ar.size() > 0) {
                 for (i in 1 until ar.size()) {
@@ -84,11 +89,15 @@ open class RealmFeedback : RealmObject() {
             }
             return feedbackReplies
         }
+
     val message: String
         get() {
-            val parser = JsonParser()
             if (TextUtils.isEmpty(messages)) return ""
-            val e = parser.parse(messages)
+
+            val stringReader = StringReader(messages)
+            val jsonReader = JsonReader(stringReader)
+
+            val e = JsonParser.parseReader(jsonReader)
             val ar = e.asJsonArray
             if (ar.size() > 0) {
                 val ob = ar[0].asJsonObject
@@ -118,9 +127,9 @@ open class RealmFeedback : RealmObject() {
             `object`.addProperty("item", feedback.item)
             if (feedback.get_id() != null) `object`.addProperty("_id", feedback.get_id())
             if (feedback.get_rev() != null) `object`.addProperty("_rev", feedback.get_rev())
-            val parser = JsonParser()
+
             try {
-                `object`.add("messages", parser.parse(feedback.messages))
+                `object`.add("messages", JsonParser.parseString(feedback.messages))
             } catch (err: Exception) {
                 err.printStackTrace()
             }
@@ -128,6 +137,8 @@ open class RealmFeedback : RealmObject() {
             return `object`
         }
 
+
+        @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject?) {
             var feedback = mRealm.where(RealmFeedback::class.java)
                 .equalTo("_id", JsonUtils.getString("_id", act)).findFirst()

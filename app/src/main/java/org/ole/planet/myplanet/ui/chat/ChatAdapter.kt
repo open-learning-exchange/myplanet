@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.chat
 
 import android.content.Context
 import android.os.Handler
+import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -33,7 +34,7 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context,
                 val typingDelayMillis = 10L
                 val typingAnimationDurationMillis = response.length * typingDelayMillis
                 textAiMessageBinding.textGchatMessageOther.text = ""
-                Handler().postDelayed({
+                Handler(Looper.getMainLooper()).postDelayed({
                     animateTyping(response, typingDelayMillis)
                 }, typingAnimationDurationMillis)
             } else if(responseSource == RESPONSE_SOURCE_SHARED_VIEW_MODEL){
@@ -52,11 +53,11 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context,
                     if (currentIndex < response.length) {
                         textAiMessageBinding.textGchatMessageOther.text = response.substring(0, currentIndex + 1)
                         currentIndex++
-                        Handler().postDelayed(this, typingDelayMillis)
+                        Handler(Looper.getMainLooper()).postDelayed(this, typingDelayMillis)
                     }
                 }
             }
-            Handler().postDelayed(typingRunnable, typingDelayMillis)
+            Handler(Looper.getMainLooper()).postDelayed(typingRunnable, typingDelayMillis)
         }
     }
 

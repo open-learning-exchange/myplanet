@@ -98,19 +98,17 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
 
     fun getTeamMembers() {
         selectedTeamId = prefData.getSELECTEDTEAMID().toString()
-        users = RealmMyTeam.getUsers(selectedTeamId, mRealm, "")
+        if (selectedTeamId.isNotEmpty()) {
+            users = RealmMyTeam.getUsers(selectedTeamId, mRealm, "")
+            val userList = (users as MutableList<RealmUserModel>?)?.map {
+                User(it.getFullName(), it.name ?: "", "", it.userImage ?: "", "team")
+            } ?: emptyList()
 
-        val userList = (users as MutableList<RealmUserModel>?)?.map {
-            User(it.getFullName() ?: "", it.name ?: "", "", it.userImage ?: "", "team")
-        } ?: emptyList()
-
-        val existingUsers = prefData.getSAVEDUSERS().toMutableList()
-        val filteredExistingUsers = existingUsers.filter { it.source != "team" }
-
-        val updatedUserList = userList.filterNot { user ->
-            filteredExistingUsers.any { it.name == user.name }
-        } + filteredExistingUsers
-        prefData.setSAVEDUSERS(updatedUserList)
+            val existingUsers = prefData.getSAVEDUSERS().toMutableList()
+            val filteredExistingUsers = existingUsers.filter { it.source != "team" }
+            val updatedUserList = userList.filterNot { user -> filteredExistingUsers.any { it.name == user.name } } + filteredExistingUsers
+            prefData.setSAVEDUSERS(updatedUserList)
+        }
 
         mAdapter = if (mAdapter == null) {
             TeamListAdapter(prefData.getSAVEDUSERS().toMutableList(), this, this)

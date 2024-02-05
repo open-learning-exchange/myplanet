@@ -6,16 +6,16 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
-import android.preference.ListPreference
-import android.preference.Preference
-import android.preference.Preference.OnPreferenceChangeListener
-import android.preference.Preference.OnPreferenceClickListener
-import android.preference.PreferenceFragment
-import android.preference.SwitchPreference
 import android.view.MenuItem
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.preference.ListPreference
+import androidx.preference.Preference
+import androidx.preference.Preference.OnPreferenceChangeListener
+import androidx.preference.Preference.OnPreferenceClickListener
+import androidx.preference.PreferenceFragmentCompat
+import androidx.preference.SwitchPreference
 import io.realm.Realm
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseResourceFragment
@@ -39,7 +39,7 @@ class SettingActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         supportActionBar!!.setDisplayHomeAsUpEnabled(true)
-        fragmentManager.beginTransaction().replace(android.R.id.content, SettingFragment()).commit()
+        supportFragmentManager.beginTransaction().replace(android.R.id.content, SettingFragment()).commit()
         title = getString(R.string.action_settings)
     }
 
@@ -56,124 +56,138 @@ class SettingActivity : AppCompatActivity() {
     override fun finish() {
         super.finish()
         if (openDashboard) {
-            startActivity(
-                Intent(this, DashboardActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
-            )
+            startActivity(Intent(this, DashboardActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK))
         }
     }
 
-    class SettingFragment : PreferenceFragment() {
-        var profileDbHandler: UserProfileDbHandler? = null
+    class SettingFragment : PreferenceFragmentCompat() {
+        lateinit var profileDbHandler: UserProfileDbHandler
         var user: RealmUserModel? = null
         var dialog: ProgressDialog? = null
+
         @RequiresApi(Build.VERSION_CODES.O)
-        override fun onCreate(savedInstanceState: Bundle?) {
-            super.onCreate(savedInstanceState)
-            addPreferencesFromResource(R.xml.pref)
-            profileDbHandler = UserProfileDbHandler(activity)
-            user = profileDbHandler!!.userModel
-            dialog = ProgressDialog(activity)
+        override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
+            setPreferencesFromResource(R.xml.pref, rootKey)
+            profileDbHandler = UserProfileDbHandler(requireActivity())
+            user = profileDbHandler.userModel
+            dialog = ProgressDialog(requireActivity())
             setBetaToggleOn()
             setAutoSyncToggleOn()
-            val lp = findPreference("app_language") as ListPreference
-            lp.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, o: Any ->
-                LocaleHelper.setLocale(activity, o.toString())
-                activity.recreate()
-                true
+            val lp = findPreference<ListPreference>("app_language")
+            if (lp != null) {
+                lp.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, o: Any ->
+                    LocaleHelper.setLocale(requireActivity(), o.toString())
+                    requireActivity().recreate()
+                    true
+                }
             }
 
             // Show Available space under the "Freeup Space" preference.
-            val spacePreference = findPreference("freeup_space")
-            spacePreference.summary = availableOverTotalMemoryFormattedString
+            val spacePreference = findPreference<Preference>("freeup_space")
+            if (spacePreference != null) {
+                spacePreference.summary = availableOverTotalMemoryFormattedString
+            }
             clearDataButtonInit()
         }
 
         private fun clearDataButtonInit() {
-            val mRealm = DatabaseService(activity).realmInstance
-            val preference = findPreference("reset_app")
-            preference.onPreferenceClickListener = OnPreferenceClickListener {
-                AlertDialog.Builder(activity).setTitle(R.string.are_you_sure)
-                    .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                        BaseResourceFragment.settings?.edit()?.clear()?.apply()
-                        mRealm.executeTransactionAsync(
-                            Realm.Transaction { realm: Realm -> realm.deleteAll() },
-                            Realm.Transaction.OnSuccess {
-                                Utilities.toast(activity, R.string.data_cleared.toString())
-                                startActivity(Intent(activity, LoginActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK))
-                                openDashboard = false
-                                activity.finish()
-                            })
-                    }.setNegativeButton(R.string.no, null).show()
-                false
+            val mRealm = DatabaseService(requireActivity()).realmInstance
+            val preference = findPreference<Preference>("reset_app")
+            if (preference != null) {
+                preference.onPreferenceClickListener = OnPreferenceClickListener {
+                    AlertDialog.Builder(requireActivity()).setTitle(R.string.are_you_sure)
+                        .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
+                            BaseResourceFragment.settings?.edit()?.clear()?.apply()
+                            mRealm.executeTransactionAsync(
+                                Realm.Transaction { realm: Realm -> realm.deleteAll() },
+                                Realm.Transaction.OnSuccess {
+                                    Utilities.toast(requireActivity(), R.string.data_cleared.toString())
+                                    startActivity(Intent(requireActivity(), LoginActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK))
+                                    openDashboard = false
+                                    requireActivity().finish()
+                                })
+                        }.setNegativeButton(R.string.no, null).show()
+                    false
+                }
             }
-            val pref_freeup = findPreference("freeup_space")
-            pref_freeup.onPreferenceClickListener = OnPreferenceClickListener {
-                AlertDialog.Builder(activity).setTitle(R.string.are_you_sure_want_to_delete_all_the_files)
-                    .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                        mRealm.executeTransactionAsync({ realm: Realm ->
-                            val libraries = realm.where(RealmMyLibrary::class.java).findAll()
-                            for (library in libraries) library.resourceOffline = false }, {
+            val prefFreeUp = findPreference<Preference>("freeup_space")
+            if (prefFreeUp != null) {
+                prefFreeUp.onPreferenceClickListener = OnPreferenceClickListener {
+                    AlertDialog.Builder(requireActivity()).setTitle(R.string.are_you_sure_want_to_delete_all_the_files)
+                        .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
+                            mRealm.executeTransactionAsync({ realm: Realm ->
+                                val libraries = realm.where(RealmMyLibrary::class.java).findAll()
+                                for (library in libraries) library.resourceOffline = false }, {
                                 val f = File(Utilities.SD_PATH)
-                            deleteRecursive(f)
-                            Utilities.toast(activity, R.string.data_cleared.toString()) }) {
-                            error: Throwable? -> Utilities.toast(activity, R.string.unable_to_clear_files.toString())
-                        }
-                    }.setNegativeButton("No", null).show()
-                false
+                                deleteRecursive(f)
+                                Utilities.toast(requireActivity(), R.string.data_cleared.toString()) }) {
+                                Utilities.toast(requireActivity(), R.string.unable_to_clear_files.toString())
+                            }
+                        }.setNegativeButton("No", null).show()
+                    false
+                }
             }
         }
 
-        fun deleteRecursive(fileOrDirectory: File) {
+        private fun deleteRecursive(fileOrDirectory: File) {
             if (fileOrDirectory.isDirectory) for (child in fileOrDirectory.listFiles()!!) deleteRecursive(child)
             fileOrDirectory.delete()
         }
 
-        fun setBetaToggleOn() {
-            val beta = findPreference("beta_function") as SwitchPreference
-            val course = findPreference("beta_course") as SwitchPreference
-            val achievement = findPreference("beta_achievement") as SwitchPreference
-            val rating = findPreference("beta_rating") as SwitchPreference
-            val myHealth = findPreference("beta_myHealth") as SwitchPreference
-            val healthWorker = findPreference("beta_healthWorker") as SwitchPreference
-            val newsAddImage = findPreference("beta_addImageToMessage") as SwitchPreference
-            beta.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, _: Any? ->
-                if (beta.isChecked) {
-                    course.isChecked = true
-                    achievement.isChecked = true
+        private fun setBetaToggleOn() {
+            val beta = findPreference<SwitchPreference>("beta_function")
+            val course = findPreference<SwitchPreference>("beta_course")
+            val achievement = findPreference<SwitchPreference>("beta_achievement")
+//            val rating = findPreference<SwitchPreference>("beta_rating")
+//            val myHealth = findPreference<SwitchPreference>("beta_myHealth")
+//            val healthWorker = findPreference<SwitchPreference>("beta_healthWorker")
+//            val newsAddImage = findPreference<SwitchPreference>("beta_addImageToMessage")
+
+            if (beta != null) {
+                beta.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, _: Any? ->
+                    if (beta.isChecked) {
+                        if (course != null) {
+                            course.isChecked = true
+                        }
+                        if (achievement != null) {
+                            achievement.isChecked = true
+                        }
+                    }
+                    true
                 }
-                true
             }
         }
 
-        fun setAutoSyncToggleOn() {
-            val autoSync = findPreference("auto_sync_with_server") as SwitchPreference
-            val autoForceWeeklySync = findPreference("force_weekly_sync") as SwitchPreference
-            val autoForceMonthlySync = findPreference("force_monthly_sync") as SwitchPreference
-            val lastSyncDate = findPreference("lastSyncDate") as Preference
-            autoSync.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, _: Any? ->
+        private fun setAutoSyncToggleOn() {
+            val autoSync = findPreference<SwitchPreference>("auto_sync_with_server")
+            val autoForceWeeklySync = findPreference<SwitchPreference>("force_weekly_sync")
+            val autoForceMonthlySync = findPreference<SwitchPreference>("force_monthly_sync")
+            val lastSyncDate = findPreference<Preference>("lastSyncDate")
+            autoSync!!.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, _: Any? ->
                 if (autoSync.isChecked) {
-                    if (autoForceWeeklySync.isChecked) {
-                        autoForceMonthlySync.isChecked = false
-                    } else if (autoForceMonthlySync.isChecked) {
-                        autoForceWeeklySync.isChecked = false
-                    } else {
-                        autoForceWeeklySync.isChecked = true
-                    }
+                    if (autoForceWeeklySync!!.isChecked) {
+                        autoForceMonthlySync!!.isChecked = false
+                    } else autoForceWeeklySync.isChecked = !autoForceMonthlySync!!.isChecked
                 }
                 true
             }
-            autoForceSync(autoSync, autoForceWeeklySync, autoForceMonthlySync)
+            autoForceSync(autoSync, autoForceWeeklySync!!, autoForceMonthlySync!!)
             autoForceSync(autoSync, autoForceMonthlySync, autoForceWeeklySync)
-            val settings = activity.getSharedPreferences(DashboardFragment.PREFS_NAME, MODE_PRIVATE)
+            val settings = requireActivity().getSharedPreferences(DashboardFragment.PREFS_NAME, MODE_PRIVATE)
             val lastSynced = settings.getLong("LastSync", 0)
             if (lastSynced == 0L) {
-                lastSyncDate.setTitle(R.string.last_synced_never)
-            } else lastSyncDate.title = getString(R.string.last_synced_colon) + Utilities.getRelativeTime(lastSynced)
+                lastSyncDate?.setTitle(R.string.last_synced_never)
+            } else if (lastSyncDate != null) {
+                lastSyncDate.title = getString(R.string.last_synced_colon) + Utilities.getRelativeTime(lastSynced)
+            }
         }
 
         override fun onDestroy() {
             super.onDestroy()
-            profileDbHandler!!.onDestory()
+            if (this::profileDbHandler.isInitialized) {
+                profileDbHandler.onDestory()
+            }
         }
     }
 
@@ -181,11 +195,7 @@ class SettingActivity : AppCompatActivity() {
         var openDashboard = true
         private fun autoForceSync(autoSync: SwitchPreference, autoForceA: SwitchPreference, autoForceB: SwitchPreference) {
             autoForceA.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, _: Any? ->
-                if (autoSync.isChecked) {
-                    autoForceB.isChecked = false
-                } else {
-                    autoForceB.isChecked = true
-                }
+                autoForceB.isChecked = !autoSync.isChecked
                 true
             }
         }

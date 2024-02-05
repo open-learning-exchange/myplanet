@@ -30,12 +30,12 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.RadioGroup;
 import android.widget.Spinner;
-import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.widget.SwitchCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.afollestad.materialdialogs.DialogAction;
@@ -96,7 +96,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     public TextView syncDate, lblLastSyncDate;
     public TextView intervalLabel, tvNodata;
     public Spinner spinner;
-    public Switch syncSwitch;
+    public SwitchCompat syncSwitch;
     int convertedDate;
     boolean connectionResult;
     Realm mRealm;
@@ -153,7 +153,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
 
     public void sync(MaterialDialog dialog) {
         spinner = (Spinner) dialog.findViewById(R.id.intervalDropper);
-        syncSwitch = (Switch) dialog.findViewById(R.id.syncSwitch);
+        syncSwitch = (SwitchCompat) dialog.findViewById(R.id.syncSwitch);
         intervalLabel = (TextView) dialog.findViewById(R.id.intervalLabel);
         syncSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> setSpinnerVisibility(isChecked));
         syncSwitch.setChecked(settings.getBoolean("autoSync", true));
@@ -231,8 +231,8 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
     // Create items in the spinner
     public void syncDropdownAdd() {
         List<String> list = new ArrayList<>();
-        list.add("1 Hour");
-        list.add("3 Hours");
+        list.add("1 hour");
+        list.add("3 hours");
         ArrayAdapter<String> spinnerArrayAdapter = new ArrayAdapter<>(this, R.layout.spinner_item, list);
         spinnerArrayAdapter.setDropDownViewResource(R.layout.spinner_item);
         spinner.setAdapter(spinnerArrayAdapter);
@@ -835,8 +835,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
             serverUrlProtocol = dialogServerUrlBinding.inputServerUrlProtocol;
             dialogServerUrlBinding.deviceName.setText(NetworkUtils.getDeviceName());
             MaterialDialog.Builder builder = new MaterialDialog.Builder(this);
-            builder.title(R.string.action_settings)
-                    .customView(dialogServerUrlBinding.getRoot(), true)
+            builder.customView(dialogServerUrlBinding.getRoot(), true)
                     .positiveText(R.string.btn_sync)
                     .negativeText(R.string.btn_sync_cancel)
                     .neutralText(R.string.btn_sync_save)
@@ -935,7 +934,7 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
         binding.switchServerUrl.setVisibility(show ? View.VISIBLE : View.GONE);
         binding.ltProtocol.setVisibility(show ? View.VISIBLE : View.GONE);
         binding.ltIntervalLabel.setVisibility(show ? View.VISIBLE : View.GONE);
-        binding.ltSyncSwitch.setVisibility(show ? View.VISIBLE : View.GONE);
+        binding.syncSwitch.setVisibility(show ? View.VISIBLE : View.GONE);
         binding.ltDeviceName.setVisibility(show ? View.VISIBLE : View.GONE);
 
         if (show) {
@@ -976,13 +975,24 @@ public abstract class SyncActivity extends ProcessUserDataActivity implements Sy
                 teamAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, teamList);
                 teamAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
                 teamList.clear();
-                teamList.add("Select team");
+                teamList.add("select team");
                 for (RealmMyTeam team : teams) {
                     if (team.isValid()) {
                         teamList.add(team.name);
                     }
                 }
                 binding.team.setAdapter(teamAdapter);
+                String lastSelection = prefData.getSELECTEDTEAMID1();
+                if (lastSelection != null && !lastSelection.isEmpty()) {
+                    for (int i = 0; i < teams.size(); i++) {
+                        RealmMyTeam team = teams.get(i);
+                        if (team._id != null && team._id.equals(lastSelection) && team.isValid()) {
+                            int lastSelectedPosition = i + 1;
+                            binding.team.setSelection(lastSelectedPosition);
+                            break;
+                        }
+                    }
+                }
                 binding.team.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                     @Override
                     public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {

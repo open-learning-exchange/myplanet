@@ -16,8 +16,8 @@
     <string name="hint_serverURl">Adresse du serveur de la planète (Ex. 192.168.2.1)</string>
     <string name="hint_serverPin">Code PIN du serveur (Obtenez ce code PIN auprès de l\'administrateur)</string>
     <string name="radio_protocol">Protocole :</string>
-    <string name="radio_http">HTTP</string>
-    <string name="radio_https">HTTPS</string>
+    <string name="radio_http">http</string>
+    <string name="radio_https">https</string>
     <string name="title_activity_dashboard">Tableau de bord</string>
     <string name="menu_myplanet">myPlanet</string>
     <string name="menu_home">Accueil</string>
@@ -533,7 +533,7 @@
     <string name="courses_colon">Cours :</string>
     <string name="title">Titre</string>
     <string name="source">Source</string>
-    <string name="cloud_url">URL du Cloud</string>
+    <string name="cloud_url">cloud</string>
     <string name="interval">Intervalle</string>
     <string name="autosync">Synchronisation automatique</string>
     <string name="autosync_off">Désactivée</string>

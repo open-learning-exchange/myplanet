@@ -40,7 +40,7 @@ class ManagerSync private constructor(context: Context) {
                     if (response.isSuccessful && response.body() != null) {
                         val jsonDoc = response.body()
                         if (jsonDoc!!.has("derived_key") && jsonDoc.has("salt")) {
-                            val decrypt = AndroidDecrypter()
+//                          val decrypt = AndroidDecrypter()
                             val derivedKey = jsonDoc["derived_key"].asString
                             val salt = jsonDoc["salt"].asString
                             if (AndroidDecrypter(userName, password, derivedKey, salt)) {

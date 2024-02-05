@@ -22,24 +22,23 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 
 class CourseProgressActivity : BaseActivity() {
     private lateinit var activityCourseProgressBinding: ActivityCourseProgressBinding
-    lateinit var realm: Realm;
-    lateinit var user: RealmUserModel;
-    lateinit var courseId: String;
+    lateinit var realm: Realm
+    lateinit var user: RealmUserModel
+    lateinit var courseId: String
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         activityCourseProgressBinding = ActivityCourseProgressBinding.inflate(layoutInflater)
         setContentView(activityCourseProgressBinding.root)
         initActionBar()
-        courseId = intent.getStringExtra("courseId").toString();
+        courseId = intent.getStringExtra("courseId").toString()
         realm = DatabaseService(this).realmInstance
         user = UserProfileDbHandler(this).userModel
-        var courseProgress = RealmCourseProgress.getCourseProgress(realm, user.id)
-        var progress = courseProgress[courseId]
-        var course =
-                realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
+        val courseProgress = RealmCourseProgress.getCourseProgress(realm, user.id)
+        val progress = courseProgress[courseId]
+        val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
         if (progress != null) {
             activityCourseProgressBinding.progressView.setProgress(
-                    (progress["current"].asInt.div(progress["max"].asInt)) * 100, true
+                (progress["current"].asInt.div(progress["max"].asInt)) * 100, true
             )
         }
         activityCourseProgressBinding.tvCourse.text = course!!.courseTitle
@@ -50,13 +49,12 @@ class CourseProgressActivity : BaseActivity() {
     }
 
     private fun showProgress() {
-        var steps =
-                realm.where(RealmCourseStep::class.java).contains("courseId", courseId).findAll()
-        var array = JsonArray()
+        val steps = realm.where(RealmCourseStep::class.java).contains("courseId", courseId).findAll()
+        val array = JsonArray()
         steps.map {
-            var ob = JsonObject()
+            val ob = JsonObject()
             ob.addProperty("stepId", it.id)
-            var exams = realm.where(RealmStepExam::class.java).equalTo("stepId", it.id).findAll()
+            val exams = realm.where(RealmStepExam::class.java).equalTo("stepId", it.id).findAll()
             getExamObject(exams, ob)
             array.add(ob)
         }
@@ -65,18 +63,16 @@ class CourseProgressActivity : BaseActivity() {
     }
 
     private fun getExamObject(exams: RealmResults<RealmStepExam>, ob: JsonObject) {
-        exams.forEach {
-            var submissions = realm.where(RealmSubmission::class.java).equalTo("userId", user.id)
-                    .contains("parentId", it.id).equalTo("type", "exam").findAll()
+        exams.forEach { it ->
+            val submissions = realm.where(RealmSubmission::class.java).equalTo("userId", user.id)
+                .contains("parentId", it.id).equalTo("type", "exam").findAll()
             submissions.map {
-                var answers =
-                        realm.where(RealmAnswer::class.java).equalTo("submissionId", it.id).findAll()
+                val answers = realm.where(RealmAnswer::class.java).equalTo("submissionId", it.id).findAll()
                 var examId = it.parentId
                 if (it.parentId?.contains("@") == true) {
                     examId = it.parentId!!.split("@")[0]
                 }
-                var questions =
-                        realm.where(RealmExamQuestion::class.java).equalTo("examId", examId).findAll();
+                val questions = realm.where(RealmExamQuestion::class.java).equalTo("examId", examId).findAll()
                 ob.addProperty("completed", questions.size == answers.size)
                 ob.addProperty("percentage", (answers.size.div(questions.size)) * 100)
                 ob.addProperty("status", it.status)

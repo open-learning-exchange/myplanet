@@ -37,20 +37,20 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
     var user: RealmUserModel? = null
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         fragmentCommunityBinding = FragmentCommunityBinding.inflate(inflater, container, false)
         return fragmentCommunityBinding.root
     }
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         mRealm = DatabaseService(requireActivity()).realmInstance
         user = UserProfileDbHandler(requireActivity()).userModel
         fragmentCommunityBinding.btnLibrary.setOnClickListener {
             homeItemClickListener?.openCallFragment(LibraryFragment())
         }
         val list =
-            mRealm!!.where(RealmNews::class.java).equalTo("docType", "message", Case.INSENSITIVE)
+            mRealm.where(RealmNews::class.java).equalTo("docType", "message", Case.INSENSITIVE)
                 .equalTo("viewableBy", "community", Case.INSENSITIVE)
                 .equalTo("createdOn", user?.planetCode, Case.INSENSITIVE).isEmpty("replyTo")
                 .sort("time", Sort.DESCENDING).findAll()

@@ -16,8 +16,8 @@
     <string name="hint_serverURl">ग्रह सर्भर ठेगाना (उदाहरणका लागि १९२.१६८.१.१)</string>
     <string name="hint_serverPin">सर्भर पिन (प्रशासकबाट यस पिन प्राप्त गर्नुहोस्)</string>
     <string name="radio_protocol">प्रोटोकल:</string>
-    <string name="radio_http">HTTP</string>
-    <string name="radio_https">HTTPS</string>
+    <string name="radio_http">http</string>
+    <string name="radio_https">https</string>
     <string name="title_activity_dashboard">ड्यासबोर्ड</string>
     <string name="menu_myplanet">myPlanet</string>
     <string name="menu_home">होम</string>
@@ -533,7 +533,7 @@
     <string name="courses_colon">कोर्सहरू:</string>
     <string name="title">शीर्षक</string>
     <string name="source">स्रोत</string>
-    <string name="cloud_url">बादली यूआरएल</string>
+    <string name="cloud_url">cloud</string>
     <string name="interval">अन्तराल</string>
     <string name="autosync">अटोसिङ्क</string>
     <string name="autosync_off">अटोसिङ्क बन्द छ!</string>
