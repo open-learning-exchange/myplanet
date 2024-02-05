@@ -16,30 +16,35 @@ class CommunityPagerAdapter(fm: FragmentManager, val id: String, var fromLogin: 
             R.string.services), context.getString(R.string.finances))
     var titles_login = arrayOf(context.getString(R.string.news), context.getString(R.string.community_leaders), context.getString(R.string.calendar))
     override fun getItem(position: Int): Fragment {
-        var fragment: Fragment;
-        if (position == 0) {
-            fragment = NewsFragment()
-        } else if (position == 1) {
-            fragment = LeadersFragment()
-        } else if (position == 3) {
-            fragment = ServicesFragment()
-        } else if (position == 2) {
-            fragment = EnterpriseCalendarFragment()
-        } else {
-            fragment = FinanceFragment()
+        val fragment: Fragment = when (position) {
+            0 -> {
+                NewsFragment()
+            }
+            1 -> {
+                LeadersFragment()
+            }
+            3 -> {
+                ServicesFragment()
+            }
+            2 -> {
+                EnterpriseCalendarFragment()
+            }
+            else -> {
+                FinanceFragment()
+            }
         }
         val b = Bundle()
         b.putString("id", id)
         b.putBoolean("fromLogin", fromLogin)
         fragment.arguments = b
-        return fragment;
+        return fragment
     }
 
     override fun getCount(): Int {
         return if (fromLogin) titles_login.size else titles.size
     }
 
-    override fun getPageTitle(position: Int): CharSequence? {
+    override fun getPageTitle(position: Int): CharSequence {
         return titles[position]
     }
 }

@@ -33,18 +33,17 @@ class NewsDetailActivity : BaseActivity() {
         setSupportActionBar(activityNewsDetailBinding.toolbar)
         initActionBar()
         realm = DatabaseService(this).realmInstance
-        var id = intent.getStringExtra("newsId")
+        val id = intent.getStringExtra("newsId")
         news = realm.where(RealmNews::class.java).equalTo("id", id).findFirst()
         if (news == null) {
             Utilities.toast(this, getString(R.string.new_not_available))
             finish()
             return
         }
-        var user = UserProfileDbHandler(this).userModel
-        var userId = user.id
+        val user = UserProfileDbHandler(this).userModel
+        val userId = user.id
         realm.executeTransactionAsync {
-            var newsLog: RealmNewsLog =
-                it.createObject(RealmNewsLog::class.java, UUID.randomUUID().toString())
+            val newsLog: RealmNewsLog = it.createObject(RealmNewsLog::class.java, UUID.randomUUID().toString())
             newsLog.androidId = NetworkUtils.getUniqueIdentifier()
             newsLog.type = "news"
             newsLog.time = Date().time
@@ -58,7 +57,7 @@ class NewsDetailActivity : BaseActivity() {
         var msg: String? = news!!.message
 
         if (news!!.imageUrls != null && news!!.imageUrls!!.size > 0) {
-            msg = loadLocalImage();
+            msg = loadLocalImage()
         } else {
             news?.imagesArray?.forEach {
                 val ob = it.asJsonObject
@@ -77,7 +76,7 @@ class NewsDetailActivity : BaseActivity() {
             "\n",
             "<div/><br/><div style=\" word-wrap: break-word;page-break-after: always;  word-spacing: 2px;\" >"
         )
-        activityNewsDetailBinding.tvDetail.settings.layoutAlgorithm = WebSettings.LayoutAlgorithm.SINGLE_COLUMN;
+        activityNewsDetailBinding.tvDetail.settings.layoutAlgorithm = WebSettings.LayoutAlgorithm.SINGLE_COLUMN
         activityNewsDetailBinding.tvDetail.loadDataWithBaseURL(
             null,
             "<html><body><div style=\" word-wrap: break-word;  word-spacing: 2px;\" >$msg</div></body></html>",

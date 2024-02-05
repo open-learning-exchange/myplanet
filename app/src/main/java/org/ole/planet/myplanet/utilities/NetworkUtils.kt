@@ -100,9 +100,9 @@ object NetworkUtils {
         val manufacturer = Build.MANUFACTURER
         val model = Build.MODEL
         return if (model.startsWith(manufacturer)) {
-            model.toUpperCase(Locale.ROOT)
+            model.uppercase(Locale.ROOT)
         } else {
-            "$manufacturer $model".toUpperCase(Locale.ROOT)
+            "$manufacturer $model".uppercase(Locale.ROOT)
         }
     }
 

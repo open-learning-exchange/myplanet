@@ -196,7 +196,7 @@ class AdapterCourses(private val context: Context, private var courseList: List<
 
     private fun showChip(chipCloud: ChipCloud, parent: RealmTag?) {
         chipCloud.addChip(if (parent != null) parent.name else "")
-        chipCloud.setListener { i: Int, b: Boolean, b1: Boolean ->
+        chipCloud.setListener { _: Int, _: Boolean, b1: Boolean ->
             if (b1 && listener != null) {
                 listener!!.onTagClicked(parent)
             }
@@ -257,13 +257,13 @@ class AdapterCourses(private val context: Context, private var courseList: List<
             }
             rowCourseBinding.courseProgress.setOnSeekBarChangeListener(object : OnSeekBarChangeListener {
                 override fun onProgressChanged(seekBar: SeekBar, i: Int, b: Boolean) {
-                    val position = getAdapterPosition()
+                    val position = bindingAdapterPosition
                     if (position != RecyclerView.NO_POSITION && position < courseList.size) {
-                        if (progressMap!!.containsKey(courseList[getAdapterPosition()]!!.courseId)) {
-                            val ob = progressMap!![courseList[getAdapterPosition()]!!.courseId]
+                        if (progressMap!!.containsKey(courseList[bindingAdapterPosition]!!.courseId)) {
+                            val ob = progressMap!![courseList[bindingAdapterPosition]!!.courseId]
                             val current = getInt("current", ob)
                             if (b && i <= current + 1) {
-                                openCourse(courseList[getAdapterPosition()], seekBar.progress)
+                                openCourse(courseList[bindingAdapterPosition], seekBar.progress)
                             }
                         }
                     }

@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.viewpager.widget.ViewPager
 import io.realm.Realm
@@ -126,7 +127,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             if (position - 1 < steps!!.size) changeNextButtonState(position)
         } else {
             fragmentTakeCourseBinding!!.nextStep.isClickable = true
-            fragmentTakeCourseBinding!!.nextStep.setTextColor(resources.getColor(R.color.md_white_1000))
+            fragmentTakeCourseBinding!!.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
             fragmentTakeCourseBinding!!.tvStepTitle.text = currentCourse!!.courseTitle
         }
         val i = getCurrentProgress(steps!!, mRealm!!, userModel!!.id, courseId)
@@ -138,11 +139,11 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
 
     private fun changeNextButtonState(position: Int) {
         Utilities.log(isStepCompleted(mRealm!!, steps!![position - 1]!!.id, userModel!!.id!!).toString() + " is step completed")
-        if (isStepCompleted(mRealm!!, steps!![position - 1]!!.id, userModel!!.id!!) || !showBetaFeature(Constants.KEY_EXAM, activity)) {
+        if (isStepCompleted(mRealm!!, steps!![position - 1]!!.id, userModel!!.id!!) || !showBetaFeature(Constants.KEY_EXAM, requireContext())) {
             fragmentTakeCourseBinding!!.nextStep.isClickable = true
-            fragmentTakeCourseBinding!!.nextStep.setTextColor(resources.getColor(R.color.md_white_1000))
+            fragmentTakeCourseBinding!!.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
         } else {
-            fragmentTakeCourseBinding!!.nextStep.setTextColor(resources.getColor(R.color.md_grey_500))
+            fragmentTakeCourseBinding!!.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_grey_500))
             fragmentTakeCourseBinding!!.nextStep.isClickable = false
         }
     }
@@ -153,7 +154,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
 
     private fun onClickNext() {
         if (fragmentTakeCourseBinding!!.viewPagerCourse.currentItem == steps!!.size) {
-            fragmentTakeCourseBinding!!.nextStep.setTextColor(resources.getColor(R.color.md_grey_500))
+            fragmentTakeCourseBinding!!.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_grey_500))
             fragmentTakeCourseBinding!!.nextStep.visibility = View.GONE
             fragmentTakeCourseBinding!!.finishStep.visibility = View.VISIBLE
         }

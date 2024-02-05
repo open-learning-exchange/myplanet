@@ -26,7 +26,7 @@ class MyProgressFragment : Fragment() {
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         fragmentMyProgressBinding = FragmentMyProgressBinding.inflate(inflater, container, false)
         return fragmentMyProgressBinding.root
     }
@@ -54,7 +54,7 @@ class MyProgressFragment : Fragment() {
                 .contains("parentId", it.courseId)
                 .equalTo("type", "exam")
                 .findAll()
-            var totalMistakes = 0
+            val totalMistakes = 0
             val exams = realm.where(RealmStepExam::class.java)
                 .equalTo("courseId", it.courseId)
                 .findAll()
@@ -74,7 +74,7 @@ class MyProgressFragment : Fragment() {
         obj: JsonObject
     ) {
         var totalMistakes1 = totalMistakes
-        submissions.forEach { it ->
+        submissions.forEach {
             val answers = realm.where(RealmAnswer::class.java)
                 .equalTo("submissionId", it.id)
                 .findAll()

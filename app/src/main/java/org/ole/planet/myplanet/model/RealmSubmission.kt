@@ -142,8 +142,7 @@ open class RealmSubmission : RealmObject() {
             if (TextUtils.isEmpty(sub.user)) {
                 `object`.add("user", user!!.serialize())
             } else {
-                val parser = JsonParser()
-                `object`.add("user", parser.parse(sub.user))
+                `object`.add("user", JsonParser.parseString(sub.user))
             }
             Utilities.log("SerializeExamResult sub $`object`")
             return `object`

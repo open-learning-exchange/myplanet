@@ -68,7 +68,7 @@ class LibraryDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         fragmentLibraryDetailBinding.tvLanguage.text = library.language
         fragmentLibraryDetailBinding.tvLicense.text = library.linkToLicense
         fragmentLibraryDetailBinding.tvResource.text = listToString(library.resourceFor)
-        profileDbHandler!!.setResourceOpenCount(library)
+        profileDbHandler.setResourceOpenCount(library)
         try {
             onRatingChanged()
         } catch (ex: Exception) {
@@ -90,17 +90,17 @@ class LibraryDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             }
             openResource(library)
         }
-        Utilities.log("user id " + profileDbHandler!!.userModel.id + " " + library.userId!!.contains(profileDbHandler!!.userModel.id))
-        val isAdd = !library.userId!!.contains(profileDbHandler!!.userModel.id)
+        Utilities.log("user id " + profileDbHandler.userModel.id + " " + library.userId!!.contains(profileDbHandler.userModel.id))
+        val isAdd = !library.userId!!.contains(profileDbHandler.userModel.id)
         fragmentLibraryDetailBinding.btnRemove.setImageResource(if (isAdd) R.drawable.ic_add_library else R.drawable.close_x)
         fragmentLibraryDetailBinding.btnRemove.setOnClickListener {
             if (!lRealm.isInTransaction) lRealm.beginTransaction()
             if (isAdd) {
-                library.setUserId(profileDbHandler!!.userModel.id)
-                onAdd(lRealm, "resources", profileDbHandler!!.userModel.id!!, libraryId!!)
+                library.setUserId(profileDbHandler.userModel.id)
+                onAdd(lRealm, "resources", profileDbHandler.userModel.id!!, libraryId!!)
             } else {
-                library.removeUserId(profileDbHandler!!.userModel.id)
-                onRemove(lRealm, "resources", profileDbHandler!!.userModel.id!!, libraryId!!)
+                library.removeUserId(profileDbHandler.userModel.id)
+                onRemove(lRealm, "resources", profileDbHandler.userModel.id!!, libraryId!!)
             }
             Utilities.toast(activity, getString(R.string.resources) + if (isAdd) getString(R.string.added_to) else getString(R.string.removed_from) + getString(R.string.my_library))
             setLibraryData()

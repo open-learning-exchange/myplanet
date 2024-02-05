@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.dashboard
 
-import android.R
 import android.os.Build
 import android.os.Bundle
 import android.text.Html
