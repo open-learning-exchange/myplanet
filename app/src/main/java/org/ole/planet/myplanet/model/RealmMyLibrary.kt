@@ -355,6 +355,7 @@ open class RealmMyLibrary : RealmObject() {
             mRealm.commitTransaction()
         }
 
+        @JvmStatic
         fun insertMyLibrary(userId: String?, stepId: String?, courseId: String?, doc: JsonObject, mRealm: Realm) {
             val resourceId = JsonUtils.getString("_id", doc)
             val settings = MainApplication.context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE)
@@ -376,8 +377,7 @@ open class RealmMyLibrary : RealmObject() {
             resource.description = JsonUtils.getString("description", doc)
             if (doc.has("_attachments")) {
                 val attachments = doc["_attachments"].asJsonObject
-                val parser = JsonParser()
-                val element = parser.parse(attachments.toString())
+                val element = JsonParser.parseString(attachments.toString())
                 val obj = element.asJsonObject
                 val entries = obj.entrySet()
                 for ((key) in entries) {
@@ -413,6 +413,7 @@ open class RealmMyLibrary : RealmObject() {
             resource.setLanguages(JsonUtils.getJsonArray("languages", doc), resource)
         }
 
+        @JvmStatic
         fun getListAsArray(db_myLibrary: RealmResults<RealmMyLibrary>): Array<CharSequence?> {
             val array = arrayOfNulls<CharSequence>(db_myLibrary.size)
             for (i in db_myLibrary.indices) {

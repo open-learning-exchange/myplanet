@@ -147,8 +147,7 @@ open class RealmUserModel : RealmObject() {
 
     fun addImageUrl(jsonDoc: JsonObject, settings: SharedPreferences?) {
         if (jsonDoc.has("_attachments")) {
-            val parser = JsonParser()
-            val element = parser.parse(jsonDoc["_attachments"].asJsonObject.toString())
+            val element = JsonParser.parseString(jsonDoc["_attachments"].asJsonObject.toString())
             val obj = element.asJsonObject
             val entries = obj.entrySet()
             for ((key1) in entries) {
