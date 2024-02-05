@@ -42,8 +42,8 @@ class MyMeetupDetailFragment : Fragment(), View.OnClickListener {
         listDesc = fragmentMyMeetupDetailBinding.root.findViewById(R.id.list_desc)
         listUsers = fragmentMyMeetupDetailBinding.root.findViewById(R.id.list_users)
         tvJoined = fragmentMyMeetupDetailBinding.root.findViewById(R.id.tv_joined)
-        fragmentMyMeetupDetailBinding.btnInvite.visibility = if (showBetaFeature(Constants.KEY_MEETUPS, activity)) View.VISIBLE else View.GONE
-        fragmentMyMeetupDetailBinding.btnLeave.visibility = if (showBetaFeature(Constants.KEY_MEETUPS, activity)) View.VISIBLE else View.GONE
+        fragmentMyMeetupDetailBinding.btnInvite.visibility = if (showBetaFeature(Constants.KEY_MEETUPS, requireContext())) View.VISIBLE else View.GONE
+        fragmentMyMeetupDetailBinding.btnLeave.visibility = if (showBetaFeature(Constants.KEY_MEETUPS, requireContext())) View.VISIBLE else View.GONE
         fragmentMyMeetupDetailBinding.btnLeave.setOnClickListener(this)
         mRealm = DatabaseService(requireActivity()).realmInstance
         profileDbHandler = UserProfileDbHandler(activity)
