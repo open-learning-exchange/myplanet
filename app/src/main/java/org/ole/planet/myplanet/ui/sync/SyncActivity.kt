@@ -111,7 +111,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     lateinit var inputName: EditText
     lateinit var inputPassword: EditText
     private lateinit var serverUrl: EditText
-    lateinit var serverUrlProtocol: EditText
+    var serverUrlProtocol: EditText? = null
     private lateinit var serverPassword: EditText
     lateinit var inputLayoutName: TextInputLayout
     lateinit var inputLayoutPassword: TextInputLayout
@@ -827,7 +827,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     if (selectedTeamId == null) {
                         saveConfigAndContinue(dialog)
                     } else {
-                        val url = serverUrlProtocol.text.toString() + serverUrl.text.toString()
+                        val url = serverUrlProtocol!!.text.toString() + serverUrl.text.toString()
                         if (isUrlValid(url)) {
                             prefData.setSELECTEDTEAMID(selectedTeamId)
                             (activity as LoginActivity).getTeamMembers()
@@ -945,7 +945,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             serverUrl.isEnabled = false
             serverPassword.isEnabled = false
             settings.edit().putString("serverProtocol", getString(R.string.https_protocol)).apply()
-            serverUrlProtocol.setText(getString(R.string.https_protocol))
+            serverUrlProtocol?.setText(getString(R.string.https_protocol))
         }
         try {
             mRealm = Realm.getDefaultInstance()
@@ -1035,7 +1035,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     R.id.radio_https
                 }
             )
-            serverUrlProtocol.setText(settings.getString("serverProtocol", ""))
+            serverUrlProtocol?.setText(settings.getString("serverProtocol", ""))
         }
         serverUrl.isEnabled = !checked
         serverPassword.isEnabled = !checked
@@ -1045,13 +1045,13 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     private fun protocol_semantics() {
-        settings.edit().putString("serverProtocol", serverUrlProtocol.text.toString()).apply()
+        settings.edit().putString("serverProtocol", serverUrlProtocol?.text.toString()).apply()
         protocol_checkin.setOnCheckedChangeListener { _: RadioGroup?, i: Int ->
             when (i) {
-                R.id.radio_http -> serverUrlProtocol.setText(getString(R.string.http_protocol))
-                R.id.radio_https -> serverUrlProtocol.setText(getString(R.string.https_protocol))
+                R.id.radio_http -> serverUrlProtocol?.setText(getString(R.string.http_protocol))
+                R.id.radio_https -> serverUrlProtocol?.setText(getString(R.string.https_protocol))
             }
-            settings.edit().putString("serverProtocol", serverUrlProtocol.text.toString()).apply()
+            settings.edit().putString("serverProtocol", serverUrlProtocol?.text.toString()).apply()
         }
     }
 
@@ -1208,10 +1208,11 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     inner class MyTextWatcher(var view: View?) : TextWatcher {
         override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
         override fun onTextChanged(s: CharSequence, i: Int, i1: Int, i2: Int) {
-            val protocol = if (serverUrlProtocol == null) settings.getString(
-                "serverProtocol",
-                "http://"
-            ) else serverUrlProtocol.text.toString()
+            val protocol = serverUrlProtocol?.text?.toString()
+                ?: settings.getString(
+                    "serverProtocol",
+                    "http://"
+                )
             if (view!!.id == R.id.input_server_url) positiveAction.isEnabled = s.toString()
                 .trim { it <= ' ' }.isNotEmpty() && URLUtil.isValidUrl(protocol + s.toString())
         }
