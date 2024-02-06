@@ -25,7 +25,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     private lateinit var activityLoginBinding: ActivityLoginBinding
     private var guest = false
     var users: List<RealmUserModel>? = null
-    var mAdapter: TeamListAdapter? = null
+    private var mAdapter: TeamListAdapter? = null
     private var backPressedTime: Long = 0
     private val BACK_PRESSED_INTERVAL: Long = 2000
 
@@ -98,8 +98,8 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
 
     fun getTeamMembers() {
         selectedTeamId = prefData.getSELECTEDTEAMID().toString()
-        if (selectedTeamId.isNotEmpty()) {
-            users = RealmMyTeam.getUsers(selectedTeamId, mRealm, "")
+        if (selectedTeamId!!.isNotEmpty()) {
+            users = RealmMyTeam.getUsers(selectedTeamId!!, mRealm, "")
             val userList = (users as MutableList<RealmUserModel>?)?.map {
                 User(it.getFullName(), it.name ?: "", "", it.userImage ?: "", "team")
             } ?: emptyList()
@@ -141,7 +141,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             inputName.setText(user.name)
         } else {
             if (user.source == "guest"){
-                val model = mRealm.copyFromRealm(RealmUserModel.createGuestUser(user.name, mRealm, settings))
+                val model = RealmUserModel.createGuestUser(user.name, mRealm, settings)?.let { mRealm.copyFromRealm(it) }
                 if (model == null) {
                     Utilities.toast(this, getString(R.string.unable_to_login))
                 } else {
