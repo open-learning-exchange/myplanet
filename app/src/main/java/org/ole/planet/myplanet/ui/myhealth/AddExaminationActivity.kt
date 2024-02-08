@@ -66,7 +66,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         supportActionBar!!.setDisplayHomeAsUpEnabled(true)
         customDiag = HashSet()
         initViews()
-        currentUser = UserProfileDbHandler(this).userModel
+        currentUser = UserProfileDbHandler(this).userModel!!
         mapConditions = HashMap()
         mRealm = DatabaseService(this).realmInstance
         userId = intent.getStringExtra("userId").toString()

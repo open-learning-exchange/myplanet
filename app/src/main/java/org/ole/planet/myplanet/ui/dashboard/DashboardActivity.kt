@@ -93,7 +93,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
             if (userProfileModel != null) {
                 var name: String? = userProfileModel.getFullName()
                 if (name!!.trim { it <= ' ' }.isEmpty()) {
-                    name = profileDbHandler.userModel.name
+                    name = profileDbHandler.userModel?.name
                 }
                 activityDashboardBinding.appBarBell.appTitleName.text = "$name's Planet"
             } else {
@@ -111,7 +111,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
             return
         }
         navigationView.setOnNavigationItemSelectedListener(this)
-        navigationView.visibility = if (UserProfileDbHandler(this).userModel.isShowTopbar) View.VISIBLE else View.GONE
+        navigationView.visibility = if (UserProfileDbHandler(this).userModel!!.isShowTopbar) View.VISIBLE else View.GONE
         headerResult = accountHeader
         createDrawer()
         if (!(user!!.id!!.startsWith("guest") && profileDbHandler.offlineVisits >= 3) && resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
@@ -186,7 +186,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
             becomeMember.setOnClickListener {
                 val guest = true
                 val intent = Intent(this, BecomeMemberActivity::class.java)
-                intent.putExtra("username", profileDbHandler.userModel.name)
+                intent.putExtra("username", profileDbHandler.userModel!!.name)
                 intent.putExtra("guest", guest)
                 setResult(RESULT_OK, intent)
                 startActivity(intent)

@@ -313,7 +313,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     fun startSync() {
         Utilities.log("Start sync")
-        SyncManager.getInstance().start(this@SyncActivity)
+        SyncManager.instance?.start(this@SyncActivity)
     }
 
     private fun saveConfigAndContinue(dialog: MaterialDialog): String {
@@ -783,13 +783,13 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 prefData.setSAVEDUSERS(existingUsers)
             }
         } else if (source === "member") {
-            var userProfile = profileDbHandler.userModel.userImage
-            var fullName: String? = profileDbHandler.userModel.getFullName()
+            var userProfile = profileDbHandler.userModel!!.userImage
+            var fullName: String? = profileDbHandler.userModel!!.getFullName()
             if (userProfile == null) {
                 userProfile = ""
             }
             if (fullName!!.trim { it <= ' ' }.isEmpty()) {
-                fullName = profileDbHandler.userModel.name
+                fullName = profileDbHandler.userModel!!.name
             }
             val newUser = User(fullName!!, name!!, password!!, userProfile, "member")
             val existingUsers: MutableList<User> = ArrayList(

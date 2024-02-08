@@ -60,7 +60,7 @@ class MyHealthFragment : Fragment() {
 
         fragmentVitalSignBinding.rvRecords.addItemDecoration(DividerItemDecoration(activity, DividerItemDecoration.VERTICAL))
         profileDbHandler = UserProfileDbHandler(alertMyPersonalBinding.root.context)
-        userId = if (TextUtils.isEmpty(profileDbHandler!!.userModel._id)) profileDbHandler!!.userModel.id else profileDbHandler!!.userModel._id
+        userId = if (TextUtils.isEmpty(profileDbHandler!!.userModel?._id)) profileDbHandler!!.userModel?.id else profileDbHandler!!.userModel?._id
         getHealthRecords(userId)
 
         Utilities.log("ROLE " + profileDbHandler?.userModel?.getRoleAsString()!!)

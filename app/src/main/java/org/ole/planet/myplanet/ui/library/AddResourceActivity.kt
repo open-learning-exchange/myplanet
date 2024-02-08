@@ -36,7 +36,7 @@ class AddResourceActivity : AppCompatActivity() {
         setContentView(activityAddResourceBinding.root)
         supportActionBar!!.setDisplayHomeAsUpEnabled(true)
         supportActionBar!!.setHomeButtonEnabled(true)
-        userModel = UserProfileDbHandler(this).userModel
+        userModel = UserProfileDbHandler(this).userModel!!
         resourceUrl = intent.getStringExtra("resource_local_url")
         levels = RealmList()
         subjects = RealmList()

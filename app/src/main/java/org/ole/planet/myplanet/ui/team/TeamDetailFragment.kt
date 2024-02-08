@@ -29,7 +29,7 @@ class TeamDetailFragment : Fragment() {
         fragmentTeamDetailBinding = FragmentTeamDetailBinding.inflate(inflater, container, false)
         val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
         teamId = requireArguments().getString("id")
-        val user = UserProfileDbHandler(activity).userModel
+        val user = UserProfileDbHandler(requireContext()).userModel!!
         mRealm = DatabaseService(requireActivity()).realmInstance
         team = mRealm.where(RealmMyTeam::class.java).equalTo("_id", requireArguments().getString("id")).findFirst()
         fragmentTeamDetailBinding.viewPager.adapter = TeamPagerAdapter(childFragmentManager, team!!, isMyTeam)
@@ -67,7 +67,7 @@ class TeamDetailFragment : Fragment() {
     }
 
     private fun createTeamLog() {
-        val user = UserProfileDbHandler(activity).userModel
+        val user = UserProfileDbHandler(requireContext()).userModel
         if (team == null) return
         if (!mRealm.isInTransaction) {
             mRealm.beginTransaction()
@@ -75,12 +75,14 @@ class TeamDetailFragment : Fragment() {
         Utilities.log("Crete team log")
         val log = mRealm.createObject(RealmTeamLog::class.java, UUID.randomUUID().toString())
         log.teamId = teamId
-        log.user = user.name
-        log.createdOn = user.planetCode
-        log.type = "teamVisit"
-        log.teamType = team!!.teamType
-        log.parentCode = user.parentCode
-        log.time = Date().time
+        if (user != null) {
+            log.user = user.name
+            log.createdOn = user.planetCode
+            log.type = "teamVisit"
+            log.teamType = team!!.teamType
+            log.parentCode = user.parentCode
+            log.time = Date().time
+        }
         mRealm.commitTransaction()
     }
 }

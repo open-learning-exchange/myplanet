@@ -53,7 +53,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         fragmentTakeCourseBinding = FragmentTakeCourseBinding.inflate(inflater, container, false)
         dbService = DatabaseService(requireActivity())
         mRealm = dbService!!.realmInstance
-        userModel = UserProfileDbHandler(activity).userModel
+        userModel = UserProfileDbHandler(requireContext()).userModel
         currentCourse = mRealm!!.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
         return fragmentTakeCourseBinding!!.root
     }

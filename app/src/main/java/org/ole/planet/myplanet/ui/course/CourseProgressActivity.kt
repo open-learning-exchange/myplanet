@@ -32,7 +32,7 @@ class CourseProgressActivity : BaseActivity() {
         initActionBar()
         courseId = intent.getStringExtra("courseId").toString()
         realm = DatabaseService(this).realmInstance
-        user = UserProfileDbHandler(this).userModel
+        user = UserProfileDbHandler(this).userModel!!
         val courseProgress = RealmCourseProgress.getCourseProgress(realm, user.id)
         val progress = courseProgress[courseId]
         val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()

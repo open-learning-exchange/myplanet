@@ -36,7 +36,7 @@ class MyActivityFragment : Fragment() {
         val calendar = Calendar.getInstance()
 
         calendar.set(Calendar.YEAR, calendar.get(Calendar.YEAR) - 1)
-        val resourceActivity = realm.where(RealmOfflineActivity::class.java).equalTo("userId", userModel.id)
+        val resourceActivity = realm.where(RealmOfflineActivity::class.java).equalTo("userId", userModel!!.id)
             .between("loginTime", calendar.timeInMillis, Calendar.getInstance().timeInMillis)
             .findAll()
 

@@ -34,8 +34,8 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.service.UserProfileDbHandler.KEY_RESOURCE_DOWNLOAD
-import org.ole.planet.myplanet.service.UserProfileDbHandler.KEY_RESOURCE_OPEN
+import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_RESOURCE_DOWNLOAD
+import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_RESOURCE_OPEN
 import org.ole.planet.myplanet.ui.course.AdapterCourses
 import org.ole.planet.myplanet.ui.viewer.*
 import org.ole.planet.myplanet.utilities.FileUtils
@@ -206,7 +206,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             Utilities.toast(activity, getString(R.string.unable_to_open_resource))
             return
         }
-        profileDbHandler = UserProfileDbHandler(activity)
+        profileDbHandler = UserProfileDbHandler(requireContext())
         profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_OPEN)
         if (mimetype.startsWith("video")) {
             playVideo(videotype, items)
