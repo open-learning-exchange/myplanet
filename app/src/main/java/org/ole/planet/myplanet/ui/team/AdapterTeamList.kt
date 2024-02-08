@@ -26,6 +26,7 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
     private var type: String? = ""
     private val fragmentManager: FragmentManager
     private var teamListener: OnClickTeamItem? = null
+    private var filteredList: List<RealmMyTeam> = list.filter { it.status!!.isNotEmpty() }
 
     interface OnClickTeamItem {
         fun onEditTeam(team: RealmMyTeam?)
@@ -41,20 +42,30 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
     }
 
     override fun onBindViewHolder(holder: ViewHolderTeam, position: Int) {
-        itemTeamListBinding.created.text = TimeUtils.getFormatedDate(list[position].createdDate)
-        itemTeamListBinding.type.text = list[position].teamType
-        itemTeamListBinding.type.visibility = if (type == null) View.VISIBLE else View.GONE
-        itemTeamListBinding.editTeam.visibility = if (RealmMyTeam.getTeamLeader(list[position]._id, mRealm) == user.id) View.VISIBLE else View.GONE
-        itemTeamListBinding.name.text = list[position].name
+        itemTeamListBinding.created.text = TimeUtils.getFormatedDate(filteredList[position].createdDate)
+        itemTeamListBinding.type.text = filteredList[position].teamType
+        itemTeamListBinding.type.visibility =
+            if (type == null) {
+                View.VISIBLE
+            } else {
+                View.GONE
+            }
+        itemTeamListBinding.editTeam.visibility =
+            if (RealmMyTeam.getTeamLeader(filteredList[position]._id, mRealm) == user.id) {
+                View.VISIBLE
+            } else {
+                View.GONE
+            }
+        itemTeamListBinding.name.text = filteredList[position].name
 
-        itemTeamListBinding.noOfVisits.text = RealmTeamLog.getVisitByTeam(mRealm, list[position]._id).toString() + ""
-        val isMyTeam = list[position].isMyTeam(user.id, mRealm)
+        itemTeamListBinding.noOfVisits.text = "${RealmTeamLog.getVisitByTeam(mRealm, filteredList[position]._id)}"
+        val isMyTeam = filteredList[position].isMyTeam(user.id, mRealm)
         showActionButton(isMyTeam, holder, position)
         holder.itemView.setOnClickListener {
             if (context is OnHomeItemClickListener) {
                 val f = TeamDetailFragment()
                 val b = Bundle()
-                b.putString("id", list[position]._id)
+                b.putString("id", filteredList[position]._id)
                 b.putBoolean("isMyTeam", isMyTeam)
                 f.arguments = b
                 (context as OnHomeItemClickListener).openCallFragment(f)
@@ -70,9 +81,11 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
 
     private fun getBundle(team: RealmMyTeam): Bundle {
         val bundle = Bundle()
-        if (team.type!!.isEmpty()) bundle.putString("state", "teams") else bundle.putString(
-            "state", team.type + "s"
-        )
+        if (team.type!!.isEmpty()) {
+            bundle.putString("state", "teams")
+        } else {
+            bundle.putString("state", "${team.type}s")
+        }
         bundle.putString("item", team._id)
         bundle.putString("parentCode", "dev")
         return bundle
@@ -80,12 +93,12 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
 
     private fun showActionButton(isMyTeam: Boolean, holder: RecyclerView.ViewHolder, position: Int) {
         if (isMyTeam) {
-            if (RealmMyTeam.isTeamLeader(list[position].teamId, user.id!!, mRealm)) {
+            if (RealmMyTeam.isTeamLeader(filteredList[position].teamId, user.id!!, mRealm)) {
                 itemTeamListBinding.joinLeave.text = "Leave"
                 itemTeamListBinding.joinLeave.setOnClickListener {
                     AlertDialog.Builder(context).setMessage(R.string.confirm_exit)
                         .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                            list[position].leave(user, mRealm)
+                            filteredList[position].leave(user, mRealm)
                             notifyDataSetChanged()
                         }.setNegativeButton(R.string.no, null).show()
                 }
@@ -93,13 +106,13 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
                 itemTeamListBinding.joinLeave.visibility = View.GONE
                 return
             }
-        } else if (list[position].requested(user.id!!, mRealm)) {
+        } else if (filteredList[position].requested(user.id!!, mRealm)) {
             itemTeamListBinding.joinLeave.text = context.getString(R.string.requested)
             itemTeamListBinding.joinLeave.isEnabled = false
         } else {
             itemTeamListBinding.joinLeave.text = context.getString(R.string.request_to_join)
             itemTeamListBinding.joinLeave.setOnClickListener {
-                RealmMyTeam.requestToJoin(list[position]._id, user, mRealm)
+                RealmMyTeam.requestToJoin(filteredList[position]._id, user, mRealm)
                 notifyDataSetChanged()
             }
         }
@@ -107,7 +120,7 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
     }
 
     override fun getItemCount(): Int {
-        return list.size
+        return filteredList.size
     }
 
     fun setType(type: String?) {
