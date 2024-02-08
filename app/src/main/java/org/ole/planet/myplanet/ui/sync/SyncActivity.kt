@@ -199,17 +199,17 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     progressDialog!!.dismiss()
                     val ss = response.body()!!.string()
                     val myList = listOf(*ss.split(",".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray())
-                        Utilities.log("List size $ss")
-                        if (myList.size < 8) {
-                            alertDialogOkay(getString(R.string.check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server))
-                        } else {
-                            startSync()
-                        }
-                    } catch (e: Exception) {
-                        alertDialogOkay(getString(R.string.device_couldn_t_reach_server_check_and_try_again))
-                        progressDialog!!.dismiss()
+                    Utilities.log("List size $ss")
+                    if (myList.size < 8) {
+                        alertDialogOkay(getString(R.string.check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server))
+                    } else {
+                        startSync()
                     }
+                } catch (e: Exception) {
+                    alertDialogOkay(getString(R.string.device_couldn_t_reach_server_check_and_try_again))
+                    progressDialog!!.dismiss()
                 }
+            }
 
                 override fun onFailure(call: Call<ResponseBody?>, t: Throwable) {
                     alertDialogOkay(getString(R.string.device_couldn_t_reach_server_check_and_try_again))
@@ -347,13 +347,15 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     override fun onSyncComplete() {
         progressDialog!!.dismiss()
-        runOnUiThread {
-            syncIconDrawable = syncIcon.drawable as AnimationDrawable
-            syncIconDrawable.stop()
-            syncIconDrawable.selectDrawable(0)
-            syncIcon.invalidateDrawable(syncIconDrawable)
-            showSnack(findViewById(android.R.id.content), getString(R.string.sync_completed))
-            cancellAll(this)
+        if (::syncIconDrawable.isInitialized) {
+            runOnUiThread {
+                syncIconDrawable = syncIcon.drawable as AnimationDrawable
+                syncIconDrawable.stop()
+                syncIconDrawable.selectDrawable(0)
+                syncIcon.invalidateDrawable(syncIconDrawable)
+                showSnack(findViewById(android.R.id.content), getString(R.string.sync_completed))
+                cancellAll(this)
+            }
         }
     }
 
@@ -362,42 +364,50 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             defaultPref.edit().putBoolean("beta_addImageToMessage", true).apply()
         }
         customDeviceName.text = getCustomDeviceName()
-        btnSignIn.setOnClickListener {
-            if (TextUtils.isEmpty(inputName.text.toString())) {
-                inputName.error = getString(R.string.err_msg_name)
-            } else if (TextUtils.isEmpty(inputPassword.text.toString())) {
-                inputPassword.error = getString(R.string.err_msg_password)
-            } else {
-                val user = mRealm.where(RealmUserModel::class.java).equalTo("name", inputName.text.toString()).findFirst()
-                if (user == null || !user.isArchived) {
-                    submitForm(inputName.text.toString(), inputPassword.text.toString())
+        if (::btnSignIn.isInitialized) {
+            btnSignIn.setOnClickListener {
+                if (TextUtils.isEmpty(inputName.text.toString())) {
+                    inputName.error = getString(R.string.err_msg_name)
+                } else if (TextUtils.isEmpty(inputPassword.text.toString())) {
+                    inputPassword.error = getString(R.string.err_msg_password)
                 } else {
-                    val builder = AlertDialog.Builder(this)
-                    builder.setMessage("member " + inputName.text.toString() + " is archived")
-                    builder.setCancelable(false)
-                    builder.setPositiveButton("Ok") { dialog: DialogInterface, _: Int ->
-                        dialog.dismiss()
-                        inputName.setText("")
-                        inputPassword.setText("")
+                    val user = mRealm.where(RealmUserModel::class.java)
+                        .equalTo("name", inputName.text.toString()).findFirst()
+                    if (user == null || !user.isArchived) {
+                        submitForm(inputName.text.toString(), inputPassword.text.toString())
+                    } else {
+                        val builder = AlertDialog.Builder(this)
+                        builder.setMessage("member " + inputName.text.toString() + " is archived")
+                        builder.setCancelable(false)
+                        builder.setPositiveButton("Ok") { dialog: DialogInterface, _: Int ->
+                            dialog.dismiss()
+                            inputName.setText("")
+                            inputPassword.setText("")
+                        }
+                        val dialog = builder.create()
+                        dialog.show()
                     }
-                    val dialog = builder.create()
-                    dialog.show()
                 }
             }
         }
-        if (!settings.contains("serverProtocol")) settings.edit()
-            .putString("serverProtocol", "http://").apply()
-        becomeMember.setOnClickListener {
-            inputName.setText("")
-            becomeAMember()
+        if (!settings.contains("serverProtocol")) settings.edit().putString("serverProtocol", "http://").apply()
+        if (::becomeMember.isInitialized) {
+            becomeMember.setOnClickListener {
+                inputName.setText("")
+                becomeAMember()
+            }
         }
-        imgBtnSetting.setOnClickListener {
-            inputName.setText("")
-            settingDialog(this)
+        if (::imgBtnSetting.isInitialized) {
+            imgBtnSetting.setOnClickListener {
+                inputName.setText("")
+                settingDialog(this)
+            }
         }
-        btnGuestLogin.setOnClickListener {
-            inputName.setText("")
-            showGuestLoginDialog()
+        if (::btnGuestLogin.isInitialized ) {
+            btnGuestLogin.setOnClickListener {
+                inputName.setText("")
+                showGuestLoginDialog()
+            }
         }
     }
 
@@ -1089,9 +1099,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     override fun onSuccess(s: String?) {
         Utilities.log("Sync completed ")
         if (progressDialog!!.isShowing && s!!.contains("Crash")) progressDialog!!.dismiss()
-        showSnack(btnSignIn, s!!)
+        if (::btnSignIn.isInitialized) {
+            showSnack(btnSignIn, s!!)
+        }
         settings.edit().putLong("lastUsageUploaded", Date().time).apply()
-        lblLastSyncDate.text = getString(R.string.last_sync) + Utilities.getRelativeTime(Date().time) + " >>"
+        if (::lblLastSyncDate.isInitialized) {
+            lblLastSyncDate.text =
+                getString(R.string.last_sync) + Utilities.getRelativeTime(Date().time) + " >>"
+        }
     }
 
     override fun onUpdateAvailable(info: MyPlanet, cancelable: Boolean) {
