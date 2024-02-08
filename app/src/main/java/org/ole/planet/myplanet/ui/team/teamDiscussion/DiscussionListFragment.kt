@@ -57,13 +57,13 @@ class DiscussionListFragment : BaseTeamFragment() {
             val realmNewsList: List<RealmNews> = mRealm.where(RealmNews::class.java).isEmpty("replyTo").sort("time", Sort.DESCENDING).findAll()
             val list: MutableList<RealmNews> = ArrayList()
             for (news in realmNewsList) {
-                if (!TextUtils.isEmpty(news.viewableBy) && news.viewableBy.equals("teams", ignoreCase = true) && news.viewableId.equals(team?._id, ignoreCase = true)) {
+                if (!TextUtils.isEmpty(news.viewableBy) && news.viewableBy.equals("teams", ignoreCase = true) && news.viewableId.equals(team._id, ignoreCase = true)) {
                     list.add(news)
                 } else if (!TextUtils.isEmpty(news.viewIn)) {
                     val ar = Gson().fromJson(news.viewIn, JsonArray::class.java)
                     for (e in ar) {
                         val ob = e.asJsonObject
-                        if (ob["_id"].asString.equals(team!!._id, ignoreCase = true)) {
+                        if (ob["_id"].asString.equals(team._id, ignoreCase = true)) {
                             list.add(news)
                         }
                     }
@@ -77,12 +77,19 @@ class DiscussionListFragment : BaseTeamFragment() {
         changeLayoutManager(newConfig.orientation, fragmentDiscussionListBinding.rvDiscussion)
     }
 
-    private fun showRecyclerView(realmNewsList: List<RealmNews>) {
-        val adapterNews = AdapterNews(activity, realmNewsList, user, null, true)
-        adapterNews.setmRealm(mRealm)
-        adapterNews.setListener(this)
+    private fun showRecyclerView(realmNewsList: List<RealmNews?>?) {
+        val adapterNews = activity?.let { realmNewsList?.let { it1 -> AdapterNews(
+            it,
+            it1.toMutableList(),
+            user,
+            null
+        ) } }
+        adapterNews?.setmRealm(mRealm)
+        adapterNews?.setListener(this)
         fragmentDiscussionListBinding.rvDiscussion.adapter = adapterNews
-        showNoData(fragmentDiscussionListBinding.tvNodata, adapterNews.itemCount)
+        if (adapterNews != null) {
+            showNoData(fragmentDiscussionListBinding.tvNodata, adapterNews.itemCount)
+        }
     }
 
     private fun showAddMessage() {
@@ -104,12 +111,12 @@ class DiscussionListFragment : BaseTeamFragment() {
                     return@setPositiveButton
                 }
                 val map = HashMap<String?, String>()
-                map["viewInId"] = teamId!!
+                map["viewInId"] = teamId
                 map["viewInSection"] = "teams"
                 map["message"] = msg
-                map["messageType"] = team!!.teamType!!
-                map["messagePlanetCode"] = team!!.teamPlanetCode!!
-                createNews(map, mRealm, user!!, imageList)
+                map["messageType"] = team.teamType!!
+                map["messagePlanetCode"] = team.teamPlanetCode!!
+                createNews(map, mRealm, user, imageList)
                 Utilities.log("discussion created")
                 fragmentDiscussionListBinding.rvDiscussion.adapter!!.notifyDataSetChanged()
                 setData(news)
@@ -118,7 +125,7 @@ class DiscussionListFragment : BaseTeamFragment() {
             .show()
     }
 
-    override fun setData(list: List<RealmNews>) {
+    override fun setData(list: List<RealmNews?>?) {
         showRecyclerView(list)
     }
 }
