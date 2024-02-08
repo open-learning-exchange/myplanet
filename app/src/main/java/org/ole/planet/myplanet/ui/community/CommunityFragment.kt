@@ -27,11 +27,13 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
     override fun addImage(llImage: LinearLayout?) {
     }
 
-    override fun showReply(news: RealmNews, fromLogin: Boolean) {
-        startActivity(
-            Intent(activity, ReplyActivity::class.java).putExtra("id", news.id)
-                .putExtra("fromLogin", fromLogin)
-        )
+    override fun showReply(news: RealmNews?, fromLogin: Boolean) {
+        if (news != null) {
+            startActivity(
+                Intent(activity, ReplyActivity::class.java).putExtra("id", news.id)
+                    .putExtra("fromLogin", fromLogin)
+            )
+        }
     }
 
     var user: RealmUserModel? = null
@@ -58,10 +60,10 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
         changeLayoutManager(orientation)
 
         Utilities.log("list size " + list.size)
-        val adapter = AdapterNews(activity, list, user, null, true)
-        adapter.setListener(this)
-        adapter.setFromLogin(requireArguments().getBoolean("fromLogin", false))
-        adapter.setmRealm(mRealm)
+        val adapter = activity?.let { AdapterNews(it, list, user, null) }
+        adapter?.setListener(this)
+        adapter?.setFromLogin(requireArguments().getBoolean("fromLogin", false))
+        adapter?.setmRealm(mRealm)
         fragmentCommunityBinding.rvCommunity.adapter = adapter
         fragmentCommunityBinding.llEditDelete.visibility = if (user!!.isManager()) View.VISIBLE else View.GONE
 
