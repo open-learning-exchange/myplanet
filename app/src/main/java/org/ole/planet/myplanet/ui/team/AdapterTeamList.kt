@@ -67,11 +67,13 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
         }
         itemTeamListBinding.editTeam.setOnClickListener { teamListener!!.onEditTeam(list[position]) }
         itemTeamListBinding.joinLeave.setOnClickListener {
-            if (RealmMyTeam.isTeamLeader(list[position].teamId, user.id!!, mRealm)) {
-                AlertDialog.Builder(context).setMessage(R.string.confirm_exit)
-                    .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                        list[position].leave(user, mRealm)
-                    }.setNegativeButton(R.string.no, null).show()
+            if (isMyTeam) {
+                if (RealmMyTeam.isTeamLeader(list[position].teamId, user.id!!, mRealm)) {
+                    AlertDialog.Builder(context).setMessage(R.string.confirm_exit)
+                        .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
+                            list[position].leave(user, mRealm)
+                        }.setNegativeButton(R.string.no, null).show()
+                }
             } else {
                 RealmMyTeam.requestToJoin(list[position]._id, user, mRealm)
             }
