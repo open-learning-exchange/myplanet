@@ -14,7 +14,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 abstract class BaseTeamFragment : BaseNewsFragment() {
     lateinit var dbService: DatabaseService
-    lateinit var user: RealmUserModel
+    var user: RealmUserModel? = null
     lateinit var teamId: String
     lateinit var team: RealmMyTeam
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -26,9 +26,7 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
         }
         dbService = DatabaseService(requireActivity())
         mRealm = dbService.realmInstance
-        if (UserProfileDbHandler(activity).userModel != null) {
-            user = mRealm.copyFromRealm(UserProfileDbHandler(activity).userModel)
-        }
+        user = mRealm.copyFromRealm(UserProfileDbHandler(requireContext()).userModel)
         Utilities.log("Team id $teamId")
         team = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()!!
         settings = requireActivity().getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE)

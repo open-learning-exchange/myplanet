@@ -54,7 +54,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         title = "Reply"
         imageList = RealmList()
         id = intent.getStringExtra("id")!!
-        user = UserProfileDbHandler(this).userModel
+        user = UserProfileDbHandler(this).userModel!!
         activityReplyBinding.rvReply.layoutManager = LinearLayoutManager(this)
         activityReplyBinding.rvReply.isNestedScrollingEnabled = false
         showData(id)

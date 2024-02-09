@@ -51,7 +51,7 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         imageList = RealmList()
-        profileDbHandler = UserProfileDbHandler(activity)
+        profileDbHandler = UserProfileDbHandler(requireContext())
         openFolderLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
             if (result.resultCode == Activity.RESULT_OK) {
                 val data = result.data
