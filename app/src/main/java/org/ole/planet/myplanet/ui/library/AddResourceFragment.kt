@@ -228,7 +228,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
             val v = LayoutInflater.from(context).inflate(R.layout.alert_my_personal, null)
             val etTitle = v.findViewById<EditText>(R.id.et_title)
             val etDesc = v.findViewById<EditText>(R.id.et_description)
-            val realmUserModel = UserProfileDbHandler(MainApplication.context).userModel
+            val realmUserModel = UserProfileDbHandler(MainApplication.context).userModel!!
             val userId = realmUserModel.id
             val userName = realmUserModel.name
             AlertDialog.Builder(context!!).setTitle(R.string.enter_resource_detail).setView(v)

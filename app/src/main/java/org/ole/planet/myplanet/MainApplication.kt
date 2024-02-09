@@ -1,10 +1,8 @@
 package org.ole.planet.myplanet
 
-import android.app.Activity
 import android.app.Application
 import android.content.Context
 import android.content.SharedPreferences
-import android.os.Bundle
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
 import android.provider.Settings
@@ -42,7 +40,7 @@ class MainApplication : Application() {
             get() {
                 try {
                     return Settings.Secure.getString(
-                        context!!.contentResolver,
+                        context.contentResolver,
                         Settings.Secure.ANDROID_ID
                     )
                 } catch (e: Exception) {
@@ -101,6 +99,4 @@ class MainApplication : Application() {
         super.attachBaseContext(LocaleHelper.onAttach(base, "en"))
         Utilities.setContext(base)
     }
-
-    fun onActivityCreated(activity: Activity?, bundle: Bundle?) {}
 }

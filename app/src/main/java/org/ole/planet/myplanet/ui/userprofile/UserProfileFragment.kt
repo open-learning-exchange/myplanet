@@ -73,14 +73,14 @@ class UserProfileFragment : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentUserProfileBinding = FragmentUserProfileBinding.inflate(inflater, container, false)
-        handler = UserProfileDbHandler(activity)
+        handler = UserProfileDbHandler(requireContext())
         realmService = DatabaseService(requireContext())
         mRealm = realmService.realmInstance
         fragmentUserProfileBinding.rvStat.layoutManager = LinearLayoutManager(activity)
         fragmentUserProfileBinding.rvStat.isNestedScrollingEnabled = false
 
         fragmentUserProfileBinding.btProfilePic.setOnClickListener { searchForPhoto() }
-        model = handler.userModel
+        model = handler.userModel!!
         fragmentUserProfileBinding.txtName.text = String.format("%s %s %s", model.firstName, model.middleName, model.lastName)
         fragmentUserProfileBinding.txtEmail.text = getString(R.string.email_colon) + Utilities.checkNA(model.email)
         val dob = if (TextUtils.isEmpty(model.dob)) "N/A" else TimeUtils.getFormatedDate(model.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
@@ -106,7 +106,7 @@ class UserProfileFragment : Fragment() {
 
         val map = linkedMapOf(
             "Community Name" to Utilities.checkNA(model.planetCode),
-            "Last Login : " to Utilities.getRelativeTime(handler.lastVisit),
+            "Last Login : " to handler.lastVisit?.let { Utilities.getRelativeTime(it) },
             "Total Visits : " to handler.offlineVisits.toString(),
             "Most Opened Resource : " to Utilities.checkNA(handler.maxOpenedResource),
             "Number of Resources Opened : " to Utilities.checkNA(handler.numberOfResourceOpen)

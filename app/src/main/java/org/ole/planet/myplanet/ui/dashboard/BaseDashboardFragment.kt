@@ -58,11 +58,11 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     private var di: ProgressDialog? = null
 
     fun onLoaded(v: View) {
-        profileDbHandler = UserProfileDbHandler(activity)
-        model = profileDbHandler.userModel
-        fullName = profileDbHandler.userModel.getFullName()
+        profileDbHandler = UserProfileDbHandler(requireContext())
+        model = profileDbHandler.userModel!!
+        fullName = profileDbHandler.userModel!!.getFullName()
         if (fullName?.trim().isNullOrBlank()) {
-            fullName = profileDbHandler.userModel.name
+            fullName = profileDbHandler.userModel!!.name
 
             v.findViewById<LinearLayout>(R.id.ll_prompt).visibility = View.VISIBLE
             v.findViewById<LinearLayout>(R.id.ll_prompt).setOnClickListener {
@@ -193,7 +193,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
     private fun myTeamInit(flexboxLayout: FlexboxLayout): Int {
         val dbMyTeam = RealmMyTeam.getMyTeamsByUserId(mRealm, settings!!)
-        val userId = UserProfileDbHandler(activity).userModel.id
+        val userId = UserProfileDbHandler(requireContext()).userModel!!.id
         for ((count, ob) in dbMyTeam.withIndex()) {
             val v = LayoutInflater.from(activity).inflate(R.layout.item_home_my_team, flexboxLayout, false)
             val name = v.findViewById<TextView>(R.id.tv_name)
@@ -364,9 +364,9 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         di?.setMessage(getString(R.string.syncing_health_please_wait))
         Utilities.log(model.getRoleAsString())
         if (model.getRoleAsString().contains("health")) {
-            TransactionSyncManager.syncAllHealthData(mRealm, settings, this)
+            settings?.let { TransactionSyncManager.syncAllHealthData(mRealm, it, this) }
         } else {
-            TransactionSyncManager.syncKeyIv(mRealm, settings, this)
+            settings?.let { TransactionSyncManager.syncKeyIv(mRealm, it, this) }
         }
     }
 

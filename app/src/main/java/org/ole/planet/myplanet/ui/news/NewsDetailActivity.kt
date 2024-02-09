@@ -40,7 +40,7 @@ class NewsDetailActivity : BaseActivity() {
             finish()
             return
         }
-        val user = UserProfileDbHandler(this).userModel
+        val user = UserProfileDbHandler(this).userModel!!
         val userId = user.id
         realm.executeTransactionAsync {
             val newsLog: RealmNewsLog = it.createObject(RealmNewsLog::class.java, UUID.randomUUID().toString())

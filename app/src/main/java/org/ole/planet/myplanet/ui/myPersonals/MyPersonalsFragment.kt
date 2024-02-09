@@ -54,9 +54,9 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
     }
 
     private fun setAdapter() {
-        val model = UserProfileDbHandler(activity).userModel
+        val model = UserProfileDbHandler(requireContext()).userModel
         val realmMyPersonals: List<RealmMyPersonal> = mRealm.where(RealmMyPersonal::class.java)
-            .equalTo("userId", model.id).findAll()
+            .equalTo("userId", model?.id).findAll()
         val personalAdapter = AdapterMyPersonal(requireActivity(), realmMyPersonals)
         personalAdapter.setListener(this)
         personalAdapter.setRealm(mRealm)
@@ -86,9 +86,11 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
     override fun onUpload(personal: RealmMyPersonal?) {
         pg!!.setMessage("Please wait......")
         pg!!.show()
-        UploadManager.getInstance().uploadMyPersonal(personal) { s: String? ->
-            Utilities.toast(activity, s)
-            pg!!.dismiss()
+        if (personal != null) {
+            UploadManager.instance?.uploadMyPersonal(personal) { s: String? ->
+                Utilities.toast(activity, s)
+                pg!!.dismiss()
+            }
         }
     }
 

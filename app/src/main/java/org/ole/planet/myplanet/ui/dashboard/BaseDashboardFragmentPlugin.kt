@@ -109,13 +109,13 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         setBackgroundColor(v, itemCnt)
 
         val title = (obj as RealmMyLife).title
-        val user = UserProfileDbHandler(activity).userModel
+        val user = UserProfileDbHandler(requireContext()).userModel
         itemMyLifeBinding.img.setImageResource(resources.getIdentifier(obj.imageId, "drawable", requireActivity().packageName))
         itemMyLifeBinding.tvName.text = title
 
         if (title == getString(R.string.my_survey)) {
             itemMyLifeBinding.tvCount.visibility = View.VISIBLE
-            val noOfSurvey = RealmSubmission.getNoOfSurveySubmissionByUser(user.id, mRealm)
+            val noOfSurvey = RealmSubmission.getNoOfSurveySubmissionByUser(user?.id, mRealm)
             itemMyLifeBinding.tvCount.text = noOfSurvey.toString()
             Utilities.log("Count $noOfSurvey")
         } else {
