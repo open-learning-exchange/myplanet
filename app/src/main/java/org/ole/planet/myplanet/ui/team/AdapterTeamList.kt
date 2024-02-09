@@ -59,7 +59,7 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
         itemTeamListBinding.name.text = filteredList[position].name
         itemTeamListBinding.noOfVisits.text = "${RealmTeamLog.getVisitByTeam(mRealm, filteredList[position]._id)}"
         val isMyTeam = filteredList[position].isMyTeam(user.id, mRealm)
-        showActionButton(isMyTeam, holder, position)
+        showActionButton(isMyTeam, position)
         holder.itemView.setOnClickListener {
             if (context is OnHomeItemClickListener) {
                 val f = TeamDetailFragment()
