@@ -25,9 +25,9 @@ class CommunityTabFragment : Fragment() {
         val settings = requireActivity().getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE)
         val sParentcode = settings.getString("parentCode", "")
         val user = UserProfileDbHandler(requireActivity()).userModel
-        fragmentTeamDetailBinding.viewPager.adapter = CommunityPagerAdapter(childFragmentManager, user.planetCode + "@" + sParentcode, false)
+        fragmentTeamDetailBinding.viewPager.adapter = CommunityPagerAdapter(childFragmentManager, user?.planetCode + "@" + sParentcode, false)
         fragmentTeamDetailBinding.tabLayout.setupWithViewPager(fragmentTeamDetailBinding.viewPager)
-        fragmentTeamDetailBinding.title.text = user.planetCode
+        fragmentTeamDetailBinding.title.text = user?.planetCode
         fragmentTeamDetailBinding.subtitle.text = TimeUtils.getFormatedDateWithTime(Date().time)
         fragmentTeamDetailBinding.llActionButtons.visibility = View.GONE
         fragmentTeamDetailBinding.tabLayout.setupWithViewPager(fragmentTeamDetailBinding.viewPager)

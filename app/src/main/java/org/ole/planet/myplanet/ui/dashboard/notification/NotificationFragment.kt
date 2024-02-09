@@ -63,7 +63,7 @@ class NotificationFragment : BottomSheetDialogFragment() {
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val model = UserProfileDbHandler(activity).userModel
+        val model = UserProfileDbHandler(requireContext()).userModel!!
         val surveyList = mRealm.where(RealmSubmission::class.java).equalTo("userId", model.id)
             .equalTo("status", "pending").equalTo("type", "survey").findAll()
         fragmentNotificationBinding.icBack.setOnClickListener {

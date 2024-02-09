@@ -38,7 +38,7 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentMySubmissionBinding = FragmentMySubmissionBinding.inflate(inflater, container, false)
         exams = HashMap()
-        user = UserProfileDbHandler(activity).userModel
+        user = UserProfileDbHandler(requireContext()).userModel
         return fragmentMySubmissionBinding.root
     }
 

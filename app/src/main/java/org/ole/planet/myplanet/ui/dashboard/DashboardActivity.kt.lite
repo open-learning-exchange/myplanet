@@ -93,7 +93,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
             if (userProfileModel != null) {
                 var name: String? = userProfileModel.getFullName()
                 if (name!!.trim { it <= ' ' }.isEmpty()) {
-                    name = profileDbHandler.userModel.name
+                    name = profileDbHandler.userModel?.name
                 }
                 activityDashboardBinding.appBarBell.appTitleName.text = "$name's Planet"
             } else {
@@ -111,7 +111,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
             return
         }
         navigationView.setOnNavigationItemSelectedListener(this)
-        navigationView.visibility = if (UserProfileDbHandler(this).userModel.isShowTopbar) View.VISIBLE else View.GONE
+        navigationView.visibility = if (UserProfileDbHandler(this).userModel!!.isShowTopbar) View.VISIBLE else View.GONE
         headerResult = accountHeader
         createDrawer()
         if (!(user!!.id!!.startsWith("guest") && profileDbHandler.offlineVisits >= 3) && resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
@@ -133,14 +133,14 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
             activityDashboardBinding.appBarBell.bellToolbar.visibility = View.VISIBLE
         }
         activityDashboardBinding.appBarBell.ivSync.setOnClickListener {
-            continueSyncProcess(true, false)
+            continueSyncProcess(forceSync = true, isSync = false)
         }
         activityDashboardBinding.appBarBell.imgLogo.setOnClickListener { result!!.openDrawer() }
         activityDashboardBinding.appBarBell.bellToolbar.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 R.id.action_chat -> openCallFragment(ChatHistoryListFragment())
                 R.id.menu_goOnline -> wifiStatusSwitch()
-                R.id.action_sync -> continueSyncProcess(true, false)
+                R.id.action_sync -> continueSyncProcess(forceSync = true, isSync = false)
                 R.id.action_feedback -> openCallFragment(FeedbackListFragment())
                 R.id.action_settings -> startActivity(Intent(this@DashboardActivity, SettingActivity::class.java))
                 R.id.action_disclaimer -> openCallFragment(DisclaimerFragment())
@@ -186,7 +186,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
             becomeMember.setOnClickListener {
                 val guest = true
                 val intent = Intent(this, BecomeMemberActivity::class.java)
-                intent.putExtra("username", profileDbHandler.userModel.name)
+                intent.putExtra("username", profileDbHandler.userModel!!.name)
                 intent.putExtra("guest", guest)
                 setResult(RESULT_OK, intent)
                 startActivity(intent)

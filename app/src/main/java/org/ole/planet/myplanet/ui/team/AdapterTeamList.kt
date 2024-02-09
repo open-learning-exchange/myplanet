@@ -22,7 +22,7 @@ import org.ole.planet.myplanet.utilities.TimeUtils
 
 class AdapterTeamList(private val context: Context, private val list: List<RealmMyTeam>, private val mRealm: Realm, fragmentManager: FragmentManager) : RecyclerView.Adapter<AdapterTeamList.ViewHolderTeam>() {
     private lateinit var itemTeamListBinding: ItemTeamListBinding
-    private val user: RealmUserModel = UserProfileDbHandler(context).userModel
+    private val user: RealmUserModel = UserProfileDbHandler(context).userModel!!
     private var type: String? = ""
     private val fragmentManager: FragmentManager
     private var teamListener: OnClickTeamItem? = null
