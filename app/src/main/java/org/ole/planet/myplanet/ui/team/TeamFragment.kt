@@ -148,8 +148,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         team.updated = true
 
         //create member ship
-        val teamMemberObj =
-            mRealm.createObject(RealmMyTeam::class.java, AndroidDecrypter.generateIv())
+        val teamMemberObj = mRealm.createObject(RealmMyTeam::class.java, AndroidDecrypter.generateIv())
         teamMemberObj.userId = user._id
         teamMemberObj.teamId = teamId
         teamMemberObj.teamPlanetCode = user.planetCode
