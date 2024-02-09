@@ -40,17 +40,17 @@ class MyProgressFragment : Fragment() {
         val realm = DatabaseService(requireActivity()).realmInstance
         val user = UserProfileDbHandler(requireActivity()).userModel
         val mycourses = RealmMyCourse.getMyCourseByUserId(
-            user.id, realm.where(RealmMyCourse::class.java).findAll()
+            user?.id, realm.where(RealmMyCourse::class.java).findAll()
         )
         val arr = JsonArray()
-        val courseProgress = RealmCourseProgress.getCourseProgress(realm, user.id)
+        val courseProgress = RealmCourseProgress.getCourseProgress(realm, user?.id)
         mycourses.forEach { it ->
             val obj = JsonObject()
             obj.addProperty("courseName", it.courseTitle)
             obj.addProperty("courseId", it.courseId)
             obj.add("progress", courseProgress[it.id])
             val submissions = realm.where(RealmSubmission::class.java)
-                .equalTo("userId", user.id)
+                .equalTo("userId", user?.id)
                 .contains("parentId", it.courseId)
                 .equalTo("type", "exam")
                 .findAll()

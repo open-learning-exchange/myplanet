@@ -21,7 +21,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentFeedbackListBinding = FragmentFeedbackListBinding.inflate(inflater, container, false)
         mRealm = DatabaseService(requireActivity()).realmInstance
-        userModel = UserProfileDbHandler(activity).userModel
+        userModel = UserProfileDbHandler(requireContext()).userModel!!
         fragmentFeedbackListBinding.fab.setOnClickListener {
             val feedbackFragment = FeedbackFragment()
             feedbackFragment.setOnFeedbackSubmittedListener(this)

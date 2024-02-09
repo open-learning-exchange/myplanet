@@ -123,7 +123,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     }
 
     private fun createTeam(name: String?, type: String?, map: HashMap<String, String>, isPublic: Boolean) {
-        val user = UserProfileDbHandler(activity).userModel
+        val user = UserProfileDbHandler(requireContext()).userModel!!
         if (!mRealm.isInTransaction) mRealm.beginTransaction()
         val teamId = AndroidDecrypter.generateIv()
         val team = mRealm.createObject(RealmMyTeam::class.java, teamId)

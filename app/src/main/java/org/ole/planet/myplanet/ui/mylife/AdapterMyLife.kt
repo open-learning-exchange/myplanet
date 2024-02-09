@@ -45,7 +45,7 @@ class AdapterMyLife(
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>(), ItemTouchHelperAdapter {
     private val HIDE = 0.5f
     private val SHOW = 1f
-    private val user: RealmUserModel = UserProfileDbHandler(context).userModel
+    private val user: RealmUserModel = UserProfileDbHandler(context).userModel!!
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val v = LayoutInflater.from(context).inflate(R.layout.row_life, parent, false)

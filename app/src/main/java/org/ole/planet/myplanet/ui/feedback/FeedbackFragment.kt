@@ -45,7 +45,7 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
         fragmentFeedbackBinding = FragmentFeedbackBinding.inflate(inflater, container, false)
         databaseService = DatabaseService(requireActivity())
         mRealm = databaseService.realmInstance
-        model = UserProfileDbHandler(activity).userModel
+        model = UserProfileDbHandler(requireContext()).userModel!!
         user = if (model != null) { model.name }
         else { "Anonymous" }
         fragmentFeedbackBinding.btnSubmit.setOnClickListener(this)

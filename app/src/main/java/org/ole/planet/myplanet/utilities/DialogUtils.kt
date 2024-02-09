@@ -120,7 +120,7 @@ object DialogUtils {
     }
 
     @JvmStatic
-    fun startDownloadUpdate(context: Context, path: String, progressDialog: ProgressDialog) {
+    fun startDownloadUpdate(context: Context, path: String, progressDialog: ProgressDialog?) {
         Service(MainApplication.context).checkCheckSum(object : Service.ChecksumCallback {
             override fun onMatch() {
                 Utilities.toast(MainApplication.context, context.getString(R.string.apk_already_exists))

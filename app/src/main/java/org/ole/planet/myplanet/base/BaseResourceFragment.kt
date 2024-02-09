@@ -134,7 +134,7 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     fun showPendingSurveyDialog() {
-        model = UserProfileDbHandler(activity).userModel
+        model = UserProfileDbHandler(requireContext()).userModel!!
         val list: List<RealmSubmission> = mRealm.where(RealmSubmission::class.java)
             .equalTo("userId", model.id)
             .equalTo("status", "pending").equalTo("type", "survey")

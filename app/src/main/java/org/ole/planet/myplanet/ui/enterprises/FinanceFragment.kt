@@ -91,7 +91,7 @@ class FinanceFragment : BaseTeamFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        if (user.isManager() || user.isLeader()) {
+        if (user!!.isManager() || user!!.isLeader()) {
             fragmentFinanceBinding.addTransaction.visibility = View.VISIBLE
         } else {
             fragmentFinanceBinding.addTransaction.visibility = View.GONE
@@ -159,8 +159,8 @@ class FinanceFragment : BaseTeamFragment() {
         team.description = note
         team.teamId = teamId
         team.amount = amount.toInt()
-        team.parentCode = user.parentCode
-        team.teamPlanetCode = user.planetCode
+        team.parentCode = user!!.parentCode
+        team.teamPlanetCode = user!!.planetCode
         team.teamType = "sync"
         team.docType = "transaction"
         team.updated = true
