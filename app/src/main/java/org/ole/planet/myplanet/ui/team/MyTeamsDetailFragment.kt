@@ -159,10 +159,15 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
         mRealm.commitTransaction()
     }
 
-    private fun showRecyclerView(realmNewsList: List<RealmNews>) {
-        val adapterNews = AdapterNews(activity, realmNewsList, user, null, true)
-        adapterNews.setmRealm(mRealm)
-        adapterNews.setListener(this)
+    private fun showRecyclerView(realmNewsList: List<RealmNews?>?) {
+        val adapterNews = activity?.let { realmNewsList?.let { it1 -> AdapterNews(
+            it,
+            it1.toMutableList(),
+            user,
+            null
+        ) } }
+        adapterNews?.setmRealm(mRealm)
+        adapterNews?.setListener(this)
         rvDiscussion!!.adapter = adapterNews
         llRv!!.visibility = View.VISIBLE
     }
@@ -197,7 +202,7 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
                 b.putString("libraryId", libraries!![i]!!.id)
                 b.putString("openFrom", team!!.teamType + "-" + team!!.title)
                 f.arguments = b
-                homeItemClickListener.openCallFragment(f)
+                homeItemClickListener!!.openCallFragment(f)
             }
         }
     }
@@ -240,7 +245,7 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
         val b = Bundle()
         b.putString("id", id)
         f.arguments = b
-        homeItemClickListener.openCallFragment(f)
+        homeItemClickListener?.openCallFragment(f)
     }
 
     private fun getRequestedTeamList(req: String?): List<RealmUserModel> {
@@ -257,7 +262,7 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
         return ArrayList()
     }
 
-    override fun setData(list: List<RealmNews>) {
+    override fun setData(list: List<RealmNews?>?) {
         showRecyclerView(list)
     }
 }

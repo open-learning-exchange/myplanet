@@ -57,7 +57,6 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
                 View.GONE
             }
         itemTeamListBinding.name.text = filteredList[position].name
-
         itemTeamListBinding.noOfVisits.text = "${RealmTeamLog.getVisitByTeam(mRealm, filteredList[position]._id)}"
         val isMyTeam = filteredList[position].isMyTeam(user.id, mRealm)
         showActionButton(isMyTeam, holder, position)
@@ -77,6 +76,19 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
             feedbackFragment.arguments = getBundle(list[position])
         }
         itemTeamListBinding.editTeam.setOnClickListener { teamListener!!.onEditTeam(list[position]) }
+        itemTeamListBinding.joinLeave.setOnClickListener {
+            if (isMyTeam) {
+                if (RealmMyTeam.isTeamLeader(list[position].teamId, user.id!!, mRealm)) {
+                    AlertDialog.Builder(context).setMessage(R.string.confirm_exit)
+                        .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
+                            list[position].leave(user, mRealm)
+                        }.setNegativeButton(R.string.no, null).show()
+                }
+            } else {
+                RealmMyTeam.requestToJoin(list[position]._id, user, mRealm)
+            }
+            it.isEnabled = false
+        }
     }
 
     private fun getBundle(team: RealmMyTeam): Bundle {
@@ -91,17 +103,10 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
         return bundle
     }
 
-    private fun showActionButton(isMyTeam: Boolean, holder: RecyclerView.ViewHolder, position: Int) {
+    private fun showActionButton(isMyTeam: Boolean, position: Int) {
         if (isMyTeam) {
             if (RealmMyTeam.isTeamLeader(filteredList[position].teamId, user.id!!, mRealm)) {
                 itemTeamListBinding.joinLeave.text = "Leave"
-                itemTeamListBinding.joinLeave.setOnClickListener {
-                    AlertDialog.Builder(context).setMessage(R.string.confirm_exit)
-                        .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                            filteredList[position].leave(user, mRealm)
-                            notifyDataSetChanged()
-                        }.setNegativeButton(R.string.no, null).show()
-                }
             } else {
                 itemTeamListBinding.joinLeave.visibility = View.GONE
                 return
@@ -111,10 +116,6 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
             itemTeamListBinding.joinLeave.isEnabled = false
         } else {
             itemTeamListBinding.joinLeave.text = context.getString(R.string.request_to_join)
-            itemTeamListBinding.joinLeave.setOnClickListener {
-                RealmMyTeam.requestToJoin(filteredList[position]._id, user, mRealm)
-                notifyDataSetChanged()
-            }
         }
         itemTeamListBinding.joinLeave.visibility = View.VISIBLE
     }
