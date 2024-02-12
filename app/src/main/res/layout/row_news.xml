@@ -7,16 +7,16 @@
     app:cardUseCompatPadding="true"
     app:contentPadding="@dimen/padding_normal">
 
-
-    <LinearLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical">
-
+        android:layout_height="wrap_content">
 
         <LinearLayout
+            android:id="@+id/linearLayout4"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
 
             <ImageView
                 android:id="@+id/img_user"
@@ -54,13 +54,14 @@
                     android:textSize="14sp" />
 
             </LinearLayout>
-
-
         </LinearLayout>
 
         <LinearLayout
+            android:id="@+id/linearLayout5"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/linearLayout4">
 
             <ImageView
                 android:id="@+id/img_news"
@@ -74,6 +75,7 @@
                 android:id="@+id/tv_message"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_gravity="center"
                 android:layout_weight="3"
                 android:ellipsize="end"
                 android:maxLines="6"
@@ -88,69 +90,85 @@
             android:id="@+id/fb_chips"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:padding="@dimen/padding_normal" />
+            android:padding="@dimen/padding_normal"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/linearLayout5" />
 
-        <LinearLayout
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/fb_chips">
 
             <Button
                 android:id="@+id/btn_reply"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:text="@string/reply"
-                android:theme="@style/PrimaryFlatButton" />
+                android:theme="@style/PrimaryFlatButton"
+                app:layout_constraintEnd_toStartOf="@+id/btn_show_reply"
+                app:layout_constraintHorizontal_chainStyle="spread_inside"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
 
             <Button
                 android:id="@+id/btn_show_reply"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:text="@string/show_reply"
-                android:theme="@style/PrimaryFlatButton" />
+                android:theme="@style/PrimaryFlatButton"
+                app:layout_constraintEnd_toStartOf="@+id/btn_add_label"
+                app:layout_constraintStart_toEndOf="@+id/btn_reply"
+                app:layout_constraintTop_toTopOf="parent" />
 
             <Button
                 android:id="@+id/btn_add_label"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:text="@string/add_label"
-                android:theme="@style/PrimaryFlatButton" />
+                android:theme="@style/PrimaryFlatButton"
+                app:layout_constraintEnd_toStartOf="@+id/btn_share"
+                app:layout_constraintStart_toEndOf="@+id/btn_show_reply"
+                app:layout_constraintTop_toTopOf="parent" />
 
             <Button
                 android:id="@+id/btn_share"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:text="@string/share_with_community"
                 android:theme="@style/PrimaryFlatButton"
-                android:visibility="gone" />
+                app:layout_constraintEnd_toStartOf="@+id/ll_edit_delete"
+                app:layout_constraintStart_toEndOf="@+id/btn_add_label"
+                app:layout_constraintTop_toTopOf="parent" />
+
 
             <LinearLayout
                 android:id="@+id/ll_edit_delete"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center">
+                android:layout_gravity="center"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/btn_share"
+                app:layout_constraintTop_toTopOf="parent">
 
                 <ImageView
                     android:id="@+id/img_edit"
-                    android:layout_width="@dimen/_24dp"
-                    android:layout_height="@dimen/_24dp"
-                    android:layout_gravity="center"
-                    android:layout_marginLeft="8dp"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_marginStart="8dp"
                     android:background="?attr/selectableItemBackground"
                     android:visibility="visible"
                     app:srcCompat="@drawable/ic_edit" />
 
                 <ImageView
                     android:id="@+id/img_delete"
-                    android:layout_width="@dimen/_24dp"
-                    android:layout_height="@dimen/_24dp"
-                    android:layout_gravity="center"
-                    android:layout_marginLeft="8dp"
-                    android:layout_marginRight="8dp"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_marginStart="8dp"
                     android:background="?attr/selectableItemBackground"
                     app:srcCompat="@drawable/ic_delete" />
             </LinearLayout>
-        </LinearLayout>
-    </LinearLayout>
-
-
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.cardview.widget.CardView>
