@@ -105,7 +105,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
                         .findAll()
                 val urls = ArrayList<String>()
                 getUrlsAndStartDownload(
-                    imageList, settings, urls as ArrayList<String?>
+                    imageList, settings, urls
                 )
             }, now[Calendar.YEAR], now[Calendar.MONTH], now[Calendar.DAY_OF_MONTH]
         )

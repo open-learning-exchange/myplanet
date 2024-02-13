@@ -149,7 +149,7 @@ class ChatDetailFragment : Fragment() {
         fragmentChatDetailBinding.imageGchatLoading.visibility = View.VISIBLE
 
         val apiInterface = ApiClient.client?.create(ApiInterface::class.java)
-        apiInterface?.chatGpt(Utilities.getHostUrl(), content)?.enqueue(object : Callback<ChatModel> {
+        apiInterface?.chatGpt(Utilities.hostUrl, content)?.enqueue(object : Callback<ChatModel> {
             override fun onResponse(call: Call<ChatModel>, response: Response<ChatModel>) {
                 val responseBody = response.body()
                 if (response.isSuccessful && responseBody != null) {
@@ -256,7 +256,7 @@ class ChatDetailFragment : Fragment() {
         fragmentChatDetailBinding.imageGchatLoading.visibility = View.VISIBLE
 
         val apiInterface = ApiClient.client?.create(ApiInterface::class.java)
-        apiInterface?.chatGpt(Utilities.getHostUrl(), content)?.enqueue(object : Callback<ChatModel> {
+        apiInterface?.chatGpt(Utilities.hostUrl, content)?.enqueue(object : Callback<ChatModel> {
             override fun onResponse(call: Call<ChatModel>, response: Response<ChatModel>) {
                 val responseBody = response.body()
                 if (response.isSuccessful && responseBody != null) {

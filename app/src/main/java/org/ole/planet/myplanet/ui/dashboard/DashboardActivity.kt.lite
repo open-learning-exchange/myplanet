@@ -53,7 +53,7 @@ import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.LocaleHelper
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.org.ole.planet.myplanet.utilities.Utilities
 //import org.ole.planet.myplanet.base.BaseContainerFragment
 
 class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, BottomNavigationView.OnNavigationItemSelectedListener {
@@ -168,7 +168,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
     private fun checkUser() {
         user = UserProfileDbHandler(this).userModel
         if (user == null) {
-            Utilities.toast(this, getString(R.string.session_expired))
+            org.ole.planet.myplanet.utilities.Utilities.toast(this, getString(R.string.session_expired))
             logout()
             return
         }
@@ -266,7 +266,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
     }
 
     private fun menuAction(selectedMenuId: Int) {
-        Utilities.log("Selected")
+        org.ole.planet.myplanet.utilities.Utilities.log("Selected")
         when (selectedMenuId) {
             R.string.menu_myplanet -> openCallFragment(BellDashboardFragment())
             R.string.menu_library -> openCallFragment(LibraryFragment())

@@ -82,7 +82,7 @@ class UserProfileFragment : Fragment() {
         fragmentUserProfileBinding.btProfilePic.setOnClickListener { searchForPhoto() }
         model = handler.userModel!!
         fragmentUserProfileBinding.txtName.text = String.format("%s %s %s", model.firstName, model.middleName, model.lastName)
-        fragmentUserProfileBinding.txtEmail.text = getString(R.string.email_colon) + Utilities.checkNA(model.email)
+        fragmentUserProfileBinding.txtEmail.text = getString(R.string.email_colon) + Utilities.checkNA(model.email!!)
         val dob = if (TextUtils.isEmpty(model.dob)) "N/A" else TimeUtils.getFormatedDate(model.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
         fragmentUserProfileBinding.txtDob.text = getString(R.string.date_of_birth) + dob
 
@@ -105,7 +105,7 @@ class UserProfileFragment : Fragment() {
         }
 
         val map = linkedMapOf(
-            "Community Name" to Utilities.checkNA(model.planetCode),
+            "Community Name" to Utilities.checkNA(model.planetCode!!),
             "Last Login : " to handler.lastVisit?.let { Utilities.getRelativeTime(it) },
             "Total Visits : " to handler.offlineVisits.toString(),
             "Most Opened Resource : " to Utilities.checkNA(handler.maxOpenedResource),

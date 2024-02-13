@@ -146,7 +146,7 @@ class SyncManager private constructor(private val context: Context) {
     @Throws(IOException::class)
     private fun syncResource(dbClient: ApiInterface, listener: SyncListener?) {
         val newIds: MutableList<String?> = ArrayList()
-        val allDocs = dbClient.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/resources/_all_docs?include_doc=false")
+        val allDocs = dbClient.getJsonObject(Utilities.header, Utilities.getUrl() + "/resources/_all_docs?include_doc=false")
         val all = allDocs.execute()
         val rows = getJsonArray("rows", all.body())
         val keys: MutableList<String> = ArrayList()
@@ -156,7 +156,7 @@ class SyncManager private constructor(private val context: Context) {
             if (i == rows.size() - 1 || keys.size == 1000) {
                 val obj = JsonObject()
                 obj.add("keys", Gson().fromJson(Gson().toJson(keys), JsonArray::class.java))
-                val response = dbClient.findDocs(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/resources/_all_docs?include_docs=true", obj).execute()
+                val response = dbClient.findDocs(Utilities.header, "application/json", Utilities.getUrl() + "/resources/_all_docs?include_docs=true", obj).execute()
                 if (response.body() != null) {
                     val ids: List<String?> = save(getJsonArray("rows", response.body()), mRealm)
                     newIds.addAll(ids)
@@ -171,7 +171,7 @@ class SyncManager private constructor(private val context: Context) {
         val apiInterface = client!!.create(ApiInterface::class.java)
         mRealm.executeTransaction { realm: Realm ->
             try {
-                val res = apiInterface.getDocuments(Utilities.getHeader(), Utilities.getUrl() + "/shelf/_all_docs").execute().body()
+                val res = apiInterface.getDocuments(Utilities.header, Utilities.getUrl() + "/shelf/_all_docs").execute().body()
                 for (i in res!!.rows!!.indices) {
                     shelfDoc = res.rows!![i]
                     populateShelfItems(apiInterface, realm)
@@ -185,7 +185,7 @@ class SyncManager private constructor(private val context: Context) {
     private fun populateShelfItems(apiInterface: ApiInterface, mRealm: Realm) {
         try {
             this.mRealm = mRealm
-            val jsonDoc = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/shelf/" + shelfDoc!!.id).execute().body()
+            val jsonDoc = apiInterface.getJsonObject(Utilities.header, Utilities.getUrl() + "/shelf/" + shelfDoc!!.id).execute().body()
             Utilities.log(Gson().toJson(jsonDoc))
             for (i in Constants.shelfDataList.indices) {
                 val shelfData = Constants.shelfDataList[i]
@@ -222,7 +222,7 @@ class SyncManager private constructor(private val context: Context) {
     private fun validateDocument(array_categoryIds: JsonArray, x: Int) {
         val apiInterface = client!!.create(ApiInterface::class.java)
         try {
-            val resourceDoc = apiInterface.getJsonObject(Utilities.getHeader(), Utilities.getUrl() + "/" + stringArray[2] + "/" + array_categoryIds[x].asString).execute().body()
+            val resourceDoc = apiInterface.getJsonObject(Utilities.header, Utilities.getUrl() + "/" + stringArray[2] + "/" + array_categoryIds[x].asString).execute().body()
             resourceDoc?.let { triggerInsert(stringArray, array_categoryIds, x, it) }
         } catch (e: IOException) {
             e.printStackTrace()

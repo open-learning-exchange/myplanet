@@ -84,7 +84,7 @@ class AutoSyncWorker(private val context: Context, workerParams: WorkerParameter
 
     override fun onUpdateAvailable(info: MyPlanet, cancelable: Boolean) {
         if (Constants.showBetaFeature(Constants.KEY_AUTOUPDATE, context)) {
-            startDownloadUpdate(context, Utilities.getApkUpdateUrl(info.localapkpath), null)
+            startDownloadUpdate(context, Utilities.getApkUpdateUrl(info.localapkpath!!), null)
         }
     }
 

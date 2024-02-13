@@ -39,7 +39,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_RESOUR
 import org.ole.planet.myplanet.ui.course.AdapterCourses
 import org.ole.planet.myplanet.ui.viewer.*
 import org.ole.planet.myplanet.utilities.FileUtils
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.org.ole.planet.myplanet.utilities.Utilities
 import java.io.File
 
 abstract class BaseContainerFragment : BaseResourceFragment() {
@@ -61,7 +61,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 //                    currentLibrary = null
 //                }
 //            } else {
-//                Utilities.toast(requireActivity(), getString(R.string.permissions_denied))
+//                org.ole.planet.myplanet.utilities.Utilities.toast(requireActivity(), getString(R.string.permissions_denied))
 //            }
 //        }
    }
@@ -75,10 +75,10 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         lib: List<RealmMyLibrary?>, settings: SharedPreferences?, urls: ArrayList<String?>
     ) {
         for (library in lib) {
-            val url = Utilities.getUrl(library, settings)
+            val url = org.ole.planet.myplanet.utilities.Utilities.getUrl(library, settings)
             if (!FileUtils.checkFileExist(url) && !TextUtils.isEmpty(url)) urls.add(url)
         }
-        if (urls.isNotEmpty()) startDownload(urls) else Utilities.toast(
+        if (urls.isNotEmpty()) startDownload(urls) else org.ole.planet.myplanet.utilities.Utilities.toast(
             activity, getString(R.string.no_images_to_download)
         )
     }
@@ -121,7 +121,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             openFileType(items, "online")
         } else {
             val arrayList = ArrayList<String>()
-            arrayList.add(Utilities.getUrl(items, settings))
+            arrayList.add(org.ole.planet.myplanet.utilities.Utilities.getUrl(items, settings))
             startDownload(arrayList)
             profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_DOWNLOAD)
         }
@@ -130,7 +130,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     private fun checkFileExtension(items: RealmMyLibrary) {
         val filenameArray = items.resourceLocalAddress!!.split("\\.".toRegex()).toTypedArray()
         val extension = filenameArray[filenameArray.size - 1]
-        val mimetype = Utilities.getMimeType(items.resourceLocalAddress)
+        val mimetype = org.ole.planet.myplanet.utilities.Utilities.getMimeType(items.resourceLocalAddress)
         if (mimetype.contains("image")) {
             openIntent(items, ImageViewerActivity::class.java)
         } else if (mimetype.contains("pdf")) {
@@ -166,7 +166,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 //
 //        val apkFile = File(directory, items.resourceLocalAddress)
 //        if (!apkFile.exists()) {
-//            Utilities.toast(activity,"APK file not found")
+//            org.ole.planet.myplanet.utilities.Utilities.toast(activity,"APK file not found")
 //            return
 //        }
 //
@@ -186,7 +186,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 //                requestInstallPermission()
 //            }
 //        } else {
-//            Utilities.toast(activity,"No app to handle the installation")
+//            org.ole.planet.myplanet.utilities.Utilities.toast(activity,"No app to handle the installation")
 //        }
 //    }
 
@@ -199,11 +199,11 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun openFileType(items: RealmMyLibrary, videotype: String) {
-        val mimetype = Utilities.getMimeType(items.resourceLocalAddress)
-        Utilities.log("Mime type $mimetype")
-        Utilities.log("Mime type " + items.resourceLocalAddress)
+        val mimetype = org.ole.planet.myplanet.utilities.Utilities.getMimeType(items.resourceLocalAddress)
+        org.ole.planet.myplanet.utilities.Utilities.log("Mime type $mimetype")
+        org.ole.planet.myplanet.utilities.Utilities.log("Mime type " + items.resourceLocalAddress)
         if (mimetype == null) {
-            Utilities.toast(activity, getString(R.string.unable_to_open_resource))
+            org.ole.planet.myplanet.utilities.Utilities.toast(activity, getString(R.string.unable_to_open_resource))
             return
         }
         profileDbHandler = UserProfileDbHandler(requireContext())
@@ -219,7 +219,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         val bundle = Bundle()
         bundle.putString("videoType", videoType)
         if (videoType == "online") {
-            bundle.putString("videoURL", "" + Utilities.getUrl(items, settings))
+            bundle.putString("videoURL", "" + org.ole.planet.myplanet.utilities.Utilities.getUrl(items, settings))
             Log.e("AUTH", "" + auth)
             bundle.putString("Auth", "" + auth)
         } else if (videoType == "offline") {

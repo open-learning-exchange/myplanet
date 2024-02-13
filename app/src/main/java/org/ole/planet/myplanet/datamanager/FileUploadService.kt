@@ -79,7 +79,7 @@ open class FileUploadService {
         @JvmStatic
         fun getHeaderMap(mimeType: String, rev: String): Map<String, String> {
             val hashMap: MutableMap<String, String> = HashMap()
-            hashMap["Authorization"] = Utilities.getHeader()
+            hashMap["Authorization"] = Utilities.header
             hashMap["Content-Type"] = mimeType
             hashMap["If-Match"] = rev
             return hashMap
