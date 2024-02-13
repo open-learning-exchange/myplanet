@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.sync
 
 import android.annotation.SuppressLint
 import android.content.Intent
-import android.content.SharedPreferences
 import android.graphics.PorterDuff
 import android.net.ConnectivityManager
 import android.net.wifi.WifiManager

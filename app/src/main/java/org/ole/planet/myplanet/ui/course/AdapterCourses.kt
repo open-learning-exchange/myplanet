@@ -146,7 +146,7 @@ class AdapterCourses(private val context: Context, private var courseList: List<
                     true
                 }
                 holder.rowCourseBinding.checkbox.setOnClickListener { view: View ->
-                    Utilities.handleCheck((view as CheckBox).isChecked, position, selectedItems as ArrayList<*>, courseList)
+                    Utilities.handleCheck((view as CheckBox).isChecked, position, selectedItems as MutableList<Any>, courseList)
                     if (listener != null) listener!!.onSelectedListChange(selectedItems)
                 }
                 showProgressAndRating(position, holder)

@@ -183,9 +183,9 @@ class MyHealthFragment : Fragment() {
         fragmentVitalSignBinding.layoutUserDetail.visibility = View.VISIBLE
         fragmentVitalSignBinding.tvMessage.visibility = View.GONE
         fragmentVitalSignBinding.txtFullName.text = "${userModel?.firstName} ${userModel?.middleName} ${userModel?.lastName}"
-        fragmentVitalSignBinding.txtEmail.text = Utilities.checkNA(userModel!!.email)
-        fragmentVitalSignBinding.txtLanguage.text = Utilities.checkNA(userModel!!.language)
-        fragmentVitalSignBinding.txtDob.text = Utilities.checkNA(userModel!!.dob)
+        fragmentVitalSignBinding.txtEmail.text = Utilities.checkNA(userModel!!.email!!)
+        fragmentVitalSignBinding.txtLanguage.text = Utilities.checkNA(userModel!!.language!!)
+        fragmentVitalSignBinding.txtDob.text = Utilities.checkNA(userModel!!.dob!!)
         var mh = mRealm.where(RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
         if (mh == null) {
             mh = mRealm.where(RealmMyHealthPojo::class.java).equalTo("userId", userId).findFirst()
@@ -198,10 +198,12 @@ class MyHealthFragment : Fragment() {
                 return
             }
             val myHealths = mm.profile
-            fragmentVitalSignBinding.txtOtherNeed.text = Utilities.checkNA(myHealths?.notes)
-            fragmentVitalSignBinding.txtSpecialNeeds.text = Utilities.checkNA(myHealths?.specialNeeds)
-            fragmentVitalSignBinding.txtBirthPlace.text = Utilities.checkNA(userModel?.birthPlace)
-            fragmentVitalSignBinding.txtEmergencyContact.text = ("${getString(R.string.name_colon)} ${Utilities.checkNA(myHealths?.emergencyContactName)} ${getString(R.string.type)} ${Utilities.checkNA(myHealths?.emergencyContactName)} ${getString(R.string.contact_colon)} ${Utilities.checkNA(myHealths?.emergencyContact)}").trimIndent()
+            fragmentVitalSignBinding.txtOtherNeed.text = Utilities.checkNA(myHealths?.notes!!)
+            fragmentVitalSignBinding.txtSpecialNeeds.text = Utilities.checkNA(myHealths?.specialNeeds!!)
+            fragmentVitalSignBinding.txtBirthPlace.text = Utilities.checkNA(userModel?.birthPlace!!)
+            fragmentVitalSignBinding.txtEmergencyContact.text = ("${getString(R.string.name_colon)} ${Utilities.checkNA(myHealths?.emergencyContactName!!)} " +
+                    "${getString(R.string.type)} ${Utilities.checkNA(myHealths?.emergencyContactName!!)} " +
+                    "${getString(R.string.contact_colon)} ${Utilities.checkNA(myHealths?.emergencyContact!!)}").trimIndent()
             val list = getExaminations(mm)
 
             val adap = AdapterHealthExamination(requireActivity(), list, mh, userModel!!)
@@ -224,14 +226,14 @@ class MyHealthFragment : Fragment() {
     private fun getExaminations(mm: RealmMyHealth): List<RealmMyHealthPojo> {
         var healths = mRealm.where(RealmMyHealthPojo::class.java)!!.findAll()
         healths.forEach {
-            Utilities.log(it.profileId)
+            Utilities.log(it.profileId!!)
         }
         healths = mRealm.where(RealmMyHealthPojo::class.java)!!.equalTo("profileId", mm.userKey)!!.findAll()
         return healths!!
     }
 
     private fun getHealthProfile(mh: RealmMyHealthPojo): RealmMyHealth? {
-        Utilities.log(mh.data)
+        Utilities.log(mh.data!!)
         val json = AndroidDecrypter.decrypt(mh.data, userModel!!.key, userModel!!.iv)
         return if (TextUtils.isEmpty(json)) {
             null

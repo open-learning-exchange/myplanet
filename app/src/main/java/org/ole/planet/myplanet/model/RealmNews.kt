@@ -101,7 +101,9 @@ open class RealmNews : RealmObject() {
     val messageWithoutMarkdown: String?
         get() {
             var ms = message
-            Utilities.log(ms)
+            if (ms != null) {
+                Utilities.log(ms)
+            }
             for (ob in imagesArray) {
                 ms = ms!!.replace(JsonUtils.getString("markdown", ob.asJsonObject), "")
             }

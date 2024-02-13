@@ -122,7 +122,7 @@ class NewsFragment : BaseNewsFragment() {
                 resourceIds.add(resourceId)
             }
         }
-        val urls = ArrayList<String?>()
+        val urls = ArrayList<String>()
         val settings = requireActivity().getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE)
         val stringArray: Array<String?> = resourceIds.toTypedArray()
         val lib: List<RealmMyLibrary?> = mRealm.where(RealmMyLibrary::class.java)
