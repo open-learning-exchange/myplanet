@@ -17,6 +17,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayout.OnTabSelectedListener
@@ -28,6 +29,9 @@ import com.mikepenz.materialdrawer.holder.DimenHolder
 import com.mikepenz.materialdrawer.model.PrimaryDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.Nameable
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
@@ -79,50 +83,22 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
         activityDashboardBinding = ActivityDashboardBinding.inflate(layoutInflater)
         setContentView(activityDashboardBinding.root)
         setupUI(activityDashboardBinding.activityDashboardParentLayout, this@DashboardActivity)
-        setSupportActionBar(activityDashboardBinding.myToolbar)
-        supportActionBar!!.setDisplayHomeAsUpEnabled(false)
-        supportActionBar!!.setTitle(R.string.app_project_name)
-        activityDashboardBinding.myToolbar.setTitleTextColor(Color.WHITE)
-        activityDashboardBinding.myToolbar.setSubtitleTextColor(Color.WHITE)
-        navigationView = activityDashboardBinding.topBarNavigation
-        disableShiftMode(navigationView)
-        activityDashboardBinding.appBarBell.bellToolbar.inflateMenu(R.menu.menu_bell_dashboard)
-        tl = findViewById(R.id.tab_layout)
-        try {
-            val userProfileModel = profileDbHandler.userModel
-            if (userProfileModel != null) {
-                var name: String? = userProfileModel.getFullName()
-                if (name!!.trim { it <= ' ' }.isEmpty()) {
-                    name = profileDbHandler.userModel?.name
-                }
-                activityDashboardBinding.appBarBell.appTitleName.text = "$name's Planet"
-            } else {
-                activityDashboardBinding.appBarBell.appTitleName.text = getString(R.string.app_project_name)
-            }
-        } catch (err: Exception) {
-            throw RuntimeException(err)
-        }
-        activityDashboardBinding.appBarBell.ivSetting.setOnClickListener {
-            startActivity(Intent(this, SettingActivity::class.java))
-        }
+        setupToolBar()
+
         if ((user != null) && user!!.rolesList!!.isEmpty() && !user!!.userAdmin!!) {
             navigationView.visibility = View.GONE
             openCallFragment(InactiveDashboardFragment(), "Dashboard")
             return
         }
-        navigationView.setOnNavigationItemSelectedListener(this)
-        navigationView.visibility = if (UserProfileDbHandler(this).userModel!!.isShowTopbar) View.VISIBLE else View.GONE
-        headerResult = accountHeader
-        createDrawer()
-        if (!(user!!.id!!.startsWith("guest") && profileDbHandler.offlineVisits >= 3) && resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
-            result!!.openDrawer()
-        } //Opens drawer by default
-        result!!.stickyFooter.setPadding(0, 0, 0, 0) // moves logout button to the very bottom of the drawer. Without it, the "logout" button suspends a little.
-        result!!.actionBarDrawerToggle.isDrawerIndicatorEnabled = true
-        dl = result!!.drawerLayout
-        window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN)
-        result!!.drawerLayout.fitsSystemWindows = false
-        topbarSetting()
+
+        lifecycleScope.launch(Dispatchers.Default) {
+            withContext(Dispatchers.Main) {
+                setupUIComponents()
+            }
+        }
+    }
+
+    private fun setupUIComponents() {
         if (intent != null && intent.hasExtra("fragmentToOpen")) {
             val fragmentToOpen = intent.getStringExtra("fragmentToOpen")
             if (("feedbackList" == fragmentToOpen)) {
@@ -159,6 +135,50 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
         hideWifi()
     }
 
+    private fun setupToolBar() {
+        setSupportActionBar(activityDashboardBinding.myToolbar)
+        supportActionBar!!.setDisplayShowTitleEnabled(false)
+        navigationView = activityDashboardBinding.topBarNavigation
+        disableShiftMode(navigationView)
+        navigationView.setOnNavigationItemSelectedListener(this)
+        navigationView.visibility = if (UserProfileDbHandler(this).userModel!!.isShowTopbar) {
+            View.VISIBLE
+        } else {
+            View.GONE
+        }
+
+        activityDashboardBinding.appBarBell.bellToolbar.inflateMenu(R.menu.menu_bell_dashboard)
+        tl = findViewById(R.id.tab_layout)
+        try {
+            val userProfileModel = profileDbHandler.userModel
+            if (userProfileModel != null) {
+                var name: String? = userProfileModel.getFullName()
+                if (name!!.trim { it <= ' ' }.isEmpty()) {
+                    name = profileDbHandler.userModel?.name
+                }
+                activityDashboardBinding.appBarBell.appTitleName.text = "$name's Planet"
+            } else {
+                activityDashboardBinding.appBarBell.appTitleName.text = getString(R.string.app_project_name)
+            }
+        } catch (err: Exception) {
+            throw RuntimeException(err)
+        }
+        activityDashboardBinding.appBarBell.ivSetting.setOnClickListener {
+            startActivity(Intent(this, SettingActivity::class.java))
+        }
+        headerResult = accountHeader
+        createDrawer()
+        if (!(user!!.id!!.startsWith("guest") && profileDbHandler.offlineVisits >= 3) && resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
+            result!!.openDrawer()
+        }
+        result!!.stickyFooter.setPadding(0, 0, 0, 0)
+        result!!.actionBarDrawerToggle.isDrawerIndicatorEnabled = true
+        dl = result!!.drawerLayout
+        window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN)
+        result!!.drawerLayout.fitsSystemWindows = false
+        topbarSetting()
+    }
+
     private fun hideWifi() {
         val nav_Menu = activityDashboardBinding.appBarBell.bellToolbar.menu
         nav_Menu.findItem(R.id.menu_goOnline)
@@ -168,8 +188,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
     private fun checkUser() {
         user = UserProfileDbHandler(this).userModel
         if (user == null) {
-            Utilities.toast(this, getString(R.string.session_expired))
-            logout()
+            runOnUiThread {
+                Utilities.toast(this, getString(R.string.session_expired))
+                logout()
+            }
             return
         }
         if (user!!.id!!.startsWith("guest") && profileDbHandler.offlineVisits >= 3) {
