@@ -219,7 +219,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         val bundle = Bundle()
         bundle.putString("videoType", videoType)
         if (videoType == "online") {
-            bundle.putString("videoURL", "" + Utilities.getUrl(items, settings))))
+            bundle.putString("videoURL", "" + Utilities.getUrl(items, settings))
             Log.e("AUTH", "" + auth)
             bundle.putString("Auth", "" + auth)
         } else if (videoType == "offline") {
