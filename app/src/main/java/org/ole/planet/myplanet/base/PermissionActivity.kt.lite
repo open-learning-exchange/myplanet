@@ -14,7 +14,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.utilities.org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.Utilities
 
 abstract class PermissionActivity : AppCompatActivity() {
     fun checkPermission(strPermission: String?): Boolean {
@@ -25,7 +25,7 @@ abstract class PermissionActivity : AppCompatActivity() {
     @RequiresApi(Build.VERSION_CODES.M)
     fun checkUsagesPermission() {
         if (!getUsagesPermission(this)) {
-            org.ole.planet.myplanet.utilities.Utilities.toast(this, getString(R.string.please_allow_usages_permission_to_myplanet_app))
+            Utilities.toast(this, getString(R.string.please_allow_usages_permission_to_myplanet_app))
             startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
         }
     }
