@@ -72,7 +72,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         }
     }
     fun getUrlsAndStartDownload(
-        lib: List<RealmMyLibrary?>, settings: SharedPreferences?, urls: ArrayList<String?>
+        lib: List<RealmMyLibrary?>, settings: SharedPreferences?, urls: ArrayList<String>
     ) {
         for (library in lib) {
             val url = Utilities.getUrl(library, settings)
@@ -131,14 +131,16 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         val filenameArray = items.resourceLocalAddress!!.split("\\.".toRegex()).toTypedArray()
         val extension = filenameArray[filenameArray.size - 1]
         val mimetype = Utilities.getMimeType(items.resourceLocalAddress)
-        if (mimetype.contains("image")) {
-            openIntent(items, ImageViewerActivity::class.java)
-        } else if (mimetype.contains("pdf")) {
-            openPdf(items)
-        } else if (mimetype.contains("audio")) {
-            openIntent(items, AudioPlayerActivity::class.java)
-        } else {
-            checkMoreFileExtensions(extension, items)
+        if (mimetype != null) {
+            if (mimetype.contains("image")) {
+                openIntent(items, ImageViewerActivity::class.java)
+            } else if (mimetype.contains("pdf")) {
+                openPdf(items)
+            } else if (mimetype.contains("audio")) {
+                openIntent(items, AudioPlayerActivity::class.java)
+            } else {
+                checkMoreFileExtensions(extension, items)
+            }
         }
     }
     @RequiresApi(Build.VERSION_CODES.O)
