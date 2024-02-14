@@ -189,7 +189,7 @@ class Service(private val context: Context) {
     fun becomeMember(realm: Realm, obj: JsonObject, callback: CreateUserCallback) {
         isPlanetAvailable(object : PlanetAvailableListener {
             override fun isAvailable() {
-                retrofitInterface.getJsonObject(Utilities.getHeader(), "${Utilities.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}")
+                retrofitInterface.getJsonObject(Utilities.header, "${Utilities.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}")
                     .enqueue(object : Callback<JsonObject> {
                         override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
                             if (response.body() != null && response.body()!!.has("_id")) {
@@ -257,7 +257,7 @@ class Service(private val context: Context) {
             }
 
             override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
-                Utilities.log(t.message)
+                Utilities.log(t.message!!)
             }
         })
     }
@@ -275,7 +275,7 @@ class Service(private val context: Context) {
         realm.executeTransactionAsync({ realm1: Realm? ->
             try {
                 val res = retrofitInterface.getJsonObject(
-                    Utilities.getHeader(),
+                    Utilities.header,
                     Utilities.getUrl() + "/_users/" + id
                 ).execute()
                 if (res.body() != null) {

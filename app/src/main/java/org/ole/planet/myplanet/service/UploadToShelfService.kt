@@ -52,7 +52,7 @@ class UploadToShelfService(context: Context) {
             for (model in userModels) {
                 try {
                     var res = apiInterface.getJsonObject(
-                        Utilities.getHeader(),
+                        Utilities.header,
                         Utilities.getUrl() + "/_users/org.couchdb.user:" + model.name
                     ).execute()
                     if (res.body() == null) {
@@ -67,7 +67,7 @@ class UploadToShelfService(context: Context) {
                             val id = res.body()!!.get("id").asString
                             val rev = res.body()!!.get("rev").asString
                             res = apiInterface.getJsonObject(
-                                Utilities.getHeader(),
+                                Utilities.header,
                                 Utilities.getUrl() + "/_users/" + id
                             ).execute()
                             if (res.body() != null) {
@@ -124,7 +124,7 @@ class UploadToShelfService(context: Context) {
     @Throws(IOException::class)
     fun saveKeyIv(apiInterface: ApiInterface, model: RealmUserModel, obj: JsonObject): Boolean {
         val table =
-            "userdb-" + Utilities.toHex(model.planetCode) + "-" + Utilities.toHex(model.name)
+            "userdb-" + Utilities.toHex(model.planetCode!!) + "-" + Utilities.toHex(model.name!!)
         val header = "Basic " + Base64.encodeToString(
             (obj["name"].asString + ":" + obj["password"].asString).toByteArray(),
             Base64.NO_WRAP
@@ -167,7 +167,7 @@ class UploadToShelfService(context: Context) {
             for (pojo in myHealths) {
                 try {
                     val res = apiInterface.postDoc(
-                        Utilities.getHeader(),
+                        Utilities.header,
                         "application/json",
                         Utilities.getUrl() + "/health",
                         serialize(pojo)
@@ -195,18 +195,18 @@ class UploadToShelfService(context: Context) {
                     try {
                         if (model.id!!.startsWith("guest")) continue
                         val jsonDoc = apiInterface.getJsonObject(
-                            Utilities.getHeader(),
+                            Utilities.header,
                             Utilities.getUrl() + "/shelf/" + model._id
                         ).execute().body()
                         val `object` = getShelfData(realm, model.id, jsonDoc)
                         Utilities.log("JSON " + Gson().toJson(jsonDoc))
                         val d = apiInterface.getJsonObject(
-                            Utilities.getHeader(),
+                            Utilities.header,
                             Utilities.getUrl() + "/shelf/" + model.id
                         ).execute().body()
                         `object`.addProperty("_rev", getString("_rev", d))
                         apiInterface.putDoc(
-                            Utilities.getHeader(),
+                            Utilities.header,
                             "application/json",
                             Utilities.getUrl() + "/shelf/" + sharedPreferences.getString(
                                 "userId",
@@ -265,7 +265,7 @@ class UploadToShelfService(context: Context) {
             private set
 
         private fun changeUserSecurity(model: RealmUserModel, obj: JsonObject) {
-            val table = "userdb-" + Utilities.toHex(model.planetCode) + "-" + Utilities.toHex(model.name)
+            val table = "userdb-" + Utilities.toHex(model.planetCode!!) + "-" + Utilities.toHex(model.name!!)
             val header = "Basic " + Base64.encodeToString((obj["name"].asString + ":" + obj["password"].asString).toByteArray(), Base64.NO_WRAP)
             val apiInterface = client!!.create(ApiInterface::class.java)
             var response: Response<JsonObject?>

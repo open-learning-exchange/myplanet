@@ -171,9 +171,9 @@ open class RealmSubmission : RealmObject() {
             var `object`: JsonObject? = null
             if (!TextUtils.isEmpty(sub.userId) && sub.userId!!.startsWith("guest")) return
             `object` = if (TextUtils.isEmpty(sub._id)) {
-                apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/submissions", serializeExamResult(realm, sub, context)).execute().body()
+                apiInterface.postDoc(Utilities.header, "application/json", Utilities.getUrl() + "/submissions", serializeExamResult(realm, sub, context)).execute().body()
             } else {
-                apiInterface.putDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/submissions/" + sub._id, serializeExamResult(realm, sub, context)).execute().body()
+                apiInterface.putDoc(Utilities.header, "application/json", Utilities.getUrl() + "/submissions/" + sub._id, serializeExamResult(realm, sub, context)).execute().body()
             }
             if (`object` != null) {
                 sub._id = JsonUtils.getString("id", `object`)

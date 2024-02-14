@@ -89,7 +89,7 @@ class UploadManager(context: Context) : FileUploadService() {
             val newsLog: List<RealmNewsLog> = realm.where(RealmNewsLog::class.java).isNull("_id").or().isEmpty("_id").findAll()
             for (news in newsLog) {
                 try {
-                    val `object` = apiInterface.postDoc(Utilities.getHeader(), "application/json", Utilities.getUrl() + "/myplanet_activities", serialize(news)).execute().body()
+                    val `object` = apiInterface.postDoc(Utilities.header, "application/json", Utilities.getUrl() + "/myplanet_activities", serialize(news)).execute().body()
                     Utilities.log("Team upload " + Gson().toJson(`object`))
                     if (`object` != null) {
                         news._id = getString("id", `object`)
@@ -108,7 +108,7 @@ class UploadManager(context: Context) : FileUploadService() {
         if (model.isManager()) return
         try {
             apiInterface.postDoc(
-                Utilities.getHeader(),
+                Utilities.header,
                 "application/json",
                 Utilities.getUrl() + "/myplanet_activities",
                 getNormalMyPlanetActivities(MainApplication.context, pref, model)
@@ -117,7 +117,7 @@ class UploadManager(context: Context) : FileUploadService() {
                 override fun onFailure(call: Call<JsonObject?>, t: Throwable) {}
             })
             apiInterface.getJsonObject(
-                Utilities.getHeader(),
+                Utilities.header,
                 Utilities.getUrl() + "/myplanet_activities/" + getAndroidId(MainApplication.context) + "@" + getUniqueIdentifier()
             ).enqueue(object : Callback<JsonObject?> {
                 override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
@@ -130,7 +130,7 @@ class UploadManager(context: Context) : FileUploadService() {
                         `object` = getMyPlanetActivities(context, pref, model)
                     }
                     apiInterface.postDoc(
-                        Utilities.getHeader(),
+                        Utilities.header,
                         "application/json",
                         Utilities.getUrl() + "/myplanet_activities",
                         `object`
@@ -204,14 +204,14 @@ class UploadManager(context: Context) : FileUploadService() {
                 try {
                     if (sub.get_id()!!.startsWith("guest")) continue
                     val ob = apiInterface.putDoc(
-                        Utilities.getHeader(),
+                        Utilities.header,
                         "application/json",
                         Utilities.getUrl() + "/achievements/" + sub.get_id(),
                         serialize(sub)
                     ).execute().body()
                     if (ob == null) {
                         val re = apiInterface.postDoc(
-                            Utilities.getHeader(),
+                            Utilities.header,
                             "application/json",
                             Utilities.getUrl() + "/achievements",
                             serialize(sub)
@@ -235,7 +235,7 @@ class UploadManager(context: Context) : FileUploadService() {
                 try {
                     if (sub.userId!!.startsWith("guest")) continue
                     val `object` = apiInterface.postDoc(
-                        Utilities.getHeader(),
+                        Utilities.header,
                         "application/json",
                         Utilities.getUrl() + "/courses_progress",
                         serializeProgress(sub)
@@ -263,7 +263,7 @@ class UploadManager(context: Context) : FileUploadService() {
                     try {
                         var res: Response<*>
                         res = apiInterface.postDoc(
-                            Utilities.getHeader(),
+                            Utilities.header,
                             "application/json",
                             Utilities.getUrl() + "/feedback",
                             serializeFeedback(feedback)
@@ -302,7 +302,7 @@ class UploadManager(context: Context) : FileUploadService() {
             for (sub in data) {
                 try {
                     val `object` = apiInterface.postDoc(
-                        Utilities.getHeader(),
+                        Utilities.header,
                         "application/json",
                         Utilities.getUrl() + "/submissions",
                         serializeRealmSubmitPhotos(sub)
@@ -336,7 +336,7 @@ class UploadManager(context: Context) : FileUploadService() {
             for (sub in data) {
                 try {
                     val `object` = apiInterface.postDoc(
-                        Utilities.getHeader(),
+                        Utilities.header,
                         "application/json",
                         Utilities.getUrl() + "/resources",
                         serialize(sub, user!!)
@@ -361,7 +361,7 @@ class UploadManager(context: Context) : FileUploadService() {
         val apiInterface = client!!.create(ApiInterface::class.java)
         if (!personal.isUploaded) {
             apiInterface.postDoc(
-                Utilities.getHeader(),
+                Utilities.header,
                 "application/json",
                 Utilities.getUrl() + "/resources",
                 serialize(personal, context)
@@ -399,7 +399,7 @@ class UploadManager(context: Context) : FileUploadService() {
                     var `object`: JsonObject? = null
                     try {
                         `object` = apiInterface.postDoc(
-                            Utilities.getHeader(),
+                            Utilities.header,
                             "application/json",
                             Utilities.getUrl() + "/tasks",
                             serialize(realm, task)
@@ -429,7 +429,7 @@ class UploadManager(context: Context) : FileUploadService() {
             for (team in teams) {
                 try {
                     val `object` = apiInterface.postDoc(
-                        Utilities.getHeader(),
+                        Utilities.header,
                         "application/json",
                         Utilities.getUrl() + "/teams",
                         serialize(team)
@@ -460,7 +460,7 @@ class UploadManager(context: Context) : FileUploadService() {
                     try {
                         if (act.userId!!.startsWith("guest")) continue
                         val `object` = apiInterface.postDoc(
-                            Utilities.getHeader(),
+                            Utilities.header,
                             "application/json",
                             Utilities.getUrl() + "/login_activities",
                             serializeLoginActivities(act, context)
@@ -484,7 +484,7 @@ class UploadManager(context: Context) : FileUploadService() {
         for (log in logs) {
             try {
                 val `object` = apiInterface.postDoc(
-                    Utilities.getHeader(),
+                    Utilities.header,
                     "application/json",
                     Utilities.getUrl() + "/team_activities",
                     serializeTeamActivities(log, context)
@@ -513,14 +513,14 @@ class UploadManager(context: Context) : FileUploadService() {
                     var `object`: Response<JsonObject?>
                     `object` = if (TextUtils.isEmpty(act._id)) {
                         apiInterface.postDoc(
-                            Utilities.getHeader(),
+                            Utilities.header,
                             "application/json",
                             Utilities.getUrl() + "/ratings",
                             serializeRating(act)
                         ).execute()
                     } else {
                         apiInterface.putDoc(
-                            Utilities.getHeader(),
+                            Utilities.header,
                             "application/json",
                             Utilities.getUrl() + "/ratings/" + act._id,
                             serializeRating(act)
@@ -558,7 +558,7 @@ class UploadManager(context: Context) : FileUploadService() {
                             val imgObject = Gson().fromJson(imageobject, JsonObject::class.java)
                             val ob = createImage(user, imgObject)
                             val response = apiInterface.postDoc(
-                                Utilities.getHeader(),
+                                Utilities.header,
                                 "application/json",
                                 Utilities.getUrl() + "/resources",
                                 ob
@@ -602,14 +602,14 @@ class UploadManager(context: Context) : FileUploadService() {
                     var newsUploadResponse: Response<JsonObject?>
                     newsUploadResponse = if (TextUtils.isEmpty(act.get_id())) {
                         apiInterface.postDoc(
-                            Utilities.getHeader(),
+                            Utilities.header,
                             "application/json",
                             Utilities.getUrl() + "/news",
                             `object`
                         ).execute()
                     } else {
                         apiInterface.putDoc(
-                            Utilities.getHeader(),
+                            Utilities.header,
                             "application/json",
                             Utilities.getUrl() + "/news/" + act.get_id(),
                             `object`
@@ -637,7 +637,7 @@ class UploadManager(context: Context) : FileUploadService() {
             for (act in logs) {
                 try {
                     val o = apiInterface.postDoc(
-                        Utilities.getHeader(),
+                        Utilities.header,
                         "application/json",
                         Utilities.getUrl() + "/apk_logs",
                         serialize(act, context)
@@ -659,7 +659,7 @@ class UploadManager(context: Context) : FileUploadService() {
             for (act in logs) {
                 try {
                     val o = apiInterface.postDoc(
-                        Utilities.getHeader(),
+                        Utilities.header,
                         "application/json",
                         Utilities.getUrl() + "/search_activities",
                         act.serialize()
@@ -688,7 +688,7 @@ class UploadManager(context: Context) : FileUploadService() {
             for (act in activities) {
                 try {
                     val `object` = apiInterface.postDoc(
-                        Utilities.getHeader(),
+                        Utilities.header,
                         "application/json",
                         Utilities.getUrl() + "/" + db,
                         serializeResourceActivities(act)
@@ -708,13 +708,13 @@ class UploadManager(context: Context) : FileUploadService() {
         mRealm = dbService.realmInstance
         val apiInterface = client!!.create(ApiInterface::class.java)
         mRealm!!.executeTransactionAsync { realm: Realm ->
-            val activities: RealmResults<RealmCourseActivity>
-            activities = realm.where(RealmCourseActivity::class.java).isNull("_rev")
+            val activities: RealmResults<RealmCourseActivity> =
+                realm.where(RealmCourseActivity::class.java).isNull("_rev")
                 .notEqualTo("type", "sync").findAll()
             for (act in activities) {
                 try {
                     val `object` = apiInterface.postDoc(
-                        Utilities.getHeader(),
+                        Utilities.header,
                         "application/json",
                         Utilities.getUrl() + "/course_activities",
                         serializeSerialize(act)

@@ -180,7 +180,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
 
     private fun loadRemoteImage(holder: RecyclerView.ViewHolder, news: RealmNews?) {
         val viewHolder = holder as ViewHolderNews
-        Utilities.log(news!!.images)
+        Utilities.log(news!!.images!!)
         if (news.imagesArray.size() > 0) {
             val ob = news.imagesArray[0].asJsonObject
             val resourceId = getString("resourceId", ob.asJsonObject)

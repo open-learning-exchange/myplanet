@@ -65,7 +65,7 @@ class MyDownloadService : IntentService("Download Service") {
         Utilities.log("File url $url")
         val retrofitInterface = ApiClient.client?.create(ApiInterface::class.java)
         if (retrofitInterface != null) {
-            request = retrofitInterface.downloadFile(Utilities.getHeader(), url)
+            request = retrofitInterface.downloadFile(Utilities.header, url)
             try {
                 val r = request?.execute()
                 if (r != null) {

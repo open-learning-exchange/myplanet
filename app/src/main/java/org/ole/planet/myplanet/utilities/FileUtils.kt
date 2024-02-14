@@ -15,7 +15,6 @@ import android.util.Log
 import android.webkit.MimeTypeMap
 import androidx.annotation.RequiresApi
 import androidx.core.content.FileProvider
-import androidx.fragment.app.Fragment
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
@@ -222,7 +221,7 @@ object FileUtils {
     @JvmStatic
     fun openOleFolder(): Intent {
         val intent = Intent(Intent.ACTION_GET_CONTENT)
-        val uri = Uri.parse(Utilities.SD_PATH)  // Ensure Utilities.SD_PATH is the correct path
+        val uri = Uri.parse(Utilities.SD_PATH)  // Ensure org.ole.planet.myplanet.utilities.Utilities.SD_PATH is the correct path
         intent.setDataAndType(uri, "*/*")
         return Intent.createChooser(intent, "Open folder")
     }

@@ -70,7 +70,7 @@ class AdapterLibrary(private val context: Context, private var libraryList: List
         if (holder is ViewHolderLibrary) {
             holder.bind()
             holder.rowLibraryBinding.title.text = libraryList[position]!!.title
-            Utilities.log(libraryList[position]!!.description)
+            Utilities.log(libraryList[position]!!.description!!)
             setMarkdownText(holder.rowLibraryBinding.description, libraryList[position]!!.description!!)
             holder.rowLibraryBinding.timesRated.text = libraryList[position]!!.timesRated.toString() + context.getString(R.string.total)
             holder.rowLibraryBinding.checkbox.isChecked = selectedItems.contains(libraryList[position])
@@ -87,7 +87,7 @@ class AdapterLibrary(private val context: Context, private var libraryList: List
                 holder.rowLibraryBinding.ratingBar.rating = 0f
             }
             holder.rowLibraryBinding.checkbox.setOnClickListener { view: View ->
-                Utilities.handleCheck((view as CheckBox).isChecked, position, selectedItems as ArrayList<*>, libraryList)
+                Utilities.handleCheck((view as CheckBox).isChecked, position, selectedItems as MutableList<Any>, libraryList)
                 if (listener != null) listener!!.onSelectedListChange(selectedItems)
             }
         }

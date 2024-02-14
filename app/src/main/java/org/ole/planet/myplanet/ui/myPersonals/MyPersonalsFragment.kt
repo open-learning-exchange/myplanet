@@ -88,7 +88,9 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
         pg!!.show()
         if (personal != null) {
             UploadManager.instance?.uploadMyPersonal(personal) { s: String? ->
-                Utilities.toast(activity, s)
+                if (s != null) {
+                    Utilities.toast(activity, s)
+                }
                 pg!!.dismiss()
             }
         }

@@ -163,7 +163,7 @@ abstract class BaseResourceFragment : Fragment() {
             .setPositiveButton(R.string.dismiss, null).show()
     }
 
-    fun startDownload(urls: ArrayList<*>) {
+    fun startDownload(urls: ArrayList<String>) {
         if (isAdded) {
             Service(requireActivity()).isPlanetAvailable(object : PlanetAvailableListener {
                 override fun isAvailable() {

@@ -151,7 +151,7 @@ open class RealmUserModel : RealmObject() {
             val obj = element.asJsonObject
             val entries = obj.entrySet()
             for ((key1) in entries) {
-                userImage = Utilities.getUserImageUrl(id, key1)
+                userImage = Utilities.getUserImageUrl(id!!, key1)
                 break
             }
         }

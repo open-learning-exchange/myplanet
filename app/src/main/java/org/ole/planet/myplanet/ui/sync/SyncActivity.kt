@@ -439,8 +439,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 inputPassword.setText(settings.getString(getString(R.string.login_password), ""))
             }
             if (isNetworkConnected()) {
-                service.syncPlanetServers(mRealm,
-                    SuccessListener { success: String? -> Utilities.toast(this, success) })
+                service.syncPlanetServers(mRealm, { success: String? -> Utilities.toast(this, success!!) })
             }
             inputName.addTextChangedListener(object : TextWatcher {
                 override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
