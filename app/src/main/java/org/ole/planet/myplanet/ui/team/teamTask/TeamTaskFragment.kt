@@ -40,7 +40,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
     private var deadline: Calendar? = null
     private var datePicker: TextView? = null
     var list: List<RealmTeamTask>? = null
-    private var adapterTask: AdapterTask? = null
+    private lateinit var adapterTask: AdapterTask
     var listener = DatePickerDialog.OnDateSetListener { _: DatePicker?, year: Int, monthOfYear: Int, dayOfMonth: Int ->
             deadline = Calendar.getInstance()
             deadline!!.set(Calendar.YEAR, year)
@@ -146,9 +146,11 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
     }
 
     private fun setAdapter() {
-        adapterTask = AdapterTask(requireActivity(), mRealm, list!!)
-        adapterTask!!.setListener(this)
-        fragmentTeamTaskBinding.rvTask.adapter = adapterTask
+        if(isAdded) {
+            adapterTask = AdapterTask(requireContext(), mRealm, list!!)
+            adapterTask.setListener(this)
+            fragmentTeamTaskBinding.rvTask.adapter = adapterTask
+        }
     }
 
     override fun onCheckChange(realmTeamTask: RealmTeamTask?, b: Boolean) {
@@ -174,7 +176,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
         task!!.deleteFromRealm()
         Utilities.toast(activity, getString(R.string.task_deleted_successfully))
         mRealm.commitTransaction()
-        adapterTask!!.notifyDataSetChanged()
+        adapterTask.notifyDataSetChanged()
         showNoData(fragmentTeamTaskBinding.tvNodata, fragmentTeamTaskBinding.rvTask.adapter!!.itemCount)
     }
 
