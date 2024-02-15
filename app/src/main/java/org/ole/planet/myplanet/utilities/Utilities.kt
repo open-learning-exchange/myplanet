@@ -30,13 +30,16 @@ object Utilities {
         contextRef = WeakReference(ctx.applicationContext)
     }
 
+    val context: Context?
+        get() = contextRef?.get()
+
     val SD_PATH: String by lazy {
-        context.getExternalFilesDir(null)?.let { "$it/ole/" } ?: ""
+        context?.getExternalFilesDir(null)?.let { "$it/ole/" } ?: "default/fallback/path"
     }
 
     @JvmStatic
     fun log(message: String) {
-        Log.d("OLE ", "log: $message")
+        context?.let { Log.d("OLE ", "log: $message") } ?: Log.d("OLE ", "log: $message - Context is null")
     }
 
     fun getUrl(library: RealmMyLibrary?, settings: SharedPreferences?): String {
@@ -94,11 +97,13 @@ object Utilities {
     fun loadImage(userImage: String?, imageView: ImageView) {
         log("User image $userImage")
         if (!TextUtils.isEmpty(userImage)) {
-            Glide.with(context)
-                .load(userImage)
-                .placeholder(R.drawable.profile)
-                .error(R.drawable.profile)
-                .into(imageView)
+            context?.let {
+                Glide.with(it)
+                    .load(userImage)
+                    .placeholder(R.drawable.profile)
+                    .error(R.drawable.profile)
+                    .into(imageView)
+            }
         } else {
             imageView.setImageResource(R.drawable.ole_logo)
         }
@@ -114,40 +119,43 @@ object Utilities {
 
     val header: String
         get() {
-            val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            log("User " + settings.getString("url_user", "") + " " + settings.getString("url_pwd", ""))
-            return "Basic " + Base64.encodeToString((settings.getString("url_user", "") + ":" + settings.getString("url_pwd", "")).toByteArray(), Base64.NO_WRAP)
+            val settings = context?.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            log("User " + settings?.getString("url_user", "") + " " + settings?.getString("url_pwd", ""))
+            return "Basic " + Base64.encodeToString((settings?.getString("url_user", "") + ":" + settings?.getString("url_pwd", "")).toByteArray(), Base64.NO_WRAP)
         }
 
     fun getUrl(): String {
-        val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        if (settings.contains("couchdbURL")) {
-            var url = settings.getString("couchdbURL", "")
+        val settings = context?.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        if (settings != null) {
+            if (settings.contains("couchdbURL")) {
+                var url = settings.getString("couchdbURL", "")
 
-            if (!url?.endsWith("/db")!!) {
-                url += "/db"
+                if (!url?.endsWith("/db")!!) {
+                    url += "/db"
+                }
+                return url
             }
-            return url
         }
         return ""
     }
 
     val hostUrl: String
         get() {
-            val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            val url: String?
+            val safeContext = context ?: return "default/fallback/host/url"
+            val settings = safeContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             val scheme = settings.getString("url_Scheme", "")
             val hostIp = settings.getString("url_Host", "")
-            if (settings.contains("url_Host")) {
-                url = if (settings.getString("url_Host", "")!!.endsWith(".org")) {
+
+            if (settings.contains("url_Host") && hostIp != null && scheme != null) {
+                return if (hostIp.endsWith(".org")) {
                     "$scheme://$hostIp/ml/"
                 } else {
                     "$scheme://$hostIp:5000"
                 }
-                return url
             }
-            return ""
+            return "default/fallback/host/url"
         }
+
 
     fun getUpdateUrl(settings: SharedPreferences): String {
         var url = settings.getString("couchdbURL", "")
@@ -190,13 +198,13 @@ object Utilities {
     }
 
     fun getApkUpdateUrl(path: String): String {
-        val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val safeContext = context ?: return "default/fallback/update/url"
+        val preferences = safeContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         var url = preferences.getString("couchdbURL", "")
-        if (url != null) {
-            if (url.endsWith("/db")) {
-                url = url.replace("/db", "")
-            }
+        if (url != null && url.endsWith("/db")) {
+            url = url.replace("/db", "")
         }
+
         return "$url$path"
     }
 
