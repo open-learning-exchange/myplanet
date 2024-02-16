@@ -12,6 +12,7 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.datamanager.ApiInterface
+import org.ole.planet.myplanet.model.DocumentResponse
 import org.ole.planet.myplanet.model.RealmChatHistory.Companion.insert
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -27,10 +28,12 @@ import java.io.IOException
 
 object TransactionSyncManager {
     fun authenticate(): Boolean {
-        val apiInterface = client!!.create(ApiInterface::class.java)
+        val apiInterface = client?.create(ApiInterface::class.java)
         try {
-            val response: Response<*> = apiInterface.getDocuments(Utilities.header, Utilities.getUrl() + "/tablet_users/_all_docs").execute()
-            return response.code() == 200
+            val response: Response<DocumentResponse>? = apiInterface?.getDocuments(Utilities.header, Utilities.getUrl() + "/tablet_users/_all_docs")?.execute()
+            if (response != null) {
+                return response.code() == 200
+            }
         } catch (e: IOException) {
             e.printStackTrace()
         }
@@ -50,24 +53,22 @@ object TransactionSyncManager {
                 syncHealthData(userModel, header)
             }
         }, { listener.onSyncComplete() }) { error: Throwable ->
-            listener.onSyncFailed(
-                error.message!!
-            )
+            error.message?.let { listener.onSyncFailed(it) }
         }
     }
 
     private fun syncHealthData(userModel: RealmUserModel?, header: String) {
-        val table = "userdb-" + Utilities.toHex(userModel!!.planetCode!!) + "-" + Utilities.toHex(userModel.name!!)
-        val apiInterface = client!!.create(ApiInterface::class.java)
-        val response: Response<*>
+        val table = "userdb-" + userModel?.planetCode?.let { Utilities.toHex(it) } + "-" + userModel?.name?.let { Utilities.toHex(it) }
+        val apiInterface = client?.create(ApiInterface::class.java)
+        val response: Response<DocumentResponse>?
         try {
-            response = apiInterface.getDocuments(header, Utilities.getUrl() + "/" + table + "/_all_docs").execute()
-            val ob = response.body()
-            if (ob != null && ob.rows!!.isNotEmpty()) {
+            response = apiInterface?.getDocuments(header, Utilities.getUrl() + "/" + table + "/_all_docs")?.execute()
+            val ob = response?.body()
+            if (ob != null && ob.rows?.isNotEmpty() == true) {
                 val r = ob.rows!![0]
-                val jsonDoc = apiInterface.getJsonObject(header, Utilities.getUrl() + "/" + table + "/" + r.id).execute().body()
-                userModel.key = getString("key", jsonDoc)
-                userModel.iv = getString("iv", jsonDoc)
+                val jsonDoc = apiInterface?.getJsonObject(header, Utilities.getUrl() + "/" + table + "/" + r.id)?.execute()?.body()
+                userModel?.key = getString("key", jsonDoc)
+                userModel?.iv = getString("iv", jsonDoc)
             }
         } catch (e: IOException) {
             e.printStackTrace()
@@ -79,35 +80,33 @@ object TransactionSyncManager {
         val model = UserProfileDbHandler(MainApplication.context).userModel
         val userName = settings.getString("loginUserName", "")
         val password = settings.getString("loginUserPassword", "")
-        val table = "userdb-" + Utilities.toHex(model!!.planetCode!!) + "-" + Utilities.toHex(model.name!!)
+        val table = "userdb-" + model?.planetCode?.let { Utilities.toHex(it) } + "-" + model?.name?.let { Utilities.toHex(it) }
         val header = "Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)
-        val id = model.id
+        val id = model?.id
         mRealm.executeTransactionAsync({ realm: Realm ->
             val userModel = realm.where(RealmUserModel::class.java).equalTo("id", id).findFirst()
             syncHealthData(userModel, header)
         }, { listener.onSyncComplete() }) { error: Throwable ->
-            listener.onSyncFailed(error.message!!)
+            error.message?.let { listener.onSyncFailed(it) }
         }
     }
 
     fun syncDb(realm: Realm, table: String) {
         realm.executeTransactionAsync { mRealm: Realm ->
-            val apiInterface = client!!.create(ApiInterface::class.java)
-            val allDocs = apiInterface.getJsonObject(Utilities.header, Utilities.getUrl() + "/" + table + "/_all_docs?include_doc=false")
+            val apiInterface = client?.create(ApiInterface::class.java)
+            val allDocs = apiInterface?.getJsonObject(Utilities.header, Utilities.getUrl() + "/" + table + "/_all_docs?include_doc=false")
             try {
-                val all = allDocs.execute()
-                val rows = getJsonArray("rows", all.body())
+                val all = allDocs?.execute()
+                val rows = getJsonArray("rows", all?.body())
                 val keys: MutableList<String> = ArrayList()
                 for (i in 0 until rows.size()) {
                     val `object` = rows[i].asJsonObject
-                    if (!TextUtils.isEmpty(getString("id", `object`))) keys.add(
-                        getString("key", `object`)
-                    )
+                    if (!TextUtils.isEmpty(getString("id", `object`))) keys.add(getString("key", `object`))
                     if (i == rows.size() - 1 || keys.size == 1000) {
                         val obj = JsonObject()
                         obj.add("keys", Gson().fromJson(Gson().toJson(keys), JsonArray::class.java))
-                        val response = apiInterface.findDocs(Utilities.header, "application/json", Utilities.getUrl() + "/" + table + "/_all_docs?include_docs=true", obj).execute()
-                        if (response.body() != null) {
+                        val response = apiInterface?.findDocs(Utilities.header, "application/json", Utilities.getUrl() + "/" + table + "/_all_docs?include_docs=true", obj)?.execute()
+                        if (response?.body() != null) {
                             val arr = getJsonArray("rows", response.body())
                             if (table == "chat_history") {
                                 insertToChat(arr, mRealm)
@@ -159,11 +158,13 @@ object TransactionSyncManager {
 
     private fun callMethod(mRealm: Realm, jsonDoc: JsonObject, type: String) {
         try {
-            val methods = Constants.classList[type]!!.methods
-            for (m in methods) {
-                if ("insert" == m.name) {
-                    m.invoke(null, mRealm, jsonDoc)
-                    break
+            val methods = Constants.classList[type]?.methods
+            methods?.let {
+                for (m in it) {
+                    if ("insert" == m.name) {
+                        m.invoke(null, mRealm, jsonDoc)
+                        break
+                    }
                 }
             }
         } catch (e: Exception) {
