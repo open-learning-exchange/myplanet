@@ -40,9 +40,9 @@ open class RealmAnswer : RealmObject() {
             return array
         }
 
-    fun setValueChoices(map: HashMap<String?, String?>, isLastAnsvalid: Boolean) {
+    fun setValueChoices(map: HashMap<String, String>?, isLastAnsvalid: Boolean) {
         if (!isLastAnsvalid) valueChoices!!.clear()
-        for (key in map.keys) {
+        for (key in map!!.keys) {
             val ob = JsonObject()
             ob.addProperty("id", map[key])
             ob.addProperty("text", key)
