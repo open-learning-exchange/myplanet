@@ -1,7 +1,9 @@
 package org.ole.planet.myplanet.ui.dashboard.notification
 
 import android.content.Context
+import android.os.SystemClock
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.callback.NotificationCallback
@@ -23,7 +25,7 @@ class AdapterNotification(var context: Context, var list: List<Notifications>, v
         if (holder is ViewHolderNotification) {
             rowNotificationBinding.title.text = list[position].text
             rowNotificationBinding.icon.setImageResource(list[position].icon)
-            holder.itemView.setOnClickListener {
+            holder.itemView.setSafeOnClickListener {
                 when (position) {
                     0 -> callback.showResourceDownloadDialog()
                     1 -> callback.showUserResourceDialog()
@@ -43,5 +45,17 @@ class AdapterNotification(var context: Context, var list: List<Notifications>, v
         init {
             this.rowNotificationBinding = rowNotificationBinding
         }
+    }
+
+    private fun View.setSafeOnClickListener(debounceTime: Long = 1000, onClick: (View) -> Unit) {
+        this.setOnClickListener(object : View.OnClickListener {
+            private var lastClickTime: Long = 0
+
+            override fun onClick(v: View) {
+                if (SystemClock.elapsedRealtime() - lastClickTime < debounceTime) return
+                lastClickTime = SystemClock.elapsedRealtime()
+                onClick(v)
+            }
+        })
     }
 }
