@@ -145,7 +145,9 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
 
     fun showErrorMessage(s: String?): Boolean {
         if (ans.isEmpty() && listAns!!.isEmpty()) {
-            Utilities.toast(activity, s)
+            if (s != null) {
+                Utilities.toast(activity, s)
+            }
             return true
         }
         return false
@@ -189,7 +191,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
         submit.uniqueId = unique_id
         submit.photoLocation = photo_path
         submit.uploaded = false
-        Utilities.log(submit.photoLocation)
+        submit.photoLocation?.let { Utilities.log(it) }
         Utilities.log("insert_into_submitPhotos")
         mRealm!!.commitTransaction()
     }
@@ -197,7 +199,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     override fun onImageCapture(fileUri: String?) {
         photo_path = fileUri
         insert_into_submitPhotos(Submit_id)
-        Utilities.log(photo_path)
+        photo_path?.let { Utilities.log(it) }
     }
 
     fun setMarkdownViewAndShowInput(etAnswer: EditText, type: String, oldAnswer: String?) {
