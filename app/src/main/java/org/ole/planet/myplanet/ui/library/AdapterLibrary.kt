@@ -168,10 +168,14 @@ class AdapterLibrary(private val context: Context, private var libraryList: List
     internal inner class ViewHolderLibrary(val rowLibraryBinding: RowLibraryBinding) :
         RecyclerView.ViewHolder(rowLibraryBinding.root) {
             init {
-                rowLibraryBinding.ratingBar.setOnTouchListener { v1: View?, event: MotionEvent ->
-                    if (event.action == MotionEvent.ACTION_UP) homeItemClickListener!!.showRatingDialog("resource",
-                        libraryList[adapterPosition]!!.resourceId, libraryList[adapterPosition]!!.title, ratingChangeListener
-                    )
+                rowLibraryBinding.ratingBar.setOnTouchListener { _: View?, event: MotionEvent ->
+                    if (event.action == MotionEvent.ACTION_UP) {
+                        homeItemClickListener!!.showRatingDialog("resource",
+                            libraryList[bindingAdapterPosition]!!.resourceId,
+                            libraryList[bindingAdapterPosition]!!.title,
+                            ratingChangeListener
+                        )
+                    }
                     true
                 }
             }
