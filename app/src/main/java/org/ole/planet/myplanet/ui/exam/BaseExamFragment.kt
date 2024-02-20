@@ -33,27 +33,27 @@ import java.util.UUID
 
 abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     var exam: RealmStepExam? = null
-    var db: DatabaseService? = null
-    var mRealm: Realm? = null
+    lateinit var db: DatabaseService
+    lateinit var mRealm: Realm
     var stepId: String? = null
     var id: String? = ""
     var type: String? = "exam"
     var currentIndex = 0
-    var stepNumber = 0
+    private var stepNumber = 0
     var questions: RealmResults<RealmExamQuestion>? = null
     var ans = ""
     var user: RealmUserModel? = null
     var sub: RealmSubmission? = null
     var listAns: HashMap<String, String>? = null
     var isMySurvey = false
-    var unique_id = getUniqueIdentifier()
+    private var unique_id = getUniqueIdentifier()
     var date = Date().toString()
-    var photo_path: String? = ""
+    private var photo_path: String? = ""
     var Submit_id = ""
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         db = DatabaseService(requireActivity())
-        mRealm = db!!.realmInstance
+        mRealm = db.realmInstance
         if (arguments != null) {
             stepId = requireArguments().getString("stepId")
             stepNumber = requireArguments().getInt("stepNum")
@@ -67,9 +67,12 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
         if (TextUtils.isEmpty(stepId)) {
             id = requireArguments().getString("id")
             if (isMySurvey) {
-                sub = mRealm!!.where(RealmSubmission::class.java).equalTo("id", id).findFirst()
-                id = if (sub!!.parentId!!.contains("@")) sub!!.parentId!!.split("@".toRegex())
-                    .dropLastWhile { it.isEmpty() }.toTypedArray()[0] else sub!!.parentId
+                sub = mRealm.where(RealmSubmission::class.java).equalTo("id", id).findFirst()
+                id = if (sub?.parentId?.contains("@") == true) {
+                    sub!!.parentId?.split("@".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()?.get(0)
+                } else {
+                    sub!!.parentId
+                }
             }
         }
     }
@@ -82,10 +85,9 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
 
     fun initExam() {
         exam = if (!TextUtils.isEmpty(stepId)) {
-            mRealm!!.where(RealmStepExam::class.java).equalTo("stepId", stepId)
-                .findFirst()
+            mRealm.where(RealmStepExam::class.java).equalTo("stepId", stepId).findFirst()
         } else {
-            mRealm!!.where(RealmStepExam::class.java).equalTo("id", id).findFirst()
+            mRealm.where(RealmStepExam::class.java).equalTo("id", id).findFirst()
         }
     }
 
@@ -93,7 +95,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     fun checkAnsAndContinue(cont: Boolean) {
         if (cont) {
             isLastAnsvalid = true
-            currentIndex = currentIndex + 1
+            currentIndex += 1
             continueExam()
         } else {
             isLastAnsvalid = false
@@ -102,15 +104,15 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     }
 
     private fun continueExam() {
-        if (currentIndex < questions!!.size) {
-            startExam(questions!![currentIndex])
-        } else if (type!!.startsWith("survey")) {
+        if (currentIndex < (questions?.size ?: 0)) {
+            startExam(questions?.get(currentIndex))
+        } else if (type?.startsWith("survey") == true) {
             showUserInfoDialog()
         } else {
             saveCourseProgress()
             AlertDialog.Builder(requireActivity())
                 .setTitle(getString(R.string.thank_you_for_taking_this) + type + getString(R.string.we_wish_you_all_the_best))
-                .setPositiveButton("Finish") { dialogInterface: DialogInterface?, i: Int ->
+                .setPositiveButton("Finish") { _: DialogInterface?, _: Int ->
                     requireActivity().onBackPressed()
                     try {
                     } catch (e: Exception) {
@@ -121,30 +123,30 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     }
 
     private fun saveCourseProgress() {
-        val progress =
-            mRealm!!.where(RealmCourseProgress::class.java).equalTo("courseId", exam!!.courseId)
-                .equalTo("stepNum", stepNumber).findFirst()
+        val progress = mRealm.where(RealmCourseProgress::class.java)
+            .equalTo("courseId", exam?.courseId)
+            .equalTo("stepNum", stepNumber).findFirst()
         if (progress != null) {
-            if (!mRealm!!.isInTransaction) mRealm!!.beginTransaction()
-            progress.passed = sub!!.status == "graded"
-            mRealm!!.commitTransaction()
+            if (!mRealm.isInTransaction) mRealm.beginTransaction()
+            progress.passed = sub?.status == "graded"
+            mRealm.commitTransaction()
         }
     }
 
     private fun showUserInfoDialog() {
-        if (!isMySurvey && !exam!!.isFromNation) {
-            UserInformationFragment.Companion.getInstance(sub!!.id).show(childFragmentManager, "")
+        if (!isMySurvey && !exam?.isFromNation!!) {
+            UserInformationFragment.getInstance(sub?.id).show(childFragmentManager, "")
         } else {
-            if (!mRealm!!.isInTransaction) mRealm!!.beginTransaction()
-            sub!!.status = "complete"
-            mRealm!!.commitTransaction()
+            if (!mRealm.isInTransaction) mRealm.beginTransaction()
+            sub?.status = "complete"
+            mRealm.commitTransaction()
             Utilities.toast(activity, getString(R.string.thank_you_for_taking_this_survey))
             requireActivity().onBackPressed()
         }
     }
 
     fun showErrorMessage(s: String?): Boolean {
-        if (ans.isEmpty() && listAns!!.isEmpty()) {
+        if (ans.isEmpty() && listAns?.isEmpty() != false) {
             if (s != null) {
                 Utilities.toast(activity, s)
             }
@@ -155,14 +157,13 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
 
     fun createAnswer(list: RealmList<RealmAnswer>?): RealmAnswer? {
         var list = list
-        val answer: RealmAnswer?
         if (list == null) {
             list = RealmList()
         }
-        answer = if (list.size > currentIndex) {
+        val answer: RealmAnswer? = if (list.size > currentIndex) {
             list[currentIndex]
         } else {
-            mRealm!!.createObject(
+            mRealm.createObject(
                 RealmAnswer::class.java,
                 UUID.randomUUID().toString()
             )
@@ -172,28 +173,27 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
 
     fun addAnswer(compoundButton: CompoundButton) {
         if (compoundButton.tag != null) {
-            listAns!![compoundButton.text.toString() + ""] = compoundButton.tag.toString() + ""
+            listAns?.set(compoundButton.text.toString() + "", compoundButton.tag.toString() + "")
         } else {
             ans = compoundButton.text.toString() + ""
         }
     }
 
     abstract fun startExam(question: RealmExamQuestion?)
-    fun insert_into_submitPhotos(submit_id: String?) {
-        mRealm!!.beginTransaction()
-        val submit =
-            mRealm!!.createObject(RealmSubmitPhotos::class.java, UUID.randomUUID().toString())
+    private fun insert_into_submitPhotos(submit_id: String?) {
+        mRealm.beginTransaction()
+        val submit = mRealm.createObject(RealmSubmitPhotos::class.java, UUID.randomUUID().toString())
         submit.submissionId = submit_id
-        submit.examId = exam!!.id
-        submit.courseId = exam!!.courseId
-        submit.memberId = user!!.id
+        submit.examId = exam?.id
+        submit.courseId = exam?.courseId
+        submit.memberId = user?.id
         submit.date = date
         submit.uniqueId = unique_id
         submit.photoLocation = photo_path
         submit.uploaded = false
         submit.photoLocation?.let { Utilities.log(it) }
         Utilities.log("insert_into_submitPhotos")
-        mRealm!!.commitTransaction()
+        mRealm.commitTransaction()
     }
 
     override fun onImageCapture(fileUri: String?) {
@@ -210,14 +210,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
             etAnswer.addTextChangedListener(MarkwonEditorTextWatcher.withProcess(editor))
         } else {
             etAnswer.addTextChangedListener(object : TextWatcher {
-                override fun beforeTextChanged(
-                    charSequence: CharSequence,
-                    i: Int,
-                    i1: Int,
-                    i2: Int
-                ) {
-                }
-
+                override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
                 override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
                 override fun afterTextChanged(editable: Editable) {}
             })
