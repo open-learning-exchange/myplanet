@@ -87,9 +87,15 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
             .setPositiveButton(R.string.save) { _: DialogInterface?, _: Int ->
                 val task = alertTaskBinding.etTask.text.toString()
                 val desc = alertTaskBinding.etDescription.text.toString()
-                if (task.isEmpty()) Utilities.toast(activity, getString(R.string.task_title_is_required))
-                else if (deadline == null) Utilities.toast(activity, getString(R.string.deadline_is_required))
-                else createOrUpdateTask(task, desc, t)
+                if (task.isEmpty()) {
+                    Utilities.toast(activity, getString(R.string.task_title_is_required))
+                } else if (deadline == null) {
+                    Utilities.toast(activity, getString(R.string.deadline_is_required))
+                } else {
+                    createOrUpdateTask(task, desc, t)
+                    setAdapter()
+                }
+
             }.setNegativeButton(getString(R.string.cancel), null).show()
     }
 
@@ -195,6 +201,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
                 Utilities.toast(activity, getString(R.string.assign_task_to) + " " + user.name)
                 mRealm.commitTransaction()
                 adapter.notifyDataSetChanged()
+                setAdapter()
             }.show()
     }
 }
