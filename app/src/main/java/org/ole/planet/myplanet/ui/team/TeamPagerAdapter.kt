@@ -74,11 +74,26 @@ class TeamPagerAdapter(fm: FragmentManager?, team: RealmMyTeam, private val isIn
             4 -> f = EnterpriseCalendarFragment()
             5 -> f = fragment //finances
             6 -> {
-                f = TeamResourceFragment()
-                MainApplication.listener = f
+                if (isEnterprise) {
+                    f = EnterpriseCalendarFragment()
+                } else {
+                    f = TeamResourceFragment()
+                    MainApplication.listener = f
+                }
             }
-
-            7 -> f = MembersFragment()
+            7 -> {
+                if (isEnterprise) {
+                    f = TeamResourceFragment()
+                    MainApplication.listener = f
+                } else {
+                    f = MembersFragment()
+                }
+            }
+            8 -> {
+                if (isEnterprise) {
+                    f = MembersFragment()
+                }
+            }
         }
         return f
     }
