@@ -166,16 +166,17 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 //            }
 //        }
 //
-//        val apkFile = File(directory, items.resourceLocalAddress)
-//        if (!apkFile.exists()) {
-//            Utilities.toast(activity,"APK file not found")
-//            return
+//        val apkFile = items.resourceLocalAddress?.let { File(directory, it) }
+//        if (apkFile != null) {
+//            if (!apkFile.exists()) {
+//                Utilities.toast(activity,"APK file not found")
+//                return
+//            }
 //        }
 //
-//        val uri = FileProvider.getUriForFile(
-//            MainApplication.context, "${MainApplication.context.packageName}.fileprovider",
-//            apkFile
-//        )
+//        val uri = apkFile?.let {
+//            FileProvider.getUriForFile(MainApplication.context, "${MainApplication.context.packageName}.fileprovider", it)
+//        }
 //
 //        val intent = Intent(Intent.ACTION_INSTALL_PACKAGE)
 //        intent.data = uri
