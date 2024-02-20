@@ -182,7 +182,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
         task!!.deleteFromRealm()
         Utilities.toast(activity, getString(R.string.task_deleted_successfully))
         mRealm.commitTransaction()
-        adapterTask.notifyDataSetChanged()
+        setAdapter()
         showNoData(fragmentTeamTaskBinding.tvNodata, fragmentTeamTaskBinding.rvTask.adapter!!.itemCount)
     }
 
