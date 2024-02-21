@@ -47,7 +47,7 @@ class SimpleItemTouchHelperCallback(private val mAdapter: ItemTouchHelperAdapter
         }
 
         // Notify the adapter of the move
-        mAdapter.onItemMove(source.adapterPosition, target.adapterPosition)
+        mAdapter.onItemMove(source.bindingAdapterPosition, target.bindingAdapterPosition)
         return true
     }
 
