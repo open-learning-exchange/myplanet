@@ -182,7 +182,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
 
     override fun onClickMore(realmTeamTask: RealmTeamTask?) {
         val alertUsersSpinnerBinding = AlertUsersSpinnerBinding.inflate(LayoutInflater.from(MainApplication.context))
-        val userList: List<RealmUserModel> = getJoinedMember(teamId!!, mRealm)
+        val userList: List<RealmUserModel> = getJoinedMember(teamId, mRealm)
         val adapter: ArrayAdapter<RealmUserModel> = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, userList)
         alertUsersSpinnerBinding.spnUser.adapter = adapter
         AlertDialog.Builder(requireActivity()).setTitle(R.string.select_member)

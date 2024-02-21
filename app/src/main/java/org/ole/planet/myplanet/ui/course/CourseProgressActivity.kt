@@ -64,9 +64,10 @@ class CourseProgressActivity : BaseActivity() {
 
     private fun getExamObject(exams: RealmResults<RealmStepExam>, ob: JsonObject) {
         exams.forEach { it ->
-            val submissions = realm.where(RealmSubmission::class.java).equalTo("userId", user.id)
-                .contains("parentId", it.id).equalTo("type", "exam").findAll()
-            submissions.map {
+            it.id?.let { it1 ->
+                realm.where(RealmSubmission::class.java).equalTo("userId", user.id)
+                    .contains("parentId", it1).equalTo("type", "exam").findAll()
+            }?.map {
                 val answers = realm.where(RealmAnswer::class.java).equalTo("submissionId", it.id).findAll()
                 var examId = it.parentId
                 if (it.parentId?.contains("@") == true) {

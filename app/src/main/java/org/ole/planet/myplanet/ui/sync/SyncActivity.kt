@@ -10,7 +10,6 @@ import android.content.res.Resources
 import android.graphics.drawable.AnimationDrawable
 import android.os.Build
 import android.os.Bundle
-import androidx.preference.PreferenceManager
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
@@ -36,6 +35,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SwitchCompat
 import androidx.core.content.ContextCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import androidx.preference.PreferenceManager
 import com.afollestad.materialdialogs.DialogAction
 import com.afollestad.materialdialogs.MaterialDialog
 import com.google.android.material.textfield.TextInputLayout
@@ -44,7 +44,6 @@ import io.realm.Sort
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.databinding.AlertGuestLoginBinding
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
@@ -711,7 +710,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                             showUserAlreadyMemberDialog(username)
                         }
                     } else {
-                        val model = mRealm.copyFromRealm(createGuestUser(username, mRealm, settings))
+                        val model = createGuestUser(username, mRealm, settings)?.let { it1 ->
+                            mRealm.copyFromRealm(it1)
+                        }
                         if (model == null) {
                             Utilities.toast(this, getString(R.string.unable_to_login))
                         } else {
