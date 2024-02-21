@@ -50,7 +50,9 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
 
         val callback = object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                exoPlayer.stop()
+                if (this@VideoPlayerActivity::exoPlayer.isInitialized) {
+                    exoPlayer.stop()
+                }
                 finish()
             }
         }
