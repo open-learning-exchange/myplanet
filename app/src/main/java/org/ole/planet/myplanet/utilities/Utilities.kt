@@ -205,7 +205,7 @@ object Utilities {
     }
 
     fun getMimeType(url: String?): String? {
-        val extension = MimeTypeMap.getFileExtensionFromUrl(url)
+        val extension = FileUtils.getFileExtension(url)
         return MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
     }
 }
