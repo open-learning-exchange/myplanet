@@ -71,7 +71,7 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
         initializeViews(v)
         dbService = DatabaseService(requireActivity())
         mRealm = dbService!!.realmInstance
-        user = mRealm.copyFromRealm(profileDbHandler.userModel)
+        user = profileDbHandler.userModel?.let { mRealm.copyFromRealm(it) }
         team = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
         return fragmentMyTeamsDetailBinding.root
     }

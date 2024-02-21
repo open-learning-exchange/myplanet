@@ -152,12 +152,14 @@ open class RealmSubmission : RealmObject() {
         fun isStepCompleted(realm: Realm, id: String?, userId: String): Boolean {
             val exam = realm.where(RealmStepExam::class.java).equalTo("stepId", id).findFirst() ?: return true
             Utilities.log("Is step completed " + exam.id + " " + userId)
-            return realm.where(RealmSubmission::class.java).equalTo("userId", userId)
-                .contains("parentId", exam.id).notEqualTo("status", "pending").findFirst() != null
+            return exam.id?.let {
+                realm.where(RealmSubmission::class.java).equalTo("userId", userId)
+                    .contains("parentId", it).notEqualTo("status", "pending").findFirst()
+            } != null
         }
 
         @JvmStatic
-        fun createSubmission(sub: RealmSubmission?, mRealm: Realm): RealmSubmission? {
+        fun createSubmission(sub: RealmSubmission?, mRealm: Realm): RealmSubmission {
             var sub = sub
             if (sub == null || sub.status == "complete" && sub.type == "exam") sub =
                 mRealm.createObject(RealmSubmission::class.java, UUID.randomUUID().toString())
