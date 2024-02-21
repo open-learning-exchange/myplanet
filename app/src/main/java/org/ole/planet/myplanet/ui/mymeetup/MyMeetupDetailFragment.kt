@@ -47,7 +47,7 @@ class MyMeetupDetailFragment : Fragment(), View.OnClickListener {
         fragmentMyMeetupDetailBinding.btnLeave.setOnClickListener(this)
         mRealm = DatabaseService(requireActivity()).realmInstance
         profileDbHandler = UserProfileDbHandler(requireContext())
-        user = mRealm.copyFromRealm(profileDbHandler!!.userModel)
+        user = profileDbHandler!!.userModel?.let { mRealm.copyFromRealm(it) }
         return fragmentMyMeetupDetailBinding.root
     }
 

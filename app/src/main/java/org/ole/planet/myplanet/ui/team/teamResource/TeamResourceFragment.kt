@@ -35,7 +35,7 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener {
     }
 
     private fun showLibraryList() {
-        val libraries: List<RealmMyLibrary> = mRealm.where(RealmMyLibrary::class.java).`in`("id", getResourceIds(teamId!!, mRealm).toTypedArray<String>()).findAll()
+        val libraries: List<RealmMyLibrary> = mRealm.where(RealmMyLibrary::class.java).`in`("id", getResourceIds(teamId, mRealm).toTypedArray<String>()).findAll()
         adapterLibrary = settings?.let { AdapterTeamResource(requireActivity(), libraries, mRealm, teamId, it) }
         fragmentTeamResourceBinding.rvResource.layoutManager = GridLayoutManager(activity, 3)
         fragmentTeamResourceBinding.rvResource.adapter = adapterLibrary
@@ -46,7 +46,7 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener {
         val myLibraryAlertdialogBinding = MyLibraryAlertdialogBinding.inflate(layoutInflater)
         val alertDialogBuilder = AlertDialog.Builder(requireActivity())
         alertDialogBuilder.setTitle(R.string.select_resource)
-        val libraries: List<RealmMyLibrary> = mRealm.where(RealmMyLibrary::class.java).not().`in`("_id", getResourceIds(teamId!!, mRealm).toTypedArray<String>()).findAll()
+        val libraries: List<RealmMyLibrary> = mRealm.where(RealmMyLibrary::class.java).not().`in`("_id", getResourceIds(teamId, mRealm).toTypedArray<String>()).findAll()
         alertDialogBuilder.setView(myLibraryAlertdialogBinding.root)
             .setPositiveButton(R.string.add) { _: DialogInterface?, _: Int ->
                 val selected = myLibraryAlertdialogBinding.alertDialogListView.selectedItemsList

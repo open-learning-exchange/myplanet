@@ -301,15 +301,17 @@ class AdapterCourses(private val context: Context, private var courseList: List<
         fun prependBaseUrlToImages(markdownContent: String?, baseUrl: String): String {
             val pattern = "!\\[.*?\\]\\((.*?)\\)"
             val imagePattern = Pattern.compile(pattern)
-            val matcher = imagePattern.matcher(markdownContent)
+            val matcher = markdownContent?.let { imagePattern.matcher(it) }
             val result = StringBuffer()
-            while (matcher.find()) {
-                val relativePath = matcher.group(1)
-                val modifiedPath = relativePath.replaceFirst("resources/".toRegex(), "")
-                val fullUrl = baseUrl + modifiedPath
-                matcher.appendReplacement(result, "<img src=$fullUrl width=150 height=100/>")
+            if (matcher != null) {
+                while (matcher.find()) {
+                    val relativePath = matcher.group(1)
+                    val modifiedPath = relativePath?.replaceFirst("resources/".toRegex(), "")
+                    val fullUrl = baseUrl + modifiedPath
+                    matcher.appendReplacement(result, "<img src=$fullUrl width=150 height=100/>")
+                }
             }
-            matcher.appendTail(result)
+            matcher?.appendTail(result)
             return result.toString()
         }
     }

@@ -90,8 +90,8 @@ class AdapterMyPersonal(private val context: Context, private val list: List<Rea
 
     private fun openVideo(path: String?) {
         val b = Bundle()
-        b.putString("videoURL", "" + Uri.fromFile(File(path)))
-        b.putString("Auth", "" + Uri.fromFile(File(path)))
+        b.putString("videoURL", "" + Uri.fromFile(path?.let { File(it) }))
+        b.putString("Auth", "" + Uri.fromFile(path?.let { File(it) }))
         b.putString("videoType", "offline")
         val i = Intent(context, VideoPlayerActivity::class.java).putExtra("TOUCHED_FILE", path)
         i.putExtras(b)

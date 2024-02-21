@@ -37,7 +37,7 @@ class AdapterSteps(private val context: Context, private val list: List<RealmCou
     inner class ViewHolder(private val rowStepsBinding: RowStepsBinding) : RecyclerView.ViewHolder(rowStepsBinding.root) {
         init {
             itemView.setOnClickListener {
-                val position = adapterPosition
+                val position = bindingAdapterPosition
                 if (position != RecyclerView.NO_POSITION) {
                     toggleDescriptionVisibility(position)
                 }
