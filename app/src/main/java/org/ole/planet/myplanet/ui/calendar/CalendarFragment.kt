@@ -6,9 +6,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import com.applandeo.materialcalendarview.EventDay
-import com.applandeo.materialcalendarview.listeners.OnDayClickListener
-import org.ole.planet.myplanet.R
+import com.applandeo.materialcalendarview.CalendarDay
+import com.applandeo.materialcalendarview.listeners.OnCalendarDayClickListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentCalendarBinding
 import java.util.Calendar
@@ -17,10 +16,10 @@ class CalendarFragment : Fragment() {
     private lateinit var calendarBinding: FragmentCalendarBinding
     var listener: OnHomeItemClickListener? = null
     fun addEvents() {
-        val events: MutableList<EventDay> = ArrayList()
+        val events: MutableList<CalendarDay> = ArrayList()
         val calendar = Calendar.getInstance()
-        events.add(EventDay(calendar, R.drawable.bg_label_checked))
-        calendarBinding.calendarView.setEvents(events)
+        events.add(CalendarDay(calendar))
+        calendarBinding.calendarView.setCalendarDays(events)
     }
 
     override fun onAttach(context: Context) {
@@ -30,9 +29,8 @@ class CalendarFragment : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         calendarBinding = FragmentCalendarBinding.inflate(inflater, container, false)
-        calendarBinding.calendarView.setOnDayClickListener(object : OnDayClickListener {
-            override fun onDayClick(eventDay: EventDay) {
-
+        calendarBinding.calendarView.setOnCalendarDayClickListener(object : OnCalendarDayClickListener {
+            override fun onClick(calendarDay: CalendarDay) {
             }
         })
         val calendar = Calendar.getInstance()

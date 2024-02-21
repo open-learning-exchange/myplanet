@@ -1,7 +1,7 @@
 package org.ole.planet.myplanet.ui.map
 
 import android.os.Bundle
-import android.preference.PreferenceManager
+import androidx.preference.PreferenceManager
 import androidx.appcompat.app.AppCompatActivity
 import org.ole.planet.myplanet.databinding.ActivityOfflineMapBinding
 import org.osmdroid.config.Configuration
