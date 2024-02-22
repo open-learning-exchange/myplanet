@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.PREFS_NAME
 import org.ole.planet.myplanet.datamanager.MyDownloadService
+import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import java.lang.ref.WeakReference
 import java.math.BigInteger
@@ -103,8 +104,7 @@ object Utilities {
             imageView.setImageResource(R.drawable.ole_logo)
         }
     }
-
-    fun handleCheck(b: Boolean, i: Int, selectedItems: MutableList<Any>, list: List<*>) {
+    fun <T> handleCheck(b: Boolean, i: Int, selectedItems: MutableList<T?>, list: List<T?>) {
         if (b) {
             selectedItems.add(list[i]!!)
         } else if (selectedItems.contains(list[i])) {

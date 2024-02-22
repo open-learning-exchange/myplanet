@@ -28,7 +28,7 @@ class CollectionsFragment : DialogFragment(), OnClickTagItem, CompoundButton.OnC
     var adapter: TagExpandableAdapter? = null
     private var dbType: String? = null
     private var tagListener: TagClickListener? = null
-    private var selectedItemsList: ArrayList<RealmTag?>? = ArrayList()
+    private var selectedItemsList: MutableList<RealmTag> = ArrayList()
 
     fun setListener(listener: TagClickListener?) {
         this.tagListener = listener
@@ -87,7 +87,7 @@ class CollectionsFragment : DialogFragment(), OnClickTagItem, CompoundButton.OnC
 
     private fun setListAdapter() {
         list = mRealm!!.where(RealmTag::class.java).equalTo("db", dbType).isNotEmpty("name").equalTo("isAttached", false).findAll()
-        selectedItemsList = recentList as ArrayList<RealmTag?>?
+        selectedItemsList = recentList
         val allTags: List<RealmTag> = mRealm!!.where(RealmTag::class.java).findAll()
         val childMap = HashMap<String?, MutableList<RealmTag>>()
         for (t in allTags) {
@@ -112,16 +112,16 @@ class CollectionsFragment : DialogFragment(), OnClickTagItem, CompoundButton.OnC
         }
     }
 
-    override fun onTagClicked(tag: RealmTag?) {
+    override fun onTagClicked(tag: RealmTag) {
         if (tagListener != null) tagListener!!.onTagSelected(tag)
         dismiss()
     }
 
-    override fun onCheckboxTagSelected(tag: RealmTag?) {
-        if (selectedItemsList!!.contains(tag)) {
-            selectedItemsList!!.remove(tag)
+    override fun onCheckboxTagSelected(tag: RealmTag) {
+        if (selectedItemsList.contains(tag)) {
+            selectedItemsList.remove(tag)
         } else {
-            selectedItemsList!!.add(tag)
+            selectedItemsList.add(tag)
         }
     }
 
@@ -134,9 +134,9 @@ class CollectionsFragment : DialogFragment(), OnClickTagItem, CompoundButton.OnC
     }
 
     companion object {
-        var recentList: List<RealmTag>? = null
-        fun getInstance(l: MutableList<RealmTag?>?, dbType: String?): CollectionsFragment {
-            recentList = l as List<RealmTag>?
+        lateinit var recentList: MutableList<RealmTag>
+        fun getInstance(l: MutableList<RealmTag>, dbType: String?): CollectionsFragment {
+            recentList = l
             val f = CollectionsFragment()
             val b = Bundle()
             b.putString("dbType", dbType)
