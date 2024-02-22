@@ -49,17 +49,21 @@ class MyProgressFragment : Fragment() {
             obj.addProperty("courseName", it.courseTitle)
             obj.addProperty("courseId", it.courseId)
             obj.add("progress", courseProgress[it.id])
-            val submissions = realm.where(RealmSubmission::class.java)
-                .equalTo("userId", user?.id)
-                .contains("parentId", it.courseId)
-                .equalTo("type", "exam")
-                .findAll()
+            val submissions = it.courseId?.let { it1 ->
+                realm.where(RealmSubmission::class.java)
+                    .equalTo("userId", user?.id)
+                    .contains("parentId", it1)
+                    .equalTo("type", "exam")
+                    .findAll()
+            }
             val totalMistakes = 0
             val exams = realm.where(RealmStepExam::class.java)
                 .equalTo("courseId", it.courseId)
                 .findAll()
             val examIds: List<String> = exams.map { it.id as String }
-            submissionMap(submissions, realm, examIds, totalMistakes, obj)
+            if (submissions != null) {
+                submissionMap(submissions, realm, examIds, totalMistakes, obj)
+            }
             arr.add(obj)
         }
         fragmentMyProgressBinding.rvMyprogress.layoutManager = LinearLayoutManager(requireActivity())

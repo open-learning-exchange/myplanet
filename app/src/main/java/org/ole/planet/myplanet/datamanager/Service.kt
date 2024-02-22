@@ -144,7 +144,7 @@ class Service(private val context: Context) {
                                             callback.onError("Planet up to date", false)
                                         }
                                     } catch (e: Exception) {
-                                        Log.e("Error", e.localizedMessage)
+                                        e.localizedMessage?.let { Log.e("Error", it) }
                                         callback.onError(
                                             "New apk version required  but not found on server - Contact admin",
                                             false
