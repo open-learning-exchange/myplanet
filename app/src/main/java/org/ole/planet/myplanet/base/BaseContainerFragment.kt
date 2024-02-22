@@ -26,7 +26,6 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatRatingBar
 import androidx.core.content.FileProvider
 import com.google.gson.JsonObject
-import io.realm.RealmResults
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.PermissionActivity.Companion.hasInstallPermission
@@ -273,16 +272,16 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             }
         }
     }
-    fun setResourceButton(resources: RealmResults<*>?, btnResources: Button) {
-        if (resources == null || resources.size == 0) {
+    fun setResourceButton(resources: List<RealmMyLibrary>?, btnResources: Button) {
+        if (resources.isNullOrEmpty()) {
             btnResources.visibility = View.GONE
         } else {
             btnResources.visibility = View.VISIBLE
             btnResources.text = getString(R.string.resources) + " [" + resources.size + "]"
             btnResources.setOnClickListener {
-                if (resources.size > 0) showDownloadDialog(
-                    resources as List<RealmMyLibrary>
-                )
+                if (resources.isNotEmpty()) {
+                    showDownloadDialog(resources)
+                }
             }
         }
     }

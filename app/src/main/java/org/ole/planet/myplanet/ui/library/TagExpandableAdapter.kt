@@ -12,13 +12,13 @@ import org.ole.planet.myplanet.databinding.RowAdapterNavigationChildBinding
 import org.ole.planet.myplanet.databinding.RowAdapterNavigationParentBinding
 import org.ole.planet.myplanet.model.RealmTag
 
-class TagExpandableAdapter(private var tagList: List<RealmTag>, private val childMap: HashMap<String?, MutableList<RealmTag>>, selectedItemsList: ArrayList<RealmTag?>?) : BaseExpandableListAdapter() {
+class TagExpandableAdapter(private var tagList: List<RealmTag>, private val childMap: HashMap<String?, MutableList<RealmTag>>, selectedItemsList: MutableList<RealmTag>) : BaseExpandableListAdapter() {
     private var clickListener: OnClickTagItem? = null
     private var isSelectMultiple = false
     private var selectedItemsList = ArrayList<RealmTag>()
 
     init {
-        this.selectedItemsList = (selectedItemsList ?: ArrayList()) as ArrayList<RealmTag>
+        this.selectedItemsList = selectedItemsList as ArrayList<RealmTag>
     }
 
     fun setSelectMultiple(selectMultiple: Boolean) {
@@ -143,7 +143,7 @@ class TagExpandableAdapter(private var tagList: List<RealmTag>, private val chil
     }
 
     interface OnClickTagItem {
-        fun onTagClicked(tag: RealmTag?)
-        fun onCheckboxTagSelected(tags: RealmTag?)
+        fun onTagClicked(tag: RealmTag)
+        fun onCheckboxTagSelected(tags: RealmTag)
     }
 }
