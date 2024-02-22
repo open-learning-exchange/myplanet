@@ -14,14 +14,12 @@ import android.widget.ImageView
 import android.widget.Toast
 import com.bumptech.glide.Glide
 import fisk.chipcloud.ChipCloudConfig
-import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.PREFS_NAME
 import org.ole.planet.myplanet.datamanager.MyDownloadService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import java.lang.ref.WeakReference
 import java.math.BigInteger
-import java.util.ArrayList
 
 object Utilities {
     private var contextRef: WeakReference<Context>? = null
@@ -34,7 +32,7 @@ object Utilities {
         get() = contextRef?.get()
 
     val SD_PATH: String by lazy {
-        context?.getExternalFilesDir(null)?.let { "$it/ole/" } ?: "default/fallback/path"
+        context?.getExternalFilesDir(null)?.let { "$it/ole/" } ?: ""
     }
 
     @JvmStatic
@@ -140,23 +138,22 @@ object Utilities {
     }
 
     val hostUrl: String
-        get() {
-            val safeContext = context ?: return "default/fallback/host/url"
-            val settings = safeContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            val scheme = settings.getString("url_Scheme", "")
-            val hostIp = settings.getString("url_Host", "")
-
-            if (settings.contains("url_Host") && hostIp != null && scheme != null) {
-                return if (hostIp.endsWith(".org")) {
-                    "$scheme://$hostIp/ml/"
-                } else {
-                    "$scheme://$hostIp:5000"
-                }
+    get() {
+        val settings = context?.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val url: String?
+        val scheme = settings?.getString("url_Scheme", "")
+        val hostIp = settings?.getString("url_Host", "")
+        if (settings?.contains("url_Host") == true) {
+            url = if (settings.getString("url_Host", "")!!.endsWith(".org")) {
+                "$scheme://$hostIp/ml/"
+            } else {
+                "$scheme://$hostIp:5000"
             }
-            return "default/fallback/host/url"
+            return url
         }
-
-
+        return ""
+    }
+    
     fun getUpdateUrl(settings: SharedPreferences): String {
         var url = settings.getString("couchdbURL", "")
         if (url != null) {
@@ -198,13 +195,13 @@ object Utilities {
     }
 
     fun getApkUpdateUrl(path: String): String {
-        val safeContext = context ?: return "default/fallback/update/url"
-        val preferences = safeContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        var url = preferences.getString("couchdbURL", "")
-        if (url != null && url.endsWith("/db")) {
-            url = url.replace("/db", "")
+        val preferences = context?.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        var url = preferences?.getString("couchdbURL", "")
+        if (url != null) {
+            if (url.endsWith("/db")) {
+                url = url.replace("/db", "")
+            }
         }
-
         return "$url$path"
     }
 
