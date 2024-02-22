@@ -5,6 +5,6 @@ import org.ole.planet.myplanet.model.RealmTag
 
 interface OnCourseItemSelected {
     @JvmSuppressWildcards
-    fun onSelectedListChange(list: List<RealmMyCourse?>?)
+    fun onSelectedListChange(list: MutableList<RealmMyCourse?>)
     fun onTagClicked(tag: RealmTag?)
 }

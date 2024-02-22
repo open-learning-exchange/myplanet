@@ -289,7 +289,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     private fun updateCountText(countText: Int, tv: TextView) {
-        tv.text = countText.toString() + ""
+        tv.text = "$countText"
         hideCountIfZero(tv, countText)
     }
 
@@ -317,7 +317,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     fun showNotificationFragment() {
         val fragment = NotificationFragment()
         fragment.callback = this
-        fragment.resourceList = getLibraryList(mRealm) as List<RealmMyLibrary>
+        fragment.resourceList = getLibraryList(mRealm)
         fragment.show(childFragmentManager, "")
         editor?.putBoolean(Constants.KEY_NOTIFICATION_SHOWN, true)?.commit()
     }

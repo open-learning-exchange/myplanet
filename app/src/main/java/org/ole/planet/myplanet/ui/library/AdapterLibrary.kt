@@ -72,7 +72,7 @@ class AdapterLibrary(private val context: Context, private var libraryList: List
             holder.rowLibraryBinding.title.text = libraryList[position]!!.title
             Utilities.log(libraryList[position]!!.description!!)
             setMarkdownText(holder.rowLibraryBinding.description, libraryList[position]!!.description!!)
-            holder.rowLibraryBinding.timesRated.text = libraryList[position]!!.timesRated.toString() + context.getString(R.string.total)
+            holder.rowLibraryBinding.timesRated.text = "${libraryList[position]!!.timesRated}${context.getString(R.string.total)}"
             holder.rowLibraryBinding.checkbox.isChecked = selectedItems.contains(libraryList[position])
             holder.rowLibraryBinding.rating.text = if (TextUtils.isEmpty(libraryList[position]!!.averageRating)) "0.0"
             else String.format("%.1f", libraryList[position]!!.averageRating!!.toDouble())
@@ -87,7 +87,7 @@ class AdapterLibrary(private val context: Context, private var libraryList: List
                 holder.rowLibraryBinding.ratingBar.rating = 0f
             }
             holder.rowLibraryBinding.checkbox.setOnClickListener { view: View ->
-                Utilities.handleCheck((view as CheckBox).isChecked, position, selectedItems as MutableList<Any>, libraryList)
+                Utilities.handleCheck((view as CheckBox).isChecked, position, selectedItems, libraryList)
                 if (listener != null) listener!!.onSelectedListChange(selectedItems)
             }
         }
@@ -106,7 +106,7 @@ class AdapterLibrary(private val context: Context, private var libraryList: List
         }
         notifyDataSetChanged()
         if (listener != null) {
-            listener!!.onSelectedListChange(selectedItems as List<RealmMyLibrary>)
+            listener!!.onSelectedListChange(selectedItems)
         }
     }
 
