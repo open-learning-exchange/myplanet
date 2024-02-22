@@ -180,19 +180,23 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
 
     private fun loadRemoteImage(holder: RecyclerView.ViewHolder, news: RealmNews?) {
         val viewHolder = holder as ViewHolderNews
-        Utilities.log(news!!.images!!)
-        if (news.imagesArray.size() > 0) {
-            val ob = news.imagesArray[0].asJsonObject
-            val resourceId = getString("resourceId", ob.asJsonObject)
-            val library =
-                mRealm.where(RealmMyLibrary::class.java).equalTo("_id", resourceId).findFirst()
-            if (library != null) {
-                val basePath = context.getExternalFilesDir(null)
-                val imageFile = File(basePath, "ole/" + library.id + "/" + library.resourceLocalAddress)
-                if (imageFile.exists()) {
-                    Glide.with(context).load(imageFile).into(viewHolder.rowNewsBinding.imgNews)
-                    viewHolder.rowNewsBinding.imgNews.visibility = View.VISIBLE
-                    return
+        news?.imagesArray?.let { imagesArray ->
+            Utilities.log(news.images!!)
+            if (imagesArray.size() > 0) {
+                val ob = imagesArray[0]?.asJsonObject
+                getString("resourceId", ob).let { resourceId ->
+                    mRealm.where(RealmMyLibrary::class.java).equalTo("_id", resourceId).findFirst()?.let { library ->
+                        context.getExternalFilesDir(null)?.let { basePath ->
+                            val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
+                            if (imageFile.exists()) {
+                                Glide.with(context)
+                                    .load(imageFile)
+                                    .into(viewHolder.rowNewsBinding.imgNews)
+                                viewHolder.rowNewsBinding.imgNews.visibility = View.VISIBLE
+                                return
+                            }
+                        }
+                    }
                 }
             }
         }

@@ -223,13 +223,13 @@ abstract class BaseResourceFragment : Fragment() {
         LocalBroadcastManager.getInstance(MainApplication.context).registerReceiver(stateReceiver, intentFilter3)
     }
 
-    fun getLibraryList(mRealm: Realm): List<RealmMyLibrary?> {
+    fun getLibraryList(mRealm: Realm): List<RealmMyLibrary> {
         return getLibraryList(mRealm, settings!!.getString("userId", "--"))
     }
 
-    fun getLibraryList(mRealm: Realm, userId: String?): List<RealmMyLibrary?> {
+    fun getLibraryList(mRealm: Realm, userId: String?): List<RealmMyLibrary> {
         val l = mRealm.where(RealmMyLibrary::class.java).equalTo("isPrivate", false).findAll()
-        val libList: MutableList<RealmMyLibrary?> = ArrayList()
+        val libList: MutableList<RealmMyLibrary> = ArrayList()
         val libraries = getLibraries(l)
         for (item in libraries) {
             if (item.userId!!.contains(userId)) {
