@@ -146,7 +146,7 @@ class AdapterCourses(private val context: Context, private var courseList: List<
                     true
                 }
                 holder.rowCourseBinding.checkbox.setOnClickListener { view: View ->
-                    Utilities.handleCheck((view as CheckBox).isChecked, position, selectedItems as MutableList<Any>, courseList)
+                    Utilities.handleCheck((view as CheckBox).isChecked, position, selectedItems, courseList)
                     if (listener != null) listener!!.onSelectedListChange(selectedItems)
                 }
                 showProgressAndRating(position, holder)
@@ -158,7 +158,7 @@ class AdapterCourses(private val context: Context, private var courseList: List<
         if (content.isNullOrEmpty()) {
             layout?.visibility = View.GONE
         } else {
-            textView?.text = prefix + content
+            textView?.text = "$prefix$content"
         }
     }
 
@@ -190,7 +190,7 @@ class AdapterCourses(private val context: Context, private var courseList: List<
     private fun showTags(tags: List<RealmTag>, chipCloud: ChipCloud) {
         for (tag in tags) {
             val parent = mRealm!!.where(RealmTag::class.java).equalTo("id", tag.tagId).findFirst()
-            showChip(chipCloud, parent)
+            parent?.let { showChip(chipCloud, it) }
         }
     }
 

@@ -4,7 +4,7 @@ import org.ole.planet.myplanet.model.RealmTag
 
 interface TagClickListener {
     @JvmSuppressWildcards
-    fun onTagSelected(tag: RealmTag?)
+    fun onTagSelected(tag: RealmTag)
     @JvmSuppressWildcards
-    fun onOkClicked(list: List<RealmTag?>?)
+    fun onOkClicked(list: List<RealmTag>?)
 }

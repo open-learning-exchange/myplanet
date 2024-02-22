@@ -26,7 +26,6 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatRatingBar
 import androidx.core.content.FileProvider
 import com.google.gson.JsonObject
-import io.realm.RealmResults
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.PermissionActivity.Companion.hasInstallPermission
@@ -37,7 +36,13 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_RESOURCE_DOWNLOAD
 import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_RESOURCE_OPEN
 import org.ole.planet.myplanet.ui.course.AdapterCourses
-import org.ole.planet.myplanet.ui.viewer.*
+import org.ole.planet.myplanet.ui.viewer.AudioPlayerActivity
+import org.ole.planet.myplanet.ui.viewer.CSVViewerActivity
+import org.ole.planet.myplanet.ui.viewer.ImageViewerActivity
+import org.ole.planet.myplanet.ui.viewer.MarkdownViewerActivity
+import org.ole.planet.myplanet.ui.viewer.PDFReaderActivity
+import org.ole.planet.myplanet.ui.viewer.TextFileViewerActivity
+import org.ole.planet.myplanet.ui.viewer.VideoPlayerActivity
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import java.io.File
@@ -273,16 +278,16 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             }
         }
     }
-    fun setResourceButton(resources: RealmResults<*>?, btnResources: Button) {
-        if (resources == null || resources.size == 0) {
+    fun setResourceButton(resources: List<RealmMyLibrary>?, btnResources: Button) {
+        if (resources.isNullOrEmpty()) {
             btnResources.visibility = View.GONE
         } else {
             btnResources.visibility = View.VISIBLE
             btnResources.text = getString(R.string.resources) + " [" + resources.size + "]"
             btnResources.setOnClickListener {
-                if (resources.size > 0) showDownloadDialog(
-                    resources as List<RealmMyLibrary>
-                )
+                if (resources.isNotEmpty()) {
+                    showDownloadDialog(resources)
+                }
             }
         }
     }
