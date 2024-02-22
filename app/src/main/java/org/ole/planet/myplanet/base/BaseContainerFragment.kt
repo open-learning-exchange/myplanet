@@ -36,13 +36,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_RESOURCE_DOWNLOAD
 import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_RESOURCE_OPEN
 import org.ole.planet.myplanet.ui.course.AdapterCourses
-import org.ole.planet.myplanet.ui.viewer.AudioPlayerActivity
-import org.ole.planet.myplanet.ui.viewer.CSVViewerActivity
-import org.ole.planet.myplanet.ui.viewer.ImageViewerActivity
-import org.ole.planet.myplanet.ui.viewer.MarkdownViewerActivity
-import org.ole.planet.myplanet.ui.viewer.PDFReaderActivity
-import org.ole.planet.myplanet.ui.viewer.TextFileViewerActivity
-import org.ole.planet.myplanet.ui.viewer.VideoPlayerActivity
+import org.ole.planet.myplanet.ui.viewer.*
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import java.io.File
