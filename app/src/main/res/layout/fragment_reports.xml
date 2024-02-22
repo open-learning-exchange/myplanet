@@ -6,30 +6,52 @@
     android:layout_height="match_parent"
     tools:context=".ui.enterprises.ReportsFragment">
 
-    <Button
-        android:id="@+id/addReports"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:id="@+id/ltButtons"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="start"
-        android:layout_marginStart="10dp"
-        android:layout_marginTop="10dp"
-        android:padding="@dimen/padding_normal"
-        android:text="Add Reports"
-        android:textSize="16sp"
+        android:orientation="horizontal"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent">
 
-    <Button
-        android:id="@+id/exportCSV"
-        android:layout_width="wrap_content"
+        <Button
+            android:id="@+id/addReports"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="start"
+            android:layout_marginStart="10dp"
+            android:layout_marginTop="10dp"
+            android:padding="@dimen/padding_normal"
+            android:text="Add Reports"
+            android:textSize="16sp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <Button
+            android:id="@+id/exportCSV"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="start"
+            android:layout_marginStart="10dp"
+            android:layout_marginTop="10dp"
+            android:padding="@dimen/padding_normal"
+            android:text="Export CSV"
+            android:textSize="16sp"
+            app:layout_constraintStart_toEndOf="@+id/addReports"
+            app:layout_constraintTop_toTopOf="parent" />
+
+    </LinearLayout>
+
+
+    <include
+        android:id="@+id/reportListItem"
+        layout="@layout/report_list_item"
+        android:layout_margin="@dimen/_10dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="start"
-        android:layout_marginStart="10dp"
-        android:layout_marginTop="10dp"
-        android:padding="@dimen/padding_normal"
-        android:text="Export CSV"
-        android:textSize="16sp"
-        app:layout_constraintStart_toEndOf="@+id/addReports"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/ltButtons" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
