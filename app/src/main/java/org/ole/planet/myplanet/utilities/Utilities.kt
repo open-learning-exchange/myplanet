@@ -37,7 +37,7 @@ object Utilities {
 
     @JvmStatic
     fun log(message: String) {
-        context?.let { Log.d("OLE ", "log: $message") } ?: Log.d("OLE ", "log: $message - Context is null")
+        Log.d("OLE ", "log: $message")
     }
 
     fun getUrl(library: RealmMyLibrary?, settings: SharedPreferences?): String {
@@ -124,36 +124,33 @@ object Utilities {
 
     fun getUrl(): String {
         val settings = context?.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        if (settings != null) {
-            if (settings.contains("couchdbURL")) {
-                var url = settings.getString("couchdbURL", "")
-
-                if (!url?.endsWith("/db")!!) {
-                    url += "/db"
-                }
-                return url
-            }
-        }
-        return ""
-    }
-
-    val hostUrl: String
-    get() {
-        val settings = context?.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val url: String?
-        val scheme = settings?.getString("url_Scheme", "")
-        val hostIp = settings?.getString("url_Host", "")
-        if (settings?.contains("url_Host") == true) {
-            url = if (settings.getString("url_Host", "")!!.endsWith(".org")) {
-                "$scheme://$hostIp/ml/"
-            } else {
-                "$scheme://$hostIp:5000"
+        if (settings?.contains("couchdbURL") == true) {
+            var url = settings.getString("couchdbURL", "")
+            if (!url?.endsWith("/db")!!) {
+                url += "/db"
             }
             return url
         }
         return ""
     }
-    
+
+    val hostUrl: String
+        get() {
+            val settings = context?.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val url: String?
+            val scheme = settings?.getString("url_Scheme", "")
+            val hostIp = settings?.getString("url_Host", "")
+            if (settings?.contains("url_Host") == true) {
+                url = if (settings.getString("url_Host", "")!!.endsWith(".org")) {
+                    "$scheme://$hostIp/ml/"
+                } else {
+                    "$scheme://$hostIp:5000"
+                }
+                return url
+            }
+            return ""
+        }
+
     fun getUpdateUrl(settings: SharedPreferences): String {
         var url = settings.getString("couchdbURL", "")
         if (url != null) {
