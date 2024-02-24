@@ -195,14 +195,16 @@ class MyDownloadService : IntentService("Download Service") {
     private fun changeOfflineStatus() {
         val currentFileName = FileUtils.getFileNameFromUrl(url)
         mRealm!!.executeTransaction { realm: Realm ->
-            val obj = realm.where(
-                RealmMyLibrary::class.java
-            ).equalTo("resourceLocalAddress", currentFileName).findFirst()
-            if (obj != null) {
-                obj.resourceOffline = true
-                obj.downloadedRev = obj.get_rev()
+            val matchingItems = realm.where(RealmMyLibrary::class.java)
+                .equalTo("resourceLocalAddress", currentFileName)
+                .findAll()
+            if (!matchingItems.isEmpty()) {
+                for (item in matchingItems) {
+                    item.resourceOffline = true
+                    item.downloadedRev = item.get_rev()
+                }
             } else {
-                Utilities.log("object Is null")
+                Utilities.log("No matching objects found")
             }
         }
     }
