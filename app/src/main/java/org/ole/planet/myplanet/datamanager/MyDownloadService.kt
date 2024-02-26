@@ -48,14 +48,15 @@ class MyDownloadService : IntentService("Download Service") {
             stopSelf()
         }
         notificationBuilder = NotificationCompat.Builder(this, "11")
-        NotificationUtil.setChannel(notificationManager!!)
-        val noti = notificationBuilder!!.setSmallIcon(R.mipmap.ic_launcher).setContentTitle("OLE Download")
-            .setContentText("Downloading File...").setAutoCancel(true).build()
-        notificationManager!!.notify(0, noti)
-        urls = intent!!.getStringArrayListExtra("urls")
+        NotificationUtil.setChannel(notificationManager)
+        val noti = notificationBuilder?.setSmallIcon(R.mipmap.ic_launcher)
+            ?.setContentTitle("OLE Download")?.setContentText("Downloading File...")
+            ?.setAutoCancel(true)?.build()
+        notificationManager?.notify(0, noti)
+        urls = intent?.getStringArrayListExtra("urls")
         realmConfig()
-        for (i in urls!!.indices) {
-            url = urls!![i]
+        for (i in urls?.indices ?: emptyList()) {
+            url = urls?.get(i)
             currentIndex = i
             initDownload()
         }
@@ -71,8 +72,8 @@ class MyDownloadService : IntentService("Download Service") {
                 if (r != null) {
                     if (r.code() == 200) {
                         val responseBody = r.body()
-                        if (!checkStorage(responseBody!!.contentLength())) {
-                            downloadFile(responseBody)
+                        if (!checkStorage(responseBody?.contentLength() ?: 0L)) {
+                            responseBody?.let { downloadFile(it) }
                         }
                     } else {
                         downloadFiled(if (r.code() == 404) "File Not found " else "Connection failed")
@@ -88,8 +89,8 @@ class MyDownloadService : IntentService("Download Service") {
     }
 
     private fun downloadFiled(message: String) {
-        notificationBuilder!!.setContentText(message)
-        notificationManager!!.notify(0, notificationBuilder!!.build())
+        notificationBuilder?.setContentText(message)
+        notificationManager?.notify(0, notificationBuilder?.build())
         val d = Download()
         completeAll = false
         d.failed = true
@@ -100,8 +101,8 @@ class MyDownloadService : IntentService("Download Service") {
 
     @Throws(IOException::class)
     private fun downloadFile(body: ResponseBody?) {
-        val fileSize = body!!.contentLength()
-        val bis: InputStream = BufferedInputStream(body.byteStream(), 1024 * 8)
+        val fileSize = body?.contentLength()
+        val bis: InputStream = BufferedInputStream(body?.byteStream(), 1024 * 8)
         outputFile = FileUtils.getSDPathFromUrl(url)
         val output: OutputStream = FileOutputStream(outputFile)
         var total: Long = 0
@@ -109,9 +110,14 @@ class MyDownloadService : IntentService("Download Service") {
         var timeCount = 1
         while (bis.read(data).also { count = it } != -1) {
             total += count.toLong()
-            totalFileSize = (fileSize / 1024.0.pow(1.0)).toInt()
+            fileSize?.let {
+                totalFileSize = (it / 1024.0.pow(1.0)).toInt()
+            } ?: run {
+                totalFileSize = 0
+            }
+
             val current = (total / 1024.0.pow(1.0)).roundToInt().toDouble()
-            val progress = (total * 100 / fileSize).toInt()
+            val progress = fileSize?.let { (total * 100 / it).toInt() } ?: 0
             val currentTime = System.currentTimeMillis() - startTime
             val download = Download()
             download.fileName = FileUtils.getFileNameFromUrl(url)
@@ -149,9 +155,9 @@ class MyDownloadService : IntentService("Download Service") {
     private fun sendNotification(download: Download) {
         download.fileName = "Downloading : " + FileUtils.getFileNameFromUrl(url)
         sendIntent(download)
-        notificationBuilder!!.setProgress(100, download.progress, false)
-        notificationBuilder!!.setContentText("Downloading file " + download.currentFileSize + "/" + totalFileSize + " KB")
-        notificationManager!!.notify(0, notificationBuilder!!.build())
+        notificationBuilder?.setProgress(100, download.progress, false)
+        notificationBuilder?.setContentText("Downloading file " + download.currentFileSize + "/" + totalFileSize + " KB")
+        notificationManager?.notify(0, notificationBuilder?.build())
     }
 
     private fun sendIntent(download: Download) {
@@ -161,20 +167,22 @@ class MyDownloadService : IntentService("Download Service") {
     }
 
     private fun onDownloadComplete() {
-        if (outputFile!!.length() > 0) changeOfflineStatus()
+        if ((outputFile?.length() ?: 0) > 0) {
+            changeOfflineStatus()
+        }
         val download = Download()
         download.fileName = FileUtils.getFileNameFromUrl(url)
         download.fileUrl = url
         download.progress = 100
-        if (currentIndex == urls!!.size - 1) {
+        if (currentIndex == (urls?.size ?: 0) - 1) {
             completeAll = true
             download.completeAll = true
         }
         sendIntent(download)
-        notificationManager!!.cancel(0)
-        notificationBuilder!!.setProgress(0, 0, false)
-        notificationBuilder!!.setContentText("File Downloaded")
-        notificationManager!!.notify(0, notificationBuilder!!.build())
+        notificationManager?.cancel(0)
+        notificationBuilder?.setProgress(0, 0, false)
+        notificationBuilder?.setContentText("File Downloaded")
+        notificationManager?.notify(0, notificationBuilder?.build())
     }
 
     override fun onDestroy() {
@@ -186,15 +194,15 @@ class MyDownloadService : IntentService("Download Service") {
 
     private fun stopDownload() {
         if (request != null && outputFile != null) {
-            request!!.cancel()
-            outputFile!!.delete()
-            notificationManager!!.cancelAll()
+            request?.cancel()
+            outputFile?.delete()
+            notificationManager?.cancelAll()
         }
     }
 
     private fun changeOfflineStatus() {
         val currentFileName = FileUtils.getFileNameFromUrl(url)
-        mRealm!!.executeTransaction { realm: Realm ->
+        mRealm?.executeTransaction { realm: Realm ->
             val matchingItems = realm.where(RealmMyLibrary::class.java)
                 .equalTo("resourceLocalAddress", currentFileName)
                 .findAll()
@@ -218,6 +226,6 @@ class MyDownloadService : IntentService("Download Service") {
     }
 
     override fun onTaskRemoved(rootIntent: Intent) {
-        notificationManager!!.cancel(0)
+        notificationManager?.cancel(0)
     }
 }
