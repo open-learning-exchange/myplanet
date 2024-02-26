@@ -31,11 +31,11 @@ object NotificationUtil {
     }
 
     @JvmStatic
-    fun setChannel(notificationManager: NotificationManager) {
+    fun setChannel(notificationManager: NotificationManager?) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val importance = NotificationManager.IMPORTANCE_LOW
             val notificationChannel = NotificationChannel("11", "ole", importance)
-            notificationManager.createNotificationChannel(notificationChannel)
+            notificationManager?.createNotificationChannel(notificationChannel)
         }
     }
 }
