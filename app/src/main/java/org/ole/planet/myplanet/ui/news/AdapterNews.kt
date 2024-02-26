@@ -80,7 +80,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         if (holder is ViewHolderNews) {
             holder.bind(position)
             val news = getNews(holder, position)
-            if (news!!.isValid) {
+            if (news?.isValid == true) {
                 val userModel = mRealm.where(RealmUserModel::class.java).equalTo("id", news.userId).findFirst()
                 if (userModel != null && currentUser != null) {
                     holder.rowNewsBinding.tvName.text = userModel.toString()
@@ -92,17 +92,14 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                 }
                 showShareButton(holder, news)
                 holder.rowNewsBinding.tvMessage.text = news.messageWithoutMarkdown
-                holder.rowNewsBinding.tvDate.text = formatDate(
-                    news.time
-                )
-                if (news.userId == currentUser!!._id) {
+                holder.rowNewsBinding.tvDate.text = formatDate(news.time)
+                if (news.userId == currentUser?._id) {
                     holder.rowNewsBinding.imgDelete.setOnClickListener {
                         AlertDialog.Builder(context)
                             .setMessage(R.string.delete_record)
                             .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
                                 deletePost(news, context)
-                            }
-                            .setNegativeButton(R.string.cancel, null).show()
+                            }.setNegativeButton(R.string.cancel, null).show()
                     }
                     holder.rowNewsBinding.imgEdit.setOnClickListener {
                         showEditAlert(news.id, true)
@@ -119,7 +116,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                 showReplyButton(holder, news, position)
                 if (news.isCommunityNews) {
                     holder.itemView.setOnClickListener {
-                        context.startActivity(Intent(context, NewsDetailActivity::class.java).putExtra("newsId", list[position]!!.id))
+                        context.startActivity(Intent(context, NewsDetailActivity::class.java).putExtra("newsId", list[position]?.id))
                     }
                 }
                 addLabels(holder, news)
@@ -135,38 +132,43 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
             val inflater = menu.menuInflater
             inflater.inflate(R.menu.menu_add_label, menu.menu)
             menu.setOnMenuItemClickListener { menuItem: MenuItem ->
-                if (!mRealm.isInTransaction) mRealm.beginTransaction()
-                news!!.addLabel(Constants.LABELS["${menuItem.title}"])
+                if (!mRealm.isInTransaction) {
+                    mRealm.beginTransaction()
+                }
+                news?.addLabel(Constants.LABELS["${menuItem.title}"])
                 Utilities.toast(context, R.string.label_added.toString())
                 mRealm.commitTransaction()
-                showChips(holder, news)
+                news?.let { it1 -> showChips(holder, it1) }
                 false
             }
             menu.show()
         }
     }
 
-    private fun showChips(holder: RecyclerView.ViewHolder, news: RealmNews?) {
+    private fun showChips(holder: RecyclerView.ViewHolder, news: RealmNews) {
         val viewHolder = holder as ViewHolderNews
         viewHolder.rowNewsBinding.fbChips.removeAllViews()
         val chipCloud = ChipCloud(context, viewHolder.rowNewsBinding.fbChips, config)
-        for (s in news!!.labels!!) {
+        for (s in news.labels ?: emptyList()) {
             chipCloud.addChip(getLabel(s))
             chipCloud.setDeleteListener { _: Int, s1: String? ->
-                if (!mRealm.isInTransaction) mRealm.beginTransaction()
-                news.labels!!.remove(Constants.LABELS[s1])
+                if (!mRealm.isInTransaction) {
+                    mRealm.beginTransaction()
+                }
+                news.labels?.remove(Constants.LABELS[s1])
                 mRealm.commitTransaction()
-                viewHolder.rowNewsBinding.btnAddLabel.isEnabled = news.labels!!.size < 3
+                viewHolder.rowNewsBinding.btnAddLabel.isEnabled = (news.labels?.size ?: 0) < 3
             }
         }
-        viewHolder.rowNewsBinding.btnAddLabel.isEnabled = news.labels!!.size < 3
+        viewHolder.rowNewsBinding.btnAddLabel.isEnabled = (news.labels?.size ?: 0) < 3
     }
 
     private fun loadImage(holder: RecyclerView.ViewHolder, news: RealmNews?) {
         val viewHolder = holder as ViewHolderNews
-        if (news!!.imageUrls != null && news.imageUrls!!.size > 0) {
+        val imageUrls = news?.imageUrls
+        if (imageUrls != null && imageUrls.size > 0) {
             try {
-                val imgObject = Gson().fromJson(news.imageUrls!![0], JsonObject::class.java)
+                val imgObject = Gson().fromJson(imageUrls[0], JsonObject::class.java)
                 viewHolder.rowNewsBinding.imgNews.visibility = View.VISIBLE
                 Glide.with(context).load(File(getString("imageUrl", imgObject)))
                     .into(viewHolder.rowNewsBinding.imgNews)
@@ -181,7 +183,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     private fun loadRemoteImage(holder: RecyclerView.ViewHolder, news: RealmNews?) {
         val viewHolder = holder as ViewHolderNews
         news?.imagesArray?.let { imagesArray ->
-            Utilities.log(news.images!!)
+            news.images?.let { Utilities.log(it) }
             if (imagesArray.size() > 0) {
                 val ob = imagesArray[0]?.asJsonObject
                 getString("resourceId", ob).let { resourceId ->
@@ -205,17 +207,23 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
 
     private fun showReplyButton(holder: RecyclerView.ViewHolder, finalNews: RealmNews?, position: Int) {
         val viewHolder = holder as ViewHolderNews
-        if (listener == null || fromLogin) viewHolder.rowNewsBinding.btnShowReply.visibility = View.GONE
-        viewHolder.rowNewsBinding.btnReply.setOnClickListener { showEditAlert(finalNews!!.id, false) }
-        val replies: List<RealmNews> = mRealm.where(RealmNews::class.java).sort("time", Sort.DESCENDING).equalTo("replyTo", finalNews!!.id, Case.INSENSITIVE).findAll()
+        if (listener == null || fromLogin) {
+            viewHolder.rowNewsBinding.btnShowReply.visibility = View.GONE
+        }
+        viewHolder.rowNewsBinding.btnReply.setOnClickListener { showEditAlert(finalNews?.id, false) }
+        val replies: List<RealmNews> = mRealm.where(RealmNews::class.java).sort("time", Sort.DESCENDING).equalTo("replyTo", finalNews?.id, Case.INSENSITIVE).findAll()
         viewHolder.rowNewsBinding.btnShowReply.text = String.format(context.getString(R.string.show_replies) + " (%d)", replies.size)
-        viewHolder.rowNewsBinding.btnShowReply.visibility = if (replies.isNotEmpty()) View.VISIBLE else View.GONE
-        if (position == 0 && parentNews != null) viewHolder.rowNewsBinding.btnShowReply.visibility = View.GONE
+        viewHolder.rowNewsBinding.btnShowReply.visibility = if (replies.isNotEmpty()) {
+            View.VISIBLE
+        } else {
+            View.GONE
+        }
+        if (position == 0 && parentNews != null) {
+            viewHolder.rowNewsBinding.btnShowReply.visibility = View.GONE
+        }
         viewHolder.rowNewsBinding.btnShowReply.setOnClickListener {
-            sharedPreferences!!.setREPLIEDNEWSID(finalNews.id)
-            if (listener != null) {
-                listener!!.showReply(finalNews, fromLogin)
-            }
+            sharedPreferences?.setREPLIEDNEWSID(finalNews?.id)
+            listener?.showReply(finalNews, fromLogin)
         }
     }
 
@@ -224,16 +232,18 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         val et = v.findViewById<EditText>(R.id.et_input)
         v.findViewById<View>(R.id.ll_image).visibility = if (showBetaFeature(Constants.KEY_NEWSADDIMAGE, context)) View.VISIBLE else View.GONE
         val llImage = v.findViewById<LinearLayout>(R.id.ll_alert_image)
-        v.findViewById<View>(R.id.add_news_image).setOnClickListener { listener!!.addImage(llImage) }
+        v.findViewById<View>(R.id.add_news_image).setOnClickListener { listener?.addImage(llImage) }
         val news = mRealm.where(RealmNews::class.java).equalTo("id", id).findFirst()
-        if (isEdit) et.setText("${news!!.message}")
+        if (isEdit) et.setText("${news?.message}")
         AlertDialog.Builder(context).setTitle(if (isEdit) R.string.edit_post else R.string.reply)
             .setIcon(R.drawable.ic_edit).setView(v)
             .setPositiveButton(R.string.button_submit) { _: DialogInterface?, _: Int ->
                 val s = et.text.toString()
                 if (isEdit) {
                     editPost(s, news)
-                } else postReply(s, news)
+                } else {
+                    postReply(s, news)
+                }
             }.setNegativeButton(R.string.cancel, null).show()
     }
 
@@ -247,7 +257,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         map["messageType"] = news?.messageType ?: ""
         map["messagePlanetCode"] = news?.messagePlanetCode ?: ""
 
-        createNews(map, mRealm, currentUser!!, imageList)
+        currentUser?.let { createNews(map, mRealm, it, imageList) }
         notifyDataSetChanged()
     }
 
@@ -258,7 +268,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
             return
         }
         if (!mRealm.isInTransaction) mRealm.beginTransaction()
-        news!!.message = s
+        news?.message = s
         mRealm.commitTransaction()
         notifyDataSetChanged()
     }
@@ -281,7 +291,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
 
     private fun showHideButtons(userModel: RealmUserModel, holder: RecyclerView.ViewHolder) {
         val viewHolder = holder as ViewHolderNews
-        if (currentUser!!.id == userModel.id) {
+        if (currentUser?.id == userModel.id) {
             viewHolder.rowNewsBinding.llEditDelete.visibility = View.VISIBLE
             viewHolder.rowNewsBinding.btnAddLabel.visibility = View.VISIBLE
         } else {
@@ -333,26 +343,25 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
 
     private fun showShareButton(holder: RecyclerView.ViewHolder, news: RealmNews?) {
         val viewHolder = holder as ViewHolderNews
-        viewHolder.rowNewsBinding.btnShare.visibility = if (news!!.isCommunityNews || fromLogin) View.GONE else View.VISIBLE
+        viewHolder.rowNewsBinding.btnShare.visibility = if (news?.isCommunityNews == true || fromLogin) View.GONE else View.VISIBLE
         viewHolder.rowNewsBinding.btnShare.setOnClickListener {
-            val array = Gson().fromJson(news.viewIn, JsonArray::class.java)
+            val array = Gson().fromJson(news?.viewIn, JsonArray::class.java)
             val ob = JsonObject()
             ob.addProperty("section", "community")
-            ob.addProperty("_id", currentUser!!.planetCode + "@" + currentUser!!.parentCode)
+            ob.addProperty("_id", currentUser?.planetCode + "@" + currentUser?.parentCode)
             ob.addProperty("sharedDate", Calendar.getInstance().timeInMillis)
             array.add(ob)
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
-            news.viewIn = Gson().toJson(array)
+            if (!mRealm.isInTransaction) {
+                mRealm.beginTransaction()
+            }
+            news?.viewIn = Gson().toJson(array)
             mRealm.commitTransaction()
             Utilities.toast(context, context.getString(R.string.shared_to_community))
             viewHolder.rowNewsBinding.btnShare.visibility = View.GONE
         }
     }
 
-    internal inner class ViewHolderNews(val rowNewsBinding: RowNewsBinding) :
-        RecyclerView.ViewHolder(
-            rowNewsBinding.root
-        ) {
+    internal inner class ViewHolderNews(val rowNewsBinding: RowNewsBinding) : RecyclerView.ViewHolder(rowNewsBinding.root) {
         private var adapterPosition = 0
         fun bind(position: Int) {
             adapterPosition = position
