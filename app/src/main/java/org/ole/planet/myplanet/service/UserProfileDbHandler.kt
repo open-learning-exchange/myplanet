@@ -16,7 +16,7 @@ import java.util.UUID
 
 class UserProfileDbHandler(context: Context) {
     private val settings: SharedPreferences
-    private val mRealm: Realm?
+    var mRealm: Realm
     private val realmService: DatabaseService
     private val fullName: String
 
@@ -28,11 +28,11 @@ class UserProfileDbHandler(context: Context) {
     }
 
     val userModel: RealmUserModel?
-        get() = mRealm!!.where(RealmUserModel::class.java)
+        get() = mRealm.where(RealmUserModel::class.java)
             .equalTo("id", settings.getString("userId", "")).findFirst()
 
     fun onLogin() {
-        if (!mRealm!!.isInTransaction) mRealm.beginTransaction()
+        if (!mRealm.isInTransaction) mRealm.beginTransaction()
         val offlineActivities = mRealm.copyToRealm(createUser())
         offlineActivities.type = KEY_LOGIN
         offlineActivities._rev = null
@@ -43,39 +43,37 @@ class UserProfileDbHandler(context: Context) {
     }
 
     fun onLogout() {
-        if (!mRealm!!.isInTransaction) mRealm.beginTransaction()
+        if (!mRealm.isInTransaction) mRealm.beginTransaction()
         val offlineActivities = getRecentLogin(mRealm) ?: return
         offlineActivities.logoutTime = Date().time
         mRealm.commitTransaction()
     }
 
     fun onDestory() {
-        if (mRealm != null && !mRealm.isClosed) {
+        if (!mRealm.isClosed) {
             mRealm.close()
         }
     }
 
     private fun createUser(): RealmOfflineActivity {
-        val offlineActivities = mRealm!!.createObject(
-            RealmOfflineActivity::class.java, UUID.randomUUID().toString()
-        )
+        val offlineActivities = mRealm.createObject(RealmOfflineActivity::class.java, UUID.randomUUID().toString())
         val model = userModel
-        offlineActivities.userId = model!!.id
-        offlineActivities.userName = model.name
-        offlineActivities.parentCode = model.parentCode
-        offlineActivities.createdOn = model.planetCode
+        offlineActivities.userId = model?.id
+        offlineActivities.userName = model?.name
+        offlineActivities.parentCode = model?.parentCode
+        offlineActivities.createdOn = model?.planetCode
         return offlineActivities
     }
 
     val lastVisit: Long?
-        get() = mRealm!!.where(RealmOfflineActivity::class.java).max("loginTime") as Long?
+        get() = mRealm.where(RealmOfflineActivity::class.java).max("loginTime") as Long?
     val offlineVisits: Int
         get() = getOfflineVisits(userModel)
 
     fun getOfflineVisits(m: RealmUserModel?): Int {
-        val db_users = mRealm!!.where(
+        val db_users = mRealm.where(
             RealmOfflineActivity::class.java
-        ).equalTo("userName", m!!.name).equalTo("type", KEY_LOGIN).findAll()
+        ).equalTo("userName", m?.name).equalTo("type", KEY_LOGIN).findAll()
         return if (!db_users.isEmpty()) {
             db_users.size
         } else {
@@ -89,10 +87,10 @@ class UserProfileDbHandler(context: Context) {
 
     fun setResourceOpenCount(item: RealmMyLibrary, type: String?) {
         val model = userModel
-        if (model!!.id!!.startsWith("guest")) {
+        if (model?.id?.startsWith("guest") == true) {
             return
         }
-        if (!mRealm!!.isInTransaction) mRealm.beginTransaction()
+        if (!mRealm.isInTransaction) mRealm.beginTransaction()
         val offlineActivities = mRealm.copyToRealm(createResourceUser(model))
         offlineActivities.type = type
         offlineActivities.title = item.title
@@ -103,24 +101,24 @@ class UserProfileDbHandler(context: Context) {
     }
 
     private fun createResourceUser(model: RealmUserModel?): RealmResourceActivity {
-        val offlineActivities = mRealm!!.createObject(
+        val offlineActivities = mRealm.createObject(
             RealmResourceActivity::class.java, UUID.randomUUID().toString()
         )
-        offlineActivities.user = model!!.name
-        offlineActivities.parentCode = model.parentCode
-        offlineActivities.createdOn = model.planetCode
+        offlineActivities.user = model?.name
+        offlineActivities.parentCode = model?.parentCode
+        offlineActivities.createdOn = model?.planetCode
         return offlineActivities
     }
 
     val numberOfResourceOpen: String
         get() {
-            val count = mRealm!!.where(RealmResourceActivity::class.java).equalTo("user", fullName)
+            val count = mRealm.where(RealmResourceActivity::class.java).equalTo("user", fullName)
                 .equalTo("type", KEY_RESOURCE_OPEN).count()
             return if (count == 0L) "" else "Resource opened $count times."
         }
     val maxOpenedResource: String
         get() {
-            val result = mRealm!!.where(
+            val result = mRealm.where(
                 RealmResourceActivity::class.java
             ).equalTo("user", fullName).equalTo("type", KEY_RESOURCE_OPEN).findAll().where()
                 .distinct("resourceId").findAll()
@@ -133,15 +131,15 @@ class UserProfileDbHandler(context: Context) {
                         .equalTo("resourceId", realm_resourceActivities.resourceId).count()
                 if (count > maxCount) {
                     maxCount = count
-                    maxOpenedResource = realm_resourceActivities.title!!
+                    maxOpenedResource = "${realm_resourceActivities.title}"
                 }
             }
             return if (maxCount == 0L) "" else "$maxOpenedResource opened $maxCount times"
         }
 
     fun changeTopbarSetting(o: Boolean) {
-        if (!mRealm!!.isInTransaction) mRealm.beginTransaction()
-        userModel!!.isShowTopbar = o
+        if (!mRealm.isInTransaction) mRealm.beginTransaction()
+        userModel?.isShowTopbar = o
         mRealm.commitTransaction()
     }
 
