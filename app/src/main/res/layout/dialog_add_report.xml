@@ -122,7 +122,7 @@
             android:layout_height="wrap_content"
             android:hint="Beginning Balance"
             android:inputType="numberDecimal"
-            android:text="0.0" />
+            android:text="0" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
@@ -145,7 +145,7 @@
             android:layout_height="wrap_content"
             android:hint="Sales"
             android:inputType="numberDecimal"
-            android:text="0.0" />
+            android:text="0" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
@@ -168,7 +168,7 @@
             android:layout_height="wrap_content"
             android:hint="Other Income"
             android:inputType="numberDecimal"
-            android:text="0.0" />
+            android:text="0" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
@@ -192,7 +192,7 @@
             android:layout_height="wrap_content"
             android:hint="Personnel"
             android:inputType="numberDecimal"
-            android:text="0.0" />
+            android:text="0" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
@@ -215,6 +215,6 @@
             android:layout_height="wrap_content"
             android:hint="Non Personnel"
             android:inputType="numberDecimal"
-            android:text="0.0" />
+            android:text="0" />
     </com.google.android.material.textfield.TextInputLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

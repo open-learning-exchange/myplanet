@@ -73,47 +73,73 @@ open class RealmMyTeam : RealmObject() {
     var isPublic = false
     @JvmField
     var updated = false
+    @JvmField
+    var beginningBalance: String? = null
+    @JvmField
+    var sales: String? = null
+    @JvmField
+    var otherIncome: String? = null
+    @JvmField
+    var wages: String? = null
+    @JvmField
+    var otherExpenses: String? = null
+    @JvmField
+    var startDate: Long = 0
+    @JvmField
+    var endDate: Long = 0
+    @JvmField
+    var updatedDate: Long = 0
 
     companion object {
         @JvmStatic
         fun insertMyTeams(doc: JsonObject, mRealm: Realm) {
-            val teamId = JsonUtils.getString("_id", doc)
-            var myTeams = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
-            if (myTeams == null) {
-                myTeams = mRealm.createObject(RealmMyTeam::class.java, teamId)
-            }
-            Utilities.log(teamId)
-            if (myTeams != null) {
-                myTeams.userId = JsonUtils.getString("userId", doc)
-                myTeams.teamId = JsonUtils.getString("teamId", doc)
-                myTeams._rev = JsonUtils.getString("_rev", doc)
-                myTeams.name = JsonUtils.getString("name", doc)
-                myTeams.sourcePlanet = JsonUtils.getString("sourcePlanet", doc)
-                myTeams.title = JsonUtils.getString("title", doc)
-                myTeams.description = JsonUtils.getString("description", doc)
-                myTeams.limit = JsonUtils.getInt("limit", doc)
-                myTeams.status = JsonUtils.getString("status", doc)
-                myTeams.teamPlanetCode = JsonUtils.getString("teamPlanetCode", doc)
-                myTeams.createdDate = JsonUtils.getLong("createdDate", doc)
-                myTeams.resourceId = JsonUtils.getString("resourceId", doc)
-                myTeams.teamType = JsonUtils.getString("teamType", doc)
-                myTeams.route = JsonUtils.getString("route", doc)
-                myTeams.type = JsonUtils.getString("type", doc)
-                myTeams.services = JsonUtils.getString("services", doc)
-                myTeams.rules = JsonUtils.getString("rules", doc)
-                myTeams.parentCode = JsonUtils.getString("parentCode", doc)
-                myTeams.createdBy = JsonUtils.getString("createdBy", doc)
-                myTeams.userPlanetCode = JsonUtils.getString("userPlanetCode", doc)
-                myTeams.isLeader = JsonUtils.getBoolean("isLeader", doc)
-                myTeams.amount = JsonUtils.getInt("amount", doc)
-                myTeams.date = JsonUtils.getLong("date", doc)
-                myTeams.docType = JsonUtils.getString("docType", doc)
-                myTeams.isPublic = JsonUtils.getBoolean("public", doc)
-                val coursesArray = JsonUtils.getJsonArray("courses", doc)
-                myTeams.courses = RealmList()
-                for (e in coursesArray) {
-                    val id = e.asJsonObject["_id"].asString
-                    if (!myTeams.courses?.contains(id)!!) myTeams.courses?.add(id)
+            mRealm.executeTransactionAsync { realm ->
+                val teamId = JsonUtils.getString("_id", doc)
+                var myTeams = realm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
+                if (myTeams == null) {
+                    myTeams = realm.createObject(RealmMyTeam::class.java, teamId)
+                }
+                Utilities.log(teamId)
+                if (myTeams != null) {
+                    myTeams.userId = JsonUtils.getString("userId", doc)
+                    myTeams.teamId = JsonUtils.getString("teamId", doc)
+                    myTeams._rev = JsonUtils.getString("_rev", doc)
+                    myTeams.name = JsonUtils.getString("name", doc)
+                    myTeams.sourcePlanet = JsonUtils.getString("sourcePlanet", doc)
+                    myTeams.title = JsonUtils.getString("title", doc)
+                    myTeams.description = JsonUtils.getString("description", doc)
+                    myTeams.limit = JsonUtils.getInt("limit", doc)
+                    myTeams.status = JsonUtils.getString("status", doc)
+                    myTeams.teamPlanetCode = JsonUtils.getString("teamPlanetCode", doc)
+                    myTeams.createdDate = JsonUtils.getLong("createdDate", doc)
+                    myTeams.resourceId = JsonUtils.getString("resourceId", doc)
+                    myTeams.teamType = JsonUtils.getString("teamType", doc)
+                    myTeams.route = JsonUtils.getString("route", doc)
+                    myTeams.type = JsonUtils.getString("type", doc)
+                    myTeams.services = JsonUtils.getString("services", doc)
+                    myTeams.rules = JsonUtils.getString("rules", doc)
+                    myTeams.parentCode = JsonUtils.getString("parentCode", doc)
+                    myTeams.createdBy = JsonUtils.getString("createdBy", doc)
+                    myTeams.userPlanetCode = JsonUtils.getString("userPlanetCode", doc)
+                    myTeams.isLeader = JsonUtils.getBoolean("isLeader", doc)
+                    myTeams.amount = JsonUtils.getInt("amount", doc)
+                    myTeams.date = JsonUtils.getLong("date", doc)
+                    myTeams.docType = JsonUtils.getString("docType", doc)
+                    myTeams.isPublic = JsonUtils.getBoolean("public", doc)
+                    myTeams.beginningBalance = JsonUtils.getString("beginningBalance", doc)
+                    myTeams.sales = JsonUtils.getString("sales", doc)
+                    myTeams.otherIncome = JsonUtils.getString("otherIncome", doc)
+                    myTeams.wages = JsonUtils.getString("wages", doc)
+                    myTeams.otherExpenses = JsonUtils.getString("otherExpenses", doc)
+                    myTeams.startDate = JsonUtils.getLong("startDate", doc)
+                    myTeams.endDate = JsonUtils.getLong("endDate", doc)
+                    myTeams.updatedDate = JsonUtils.getLong("updatedDate", doc)
+                    val coursesArray = JsonUtils.getJsonArray("courses", doc)
+                    myTeams.courses = RealmList()
+                    for (e in coursesArray) {
+                        val id = e.asJsonObject["_id"].asString
+                        if (!myTeams.courses?.contains(id)!!) myTeams.courses?.add(id)
+                    }
                 }
             }
         }

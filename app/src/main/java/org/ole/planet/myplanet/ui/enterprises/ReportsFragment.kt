@@ -1,73 +1,151 @@
 package org.ole.planet.myplanet.ui.enterprises
 
 import android.app.DatePickerDialog
+import android.os.Build
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextUtils
+import android.text.TextWatcher
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.gson.JsonObject
+import io.realm.Realm
+import io.realm.RealmResults
+import io.realm.Sort
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.databinding.AlertGuestLoginBinding
 import org.ole.planet.myplanet.databinding.DialogAddReportBinding
 import org.ole.planet.myplanet.databinding.FragmentReportsBinding
+import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.RealmMyTeam.Companion.insertMyTeams
+import org.ole.planet.myplanet.ui.team.BaseTeamFragment
+import java.text.Normalizer
 import java.util.Calendar
+import java.util.regex.Pattern
 
-class ReportsFragment : Fragment() {
+class ReportsFragment : BaseTeamFragment() {
     private lateinit var fragmentReportsBinding: FragmentReportsBinding
+    var list: RealmResults<RealmMyTeam>? = null
+    lateinit var adapterReports: AdapterReports
+    var startTimeStamp: String? = ""
+    var endTimeStamp: String? = ""
+    lateinit var teamType: String
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentReportsBinding = FragmentReportsBinding.inflate(inflater, container, false)
+        mRealm = DatabaseService(requireActivity()).realmInstance
         fragmentReportsBinding.addReports.setOnClickListener{
-            val dialogBuilder = AlertDialog.Builder(requireContext())
-            val dialogBinding = DialogAddReportBinding.inflate(layoutInflater)
-            dialogBuilder.setView(dialogBinding.root)
-            dialogBinding.ltStartDate.setOnClickListener {
-                val calendar = Calendar.getInstance()
-                val year = calendar.get(Calendar.YEAR)
-                val month = calendar.get(Calendar.MONTH)
-                val day = calendar.get(Calendar.DAY_OF_MONTH)
-
-                val dpd = DatePickerDialog(requireContext(), { _, selectedYear, selectedMonth, selectedDay ->
-                    dialogBinding.startDate.text = "$selectedDay/${selectedMonth + 1}/$selectedYear"
-                }, year, month, day)
-
-                dpd.show()
-            }
-
-            dialogBinding.ltEndDate.setOnClickListener {
-                val calendar = Calendar.getInstance()
-                val year = calendar.get(Calendar.YEAR)
-                val month = calendar.get(Calendar.MONTH)
-                val day = calendar.get(Calendar.DAY_OF_MONTH)
-
-                val dpd = DatePickerDialog(requireContext(), { _, selectedYear, selectedMonth, selectedDay ->
-                    dialogBinding.endDate.text = "$selectedDay/${selectedMonth + 1}/$selectedYear"
-                }, year, month, day)
-
-                dpd.show()
-            }
-
-            dialogBuilder
-                .setCancelable(false)
-                .setPositiveButton("Submit") { _, _ ->
-                    val startDate = "${dialogBinding.startDate.text}"
-                    val endDate = "${dialogBinding.endDate.text}"
-                    val summary = "${dialogBinding.summary.text}"
-                    val beginningBalance = "${dialogBinding.beginningBalance.text}".toDoubleOrNull() ?: 0.0
-                    val sales = "${dialogBinding.sales.text}".toDoubleOrNull() ?: 0.0
-                    val otherIncome = "${dialogBinding.otherIncome.text}".toDoubleOrNull() ?: 0.0
-                    val personnel = "${dialogBinding.personnel.text}".toDoubleOrNull() ?: 0.0
-                    val nonPersonnel = "${dialogBinding.nonPersonnel.text}".toDoubleOrNull() ?: 0.0
-                }
-                .setNegativeButton("Cancel") { dialog, _ ->
-                    dialog.cancel()
-                }
-
-            val dialog = dialogBuilder.create()
+            val dialogAddReportBinding = DialogAddReportBinding.inflate(LayoutInflater.from(requireContext()))
+            val v: View = dialogAddReportBinding.root
+            val builder = AlertDialog.Builder(requireContext())
+            builder.setTitle("Login As Guest")
+                .setView(v)
+                .setPositiveButton("submit", null)
+                .setNegativeButton("cancel", null)
+            val dialog = builder.create()
             dialog.show()
+            val submit = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+            val cancel = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
+
+            dialogAddReportBinding.ltStartDate.setOnClickListener {
+                val calendar = Calendar.getInstance()
+                val year = calendar.get(Calendar.YEAR)
+                val month = calendar.get(Calendar.MONTH)
+                val day = calendar.get(Calendar.DAY_OF_MONTH)
+
+                val dpd = DatePickerDialog(requireContext(), { _, selectedYear, selectedMonth, selectedDay ->
+                    dialogAddReportBinding.startDate.text = "$selectedDay/${selectedMonth + 1}/$selectedYear"
+                    calendar.set(Calendar.YEAR, selectedYear)
+                    calendar.set(Calendar.MONTH, selectedMonth)
+                    calendar.set(Calendar.DAY_OF_MONTH, selectedDay)
+
+                    startTimeStamp = "${calendar.timeInMillis}"
+                }, year, month, day)
+
+                dpd.show()
+            }
+
+            dialogAddReportBinding.ltEndDate.setOnClickListener {
+                val calendar = Calendar.getInstance()
+                val year = calendar.get(Calendar.YEAR)
+                val month = calendar.get(Calendar.MONTH)
+                val day = calendar.get(Calendar.DAY_OF_MONTH)
+
+                val dpd = DatePickerDialog(requireContext(), { _, selectedYear, selectedMonth, selectedDay ->
+                    dialogAddReportBinding.endDate.text = "$selectedDay/${selectedMonth + 1}/$selectedYear"
+                    calendar.set(Calendar.YEAR, selectedYear)
+                    calendar.set(Calendar.MONTH, selectedMonth)
+                    calendar.set(Calendar.DAY_OF_MONTH, selectedDay)
+
+                    endTimeStamp = "${calendar.timeInMillis}"
+                }, year, month, day)
+
+                dpd.show()
+            }
+
+            submit.setOnClickListener {
+                if(dialogAddReportBinding.startDate.text == "Start Date"){
+                    dialogAddReportBinding.startDate.error = "start date is required"
+                } else if(dialogAddReportBinding.endDate.text == "End Date"){
+                    dialogAddReportBinding.endDate.error = "start date is required"
+                } else if (TextUtils.isEmpty("${dialogAddReportBinding.summary.text}")) {
+                    dialogAddReportBinding.summary.error = "summary is required"
+                } else if (TextUtils.isEmpty("${dialogAddReportBinding.beginningBalance.text}")) {
+                    dialogAddReportBinding.beginningBalance.error = "beginning balance is required"
+                } else if (TextUtils.isEmpty("${dialogAddReportBinding.sales.text}")) {
+                    dialogAddReportBinding.sales.error = "sales is required"
+                } else if (TextUtils.isEmpty("${dialogAddReportBinding.otherIncome.text}")) {
+                    dialogAddReportBinding.otherIncome.error = "other income is required"
+                } else if (TextUtils.isEmpty("${dialogAddReportBinding.personnel.text}")) {
+                    dialogAddReportBinding.personnel.error = "personnel is required"
+                } else if (TextUtils.isEmpty("${dialogAddReportBinding.nonPersonnel.text}")) {
+                    dialogAddReportBinding.nonPersonnel.error = "non-personnel is required"
+                } else {
+                    val doc = JsonObject().apply {
+                        addProperty("createdDate", System.currentTimeMillis())
+                        addProperty("description", "${dialogAddReportBinding.summary.text}")
+                        addProperty("beginningBalance", "${dialogAddReportBinding.beginningBalance.text}")
+                        addProperty("sales", "${dialogAddReportBinding.sales.text}")
+                        addProperty("otherIncome", "${dialogAddReportBinding.otherIncome.text}")
+                        addProperty("wages", "${dialogAddReportBinding.personnel.text}")
+                        addProperty("otherExpenses", "${dialogAddReportBinding.nonPersonnel.text}")
+                        addProperty("startDate", startTimeStamp)
+                        addProperty("endDate", endTimeStamp)
+                        addProperty("updatedDate", System.currentTimeMillis())
+                        addProperty("teamId", teamId)
+                        addProperty("teamType", team.teamType)
+                        addProperty("teamPlanetCode", team.teamPlanetCode)
+                        addProperty("docType", "report")
+                        addProperty("updated", true)
+                    }
+                    insertMyTeams(doc, mRealm)
+                    dialog.dismiss()
+                }
+            }
+
+            cancel.setOnClickListener { dialog.dismiss() }
         }
 
         return fragmentReportsBinding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        list = mRealm.where(RealmMyTeam::class.java).notEqualTo("status", "archived")
+            .equalTo("teamId", teamId).equalTo("docType", "report")
+            .sort("date", Sort.DESCENDING).findAll()
+
+        adapterReports = AdapterReports(requireActivity(), list as RealmResults<RealmMyTeam>)
+        fragmentReportsBinding.rvReports.layoutManager = LinearLayoutManager(activity)
+        fragmentReportsBinding.rvReports.adapter = adapterReports
+
+        Log.d("ReportsFragment", "list: $list")
     }
 }

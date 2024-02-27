@@ -10,52 +10,33 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Enterprise Reports"
-        android:textSize="16sp"
         android:textColor="@color/md_black_1000"
+        android:textSize="16sp"
         android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <LinearLayout
-        android:id="@+id/lTDate"
-        android:layout_width="match_parent"
+
+    <TextView
+        android:id="@+id/date"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:gravity="center"
-        app:layout_constraintTop_toBottomOf="@+id/tvReportTitle">
+        android:textColor="@color/md_black_1000"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/tvReportTitle" />
 
-        <TextView
-            android:id="@+id/dateFrom"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Jan 1, 2024 "
-            android:textColor="@color/md_black_1000"
-            android:textStyle="bold"
-            android:textSize="16sp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <TextView
-            android:id="@+id/dateTo"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="- Jan 31, 2024"
-            android:textColor="@color/md_black_1000"
-            android:textStyle="bold"
-            android:textSize="16sp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-    </LinearLayout>
 
     <TableLayout
         android:id="@+id/tbReport"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:stretchColumns="*"
-        app:layout_constraintTop_toBottomOf="@+id/lTDate">
+        app:layout_constraintTop_toBottomOf="@+id/date">
 
         <TableRow
             android:id="@+id/rowBeginningBalance"
@@ -67,17 +48,17 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Beginning Balance"
-                android:textSize="16sp"
                 android:textColor="@color/md_black_1000"
+                android:textSize="16sp"
                 android:textStyle="bold" />
 
             <TextView
-                android:id="@+id/simpleTextView"
+                android:id="@+id/beginningBalanceValue"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="$2000"
+                android:textColor="@color/md_black_1000"
                 android:textSize="16sp"
-                android:textColor="@color/md_black_1000" />
+                android:textStyle="bold" />
         </TableRow>
 
         <View
@@ -95,16 +76,16 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Sales"
-                android:textSize="16sp"
-                android:textColor="@color/md_black_1000" />
+                android:textColor="@color/md_black_1000"
+                android:textSize="16sp" />
 
             <TextView
                 android:id="@+id/salesValue"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="$2000"
-                android:textSize="16sp"
-                android:textColor="@color/md_black_1000" />
+                android:textColor="@color/md_black_1000"
+                android:textSize="16sp" />
         </TableRow>
 
         <TableRow
@@ -117,16 +98,16 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Other"
-                android:textSize="16sp"
-                android:textColor="@color/md_black_1000" />
+                android:textColor="@color/md_black_1000"
+                android:textSize="16sp" />
 
             <TextView
                 android:id="@+id/otherValue"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="$2000"
-                android:textSize="16sp"
-                android:textColor="@color/md_black_1000" />
+                android:textColor="@color/md_black_1000"
+                android:textSize="16sp" />
         </TableRow>
 
         <TableRow
@@ -139,17 +120,17 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Total Income"
-                android:textSize="16sp"
                 android:textColor="@color/md_black_1000"
+                android:textSize="16sp"
                 android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/totalIncomeValue"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="$2000"
+                android:textColor="@color/md_black_1000"
                 android:textSize="16sp"
-                android:textColor="@color/md_black_1000" />
+                android:textStyle="bold" />
         </TableRow>
 
         <View
@@ -167,16 +148,16 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Personnel"
-                android:textSize="16sp"
-                android:textColor="@color/md_black_1000" />
+                android:textColor="@color/md_black_1000"
+                android:textSize="16sp" />
 
             <TextView
                 android:id="@+id/personnelValue"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="$2000"
-                android:textSize="16sp"
-                android:textColor="@color/md_black_1000" />
+                android:textColor="@color/md_black_1000"
+                android:textSize="16sp" />
         </TableRow>
 
         <TableRow
@@ -189,16 +170,16 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Non-Personnel"
-                android:textSize="16sp"
-                android:textColor="@color/md_black_1000" />
+                android:textColor="@color/md_black_1000"
+                android:textSize="16sp" />
 
             <TextView
                 android:id="@+id/nonPersonnelValue"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="$2000"
-                android:textSize="16sp"
-                android:textColor="@color/md_black_1000" />
+                android:textColor="@color/md_black_1000"
+                android:textSize="16sp" />
         </TableRow>
 
         <TableRow
@@ -211,17 +192,17 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Total Expenses"
-                android:textSize="16sp"
                 android:textColor="@color/md_black_1000"
+                android:textSize="16sp"
                 android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/totalExpensesValue"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="$2000"
+                android:textColor="@color/md_black_1000"
                 android:textSize="16sp"
-                android:textColor="@color/md_black_1000" />
+                android:textStyle="bold" />
         </TableRow>
 
         <View
@@ -239,17 +220,17 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Profit/Loss"
-                android:textSize="16sp"
                 android:textColor="@color/md_black_1000"
+                android:textSize="16sp"
                 android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/profitLossValue"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="$2000"
+                android:textColor="@color/md_black_1000"
                 android:textSize="16sp"
-                android:textColor="@color/md_black_1000" />
+                android:textStyle="bold" />
         </TableRow>
 
         <TableRow
@@ -262,17 +243,17 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Ending Balance"
-                android:textSize="16sp"
                 android:textColor="@color/md_black_1000"
+                android:textSize="16sp"
                 android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/endingBalanceValue"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="$2000"
+                android:textColor="@color/md_black_1000"
                 android:textSize="16sp"
-                android:textColor="@color/md_black_1000" />
+                android:textStyle="bold" />
         </TableRow>
     </TableLayout>
 
@@ -281,7 +262,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/tbReport">
 
@@ -292,6 +272,7 @@
             android:layout_marginTop="@dimen/_10dp"
             android:text="Reports Summary"
             android:textColor="@color/md_black_1000"
+            android:textSize="16sp"
             android:textStyle="bold"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/tbReport" />
@@ -306,19 +287,28 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/_10dp"
-            android:text="Hello\nReport created on: Feb 21, 2024 | Updated on: Feb 21, 2024"
             android:textColor="@color/md_black_1000"
+            android:textSize="16sp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/tbReport" />
     </LinearLayout>
 
+    <TextView
+        android:id="@+id/createUpdate"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/md_black_1000"
+        android:textSize="16sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/ltReportSummary" />
+
     <LinearLayout
         android:id="@+id/llEditDelete"
         android:layout_width="wrap_content"
-        android:layout_margin="@dimen/_10dp"
         android:layout_height="wrap_content"
+        android:layout_margin="@dimen/_10dp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/ltReportSummary">
+        app:layout_constraintTop_toBottomOf="@+id/createUpdate">
 
         <ImageView
             android:id="@+id/img_edit"
