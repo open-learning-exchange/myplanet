@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.ui.enterprises
 import android.app.DatePickerDialog
 import android.os.Bundle
 import android.text.TextUtils
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -145,7 +144,5 @@ class ReportsFragment : BaseTeamFragment() {
         adapterReports = AdapterReports(list as RealmResults<RealmMyTeam>)
         fragmentReportsBinding.rvReports.layoutManager = LinearLayoutManager(activity)
         fragmentReportsBinding.rvReports.adapter = adapterReports
-
-        Log.d("ReportsFragment", "list: $list")
     }
 }
