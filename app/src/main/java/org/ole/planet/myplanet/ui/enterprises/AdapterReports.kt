@@ -19,8 +19,8 @@ class AdapterReports(private var list: RealmResults<RealmMyTeam>) : RecyclerView
         val report = list[position]
         report?.let {
             with(reportListItemBinding) {
-                val totalIncome = (report.sales?.toInt() ?: 0) + (report.otherIncome?.toInt() ?: 0)
-                val totalExpenses = (report.wages?.toInt() ?: 0) + (report.otherExpenses?.toInt() ?: 0)
+                val totalIncome = report.sales + report.otherIncome
+                val totalExpenses = report.wages + report.otherExpenses
                 val profitLoss = totalIncome - totalExpenses
 
                 date.text = "${TimeUtils.formatDate(it.startDate, " MMM dd, yyyy")} - ${TimeUtils.formatDate(it.endDate, "MMM dd, yyyy")}"
@@ -32,7 +32,7 @@ class AdapterReports(private var list: RealmResults<RealmMyTeam>) : RecyclerView
                 nonPersonnelValue.text = "${it.otherExpenses}"
                 totalExpensesValue.text = "$totalExpenses"
                 profitLossValue.text = "$profitLoss"
-                endingBalanceValue.text = "${(profitLoss + (it.beginningBalance?.toInt() ?: 0))}"
+                endingBalanceValue.text = "${(profitLoss + it.beginningBalance)}"
                 tvReportDetails.text = it.description
                 createUpdate.text = "Report created on: ${TimeUtils.formatDate(it.createdDate, "MMM dd, yyyy")} | Updated on: ${TimeUtils.formatDate(it.updatedDate, "MMM dd, yyyy")}"
             }
@@ -42,10 +42,6 @@ class AdapterReports(private var list: RealmResults<RealmMyTeam>) : RecyclerView
 
     override fun getItemCount(): Int {
         return list.size
-    }
-
-    fun updateList(reportList: RealmResults<RealmMyTeam>) {
-        list = reportList
     }
 
     class ViewHolderReports(reportListItemBinding: ReportListItemBinding) : RecyclerView.ViewHolder(reportListItemBinding.root)

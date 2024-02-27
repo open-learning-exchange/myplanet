@@ -35,7 +35,7 @@ class ReportsFragment : BaseTeamFragment() {
             val dialogAddReportBinding = DialogAddReportBinding.inflate(LayoutInflater.from(requireContext()))
             val v: View = dialogAddReportBinding.root
             val builder = AlertDialog.Builder(requireContext())
-            builder.setTitle("Login As Guest")
+            builder.setTitle("add report")
                 .setView(v)
                 .setPositiveButton("submit", null)
                 .setNegativeButton("cancel", null)
@@ -44,8 +44,19 @@ class ReportsFragment : BaseTeamFragment() {
             val submit = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
             val cancel = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
 
+            val calendar = Calendar.getInstance()
+            calendar.set(Calendar.DAY_OF_MONTH, 1)
+            val firstDayOfMonth = "${calendar.get(Calendar.DAY_OF_MONTH)}/${calendar.get(Calendar.MONTH) + 1}/${calendar.get(Calendar.YEAR)}"
+            startTimeStamp = "${calendar.timeInMillis}"
+
+            calendar.set(Calendar.DAY_OF_MONTH, calendar.getActualMaximum(Calendar.DAY_OF_MONTH))
+            val lastDayOfMonth = "${calendar.get(Calendar.DAY_OF_MONTH)}/${calendar.get(Calendar.MONTH) + 1}/${calendar.get(Calendar.YEAR)}"
+            endTimeStamp = "${calendar.timeInMillis}"
+
+            dialogAddReportBinding.startDate.text = firstDayOfMonth
+            dialogAddReportBinding.endDate.text = lastDayOfMonth
+
             dialogAddReportBinding.ltStartDate.setOnClickListener {
-                val calendar = Calendar.getInstance()
                 val year = calendar.get(Calendar.YEAR)
                 val month = calendar.get(Calendar.MONTH)
                 val day = calendar.get(Calendar.DAY_OF_MONTH)
@@ -63,7 +74,6 @@ class ReportsFragment : BaseTeamFragment() {
             }
 
             dialogAddReportBinding.ltEndDate.setOnClickListener {
-                val calendar = Calendar.getInstance()
                 val year = calendar.get(Calendar.YEAR)
                 val month = calendar.get(Calendar.MONTH)
                 val day = calendar.get(Calendar.DAY_OF_MONTH)
@@ -116,8 +126,6 @@ class ReportsFragment : BaseTeamFragment() {
                         addProperty("updated", true)
                     }
                     insertReports(doc, mRealm)
-                    adapterReports.updateList(list as RealmResults<RealmMyTeam>)
-                    adapterReports.notifyDataSetChanged()
                     dialog.dismiss()
                 }
             }

@@ -74,15 +74,15 @@ open class RealmMyTeam : RealmObject() {
     @JvmField
     var updated = false
     @JvmField
-    var beginningBalance: String? = null
+    var beginningBalance = 0
     @JvmField
-    var sales: String? = null
+    var sales = 0
     @JvmField
-    var otherIncome: String? = null
+    var otherIncome = 0
     @JvmField
-    var wages: String? = null
+    var wages = 0
     @JvmField
-    var otherExpenses: String? = null
+    var otherExpenses = 0
     @JvmField
     var startDate: Long = 0
     @JvmField
@@ -126,11 +126,11 @@ open class RealmMyTeam : RealmObject() {
                     myTeams.date = JsonUtils.getLong("date", doc)
                     myTeams.docType = JsonUtils.getString("docType", doc)
                     myTeams.isPublic = JsonUtils.getBoolean("public", doc)
-                    myTeams.beginningBalance = JsonUtils.getString("beginningBalance", doc)
-                    myTeams.sales = JsonUtils.getString("sales", doc)
-                    myTeams.otherIncome = JsonUtils.getString("otherIncome", doc)
-                    myTeams.wages = JsonUtils.getString("wages", doc)
-                    myTeams.otherExpenses = JsonUtils.getString("otherExpenses", doc)
+                    myTeams.beginningBalance = JsonUtils.getInt("beginningBalance", doc)
+                    myTeams.sales = JsonUtils.getInt("sales", doc)
+                    myTeams.otherIncome = JsonUtils.getInt("otherIncome", doc)
+                    myTeams.wages = JsonUtils.getInt("wages", doc)
+                    myTeams.otherExpenses = JsonUtils.getInt("otherExpenses", doc)
                     myTeams.startDate = JsonUtils.getLong("startDate", doc)
                     myTeams.endDate = JsonUtils.getLong("endDate", doc)
                     myTeams.updatedDate = JsonUtils.getLong("updatedDate", doc)
@@ -160,11 +160,11 @@ open class RealmMyTeam : RealmObject() {
                     myTeams.createdDate = JsonUtils.getLong("createdDate", doc)
                     myTeams.teamType = JsonUtils.getString("teamType", doc)
                     myTeams.docType = JsonUtils.getString("docType", doc)
-                    myTeams.beginningBalance = JsonUtils.getString("beginningBalance", doc)
-                    myTeams.sales = JsonUtils.getString("sales", doc)
-                    myTeams.otherIncome = JsonUtils.getString("otherIncome", doc)
-                    myTeams.wages = JsonUtils.getString("wages", doc)
-                    myTeams.otherExpenses = JsonUtils.getString("otherExpenses", doc)
+                    myTeams.beginningBalance = JsonUtils.getInt("beginningBalance", doc)
+                    myTeams.sales = JsonUtils.getInt("sales", doc)
+                    myTeams.otherIncome = JsonUtils.getInt("otherIncome", doc)
+                    myTeams.wages = JsonUtils.getInt("wages", doc)
+                    myTeams.otherExpenses = JsonUtils.getInt("otherExpenses", doc)
                     myTeams.startDate = JsonUtils.getLong("startDate", doc)
                     myTeams.endDate = JsonUtils.getLong("endDate", doc)
                     myTeams.updatedDate = JsonUtils.getLong("updatedDate", doc)
@@ -313,24 +313,35 @@ open class RealmMyTeam : RealmObject() {
 
             JsonUtils.addString(`object`, "_id", team._id)
             JsonUtils.addString(`object`, "_rev", team._rev)
-            JsonUtils.addString(`object`, "teamId", team.teamId)
             `object`.addProperty("name", team.name)
             `object`.addProperty("userId", team.userId)
-            `object`.addProperty("description", team.description)
-            `object`.addProperty("limit", team.limit)
+            if (team.docType != "report") {
+                `object`.addProperty("limit", team.limit)
+                `object`.addProperty("amount", team.amount)
+                `object`.addProperty("date", team.date)
+                `object`.addProperty("public", team.isPublic)
+                `object`.addProperty("isLeader", team.isLeader)
+            }
             `object`.addProperty("createdDate", team.createdDate)
-            `object`.addProperty("status", team.status)
+            `object`.addProperty("description", team.description)
+            `object`.addProperty("beginningBalance", team.beginningBalance)
+            `object`.addProperty("sales", team.sales)
+            `object`.addProperty("otherIncome", team.otherIncome)
+            `object`.addProperty("wages", team.wages)
+            `object`.addProperty("otherExpenses", team.otherExpenses)
+            `object`.addProperty("startDate", team.startDate)
+            `object`.addProperty("endDate", team.endDate)
+            `object`.addProperty("updatedDate", team.updatedDate)
+            JsonUtils.addString(`object`, "teamId", team.teamId)
             `object`.addProperty("teamType", team.teamType)
             `object`.addProperty("teamPlanetCode", team.teamPlanetCode)
+            `object`.addProperty("docType", team.docType)
+            `object`.addProperty("status", team.status)
             `object`.addProperty("userPlanetCode", team.userPlanetCode)
             `object`.addProperty("parentCode", team.parentCode)
-            `object`.addProperty("docType", team.docType)
-            `object`.addProperty("isLeader", team.isLeader)
+
             `object`.addProperty("type", team.type)
-            `object`.addProperty("amount", team.amount)
             `object`.addProperty("route", team.route)
-            `object`.addProperty("date", team.date)
-            `object`.addProperty("public", team.isPublic)
             `object`.addProperty("sourcePlanet", team.sourcePlanet)
             `object`.addProperty("services", team.services)
             `object`.addProperty("createdBy", team.createdBy)
