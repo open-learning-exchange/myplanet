@@ -145,6 +145,35 @@ open class RealmMyTeam : RealmObject() {
         }
 
         @JvmStatic
+        fun insertReports(doc: JsonObject, mRealm: Realm) {
+            mRealm.executeTransactionAsync { realm ->
+                val teamId = JsonUtils.getString("_id", doc)
+                var myTeams = realm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
+                if (myTeams == null) {
+                    myTeams = realm.createObject(RealmMyTeam::class.java, teamId)
+                }
+                Utilities.log(teamId)
+                if (myTeams != null) {
+                    myTeams.teamId = JsonUtils.getString("teamId", doc)
+                    myTeams.description = JsonUtils.getString("description", doc)
+                    myTeams.teamPlanetCode = JsonUtils.getString("teamPlanetCode", doc)
+                    myTeams.createdDate = JsonUtils.getLong("createdDate", doc)
+                    myTeams.teamType = JsonUtils.getString("teamType", doc)
+                    myTeams.docType = JsonUtils.getString("docType", doc)
+                    myTeams.beginningBalance = JsonUtils.getString("beginningBalance", doc)
+                    myTeams.sales = JsonUtils.getString("sales", doc)
+                    myTeams.otherIncome = JsonUtils.getString("otherIncome", doc)
+                    myTeams.wages = JsonUtils.getString("wages", doc)
+                    myTeams.otherExpenses = JsonUtils.getString("otherExpenses", doc)
+                    myTeams.startDate = JsonUtils.getLong("startDate", doc)
+                    myTeams.endDate = JsonUtils.getLong("endDate", doc)
+                    myTeams.updatedDate = JsonUtils.getLong("updatedDate", doc)
+                    myTeams.updated = JsonUtils.getBoolean("updated", doc)
+                }
+            }
+        }
+
+        @JvmStatic
         fun getResourceIds(teamId: String, realm: Realm): MutableList<String> {
             val teams = realm.where(RealmMyTeam::class.java).equalTo("teamId", teamId).findAll()
             val ids = mutableListOf<String>()

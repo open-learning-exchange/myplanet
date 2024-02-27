@@ -1,41 +1,31 @@
 package org.ole.planet.myplanet.ui.enterprises
 
 import android.app.DatePickerDialog
-import android.os.Build
 import android.os.Bundle
-import android.text.Editable
 import android.text.TextUtils
-import android.text.TextWatcher
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
-import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.gson.JsonObject
-import io.realm.Realm
 import io.realm.RealmResults
 import io.realm.Sort
-import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.databinding.AlertGuestLoginBinding
 import org.ole.planet.myplanet.databinding.DialogAddReportBinding
 import org.ole.planet.myplanet.databinding.FragmentReportsBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmMyTeam.Companion.insertMyTeams
+import org.ole.planet.myplanet.model.RealmMyTeam.Companion.insertReports
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
-import java.text.Normalizer
 import java.util.Calendar
-import java.util.regex.Pattern
 
 class ReportsFragment : BaseTeamFragment() {
     private lateinit var fragmentReportsBinding: FragmentReportsBinding
     var list: RealmResults<RealmMyTeam>? = null
-    lateinit var adapterReports: AdapterReports
-    var startTimeStamp: String? = ""
-    var endTimeStamp: String? = ""
+    private lateinit var adapterReports: AdapterReports
+    private var startTimeStamp: String? = null
+    private var endTimeStamp: String? = null
     lateinit var teamType: String
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -91,9 +81,9 @@ class ReportsFragment : BaseTeamFragment() {
             }
 
             submit.setOnClickListener {
-                if(dialogAddReportBinding.startDate.text == "Start Date"){
+                if (dialogAddReportBinding.startDate.text == "Start Date"){
                     dialogAddReportBinding.startDate.error = "start date is required"
-                } else if(dialogAddReportBinding.endDate.text == "End Date"){
+                } else if (dialogAddReportBinding.endDate.text == "End Date"){
                     dialogAddReportBinding.endDate.error = "start date is required"
                 } else if (TextUtils.isEmpty("${dialogAddReportBinding.summary.text}")) {
                     dialogAddReportBinding.summary.error = "summary is required"
@@ -125,7 +115,9 @@ class ReportsFragment : BaseTeamFragment() {
                         addProperty("docType", "report")
                         addProperty("updated", true)
                     }
-                    insertMyTeams(doc, mRealm)
+                    insertReports(doc, mRealm)
+                    adapterReports.updateList(list as RealmResults<RealmMyTeam>)
+                    adapterReports.notifyDataSetChanged()
                     dialog.dismiss()
                 }
             }
@@ -138,11 +130,11 @@ class ReportsFragment : BaseTeamFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        list = mRealm.where(RealmMyTeam::class.java).notEqualTo("status", "archived")
-            .equalTo("teamId", teamId).equalTo("docType", "report")
+        list = mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId)
+            .equalTo("docType", "report")
             .sort("date", Sort.DESCENDING).findAll()
 
-        adapterReports = AdapterReports(requireActivity(), list as RealmResults<RealmMyTeam>)
+        adapterReports = AdapterReports(list as RealmResults<RealmMyTeam>)
         fragmentReportsBinding.rvReports.layoutManager = LinearLayoutManager(activity)
         fragmentReportsBinding.rvReports.adapter = adapterReports
 

@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.enterprises
 
-import android.content.Context
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
@@ -9,7 +8,7 @@ import org.ole.planet.myplanet.databinding.ReportListItemBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.utilities.TimeUtils
 
-class AdapterReports(private val context: Context, private val list: RealmResults<RealmMyTeam>) : RecyclerView.Adapter<AdapterReports.ViewHolderReports>() {
+class AdapterReports(private var list: RealmResults<RealmMyTeam>) : RecyclerView.Adapter<AdapterReports.ViewHolderReports>() {
     private lateinit var reportListItemBinding: ReportListItemBinding
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderReports {
         reportListItemBinding = ReportListItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
@@ -43,6 +42,10 @@ class AdapterReports(private val context: Context, private val list: RealmResult
 
     override fun getItemCount(): Int {
         return list.size
+    }
+
+    fun updateList(reportList: RealmResults<RealmMyTeam>) {
+        list = reportList
     }
 
     class ViewHolderReports(reportListItemBinding: ReportListItemBinding) : RecyclerView.ViewHolder(reportListItemBinding.root)

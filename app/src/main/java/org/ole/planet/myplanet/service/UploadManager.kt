@@ -422,9 +422,7 @@ class UploadManager(context: Context) : FileUploadService() {
         val apiInterface = client!!.create(ApiInterface::class.java)
         mRealm = dbService.realmInstance
         mRealm!!.executeTransactionAsync { realm: Realm ->
-            val teams: List<RealmMyTeam> = realm.where(
-                RealmMyTeam::class.java
-            ).equalTo("updated", true).findAll()
+            val teams: List<RealmMyTeam> = realm.where(RealmMyTeam::class.java).equalTo("updated", true).findAll()
             Utilities.log("Teams size " + teams.size)
             for (team in teams) {
                 try {
