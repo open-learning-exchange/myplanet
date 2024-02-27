@@ -1,123 +1,130 @@
 package org.ole.planet.myplanet.ui.dashboard
 
-import android.content.DialogInterface
 import android.os.Bundle
-import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import kotlinx.android.synthetic.main.card_profile_bell.ll_badges
-import kotlinx.android.synthetic.main.card_profile_bell.txt_community_name
-import kotlinx.android.synthetic.main.card_profile_bell.txt_date
-import kotlinx.android.synthetic.main.card_profile_bell.view.fab_feedback
-import kotlinx.android.synthetic.main.fragment_home_bell.add_resource
-import kotlinx.android.synthetic.main.fragment_home_bell.view.fab_my_activity
-import kotlinx.android.synthetic.main.fragment_home_bell.view.fab_my_progress
-import kotlinx.android.synthetic.main.fragment_home_bell.view.fab_notification
-import kotlinx.android.synthetic.main.fragment_home_bell.view.fab_survey
-import kotlinx.android.synthetic.main.home_card_courses.view.myCoursesImageButton
-import kotlinx.android.synthetic.main.home_card_library.view.myLibraryImageButton
-import kotlinx.android.synthetic.main.home_card_mylife.view.myLifeImageButton
-import kotlinx.android.synthetic.main.home_card_teams.view.ll_home_team
-import org.ole.planet.myplanet.MainApplication
+import io.realm.Case
+import org.json.JSONException
+import org.json.JSONObject
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.base.BaseResourceFragment
+import org.ole.planet.myplanet.databinding.FragmentHomeBellBinding
 import org.ole.planet.myplanet.model.RealmCertification
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmExamQuestion
+import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.ui.course.CourseFragment
 import org.ole.planet.myplanet.ui.course.MyProgressFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
 import org.ole.planet.myplanet.ui.library.AddResourceFragment
 import org.ole.planet.myplanet.ui.library.LibraryFragment
 import org.ole.planet.myplanet.ui.mylife.LifeFragment
+import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
 import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.ui.team.TeamFragment
 import org.ole.planet.myplanet.utilities.TimeUtils
 import java.util.Date
 
 class BellDashboardFragment : BaseDashboardFragment() {
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
-    ): View? {
-        val view = inflater.inflate(R.layout.fragment_home_bell, container, false)
-        declareElements(view)
+    private lateinit var fragmentHomeBellBinding: FragmentHomeBellBinding
+
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+        fragmentHomeBellBinding = FragmentHomeBellBinding.inflate(inflater, container, false)
+
+        val view = fragmentHomeBellBinding.root
+        initView(view)
+        declareElements()
         onLoaded(view)
-        return view
+        return fragmentHomeBellBinding.root
     }
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
-        txt_date.text = TimeUtils.formatDate(Date().time)
-        txt_community_name.text = model.planetCode
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        fragmentHomeBellBinding.cardProfileBell.txtDate.text = TimeUtils.formatDate(Date().time)
+        fragmentHomeBellBinding.cardProfileBell.txtCommunityName.text = model.planetCode
         (activity as DashboardActivity?)?.supportActionBar?.hide()
-        add_resource.setOnClickListener { v: View? ->
-            AddResourceFragment().show(
-                childFragmentManager, getString(R.string.add_res)
-            )
+        fragmentHomeBellBinding.addResource.setOnClickListener {
+            AddResourceFragment().show(childFragmentManager, getString(R.string.add_res))
         }
         showBadges()
-        if (!model.id.startsWith("guest") && TextUtils.isEmpty(model.key) && MainApplication.showHealthDialog) {
-            AlertDialog.Builder(activity!!)
-                .setMessage(getString(R.string.health_record_not_available_sync_health_data))
-                .setPositiveButton(getString(R.string.sync)) { dialogInterface: DialogInterface?, i: Int ->
-                    syncKeyId()
-                    MainApplication.showHealthDialog = false
-                }.setNegativeButton(getString(R.string.cancel), null).show()
+        
+        val noOfSurvey = RealmSubmission.getNoOfSurveySubmissionByUser(model.id, mRealm)
+        if (noOfSurvey >= 1){
+            val title: String = if (noOfSurvey > 1 ) {
+                "surveys"
+            } else{
+                "survey"
+            }
+            val itemsQuery = mRealm.where(RealmSubmission::class.java).equalTo("userId", model.id)
+                .equalTo("type", "survey").equalTo("status", "pending", Case.INSENSITIVE)
+                .findAll()
+            val courseTitles = itemsQuery.map { it.parent }
+            val surveyNames = courseTitles.map { json ->
+                try {
+                    val jsonObject = json?.let { JSONObject(it) }
+                    jsonObject?.getString("name")
+                } catch (e: JSONException) {
+                    e.printStackTrace()
+                }
+            }
+
+            val alertDialog: AlertDialog.Builder = AlertDialog.Builder(requireActivity())
+            alertDialog.setTitle("You have $noOfSurvey $title to complete")
+            val surveyNamesArray = surveyNames.filterNotNull().map { it as CharSequence }.toTypedArray()
+            alertDialog.setItems(surveyNamesArray, null)
+            alertDialog.setPositiveButton("OK") { dialog, _ ->
+                homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("survey"))
+                dialog.dismiss()
+            }
+            alertDialog.show()
         }
     }
 
     private fun showBadges() {
-        ll_badges.removeAllViews()
-        val list = RealmCourseProgress.getPassedCourses(
-            mRealm, BaseResourceFragment.settings.getString("userId", "")
-        )
+        fragmentHomeBellBinding.cardProfileBell.llBadges.removeAllViews()
+        val list = RealmCourseProgress.getPassedCourses(mRealm, settings?.getString("userId", ""))
         for (sub in list) {
             val star =
                 LayoutInflater.from(activity).inflate(R.layout.image_start, null) as ImageView
-            val examId = if (sub.parentId.contains("@")) sub.parentId.split("@")
+            val examId = if (sub.parentId?.contains("@") == true) sub.parentId!!.split("@")
                 .toTypedArray()[0] else sub.parentId
             val courseId =
-                if (sub.parentId.contains("@")) sub.parentId.split("@").toTypedArray()[1] else ""
+                if (sub.parentId?.contains("@") == true) sub.parentId!!.split("@").toTypedArray()[1] else ""
             val questions =
                 mRealm.where(RealmExamQuestion::class.java).equalTo("examId", examId).count()
             setColor(questions, courseId, star)
-            ll_badges.addView(star)
+            fragmentHomeBellBinding.cardProfileBell.llBadges.addView(star)
         }
     }
 
     private fun setColor(questions: Long, courseId: String, star: ImageView) =
         if (RealmCertification.isCourseCertified(mRealm, courseId)) {
-            star.setColorFilter(resources.getColor(R.color.colorPrimary))
+            star.setColorFilter(ContextCompat.getColor(requireContext(), R.color.colorPrimary))
         } else {
-            star.setColorFilter(resources.getColor(R.color.md_blue_grey_300))
+            star.setColorFilter(ContextCompat.getColor(requireContext(), R.color.md_blue_grey_300))
         }
 
-    private fun declareElements(view: View) {
-        initView(view)
-        view.ll_home_team.setOnClickListener { homeItemClickListener.openCallFragment(TeamFragment()) }
-        view.myLibraryImageButton.setOnClickListener { openHelperFragment(LibraryFragment()) }
-        view.myCoursesImageButton.setOnClickListener { openHelperFragment(CourseFragment()) }
-        view.fab_my_progress.setOnClickListener { openHelperFragment(MyProgressFragment()) }
-        view.fab_my_activity.setOnClickListener { openHelperFragment(MyActivityFragment()) }
-        view.fab_survey.setOnClickListener { openHelperFragment(SurveyFragment()) }
-        view.fab_feedback.setOnClickListener { openHelperFragment(FeedbackListFragment()) }
-        view.myLifeImageButton.setOnClickListener {
-            homeItemClickListener.openCallFragment(
-                LifeFragment()
-            )
-        }
-        view.fab_notification.setOnClickListener { showNotificationFragment() }
+    private fun declareElements() {
+        fragmentHomeBellBinding.homeCardTeams.llHomeTeam.setOnClickListener { homeItemClickListener?.openCallFragment(TeamFragment()) }
+        fragmentHomeBellBinding.homeCardLibrary.myLibraryImageButton.setOnClickListener { openHelperFragment(LibraryFragment()) }
+        fragmentHomeBellBinding.homeCardCourses.myCoursesImageButton.setOnClickListener { openHelperFragment(CourseFragment()) }
+        fragmentHomeBellBinding.fabMyProgress.setOnClickListener { openHelperFragment(MyProgressFragment()) }
+        fragmentHomeBellBinding.fabMyActivity.setOnClickListener { openHelperFragment(MyActivityFragment()) }
+        fragmentHomeBellBinding.fabSurvey.setOnClickListener { openHelperFragment(SurveyFragment()) }
+        fragmentHomeBellBinding.cardProfileBell.fabFeedback.setOnClickListener { openHelperFragment(FeedbackListFragment()) }
+        fragmentHomeBellBinding.homeCardMyLife.myLifeImageButton.setOnClickListener { homeItemClickListener?.openCallFragment(LifeFragment()) }
+        fragmentHomeBellBinding.fabNotification.setOnClickListener { showNotificationFragment() }
     }
 
     private fun openHelperFragment(f: Fragment) {
         val b = Bundle()
         b.putBoolean("isMyCourseLib", true)
         f.arguments = b
-        homeItemClickListener.openCallFragment(f)
+        homeItemClickListener?.openCallFragment(f)
     }
 
     companion object {

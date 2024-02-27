@@ -1,12 +1,12 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 buildscript {
-    ext.kotlin_version = '1.7.10'
+    ext.kotlin_version = '1.9.22'
     ext {
         setup = [
-                compileSdk: 33,
+                compileSdk: 34,
                 buildTools: "28.0.0",
-                minSdk    : 19,
-                targetSdk : 33
+                minSdk    : 21,
+                targetSdk : 34
         ]
         versions = [
                 supportLib: "28.0.0"
@@ -15,15 +15,12 @@ buildscript {
 
     repositories {
         mavenCentral()
-        maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
         google()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.0.0'
-        classpath "io.realm:realm-gradle-plugin:10.15.1"
-        classpath "com.google.dagger:hilt-android-gradle-plugin:2.44"
-
-        classpath 'pl.droidsonroids.gif:android-gif-drawable:1.2.12'
+        classpath 'com.android.tools.build:gradle:8.2.2'
+        classpath "io.realm:realm-gradle-plugin:10.18.0"
+        classpath "com.google.dagger:hilt-android-gradle-plugin:2.50"
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files

@@ -16,14 +16,14 @@ class LeadersFragment : Fragment() {
     private lateinit var fragmentMembersBinding: FragmentMembersBinding
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         fragmentMembersBinding = FragmentMembersBinding.inflate(inflater, container, false)
         return fragmentMembersBinding.root
     }
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
-        var mRealm = DatabaseService(requireActivity()).realmInstance;
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        val mRealm = DatabaseService(requireActivity()).realmInstance
         val leaders = mRealm.where(RealmMyTeam::class.java).equalTo("isLeader", true).findAll()
         if (leaders.isEmpty()) {
             fragmentMembersBinding.tvNodata.text = getString(R.string.no_data_available)
@@ -32,7 +32,7 @@ class LeadersFragment : Fragment() {
             val list = ArrayList<RealmUserModel>()
             for (team in leaders) {
                 val model =
-                    mRealm.where(RealmUserModel::class.java).equalTo("id", team.user_id).findFirst()
+                    mRealm.where(RealmUserModel::class.java).equalTo("id", team.userId).findFirst()
                 if (model != null && !list.contains(model)) list.add(model)
             }
             fragmentMembersBinding.rvMember.adapter = AdapterLeader(requireActivity(), list)

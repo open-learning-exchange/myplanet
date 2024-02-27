@@ -4,12 +4,13 @@ import android.os.Bundle
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
-import android.widget.ImageView
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import io.realm.RealmObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
+import org.ole.planet.myplanet.databinding.ItemMyLifeBinding
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -32,39 +33,39 @@ import org.ole.planet.myplanet.utilities.Utilities
 open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
     fun handleClick(id: String?, title: String?, f: Fragment, v: TextView) {
         v.text = title
-        v.setOnClickListener { view: View? ->
+        v.setOnClickListener {
             if (homeItemClickListener != null) {
                 val b = Bundle()
                 b.putString("id", id)
                 if (f is TeamDetailFragment) b.putBoolean("isMyTeam", true)
                 f.arguments = b
-                homeItemClickListener.openCallFragment(f)
+                homeItemClickListener!!.openCallFragment(f)
             }
         }
     }
 
-    fun handleClickMyLife(title: String, v: View) {
-        v.setOnClickListener { view: View? ->
+    private fun handleClickMyLife(title: String, v: View) {
+        v.setOnClickListener {
             if (homeItemClickListener != null) {
                 if (title == getString(R.string.submission)) {
-                    homeItemClickListener.openCallFragment(MySubmissionFragment())
+                    homeItemClickListener!!.openCallFragment(MySubmissionFragment())
                 } else if (title == getString(R.string.our_news)) {
-                    homeItemClickListener.openCallFragment(NewsFragment())
+                    homeItemClickListener!!.openCallFragment(NewsFragment())
                 } else if (title == getString(R.string.references)) {
-                    homeItemClickListener.openCallFragment(ReferenceFragment())
+                    homeItemClickListener!!.openCallFragment(ReferenceFragment())
                 } else if (title == getString(R.string.calendar)) {
-                    homeItemClickListener.openCallFragment(CalendarFragment())
+                    homeItemClickListener!!.openCallFragment(CalendarFragment())
                 } else if (title == getString(R.string.my_survey)) {
-                    homeItemClickListener.openCallFragment(MySubmissionFragment.newInstance("survey"))
+                    homeItemClickListener!!.openCallFragment(MySubmissionFragment.newInstance("survey"))
                 } else if (title == getString(R.string.achievements)) {
-                    homeItemClickListener.openCallFragment(AchievementFragment())
+                    homeItemClickListener!!.openCallFragment(AchievementFragment())
                 } else if (title == getString(R.string.mypersonals)) {
-                    homeItemClickListener.openCallFragment(MyPersonalsFragment())
+                    homeItemClickListener!!.openCallFragment(MyPersonalsFragment())
                 } else if (title == getString(R.string.help_wanted)) {
-                    homeItemClickListener.openCallFragment(HelpWantedFragment())
+                    homeItemClickListener!!.openCallFragment(HelpWantedFragment())
                 } else if (title == getString(R.string.myhealth)) {
-                    if (!model.id.startsWith("guest")) {
-                        homeItemClickListener.openCallFragment(MyHealthFragment())
+                    if (!model.id!!.startsWith("guest")) {
+                        homeItemClickListener!!.openCallFragment(MyHealthFragment())
                     } else {
                         Utilities.toast(activity, getString(R.string.feature_not_available_for_guest_user))
                     }
@@ -75,58 +76,55 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         }
     }
 
-    fun setTextViewProperties(
-        textViewArray: Array<TextView?>, itemCnt: Int, obj: RealmObject?, c: Class<*>?
-    ) {
+    fun setTextViewProperties(textViewArray: Array<TextView?>, itemCnt: Int, obj: RealmObject?) {
         textViewArray[itemCnt] = TextView(context)
         textViewArray[itemCnt]?.setPadding(20, 10, 20, 10)
         textViewArray[itemCnt]?.textAlignment = View.TEXT_ALIGNMENT_CENTER
         textViewArray[itemCnt]?.gravity = Gravity.CENTER_VERTICAL or Gravity.CENTER_HORIZONTAL
-        if (obj is RealmMyLibrary) {
-            textViewArray[itemCnt]?.text = obj.title
-        } else if (obj is RealmMyCourse) {
-            textViewArray[itemCnt]?.let {
-                handleClick(
-                    obj.courseId, obj.courseTitle, TakeCourseFragment(), it
-                )
+        when (obj) {
+            is RealmMyLibrary -> {
+                textViewArray[itemCnt]?.text = obj.title
             }
-        } else if (obj is RealmMeetup) {
-            textViewArray[itemCnt]?.let {
-                handleClick(
-                    obj.meetupId, obj.title, MyMeetupDetailFragment(), it
-                )
+            is RealmMyCourse -> {
+                textViewArray[itemCnt]?.let {
+                    handleClick(obj.courseId, obj.courseTitle, TakeCourseFragment(), it)
+                }
+            }
+            is RealmMeetup -> {
+                textViewArray[itemCnt]?.let {
+                    handleClick(obj.meetupId, obj.title, MyMeetupDetailFragment(), it)
+                }
             }
         }
     }
 
-    fun setTextColor(textView: TextView, itemCnt: Int, c: Class<*>?) {
-        textView.setTextColor(resources.getColor(R.color.md_black_1000))
+    fun setTextColor(textView: TextView, itemCnt: Int) {
+        textView.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
         setBackgroundColor(textView, itemCnt)
     }
 
     fun getLayout(itemCnt: Int, obj: RealmObject): View {
-        val v = LayoutInflater.from(activity).inflate(R.layout.item_my_life, null)
-        val img = v.findViewById<ImageView>(R.id.img)
-        val counter = v.findViewById<TextView>(R.id.tv_count)
-        val name = v.findViewById<TextView>(R.id.tv_name)
+        val itemMyLifeBinding = ItemMyLifeBinding.inflate(LayoutInflater.from(activity))
+        val v = itemMyLifeBinding.root
         setBackgroundColor(v, itemCnt)
+
         val title = (obj as RealmMyLife).title
-        img.setImageResource(
-            resources.getIdentifier(
-                obj.imageId, "drawable", requireActivity().packageName
-            )
-        )
-        name.text = title
-        val user = UserProfileDbHandler(activity).userModel
+        val user = UserProfileDbHandler(requireContext()).userModel
+        itemMyLifeBinding.img.setImageResource(resources.getIdentifier(obj.imageId, "drawable", requireActivity().packageName))
+        itemMyLifeBinding.tvName.text = title
+
         if (title == getString(R.string.my_survey)) {
-            counter.visibility = View.VISIBLE
-            val noOfSurvey = RealmSubmission.getNoOfSurveySubmissionByUser(user.id, mRealm)
-            counter.text = noOfSurvey.toString() + ""
+            itemMyLifeBinding.tvCount.visibility = View.VISIBLE
+            val noOfSurvey = RealmSubmission.getNoOfSurveySubmissionByUser(user?.id, mRealm)
+            itemMyLifeBinding.tvCount.text = noOfSurvey.toString()
             Utilities.log("Count $noOfSurvey")
         } else {
-            counter.visibility = View.GONE
+            itemMyLifeBinding.tvCount.visibility = View.GONE
         }
-        handleClickMyLife(title, v)
+
+        if (title != null) {
+            handleClickMyLife(title, v)
+        }
         return v
     }
 
@@ -149,7 +147,7 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         if (count % 2 == 0) {
             v.setBackgroundResource(R.drawable.light_rect)
         } else {
-            v.setBackgroundColor(resources.getColor(R.color.md_grey_300))
+            v.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.md_grey_300))
         }
     }
 }

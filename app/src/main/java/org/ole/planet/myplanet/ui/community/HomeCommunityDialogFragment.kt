@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
@@ -16,26 +17,26 @@ class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
     private lateinit var fragmentTeamDetailBinding: FragmentTeamDetailBinding
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         fragmentTeamDetailBinding = FragmentTeamDetailBinding.inflate(inflater, container, false)
         return fragmentTeamDetailBinding.root
     }
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         initCommunityTab()
     }
 
     private fun initCommunityTab() {
         fragmentTeamDetailBinding.llActionButtons.visibility = View.GONE
-        var settings = requireActivity().getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE)
-        var sPlanetcode = settings.getString("planetCode", "")
-        var sParentcode = settings.getString("parentCode", "")
+        val settings = requireActivity().getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE)
+        val sPlanetcode = settings.getString("planetCode", "")
+        val sParentcode = settings.getString("parentCode", "")
         fragmentTeamDetailBinding.viewPager.adapter =
-            CommunityPagerAdapter(childFragmentManager, sPlanetcode + "@" + sParentcode, true)
+            CommunityPagerAdapter(childFragmentManager, "$sPlanetcode@$sParentcode", true)
         fragmentTeamDetailBinding.title.text = sPlanetcode
-        fragmentTeamDetailBinding.title.setTextColor(resources.getColor(R.color.md_black_1000))
-        fragmentTeamDetailBinding.subtitle.setTextColor(resources.getColor(R.color.md_black_1000))
+        fragmentTeamDetailBinding.title.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
+        fragmentTeamDetailBinding.subtitle.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
         fragmentTeamDetailBinding.subtitle.text = TimeUtils.getFormatedDateWithTime(Date().time)
         fragmentTeamDetailBinding.tabLayout.setupWithViewPager(fragmentTeamDetailBinding.viewPager)
     }

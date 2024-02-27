@@ -16,22 +16,18 @@ class CommunityTabFragment : Fragment() {
     private lateinit var fragmentTeamDetailBinding: FragmentTeamDetailBinding
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         fragmentTeamDetailBinding = FragmentTeamDetailBinding.inflate(inflater, container, false)
         return fragmentTeamDetailBinding.root
     }
-
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
-        var settings =
-            requireActivity().getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE)
-        var sParentcode = settings.getString("parentCode", "")
-
-        var user = UserProfileDbHandler(requireActivity()).userModel
-        fragmentTeamDetailBinding.viewPager.adapter =
-            CommunityPagerAdapter(childFragmentManager, user.planetCode + "@" + sParentcode, false)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        val settings = requireActivity().getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE)
+        val sParentcode = settings.getString("parentCode", "")
+        val user = UserProfileDbHandler(requireActivity()).userModel
+        fragmentTeamDetailBinding.viewPager.adapter = CommunityPagerAdapter(childFragmentManager, user?.planetCode + "@" + sParentcode, false)
         fragmentTeamDetailBinding.tabLayout.setupWithViewPager(fragmentTeamDetailBinding.viewPager)
-        fragmentTeamDetailBinding.title.text = user.planetCode
+        fragmentTeamDetailBinding.title.text = user?.planetCode
         fragmentTeamDetailBinding.subtitle.text = TimeUtils.getFormatedDateWithTime(Date().time)
         fragmentTeamDetailBinding.llActionButtons.visibility = View.GONE
         fragmentTeamDetailBinding.tabLayout.setupWithViewPager(fragmentTeamDetailBinding.viewPager)

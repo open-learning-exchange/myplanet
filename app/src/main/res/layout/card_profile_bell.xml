@@ -31,7 +31,6 @@
                 android:gravity="center"
                 android:orientation="horizontal">
 
-
                 <LinearLayout
                     android:id="@+id/ll_user"
                     android:layout_width="0dp"
@@ -47,15 +46,15 @@
                         <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_gravity="center_vertical"
-                            android:layout_weight="1">
+                            android:layout_marginStart="4dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
 
                             <TextView
                                 android:id="@+id/txtFullName"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_gravity="center_vertical"
-                                android:padding="@dimen/padding_normal"
+                                android:padding="1dp"
                                 android:textColor="@color/md_black_1000"
                                 android:textSize="@dimen/text_size_large"
                                 android:textStyle="bold" />
@@ -65,7 +64,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_gravity="center_vertical"
-                                android:padding="@dimen/padding_normal"
+                                android:padding="1dp"
                                 android:textColor="@color/md_black_1000"
                                 android:textSize="16sp"
                                 android:textStyle="bold" />
@@ -123,16 +122,14 @@
                             android:textSize="16sp"
                             android:textStyle="bold" />
                     </LinearLayout>
-
-
                 </LinearLayout>
             </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_gravity="right"
-                android:gravity="right">
+                android:layout_gravity="end"
+                android:gravity="end">
 
                 <LinearLayout
                     android:id="@+id/ll_badges"
@@ -150,11 +147,6 @@
                     android:visibility="gone"
                     app:srcCompat="@drawable/feedback" />
             </LinearLayout>
-
         </LinearLayout>
-
-
     </LinearLayout>
-
-
 </androidx.cardview.widget.CardView>

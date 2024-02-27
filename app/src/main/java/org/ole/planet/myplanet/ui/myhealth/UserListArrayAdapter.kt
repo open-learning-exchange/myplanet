@@ -8,37 +8,47 @@ import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.ImageView
 import android.widget.TextView
-import com.squareup.picasso.Callback
-import com.squareup.picasso.Picasso
+import com.bumptech.glide.Glide
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.TimeUtils
-import java.io.File
 
-class UserListArrayAdapter(activity: Activity, val view: Int, var list: List<RealmUserModel>) :
-    ArrayAdapter<RealmUserModel>(activity, view, list) {
+class UserListArrayAdapter(activity: Activity, val view: Int, var list: List<RealmUserModel>) : ArrayAdapter<RealmUserModel>(activity, view, list) {
+    private class ViewHolder {
+        var tvName: TextView? = null
+        var joined: TextView? = null
+        var image: ImageView? = null
+    }
+
     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-        var v = convertView
-        v = LayoutInflater.from(context).inflate(R.layout.item_user, parent, false)
-        val tvName = v?.findViewById<TextView>(R.id.txt_name)
-        val joined = v?.findViewById<TextView>(R.id.txt_joined)
-        val image = v?.findViewById<ImageView>(R.id.iv_user)
-        val um = getItem(position)
-        tvName?.text = """${um?.fullName} (${um?.name})"""
-        joined?.text = "${context.getString(R.string.joined_colon)} ${TimeUtils.formatDate(um!!.joinDate)}"
+        val holder: ViewHolder
+        var convertViewVar = convertView
 
-        if (!TextUtils.isEmpty(um?.userImage)) Picasso.get().load(um?.userImage)
-            .placeholder(R.drawable.profile).into(image, object : Callback {
-                override fun onSuccess() {}
-                override fun onError(e: Exception) {
-                    e.printStackTrace()
-                    val f = File(um?.userImage)
-                    Picasso.get().load(f).placeholder(R.drawable.profile).error(R.drawable.profile)
-                        .into(image)
-                }
-            }) else {
-            image?.setImageResource(R.drawable.profile)
+        if (convertViewVar == null) {
+            convertViewVar = LayoutInflater.from(context).inflate(R.layout.item_user, parent, false)
+            holder = ViewHolder()
+            holder.tvName = convertViewVar.findViewById(R.id.txt_name)
+            holder.joined = convertViewVar.findViewById(R.id.txt_joined)
+            holder.image = convertViewVar.findViewById(R.id.iv_user)
+            convertViewVar.tag = holder
+        } else {
+            holder = convertViewVar.tag as ViewHolder
         }
-        return v!!;
+
+        val um = getItem(position)
+        holder.tvName?.text = "${um?.getFullName()} (${um?.name})"
+        holder.joined?.text = "${context.getString(R.string.joined_colon)} ${TimeUtils.formatDate(um!!.joinDate)}"
+
+        if (!TextUtils.isEmpty(um.userImage)) {
+            Glide.with(context)
+                .load(um.userImage)
+                .placeholder(R.drawable.profile)
+                .error(R.drawable.profile)
+                .into(holder.image!!)
+        } else {
+            holder.image?.setImageResource(R.drawable.profile)
+        }
+
+        return convertViewVar!!
     }
 }
