@@ -28,7 +28,7 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
         mRealm = dbService.realmInstance
         user = profileDbHandler.userModel?.let { mRealm.copyFromRealm(it) }
         Utilities.log("Team id $teamId")
-        team = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()!!
+        team = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst() ?: throw IllegalArgumentException("Team not found for ID: $teamId")
         settings = requireActivity().getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE)
     }
 

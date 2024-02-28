@@ -10,7 +10,6 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import io.realm.Case
 import io.realm.Realm
-import io.realm.RealmResults
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
@@ -121,7 +120,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
 
     private fun hideTestIfNoQuestion() {
         fragmentCourseStepBinding.btnTakeTest.visibility = View.GONE
-        if (stepExams != null && stepExams.isNotEmpty()) {
+        if (stepExams.isNotEmpty()) {
             val first_step_id = stepExams[0].id
             val questions = cRealm.where(RealmExamQuestion::class.java).equalTo("examId", first_step_id).findAll()
             val submissionsCount = cRealm.where(RealmSubmission::class.java).contains("parentId", step.courseId).notEqualTo("status", "pending", Case.INSENSITIVE).count()
@@ -144,7 +143,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     }
 
     private fun setListeners() {
-        val notDownloadedResources: RealmResults<*> = cRealm.where(RealmMyLibrary::class.java).equalTo("stepId", stepId).equalTo("resourceOffline", false).isNotNull("resourceLocalAddress").findAll()
+        val notDownloadedResources: List<RealmMyLibrary> = cRealm.where(RealmMyLibrary::class.java).equalTo("stepId", stepId).equalTo("resourceOffline", false).isNotNull("resourceLocalAddress").findAll()
         setResourceButton(notDownloadedResources, fragmentCourseStepBinding.btnResources)
         fragmentCourseStepBinding.btnTakeTest.setOnClickListener {
             if (stepExams.isNotEmpty()) {
@@ -172,15 +171,17 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         fun prependBaseUrlToImages(markdownContent: String?, baseUrl: String): String {
             val pattern = "!\\[.*?\\]\\((.*?)\\)"
             val imagePattern = Pattern.compile(pattern)
-            val matcher = imagePattern.matcher(markdownContent)
+            val matcher = markdownContent?.let { imagePattern.matcher(it) }
             val result = StringBuffer()
-            while (matcher.find()) {
-                val relativePath = matcher.group(1)
-                val modifiedPath = relativePath?.replaceFirst("resources/".toRegex(), "")
-                val fullUrl = baseUrl + modifiedPath
-                matcher.appendReplacement(result, "<img src=$fullUrl width=600 height=350/>")
+            if (matcher != null) {
+                while (matcher.find()) {
+                    val relativePath = matcher.group(1)
+                    val modifiedPath = relativePath?.replaceFirst("resources/".toRegex(), "")
+                    val fullUrl = baseUrl + modifiedPath
+                    matcher.appendReplacement(result, "<img src=$fullUrl width=600 height=350/>")
+                }
             }
-            matcher.appendTail(result)
+            matcher?.appendTail(result)
             return result.toString()
         }
     }

@@ -83,9 +83,11 @@ open class RealmCourseProgress : RealmObject() {
             val list: MutableList<RealmSubmission> = ArrayList()
             for (progress in progresses) {
                 Utilities.log("Course id  certified " + progress.courseId)
-                val sub = mRealm.where(RealmSubmission::class.java)
-                    .contains("parentId", progress.courseId).equalTo("userId", userId)
-                    .sort("lastUpdateTime", Sort.DESCENDING).findFirst()
+                val sub = progress.courseId?.let {
+                    mRealm.where(RealmSubmission::class.java)
+                        .contains("parentId", it).equalTo("userId", userId)
+                        .sort("lastUpdateTime", Sort.DESCENDING).findFirst()
+                }
                 if (sub != null) list.add(sub)
             }
             return list

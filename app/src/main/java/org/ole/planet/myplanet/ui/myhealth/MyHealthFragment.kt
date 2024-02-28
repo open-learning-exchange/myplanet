@@ -199,11 +199,11 @@ class MyHealthFragment : Fragment() {
             }
             val myHealths = mm.profile
             fragmentVitalSignBinding.txtOtherNeed.text = Utilities.checkNA(myHealths?.notes!!)
-            fragmentVitalSignBinding.txtSpecialNeeds.text = Utilities.checkNA(myHealths?.specialNeeds!!)
+            fragmentVitalSignBinding.txtSpecialNeeds.text = Utilities.checkNA(myHealths.specialNeeds)
             fragmentVitalSignBinding.txtBirthPlace.text = Utilities.checkNA(userModel?.birthPlace!!)
-            fragmentVitalSignBinding.txtEmergencyContact.text = ("${getString(R.string.name_colon)} ${Utilities.checkNA(myHealths?.emergencyContactName!!)} " +
-                    "${getString(R.string.type)} ${Utilities.checkNA(myHealths?.emergencyContactName!!)} " +
-                    "${getString(R.string.contact_colon)} ${Utilities.checkNA(myHealths?.emergencyContact!!)}").trimIndent()
+            fragmentVitalSignBinding.txtEmergencyContact.text = ("${getString(R.string.name_colon)} ${Utilities.checkNA(myHealths.emergencyContactName)} " +
+                    "${getString(R.string.type)} ${Utilities.checkNA(myHealths.emergencyContactName)} " +
+                    "${getString(R.string.contact_colon)} ${Utilities.checkNA(myHealths.emergencyContact)}").trimIndent()
             val list = getExaminations(mm)
 
             val adap = AdapterHealthExamination(requireActivity(), list, mh, userModel!!)

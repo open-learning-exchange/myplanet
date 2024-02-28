@@ -7,7 +7,6 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.LinearLayoutManager
 import io.realm.Realm
-import io.realm.RealmResults
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
@@ -59,7 +58,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         val markdownContentWithLocalPaths = CourseStepFragment.prependBaseUrlToImages(courses!!.description, "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/")
         setMarkdownText(fragmentCourseDetailBinding!!.description, markdownContentWithLocalPaths)
         fragmentCourseDetailBinding!!.noOfExams.text = getNoOfExam(cRealm, id).toString() + ""
-        val resources: RealmResults<*> = cRealm.where(RealmMyLibrary::class.java).equalTo("courseId", id).equalTo("resourceOffline", false).isNotNull("resourceLocalAddress").findAll()
+        val resources: List<RealmMyLibrary> = cRealm.where(RealmMyLibrary::class.java).equalTo("courseId", id).equalTo("resourceOffline", false).isNotNull("resourceLocalAddress").findAll()
         setResourceButton(resources, fragmentCourseDetailBinding!!.btnResources)
         val downloadedResources: List<RealmMyLibrary> = cRealm.where(RealmMyLibrary::class.java).equalTo("resourceOffline", true).equalTo("courseId", id).isNotNull("resourceLocalAddress").findAll()
         setOpenResourceButton(downloadedResources, fragmentCourseDetailBinding!!.btnOpen)

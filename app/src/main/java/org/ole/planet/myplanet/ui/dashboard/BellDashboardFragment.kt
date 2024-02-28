@@ -74,7 +74,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
             val alertDialog: AlertDialog.Builder = AlertDialog.Builder(requireActivity())
             alertDialog.setTitle("You have $noOfSurvey $title to complete")
-            val surveyNamesArray = surveyNames.map { it as CharSequence }.toTypedArray()
+            val surveyNamesArray = surveyNames.filterNotNull().map { it as CharSequence }.toTypedArray()
             alertDialog.setItems(surveyNamesArray, null)
             alertDialog.setPositiveButton("OK") { dialog, _ ->
                 homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("survey"))

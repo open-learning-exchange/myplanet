@@ -5,7 +5,7 @@ import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonReader
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
@@ -140,24 +140,27 @@ open class RealmFeedback : RealmObject() {
 
         @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject?) {
-            var feedback = mRealm.where(RealmFeedback::class.java)
-                .equalTo("_id", JsonUtils.getString("_id", act)).findFirst()
-            if (feedback == null) feedback = mRealm.createObject(RealmFeedback::class.java, JsonUtils.getString("_id", act))
-            feedback!!.set_id(JsonUtils.getString("_id", act))
-            feedback.title = JsonUtils.getString("title", act)
-            feedback.source = JsonUtils.getString("source", act)
-            feedback.status = JsonUtils.getString("status", act)
-            feedback.priority = JsonUtils.getString("priority", act)
-            feedback.owner = JsonUtils.getString("owner", act)
-            feedback.openTime = JsonUtils.getString("openTime", act)
-            feedback.type = JsonUtils.getString("type", act)
-            feedback.url = JsonUtils.getString("url", act)
-            feedback.parentCode = JsonUtils.getString("parentCode", act)
-            feedback.setMessages(Gson().toJson(JsonUtils.getJsonArray("messages", act)))
-            feedback.isUploaded = true
-            feedback.item = JsonUtils.getString("item", act)
-            feedback.state = JsonUtils.getString("state", act)
-            feedback.set_rev(JsonUtils.getString("_rev", act))
+            mRealm.executeTransactionAsync { realm ->
+                var feedback = realm.where(RealmFeedback::class.java)
+                    .equalTo("_id", JsonUtils.getString("_id", act)).findFirst()
+                if (feedback == null) feedback =
+                    realm.createObject(RealmFeedback::class.java, JsonUtils.getString("_id", act))
+                feedback!!.set_id(JsonUtils.getString("_id", act))
+                feedback.title = JsonUtils.getString("title", act)
+                feedback.source = JsonUtils.getString("source", act)
+                feedback.status = JsonUtils.getString("status", act)
+                feedback.priority = JsonUtils.getString("priority", act)
+                feedback.owner = JsonUtils.getString("owner", act)
+                feedback.openTime = JsonUtils.getString("openTime", act)
+                feedback.type = JsonUtils.getString("type", act)
+                feedback.url = JsonUtils.getString("url", act)
+                feedback.parentCode = JsonUtils.getString("parentCode", act)
+                feedback.setMessages(Gson().toJson(JsonUtils.getJsonArray("messages", act)))
+                feedback.isUploaded = true
+                feedback.item = JsonUtils.getString("item", act)
+                feedback.state = JsonUtils.getString("state", act)
+                feedback.set_rev(JsonUtils.getString("_rev", act))
+            }
         }
     }
 }

@@ -43,7 +43,7 @@ class CourseFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelec
     private lateinit var selectAll: CheckBox
     lateinit var spnGrade: Spinner
     lateinit var spnSubject: Spinner
-    var searchTags: MutableList<RealmTag?>? = null
+    lateinit var searchTags: MutableList<RealmTag>
     private lateinit var confirmation: AlertDialog
     override fun getLayout(): Int {
         return R.layout.fragment_my_course
@@ -179,7 +179,7 @@ class CourseFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelec
 
     private fun clearTags() {
         requireView().findViewById<View>(R.id.btn_clear_tags).setOnClickListener {
-            searchTags!!.clear()
+            searchTags.clear()
             etSearch.setText("")
             tvSelected.text = ""
             adapterCourses.setCourseList(filterCourseByTag("", searchTags))
@@ -213,15 +213,17 @@ class CourseFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelec
         return builder.create()
     }
 
-    override fun onSelectedListChange(list: List<RealmMyCourse?>?) {
+    override fun onSelectedListChange(list: MutableList<RealmMyCourse?>) {
         selectedItems = list
         changeButtonStatus()
     }
 
     override fun onTagClicked(tag: RealmTag?) {
-        if (!searchTags!!.contains(tag)) searchTags!!.add(tag)
+        if (!searchTags.contains(tag)) {
+            tag?.let { searchTags.add(it) }
+        }
         adapterCourses.setCourseList(filterCourseByTag(etSearch.text.toString(), searchTags))
-        showTagText(searchTags!!, tvSelected)
+        showTagText(searchTags, tvSelected)
         showNoData(tvMessage, adapterCourses.itemCount)
     }
 
@@ -236,18 +238,18 @@ class CourseFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelec
         }
     }
 
-    override fun onTagSelected(tag: RealmTag?) {
-        val li: MutableList<RealmTag?> = ArrayList()
+    override fun onTagSelected(tag: RealmTag) {
+        val li: MutableList<RealmTag> = ArrayList()
         li.add(tag)
         searchTags = li
-        tvSelected.text = R.string.selected.toString() + tag!!.name
+        tvSelected.text = R.string.selected.toString() + tag.name
         adapterCourses.setCourseList(filterCourseByTag(etSearch.text.toString(), li))
         showNoData(tvMessage, adapterCourses.itemCount)
     }
 
-    override fun onOkClicked(list: List<RealmTag?>?) {
+    override fun onOkClicked(list: List<RealmTag>?) {
         if (list!!.isEmpty()) {
-            searchTags!!.clear()
+            searchTags.clear()
             adapterCourses.setCourseList(filterCourseByTag(etSearch.text.toString(), searchTags))
             showNoData(tvMessage, adapterCourses.itemCount)
         } else {
@@ -258,7 +260,7 @@ class CourseFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelec
     }
 
     private fun filterApplied(): Boolean {
-        return !(searchTags!!.isEmpty() && gradeLevel.isEmpty() && subjectLevel.isEmpty() && etSearch.text.toString().isEmpty())
+        return !(searchTags.isEmpty() && gradeLevel.isEmpty() && subjectLevel.isEmpty() && etSearch.text.toString().isEmpty())
     }
 
     private fun saveSearchActivity() {
@@ -273,7 +275,7 @@ class CourseFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelec
             activity.type = "courses"
             val filter = JsonObject()
 
-            filter.add("tags", getTagsArray(searchTags?.filterNotNull() ?: listOf()))
+            filter.add("tags", getTagsArray(searchTags.toList()))
             filter.addProperty("doc.gradeLevel", gradeLevel)
             filter.addProperty("doc.subjectLevel", subjectLevel)
             activity.filter = Gson().toJson(filter)

@@ -45,7 +45,7 @@ class LibraryFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSe
     private var etTags: EditText? = null
     var adapterLibrary: AdapterLibrary? = null
     private var flexBoxTags: FlexboxLayout? = null
-    var searchTags: MutableList<RealmTag?>? = null
+    lateinit var searchTags: MutableList<RealmTag>
     var config: ChipCloudConfig? = null
     private var clearTags: Button? = null
     private var orderByTitle: Button? = null
@@ -183,7 +183,7 @@ class LibraryFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSe
     private fun clearTagsButton() {
         clearTags!!.setOnClickListener {
             saveSearchActivity()
-            searchTags!!.clear()
+            searchTags.clear()
             etSearch!!.setText("")
             tvSelected!!.text = ""
             levels.clear()
@@ -195,7 +195,7 @@ class LibraryFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSe
         }
     }
 
-    override fun onSelectedListChange(list: List<RealmMyLibrary>) {
+    override fun onSelectedListChange(list: MutableList<RealmMyLibrary?>) {
         selectedItems = list
         changeButtonStatus()
     }
@@ -204,30 +204,30 @@ class LibraryFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSe
         flexBoxTags!!.removeAllViews()
         val chipCloud = ChipCloud(activity, flexBoxTags, config)
         chipCloud.setDeleteListener(this)
-        if (!searchTags!!.contains(realmTag)) searchTags!!.add(realmTag)
+        if (!searchTags.contains(realmTag)) searchTags.add(realmTag)
         chipCloud.addChips(searchTags)
         adapterLibrary!!.setLibraryList(applyFilter(filterLibraryByTag(etSearch!!.text.toString(), searchTags)))
-        showTagText(searchTags!!, tvSelected!!)
+        showTagText(searchTags, tvSelected!!)
         showNoData(tvMessage, adapterLibrary!!.itemCount)
     }
 
-    override fun onTagSelected(tag: RealmTag?) {
-        val li: MutableList<RealmTag?> = ArrayList()
+    override fun onTagSelected(tag: RealmTag) {
+        val li: MutableList<RealmTag> = ArrayList()
         li.add(tag)
         searchTags = li
-        tvSelected!!.text = getString(R.string.selected) + tag!!.name
+        tvSelected!!.text = "${getString(R.string.selected)}${tag.name}"
         adapterLibrary!!.setLibraryList(applyFilter(filterLibraryByTag(etSearch!!.text.toString(), li)))
         showNoData(tvMessage, adapterLibrary!!.itemCount)
     }
 
-    override fun onOkClicked(list: List<RealmTag?>?) {
+    override fun onOkClicked(list: List<RealmTag>?) {
         if (list!!.isEmpty()) {
-            searchTags!!.clear()
+            searchTags.clear()
             adapterLibrary!!.setLibraryList(applyFilter(filterLibraryByTag(etSearch!!.text.toString(), searchTags)))
             showNoData(tvMessage, adapterLibrary!!.itemCount)
         } else {
             for (tag in list) {
-                onTagClicked(tag!!)
+                onTagClicked(tag)
             }
         }
     }
@@ -244,7 +244,7 @@ class LibraryFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSe
     }
 
     override fun chipDeleted(i: Int, s: String) {
-        searchTags!!.removeAt(i)
+        searchTags.removeAt(i)
         adapterLibrary!!.setLibraryList(applyFilter(filterLibraryByTag(etSearch!!.text.toString(), searchTags)))
         showNoData(tvMessage, adapterLibrary!!.itemCount)
     }
@@ -284,7 +284,7 @@ class LibraryFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSe
     }
 
     private fun filterApplied(): Boolean {
-        return !(subjects.isEmpty() && languages.isEmpty() && mediums.isEmpty() && levels.isEmpty() && searchTags!!.isEmpty() && etSearch!!.text.toString().isEmpty())
+        return !(subjects.isEmpty() && languages.isEmpty() && mediums.isEmpty() && levels.isEmpty() && searchTags.isEmpty() && etSearch!!.text.toString().isEmpty())
     }
 
     private fun saveSearchActivity() {

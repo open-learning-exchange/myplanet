@@ -26,7 +26,6 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatRatingBar
 import androidx.core.content.FileProvider
 import com.google.gson.JsonObject
-import io.realm.RealmResults
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.PermissionActivity.Companion.hasInstallPermission
@@ -115,15 +114,24 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         startActivity(fileOpenIntent)
     }
     fun openResource(items: RealmMyLibrary) {
-        if (items.isResourceOffline()) {
-            openFileType(items, "offline")
-        } else if (FileUtils.getFileExtension(items.resourceLocalAddress) == "mp4") {
-            openFileType(items, "online")
+        val matchingItems = mRealm.where(RealmMyLibrary::class.java)
+            .equalTo("resourceLocalAddress", items.resourceLocalAddress)
+            .findAll()
+        val anyOffline = matchingItems.any { it.isResourceOffline() }
+        if (anyOffline) {
+            val offlineItem = matchingItems.first { it.isResourceOffline()}
+            openFileType(offlineItem, "offline")
         } else {
-            val arrayList = ArrayList<String>()
-            arrayList.add(Utilities.getUrl(items, settings))
-            startDownload(arrayList)
-            profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_DOWNLOAD)
+            if (items.isResourceOffline()) {
+                openFileType(items, "offline")
+            } else if (FileUtils.getFileExtension(items.resourceLocalAddress) == "mp4") {
+                openFileType(items,  "online")
+            } else {
+                val arrayList = ArrayList<String>()
+                arrayList.add(Utilities.getUrl(items, settings))
+                startDownload(arrayList)
+                profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_DOWNLOAD)
+            }
         }
     }
     @RequiresApi(Build.VERSION_CODES.O)
@@ -166,16 +174,17 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             }
         }
 
-        val apkFile = File(directory, items.resourceLocalAddress)
-        if (!apkFile.exists()) {
-            Utilities.toast(activity,"APK file not found")
-            return
+        val apkFile = items.resourceLocalAddress?.let { File(directory, it) }
+        if (apkFile != null) {
+            if (!apkFile.exists()) {
+                Utilities.toast(activity,"APK file not found")
+                return
+            }
         }
 
-        val uri = FileProvider.getUriForFile(
-            MainApplication.context, "${MainApplication.context.packageName}.fileprovider",
-            apkFile
-        )
+        val uri = apkFile?.let {
+            FileProvider.getUriForFile(MainApplication.context, "${MainApplication.context.packageName}.fileprovider", it)
+        }
 
         val intent = Intent(Intent.ACTION_INSTALL_PACKAGE)
         intent.data = uri
@@ -272,16 +281,16 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             }
         }
     }
-    fun setResourceButton(resources: RealmResults<*>?, btnResources: Button) {
-        if (resources == null || resources.size == 0) {
+    fun setResourceButton(resources: List<RealmMyLibrary>?, btnResources: Button) {
+        if (resources.isNullOrEmpty()) {
             btnResources.visibility = View.GONE
         } else {
             btnResources.visibility = View.VISIBLE
             btnResources.text = getString(R.string.resources) + " [" + resources.size + "]"
             btnResources.setOnClickListener {
-                if (resources.size > 0) showDownloadDialog(
-                    resources as List<RealmMyLibrary>
-                )
+                if (resources.isNotEmpty()) {
+                    showDownloadDialog(resources)
+                }
             }
         }
     }

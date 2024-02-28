@@ -87,9 +87,15 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
             .setPositiveButton(R.string.save) { _: DialogInterface?, _: Int ->
                 val task = alertTaskBinding.etTask.text.toString()
                 val desc = alertTaskBinding.etDescription.text.toString()
-                if (task.isEmpty()) Utilities.toast(activity, getString(R.string.task_title_is_required))
-                else if (deadline == null) Utilities.toast(activity, getString(R.string.deadline_is_required))
-                else createOrUpdateTask(task, desc, t)
+                if (task.isEmpty()) {
+                    Utilities.toast(activity, getString(R.string.task_title_is_required))
+                } else if (deadline == null) {
+                    Utilities.toast(activity, getString(R.string.deadline_is_required))
+                } else {
+                    createOrUpdateTask(task, desc, t)
+                    setAdapter()
+                }
+
             }.setNegativeButton(getString(R.string.cancel), null).show()
     }
 
@@ -176,14 +182,15 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
         task!!.deleteFromRealm()
         Utilities.toast(activity, getString(R.string.task_deleted_successfully))
         mRealm.commitTransaction()
-        adapterTask.notifyDataSetChanged()
+        setAdapter()
         showNoData(fragmentTeamTaskBinding.tvNodata, fragmentTeamTaskBinding.rvTask.adapter!!.itemCount)
     }
 
     override fun onClickMore(realmTeamTask: RealmTeamTask?) {
         val alertUsersSpinnerBinding = AlertUsersSpinnerBinding.inflate(LayoutInflater.from(MainApplication.context))
         val userList: List<RealmUserModel> = getJoinedMember(teamId!!, mRealm)
-        val adapter: ArrayAdapter<RealmUserModel> = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, userList)
+        val filteredUserList = userList.filter { user -> user.getFullName().isNotBlank() }
+        val adapter: ArrayAdapter<RealmUserModel> = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, filteredUserList)
         alertUsersSpinnerBinding.spnUser.adapter = adapter
         AlertDialog.Builder(requireActivity()).setTitle(R.string.select_member)
             .setView(alertUsersSpinnerBinding.root).setCancelable(false)
@@ -195,6 +202,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
                 Utilities.toast(activity, getString(R.string.assign_task_to) + " " + user.name)
                 mRealm.commitTransaction()
                 adapter.notifyDataSetChanged()
+                setAdapter()
             }.show()
     }
 }
