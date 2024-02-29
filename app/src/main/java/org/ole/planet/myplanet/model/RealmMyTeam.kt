@@ -367,7 +367,7 @@ open class RealmMyTeam : RealmObject() {
                 val aa = mRealm.where(RealmMyTeam::class.java)
                     .equalTo("_id", l.teamId)
                     .findFirst()
-                teamList.add(aa!!)
+                aa?.let { teamList.add(it) }
             }
             return teamList
         }

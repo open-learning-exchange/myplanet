@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmQuery
+import io.realm.RealmResults
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
 import org.ole.planet.myplanet.databinding.FragmentTeamBinding
@@ -31,6 +32,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     private lateinit var mRealm: Realm
     var type: String? = null
     var user: RealmUserModel? = null
+    private var teamList: RealmResults<RealmMyTeam>? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) {
@@ -48,6 +50,13 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         mRealm = DatabaseService(requireContext()).realmInstance
         user = UserProfileDbHandler(requireActivity()).userModel
         fragmentTeamBinding.addTeam.setOnClickListener { createTeamAlert(null) }
+
+        teamList = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId")
+            .notEqualTo("status", "archived").findAllAsync()
+
+        teamList?.addChangeListener { _ ->
+            updatedTeamList()
+        }
         return fragmentTeamBinding.root
     }
 
@@ -205,18 +214,35 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     }
 
     private fun setTeamList() {
-        val query = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId")
+        val query = mRealm.where(RealmMyTeam::class.java)
+            .isEmpty("teamId")
             .notEqualTo("status", "archived")
-        val adapterTeamList =
-            activity?.let { AdapterTeamList(it, getList(query), mRealm, childFragmentManager) }
+        val adapterTeamList = activity?.let { AdapterTeamList(it, getList(query), mRealm, childFragmentManager) }
         adapterTeamList?.setType(type)
         adapterTeamList?.setTeamListener(this@TeamFragment)
         requireView().findViewById<View>(R.id.type).visibility =
-            if (type == null) View.VISIBLE else View.GONE
+            if (type == null) {
+                View.VISIBLE
+            } else {
+                View.GONE
+            }
         fragmentTeamBinding.rvTeamList.adapter = adapterTeamList
     }
 
     override fun onEditTeam(team: RealmMyTeam?) {
         createTeamAlert(team!!)
+    }
+
+    private fun updatedTeamList() {
+        activity?.runOnUiThread {
+            val query = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId").notEqualTo("status", "archived")
+            val filteredList = getList(query)
+            val adapterTeamList = AdapterTeamList(activity as Context, filteredList, mRealm, childFragmentManager).apply {
+                setType(type)
+                setTeamListener(this@TeamFragment)
+            }
+
+            fragmentTeamBinding.rvTeamList.adapter = adapterTeamList
+        }
     }
 }
