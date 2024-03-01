@@ -38,7 +38,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBackStackChangedListener {
     lateinit var navigationView: BottomNavigationView
-    private var doubleBackToExitPressedOnce = false
+    var doubleBackToExitPressedOnce = false
     private lateinit var goOnline: MenuItem
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -179,7 +179,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
 
     override fun onBackStackChanged() {
         val f = supportFragmentManager.findFragmentById(R.id.fragment_container)
-        val fragmentTag = f!!.tag
+        val fragmentTag = f?.tag
         if (f is CourseFragment) {
             if ("shelf" == fragmentTag) navigationView.menu.findItem(R.id.menu_mycourses)
                 .setChecked(true) else navigationView.menu.findItem(R.id.menu_courses)
