@@ -376,12 +376,12 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
             }
         }
 
-//        val fragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
-//        if (fragment is BaseContainerFragment) {
-//            fragment.handleBackPressed()
-//        } else {
-//            super.onBackPressed()
-//        }
+        val fragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
+        if (fragment is BaseContainerFragment) {
+            fragment.handleBackPressed()
+        } else {
+            super.onBackPressed()
+        }
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
