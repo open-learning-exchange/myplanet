@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.RecyclerView.AdapterDataObserver
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import io.realm.Case
+import io.realm.RealmResults
 import io.realm.Sort
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseNewsFragment
@@ -29,11 +30,14 @@ import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.FileUtils.openOleFolder
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
+import org.ole.planet.myplanet.utilities.Utilities
 
 @RequiresApi(api = Build.VERSION_CODES.O)
 class NewsFragment : BaseNewsFragment() {
     private lateinit var fragmentNewsBinding: FragmentNewsBinding
     var user: RealmUserModel? = null
+    private var updatedNewsList: RealmResults<RealmNews>? = null
+    private var filteredNewsList: List<RealmNews?> = listOf()
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentNewsBinding = FragmentNewsBinding.inflate(inflater, container, false)
         llImage = fragmentNewsBinding.llImages
@@ -41,18 +45,55 @@ class NewsFragment : BaseNewsFragment() {
         user = UserProfileDbHandler(requireContext()).userModel
         setupUI(fragmentNewsBinding.newsFragmentParentLayout, requireActivity())
         fragmentNewsBinding.btnAddStory.setOnClickListener {
-            fragmentNewsBinding.llAddNews.visibility = if (fragmentNewsBinding.llAddNews.visibility == View.VISIBLE) View.GONE else View.VISIBLE
-            fragmentNewsBinding.btnAddStory.text = if (fragmentNewsBinding.llAddNews.visibility == View.VISIBLE) getString(R.string.hide_add_story) else getString(
-                    R.string.add_story
-                )
+            fragmentNewsBinding.llAddNews.visibility = if (fragmentNewsBinding.llAddNews.visibility == View.VISIBLE) {
+                View.GONE
+            } else {
+                View.VISIBLE
+            }
+            fragmentNewsBinding.btnAddStory.text = if (fragmentNewsBinding.llAddNews.visibility == View.VISIBLE) {
+                getString(R.string.hide_add_story)
+            } else {
+                getString(R.string.add_story)
+            }
         }
         if (requireArguments().getBoolean("fromLogin")) {
             fragmentNewsBinding.btnAddStory.visibility = View.GONE
             fragmentNewsBinding.llAddNews.visibility = View.GONE
         }
+
+        updatedNewsList = mRealm.where(RealmNews::class.java).sort("time", Sort.DESCENDING)
+            .isEmpty("replyTo").equalTo("docType", "message", Case.INSENSITIVE)
+            .findAllAsync()
+
+        updatedNewsList?.addChangeListener { results ->
+            filteredNewsList = filterNewsList(results)
+            setData(filteredNewsList)
+        }
         return fragmentNewsBinding.root
     }
 
+    private fun filterNewsList(results: RealmResults<RealmNews>): List<RealmNews?> {
+        val filteredList: MutableList<RealmNews?> = ArrayList()
+        for (news in results) {
+            if (news.viewableBy.equals("community", ignoreCase = true)) {
+                filteredList.add(news)
+                continue
+            }
+
+            if (!news.viewIn.isNullOrEmpty()) {
+                val ar = Gson().fromJson(news.viewIn, JsonArray::class.java)
+                for (e in ar) {
+                    val ob = e.asJsonObject
+                    if (ob != null && ob.has("_id") && ob["_id"].asString.equals("${user?.planetCode}@${user?.parentCode}", ignoreCase = true)) {
+                        filteredList.add(news)
+                        break
+                    }
+                }
+            }
+        }
+        return filteredList
+    }
+    
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setData(newsList)
@@ -72,8 +113,8 @@ class NewsFragment : BaseNewsFragment() {
 
             val n = user?.let { it1 -> createNews(map, mRealm, it1, imageList) }
             imageList.clear()
-            llImage!!.removeAllViews()
-            adapterNews!!.addItem(n)
+            llImage?.removeAllViews()
+            adapterNews?.addItem(n)
             setData(newsList)
         }
 
@@ -99,11 +140,7 @@ class NewsFragment : BaseNewsFragment() {
                     val ar = Gson().fromJson(news.viewIn, JsonArray::class.java)
                     for (e in ar) {
                         val ob = e.asJsonObject
-                        if (ob != null && ob.has("_id") && ob["_id"].asString.equals(
-                                if (user != null) user!!.planetCode + "@" + user!!.parentCode else "",
-                                ignoreCase = true
-                            )
-                        ) {
+                        if (ob != null && ob.has("_id") && ob["_id"].asString.equals(if (user != null) user?.planetCode + "@" + user?.parentCode else "", ignoreCase = true)) {
                             list.add(news)
                         }
                     }
@@ -115,11 +152,13 @@ class NewsFragment : BaseNewsFragment() {
     override fun setData(list: List<RealmNews?>?) {
         changeLayoutManager(resources.configuration.orientation, fragmentNewsBinding.rvNews)
         val resourceIds: MutableList<String> = ArrayList()
-        for (news in list!!) {
-            if (news!!.imagesArray.size() > 0) {
-                val ob = news.imagesArray[0].asJsonObject
-                val resourceId = getString("resourceId", ob.asJsonObject)
-                resourceIds.add(resourceId)
+        list?.forEach { news ->
+            if ((news?.imagesArray?.size() ?: 0) > 0) {
+                val ob = news?.imagesArray?.get(0)?.asJsonObject
+                val resourceId = getString("resourceId", ob?.asJsonObject)
+                resourceId.let {
+                    resourceIds.add(it)
+                }
             }
         }
         val urls = ArrayList<String>()
@@ -129,15 +168,16 @@ class NewsFragment : BaseNewsFragment() {
             .`in`("_id", stringArray)
             .findAll()
         getUrlsAndStartDownload(lib, settings, urls)
-        adapterNews = activity?.let { AdapterNews(it, list.toMutableList(), user, null) }
-        adapterNews!!.setmRealm(mRealm)
-        adapterNews!!.setFromLogin(requireArguments().getBoolean("fromLogin"))
-        adapterNews!!.setListener(this)
-        adapterNews!!.registerAdapterDataObserver(observer)
+        adapterNews = activity?.let { AdapterNews(it, list?.toMutableList() ?: mutableListOf(), user, null) }
+        adapterNews?.setmRealm(mRealm)
+        adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
+        adapterNews?.setListener(this)
+        adapterNews?.registerAdapterDataObserver(observer)
         fragmentNewsBinding.rvNews.adapter = adapterNews
-        showNoData(fragmentNewsBinding.tvMessage, adapterNews!!.itemCount)
+        adapterNews?.let { showNoData(fragmentNewsBinding.tvMessage, it.itemCount) }
         fragmentNewsBinding.llAddNews.visibility = View.GONE
         fragmentNewsBinding.btnAddStory.text = getString(R.string.add_story)
+        adapterNews?.notifyDataSetChanged()
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
@@ -148,15 +188,15 @@ class NewsFragment : BaseNewsFragment() {
 
     private val observer: AdapterDataObserver = object : AdapterDataObserver() {
         override fun onChanged() {
-            showNoData(fragmentNewsBinding.tvMessage, adapterNews!!.itemCount)
+            adapterNews?.let { showNoData(fragmentNewsBinding.tvMessage, it.itemCount) }
         }
 
         override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
-            showNoData(fragmentNewsBinding.tvMessage, adapterNews!!.itemCount)
+            adapterNews?.let { showNoData(fragmentNewsBinding.tvMessage, it.itemCount) }
         }
 
         override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) {
-            showNoData(fragmentNewsBinding.tvMessage, adapterNews!!.itemCount)
+            adapterNews?.let { showNoData(fragmentNewsBinding.tvMessage, it.itemCount) }
         }
     }
 }
