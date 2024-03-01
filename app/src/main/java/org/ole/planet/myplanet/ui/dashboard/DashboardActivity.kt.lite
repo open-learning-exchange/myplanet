@@ -8,6 +8,8 @@ import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.drawable.Drawable
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
@@ -358,13 +360,20 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
     }
 
     override fun onBackPressed() {
-        val fragments = supportFragmentManager.backStackEntryCount
         if (result != null && result!!.isDrawerOpen) {
             result!!.closeDrawer()
-        } else if (fragments == 1) {
-            finish()
         } else {
-            super.onBackPressed()
+            if (supportFragmentManager.backStackEntryCount > 1) {
+                supportFragmentManager.popBackStack()
+            } else {
+                if (!doubleBackToExitPressedOnce) {
+                    this.doubleBackToExitPressedOnce = true
+                    Utilities.toast(this, getString(R.string.press_back_again_to_exit))
+                    Handler(Looper.getMainLooper()).postDelayed({ doubleBackToExitPressedOnce = false }, 2000)
+                } else {
+                    finish()
+                }
+            }
         }
 
 //        val fragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
