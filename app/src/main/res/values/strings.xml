@@ -1052,5 +1052,19 @@
     <string name="progress_bar">progress bar</string>
     <string name="web_view">web view</string>
     <string name="invalid_configuration">Invalid server configurations</string>
-
+    <string name="welcome_to_myPlanet">Welcome to myPlanet</string>
+    <string name="learn_offline">Learn Offline</string>
+    <string name="open_learning">Open Learning</string>
+    <string name="unleash_learning_power">Unleash Learning Power</string>
+    <string name="ob_desc1">Your gateway to limitless Learning</string>
+    <string name="ob_desc2_1">Download resources for offline learning.</string>
+    <string name="ob_desc2_2">Access knowledge on the go.</string>
+    <string name="ob_desc3_1">Choose your interests and dive into interactive content.</string>
+    <string name="ob_desc3_2">Craft your unique learning journey.</string>
+    <string name="ob_desc4_1">Explore a world of knowledge at your fingertips.</string>
+    <string name="ob_desc4_2">🌍 Offline Access: Learn without borders, anytime.</string>
+    <string name="ob_desc4_3">🎯 Personalized: Tailor your learning path.</string>
+    <string name="ob_desc4_4">📚 Interactive: Engage with videos, books, games.</string>
+    <string name="ob_desc4_5">Begin your limitless learning journey with myPlanet!</string>
+  
 </resources>
