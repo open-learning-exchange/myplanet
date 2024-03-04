@@ -39,9 +39,6 @@ import java.io.File
 
 @RequiresApi(api = Build.VERSION_CODES.O)
 abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListener {
-//    override var mRealm: Realm? = null
-//    override var homeItemClickListener: OnHomeItemClickListener? = null
-//    override var profileDbHandler: UserProfileDbHandler? = null
     lateinit var imageList: RealmList<String>
     @JvmField
     protected var llImage: LinearLayout? = null
@@ -56,7 +53,7 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
             if (result.resultCode == Activity.RESULT_OK) {
                 val data = result.data
                 var path: String
-                val url: Uri? = data!!.data
+                val url: Uri? = data?.data
                 path = getRealPathFromURI(requireActivity(), url)
                 if (TextUtils.isEmpty(path)) {
                     path = getImagePath(url)
@@ -66,16 +63,16 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
                 `object`.addProperty("fileName", getFileNameFromUrl(path))
                 imageList.add(Gson().toJson(`object`))
                 try {
-                    llImage!!.removeAllViews()
-                    llImage!!.visibility = View.VISIBLE
+                    llImage?.removeAllViews()
+                    llImage?.visibility = View.VISIBLE
                     for (img in imageList) {
                         val ob = Gson().fromJson(img, JsonObject::class.java)
                             val inflater = LayoutInflater.from(activity).inflate(R.layout.image_thumb, null)
                             val imgView = inflater.findViewById<ImageView>(R.id.thumb)
                             Glide.with(requireActivity()).load(File(getString("imageUrl", ob))).into(imgView)
-                            llImage!!.addView(inflater)
+                            llImage?.addView(inflater)
                         }
-                        if (result.resultCode == 102) adapterNews!!.setImageList(imageList)
+                        if (result.resultCode == 102) adapterNews?.setImageList(imageList)
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }
@@ -103,19 +100,19 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
     }
 
     abstract fun setData(list: List<RealmNews?>?)
-    fun showNoData(v: View?, count: Int) {
-        BaseRecyclerFragment.showNoData(v, count)
+    fun showNoData(v: View?, count: Int?) {
+        count?.let { BaseRecyclerFragment.showNoData(v, it) }
     }
 
     private fun getImagePath(uri: Uri?): String {
-        var cursor = requireContext().contentResolver.query(uri!!, null, null, null, null)
-        cursor!!.moveToFirst()
-        var document_id = cursor.getString(0)
-        document_id = document_id.substring(document_id.lastIndexOf(":") + 1)
-        cursor.close()
+        var cursor = uri?.let { requireContext().contentResolver.query(it, null, null, null, null) }
+        cursor?.moveToFirst()
+        var document_id = cursor?.getString(0)
+        document_id = document_id?.substring(document_id.lastIndexOf(":") + 1)
+        cursor?.close()
         cursor = requireContext().contentResolver.query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, null, MediaStore.Images.Media._ID + " = ? ", arrayOf(document_id), null)
-        cursor!!.moveToFirst()
-        val path = cursor.getString(cursor.getColumnIndex(MediaStore.Images.Media.DATA))
+        cursor?.moveToFirst()
+        val path = cursor!!.getString(cursor.getColumnIndex(MediaStore.Images.Media.DATA))
         cursor.close()
         return path
     }
