@@ -92,40 +92,32 @@ abstract class BaseResourceFragment : Fragment() {
             Service(MainApplication.context).isPlanetAvailable(object : PlanetAvailableListener {
                 override fun isAvailable() {
                     if (db_myLibrary.isNotEmpty()) {
-                        if (isAdded && activity != null) {
-                            val inflater = activity!!.layoutInflater
-                            convertView = inflater.inflate(R.layout.my_library_alertdialog, null)
-                            val alertDialogBuilder = AlertDialog.Builder(activity!!)
-                            alertDialogBuilder.setView(convertView)
-                                .setTitle(R.string.download_suggestion)
-                            alertDialogBuilder.setPositiveButton(R.string.download_selected) { _: DialogInterface?, _: Int ->
-                                startDownload(
-                                    downloadFiles(
-                                        db_myLibrary,
-                                        lv!!.selectedItemsList,
-                                        settings
-                                    )
-                                )
-                            }
-                                .setNeutralButton(R.string.download_all) { _: DialogInterface?, _: Int ->
-                                    startDownload(downloadAllFiles(db_myLibrary, settings))
-                                }
-                                .setNegativeButton(R.string.txt_cancel, null)
-                            val alertDialog = alertDialogBuilder.create()
-                            createListView(db_myLibrary, alertDialog)
-                            alertDialog.show()
-                            alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled =
-                                lv!!.selectedItemsList.size > 0
+                        if (!isAdded) {
+                            return
                         }
+                        val inflater = activity!!.layoutInflater
+                        convertView = inflater.inflate(R.layout.my_library_alertdialog, null)
+                        val alertDialogBuilder = AlertDialog.Builder(activity!!)
+                        alertDialogBuilder.setView(convertView)
+                            .setTitle(R.string.download_suggestion)
+                        alertDialogBuilder.setPositiveButton(R.string.download_selected) { _: DialogInterface?, _: Int ->
+                            startDownload(downloadFiles(db_myLibrary, lv!!.selectedItemsList, settings))
+                        }.setNeutralButton(R.string.download_all) { _: DialogInterface?, _: Int ->
+                            startDownload(downloadAllFiles(db_myLibrary, settings))
+                        }.setNegativeButton(R.string.txt_cancel, null)
+                        val alertDialog = alertDialogBuilder.create()
+                        createListView(db_myLibrary, alertDialog)
+                        alertDialog.show()
+                        alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = lv!!.selectedItemsList.size > 0
                     } else {
-                        Utilities.toast(
-                            requireContext(),
-                            getString(R.string.no_resources_to_download)
-                        )
+                        Utilities.toast(requireContext(), getString(R.string.no_resources_to_download))
                     }
                 }
 
                 override fun notAvailable() {
+                    if (!isAdded) {
+                        return
+                    }
                     Utilities.toast(requireContext(), getString(R.string.planet_not_available))
                     Utilities.log("Planet not available")
                 }
