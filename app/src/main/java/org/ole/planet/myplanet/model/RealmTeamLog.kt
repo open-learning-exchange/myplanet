@@ -69,6 +69,7 @@ open class RealmTeamLog : RealmObject() {
             return ob
         }
 
+        @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject?) {
             Utilities.log("Insert team visits")
             var tag = mRealm.where(RealmTeamLog::class.java).equalTo("id", JsonUtils.getString("_id", act)).findFirst()
