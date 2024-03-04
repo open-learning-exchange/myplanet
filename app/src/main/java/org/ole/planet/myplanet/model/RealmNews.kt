@@ -62,23 +62,23 @@ open class RealmNews : RealmObject() {
     val labelsArray: JsonArray
         get() {
             val array = JsonArray()
-            for (s in labels!!) {
+            labels?.forEach{ s ->
                 array.add(s)
             }
             return array
         }
 
     fun addLabel(label: String?) {
-        if (!labels!!.contains(label)) {
+        if (label != null && !labels?.contains(label)!!) {
             Utilities.log("Added")
-            labels!!.add(label)
+            labels?.add(label)
         }
     }
 
     fun setLabels(images: JsonArray) {
         labels = RealmList()
         for (ob in images) {
-            labels!!.add(ob.asString)
+            labels?.add(ob.asString)
         }
     }
 
@@ -105,7 +105,7 @@ open class RealmNews : RealmObject() {
                 Utilities.log(ms)
             }
             for (ob in imagesArray) {
-                ms = ms!!.replace(JsonUtils.getString("markdown", ob.asJsonObject), "")
+                ms = ms?.replace(JsonUtils.getString("markdown", ob.asJsonObject), "")
             }
             return ms
         }
@@ -130,35 +130,39 @@ open class RealmNews : RealmObject() {
     companion object {
         @JvmStatic
         fun insert(mRealm: Realm, doc: JsonObject?) {
-            Utilities.log("sync nnews " + Gson().toJson(doc))
-            var news = mRealm.where(RealmNews::class.java).equalTo("_id", JsonUtils.getString("_id", doc)).findFirst()
-            if (news == null) {
-                news = mRealm.createObject(RealmNews::class.java, JsonUtils.getString("_id", doc))
+            mRealm.executeTransactionAsync { realm ->
+                Utilities.log("sync nnews " + Gson().toJson(doc))
+                var news = realm.where(RealmNews::class.java)
+                    .equalTo("_id", JsonUtils.getString("_id", doc))
+                    .findFirst()
+                if (news == null) {
+                    news = realm.createObject(RealmNews::class.java, JsonUtils.getString("_id", doc))
+                }
+                news?.set_rev(JsonUtils.getString("_rev", doc))
+                news?.set_id(JsonUtils.getString("_id", doc))
+                news?.viewableBy = JsonUtils.getString("viewableBy", doc)
+                news?.docType = JsonUtils.getString("docType", doc)
+                news?.avatar = JsonUtils.getString("avatar", doc)
+                news?.updatedDate = JsonUtils.getLong("updatedDate", doc)
+                news?.viewableId = JsonUtils.getString("viewableId", doc)
+                news?.createdOn = JsonUtils.getString("createdOn", doc)
+                news?.messageType = JsonUtils.getString("messageType", doc)
+                news?.messagePlanetCode = JsonUtils.getString("messagePlanetCode", doc)
+                news?.replyTo = JsonUtils.getString("replyTo", doc)
+                news?.parentCode = JsonUtils.getString("parentCode", doc)
+                val user = JsonUtils.getJsonObject("user", doc)
+                news?.user = Gson().toJson(JsonUtils.getJsonObject("user", doc))
+                news?.userId = JsonUtils.getString("_id", user)
+                news?.userName = JsonUtils.getString("name", user)
+                news?.time = JsonUtils.getLong("time", doc)
+                val images = JsonUtils.getJsonArray("images", doc)
+                val message = JsonUtils.getString("message", doc)
+                news?.message = message
+                news?.images = Gson().toJson(images)
+                val labels = JsonUtils.getJsonArray("labels", doc)
+                news?.viewIn = Gson().toJson(JsonUtils.getJsonArray("viewIn", doc))
+                news?.setLabels(labels)
             }
-            news!!.set_rev(JsonUtils.getString("_rev", doc))
-            news.set_id(JsonUtils.getString("_id", doc))
-            news.viewableBy = JsonUtils.getString("viewableBy", doc)
-            news.docType = JsonUtils.getString("docType", doc)
-            news.avatar = JsonUtils.getString("avatar", doc)
-            news.updatedDate = JsonUtils.getLong("updatedDate", doc)
-            news.viewableId = JsonUtils.getString("viewableId", doc)
-            news.createdOn = JsonUtils.getString("createdOn", doc)
-            news.messageType = JsonUtils.getString("messageType", doc)
-            news.messagePlanetCode = JsonUtils.getString("messagePlanetCode", doc)
-            news.replyTo = JsonUtils.getString("replyTo", doc)
-            news.parentCode = JsonUtils.getString("parentCode", doc)
-            val user = JsonUtils.getJsonObject("user", doc)
-            news.user = Gson().toJson(JsonUtils.getJsonObject("user", doc))
-            news.userId = JsonUtils.getString("_id", user)
-            news.userName = JsonUtils.getString("name", user)
-            news.time = JsonUtils.getLong("time", doc)
-            val images = JsonUtils.getJsonArray("images", doc)
-            val message = JsonUtils.getString("message", doc)
-            news.message = message
-            news.images = Gson().toJson(images)
-            val labels = JsonUtils.getJsonArray("labels", doc)
-            news.viewIn = Gson().toJson(JsonUtils.getJsonArray("viewIn", doc))
-            news.setLabels(labels)
         }
 
         @JvmStatic

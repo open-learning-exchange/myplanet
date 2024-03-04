@@ -12,6 +12,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.ui.enterprises.EnterpriseCalendarFragment
 import org.ole.planet.myplanet.ui.enterprises.FinanceFragment
+import org.ole.planet.myplanet.ui.enterprises.ReportsFragment
 import org.ole.planet.myplanet.ui.team.teamCourse.TeamCourseFragment
 import org.ole.planet.myplanet.ui.team.teamDiscussion.DiscussionListFragment
 import org.ole.planet.myplanet.ui.team.teamMember.JoinedMemberFragment
@@ -35,6 +36,9 @@ class TeamPagerAdapter(fm: FragmentManager?, team: RealmMyTeam, private val isIn
             list.add(MainApplication.context.getString(R.string.tasks))
             list.add(MainApplication.context.getString(R.string.calendar))
             list.add(MainApplication.context.getString(if (isEnterprise) R.string.finances else R.string.courses))
+            if (isEnterprise) {
+                list.add("Reports")
+            }
             list.add(MainApplication.context.getString(if (isEnterprise) R.string.documents else R.string.resources))
             list.add(MainApplication.context.getString(if (isEnterprise) R.string.applicants else R.string.join_requests))
             list.removeAt(0)
@@ -74,11 +78,26 @@ class TeamPagerAdapter(fm: FragmentManager?, team: RealmMyTeam, private val isIn
             4 -> f = EnterpriseCalendarFragment()
             5 -> f = fragment //finances
             6 -> {
-                f = TeamResourceFragment()
-                MainApplication.listener = f
+                if (isEnterprise) {
+                    f = ReportsFragment()
+                } else {
+                    f = TeamResourceFragment()
+                    MainApplication.listener = f
+                }
             }
-
-            7 -> f = MembersFragment()
+            7 -> {
+                if (isEnterprise) {
+                    f = TeamResourceFragment()
+                    MainApplication.listener = f
+                } else {
+                    f = MembersFragment()
+                }
+            }
+            8 -> {
+                if (isEnterprise) {
+                    f = MembersFragment()
+                }
+            }
         }
         return f
     }
