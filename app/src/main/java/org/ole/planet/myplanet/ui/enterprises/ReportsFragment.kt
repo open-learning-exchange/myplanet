@@ -152,9 +152,11 @@ class ReportsFragment : BaseTeamFragment() {
     }
 
     private fun updatedReportsList(results: RealmResults<RealmMyTeam>) {
-        adapterReports = AdapterReports(results)
-        fragmentReportsBinding.rvReports.layoutManager = LinearLayoutManager(activity)
-        fragmentReportsBinding.rvReports.adapter = adapterReports
-        adapterReports.notifyDataSetChanged()
+        activity?.runOnUiThread {
+            adapterReports = AdapterReports(results)
+            fragmentReportsBinding.rvReports.layoutManager = LinearLayoutManager(activity)
+            fragmentReportsBinding.rvReports.adapter = adapterReports
+            adapterReports.notifyDataSetChanged()
+        }
     }
 }
