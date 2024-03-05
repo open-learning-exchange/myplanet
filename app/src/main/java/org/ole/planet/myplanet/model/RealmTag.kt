@@ -33,9 +33,9 @@ open class RealmTag : RealmObject() {
     private fun setAttachedTo(attachedTo: JsonArray) {
         this.attachedTo = RealmList()
         for (i in 0 until attachedTo.size()) {
-            this.attachedTo!!.add(JsonUtils.getString(attachedTo, i))
+            this.attachedTo?.add(JsonUtils.getString(attachedTo, i))
         }
-        isAttached = this.attachedTo!!.size > 0
+        isAttached = (this.attachedTo?.size ?: 0) > 0
     }
 
     override fun toString(): String {
@@ -56,6 +56,7 @@ open class RealmTag : RealmObject() {
             return map
         }
 
+        @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject) {
             var tag =
                 mRealm.where(RealmTag::class.java).equalTo("_id", JsonUtils.getString("_id", act)).findFirst()
@@ -73,23 +74,17 @@ open class RealmTag : RealmObject() {
                 if (el != null && el.isJsonArray) {
                     tag.setAttachedTo(JsonUtils.getJsonArray("attachedTo", act))
                 } else {
-                    tag.attachedTo!!.add(JsonUtils.getString("attachedTo", act))
+                    tag.attachedTo?.add(JsonUtils.getString("attachedTo", act))
                 }
-                tag.isAttached = tag.attachedTo!!.size > 0
+                tag.isAttached = (tag.attachedTo?.size ?: 0) > 0
             }
-
-
         }
 
         @JvmStatic
-        fun getTagsArray(list: List<RealmTag?>?): JsonArray {
+        fun getTagsArray(list: List<RealmTag>): JsonArray {
             val array = JsonArray()
-            if (list != null) {
-                for (t in list) {
-                    if (t != null) {
-                        array.add(t._id)
-                    }
-                }
+            for (t in list) {
+                array.add(t._id)
             }
             return array
         }
