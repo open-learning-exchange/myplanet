@@ -334,10 +334,12 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     override fun onSyncFailed(s: String) {
-        syncIconDrawable = syncIcon.drawable as AnimationDrawable
-        syncIconDrawable.stop()
-        syncIconDrawable.selectDrawable(0)
-        syncIcon.invalidateDrawable(syncIconDrawable)
+        if (::syncIconDrawable.isInitialized) {
+            syncIconDrawable = syncIcon.drawable as AnimationDrawable
+            syncIconDrawable.stop()
+            syncIconDrawable.selectDrawable(0)
+            syncIcon.invalidateDrawable(syncIconDrawable)
+        }
         runOnUiThread {
             showAlert(this@SyncActivity, getString(R.string.sync_failed), s)
             showWifiSettingDialog(this@SyncActivity)
