@@ -160,7 +160,7 @@
                                 android:layout_centerVertical="true"
                                 android:autofillHints=""
                                 android:drawablePadding="12dp"
-                                android:hint="password"
+                                android:hint="@string/password"
                                 android:inputType="textPassword"
                                 android:paddingStart="10dp"
                                 android:paddingEnd="8dp"
