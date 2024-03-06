@@ -5,21 +5,18 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.BaseExpandableListAdapter
 import android.widget.CheckBox
-import android.widget.CompoundButton
 import androidx.appcompat.widget.AppCompatImageView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowAdapterNavigationChildBinding
 import org.ole.planet.myplanet.databinding.RowAdapterNavigationParentBinding
 import org.ole.planet.myplanet.model.RealmTag
+import java.util.*
+import kotlin.collections.HashMap
+import kotlin.collections.List
 
-class TagExpandableAdapter(private var tagList: List<RealmTag>, private val childMap: HashMap<String?, MutableList<RealmTag>>, selectedItemsList: MutableList<RealmTag>) : BaseExpandableListAdapter() {
+class TagExpandableAdapter(private var tagList: List<RealmTag>, private val childMap: HashMap<String, List<RealmTag>>, private val selectedItemsList: ArrayList<RealmTag>) : BaseExpandableListAdapter() {
     private var clickListener: OnClickTagItem? = null
     private var isSelectMultiple = false
-    private var selectedItemsList = ArrayList<RealmTag>()
-
-    init {
-        this.selectedItemsList = selectedItemsList as ArrayList<RealmTag>
-    }
 
     fun setSelectMultiple(selectMultiple: Boolean) {
         isSelectMultiple = selectMultiple
@@ -30,19 +27,15 @@ class TagExpandableAdapter(private var tagList: List<RealmTag>, private val chil
     }
 
     override fun getChildrenCount(groupPosition: Int): Int {
-        return if (childMap.containsKey(tagList[groupPosition].id)) {
-            childMap[tagList[groupPosition].id]!!.size
-        } else 0
+        return childMap[tagList[groupPosition].id]?.size ?: 0
     }
 
     override fun getGroup(groupPosition: Int): Any {
         return tagList[groupPosition]
     }
 
-    override fun getChild(groupPosition: Int, childPosition: Int): RealmTag? {
-        return if (childMap.containsKey(tagList[groupPosition].id)) {
-            childMap[tagList[groupPosition].id]!![childPosition]
-        } else null
+    override fun getChild(groupPosition: Int, childPosition: Int): Any? {
+        return childMap[tagList[groupPosition].id]?.get(childPosition)
     }
 
     override fun getGroupId(groupPosition: Int): Long {
@@ -57,83 +50,78 @@ class TagExpandableAdapter(private var tagList: List<RealmTag>, private val chil
         return false
     }
 
-    override fun getGroupView(groupPosition: Int, isExpanded: Boolean, convertView: View, parent: ViewGroup): View {
-        var convertView: View? = convertView
+    override fun getGroupView(groupPosition: Int, isExpanded: Boolean, convertView: View?, parent: ViewGroup?): View {
         val headerTitle = tagList[groupPosition].name
-        val rowAdapterNavigationParentBinding: RowAdapterNavigationParentBinding
+        val binding: RowAdapterNavigationParentBinding
+        val view: View
+
         if (convertView == null) {
-            rowAdapterNavigationParentBinding = RowAdapterNavigationParentBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-            convertView = rowAdapterNavigationParentBinding.root
-            convertView.setTag(rowAdapterNavigationParentBinding)
+            binding = RowAdapterNavigationParentBinding.inflate(LayoutInflater.from(parent?.context), parent, false)
+            view = binding.root
+            view.tag = binding
         } else {
-            rowAdapterNavigationParentBinding = convertView.tag as RowAdapterNavigationParentBinding
+            binding = convertView.tag as RowAdapterNavigationParentBinding
+            view = convertView
         }
-        rowAdapterNavigationParentBinding.tvDrawerTitle1.text = headerTitle
-        createCheckbox(convertView, tagList[groupPosition])
-        rowAdapterNavigationParentBinding.tvDrawerTitle.text = headerTitle
+
+        binding.tvDrawerTitle1.text = headerTitle
+        createCheckbox(view, tagList[groupPosition])
+        binding.tvDrawerTitle.text = headerTitle
+
         if (!childMap.containsKey(tagList[groupPosition].id)) {
-            rowAdapterNavigationParentBinding.tvDrawerTitle1.visibility = View.VISIBLE
-            rowAdapterNavigationParentBinding.tvDrawerTitle.visibility = View.GONE
-            rowAdapterNavigationParentBinding.ivIndicators.visibility = View.GONE
-            rowAdapterNavigationParentBinding.tvDrawerTitle1.setOnClickListener {
-                clickListener!!.onTagClicked(tagList[groupPosition])
-            }
+            binding.tvDrawerTitle1.visibility = View.VISIBLE
+            binding.tvDrawerTitle.visibility = View.GONE
+            binding.ivIndicators.visibility = View.GONE
+            binding.tvDrawerTitle1.setOnClickListener { clickListener?.onTagClicked(tagList[groupPosition]) }
         } else {
-            rowAdapterNavigationParentBinding.tvDrawerTitle.visibility = View.VISIBLE
-            rowAdapterNavigationParentBinding.tvDrawerTitle1.setOnClickListener(null)
-            rowAdapterNavigationParentBinding.tvDrawerTitle1.visibility = View.GONE
-            rowAdapterNavigationParentBinding.ivIndicators.visibility = View.VISIBLE
-            setExpandedIcon(isExpanded, rowAdapterNavigationParentBinding.ivIndicators)
-            rowAdapterNavigationParentBinding.tvDrawerTitle.setOnClickListener {
-                clickListener!!.onTagClicked(tagList[groupPosition])
-            }
+            binding.tvDrawerTitle.visibility = View.VISIBLE
+            binding.tvDrawerTitle1.setOnClickListener(null)
+            binding.tvDrawerTitle1.visibility = View.GONE
+            binding.ivIndicators.visibility = View.VISIBLE
+            setExpandedIcon(isExpanded, binding.ivIndicators)
+            binding.tvDrawerTitle.setOnClickListener { clickListener?.onTagClicked(tagList[groupPosition]) }
         }
-        return convertView
+
+        return view
     }
 
     private fun setExpandedIcon(isExpanded: Boolean, ivIndicator: AppCompatImageView) {
-        if (isExpanded) {
-            ivIndicator.setImageResource(R.drawable.ic_keyboard_arrow_up_black_24dp)
-        } else {
-            ivIndicator.setImageResource(R.drawable.ic_keyboard_arrow_down_black_24dp)
-        }
+        ivIndicator.setImageResource(if (isExpanded) R.drawable.ic_keyboard_arrow_up_black_24dp else R.drawable.ic_keyboard_arrow_down_black_24dp)
     }
 
     private fun createCheckbox(convertView: View, tag: RealmTag) {
         val checkBox = convertView.findViewById<CheckBox>(R.id.checkbox)
         checkBox.visibility = if (isSelectMultiple) View.VISIBLE else View.GONE
         checkBox.isChecked = selectedItemsList.contains(tag)
-        checkBox.setOnCheckedChangeListener { _: CompoundButton?, _: Boolean ->
-            clickListener!!.onCheckboxTagSelected(tag)
-        }
+        checkBox.setOnCheckedChangeListener { _, _ -> clickListener?.onCheckboxTagSelected(tag) }
     }
 
-    override fun getChildView(groupPosition: Int, childPosition: Int, isLastChild: Boolean, convertView: View, parent: ViewGroup): View {
-        var convertView: View? = convertView
+    override fun getChildView(groupPosition: Int, childPosition: Int, isLastChild: Boolean, convertView: View?, parent: ViewGroup?): View {
         val tag = getChild(groupPosition, childPosition) as RealmTag
-        val rowAdapterNavigationChildBinding: RowAdapterNavigationChildBinding
+        val binding: RowAdapterNavigationChildBinding
+        val view: View
+
         if (convertView == null) {
-            rowAdapterNavigationChildBinding = RowAdapterNavigationChildBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-            convertView = rowAdapterNavigationChildBinding.root
-            convertView.setTag(rowAdapterNavigationChildBinding)
+            binding = RowAdapterNavigationChildBinding.inflate(LayoutInflater.from(parent?.context), parent, false)
+            view = binding.root
+            view.tag = binding
         } else {
-            rowAdapterNavigationChildBinding = convertView.tag as RowAdapterNavigationChildBinding
+            binding = convertView.tag as RowAdapterNavigationChildBinding
+            view = convertView
         }
-        createCheckbox(convertView, tag)
-        rowAdapterNavigationChildBinding.tvDrawerTitle.text = tag.name
-        rowAdapterNavigationChildBinding.tvDrawerTitle.setOnClickListener {
-            if (clickListener != null) {
-                clickListener!!.onTagClicked(tag)
-            }
-        }
-        return convertView
+
+        createCheckbox(view, tag)
+        binding.tvDrawerTitle.text = tag.name
+        binding.tvDrawerTitle.setOnClickListener { clickListener?.onTagClicked(tag) }
+
+        return view
     }
 
     override fun isChildSelectable(groupPosition: Int, childPosition: Int): Boolean {
         return false
     }
 
-    fun setClickListener(clickListener: OnClickTagItem?) {
+    fun setClickListener(clickListener: OnClickTagItem) {
         this.clickListener = clickListener
     }
 
