@@ -13,8 +13,8 @@
     <string name="err_msg_name">Geli magaca isticmaalaha</string>
     <string name="err_msg_password">Geli erayga sirta ah</string>
     <string name="err_msg_login">Magaca isticmaalaha iyo/ama erayga sirta ah isma dhigmaan</string>
-    <string name="hint_serverURl">Cinwaanka Server-ka meeraha (Tusaale 192.168.2.1) </string>
-    <string name="hint_serverPin">Biinanka server-ka (Ka hel biinka maamulaha) </string>
+    <string name="hint_serverURl">planet ip (tusaale 192.168.2.1)</string>
+    <string name="hint_serverPin">pin server (ka hel admin)</string>
     <string name="radio_protocol">Protocol:</string>
     <string name="radio_http">http</string>
     <string name="radio_https">https</string>
@@ -951,5 +951,6 @@
     <string name="invalid_configuration">Dhamaan Suurtagal ah oo Serveryaasha ah</string>
     <string name="date_reset">Dib u habeynta taariikhda</string>
     <string name="no_course_matched_filter">Ma jiro koorsooyin u dhigma filtarrada</string>
+    <string name="recycler_chat_label">dhaqameed</string>
 
 </resources>
