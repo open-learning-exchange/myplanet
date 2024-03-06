@@ -13,8 +13,8 @@
     <string name="err_msg_name">الرجاء إدخال اسم المستخدم</string>
     <string name="err_msg_password">الرجاء إدخال كلمة المرور</string>
     <string name="err_msg_login">اسم المستخدم و/أو كلمة المرور غير متطابقة</string>
-    <string name="hint_serverURl">عنوان خادم الكوكب (مثال: 192.168.2.1)</string>
-    <string name="hint_serverPin">رقم التعريف الشخصي للخادم (احصل على هذا الرقم من المسؤول)</string>
+    <string name="hint_serverURl">عنوان ip للكوكب (مثلاً 192.168.2.1)</string>
+    <string name="hint_serverPin">رمز pin للخادم (احصل عليه من المسؤول)</string>
     <string name="radio_protocol">البروتوكول:</string>
     <string name="radio_http">http</string>
     <string name="radio_https">https</string>
@@ -971,5 +971,6 @@
     <string name="ob_desc4_3">🎯 مخصص: اصنع مسار تعلمك الشخصي.</string>
     <string name="ob_desc4_4">📚 تفاعلي: تفاعل مع الفيديوهات والكتب والألعاب.</string>
     <string name="ob_desc4_5">ابدأ رحلتك التعليمية اللا حدود مع myPlanet!</string>
+    <string name="recycler_chat_label">محادثات</string>
 
 </resources>
