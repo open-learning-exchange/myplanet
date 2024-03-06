@@ -13,8 +13,8 @@
     <string name="err_msg_name">Entrez votre nom d\'utilisateur</string>
     <string name="err_msg_password">Entrez le mot de passe</string>
     <string name="err_msg_login">Le nom d\'utilisateur et/ou le mot de passe ne correspondent pas</string>
-    <string name="hint_serverURl">Adresse du serveur de la planète (Ex. 192.168.2.1)</string>
-    <string name="hint_serverPin">Code PIN du serveur (Obtenez ce code PIN auprès de l\'administrateur)</string>
+    <string name="hint_serverURl">ip de la planète (par exemple 192.168.2.1)</string>
+    <string name="hint_serverPin">code pin du serveur (obtenez-le de l\'administrateur)</string>
     <string name="radio_protocol">Protocole :</string>
     <string name="radio_http">http</string>
     <string name="radio_https">https</string>
@@ -962,5 +962,20 @@
     <string name="invalid_configuration">Configurations de serveur invalides</string>
     <string name="date_reset">Réinitialisation des dates</string>
     <string name="no_course_matched_filter">Aucun cours ne correspond au filtre</string>
+    <string name="welcome_to_myPlanet">Bienvenue sur myPlanet</string>
+    <string name="learn_offline">Apprendre hors ligne</string>
+    <string name="open_learning">Apprentissage ouvert</string>
+    <string name="unleash_learning_power">Libérer le pouvoir d\'apprendre</string>
+    <string name="ob_desc1">Votre passerelle vers un apprentissage illimité</string>
+    <string name="ob_desc2_1">Téléchargez des ressources pour l\'apprentissage hors ligne.</string>
+    <string name="ob_desc2_2">Accédez au savoir en déplacement.</string>
+    <string name="ob_desc3_1">Choisissez vos centres d\'intérêt et plongez dans du contenu interactif.</string>
+    <string name="ob_desc3_2">Construisez votre parcours d\'apprentissage unique.</string>
+    <string name="ob_desc4_1">Explorez un monde de connaissances à portée de main.</string>
+    <string name="ob_desc4_2">🌍 Accès hors ligne : Apprenez sans frontières, à tout moment.</string>
+    <string name="ob_desc4_3">🎯 Personnalisé : Adaptez votre parcours d\'apprentissage.</string>
+    <string name="ob_desc4_4">📚 Interactif : Engagez-vous avec des vidéos, des livres, des jeux.</string>
+    <string name="ob_desc4_5">Commencez votre parcours d\'apprentissage illimité avec myPlanet!</string>
+    <string name="recycler_chat_label">conversations</string>
 
 </resources>

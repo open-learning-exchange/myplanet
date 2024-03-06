@@ -13,8 +13,8 @@
     <string name="err_msg_name">Enter your username</string>
     <string name="err_msg_password">Enter the password</string>
     <string name="err_msg_login">Username and/or password do not match</string>
-    <string name="hint_serverURl">planet server address (eg. 192.168.2.1)</string>
-    <string name="hint_serverPin">server pin (get this pin from administrator)</string>
+    <string name="hint_serverURl">planet ip (eg. 192.168.2.1)</string>
+    <string name="hint_serverPin">server pin (obtain from admin)</string>
     <string name="radio_protocol">Protocol:</string>
     <string name="radio_http">http</string>
     <string name="radio_https">https</string>
@@ -558,7 +558,7 @@
     <string name="add_label">Add Label</string>
     <string name="share_with_community">Share with community</string>
     <string name="add_res">Add Resource</string>
-    <string name="password">Password</string>
+    <string name="password">password</string>
     <string name="retype_password">Confirm Password</string>
     <string name="become_a_member">Become a member</string>
     <string name="change_member">Change Member</string>
@@ -1066,5 +1066,6 @@
     <string name="ob_desc4_3">🎯 Personalized: Tailor your learning path.</string>
     <string name="ob_desc4_4">📚 Interactive: Engage with videos, books, games.</string>
     <string name="ob_desc4_5">Begin your limitless learning journey with myPlanet!</string>
+    <string name="recycler_chat_label">conversations</string>
   
 </resources>
