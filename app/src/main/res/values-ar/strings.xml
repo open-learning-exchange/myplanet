@@ -957,6 +957,20 @@
     <string name="invalid_configuration">تكوينات الخادم غير صالحة</string>
     <string name="date_reset">إعادة ضبط التاريخ</string>
     <string name="no_course_matched_filter">لا توجد دورات تطابق الفلتر</string>
+    <string name="welcome_to_myPlanet">مرحبًا بكم في myPlanet</string>
+    <string name="learn_offline">تعلم بدون اتصال</string>
+    <string name="open_learning">فتح التعلم</string>
+    <string name="unleash_learning_power">اطلق قوة التعلم</string>
+    <string name="ob_desc1">بوابتك إلى تعلم لا حدود له</string>
+    <string name="ob_desc2_1">قم بتنزيل الموارد للتعلم دون اتصال.</string>
+    <string name="ob_desc2_2">الوصول إلى المعرفة أثناء التنقل.</string>
+    <string name="ob_desc3_1">اختر اهتماماتك وانغمس في محتوى تفاعلي.</string>
+    <string name="ob_desc3_2">صقل رحلتك التعليمية الفريدة.</string>
+    <string name="ob_desc4_1">استكشاف عالم المعرفة بين يديك.</string>
+    <string name="ob_desc4_2">🌍 الوصول غير المتصل بالإنترنت: تعلم بلا حدود، في أي وقت.</string>
+    <string name="ob_desc4_3">🎯 مخصص: اصنع مسار تعلمك الشخصي.</string>
+    <string name="ob_desc4_4">📚 تفاعلي: تفاعل مع الفيديوهات والكتب والألعاب.</string>
+    <string name="ob_desc4_5">ابدأ رحلتك التعليمية اللا حدود مع myPlanet!</string>
     <string name="recycler_chat_label">محادثات</string>
 
 </resources>
