@@ -60,6 +60,7 @@ open class RealmSubmission : RealmObject() {
     var parent: String? = null
 
     companion object {
+        @JvmStatic
         fun insert(mRealm: Realm, submission: JsonObject) {
             if (submission.has("_attachments")) {
                 return
