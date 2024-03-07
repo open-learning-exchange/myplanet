@@ -23,6 +23,7 @@ import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
 import org.ole.planet.myplanet.ui.library.AddResourceFragment
 import org.ole.planet.myplanet.ui.library.LibraryFragment
 import org.ole.planet.myplanet.ui.mylife.LifeFragment
+import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
 import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.ui.team.TeamFragment
@@ -75,7 +76,10 @@ class BellDashboardFragment : BaseDashboardFragment() {
             val alertDialog: AlertDialog.Builder = AlertDialog.Builder(requireActivity())
             alertDialog.setTitle("You have $noOfSurvey $title to complete")
             val surveyNamesArray = surveyNames.filterNotNull().map { it as CharSequence }.toTypedArray()
-            alertDialog.setItems(surveyNamesArray, null)
+            alertDialog.setItems(surveyNamesArray) { _, which ->
+                val selectedSurvey = itemsQuery[which]?.id
+                AdapterMySubmission.openSurvey(homeItemClickListener, selectedSurvey, true)
+            }
             alertDialog.setPositiveButton("OK") { dialog, _ ->
                 homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("survey"))
                 dialog.dismiss()
