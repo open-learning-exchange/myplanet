@@ -1,9 +1,8 @@
 package org.ole.planet.myplanet.ui.onBoarding
 
-import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.os.Bundle
+import android.view.View
 import android.widget.ImageView
 import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
@@ -11,7 +10,12 @@ import androidx.core.content.ContextCompat
 import androidx.viewpager.widget.ViewPager
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityOnBoardingBinding
-import org.ole.planet.myplanet.ui.SplashActivity
+import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
+import org.ole.planet.myplanet.ui.sync.LoginActivity
+import org.ole.planet.myplanet.ui.sync.SyncActivity
+import org.ole.planet.myplanet.utilities.Constants
+import org.ole.planet.myplanet.utilities.FileUtils.copyAssets
+import org.ole.planet.myplanet.utilities.SharedPrefManager
 
 class OnBoardingActivity : AppCompatActivity() {
     private lateinit var binding: ActivityOnBoardingBinding
@@ -19,26 +23,34 @@ class OnBoardingActivity : AppCompatActivity() {
     private val onBoardItems = ArrayList<OnBoardItem>()
     private var dotsCount = 0
     private lateinit var dots: Array<ImageView?>
+    lateinit var prefData: SharedPrefManager
 
     companion object {
         const val PREFS_NAME = "OLE_PLANET"
-        const val BOOLEAN_KEY = "isOnBoardingComplete"
     }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityOnBoardingBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefData = SharedPrefManager(this)
 
-        if (sharedPreferences.getBoolean(BOOLEAN_KEY, false) == true) {
-            val intent = Intent(this, SplashActivity::class.java)
-            startActivity(intent)
+        copyAssets(this)
+        val settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        if (settings.getBoolean(Constants.KEY_LOGIN, false) && !Constants.autoSynFeature(Constants.KEY_AUTOSYNC_, applicationContext)) {
+            val dashboard = Intent(applicationContext, DashboardActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+            startActivity(dashboard)
             finish()
             return
         }
 
-        loadData()
+        if (prefData.getFIRSTLAUNCH()) {
+            startActivity(Intent(this, LoginActivity::class.java))
+            finish()
+        }
 
+        loadData()
         mAdapter = OnBoardingAdapter(this, onBoardItems)
         binding.pagerIntroduction.adapter = mAdapter
         binding.pagerIntroduction.currentItem = 0
@@ -50,6 +62,14 @@ class OnBoardingActivity : AppCompatActivity() {
                     dots[i]?.setImageDrawable(ContextCompat.getDrawable(this@OnBoardingActivity, R.drawable.non_selected_item_dot))
                 }
                 dots[position]?.setImageDrawable(ContextCompat.getDrawable(this@OnBoardingActivity, R.drawable.selected_item_dot))
+
+                if (position == mAdapter.count - 1) {
+                    binding.skip.visibility = View.GONE
+                    binding.next.setText(R.string.get_started)
+                } else {
+                    binding.skip.visibility = View.VISIBLE
+                    binding.next.setText(R.string.next)
+                }
             }
 
             override fun onPageScrollStateChanged(state: Int) {}
@@ -123,12 +143,7 @@ class OnBoardingActivity : AppCompatActivity() {
     }
 
     private fun finishTutorial() {
-        val sharedPreferences = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val editor: SharedPreferences.Editor = sharedPreferences.edit()
-        editor.putBoolean(BOOLEAN_KEY, true)
-        editor.apply()
-        val main = Intent(this, SplashActivity::class.java)
-        startActivity(main)
-        finish()
+        prefData.setFIRSTLAUNCH(true)
+        startActivity(Intent(this, LoginActivity::class.java))
     }
 }
