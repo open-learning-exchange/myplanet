@@ -174,6 +174,34 @@ open class RealmMyTeam : RealmObject() {
         }
 
         @JvmStatic
+        fun updateReports(doc: JsonObject, mRealm: Realm) {
+            mRealm.executeTransactionAsync { realm ->
+                val reportId = JsonUtils.getString("_id", doc)
+                val report = realm.where(RealmMyTeam::class.java).equalTo("_id", reportId).findFirst()
+                report?.apply {
+                    description = JsonUtils.getString("description", doc)
+                    beginningBalance = JsonUtils.getInt("beginningBalance", doc)
+                    sales = JsonUtils.getInt("sales", doc)
+                    otherIncome = JsonUtils.getInt("otherIncome", doc)
+                    wages = JsonUtils.getInt("wages", doc)
+                    otherExpenses = JsonUtils.getInt("otherExpenses", doc)
+                    startDate = JsonUtils.getLong("startDate", doc)
+                    endDate = JsonUtils.getLong("endDate", doc)
+                    updatedDate = JsonUtils.getLong("updatedDate", doc)
+                    updated = JsonUtils.getBoolean("updated", doc)
+                }
+            }
+        }
+
+        @JvmStatic
+        fun deleteReport(reportId: String, realm: Realm) {
+            realm.executeTransactionAsync { transactionRealm ->
+                val report = transactionRealm.where(RealmMyTeam::class.java).equalTo("_id", reportId).findFirst()
+                report?.deleteFromRealm()
+            }
+        }
+
+        @JvmStatic
         fun getResourceIds(teamId: String, realm: Realm): MutableList<String> {
             val teams = realm.where(RealmMyTeam::class.java).equalTo("teamId", teamId).findAll()
             val ids = mutableListOf<String>()

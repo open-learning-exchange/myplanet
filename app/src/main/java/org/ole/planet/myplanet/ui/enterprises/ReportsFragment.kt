@@ -130,14 +130,14 @@ class ReportsFragment : BaseTeamFragment() {
             }
 
             cancel.setOnClickListener { dialog.dismiss() }
+        }
 
-            list = mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId)
-                .equalTo("docType", "report")
-                .sort("date", Sort.DESCENDING).findAllAsync()
+        list = mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId)
+            .equalTo("docType", "report")
+            .sort("date", Sort.DESCENDING).findAllAsync()
 
-            list?.addChangeListener { results ->
-                updatedReportsList(results)
-            }
+        list?.addChangeListener { results ->
+            updatedReportsList(results)
         }
 
         return fragmentReportsBinding.root
@@ -153,7 +153,7 @@ class ReportsFragment : BaseTeamFragment() {
 
     private fun updatedReportsList(results: RealmResults<RealmMyTeam>) {
         activity?.runOnUiThread {
-            adapterReports = AdapterReports(results)
+            adapterReports = AdapterReports(requireContext(), results)
             fragmentReportsBinding.rvReports.layoutManager = LinearLayoutManager(activity)
             fragmentReportsBinding.rvReports.adapter = adapterReports
             adapterReports.notifyDataSetChanged()

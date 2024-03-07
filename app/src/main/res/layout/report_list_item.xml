@@ -311,7 +311,7 @@
         app:layout_constraintTop_toBottomOf="@+id/createUpdate">
 
         <ImageView
-            android:id="@+id/img_edit"
+            android:id="@+id/edit"
             android:layout_width="35dp"
             android:layout_height="35dp"
             android:layout_marginStart="8dp"
@@ -320,7 +320,7 @@
             app:srcCompat="@drawable/ic_edit" />
 
         <ImageView
-            android:id="@+id/img_delete"
+            android:id="@+id/delete"
             android:layout_width="35dp"
             android:layout_height="35dp"
             android:layout_marginStart="10dp"
