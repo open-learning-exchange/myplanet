@@ -47,7 +47,6 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
@@ -77,11 +76,6 @@
         <activity
             android:name=".ui.library.AddResourceActivity"
             android:theme="@style/AppTheme" />
-        <activity
-            android:name=".ui.SplashActivity"
-            android:exported="true">
-
-        </activity>
         <activity android:name=".ui.viewer.AudioPlayerActivity" />
         <activity
             android:name=".ui.feedback.FeedbackDetailActivity"
