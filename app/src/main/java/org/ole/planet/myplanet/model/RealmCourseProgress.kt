@@ -4,6 +4,7 @@ import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmObject
+import io.realm.RealmResults
 import io.realm.Sort
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourseByUserId
@@ -105,21 +106,26 @@ open class RealmCourseProgress : RealmObject() {
             return i
         }
 
+        @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject?) {
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
+            if (!mRealm.isInTransaction) {
+                mRealm.beginTransaction()
+            }
             Utilities.log("insert course progresss " + Gson().toJson(act))
             var courseProgress = mRealm.where(RealmCourseProgress::class.java).equalTo("_id", JsonUtils.getString("_id", act)).findFirst()
-            if (courseProgress == null) courseProgress = mRealm.createObject(RealmCourseProgress::class.java, JsonUtils.getString("_id", act))
-            courseProgress!!.set_rev(JsonUtils.getString("_rev", act))
-            courseProgress.set_id(JsonUtils.getString("_id", act))
-            courseProgress.passed = JsonUtils.getBoolean("passed", act)
-            courseProgress.stepNum = JsonUtils.getInt("stepNum", act)
-            courseProgress.userId = JsonUtils.getString("userId", act)
-            courseProgress.parentCode = JsonUtils.getString("parentCode", act)
-            courseProgress.courseId = JsonUtils.getString("courseId", act)
-            courseProgress.createdOn = JsonUtils.getString("createdOn", act)
-            courseProgress.createdDate = JsonUtils.getLong("createdDate", act)
-            courseProgress.updatedDate = JsonUtils.getLong("updatedDate", act)
+            if (courseProgress == null) {
+                courseProgress = mRealm.createObject(RealmCourseProgress::class.java, JsonUtils.getString("_id", act))
+            }
+            courseProgress?.set_rev(JsonUtils.getString("_rev", act))
+            courseProgress?.set_id(JsonUtils.getString("_id", act))
+            courseProgress?.passed = JsonUtils.getBoolean("passed", act)
+            courseProgress?.stepNum = JsonUtils.getInt("stepNum", act)
+            courseProgress?.userId = JsonUtils.getString("userId", act)
+            courseProgress?.parentCode = JsonUtils.getString("parentCode", act)
+            courseProgress?.courseId = JsonUtils.getString("courseId", act)
+            courseProgress?.createdOn = JsonUtils.getString("createdOn", act)
+            courseProgress?.createdDate = JsonUtils.getLong("createdDate", act)
+            courseProgress?.updatedDate = JsonUtils.getLong("updatedDate", act)
             mRealm.commitTransaction()
         }
     }

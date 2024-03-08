@@ -141,6 +141,11 @@ open class RealmMyCourse : RealmObject() {
         }
 
         @JvmStatic
+        fun getCourseByCourseId(courseId: String, mRealm: Realm): RealmMyCourse? {
+            return mRealm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
+        }
+
+        @JvmStatic
         fun insert(mRealm: Realm, doc: JsonObject?) {
             insertMyCourses("", doc, mRealm)
         }
