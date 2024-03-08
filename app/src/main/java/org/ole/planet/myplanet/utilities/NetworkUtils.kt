@@ -3,7 +3,7 @@ package org.ole.planet.myplanet.utilities
 import android.bluetooth.BluetoothAdapter
 import android.content.Context
 import android.net.ConnectivityManager
-import android.net.NetworkInfo
+import android.net.NetworkCapabilities
 import android.net.wifi.WifiInfo
 import android.net.wifi.WifiManager
 import android.os.Build
@@ -16,17 +16,20 @@ import java.util.Collections
 import java.util.Locale
 
 object NetworkUtils {
+    private val connectivityManager by lazy {
+        context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    }
     @JvmStatic
     fun isWifiEnabled(): Boolean {
-        val mng = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager?
-        return mng != null && mng.isWifiEnabled
+        val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+        return wifiManager.isWifiEnabled
     }
 
     @JvmStatic
     fun isWifiConnected(): Boolean {
-        val connManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager?
-        val mWifi: NetworkInfo? = connManager?.getNetworkInfo(ConnectivityManager.TYPE_WIFI)
-        return mWifi?.isConnected == true
+        val network = connectivityManager.activeNetwork
+        val capabilities = connectivityManager.getNetworkCapabilities(network)
+        return capabilities != null && capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
     }
 
     @JvmStatic
@@ -43,9 +46,10 @@ object NetworkUtils {
     @JvmStatic
     fun getCurrentNetworkId(context: Context): Int {
         var ssid = -1
-        val connManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager?
-        val networkInfo: NetworkInfo? = connManager?.getNetworkInfo(ConnectivityManager.TYPE_WIFI)
-        if (networkInfo?.isConnected == true) {
+        val connManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = connManager.activeNetwork
+        val capabilities = connManager.getNetworkCapabilities(network)
+        if (capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true) {
             val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager?
             val connectionInfo: WifiInfo? = wifiManager?.connectionInfo
             if (connectionInfo != null && !TextUtils.isEmpty(connectionInfo.ssid)) {
@@ -57,10 +61,11 @@ object NetworkUtils {
 
     @JvmStatic
     fun isNetworkConnected(): Boolean {
-        val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager?
-        val ni: NetworkInfo? = cm?.activeNetworkInfo
-        return ni != null
+        val connManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = connManager.activeNetwork
+        return network != null
     }
+
 
     @JvmStatic
     fun getUniqueIdentifier(): String {
