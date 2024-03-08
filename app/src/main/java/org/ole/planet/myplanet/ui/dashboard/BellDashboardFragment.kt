@@ -9,16 +9,21 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import io.realm.Case
+import io.realm.Realm
+import io.realm.RealmResults
 import org.json.JSONException
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentHomeBellBinding
 import org.ole.planet.myplanet.model.RealmCertification
 import org.ole.planet.myplanet.model.RealmCourseProgress
-import org.ole.planet.myplanet.model.RealmExamQuestion
+import org.ole.planet.myplanet.model.RealmCourseStep
+import org.ole.planet.myplanet.model.RealmMyCourse
+import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getCourseByCourseId
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.ui.course.CourseFragment
 import org.ole.planet.myplanet.ui.course.MyProgressFragment
+import org.ole.planet.myplanet.ui.course.TakeCourseFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
 import org.ole.planet.myplanet.ui.library.AddResourceFragment
 import org.ole.planet.myplanet.ui.library.LibraryFragment
@@ -90,22 +95,53 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     private fun showBadges() {
         fragmentHomeBellBinding.cardProfileBell.llBadges.removeAllViews()
-        val list = RealmCourseProgress.getPassedCourses(mRealm, settings?.getString("userId", ""))
-        for (sub in list) {
-            val star =
-                LayoutInflater.from(activity).inflate(R.layout.image_start, null) as ImageView
-            val examId = if (sub.parentId?.contains("@") == true) sub.parentId!!.split("@")
-                .toTypedArray()[0] else sub.parentId
-            val courseId =
-                if (sub.parentId?.contains("@") == true) sub.parentId!!.split("@").toTypedArray()[1] else ""
-            val questions =
-                mRealm.where(RealmExamQuestion::class.java).equalTo("examId", examId).count()
-            setColor(questions, courseId, star)
-            fragmentHomeBellBinding.cardProfileBell.llBadges.addView(star)
+        val courseCount = countCourseIds(mRealm)
+
+        for ((index, entry) in courseCount.withIndex()) {
+            val star = LayoutInflater.from(activity).inflate(R.layout.image_start, null) as ImageView
+            val courseId = entry.keys.first()
+            val count = entry.values.first()
+            val steps = RealmCourseStep.getSteps(mRealm, courseId)
+            if (count >= steps.size) {
+                setColor(courseId, star)
+                fragmentHomeBellBinding.cardProfileBell.llBadges.addView(star)
+                star.setOnClickListener {
+                    val course = getCourseByCourseId(courseId, mRealm)
+                    openCourse(course, index)
+                }
+            }
         }
     }
 
-    private fun setColor(questions: Long, courseId: String, star: ImageView) =
+    private fun openCourse(realmMyCourses: RealmMyCourse?, position: Int) {
+        if (homeItemClickListener != null) {
+            val f: Fragment = TakeCourseFragment()
+            val b = Bundle()
+            b.putString("id", realmMyCourses?.courseId)
+            b.putInt("position", position)
+            f.arguments = b
+            homeItemClickListener?.openCallFragment(f)
+        }
+    }
+
+
+    private fun countCourseIds(mRealm: Realm): List<Map<String, Long>> {
+        val courseIdCounts: MutableMap<String, Long> = HashMap()
+        val results: RealmResults<RealmCourseProgress> = mRealm.where(RealmCourseProgress::class.java).findAll()
+        for (progress in results) {
+            val courseId = progress.courseId
+            if (courseId != null) {
+                if (courseIdCounts.containsKey(courseId)) {
+                    courseIdCounts[courseId] = courseIdCounts[courseId]!! + 1
+                } else {
+                    courseIdCounts[courseId] = 1
+                }
+            }
+        }
+        return courseIdCounts.map { mapOf(it.key to it.value) }
+    }
+
+    private fun setColor(courseId: String, star: ImageView) =
         if (RealmCertification.isCourseCertified(mRealm, courseId)) {
             star.setColorFilter(ContextCompat.getColor(requireContext(), R.color.colorPrimary))
         } else {
