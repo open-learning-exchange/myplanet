@@ -21,79 +21,64 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Calendar
 import java.util.Locale
-import java.util.Objects
 
 class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
-    private var fragmentUserInformationBinding: FragmentUserInformationBinding? = null
+    private lateinit var fragmentUserInformationBinding: FragmentUserInformationBinding
     var dob: String? = ""
-    var mRealm: Realm? = null
-    var submissions: RealmSubmission? = null
+    lateinit var mRealm: Realm
+    private var submissions: RealmSubmission? = null
     var userModel: RealmUserModel? = null
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        fragmentUserInformationBinding =
-            FragmentUserInformationBinding.inflate(inflater, container, false)
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+        fragmentUserInformationBinding = FragmentUserInformationBinding.inflate(inflater, container, false)
         mRealm = DatabaseService(requireActivity()).realmInstance
         userModel = UserProfileDbHandler(requireContext()).userModel
-        if (!TextUtils.isEmpty(id)) submissions = mRealm!!.where(
-            RealmSubmission::class.java
-        ).equalTo("id", id).findFirst()
+        if (!TextUtils.isEmpty(id)) {
+            submissions = mRealm.where(RealmSubmission::class.java).equalTo("id", id).findFirst()
+        }
         initViews()
-        return fragmentUserInformationBinding!!.root
-    }
-
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+        return fragmentUserInformationBinding.root
     }
 
     private fun initViews() {
-        fragmentUserInformationBinding!!.etEmail.setText(userModel!!.email + "")
-        fragmentUserInformationBinding!!.etFname.setText(userModel!!.firstName + "")
-        fragmentUserInformationBinding!!.etLname.setText(userModel!!.lastName + "")
-        fragmentUserInformationBinding!!.etPhone.setText(userModel!!.phoneNumber + "")
-        fragmentUserInformationBinding!!.txtDob.text = userModel!!.dob + ""
-        dob = userModel!!.dob
-        fragmentUserInformationBinding!!.btnCancel.setOnClickListener(this)
-        fragmentUserInformationBinding!!.btnSubmit.setOnClickListener(this)
-        fragmentUserInformationBinding!!.txtDob.setOnClickListener(this)
+        fragmentUserInformationBinding.etEmail.setText("${userModel?.email}")
+        fragmentUserInformationBinding.etFname.setText("${userModel?.firstName}")
+        fragmentUserInformationBinding.etLname.setText("${userModel?.lastName}")
+        fragmentUserInformationBinding.etPhone.setText("${userModel?.phoneNumber}")
+        fragmentUserInformationBinding.txtDob.text = "${userModel?.dob}"
+        dob = userModel?.dob
+        fragmentUserInformationBinding.btnCancel.setOnClickListener(this)
+        fragmentUserInformationBinding.btnSubmit.setOnClickListener(this)
+        fragmentUserInformationBinding.txtDob.setOnClickListener(this)
     }
 
     override fun onClick(view: View) {
         when (view.id) {
             R.id.btn_cancel -> if (isAdded) {
-                Objects.requireNonNull(dialog)?.dismiss()
+                dialog?.dismiss()
             }
-
             R.id.btn_submit -> submitForm()
             R.id.txt_dob -> showDatePickerDialog()
         }
     }
 
     private fun submitForm() {
-        val fname = fragmentUserInformationBinding!!.etFname.text.toString().trim { it <= ' ' }
-        val lname = fragmentUserInformationBinding!!.etLname.text.toString().trim { it <= ' ' }
-        val mName = fragmentUserInformationBinding!!.etMname.text.toString().trim { it <= ' ' }
-        val phone = fragmentUserInformationBinding!!.etPhone.text.toString().trim { it <= ' ' }
-        val email = fragmentUserInformationBinding!!.etEmail.text.toString().trim { it <= ' ' }
+        val fname = "${fragmentUserInformationBinding.etFname.text}".trim { it <= ' ' }
+        val lname = "${fragmentUserInformationBinding.etLname.text}".trim { it <= ' ' }
+        val mName = "${fragmentUserInformationBinding.etMname.text}".trim { it <= ' ' }
+        val phone = "${fragmentUserInformationBinding.etPhone.text}".trim { it <= ' ' }
+        val email = "${fragmentUserInformationBinding.etEmail.text}".trim { it <= ' ' }
         var gender = ""
-        val rbSelected = requireView().findViewById<RadioButton>(
-            fragmentUserInformationBinding!!.rbGender.checkedRadioButtonId
-        )
+        val rbSelected = requireView().findViewById<RadioButton>(fragmentUserInformationBinding.rbGender.checkedRadioButtonId)
         if (rbSelected != null) {
             gender = rbSelected.text.toString()
         }
-        val level = fragmentUserInformationBinding!!.spnLevel.selectedItem.toString()
-        val lang = fragmentUserInformationBinding!!.spnLang.selectedItem.toString()
+        val level = "${fragmentUserInformationBinding.spnLevel.selectedItem}"
+        val lang = "${fragmentUserInformationBinding.spnLang.selectedItem}"
         if (TextUtils.isEmpty(id)) {
-            val userId = userModel!!.id
+            val userId = userModel?.id
             val finalGender = gender
-            mRealm!!.executeTransactionAsync({ realm: Realm ->
-                val model = realm.where(
-                    RealmUserModel::class.java
-                ).equalTo("id", userId).findFirst()
+            mRealm.executeTransactionAsync({ realm: Realm ->
+                val model = realm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
                 if (model != null) {
                     if (!TextUtils.isEmpty(fname)) model.firstName = fname
                     if (!TextUtils.isEmpty(lname)) model.lastName = lname
@@ -108,12 +93,12 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             }, {
                 Utilities.toast(MainApplication.context, getString(R.string.user_profile_updated))
                 if (isAdded) {
-                    Objects.requireNonNull(dialog)?.dismiss()
+                    dialog?.dismiss()
                 }
-            }) { error: Throwable? ->
+            }) {
                 Utilities.toast(MainApplication.context, getString(R.string.unable_to_update_user))
                 if (isAdded) {
-                    Objects.requireNonNull(dialog)?.dismiss()
+                    dialog?.dismiss()
                 }
             }
         } else {
@@ -133,12 +118,12 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     }
 
     private fun saveSubmission(user: JsonObject) {
-        if (!mRealm!!.isInTransaction) mRealm!!.beginTransaction()
-        submissions!!.user = user.toString()
-        submissions!!.status = "complete"
-        mRealm!!.commitTransaction()
+        if (!mRealm.isInTransaction) mRealm.beginTransaction()
+        submissions?.user = user.toString()
+        submissions?.status = "complete"
+        mRealm.commitTransaction()
         if (isAdded) {
-            Objects.requireNonNull(dialog)?.dismiss()
+            dialog?.dismiss()
         }
     }
 
@@ -150,15 +135,15 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
 
     private fun showDatePickerDialog() {
         val now = Calendar.getInstance()
-        val dpd = DatePickerDialog(requireActivity(), { datePicker, i, i1, i2 ->
+        val dpd = DatePickerDialog(requireActivity(), { _, i, i1, i2 ->
             dob = String.format(Locale.US, "%04d-%02d-%02d", i, i1 + 1, i2)
-            fragmentUserInformationBinding!!.txtDob.text = dob
+            fragmentUserInformationBinding.txtDob.text = dob
         }, now[Calendar.YEAR], now[Calendar.MONTH], now[Calendar.DAY_OF_MONTH])
         dpd.show()
     }
 
     override val key: String
-        protected get() = "sub_id"
+        get() = "sub_id"
 
     companion object {
         fun getInstance(id: String?): UserInformationFragment {
