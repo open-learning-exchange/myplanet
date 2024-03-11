@@ -114,15 +114,24 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         startActivity(fileOpenIntent)
     }
     fun openResource(items: RealmMyLibrary) {
-        if (items.isResourceOffline()) {
-            openFileType(items, "offline")
-        } else if (FileUtils.getFileExtension(items.resourceLocalAddress) == "mp4") {
-            openFileType(items, "online")
+        val matchingItems = mRealm.where(RealmMyLibrary::class.java)
+            .equalTo("resourceLocalAddress", items.resourceLocalAddress)
+            .findAll()
+        val anyOffline = matchingItems.any { it.isResourceOffline() }
+        if (anyOffline) {
+            val offlineItem = matchingItems.first { it.isResourceOffline()}
+            openFileType(offlineItem, "offline")
         } else {
-            val arrayList = ArrayList<String>()
-            arrayList.add(Utilities.getUrl(items, settings))
-            startDownload(arrayList)
-            profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_DOWNLOAD)
+            if (items.isResourceOffline()) {
+                openFileType(items, "offline")
+            } else if (FileUtils.getFileExtension(items.resourceLocalAddress) == "mp4") {
+                openFileType(items,  "online")
+            } else {
+                val arrayList = ArrayList<String>()
+                arrayList.add(Utilities.getUrl(items, settings))
+                startDownload(arrayList)
+                profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_DOWNLOAD)
+            }
         }
     }
     @RequiresApi(Build.VERSION_CODES.O)
@@ -253,7 +262,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                     } else {
                         R.drawable.ic_download
                     }, 0)
-                tv.text = library.title
+                tv.text = library?.title
                 return tv
             }
         }
