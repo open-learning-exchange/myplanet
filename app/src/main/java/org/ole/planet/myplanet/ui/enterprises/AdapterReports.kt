@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.databinding.ReportListItemBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.news.ReplyActivity
+import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils
 import java.util.Calendar
 
@@ -25,16 +26,18 @@ class AdapterReports(private val context: Context, private var list: RealmResult
     private lateinit var reportListItemBinding: ReportListItemBinding
     private var startTimeStamp: String? = null
     private var endTimeStamp: String? = null
-
+    lateinit var prefData: SharedPrefManager
     private var mRealm: Realm = Realm.getDefaultInstance()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderReports {
         reportListItemBinding = ReportListItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        prefData = SharedPrefManager(context)
         return ViewHolderReports(reportListItemBinding)
     }
 
     override fun onBindViewHolder(holder: ViewHolderReports, position: Int) {
         val report = list[position]
+        reportListItemBinding.tvReportTitle.text = "${prefData.getTEAMNAME()} Financial Report"
         report?.let {
             with(reportListItemBinding) {
                 val totalIncome = report.sales + report.otherIncome

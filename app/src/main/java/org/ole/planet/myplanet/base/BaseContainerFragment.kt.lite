@@ -38,6 +38,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_RESOUR
 import org.ole.planet.myplanet.ui.course.AdapterCourses
 import org.ole.planet.myplanet.ui.viewer.*
 import org.ole.planet.myplanet.utilities.FileUtils
+import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
 import java.io.File
 
@@ -49,6 +50,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 //    var hasInstallPermission = hasInstallPermission(MainApplication.context)
 //    private var currentLibrary: RealmMyLibrary? = null
 //    private lateinit var installApkLauncher: ActivityResultLauncher<Intent>
+    lateinit var prefData: SharedPrefManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,6 +65,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 //                Utilities.toast(requireActivity(), getString(R.string.permissions_denied))
 //            }
 //        }
+        prefData = SharedPrefManager(requireContext())
    }
 
     fun setRatings(`object`: JsonObject?) {

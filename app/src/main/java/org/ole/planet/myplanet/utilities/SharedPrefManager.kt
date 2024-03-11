@@ -18,6 +18,7 @@ class SharedPrefManager(context: Context) {
     var MANUALCONFIG = "manualConfig"
     var SELECTEDTEAMID = "selectedTeamId"
     var FIRSTLAUNCH = "firstLaunch"
+    var TEAMNAME = "teamName"
 
     init {
         pref = context.getSharedPreferences(SHARED_PREF_NAME, PRIVATE_MODE)
@@ -109,6 +110,21 @@ class SharedPrefManager(context: Context) {
     @JvmName("setFIRSTLAUNCH1")
     fun setFIRSTLAUNCH(firstLaunch: Boolean) {
         editor.putBoolean(FIRSTLAUNCH, firstLaunch)
+        editor.apply()
+    }
+
+    @JvmName("getTEAMNAME1")
+    fun getTEAMNAME(): String? {
+        return if (pref.getString(TEAMNAME, "") != "") {
+            pref.getString(TEAMNAME, "")
+        } else {
+            ""
+        }
+    }
+
+    @JvmName("setTEAMNAME1")
+    fun setTEAMNAME(teamName: String?) {
+        editor.putString(TEAMNAME, teamName)
         editor.apply()
     }
 }

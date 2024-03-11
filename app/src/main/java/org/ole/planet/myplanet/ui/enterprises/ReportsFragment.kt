@@ -1,6 +1,8 @@
 package org.ole.planet.myplanet.ui.enterprises
 
+import android.app.Activity
 import android.app.DatePickerDialog
+import android.content.Intent
 import android.os.Bundle
 import android.text.TextUtils
 import android.view.LayoutInflater
@@ -17,7 +19,14 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.insertReports
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
+import org.ole.planet.myplanet.utilities.SharedPrefManager
+import org.ole.planet.myplanet.utilities.Utilities
+import java.io.IOException
+import java.io.OutputStream
+import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 class ReportsFragment : BaseTeamFragment() {
     private lateinit var fragmentReportsBinding: FragmentReportsBinding
@@ -30,6 +39,7 @@ class ReportsFragment : BaseTeamFragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentReportsBinding = FragmentReportsBinding.inflate(inflater, container, false)
         mRealm = DatabaseService(requireActivity()).realmInstance
+        prefData = SharedPrefManager(requireContext())
         fragmentReportsBinding.addReports.setOnClickListener{
             val dialogAddReportBinding = DialogAddReportBinding.inflate(LayoutInflater.from(requireContext()))
             val v: View = dialogAddReportBinding.root
@@ -132,6 +142,20 @@ class ReportsFragment : BaseTeamFragment() {
             cancel.setOnClickListener { dialog.dismiss() }
         }
 
+        fragmentReportsBinding.exportCSV.setOnClickListener {
+            val currentDate = Date()
+            val dateFormat = SimpleDateFormat("EEE_MMM_dd_yyyy", Locale.US)
+            val formattedDate = dateFormat.format(currentDate)
+            val teamName = prefData.getTEAMNAME()?.replace(" ", "_")
+
+            val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = "text/csv"
+                putExtra(Intent.EXTRA_TITLE, "Report_of_${teamName}_Financial_Report_Summary_on_${formattedDate}")
+            }
+            startActivityForResult(intent, CREATE_FILE_REQUEST_CODE)
+        }
+
         list = mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId)
             .equalTo("docType", "report")
             .sort("date", Sort.DESCENDING).findAllAsync()
@@ -158,5 +182,44 @@ class ReportsFragment : BaseTeamFragment() {
             fragmentReportsBinding.rvReports.adapter = adapterReports
             adapterReports.notifyDataSetChanged()
         }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == CREATE_FILE_REQUEST_CODE) {
+            if (resultCode == Activity.RESULT_CANCELED) {
+                Utilities.toast(requireContext(), "export cancelled.")
+            } else if (resultCode == Activity.RESULT_OK) {
+                data?.data?.also { uri ->
+                    try {
+                        val reports = mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId)
+                            .equalTo("docType", "report")
+                            .sort("date", Sort.DESCENDING).findAll()
+                        val csvBuilder = StringBuilder()
+                        csvBuilder.append("${prefData.getTEAMNAME()} Financial Report Summary\n\n")
+                        csvBuilder.append("Start Date, End Date, Created Date, Updated Date, Beginning Balance, Sales, Other Income, Wages, Other Expenses, Profit/Loss, Ending Balance\n")
+                        for (report in reports) {
+                            val dateFormat = SimpleDateFormat("EEE MMM dd yyyy HH:mm:ss 'GMT'Z (z)", Locale.US)
+                            val totalIncome = report.sales + report.otherIncome
+                            val totalExpenses = report.wages + report.otherExpenses
+                            val profitLoss = totalIncome - totalExpenses
+                            val endingBalance = profitLoss + report.beginningBalance
+                            csvBuilder.append("${dateFormat.format(report.startDate)}, ${dateFormat.format(report.endDate)}, ${dateFormat.format(report.createdDate)}, ${dateFormat.format(report.updatedDate)}, ${report.beginningBalance}, ${report.sales}, ${report.otherIncome}, ${report.wages}, ${report.otherExpenses}, $profitLoss, $endingBalance\n")
+                        }
+
+                        val outputStream: OutputStream? = requireContext().contentResolver.openOutputStream(uri)
+                        outputStream?.write(csvBuilder.toString().toByteArray())
+                        outputStream?.close()
+                        Utilities.toast(requireContext(), "CSV file saved successfully.")
+                    } catch (e: IOException) {
+                        Utilities.toast(requireContext(), "Failed to save CSV file.")
+                    }
+                }
+            }
+        }
+    }
+
+    companion object {
+        private const val CREATE_FILE_REQUEST_CODE = 1
     }
 }
