@@ -66,10 +66,10 @@ abstract class BaseResourceFragment : Fragment() {
 
     private var stateReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            AlertDialog.Builder(activity!!).setMessage(R.string.do_you_want_to_stay_online)
+            AlertDialog.Builder(requireContext()).setMessage(R.string.do_you_want_to_stay_online)
                 .setPositiveButton(R.string.yes, null)
                 .setNegativeButton(R.string.no) { _: DialogInterface?, _: Int ->
-                    val wifi = MainApplication.context.getSystemService(Context.WIFI_SERVICE) as WifiManager
+                    val wifi = MainApplication.context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
                     wifi.setWifiEnabled(false)
                 }.show()
         }
@@ -78,10 +78,10 @@ abstract class BaseResourceFragment : Fragment() {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action == DashboardActivity.MESSAGE_PROGRESS && prgDialog != null) {
                 val download = intent.getParcelableExtra<Download>("download")
-                if (!download!!.failed) {
+                if (!download?.failed!!) {
                     setProgress(download)
                 } else {
-                    showError(prgDialog!!, download.message!!)
+                    download.message?.let { showError(prgDialog!!, it) }
                 }
             }
         }
@@ -95,20 +95,22 @@ abstract class BaseResourceFragment : Fragment() {
                         if (!isAdded) {
                             return
                         }
-                        val inflater = activity!!.layoutInflater
-                        convertView = inflater.inflate(R.layout.my_library_alertdialog, null)
-                        val alertDialogBuilder = AlertDialog.Builder(activity!!)
+                        val inflater = activity?.layoutInflater
+                        convertView = inflater?.inflate(R.layout.my_library_alertdialog, null)
+                        val alertDialogBuilder = AlertDialog.Builder(requireContext())
                         alertDialogBuilder.setView(convertView)
                             .setTitle(R.string.download_suggestion)
                         alertDialogBuilder.setPositiveButton(R.string.download_selected) { _: DialogInterface?, _: Int ->
-                            startDownload(downloadFiles(db_myLibrary, lv!!.selectedItemsList, settings))
+                            lv?.selectedItemsList?.let {
+                                downloadFiles(db_myLibrary, it, settings)
+                            }?.let { startDownload(it) }
                         }.setNeutralButton(R.string.download_all) { _: DialogInterface?, _: Int ->
                             startDownload(downloadAllFiles(db_myLibrary, settings))
                         }.setNegativeButton(R.string.txt_cancel, null)
                         val alertDialog = alertDialogBuilder.create()
                         createListView(db_myLibrary, alertDialog)
                         alertDialog.show()
-                        alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = lv!!.selectedItemsList.size > 0
+                        alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = (lv?.selectedItemsList?.size ?: 0) > 0
                     } else {
                         Utilities.toast(requireContext(), getString(R.string.no_resources_to_download))
                     }
@@ -140,10 +142,11 @@ abstract class BaseResourceFragment : Fragment() {
                 var convertView = convertView
                 if (convertView == null) convertView = LayoutInflater.from(activity)
                     .inflate(android.R.layout.simple_list_item_1, null)
-                if (exams.containsKey((getItem(position) as RealmSubmission?)!!.parentId)) (convertView as TextView?)!!.text =
-                    exams[list[position].parentId]!!.name
+                if (exams.containsKey((getItem(position) as RealmSubmission?)?.parentId)) {
+                    (convertView as TextView?)?.text = exams[list[position].parentId]?.name
+                }
                 else {
-                    (convertView as TextView?)!!.setText(R.string.n_a)
+                    (convertView as TextView?)?.setText(R.string.n_a)
                 }
                 return convertView!!
             }
@@ -160,7 +163,7 @@ abstract class BaseResourceFragment : Fragment() {
             Service(requireActivity()).isPlanetAvailable(object : PlanetAvailableListener {
                 override fun isAvailable() {
                     if (urls.isNotEmpty()) {
-                        prgDialog!!.show()
+                        prgDialog?.show()
                         Utilities.openDownloadService(activity, urls)
                     }
                 }
@@ -174,10 +177,10 @@ abstract class BaseResourceFragment : Fragment() {
         }
     }
 
-    fun setProgress(download: Download?) {
-        prgDialog!!.progress = download!!.progress
+    fun setProgress(download: Download) {
+        prgDialog?.progress = download.progress
         if (!TextUtils.isEmpty(download.fileName)) {
-            prgDialog!!.setTitle(download.fileName)
+            prgDialog?.setTitle(download.fileName)
         }
         if (download.completeAll) {
             showError(prgDialog!!, getString(R.string.all_files_downloaded_successfully))
@@ -187,17 +190,17 @@ abstract class BaseResourceFragment : Fragment() {
 
     open fun onDownloadComplete() {}
     fun createListView(db_myLibrary: List<RealmMyLibrary?>, alertDialog: AlertDialog) {
-        lv = convertView!!.findViewById(R.id.alertDialog_listView)
+        lv = convertView?.findViewById(R.id.alertDialog_listView)
         val names = ArrayList<String?>()
         for (i in db_myLibrary.indices) {
-            names.add(db_myLibrary[i]!!.title)
+            names.add(db_myLibrary[i]?.title)
         }
         val adapter = ArrayAdapter(requireActivity().baseContext, R.layout.rowlayout, R.id.checkBoxRowLayout, names)
-        lv!!.choiceMode = ListView.CHOICE_MODE_MULTIPLE
-        lv!!.setCheckChangeListener {
-            alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = lv!!.selectedItemsList.size > 0
+        lv?.choiceMode = ListView.CHOICE_MODE_MULTIPLE
+        lv?.setCheckChangeListener {
+            alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = (lv?.selectedItemsList?.size ?: 0) > 0
         }
-        lv!!.adapter = adapter
+        lv?.adapter = adapter
     }
 
     private fun registerReceiver() {
@@ -216,7 +219,7 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     fun getLibraryList(mRealm: Realm): List<RealmMyLibrary> {
-        return getLibraryList(mRealm, settings!!.getString("userId", "--"))
+        return getLibraryList(mRealm, settings?.getString("userId", "--"))
     }
 
     fun getLibraryList(mRealm: Realm, userId: String?): List<RealmMyLibrary> {
@@ -224,7 +227,7 @@ abstract class BaseResourceFragment : Fragment() {
         val libList: MutableList<RealmMyLibrary> = ArrayList()
         val libraries = getLibraries(l)
         for (item in libraries) {
-            if (item.userId!!.contains(userId)) {
+            if (item.userId?.contains(userId) == true) {
                 libList.add(item)
             }
         }
@@ -246,7 +249,7 @@ abstract class BaseResourceFragment : Fragment() {
         mRealm = DatabaseService(requireActivity()).realmInstance
         prgDialog = getProgressDialog(requireActivity())
         settings = requireActivity().getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE)
-        editor = settings!!.edit()
+        editor = settings?.edit()
     }
 
     override fun onPause() {
@@ -259,13 +262,15 @@ abstract class BaseResourceFragment : Fragment() {
     fun removeFromShelf(`object`: RealmObject) {
         if (`object` is RealmMyLibrary) {
             val myObject = mRealm.where(RealmMyLibrary::class.java).equalTo("resourceId", `object`.resourceId).findFirst()
-            myObject!!.removeUserId(model.id)
-            onRemove(mRealm, "resources", model.id!!, `object`.resourceId!!)
+            myObject?.removeUserId(model.id)
+            model.id?.let { `object`.resourceId?.let { it1 ->
+                onRemove(mRealm, "resources", it, it1)
+            } }
             Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
         } else {
             val myObject = getMyCourse(mRealm, (`object` as RealmMyCourse).courseId)
-            myObject!!.removeUserId(model.id)
-            onRemove(mRealm, "courses", model.id!!, `object`.courseId!!)
+            myObject?.removeUserId(model.id)
+            model.id?.let { `object`.courseId?.let { it1 -> onRemove(mRealm, "courses", it, it1) } }
             Utilities.toast(activity, getString(R.string.removed_from_mycourse))
         }
     }
