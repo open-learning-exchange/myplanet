@@ -37,7 +37,10 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
             if (homeItemClickListener != null) {
                 val b = Bundle()
                 b.putString("id", id)
-                if (f is TeamDetailFragment) b.putBoolean("isMyTeam", true)
+                if (f is TeamDetailFragment) {
+                    b.putBoolean("isMyTeam", true)
+                }
+                prefData.setTEAMNAME(title)
                 f.arguments = b
                 homeItemClickListener!!.openCallFragment(f)
             }

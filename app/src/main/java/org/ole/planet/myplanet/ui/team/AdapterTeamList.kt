@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
+import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils
 
 class AdapterTeamList(private val context: Context, private val list: List<RealmMyTeam>, private val mRealm: Realm, fragmentManager: FragmentManager) : RecyclerView.Adapter<AdapterTeamList.ViewHolderTeam>() {
@@ -27,6 +28,7 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
     private val fragmentManager: FragmentManager
     private var teamListener: OnClickTeamItem? = null
     private var filteredList: List<RealmMyTeam> = list.filter { it.status!!.isNotEmpty() }
+    private lateinit var prefData: SharedPrefManager
 
     interface OnClickTeamItem {
         fun onEditTeam(team: RealmMyTeam?)
@@ -38,6 +40,7 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderTeam {
         itemTeamListBinding = ItemTeamListBinding.inflate(LayoutInflater.from(context), parent, false)
+        prefData = SharedPrefManager(context)
         return ViewHolderTeam(itemTeamListBinding)
     }
 
@@ -68,6 +71,7 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
                 b.putBoolean("isMyTeam", isMyTeam)
                 f.arguments = b
                 (context as OnHomeItemClickListener).openCallFragment(f)
+                prefData.setTEAMNAME(filteredList[position].name)
             }
         }
         itemTeamListBinding.btnFeedback.setOnClickListener {
