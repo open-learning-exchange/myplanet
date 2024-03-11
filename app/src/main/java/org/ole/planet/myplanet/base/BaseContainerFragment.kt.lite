@@ -103,7 +103,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
     private fun openIntent(items: RealmMyLibrary, typeClass: Class<*>?) {
         val fileOpenIntent = Intent(activity, typeClass)
-        if (items.resourceLocalAddress!!.contains("ole/audio") || items.resourceLocalAddress!!.contains("ole/video")) {
+        if (items.resourceLocalAddress?.contains("ole/audio") == true || items.resourceLocalAddress?.contains("ole/video") == true) {
             fileOpenIntent.putExtra("TOUCHED_FILE", items.resourceLocalAddress)
         } else {
             fileOpenIntent.putExtra("TOUCHED_FILE", items.id + "/" + items.resourceLocalAddress)
@@ -117,21 +117,30 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         startActivity(fileOpenIntent)
     }
     fun openResource(items: RealmMyLibrary) {
-        if (items.isResourceOffline()) {
-            openFileType(items, "offline")
-        } else if (FileUtils.getFileExtension(items.resourceLocalAddress) == "mp4") {
-            openFileType(items, "online")
+        val matchingItems = mRealm.where(RealmMyLibrary::class.java)
+            .equalTo("resourceLocalAddress", items.resourceLocalAddress)
+            .findAll()
+        val anyOffline = matchingItems.any { it.isResourceOffline() }
+        if (anyOffline) {
+            val offlineItem = matchingItems.first { it.isResourceOffline()}
+            openFileType(offlineItem, "offline")
         } else {
-            val arrayList = ArrayList<String>()
-            arrayList.add(Utilities.getUrl(items, settings))
-            startDownload(arrayList)
-            profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_DOWNLOAD)
+            if (items.isResourceOffline()) {
+                openFileType(items, "offline")
+            } else if (FileUtils.getFileExtension(items.resourceLocalAddress) == "mp4") {
+                openFileType(items,  "online")
+            } else {
+                val arrayList = ArrayList<String>()
+                arrayList.add(Utilities.getUrl(items, settings))
+                startDownload(arrayList)
+                profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_DOWNLOAD)
+            }
         }
     }
     @RequiresApi(Build.VERSION_CODES.O)
     private fun checkFileExtension(items: RealmMyLibrary) {
-        val filenameArray = items.resourceLocalAddress!!.split("\\.".toRegex()).toTypedArray()
-        val extension = filenameArray[filenameArray.size - 1]
+        val filenameArray = items.resourceLocalAddress?.split("\\.".toRegex())?.toTypedArray()
+        val extension = filenameArray?.get(filenameArray.size - 1)
         val mimetype = Utilities.getMimeType(items.resourceLocalAddress)
         if (mimetype != null) {
             if (mimetype.contains("image")) {
@@ -250,8 +259,13 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                     .inflate(android.R.layout.select_dialog_item, parent, false)
                 val tv = convertView as TextView
                 val library = getItem(position)
-                tv.setCompoundDrawablesWithIntrinsicBounds(0, 0, if (library!!.isResourceOffline()) R.drawable.ic_eye else R.drawable.ic_download, 0)
-                tv.text = library.title
+                tv.setCompoundDrawablesWithIntrinsicBounds(0, 0,
+                    if (library?.isResourceOffline() == true) {
+                        R.drawable.ic_eye
+                    } else {
+                        R.drawable.ic_download
+                    }, 0)
+                tv.text = library?.title
                 return tv
             }
         }

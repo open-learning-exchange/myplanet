@@ -14,7 +14,7 @@ abstract class BaseMemberFragment : BaseTeamFragment() {
     abstract val list: List<RealmUserModel?>
     abstract val adapter: RecyclerView.Adapter<*>?
     abstract val layoutManager: RecyclerView.LayoutManager?
-    var rvMember: RecyclerView? = null
+    private lateinit var rvMember: RecyclerView
     var tvNodata: TextView? = null
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val v = inflater.inflate(R.layout.fragment_members, container, false)
@@ -25,8 +25,8 @@ abstract class BaseMemberFragment : BaseTeamFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        rvMember!!.layoutManager = layoutManager
-        rvMember!!.adapter = adapter
+        rvMember.layoutManager = layoutManager
+        rvMember.adapter = adapter
         showNoData(tvNodata, list.size)
     }
 }
