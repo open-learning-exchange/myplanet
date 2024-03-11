@@ -18,7 +18,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 abstract class PermissionActivity : AppCompatActivity() {
     fun checkPermission(strPermission: String?): Boolean {
-        val result = ContextCompat.checkSelfPermission(this, strPermission!!)
+        val result = strPermission?.let { ContextCompat.checkSelfPermission(this, it) }
         return result == PackageManager.PERMISSION_GRANTED
     }
 
