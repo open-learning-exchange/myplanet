@@ -34,20 +34,27 @@ class ChatHistoryListFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         val slidingPaneLayout = fragmentChatHistoryListBinding.slidingPaneLayout
         slidingPaneLayout.lockMode = SlidingPaneLayout.LOCK_MODE_LOCKED
-
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, ChatHistoryListOnBackPressedCallback(slidingPaneLayout))
 
-        fragmentChatHistoryListBinding.slidingPaneLayout.openPane()
-
         fragmentChatHistoryListBinding.newChat.setOnClickListener {
-            val chatHistoryListFragment = ChatHistoryListFragment()
-            val transaction = parentFragmentManager.beginTransaction()
-            transaction.replace(R.id.fragment_container, chatHistoryListFragment)
-            transaction.addToBackStack(null)
-            transaction.commit()
+            if (resources.getBoolean(R.bool.isLargeScreen)) {
+                val chatHistoryListFragment = ChatHistoryListFragment()
+                parentFragmentManager.beginTransaction().apply {
+                    replace(R.id.fragment_container, chatHistoryListFragment)
+                    addToBackStack("ChatHistoryList")
+                    commit()
+                }
+            } else {
+                val chatDetailFragment = ChatDetailFragment()
+                parentFragmentManager.beginTransaction().apply {
+                    replace(R.id.fragment_container, chatDetailFragment)
+                    addToBackStack("ChatDetail")
+                    commit()
+                }
+            }
         }
 
-        val mRealm = DatabaseService(requireActivity()).realmInstance;
+        val mRealm = DatabaseService(requireActivity()).realmInstance
         val chats = mRealm.where(RealmChatHistory::class.java).findAll()
 
         val list = ArrayList<RealmChatHistory>()
@@ -61,6 +68,8 @@ class ChatHistoryListFragment : Fragment() {
                 sharedViewModel.setSelectedChatHistory(conversations)
                 sharedViewModel.setSelected_id(_id)
                 sharedViewModel.setSelected_rev(_rev)
+
+                fragmentChatHistoryListBinding.slidingPaneLayout.openPane()
             }
         })
         fragmentChatHistoryListBinding.recyclerView.adapter = adapter
@@ -77,9 +86,9 @@ class ChatHistoryListFragment : Fragment() {
     }
 }
 
-class ChatHistoryListOnBackPressedCallback(private val slidingPaneLayout: SlidingPaneLayout)
-    : OnBackPressedCallback(slidingPaneLayout.isSlideable && slidingPaneLayout.isOpen
-    ), SlidingPaneLayout.PanelSlideListener {
+class ChatHistoryListOnBackPressedCallback(private val slidingPaneLayout: SlidingPaneLayout) :
+    OnBackPressedCallback(slidingPaneLayout.isSlideable && slidingPaneLayout.isOpen),
+    SlidingPaneLayout.PanelSlideListener {
     init {
         slidingPaneLayout.addPanelSlideListener(this)
     }

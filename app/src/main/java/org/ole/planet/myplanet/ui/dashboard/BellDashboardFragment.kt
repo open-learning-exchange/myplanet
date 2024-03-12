@@ -99,6 +99,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
         for ((index, entry) in courseCount.withIndex()) {
             val star = LayoutInflater.from(activity).inflate(R.layout.image_start, null) as ImageView
+            star.contentDescription = getString(R.string.completed_course)
             val courseId = entry.keys.first()
             val count = entry.values.first()
             val steps = RealmCourseStep.getSteps(mRealm, courseId)
