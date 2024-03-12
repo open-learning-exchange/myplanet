@@ -150,34 +150,43 @@ class NewsFragment : BaseNewsFragment() {
         }
 
     override fun setData(list: List<RealmNews?>?) {
-        changeLayoutManager(resources.configuration.orientation, fragmentNewsBinding.rvNews)
-        val resourceIds: MutableList<String> = ArrayList()
-        list?.forEach { news ->
-            if ((news?.imagesArray?.size() ?: 0) > 0) {
-                val ob = news?.imagesArray?.get(0)?.asJsonObject
-                val resourceId = getString("resourceId", ob?.asJsonObject)
-                resourceId.let {
-                    resourceIds.add(it)
+        if (isAdded) {
+            changeLayoutManager(resources.configuration.orientation, fragmentNewsBinding.rvNews)
+            val resourceIds: MutableList<String> = ArrayList()
+            list?.forEach { news ->
+                if ((news?.imagesArray?.size() ?: 0) > 0) {
+                    val ob = news?.imagesArray?.get(0)?.asJsonObject
+                    val resourceId = getString("resourceId", ob?.asJsonObject)
+                    resourceId.let {
+                        resourceIds.add(it)
+                    }
                 }
             }
+            val urls = ArrayList<String>()
+            val settings = requireActivity().getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE)
+            val stringArray: Array<String?> = resourceIds.toTypedArray()
+            val lib: List<RealmMyLibrary?> = mRealm.where(RealmMyLibrary::class.java)
+                .`in`("_id", stringArray)
+                .findAll()
+            getUrlsAndStartDownload(lib, settings, urls)
+            adapterNews = activity?.let {
+                AdapterNews(
+                    it,
+                    list?.toMutableList() ?: mutableListOf(),
+                    user,
+                    null
+                )
+            }
+            adapterNews?.setmRealm(mRealm)
+            adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
+            adapterNews?.setListener(this)
+            adapterNews?.registerAdapterDataObserver(observer)
+            fragmentNewsBinding.rvNews.adapter = adapterNews
+            adapterNews?.let { showNoData(fragmentNewsBinding.tvMessage, it.itemCount) }
+            fragmentNewsBinding.llAddNews.visibility = View.GONE
+            fragmentNewsBinding.btnAddStory.text = getString(R.string.add_story)
+            adapterNews?.notifyDataSetChanged()
         }
-        val urls = ArrayList<String>()
-        val settings = requireActivity().getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE)
-        val stringArray: Array<String?> = resourceIds.toTypedArray()
-        val lib: List<RealmMyLibrary?> = mRealm.where(RealmMyLibrary::class.java)
-            .`in`("_id", stringArray)
-            .findAll()
-        getUrlsAndStartDownload(lib, settings, urls)
-        adapterNews = activity?.let { AdapterNews(it, list?.toMutableList() ?: mutableListOf(), user, null) }
-        adapterNews?.setmRealm(mRealm)
-        adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
-        adapterNews?.setListener(this)
-        adapterNews?.registerAdapterDataObserver(observer)
-        fragmentNewsBinding.rvNews.adapter = adapterNews
-        adapterNews?.let { showNoData(fragmentNewsBinding.tvMessage, it.itemCount) }
-        fragmentNewsBinding.llAddNews.visibility = View.GONE
-        fragmentNewsBinding.btnAddStory.text = getString(R.string.add_story)
-        adapterNews?.notifyDataSetChanged()
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
