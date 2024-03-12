@@ -5,44 +5,52 @@
         android:id="@+id/action_chat"
         android:icon="@drawable/chat"
         android:title="@string/ai_chat"
+        android:contentDescription="@string/ai_chat"
         app:showAsAction="always" />
     <item
         android:id="@+id/menu_goOnline"
         android:icon="@drawable/goonline"
         android:title="@string/user"
+        android:contentDescription="@string/user"
         app:iconTint="@color/material_drawer_accent"
         app:showAsAction="ifRoom" />
     <item
         android:id="@+id/action_sync"
         android:icon="@drawable/sync_icon"
+        android:contentDescription="@string/sync_now"
         android:title="@string/sync_now"
         app:showAsAction="never" />
     <item
         android:id="@+id/action_feedback"
         android:icon="@drawable/ic_feedback"
+        android:contentDescription="@string/menu_feedback"
         android:title="@string/menu_feedback"
         app:showAsAction="always" />
 
     <item
         android:id="@+id/action_about"
         android:icon="@drawable/ic_my_survey"
+        android:contentDescription="@string/action_about"
         android:title="@string/action_about"
         app:showAsAction="never" />
 
     <item
         android:id="@+id/action_disclaimer"
         android:icon="@drawable/ic_my_survey"
+        android:contentDescription="@string/action_disclaimer"
         android:title="@string/action_disclaimer"
         app:showAsAction="never" />
 
     <item
         android:id="@+id/action_settings"
         android:icon="@drawable/settings"
+        android:contentDescription="@string/action_settings"
         android:title="@string/action_settings"
         app:showAsAction="never" />
     <item
         android:id="@+id/action_logout"
         android:icon="@drawable/logout"
+        android:contentDescription="@string/logout"
         android:title="@string/logout"
         app:showAsAction="never" />
 </menu>

@@ -31,7 +31,8 @@
                     android:layout_height="@dimen/image_size_home_card"
                     android:layout_marginLeft="16dp"
                     android:layout_marginRight="16dp"
-                    app:srcCompat="@drawable/library" />
+                    app:srcCompat="@drawable/library"
+                    android:contentDescription="@string/my_library" />
 
                 <TextView
                     android:layout_width="match_parent"
@@ -47,7 +48,7 @@
                 android:id="@+id/count_library"
                 android:layout_width="35dp"
                 android:layout_height="35dp"
-                android:layout_gravity="right"
+                android:layout_gravity="end"
                 android:layout_margin="@dimen/padding_small"
                 android:background="@drawable/oval_white"
                 android:gravity="center"
@@ -63,6 +64,7 @@
         <HorizontalScrollView
             android:layout_width="0dp"
             android:layout_height="match_parent"
+            android:contentDescription="@string/txt_myLibrary"
             android:layout_weight="1">
 
             <com.google.android.flexbox.FlexboxLayout

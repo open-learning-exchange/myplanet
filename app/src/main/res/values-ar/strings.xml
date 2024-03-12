@@ -972,5 +972,7 @@
     <string name="ob_desc4_4">📚 تفاعلي: تفاعل مع الفيديوهات والكتب والألعاب.</string>
     <string name="ob_desc4_5">ابدأ رحلتك التعليمية اللا حدود مع myPlanet!</string>
     <string name="recycler_chat_label">محادثات</string>
+    <string name="completed_course">دورة مكتملة</string>
+    <string name="menu">القائمة الجانبية</string>
 
 </resources>

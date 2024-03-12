@@ -31,7 +31,8 @@
                     android:layout_height="@dimen/image_size_home_card"
                     android:layout_marginLeft="16dp"
                     android:layout_marginRight="16dp"
-                    app:srcCompat="@drawable/mycourses" />
+                    app:srcCompat="@drawable/mycourses"
+                    android:contentDescription="@string/txt_myCourses" />
 
 
                 <TextView
@@ -49,7 +50,7 @@
                 android:id="@+id/count_course"
                 android:layout_width="35dp"
                 android:layout_height="35dp"
-                android:layout_gravity="right"
+                android:layout_gravity="end"
                 android:layout_margin="@dimen/padding_small"
                 android:background="@drawable/oval_white"
                 android:gravity="center"
@@ -64,6 +65,7 @@
         <HorizontalScrollView
             android:layout_width="0dp"
             android:layout_height="match_parent"
+            android:contentDescription="@string/my_courses"
             android:layout_weight="1">
 
             <com.google.android.flexbox.FlexboxLayout
