@@ -118,10 +118,12 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
     }
 
     fun changeLayoutManager(orientation: Int, recyclerView: RecyclerView) {
-        if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            recyclerView.layoutManager = GridLayoutManager(activity, 2)
-        } else {
-            recyclerView.layoutManager = LinearLayoutManager(activity)
+        activity?.let { act ->
+            if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                recyclerView.layoutManager = GridLayoutManager(act, 2)
+            } else {
+                recyclerView.layoutManager = LinearLayoutManager(act)
+            }
         }
     }
 
