@@ -977,5 +977,7 @@
     <string name="ob_desc4_4">📚 Interactivo: Involúcrate con vídeos, libros, juegos.</string>
     <string name="ob_desc4_5">¡Comienza tu viaje de aprendizaje ilimitado con myPlanet!</string>
     <string name="recycler_chat_label">conversaciones</string>
+    <string name="completed_course">curso completado</string>
+    <string name="menu">menú lateral</string>
 
 </resources>

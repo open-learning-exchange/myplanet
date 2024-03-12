@@ -966,5 +966,7 @@
     <string name="ob_desc4_4">📚 Isweydaarsan: Iskaashiga filimada, buugagga, ciyaaraha.</string>
     <string name="ob_desc4_5">Bilaan ee waxbarasho aan dheeraad ahayn soo bila myPlanet!</string>
     <string name="recycler_chat_label">dhaqameed</string>
+    <string name="completed_course">koorso la dhammaaday</string>
+    <string name="menu">liiska dhinaca</string>
 
 </resources>

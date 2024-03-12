@@ -33,7 +33,8 @@
                     android:layout_height="@dimen/image_size_home_card"
                     android:layout_marginLeft="16dp"
                     android:layout_marginRight="16dp"
-                    app:srcCompat="@drawable/meetups" />
+                    app:srcCompat="@drawable/meetups"
+                    android:contentDescription="@string/txt_myLife" />
 
                 <TextView
                     android:layout_width="match_parent"
@@ -50,6 +51,7 @@
 
         <HorizontalScrollView
             android:layout_width="0dp"
+            android:contentDescription="@string/txt_myLife"
             android:layout_height="match_parent"
             android:layout_weight="1">
 
