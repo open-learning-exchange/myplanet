@@ -8,6 +8,7 @@ import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
+import io.realm.RealmResults
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utilities.JsonUtils
@@ -114,9 +115,9 @@ open class RealmMyCourse : RealmObject() {
         }
 
         @JvmStatic
-        fun getMyCourseByUserId(userId: String?, libs: List<RealmMyCourse>): List<RealmMyCourse> {
+        fun getMyCourseByUserId(userId: String?, libs: RealmResults<RealmMyCourse>?): List<RealmMyCourse> {
             val libraries: MutableList<RealmMyCourse> = ArrayList()
-            for (item in libs) {
+            for (item in libs ?: emptyList()) {
                 if (item.userId!!.contains(userId)) {
                     libraries.add(item)
                 }
@@ -163,8 +164,8 @@ open class RealmMyCourse : RealmObject() {
         }
 
         @JvmStatic
-        fun getMyCourseIds(realm: Realm, userId: String?): JsonArray {
-            val myCourses = getMyCourseByUserId(userId, realm.where(RealmMyCourse::class.java).findAll())
+        fun getMyCourseIds(realm: Realm?, userId: String?): JsonArray {
+            val myCourses = getMyCourseByUserId(userId, realm?.where(RealmMyCourse::class.java)?.findAll())
             val ids = JsonArray()
             for (lib in myCourses) {
                 ids.add(lib.courseId)

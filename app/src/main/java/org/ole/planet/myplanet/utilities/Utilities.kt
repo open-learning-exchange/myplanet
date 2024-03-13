@@ -18,11 +18,9 @@ import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.PREFS_NAME
 import org.ole.planet.myplanet.datamanager.MyDownloadService
-import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import java.lang.ref.WeakReference
 import java.math.BigInteger
-import java.util.ArrayList
 
 object Utilities {
     private var contextRef: WeakReference<Context>? = null
@@ -63,7 +61,7 @@ object Utilities {
     }
 
     @JvmStatic
-    fun toast(context: Context?, s: String) {
+    fun toast(context: Context?, s: String?) {
         context ?: return
         Toast.makeText(context, s, Toast.LENGTH_LONG).show()
     }
@@ -189,7 +187,7 @@ object Utilities {
         return "$url/apkversion"
     }
 
-    fun getApkUpdateUrl(path: String): String {
+    fun getApkUpdateUrl(path: String?): String {
         val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         var url = preferences.getString("couchdbURL", "")
         if (url != null) {
@@ -200,8 +198,8 @@ object Utilities {
         return "$url$path"
     }
 
-    fun toHex(arg: String): String {
-        return String.format("%x", BigInteger(1, arg.toByteArray()))
+    fun toHex(arg: String?): String {
+        return String.format("%x", BigInteger(1, arg?.toByteArray()))
     }
 
     fun getMimeType(url: String?): String? {

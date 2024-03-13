@@ -35,18 +35,16 @@ open class RealmRemovedLog : RealmObject() {
         }
 
         @JvmStatic
-        fun removedIds(realm: Realm, type: String, userId: String): Array<String> {
-            val removedLibs = realm.where(RealmRemovedLog::class.java)
-                .equalTo("userId", userId)
-                .equalTo("type", type)
-                .findAll()
+        fun removedIds(realm: Realm?, type: String, userId: String?): Array<String> {
+            val removedLibs = realm?.where(RealmRemovedLog::class.java)
+                ?.equalTo("userId", userId)
+                ?.equalTo("type", type)
+                ?.findAll()
 
             if (removedLibs != null) {
                 val ids = Array(removedLibs.size) { "" }
-                var i = 0
-                for (removed in removedLibs) {
+                for ((i, removed) in removedLibs.withIndex()) {
                     ids[i] = removed.docId ?: ""
-                    i++
                 }
                 return ids
             }

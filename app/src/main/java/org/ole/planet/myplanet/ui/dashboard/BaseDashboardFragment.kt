@@ -379,7 +379,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         Utilities.toast(activity, getString(R.string.myhealth_synced_successfully))
     }
 
-    override fun onSyncFailed(msg: String) {
+    override fun onSyncFailed(msg: String?) {
         di?.dismiss()
         Utilities.toast(activity, getString(R.string.myhealth_synced_failed))
     }

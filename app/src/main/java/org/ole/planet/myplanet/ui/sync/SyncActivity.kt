@@ -333,7 +333,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         progressDialog!!.show()
     }
 
-    override fun onSyncFailed(s: String) {
+    override fun onSyncFailed(s: String?) {
         if (::syncIconDrawable.isInitialized) {
             syncIconDrawable = syncIcon.drawable as AnimationDrawable
             syncIconDrawable.stop()
@@ -532,7 +532,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     syncIconDrawable.selectDrawable(0)
                 }
 
-                override fun onSyncFailed(msg: String) {
+                override fun onSyncFailed(msg: String?) {
                     Utilities.toast(MainApplication.context, msg)
                     progressDialog!!.dismiss()
                     syncIconDrawable.stop()

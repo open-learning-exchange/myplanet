@@ -32,7 +32,9 @@ class UserProfileDbHandler(context: Context) {
             .equalTo("id", settings.getString("userId", "")).findFirst()
 
     fun onLogin() {
-        if (!mRealm.isInTransaction) mRealm.beginTransaction()
+        if (!mRealm.isInTransaction) {
+            mRealm.beginTransaction()
+        }
         val offlineActivities = mRealm.copyToRealm(createUser())
         offlineActivities.type = KEY_LOGIN
         offlineActivities._rev = null
@@ -43,7 +45,9 @@ class UserProfileDbHandler(context: Context) {
     }
 
     fun onLogout() {
-        if (!mRealm.isInTransaction) mRealm.beginTransaction()
+        if (!mRealm.isInTransaction) {
+            mRealm.beginTransaction()
+        }
         val offlineActivities = getRecentLogin(mRealm) ?: return
         offlineActivities.logoutTime = Date().time
         mRealm.commitTransaction()
@@ -71,9 +75,7 @@ class UserProfileDbHandler(context: Context) {
         get() = getOfflineVisits(userModel)
 
     fun getOfflineVisits(m: RealmUserModel?): Int {
-        val db_users = mRealm.where(
-            RealmOfflineActivity::class.java
-        ).equalTo("userName", m?.name).equalTo("type", KEY_LOGIN).findAll()
+        val db_users = mRealm.where(RealmOfflineActivity::class.java).equalTo("userName", m?.name).equalTo("type", KEY_LOGIN).findAll()
         return if (!db_users.isEmpty()) {
             db_users.size
         } else {

@@ -91,7 +91,7 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
         activityPdfreaderBinding.fabRecord.setImageResource(R.drawable.ic_stop)
     }
 
-    override fun onRecordStopped(outputFile: String) {
+    override fun onRecordStopped(outputFile: String?) {
         Utilities.toast(this, getString(R.string.recording_stopped))
         cancellAll(this)
         updateTranslation(outputFile)
@@ -99,7 +99,7 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
         activityPdfreaderBinding.fabRecord.setImageResource(R.drawable.ic_mic)
     }
 
-    private fun updateTranslation(outputFile: String) {
+    private fun updateTranslation(outputFile: String?) {
         if (this::library.isInitialized) {
             if (!mRealm.isInTransaction) mRealm.beginTransaction()
             library.translationAudioPath = outputFile
@@ -115,7 +115,7 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
         }
     }
 
-    override fun onError(error: String) {
+    override fun onError(error: String?) {
         cancellAll(this)
         Utilities.toast(this, error)
         activityPdfreaderBinding.fabRecord.setImageResource(R.drawable.ic_mic)

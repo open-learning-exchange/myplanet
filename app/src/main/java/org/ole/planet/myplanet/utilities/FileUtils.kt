@@ -118,9 +118,9 @@ object FileUtils {
     }
 
     @JvmStatic
-    fun installApk(activity: Context, file: String) {
+    fun installApk(activity: Context, file: String?) {
         try {
-            if (!file.endsWith("apk")) return
+            if (!file?.endsWith("apk")!!) return
             val toInstall = getSDPathFromUrl(file)
             toInstall.setReadable(true, false)
             val apkUri: Uri

@@ -33,78 +33,55 @@ import java.util.Date
 class UploadToShelfService(context: Context) {
     private val dbService: DatabaseService
     private val sharedPreferences: SharedPreferences
-    private var mRealm: Realm? = null
+    lateinit var mRealm: Realm
 
     init {
-        sharedPreferences =
-            context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE)
+        sharedPreferences = context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE)
         dbService = DatabaseService(context)
     }
 
     fun uploadUserData(listener: SuccessListener) {
-        val apiInterface = client!!.create(ApiInterface::class.java)
+        val apiInterface = client?.create(ApiInterface::class.java)
         mRealm = dbService.realmInstance
-        mRealm!!.executeTransactionAsync({ realm: Realm ->
-            val userModels: List<RealmUserModel> = realm.where(
-                RealmUserModel::class.java
-            ).isEmpty("_id").or().equalTo("updated", true).findAll()
+        mRealm.executeTransactionAsync({ realm: Realm ->
+            val userModels: List<RealmUserModel> = realm.where(RealmUserModel::class.java).isEmpty("_id").or().equalTo("updated", true).findAll()
             Utilities.log("USER LIST SIZE + " + userModels.size)
             for (model in userModels) {
                 try {
-                    var res = apiInterface.getJsonObject(
-                        Utilities.header,
-                        Utilities.getUrl() + "/_users/org.couchdb.user:" + model.name
-                    ).execute()
-                    if (res.body() == null) {
+                    var res = apiInterface?.getJsonObject(Utilities.header, Utilities.getUrl() + "/_users/org.couchdb.user:" + model.name)?.execute()
+                    if (res?.body() == null) {
                         val obj = model.serialize()
-                        res = apiInterface.putDoc(
-                            null,
-                            "application/json",
-                            Utilities.getUrl() + "/_users/org.couchdb.user:" + model.name,
-                            obj
-                        ).execute()
-                        if (res.body() != null) {
-                            val id = res.body()!!.get("id").asString
-                            val rev = res.body()!!.get("rev").asString
-                            res = apiInterface.getJsonObject(
-                                Utilities.header,
-                                Utilities.getUrl() + "/_users/" + id
-                            ).execute()
-                            if (res.body() != null) {
+                        res = apiInterface?.putDoc(null, "application/json", Utilities.getUrl() + "/_users/org.couchdb.user:" + model.name, obj)?.execute()
+                        if (res?.body() != null) {
+                            val id = res.body()?.get("id")?.asString
+                            val rev = res.body()?.get("rev")?.asString
+                            res = apiInterface?.getJsonObject(Utilities.header, Utilities.getUrl() + "/_users/" + id)?.execute()
+                            if (res?.body() != null) {
                                 model._id = id
                                 model._rev = rev
                                 model.password_scheme = getString("password_scheme", res.body())
                                 model.derived_key = getString("derived_key", res.body())
                                 model.salt = getString("salt", res.body())
                                 model.iterations = getString("iterations", res.body())
-                                if (saveKeyIv(apiInterface, model, obj)) updateHealthData(
-                                    realm,
-                                    model
-                                )
+                                if (saveKeyIv(apiInterface, model, obj)) {
+                                    updateHealthData(realm, model)
+                                }
                             }
                         }
                     } else if (model.isUpdated) {
                         Utilities.log("UPDATED MODEL " + model.serialize())
                         val obj = model.serialize()
-                        res = apiInterface.putDoc(
-                            null,
-                            "application/json",
-                            Utilities.getUrl() + "/_users/org.couchdb.user:" + model.name,
-                            obj
-                        ).execute()
-                        if (res.body() != null) {
-                            Utilities.log(Gson().toJson(res.body()))
-                            val rev = res.body()!!["rev"].asString
+                        res = apiInterface?.putDoc(null, "application/json", Utilities.getUrl() + "/_users/org.couchdb.user:" + model.name, obj)?.execute()
+                        if (res?.body() != null) {
+                            Utilities.log(Gson().toJson(res?.body()))
+                            val rev = res?.body()!!["rev"].asString
                             model._rev = rev
                             model.isUpdated = false
                         } else {
-                            Utilities.log(res.errorBody()!!.string())
+                            res?.errorBody()?.let { Utilities.log(it.string()) }
                         }
                     } else {
-                        Utilities.toast(
-                            MainApplication.context,
-                            "User " + model.name + " already exist"
-                        )
+                        Utilities.toast(MainApplication.context, "User " + model.name + " already exist")
                     }
                 } catch (e: IOException) {
                     e.printStackTrace()
@@ -114,38 +91,32 @@ class UploadToShelfService(context: Context) {
     }
 
     private fun updateHealthData(realm: Realm, model: RealmUserModel) {
-        val list: List<RealmMyHealthPojo> = realm.where(RealmMyHealthPojo::class.java
-        ).equalTo("_id", model.id).findAll()
+        val list: List<RealmMyHealthPojo> = realm.where(RealmMyHealthPojo::class.java).equalTo("_id", model.id).findAll()
         for (p in list) {
             p.userId = model._id
         }
     }
 
     @Throws(IOException::class)
-    fun saveKeyIv(apiInterface: ApiInterface, model: RealmUserModel, obj: JsonObject): Boolean {
-        val table =
-            "userdb-" + Utilities.toHex(model.planetCode!!) + "-" + Utilities.toHex(model.name!!)
-        val header = "Basic " + Base64.encodeToString(
-            (obj["name"].asString + ":" + obj["password"].asString).toByteArray(),
-            Base64.NO_WRAP
-        )
+    fun saveKeyIv(apiInterface: ApiInterface?, model: RealmUserModel, obj: JsonObject): Boolean {
+        val table = "userdb-" + Utilities.toHex(model.planetCode) + "-" + Utilities.toHex(model.name)
+        val header = "Basic " + Base64.encodeToString((obj["name"].asString + ":" + obj["password"].asString).toByteArray(), Base64.NO_WRAP)
         val ob = JsonObject()
         var keyString = generateKey()
         var iv: String? = generateIv()
-        if (!TextUtils.isEmpty(model.iv)) iv = model.iv
-        if (!TextUtils.isEmpty(model.key)) keyString = model.key
+        if (!TextUtils.isEmpty(model.iv)) {
+            iv = model.iv
+        }
+        if (!TextUtils.isEmpty(model.key)) {
+            keyString = model.key
+        }
         ob.addProperty("key", keyString)
         ob.addProperty("iv", iv)
         ob.addProperty("createdOn", Date().time)
         var success = false
         while (!success) {
-            val response: Response<*> = apiInterface.postDoc(
-                header,
-                "application/json",
-                Utilities.getUrl() + "/" + table,
-                ob
-            ).execute()
-            if (response.body() != null) {
+            val response: Response<JsonObject>? = apiInterface?.postDoc(header, "application/json", Utilities.getUrl() + "/" + table, ob)?.execute()
+            if (response?.body() != null) {
                 model.key = keyString
                 model.iv = iv
                 success = true
@@ -158,21 +129,14 @@ class UploadToShelfService(context: Context) {
     }
 
     fun uploadHealth() {
-        val apiInterface = client!!.create(ApiInterface::class.java)
+        val apiInterface = client?.create(ApiInterface::class.java)
         mRealm = dbService.realmInstance
-        mRealm!!.executeTransactionAsync { realm: Realm ->
-            val myHealths: List<RealmMyHealthPojo> = realm.where(
-                RealmMyHealthPojo::class.java
-            ).equalTo("isUpdated", true).notEqualTo("userId", "").findAll()
+        mRealm.executeTransactionAsync { realm: Realm ->
+            val myHealths: List<RealmMyHealthPojo> = realm.where(RealmMyHealthPojo::class.java).equalTo("isUpdated", true).notEqualTo("userId", "").findAll()
             for (pojo in myHealths) {
                 try {
-                    val res = apiInterface.postDoc(
-                        Utilities.header,
-                        "application/json",
-                        Utilities.getUrl() + "/health",
-                        serialize(pojo)
-                    ).execute()
-                    if (res.body() != null && res.body()!!.has("id")) {
+                    val res = apiInterface?.postDoc(Utilities.header, "application/json", Utilities.getUrl() + "/health", serialize(pojo))?.execute()
+                    if (res?.body() != null && res.body()?.has("id") == true) {
                         pojo.set_rev(res.body()!!["rev"].asString)
                         pojo.isUpdated = false
                     }
@@ -184,56 +148,37 @@ class UploadToShelfService(context: Context) {
     }
 
     private fun uploadToshelf(listener: SuccessListener) {
-        val apiInterface = client!!.create(ApiInterface::class.java)
+        val apiInterface = client?.create(ApiInterface::class.java)
         mRealm = dbService.realmInstance
-        mRealm!!.executeTransactionAsync(
-            { realm: Realm ->
-                val users = realm.where(
-                    RealmUserModel::class.java
-                ).isNotEmpty("_id").findAll()
-                for (model in users) {
-                    try {
-                        if (model.id!!.startsWith("guest")) continue
-                        val jsonDoc = apiInterface.getJsonObject(
-                            Utilities.header,
-                            Utilities.getUrl() + "/shelf/" + model._id
-                        ).execute().body()
-                        val `object` = getShelfData(realm, model.id, jsonDoc)
-                        Utilities.log("JSON " + Gson().toJson(jsonDoc))
-                        val d = apiInterface.getJsonObject(
-                            Utilities.header,
-                            Utilities.getUrl() + "/shelf/" + model.id
-                        ).execute().body()
-                        `object`.addProperty("_rev", getString("_rev", d))
-                        apiInterface.putDoc(
-                            Utilities.header,
-                            "application/json",
-                            Utilities.getUrl() + "/shelf/" + sharedPreferences.getString(
-                                "userId",
-                                ""
-                            ),
-                            `object`
-                        ).execute().body()
-                    } catch (e: Exception) {
-                        e.printStackTrace()
+        mRealm.executeTransactionAsync({ realm: Realm ->
+            val users = realm.where(RealmUserModel::class.java).isNotEmpty("_id").findAll()
+            for (model in users) {
+                try {
+                    if (model.id?.startsWith("guest") == true) {
+                        continue
                     }
+                    val jsonDoc = apiInterface?.getJsonObject(Utilities.header, Utilities.getUrl() + "/shelf/" + model._id)?.execute()?.body()
+                    val `object` = getShelfData(realm, model.id, jsonDoc)
+                    Utilities.log("JSON " + Gson().toJson(jsonDoc))
+                    val d = apiInterface?.getJsonObject(Utilities.header, Utilities.getUrl() + "/shelf/" + model.id)?.execute()?.body()
+                    `object`.addProperty("_rev", getString("_rev", d))
+                    apiInterface?.putDoc(Utilities.header, "application/json", Utilities.getUrl() + "/shelf/" + sharedPreferences.getString("userId", ""), `object`)?.execute()?.body()
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
-            },
-            { listener.onSuccess("Sync with server completed successfully") }) { err: Throwable? ->
-            listener.onSuccess(
-                "Unable to update documents."
-            )
+            } },
+            { listener.onSuccess("Sync with server completed successfully") }) {
+            listener.onSuccess("Unable to update documents.")
         }
     }
 
     private fun getShelfData(realm: Realm?, userId: String?, jsonDoc: JsonObject?): JsonObject {
-        val myLibs = getMyLibIds(realm!!, userId)
+        val myLibs = getMyLibIds(realm, userId)
         val myCourses = getMyCourseIds(realm, userId)
         val myMeetups = getMyMeetUpIds(realm, userId)
-        val removedResources = listOf(*removedIds(realm, "resources", userId!!))
+        val removedResources = listOf(*removedIds(realm, "resources", userId))
         val removedCourses = listOf(*removedIds(realm, "courses", userId))
-        val mergedResourceIds =
-            mergeJsonArray(myLibs, getJsonArray("resourceIds", jsonDoc), removedResources)
+        val mergedResourceIds = mergeJsonArray(myLibs, getJsonArray("resourceIds", jsonDoc), removedResources)
         val mergedCoueseIds = mergeJsonArray(myCourses, getJsonArray("courseIds", jsonDoc), removedCourses)
         val `object` = JsonObject()
         `object`.addProperty("_id", sharedPreferences.getString("userId", ""))
@@ -265,26 +210,26 @@ class UploadToShelfService(context: Context) {
             private set
 
         private fun changeUserSecurity(model: RealmUserModel, obj: JsonObject) {
-            val table = "userdb-" + Utilities.toHex(model.planetCode!!) + "-" + Utilities.toHex(model.name!!)
+            val table = "userdb-" + Utilities.toHex(model.planetCode) + "-" + Utilities.toHex(model.name)
             val header = "Basic " + Base64.encodeToString((obj["name"].asString + ":" + obj["password"].asString).toByteArray(), Base64.NO_WRAP)
-            val apiInterface = client!!.create(ApiInterface::class.java)
-            var response: Response<JsonObject?>
+            val apiInterface = client?.create(ApiInterface::class.java)
+            var response: Response<JsonObject?>?
             try {
-                response = apiInterface.getJsonObject(header, Utilities.getUrl() + "/" + table + "/_security").execute()
-                if (response.body() != null) {
+                response = apiInterface?.getJsonObject(header, Utilities.getUrl() + "/" + table + "/_security")?.execute()
+                if (response?.body() != null) {
                     val jsonObject = response.body()
-                    val members = jsonObject!!.getAsJsonObject("members")
-                    val rolesArray: JsonArray = if (members.has("roles")) {
+                    val members = jsonObject?.getAsJsonObject("members")
+                    val rolesArray: JsonArray = if (members?.has("roles") == true) {
                         members.getAsJsonArray("roles")
                     } else {
                         JsonArray()
                     }
                     rolesArray.add("health")
-                    members.add("roles", rolesArray)
-                    jsonObject.add("members", members)
-                    response = apiInterface.putDoc(header, "application/json", Utilities.getUrl() + "/" + table + "/_security", jsonObject).execute()
-                    if (response.body() != null) {
-                        Utilities.log("Update security  " + Gson().toJson(response.body()))
+                    members?.add("roles", rolesArray)
+                    jsonObject?.add("members", members)
+                    response = apiInterface?.putDoc(header, "application/json", Utilities.getUrl() + "/" + table + "/_security", jsonObject)?.execute()
+                    if (response?.body() != null) {
+                        Utilities.log("Update security  " + Gson().toJson(response?.body()))
                     }
                 }
             } catch (e: IOException) {
