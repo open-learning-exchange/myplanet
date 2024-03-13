@@ -35,7 +35,7 @@ import java.util.Collections
 import java.util.regex.Pattern
 
 class AdapterCourses(private val context: Context, private var courseList: List<RealmMyCourse?>, private val map: HashMap<String?, JsonObject>) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-    private var rowCourseBinding: RowCourseBinding? = null
+    private lateinit var rowCourseBinding: RowCourseBinding
     private val selectedItems: MutableList<RealmMyCourse?>
     private var listener: OnCourseItemSelected? = null
     private var homeItemClickListener: OnHomeItemClickListener? = null
@@ -117,7 +117,7 @@ class AdapterCourses(private val context: Context, private var courseList: List<
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         rowCourseBinding =
             RowCourseBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return ViewHoldercourse(rowCourseBinding!!)
+        return ViewHoldercourse(rowCourseBinding)
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
@@ -215,15 +215,15 @@ class AdapterCourses(private val context: Context, private var courseList: List<
     }
 
     private fun showProgress(position: Int) {
-        if (progressMap!!.containsKey(courseList[position]!!.courseId)) {
-            val ob = progressMap!![courseList[position]!!.courseId]
-            rowCourseBinding!!.courseProgress.max = getInt("max", ob)
-            rowCourseBinding!!.courseProgress.progress = getInt("current", ob)
+        if (progressMap?.containsKey(courseList[position]?.courseId) == true) {
+            val ob = progressMap!![courseList[position]?.courseId]
+            rowCourseBinding.courseProgress.max = getInt("max", ob)
+            rowCourseBinding.courseProgress.progress = getInt("current", ob)
             if (getInt("current", ob) < getInt("max", ob))
-                rowCourseBinding!!.courseProgress.secondaryProgress = getInt("current", ob) + 1
-            rowCourseBinding!!.courseProgress.visibility = View.VISIBLE
+                rowCourseBinding.courseProgress.secondaryProgress = getInt("current", ob) + 1
+            rowCourseBinding.courseProgress.visibility = View.VISIBLE
         } else {
-            rowCourseBinding!!.courseProgress.visibility = View.GONE
+            rowCourseBinding.courseProgress.visibility = View.GONE
         }
     }
 
@@ -231,10 +231,10 @@ class AdapterCourses(private val context: Context, private var courseList: List<
         if (homeItemClickListener != null) {
             val f: Fragment = TakeCourseFragment()
             val b = Bundle()
-            b.putString("id", realm_myCourses!!.courseId)
+            b.putString("id", realm_myCourses?.courseId)
             b.putInt("position", i)
             f.arguments = b
-            homeItemClickListener!!.openCallFragment(f)
+            homeItemClickListener?.openCallFragment(f)
         }
     }
 
@@ -259,8 +259,8 @@ class AdapterCourses(private val context: Context, private var courseList: List<
                 override fun onProgressChanged(seekBar: SeekBar, i: Int, b: Boolean) {
                     val position = bindingAdapterPosition
                     if (position != RecyclerView.NO_POSITION && position < courseList.size) {
-                        if (progressMap!!.containsKey(courseList[bindingAdapterPosition]!!.courseId)) {
-                            val ob = progressMap!![courseList[bindingAdapterPosition]!!.courseId]
+                        if (progressMap?.containsKey(courseList[bindingAdapterPosition]?.courseId) == true) {
+                            val ob = progressMap!![courseList[bindingAdapterPosition]?.courseId]
                             val current = getInt("current", ob)
                             if (b && i <= current + 1) {
                                 openCourse(courseList[bindingAdapterPosition], seekBar.progress)
@@ -283,10 +283,10 @@ class AdapterCourses(private val context: Context, private var courseList: List<
         @JvmStatic
         fun showRating(`object`: JsonObject?, average: TextView?, ratingCount: TextView?, ratingBar: AppCompatRatingBar?) {
             if (average != null) {
-                average.text = String.format("%.2f", `object`!!["averageRating"].asFloat)
+                average.text = String.format("%.2f", `object`?.get("averageRating")?.asFloat)
             }
             if (ratingCount != null) {
-                ratingCount.text = `object`?.get("total")?.asInt.toString() + " total"
+                ratingCount.text = "${`object`?.get(" total ")?.asInt} total"
             }
             if (`object` != null) {
                 if (`object`.has("ratingByUser"))

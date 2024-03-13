@@ -21,7 +21,7 @@ class AdapterProgressGrid(private val context: Context, private val list: JsonAr
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         if (holder is ViewHolderMyProgress) {
             if (list[position].asJsonObject.has("percentage")) {
-                holder.tvProgress.text = list[position].asJsonObject["percentage"].asString + "%"
+                holder.tvProgress.text = "${list[position].asJsonObject[" percentage "].asString}%"
                 if (list[position].asJsonObject["completed"].asBoolean) {
                     holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.md_green_500))
                 } else {
@@ -37,7 +37,7 @@ class AdapterProgressGrid(private val context: Context, private val list: JsonAr
         return list.size()
     }
 
-    internal inner class ViewHolderMyProgress(private val rowMyProgressGridBinding: RowMyProgressGridBinding) : RecyclerView.ViewHolder(rowMyProgressGridBinding.root) {
+    internal inner class ViewHolderMyProgress(rowMyProgressGridBinding: RowMyProgressGridBinding) : RecyclerView.ViewHolder(rowMyProgressGridBinding.root) {
         var tvProgress = rowMyProgressGridBinding.tvProgress
     }
 }

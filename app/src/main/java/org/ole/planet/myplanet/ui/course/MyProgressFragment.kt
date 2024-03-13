@@ -24,9 +24,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 class MyProgressFragment : Fragment() {
     private lateinit var fragmentMyProgressBinding: FragmentMyProgressBinding
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
-    ): View {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentMyProgressBinding = FragmentMyProgressBinding.inflate(inflater, container, false)
         return fragmentMyProgressBinding.root
     }
@@ -70,13 +68,7 @@ class MyProgressFragment : Fragment() {
         fragmentMyProgressBinding.rvMyprogress.adapter = AdapterMyProgress(requireActivity(), arr)
     }
 
-    private fun submissionMap(
-        submissions: RealmResults<RealmSubmission>,
-        realm: Realm,
-        examIds: List<String>,
-        totalMistakes: Int,
-        obj: JsonObject
-    ) {
+    private fun submissionMap(submissions: RealmResults<RealmSubmission>, realm: Realm, examIds: List<String>, totalMistakes: Int, obj: JsonObject) {
         var totalMistakes1 = totalMistakes
         submissions.forEach {
             val answers = realm.where(RealmAnswer::class.java)
@@ -87,13 +79,12 @@ class MyProgressFragment : Fragment() {
                 val question = realm.where(RealmExamQuestion::class.java)
                     .equalTo("id", r.questionId)
                     .findFirst()
-                if (examIds.contains(question!!.examId)) {
+                if (examIds.contains(question?.examId)) {
                     totalMistakes1 += r.mistakes
-                    if (mistakesMap.containsKey(question.examId)) {
-                        mistakesMap[examIds.indexOf(question.examId).toString()] =
-                            mistakesMap[question.examId]!!.plus(r.mistakes)
+                    if (mistakesMap.containsKey(question?.examId)) {
+                        mistakesMap["${examIds.indexOf(question?.examId)}"] = mistakesMap[question?.examId]!!.plus(r.mistakes)
                     } else {
-                        mistakesMap[examIds.indexOf(question.examId).toString()] = r.mistakes
+                        mistakesMap["${examIds.indexOf(question?.examId)}"] = r.mistakes
                     }
                 }
             }

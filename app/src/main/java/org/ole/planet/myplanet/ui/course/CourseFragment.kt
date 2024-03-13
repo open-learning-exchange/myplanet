@@ -194,11 +194,11 @@ class CourseFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelec
         var msg = getString(R.string.success_you_have_added_the_following_courses)
         if (selectedItems.size <= 5) {
             for (i in selectedItems.indices) {
-                msg += " - " + selectedItems[i]!!.courseTitle + "\n"
+                msg += " - " + selectedItems[i]?.courseTitle + "\n"
             }
         } else {
             for (i in 0..4) {
-                msg += " - " + selectedItems[i]!!.courseTitle + "\n"
+                msg += " - " + selectedItems[i]?.courseTitle + "\n"
             }
             msg += getString(R.string.and) + (selectedItems.size - 5) + getString(R.string.more_course_s)
         }
@@ -248,12 +248,12 @@ class CourseFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelec
     }
 
     override fun onOkClicked(list: List<RealmTag>?) {
-        if (list!!.isEmpty()) {
+        if (list?.isEmpty() == true) {
             searchTags.clear()
             adapterCourses.setCourseList(filterCourseByTag(etSearch.text.toString(), searchTags))
             showNoData(tvMessage, adapterCourses.itemCount)
         } else {
-            for (tag in list) {
+            for (tag in list ?: emptyList()) {
                 onTagClicked(tag)
             }
         }
@@ -267,10 +267,10 @@ class CourseFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelec
         if (filterApplied()) {
             if (!mRealm.isInTransaction) mRealm.beginTransaction()
             val activity = mRealm.createObject(RealmSearchActivity::class.java, UUID.randomUUID().toString())
-            activity.user = model.name!!
+            activity.user = "${model.name}"
             activity.time = Calendar.getInstance().timeInMillis
-            activity.createdOn = model.planetCode!!
-            activity.parentCode = model.parentCode!!
+            activity.createdOn = "${model.planetCode}"
+            activity.parentCode = "${model.parentCode}"
             activity.text = etSearch.text.toString()
             activity.type = "courses"
             val filter = JsonObject()
