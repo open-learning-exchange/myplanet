@@ -64,8 +64,10 @@ class SyncManager private constructor(private val context: Context) {
             listener!!.onSyncComplete()
         }
         try {
-            mRealm.close()
-            td!!.stop()
+            if (::mRealm.isInitialized && !mRealm.isClosed) {
+                mRealm.close()
+                td!!.stop()
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }
