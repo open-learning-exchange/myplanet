@@ -14,7 +14,7 @@ open class RealmRemovedLog : RealmObject() {
 
     companion object {
         @JvmStatic
-        fun onAdd(mRealm: Realm, type: String, userId: String, docId: String) {
+        fun onAdd(mRealm: Realm, type: String, userId: String?, docId: String?) {
             if (!mRealm.isInTransaction) mRealm.beginTransaction()
             mRealm.where(RealmRemovedLog::class.java)
                 .equalTo("type", type)
@@ -25,7 +25,7 @@ open class RealmRemovedLog : RealmObject() {
         }
 
         @JvmStatic
-        fun onRemove(mRealm: Realm, type: String, userId: String, docId: String) {
+        fun onRemove(mRealm: Realm, type: String, userId: String?, docId: String?) {
             if (!mRealm.isInTransaction) mRealm.beginTransaction()
             val log = mRealm.createObject(RealmRemovedLog::class.java, UUID.randomUUID().toString())
             log.docId = docId

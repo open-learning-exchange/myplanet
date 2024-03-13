@@ -150,7 +150,7 @@ open class RealmSubmission : RealmObject() {
         }
 
         @JvmStatic
-        fun isStepCompleted(realm: Realm, id: String?, userId: String): Boolean {
+        fun isStepCompleted(realm: Realm, id: String?, userId: String?): Boolean {
             val exam = realm.where(RealmStepExam::class.java).equalTo("stepId", id).findFirst() ?: return true
             Utilities.log("Is step completed " + exam.id + " " + userId)
             return exam.id?.let {

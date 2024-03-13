@@ -41,9 +41,9 @@ class CourseProgressActivity : BaseActivity() {
                 (progress["current"].asInt.div(progress["max"].asInt)) * 100, true
             )
         }
-        activityCourseProgressBinding.tvCourse.text = course!!.courseTitle
+        activityCourseProgressBinding.tvCourse.text = course?.courseTitle
         activityCourseProgressBinding.tvProgress.text =
-                getString(R.string.progress) + courseProgress[courseId]!!["current"].asString + getString(R.string.of) + courseProgress[courseId]!!["max"].asString
+                "${getString(R.string.progress)}${courseProgress[courseId]?.get(" current ")?.asString}${getString(R.string.of)}${courseProgress[courseId]?.get(" max ")?.asString}"
         activityCourseProgressBinding.rvProgress.layoutManager = GridLayoutManager(this, 4)
         showProgress()
     }
