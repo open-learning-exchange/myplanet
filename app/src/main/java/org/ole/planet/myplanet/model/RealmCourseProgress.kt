@@ -95,9 +95,9 @@ open class RealmCourseProgress : RealmObject() {
         }
 
         @JvmStatic
-        fun getCurrentProgress(steps: List<RealmCourseStep?>, mRealm: Realm, userId: String?, courseId: String?): Int {
+        fun getCurrentProgress(steps: List<RealmCourseStep?>?, mRealm: Realm, userId: String?, courseId: String?): Int {
             var i = 0
-            while (i < steps.size) {
+            while (i < (steps?.size ?: 0)) {
                 val progress = mRealm.where(RealmCourseProgress::class.java).equalTo("stepNum", i + 1).equalTo("userId", userId).equalTo("courseId", courseId)
                     .findFirst()
                     ?: break
