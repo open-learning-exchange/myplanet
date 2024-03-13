@@ -6,5 +6,5 @@ interface SyncListener {
     @JvmSuppressWildcards
     fun onSyncComplete()
     @JvmSuppressWildcards
-    fun onSyncFailed(msg: String)
+    fun onSyncFailed(msg: String?)
 }

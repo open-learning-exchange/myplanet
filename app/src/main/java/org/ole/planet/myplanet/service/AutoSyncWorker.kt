@@ -59,8 +59,8 @@ class AutoSyncWorker(private val context: Context, workerParams: WorkerParameter
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action == DashboardActivity.MESSAGE_PROGRESS) {
                 val download = intent.getParcelableExtra<Download>("download")
-                if (!download!!.failed && download.completeAll) {
-                    installApk(context, download.fileUrl!!)
+                if (!download?.failed!! && download.completeAll) {
+                    installApk(context, download.fileUrl)
                 }
             }
         }
@@ -74,7 +74,7 @@ class AutoSyncWorker(private val context: Context, workerParams: WorkerParameter
         Utilities.log("Sync completed")
     }
 
-    override fun onSyncFailed(msg: String) {
+    override fun onSyncFailed(msg: String?) {
         if (MainApplication.syncFailedCount > 3) {
             context.startActivity(Intent(context, LoginActivity::class.java)
                 .putExtra("showWifiDialog", true)
@@ -84,7 +84,7 @@ class AutoSyncWorker(private val context: Context, workerParams: WorkerParameter
 
     override fun onUpdateAvailable(info: MyPlanet, cancelable: Boolean) {
         if (Constants.showBetaFeature(Constants.KEY_AUTOUPDATE, context)) {
-            startDownloadUpdate(context, Utilities.getApkUpdateUrl(info.localapkpath!!), null)
+            startDownloadUpdate(context, Utilities.getApkUpdateUrl(info.localapkpath), null)
         }
     }
 
@@ -94,7 +94,7 @@ class AutoSyncWorker(private val context: Context, workerParams: WorkerParameter
             SyncManager.instance?.start(this)
             UploadToShelfService.instance?.uploadUserData {
                 Service(MainApplication.context).healthAccess {
-                    UploadToShelfService.instance!!.uploadHealth()
+                    UploadToShelfService.instance?.uploadHealth()
                 }
             }
             if (!MainApplication.isSyncRunning) {

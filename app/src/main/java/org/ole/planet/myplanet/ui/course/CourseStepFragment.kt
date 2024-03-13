@@ -71,15 +71,15 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
             courseProgress = cRealm.createObject(RealmCourseProgress::class.java, UUID.randomUUID().toString())
             courseProgress.createdDate = Date().time
         }
-        courseProgress!!.courseId = step.courseId
-        courseProgress.stepNum = stepNumber
+        courseProgress?.courseId = step.courseId
+        courseProgress?.stepNum = stepNumber
         if (stepExams.isEmpty()) {
-            courseProgress.passed = true
+            courseProgress?.passed = true
         }
-        courseProgress.createdOn = user.planetCode
-        courseProgress.updatedDate = Date().time
-        courseProgress.parentCode = user.parentCode
-        courseProgress.userId = user.id
+        courseProgress?.createdOn = user.planetCode
+        courseProgress?.updatedDate = Date().time
+        courseProgress?.parentCode = user.parentCode
+        courseProgress?.userId = user.id
         cRealm.commitTransaction()
     }
 
@@ -95,7 +95,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         step = cRealm.where(RealmCourseStep::class.java).equalTo("id", stepId).findFirst()!!
         resources = cRealm.where(RealmMyLibrary::class.java).equalTo("stepId", stepId).findAll()
         stepExams = cRealm.where(RealmStepExam::class.java).equalTo("stepId", stepId).findAll()
-        if (resources != null) fragmentCourseStepBinding.btnResources.text = getString(R.string.resources) + " [" + resources.size + "]"
+        fragmentCourseStepBinding.btnResources.text = getString(R.string.resources) + " [" + resources.size + "]"
         hideTestIfNoQuestion()
         fragmentCourseStepBinding.tvTitle.text = step.stepTitle
         val markdownContentWithLocalPaths = prependBaseUrlToImages(step.description, "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/")

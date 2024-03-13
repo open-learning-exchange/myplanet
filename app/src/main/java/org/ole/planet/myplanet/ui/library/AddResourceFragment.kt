@@ -131,14 +131,14 @@ class AddResourceFragment : BottomSheetDialogFragment() {
                 floatingActionButton!!.setImageResource(R.drawable.ic_stop)
             }
 
-            override fun onRecordStopped(outputFile: String) {
+            override fun onRecordStopped(outputFile: String?) {
                 tvTime!!.text = ""
                 dialog.dismiss()
                 audioStartIntent(outputFile)
                 floatingActionButton!!.setImageResource(R.drawable.ic_mic)
             }
 
-            override fun onError(error: String) {
+            override fun onError(error: String?) {
                 Utilities.toast(activity, error)
             }
         })
@@ -187,7 +187,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
         }
     }
 
-    private fun audioStartIntent(path: String) {
+    private fun audioStartIntent(path: String?) {
         if (!TextUtils.isEmpty(path)) {
             addResource(path)
         } else {
@@ -206,7 +206,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
         return ""
     }
 
-    private fun addResource(path: String) {
+    private fun addResource(path: String?) {
         if (type == 0) {
             startActivity(Intent(activity, AddResourceActivity::class.java).putExtra("resource_local_url", path))
         } else {

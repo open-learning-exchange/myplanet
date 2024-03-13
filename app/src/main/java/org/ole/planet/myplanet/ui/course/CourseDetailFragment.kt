@@ -22,8 +22,8 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 
 class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
-    private var fragmentCourseDetailBinding: FragmentCourseDetailBinding? = null
-    var dbService: DatabaseService? = null
+    private lateinit var fragmentCourseDetailBinding: FragmentCourseDetailBinding
+    lateinit var dbService: DatabaseService
     private lateinit var cRealm: Realm
     var courses: RealmMyCourse? = null
     var user: RealmUserModel? = null
@@ -38,36 +38,36 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentCourseDetailBinding = FragmentCourseDetailBinding.inflate(inflater, container, false)
         dbService = DatabaseService(requireActivity())
-        cRealm = dbService!!.realmInstance
+        cRealm = dbService.realmInstance
         courses = cRealm.where(RealmMyCourse::class.java).equalTo("courseId", id).findFirst()
         user = UserProfileDbHandler(requireContext()).userModel
-        return fragmentCourseDetailBinding!!.root
+        return fragmentCourseDetailBinding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        initRatingView("course", courses!!.courseId, courses!!.courseTitle, this)
+        initRatingView("course", courses?.courseId, courses?.courseTitle, this)
         setCourseData()
     }
 
     private fun setCourseData() {
-        setTextViewVisibility(fragmentCourseDetailBinding!!.subjectLevel, courses!!.subjectLevel, fragmentCourseDetailBinding!!.ltSubjectLevel)
-        setTextViewVisibility(fragmentCourseDetailBinding!!.method, courses!!.method, fragmentCourseDetailBinding!!.ltMethod)
-        setTextViewVisibility(fragmentCourseDetailBinding!!.gradeLevel, courses!!.gradeLevel, fragmentCourseDetailBinding!!.ltGradeLevel)
-        setTextViewVisibility(fragmentCourseDetailBinding!!.language, courses!!.languageOfInstruction, fragmentCourseDetailBinding!!.ltLanguage)
-        val markdownContentWithLocalPaths = CourseStepFragment.prependBaseUrlToImages(courses!!.description, "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/")
-        setMarkdownText(fragmentCourseDetailBinding!!.description, markdownContentWithLocalPaths)
-        fragmentCourseDetailBinding!!.noOfExams.text = getNoOfExam(cRealm, id).toString() + ""
+        setTextViewVisibility(fragmentCourseDetailBinding.subjectLevel, courses?.subjectLevel, fragmentCourseDetailBinding.ltSubjectLevel)
+        setTextViewVisibility(fragmentCourseDetailBinding.method, courses?.method, fragmentCourseDetailBinding.ltMethod)
+        setTextViewVisibility(fragmentCourseDetailBinding.gradeLevel, courses?.gradeLevel, fragmentCourseDetailBinding.ltGradeLevel)
+        setTextViewVisibility(fragmentCourseDetailBinding.language, courses?.languageOfInstruction, fragmentCourseDetailBinding.ltLanguage)
+        val markdownContentWithLocalPaths = CourseStepFragment.prependBaseUrlToImages(courses?.description, "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/")
+        setMarkdownText(fragmentCourseDetailBinding.description, markdownContentWithLocalPaths)
+        fragmentCourseDetailBinding.noOfExams.text = "${getNoOfExam(cRealm, id)}"
         val resources: List<RealmMyLibrary> = cRealm.where(RealmMyLibrary::class.java).equalTo("courseId", id).equalTo("resourceOffline", false).isNotNull("resourceLocalAddress").findAll()
-        setResourceButton(resources, fragmentCourseDetailBinding!!.btnResources)
+        setResourceButton(resources, fragmentCourseDetailBinding.btnResources)
         val downloadedResources: List<RealmMyLibrary> = cRealm.where(RealmMyLibrary::class.java).equalTo("resourceOffline", true).equalTo("courseId", id).isNotNull("resourceLocalAddress").findAll()
-        setOpenResourceButton(downloadedResources, fragmentCourseDetailBinding!!.btnOpen)
+        setOpenResourceButton(downloadedResources, fragmentCourseDetailBinding.btnOpen)
         onRatingChanged()
         setStepsList()
     }
 
     private fun setTextViewVisibility(textView: TextView, content: String?, layout: View) {
-        if (content!!.isEmpty()) {
+        if (content?.isEmpty() == true) {
             layout.visibility = View.GONE
         } else {
             textView.text = content
@@ -75,13 +75,13 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     }
 
     private fun setStepsList() {
-        val steps = getSteps(cRealm, courses!!.courseId)
-        fragmentCourseDetailBinding!!.stepsList.layoutManager = LinearLayoutManager(activity)
-        fragmentCourseDetailBinding!!.stepsList.adapter = AdapterSteps(requireActivity(), steps, cRealm)
+        val steps = getSteps(cRealm, courses?.courseId)
+        fragmentCourseDetailBinding.stepsList.layoutManager = LinearLayoutManager(activity)
+        fragmentCourseDetailBinding.stepsList.adapter = AdapterSteps(requireActivity(), steps, cRealm)
     }
 
     override fun onRatingChanged() {
-        val `object` = getRatingsById(cRealm, "course", courses!!.courseId, user!!.id)
+        val `object` = getRatingsById(cRealm, "course", courses?.courseId, user?.id)
         setRatings(`object`)
     }
 

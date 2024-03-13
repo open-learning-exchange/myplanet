@@ -33,6 +33,7 @@ import java.util.Set;
 import io.realm.Case;
 import io.realm.RealmList;
 import io.realm.RealmObject;
+import io.realm.RealmResults;
 
 import static android.content.Context.MODE_PRIVATE;
 
@@ -209,13 +210,15 @@ public abstract class BaseRecyclerFragment<LI> extends BaseRecyclerParentFragmen
     }
 
     public List<RealmMyCourse> filterCourseByTag(String s, List<RealmTag> tags) {
-        if (tags.size() == 0 && s.isEmpty()) {
+        if (tags.isEmpty() && s.isEmpty()) {
             return applyCourseFilter((List<RealmMyCourse>) getList(RealmMyCourse.class));
         }
-        List<RealmMyCourse> list = (List<RealmMyCourse>) getData(s, RealmMyCourse.class);
-        if (isMyCourseLib) list = RealmMyCourse.getMyCourseByUserId(model.id, list);
-        else list = RealmMyCourse.getOurCourse(model.id, list);
-        if (tags.size() == 0) return list;
+        RealmResults<RealmMyCourse> list = (RealmResults<RealmMyCourse>) getData(s, RealmMyCourse.class);
+        if (isMyCourseLib) {
+            list = (RealmResults<RealmMyCourse>) RealmMyCourse.getMyCourseByUserId(model.id, list);
+        }
+        else list = (RealmResults<RealmMyCourse>) RealmMyCourse.getOurCourse(model.id, list);
+        if (tags.isEmpty()) return list;
         RealmList<RealmMyCourse> courses = new RealmList<>();
         for (RealmMyCourse course : list) {
             checkAndAddToList(course, courses, tags);

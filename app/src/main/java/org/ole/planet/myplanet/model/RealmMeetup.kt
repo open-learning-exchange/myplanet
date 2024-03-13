@@ -81,11 +81,11 @@ open class RealmMeetup : RealmObject() {
         @JvmStatic
         fun insertMyMeetups() {}
         @JvmStatic
-        fun getMyMeetUpIds(realm: Realm, userId: String?): JsonArray {
-            val meetups = realm.where(RealmMeetup::class.java).isNotEmpty("userId")
-                .equalTo("userId", userId, Case.INSENSITIVE).findAll()
+        fun getMyMeetUpIds(realm: Realm?, userId: String?): JsonArray {
+            val meetups = realm?.where(RealmMeetup::class.java)?.isNotEmpty("userId")
+                ?.equalTo("userId", userId, Case.INSENSITIVE)?.findAll()
             val ids = JsonArray()
-            for (lib in meetups) {
+            for (lib in meetups ?: emptyList()) {
                 ids.add(lib.meetupId)
             }
             return ids

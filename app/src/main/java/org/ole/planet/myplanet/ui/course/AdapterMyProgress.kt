@@ -26,13 +26,9 @@ class AdapterMyProgress(private val context: Context, private val list: JsonArra
             holder.tvTitle.text = list[position].asJsonObject["courseName"].asString
             if (list[position].asJsonObject.has("progress")) {
                 holder.tvDescription.text =
-                    context.getString(R.string.current_step) + list[position].asJsonObject["progress"].asJsonObject["current"].asInt.toString() + context.getString(R.string.of) + list[position].asJsonObject["progress"].asJsonObject["max"].asInt.toString()
+                    "${context.getString(R.string.current_step)}${list[position].asJsonObject[" progress "].asJsonObject[" current "].asInt}${context.getString(R.string.of)}${list[position].asJsonObject[" progress "].asJsonObject[" max "].asInt}"
                 holder.itemView.setOnClickListener {
-                    context.startActivity(
-                        Intent(
-                            context, CourseProgressActivity::class.java
-                        ).putExtra("courseId", list[position].asJsonObject["courseId"].asString)
-                    )
+                    context.startActivity(Intent(context, CourseProgressActivity::class.java).putExtra("courseId", list[position].asJsonObject["courseId"].asString))
                 }
             }
             if (list[position].asJsonObject.has("mistakes")) holder.tvTotal.text =

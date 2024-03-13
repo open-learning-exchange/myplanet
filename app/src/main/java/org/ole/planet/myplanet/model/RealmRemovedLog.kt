@@ -14,7 +14,7 @@ open class RealmRemovedLog : RealmObject() {
 
     companion object {
         @JvmStatic
-        fun onAdd(mRealm: Realm, type: String, userId: String, docId: String) {
+        fun onAdd(mRealm: Realm, type: String, userId: String?, docId: String?) {
             if (!mRealm.isInTransaction) mRealm.beginTransaction()
             mRealm.where(RealmRemovedLog::class.java)
                 .equalTo("type", type)
@@ -25,7 +25,7 @@ open class RealmRemovedLog : RealmObject() {
         }
 
         @JvmStatic
-        fun onRemove(mRealm: Realm, type: String, userId: String, docId: String) {
+        fun onRemove(mRealm: Realm, type: String, userId: String?, docId: String?) {
             if (!mRealm.isInTransaction) mRealm.beginTransaction()
             val log = mRealm.createObject(RealmRemovedLog::class.java, UUID.randomUUID().toString())
             log.docId = docId
@@ -35,18 +35,16 @@ open class RealmRemovedLog : RealmObject() {
         }
 
         @JvmStatic
-        fun removedIds(realm: Realm, type: String, userId: String): Array<String> {
-            val removedLibs = realm.where(RealmRemovedLog::class.java)
-                .equalTo("userId", userId)
-                .equalTo("type", type)
-                .findAll()
+        fun removedIds(realm: Realm?, type: String, userId: String?): Array<String> {
+            val removedLibs = realm?.where(RealmRemovedLog::class.java)
+                ?.equalTo("userId", userId)
+                ?.equalTo("type", type)
+                ?.findAll()
 
             if (removedLibs != null) {
                 val ids = Array(removedLibs.size) { "" }
-                var i = 0
-                for (removed in removedLibs) {
+                for ((i, removed) in removedLibs.withIndex()) {
                     ids[i] = removed.docId ?: ""
-                    i++
                 }
                 return ids
             }
