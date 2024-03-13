@@ -61,11 +61,11 @@ class SyncManager private constructor(private val context: Context) {
         ourInstance = null
         settings.edit().putLong("LastSync", Date().time).apply()
         if (listener != null) {
-            listener!!.onSyncComplete()
+            listener?.onSyncComplete()
         }
         try {
             mRealm.close()
-            td!!.stop()
+            td?.stop()
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -80,7 +80,7 @@ class SyncManager private constructor(private val context: Context) {
                 destroy()
             }
         }
-        td!!.start()
+        td?.start()
     }
 
     private fun startSync() {
@@ -112,7 +112,7 @@ class SyncManager private constructor(private val context: Context) {
             TransactionSyncManager.syncDb(mRealm, "certifications")
             TransactionSyncManager.syncDb(mRealm, "team_activities")
             TransactionSyncManager.syncDb(mRealm, "chat_history")
-            ManagerSync.instance!!.syncAdmin()
+            ManagerSync.instance?.syncAdmin()
             resourceTransactionSync(listener)
             onSynced(mRealm, settings)
             mRealm.close()
@@ -128,12 +128,12 @@ class SyncManager private constructor(private val context: Context) {
         if (listener != null) {
             isSyncing = false
             MainApplication.syncFailedCount++
-            listener!!.onSyncFailed(message!!)
+            listener?.onSyncFailed(message)
         }
     }
 
     fun resourceTransactionSync(listener: SyncListener?) {
-        val apiInterface = client!!.create(ApiInterface::class.java)
+        val apiInterface = client?.create(ApiInterface::class.java)
         mRealm.executeTransaction {
             try {
                 syncResource(apiInterface, listener)
@@ -144,11 +144,11 @@ class SyncManager private constructor(private val context: Context) {
     }
 
     @Throws(IOException::class)
-    private fun syncResource(dbClient: ApiInterface, listener: SyncListener?) {
+    private fun syncResource(dbClient: ApiInterface?, listener: SyncListener?) {
         val newIds: MutableList<String?> = ArrayList()
-        val allDocs = dbClient.getJsonObject(Utilities.header, Utilities.getUrl() + "/resources/_all_docs?include_doc=false")
-        val all = allDocs.execute()
-        val rows = getJsonArray("rows", all.body())
+        val allDocs = dbClient?.getJsonObject(Utilities.header, Utilities.getUrl() + "/resources/_all_docs?include_doc=false")
+        val all = allDocs?.execute()
+        val rows = getJsonArray("rows", all?.body())
         val keys: MutableList<String> = ArrayList()
         for (i in 0 until rows.size()) {
             val `object` = rows[i].asJsonObject
@@ -156,8 +156,8 @@ class SyncManager private constructor(private val context: Context) {
             if (i == rows.size() - 1 || keys.size == 1000) {
                 val obj = JsonObject()
                 obj.add("keys", Gson().fromJson(Gson().toJson(keys), JsonArray::class.java))
-                val response = dbClient.findDocs(Utilities.header, "application/json", Utilities.getUrl() + "/resources/_all_docs?include_docs=true", obj).execute()
-                if (response.body() != null) {
+                val response = dbClient?.findDocs(Utilities.header, "application/json", Utilities.getUrl() + "/resources/_all_docs?include_docs=true", obj)?.execute()
+                if (response?.body() != null) {
                     val ids: List<String?> = save(getJsonArray("rows", response.body()), mRealm)
                     newIds.addAll(ids)
                 }

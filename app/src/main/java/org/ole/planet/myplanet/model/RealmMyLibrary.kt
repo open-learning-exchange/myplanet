@@ -305,14 +305,14 @@ open class RealmMyLibrary : RealmObject() {
         }
 
         @JvmStatic
-        fun serialize(personal: RealmMyLibrary, user: RealmUserModel): JsonObject {
+        fun serialize(personal: RealmMyLibrary, user: RealmUserModel?): JsonObject {
             val `object` = JsonObject()
             `object`.addProperty("title", personal.title)
             `object`.addProperty("uploadDate", Date().time)
             `object`.addProperty("createdDate", personal.createdDate)
             `object`.addProperty("filename", FileUtils.getFileNameFromUrl(personal.resourceLocalAddress))
-            `object`.addProperty("author", user.name)
-            `object`.addProperty("addedBy", user.id)
+            `object`.addProperty("author", user?.name)
+            `object`.addProperty("addedBy", user?.id)
             `object`.addProperty("medium", personal.medium)
             `object`.addProperty("description", personal.description)
             `object`.addProperty("year", personal.year)
@@ -324,8 +324,8 @@ open class RealmMyLibrary : RealmObject() {
             `object`.add("resourceFor", JsonUtils.getAsJsonArray(personal.resourceFor))
             `object`.addProperty("private", false)
             `object`.addProperty("isDownloadable", "")
-            `object`.addProperty("sourcePlanet", user.planetCode)
-            `object`.addProperty("resideOn", user.planetCode)
+            `object`.addProperty("sourcePlanet", user?.planetCode)
+            `object`.addProperty("resideOn", user?.planetCode)
             `object`.addProperty("updatedDate", Calendar.getInstance().timeInMillis)
             `object`.addProperty("createdDate", personal.createdDate)
             `object`.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
@@ -449,10 +449,10 @@ open class RealmMyLibrary : RealmObject() {
         }
 
         @JvmStatic
-        fun getMyLibIds(realm: Realm, userId: String?): JsonArray {
-            val myLibraries: List<RealmMyLibrary> = realm.where(RealmMyLibrary::class.java).contains("userId", userId).findAll()
+        fun getMyLibIds(realm: Realm?, userId: String?): JsonArray {
+            val myLibraries: RealmResults<RealmMyLibrary>? = realm?.where(RealmMyLibrary::class.java)?.contains("userId", userId)?.findAll()
             val ids = JsonArray()
-            for (lib in myLibraries) {
+            for (lib in myLibraries ?: emptyList()) {
                 ids.add(lib.id)
             }
             return ids

@@ -40,7 +40,7 @@ class AudioRecorderService {
                 audioRecordListener?.onRecordStarted()
             } catch (e: Exception) {
                 myAudioRecorder = null
-                audioRecordListener?.onError(e.message!!)
+                audioRecordListener?.onError(e.message)
             }
         }
     }
@@ -81,16 +81,16 @@ class AudioRecorderService {
 
     fun stopRecording() {
         if (myAudioRecorder != null) {
-            myAudioRecorder!!.stop()
-            myAudioRecorder!!.release()
+            myAudioRecorder?.stop()
+            myAudioRecorder?.release()
             myAudioRecorder = null
-            audioRecordListener?.onRecordStopped(outputFile!!)
+            audioRecordListener?.onRecordStopped(outputFile)
         }
     }
 
     interface AudioRecordListener {
         fun onRecordStarted()
-        fun onRecordStopped(outputFile: String)
-        fun onError(error: String)
+        fun onRecordStopped(outputFile: String?)
+        fun onError(error: String?)
     }
 }
