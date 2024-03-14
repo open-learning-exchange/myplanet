@@ -671,7 +671,7 @@
     <string name="add_profile_picture">Add Profile Picture</string>
     <string name="two_dash">--</string>
     <string name="n_a">N/A</string>
-    <string name="request_to_join">Request To join</string>
+    <string name="request_to_join">Request to join</string>
     <string name="filter_labels">Filter Labels</string>
     <string name="message">message</string>
     <string name="mistakes">Mistakes</string>
@@ -1069,5 +1069,7 @@
     <string name="recycler_chat_label">conversations</string>
     <string name="completed_course">completed course</string>
     <string name="menu">side menu</string>
+    <string name="view">view</string>
+    <string name="chat_history">chat history list</string>
 
 </resources>
