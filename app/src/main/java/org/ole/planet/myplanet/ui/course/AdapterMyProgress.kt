@@ -34,11 +34,11 @@ class AdapterMyProgress(private val context: Context, private val list: JsonArra
             if (list[position].asJsonObject.has("mistakes")) holder.tvTotal.text =
                 list[position].asJsonObject["mistakes"].asString
             else holder.tvTotal.text = "0"
-            showStepMistakes(holder, position)
+            showStepMistakes(position)
         }
     }
 
-    private fun showStepMistakes(holder: ViewHolderMyProgress, position: Int) {
+    private fun showStepMistakes(position: Int) {
         if (list[position].asJsonObject.has("stepMistake")) {
             val stepMistake = list[position].asJsonObject["stepMistake"].asJsonObject
             rowMyProgressBinding.llProgress.removeAllViews()
@@ -66,7 +66,7 @@ class AdapterMyProgress(private val context: Context, private val list: JsonArra
     internal inner class ViewHolderMyProgress(rowMyProgressBinding: RowMyProgressBinding) : RecyclerView.ViewHolder(rowMyProgressBinding.root) {
         var tvTitle = rowMyProgressBinding.tvTitle
         var tvTotal = rowMyProgressBinding.tvTotal
-        var llProgress = rowMyProgressBinding.llProgress
+//        var llProgress = rowMyProgressBinding.llProgress
         var tvDescription = rowMyProgressBinding.tvDescription
     }
 }

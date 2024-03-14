@@ -38,7 +38,7 @@ object Utilities {
         Log.d("OLE ", "log: $message")
     }
 
-    fun getUrl(library: RealmMyLibrary?, settings: SharedPreferences?): String {
+    fun getUrl(library: RealmMyLibrary?): String {
         return getUrl(library?.resourceId!!, library.resourceLocalAddress!!)
     }
 

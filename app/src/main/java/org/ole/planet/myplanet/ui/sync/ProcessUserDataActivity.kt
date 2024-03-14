@@ -96,7 +96,7 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         logo.setColorFilter(alphaWhite, PorterDuff.Mode.SRC_ATOP)
     }
 
-    fun setUrlParts(url: String, password: String, context: Context?): String {
+    fun setUrlParts(url: String, password: String): String {
         val editor = settings.edit()
         val uri = Uri.parse(url)
         var couchdbURL: String
@@ -153,7 +153,7 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         UploadManager.instance?.uploadNews()
         UploadManager.instance?.uploadTeams()
         UploadManager.instance?.uploadResource(this)
-        UploadManager.instance?.uploadRating(this)
+        UploadManager.instance?.uploadRating()
         UploadManager.instance?.uploadTeamTask()
         UploadManager.instance?.uploadCrashLog(this)
         UploadManager.instance?.uploadSubmitPhotos(this)
@@ -184,7 +184,7 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         val builder1 = AlertDialog.Builder(this)
         builder1.setMessage(Message)
         builder1.setCancelable(true)
-        builder1.setNegativeButton(R.string.okay) { dialog: DialogInterface, id: Int -> dialog.cancel() }
+        builder1.setNegativeButton(R.string.okay) { dialog: DialogInterface, _: Int -> dialog.cancel() }
         val alert11 = builder1.create()
         alert11.show()
     }

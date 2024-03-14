@@ -145,7 +145,7 @@ open class RealmUserModel : RealmObject() {
         return "$firstName $lastName"
     }
 
-    fun addImageUrl(jsonDoc: JsonObject, settings: SharedPreferences?) {
+    fun addImageUrl(jsonDoc: JsonObject) {
         if (jsonDoc.has("_attachments")) {
             val element = JsonParser.parseString(jsonDoc["_attachments"].asJsonObject.toString())
             val obj = element.asJsonObject
@@ -240,7 +240,7 @@ open class RealmUserModel : RealmObject() {
                 user.language = JsonUtils.getString("language", jsonDoc)
                 user.level = JsonUtils.getString("level", jsonDoc)
                 user.isShowTopbar = true
-                user.addImageUrl(jsonDoc, settings)
+                user.addImageUrl(jsonDoc)
                 user.isArchived = JsonUtils.getBoolean("isArchived", jsonDoc)
                 if (!TextUtils.isEmpty(JsonUtils.getString("planetCode", jsonDoc))) {
                     settings.edit().putString("planetCode", JsonUtils.getString("planetCode", jsonDoc)).apply()

@@ -115,7 +115,7 @@ class SyncManager private constructor(private val context: Context) {
             TransactionSyncManager.syncDb(mRealm, "team_activities")
             TransactionSyncManager.syncDb(mRealm, "chat_history")
             ManagerSync.instance?.syncAdmin()
-            resourceTransactionSync(listener)
+            resourceTransactionSync()
             onSynced(mRealm, settings)
             mRealm.close()
         } catch (err: Exception) {
@@ -134,11 +134,11 @@ class SyncManager private constructor(private val context: Context) {
         }
     }
 
-    fun resourceTransactionSync(listener: SyncListener?) {
+    fun resourceTransactionSync() {
         val apiInterface = client?.create(ApiInterface::class.java)
         mRealm.executeTransaction {
             try {
-                syncResource(apiInterface, listener)
+                syncResource(apiInterface)
             } catch (e: IOException) {
                 e.printStackTrace()
             }
@@ -146,7 +146,7 @@ class SyncManager private constructor(private val context: Context) {
     }
 
     @Throws(IOException::class)
-    private fun syncResource(dbClient: ApiInterface?, listener: SyncListener?) {
+    private fun syncResource(dbClient: ApiInterface?) {
         val newIds: MutableList<String?> = ArrayList()
         val allDocs = dbClient?.getJsonObject(Utilities.header, Utilities.getUrl() + "/resources/_all_docs?include_doc=false")
         val all = allDocs?.execute()
@@ -225,13 +225,13 @@ class SyncManager private constructor(private val context: Context) {
         val apiInterface = client!!.create(ApiInterface::class.java)
         try {
             val resourceDoc = apiInterface.getJsonObject(Utilities.header, Utilities.getUrl() + "/" + stringArray[2] + "/" + array_categoryIds[x].asString).execute().body()
-            resourceDoc?.let { triggerInsert(stringArray, array_categoryIds, x, it) }
+            resourceDoc?.let { triggerInsert(stringArray, it) }
         } catch (e: IOException) {
             e.printStackTrace()
         }
     }
 
-    private fun triggerInsert(stringArray: Array<String?>, array_categoryIds: JsonArray, x: Int, resourceDoc: JsonObject) {
+    private fun triggerInsert(stringArray: Array<String?>, resourceDoc: JsonObject) {
         when (stringArray[2]) {
             "resources" -> insertMyLibrary(stringArray[0], resourceDoc, mRealm)
             "meetups" -> insertMyMeetups()

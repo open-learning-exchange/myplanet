@@ -286,7 +286,7 @@ class AdapterCourses(private val context: Context, private var courseList: List<
                 average.text = String.format("%.2f", `object`?.get("averageRating")?.asFloat)
             }
             if (ratingCount != null) {
-                ratingCount.text = "${`object`?.get(" total ")?.asInt} total"
+                ratingCount.text = "${`object`?.get("total")?.asInt} total"
             }
             if (`object` != null) {
                 if (`object`.has("ratingByUser"))

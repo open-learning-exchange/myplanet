@@ -106,7 +106,7 @@ class AutoSyncWorker(private val context: Context, workerParams: WorkerParameter
                 UploadManager.instance?.uploadUserActivities(this)
                 UploadManager.instance?.uploadCourseActivities()
                 UploadManager.instance?.uploadSearchActivity()
-                UploadManager.instance?.uploadRating(this)
+                UploadManager.instance?.uploadRating()
                 UploadManager.instance?.uploadResource(this)
                 UploadManager.instance?.uploadNews()
                 UploadManager.instance?.uploadTeams()

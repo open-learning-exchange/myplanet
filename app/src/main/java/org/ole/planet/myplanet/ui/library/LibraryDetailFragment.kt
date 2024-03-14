@@ -62,7 +62,7 @@ class LibraryDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private fun setLibraryData() {
         fragmentLibraryDetailBinding.tvTitle.text = String.format("%s%s", if (openFrom!!.isEmpty()) "" else "$openFrom-", library.title)
         fragmentLibraryDetailBinding.tvAuthor.text = library.author
-        fragmentLibraryDetailBinding.tvPublished.text = library.getPublisher()
+        fragmentLibraryDetailBinding.tvPublished.text = library.publisher
         fragmentLibraryDetailBinding.tvMedia.text = library.mediaType
         fragmentLibraryDetailBinding.tvSubject.text = library.subjectsAsString
         fragmentLibraryDetailBinding.tvLanguage.text = library.language

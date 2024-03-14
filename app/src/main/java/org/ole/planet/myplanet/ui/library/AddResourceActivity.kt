@@ -88,7 +88,7 @@ class AddResourceActivity : AppCompatActivity() {
         resource.resourceId = id
         resource.year = activityAddResourceBinding.etYear.text.toString().trim { it <= ' ' }
         resource.description = activityAddResourceBinding.etDescription.text.toString().trim { it <= ' ' }
-        resource.setPublisher(activityAddResourceBinding.etPublisher.text.toString().trim { it <= ' ' })
+        resource.publisher = activityAddResourceBinding.etPublisher.text.toString().trim { it <= ' ' }
         resource.linkToLicense = activityAddResourceBinding.etLinkToLicense.text.toString().trim { it <= ' ' }
         resource.openWith = activityAddResourceBinding.spnOpenWith.selectedItem.toString()
         resource.language = activityAddResourceBinding.spnLang.selectedItem.toString()

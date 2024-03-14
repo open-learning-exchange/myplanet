@@ -35,7 +35,7 @@ class AuthSessionUpdater(private val callback: AuthCallback, private val setting
     private fun sendPost(settings: SharedPreferences) {
         val thread = Thread {
             try {
-                val conn = getSessionUrl(settings)?.openConnection() as HttpURLConnection
+                val conn = getSessionUrl()?.openConnection() as HttpURLConnection
                 conn.requestMethod = "GET"
                 conn.setRequestProperty("Content-Type", "application/json")
                 conn.setRequestProperty("Accept", "application/json")
@@ -71,7 +71,7 @@ class AuthSessionUpdater(private val callback: AuthCallback, private val setting
         }
     }
 
-    private fun getSessionUrl(settings: SharedPreferences): URL? {
+    private fun getSessionUrl(): URL? {
         return try {
             val pref = Utilities.getUrl()
             val urlString = "$pref/_session"

@@ -66,7 +66,6 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.team.AdapterTeam.OnUserSelectedListener
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
-import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.autoSynFeature
@@ -287,7 +286,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private fun checkName(username: String?, password: String?, isManagerMode: Boolean): Boolean {
         try {
             mRealm = Realm.getDefaultInstance()
-            val decrypt = AndroidDecrypter()
+//            val decrypt = AndroidDecrypter()
             val db_users = mRealm.where(RealmUserModel::class.java).equalTo("name", username).findAll()
             for (user in db_users) {
                 if (user._id?.isEmpty() == true) {
@@ -327,7 +326,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         val pin = (dialog.customView?.findViewById<View>(R.id.input_server_Password) as EditText).text.toString()
         settings.edit().putString("customDeviceName", (dialog.customView?.findViewById<View>(R.id.deviceName) as EditText).text.toString()).apply()
         url = protocol + url
-        if (isUrlValid(url)) processedUrl = setUrlParts(url, pin, this)
+        if (isUrlValid(url)) processedUrl = setUrlParts(url, pin)
         return processedUrl
     }
 
@@ -624,7 +623,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                         '\u0000'
                     }
                     var hasInvalidCharacters = false
-                    var hasSpecialCharacters: Boolean
+                    val hasSpecialCharacters: Boolean
                     var hasDiacriticCharacters = false
                     val normalizedText = Normalizer.normalize(s, Normalizer.Form.NFD)
                     for (element in input) {

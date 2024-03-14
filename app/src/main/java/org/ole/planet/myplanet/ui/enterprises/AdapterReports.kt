@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.enterprises
 
 import android.app.DatePickerDialog
 import android.content.Context
-import android.content.DialogInterface
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
@@ -16,8 +15,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.DialogAddReportBinding
 import org.ole.planet.myplanet.databinding.ReportListItemBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.ui.news.ReplyActivity
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils
 import java.util.Calendar
@@ -177,18 +174,6 @@ class AdapterReports(private val context: Context, private var list: RealmResult
 
     override fun getItemCount(): Int {
         return list.size
-    }
-
-    private fun deleteReport(report: RealmMyTeam?, context: Context) {
-        if (!mRealm.isInTransaction) mRealm.beginTransaction()
-        val position = list.indexOf(report)
-        if (position != -1) {
-            list.removeAt(position)
-            notifyItemRemoved(position)
-        }
-        report?.deleteFromRealm()
-        mRealm.commitTransaction()
-        notifyDataSetChanged()
     }
 
     class ViewHolderReports(reportListItemBinding: ReportListItemBinding) : RecyclerView.ViewHolder(reportListItemBinding.root)
