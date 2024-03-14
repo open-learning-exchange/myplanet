@@ -103,11 +103,11 @@ open class RealmMyCourse : RealmObject() {
         }
 
         @JvmStatic
-        fun getMyByUserId(mRealm: Realm, settings: SharedPreferences): List<RealmObject> {
+        fun getMyByUserId(mRealm: Realm, settings: SharedPreferences?): List<RealmObject> {
             val libs = mRealm.where(RealmMyCourse::class.java).findAll()
             val libraries: MutableList<RealmObject> = ArrayList()
             for (item in libs) {
-                if (item.userId!!.contains(settings.getString("userId", "--"))) {
+                if (item.userId?.contains(settings?.getString("userId", "--")) == true) {
                     libraries.add(item)
                 }
             }

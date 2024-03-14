@@ -42,7 +42,7 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
                 }
                 prefData.setTEAMNAME(title)
                 f.arguments = b
-                homeItemClickListener!!.openCallFragment(f)
+                homeItemClickListener?.openCallFragment(f)
             }
         }
     }
@@ -51,24 +51,24 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         v.setOnClickListener {
             if (homeItemClickListener != null) {
                 if (title == getString(R.string.submission)) {
-                    homeItemClickListener!!.openCallFragment(MySubmissionFragment())
+                    homeItemClickListener?.openCallFragment(MySubmissionFragment())
                 } else if (title == getString(R.string.our_news)) {
-                    homeItemClickListener!!.openCallFragment(NewsFragment())
+                    homeItemClickListener?.openCallFragment(NewsFragment())
                 } else if (title == getString(R.string.references)) {
-                    homeItemClickListener!!.openCallFragment(ReferenceFragment())
+                    homeItemClickListener?.openCallFragment(ReferenceFragment())
                 } else if (title == getString(R.string.calendar)) {
-                    homeItemClickListener!!.openCallFragment(CalendarFragment())
+                    homeItemClickListener?.openCallFragment(CalendarFragment())
                 } else if (title == getString(R.string.my_survey)) {
-                    homeItemClickListener!!.openCallFragment(MySubmissionFragment.newInstance("survey"))
+                    homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("survey"))
                 } else if (title == getString(R.string.achievements)) {
-                    homeItemClickListener!!.openCallFragment(AchievementFragment())
+                    homeItemClickListener?.openCallFragment(AchievementFragment())
                 } else if (title == getString(R.string.mypersonals)) {
-                    homeItemClickListener!!.openCallFragment(MyPersonalsFragment())
+                    homeItemClickListener?.openCallFragment(MyPersonalsFragment())
                 } else if (title == getString(R.string.help_wanted)) {
-                    homeItemClickListener!!.openCallFragment(HelpWantedFragment())
+                    homeItemClickListener?.openCallFragment(HelpWantedFragment())
                 } else if (title == getString(R.string.myhealth)) {
-                    if (!model.id!!.startsWith("guest")) {
-                        homeItemClickListener!!.openCallFragment(MyHealthFragment())
+                    if (!model.id?.startsWith("guest")!!) {
+                        homeItemClickListener?.openCallFragment(MyHealthFragment())
                     } else {
                         Utilities.toast(activity, getString(R.string.feature_not_available_for_guest_user))
                     }

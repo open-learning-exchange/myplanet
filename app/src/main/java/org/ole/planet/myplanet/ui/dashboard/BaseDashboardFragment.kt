@@ -60,9 +60,9 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     fun onLoaded(v: View) {
         profileDbHandler = UserProfileDbHandler(requireContext())
         model = profileDbHandler.userModel!!
-        fullName = profileDbHandler.userModel!!.getFullName()
+        fullName = profileDbHandler.userModel?.getFullName()
         if (fullName?.trim().isNullOrBlank()) {
-            fullName = profileDbHandler.userModel!!.name
+            fullName = profileDbHandler.userModel?.name
 
             v.findViewById<LinearLayout>(R.id.ll_prompt).visibility = View.VISIBLE
             v.findViewById<LinearLayout>(R.id.ll_prompt).setOnClickListener {
@@ -126,11 +126,11 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
     private fun myLibraryDiv(view: View) {
         view.findViewById<FlexboxLayout>(R.id.flexboxLayout).flexDirection = FlexDirection.ROW
-        val dbMylibrary = RealmMyLibrary.getMyLibraryByUserId(mRealm, settings!!)
+        val dbMylibrary = RealmMyLibrary.getMyLibraryByUserId(mRealm, settings)
         if (dbMylibrary.isEmpty()) {
             view.findViewById<TextView>(R.id.count_library).visibility = View.GONE
         } else {
-            view.findViewById<TextView>(R.id.count_library).text = dbMylibrary.size.toString() + ""
+            view.findViewById<TextView>(R.id.count_library).text = "${dbMylibrary.size}"
         }
         for ((itemCnt, items) in dbMylibrary.withIndex()) {
             val itemLibraryHomeBinding = ItemLibraryHomeBinding.inflate(LayoutInflater.from(activity))
@@ -146,7 +146,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
             itemLibraryHomeBinding.title.text = items.title
             itemLibraryHomeBinding.detail.setOnClickListener {
-                if (homeItemClickListener != null) homeItemClickListener!!.openLibraryDetailFragment(items)
+                if (homeItemClickListener != null) homeItemClickListener?.openLibraryDetailFragment(items)
             }
 
             myLibraryItemClickAction(itemLibraryHomeBinding.title, items)
@@ -162,11 +162,11 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
     private fun setUpMyList(c: Class<*>, flexboxLayout: FlexboxLayout, view: View) {
         val dbMycourses: List<RealmObject>
-        val userId = settings!!.getString("userId", "--")
-        setUpMyLife(userId!!)
+        val userId = settings?.getString("userId", "--")
+        setUpMyLife(userId)
         dbMycourses = (when (c) {
             RealmMyCourse::class.java -> {
-                RealmMyCourse.getMyByUserId(mRealm, settings!!)
+                RealmMyCourse.getMyByUserId(mRealm, settings)
             }
             RealmMyTeam::class.java -> {
                 val i = myTeamInit(flexboxLayout)
@@ -192,8 +192,8 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     private fun myTeamInit(flexboxLayout: FlexboxLayout): Int {
-        val dbMyTeam = RealmMyTeam.getMyTeamsByUserId(mRealm, settings!!)
-        val userId = UserProfileDbHandler(requireContext()).userModel!!.id
+        val dbMyTeam = RealmMyTeam.getMyTeamsByUserId(mRealm, settings)
+        val userId = UserProfileDbHandler(requireContext()).userModel?.id
         for ((count, ob) in dbMyTeam.withIndex()) {
             val v = LayoutInflater.from(activity).inflate(R.layout.item_home_my_team, flexboxLayout, false)
             val name = v.findViewById<TextView>(R.id.tv_name)
@@ -202,14 +202,14 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
                 name.setTypeface(null, Typeface.BOLD)
             }
             handleClick(ob._id, ob.name, TeamDetailFragment(), name)
-            showNotificationIcons(ob, v, userId!!)
+            showNotificationIcons(ob, v, userId)
             name.text = ob.name
             flexboxLayout.addView(v, params)
         }
         return dbMyTeam.size
     }
 
-    private fun showNotificationIcons(ob: RealmObject, v: View, userId: String) {
+    private fun showNotificationIcons(ob: RealmObject, v: View, userId: String?) {
         val current = Calendar.getInstance().timeInMillis
         val tomorrow = Calendar.getInstance()
         tomorrow.add(Calendar.DAY_OF_YEAR, 1)
@@ -232,7 +232,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     private fun myLifeListInit(flexboxLayout: FlexboxLayout) {
         val dbMylife: MutableList<RealmMyLife>
         val rawMylife: List<RealmMyLife> =
-            RealmMyLife.getMyLifeByUserId(mRealm, settings!!)
+            RealmMyLife.getMyLifeByUserId(mRealm, settings)
         dbMylife = ArrayList()
         for (item in rawMylife) if (item.isVisible) dbMylife.add(item)
         for ((itemCnt, items) in dbMylife.withIndex()) {
@@ -240,9 +240,9 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         }
     }
 
-    private fun setUpMyLife(userId: String) {
+    private fun setUpMyLife(userId: String?) {
         val realm = DatabaseService(requireContext()).realmInstance
-        val realmObjects = RealmMyLife.getMyLifeByUserId(mRealm, settings!!)
+        val realmObjects = RealmMyLife.getMyLifeByUserId(mRealm, settings)
         if (realmObjects.isEmpty()) {
             if (!realm.isInTransaction) realm.beginTransaction()
             val myLifeListBase = getMyLifeListBase(userId)

@@ -42,7 +42,7 @@ class DashboardFragment : BaseDashboardFragment() {
         dRealm = databaseService.realmInstance
         onLoaded(view)
         initView(view)
-        (activity as AppCompatActivity?)!!.supportActionBar!!.subtitle = currentDate()
+        (activity as AppCompatActivity?)?.supportActionBar?.subtitle = currentDate()
         return fragmentHomeBinding.root
     }
 

@@ -383,8 +383,8 @@ open class RealmMyTeam : RealmObject() {
             return JsonParser.parseString(gson.toJson(`object`)).asJsonObject
         }
 
-        fun getMyTeamsByUserId(mRealm: Realm, settings: SharedPreferences): MutableList<RealmObject> {
-            val userId = settings.getString("userId", "--") ?: "--"
+        fun getMyTeamsByUserId(mRealm: Realm, settings: SharedPreferences?): MutableList<RealmObject> {
+            val userId = settings?.getString("userId", "--") ?: "--"
             val list = mRealm.where(RealmMyTeam::class.java)
                 .equalTo("userId", userId)
                 .equalTo("docType", "membership")
