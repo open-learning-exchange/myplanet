@@ -37,8 +37,8 @@ open class RealmMyLife : RealmObject {
     }
 
     companion object {
-        fun getMyLifeByUserId(mRealm: Realm, settings: SharedPreferences): List<RealmMyLife> {
-            val userId = settings.getString("userId", "--")
+        fun getMyLifeByUserId(mRealm: Realm, settings: SharedPreferences?): List<RealmMyLife> {
+            val userId = settings?.getString("userId", "--")
             return getMyLifeByUserId(mRealm, userId)
         }
 

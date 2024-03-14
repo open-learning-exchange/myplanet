@@ -82,8 +82,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
         setContentView(activityDashboardBinding.root)
         setupUI(activityDashboardBinding.activityDashboardParentLayout, this@DashboardActivity)
         setSupportActionBar(activityDashboardBinding.myToolbar)
-        supportActionBar!!.setDisplayHomeAsUpEnabled(false)
-        supportActionBar!!.setTitle(R.string.app_project_name)
+        supportActionBar?.setDisplayHomeAsUpEnabled(false)
+        supportActionBar?.setTitle(R.string.app_project_name)
         activityDashboardBinding.myToolbar.setTitleTextColor(Color.WHITE)
         activityDashboardBinding.myToolbar.setSubtitleTextColor(Color.WHITE)
         navigationView = activityDashboardBinding.topBarNavigation
@@ -94,7 +94,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
             val userProfileModel = profileDbHandler.userModel
             if (userProfileModel != null) {
                 var name: String? = userProfileModel.getFullName()
-                if (name!!.trim { it <= ' ' }.isEmpty()) {
+                if (name?.trim { it <= ' ' }?.isEmpty() == true) {
                     name = profileDbHandler.userModel?.name
                 }
                 activityDashboardBinding.appBarBell.appTitleName.text = "$name's Planet"
@@ -107,23 +107,27 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
         activityDashboardBinding.appBarBell.ivSetting.setOnClickListener {
             startActivity(Intent(this, SettingActivity::class.java))
         }
-        if (user!!.rolesList!!.isEmpty() && !user!!.userAdmin!!) {
+        if ((user != null) && user?.rolesList?.isEmpty() == true && !user?.userAdmin!!) {
             navigationView.visibility = View.GONE
             openCallFragment(InactiveDashboardFragment(), "Dashboard")
             return
         }
         navigationView.setOnNavigationItemSelectedListener(this)
-        navigationView.visibility = if (UserProfileDbHandler(this).userModel!!.isShowTopbar) View.VISIBLE else View.GONE
+        navigationView.visibility = if (UserProfileDbHandler(this).userModel?.isShowTopbar == true) {
+            View.VISIBLE
+        } else {
+            View.GONE
+        }
         headerResult = accountHeader
         createDrawer()
-        if (!(user!!.id!!.startsWith("guest") && profileDbHandler.offlineVisits >= 3) && resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
-            result!!.openDrawer()
+        if (!(user?.id?.startsWith("guest") == true && profileDbHandler.offlineVisits >= 3) && resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
+            result?.openDrawer()
         } //Opens drawer by default
-        result!!.stickyFooter.setPadding(0, 0, 0, 0) // moves logout button to the very bottom of the drawer. Without it, the "logout" button suspends a little.
-        result!!.actionBarDrawerToggle.isDrawerIndicatorEnabled = true
-        dl = result!!.drawerLayout
+        result?.stickyFooter?.setPadding(0, 0, 0, 0) // moves logout button to the very bottom of the drawer. Without it, the "logout" button suspends a little.
+        result?.actionBarDrawerToggle?.isDrawerIndicatorEnabled = true
+        dl = result?.drawerLayout
         window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN)
-        result!!.drawerLayout.fitsSystemWindows = false
+        result?.drawerLayout?.fitsSystemWindows = false
         topbarSetting()
         if (intent != null && intent.hasExtra("fragmentToOpen")) {
             val fragmentToOpen = intent.getStringExtra("fragmentToOpen")
@@ -137,7 +141,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
         activityDashboardBinding.appBarBell.ivSync.setOnClickListener {
             continueSyncProcess(forceSync = true, isSync = false)
         }
-        activityDashboardBinding.appBarBell.imgLogo.setOnClickListener { result!!.openDrawer() }
+        activityDashboardBinding.appBarBell.imgLogo.setOnClickListener { result?.openDrawer() }
         activityDashboardBinding.appBarBell.bellToolbar.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 R.id.action_chat -> openCallFragment(ChatHistoryListFragment())
@@ -152,12 +156,12 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
             }
             true
         }
-        menuh = tl!!.getTabAt(0)
-        menul = tl!!.getTabAt(1)
-        menuc = tl!!.getTabAt(2)
-        menut = tl!!.getTabAt(3)
-        menue = tl!!.getTabAt(4)
-        menuco = tl!!.getTabAt(5)
+        menuh = tl?.getTabAt(0)
+        menul = tl?.getTabAt(1)
+        menuc = tl?.getTabAt(2)
+        menut = tl?.getTabAt(3)
+        menue = tl?.getTabAt(4)
+        menuco = tl?.getTabAt(5)
         hideWifi()
     }
 
@@ -174,7 +178,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
             logout()
             return
         }
-        if (user!!.id!!.startsWith("guest") && profileDbHandler.offlineVisits >= 3) {
+        if (user?.id?.startsWith("guest") == true && profileDbHandler.offlineVisits >= 3) {
             val builder = AlertDialog.Builder(this)
             builder.setTitle("Become a member")
             builder.setMessage("Trial period ended! Kindly complete registration to continue")
@@ -188,7 +192,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
             becomeMember.setOnClickListener {
                 val guest = true
                 val intent = Intent(this, BecomeMemberActivity::class.java)
-                intent.putExtra("username", profileDbHandler.userModel!!.name)
+                intent.putExtra("username", profileDbHandler.userModel?.name)
                 intent.putExtra("guest", guest)
                 setResult(RESULT_OK, intent)
                 startActivity(intent)
@@ -217,10 +221,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
             val customTabBinding = CustomTabBinding.inflate(LayoutInflater.from(this))
             val title = customTabBinding.title
             val icon = customTabBinding.icon
-            title.text = tabLayout.getTabAt(i)!!.text
+            title.text = tabLayout.getTabAt(i)?.text
             icon.setImageResource(R.drawable.ic_home)
-            icon.setImageDrawable(tabLayout.getTabAt(i)!!.icon)
-            tabLayout.getTabAt(i)!!.setCustomView(customTabBinding.root)
+            icon.setImageDrawable(tabLayout.getTabAt(i)?.icon)
+            tabLayout.getTabAt(i)?.setCustomView(customTabBinding.root)
         }
         tabLayout.isTabIndicatorFullWidth = false
     }
@@ -232,7 +236,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
     }
 
     override fun onPrepareOptionsMenu(menu: Menu): Boolean {
-        if (user!!.rolesList!!.isEmpty()) {
+        if (user?.rolesList?.isEmpty() == true) {
             menu.findItem(R.id.action_setting).setEnabled(false)
         }
         return super.onPrepareOptionsMenu(menu)
@@ -304,7 +308,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
     override fun openLibraryDetailFragment(library: RealmMyLibrary?) {
         val f: Fragment = LibraryDetailFragment()
         val b = Bundle()
-        b.putString("libraryId", library!!.resourceId)
+        b.putString("libraryId", library?.resourceId)
         b.putString("openFrom", "Dashboard")
         f.arguments = b
         openCallFragment(f)
@@ -313,7 +317,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
     override fun sendSurvey(current: RealmStepExam?) {
         val f = SendSurveyFragment()
         val b = Bundle()
-        b.putString("surveyId", current!!.id)
+        b.putString("surveyId", current?.id)
         f.arguments = b
         f.show(supportFragmentManager, "")
     }
@@ -360,8 +364,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
     }
 
     override fun onBackPressed() {
-        if (result != null && result!!.isDrawerOpen) {
-            result!!.closeDrawer()
+        if (result != null && result?.isDrawerOpen == true) {
+            result?.closeDrawer()
         } else {
             if (supportFragmentManager.backStackEntryCount > 1) {
                 supportFragmentManager.popBackStack()

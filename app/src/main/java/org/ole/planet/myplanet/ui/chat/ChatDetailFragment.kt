@@ -158,11 +158,11 @@ class ChatDetailFragment : Fragment() {
                         if (chatResponse != null) {
                             mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_NETWORK
                             mAdapter.addResponse(chatResponse)
-                            _id = response.body()!!.couchDBResponse!!.id.toString()
-                            _rev = response.body()!!.couchDBResponse!!.rev.toString()
+                            _id = "${response.body()?.couchDBResponse?.id}"
+                            _rev = "${response.body()?.couchDBResponse?.rev}"
                             val jsonObject = JsonObject()
-                            jsonObject.addProperty("_rev", response.body()!!.couchDBResponse!!.rev.toString())
-                            jsonObject.addProperty("_id", response.body()!!.couchDBResponse!!.id.toString())
+                            jsonObject.addProperty("_rev", "${response.body()?.couchDBResponse?.rev}")
+                            jsonObject.addProperty("_id", "${response.body()?.couchDBResponse?.id}")
                             jsonObject.addProperty("time", "")
                             jsonObject.addProperty("title", "")
                             jsonObject.addProperty("updatedTime", "")
@@ -265,7 +265,7 @@ class ChatDetailFragment : Fragment() {
                         if (chatResponse != null) {
                             mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_NETWORK
                             mAdapter.addResponse(chatResponse)
-                            _rev = response.body()!!.couchDBResponse!!.rev.toString()
+                            _rev = "${response.body()?.couchDBResponse?.rev}"
                             continueConversationRealm(_id, query, chatResponse)
                         }
                     } else {
