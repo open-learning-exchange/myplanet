@@ -153,7 +153,7 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         UploadManager.instance?.uploadNews()
         UploadManager.instance?.uploadTeams()
         UploadManager.instance?.uploadResource(this)
-        UploadManager.instance?.uploadRating(this)
+        UploadManager.instance?.uploadRating()
         UploadManager.instance?.uploadTeamTask()
         UploadManager.instance?.uploadCrashLog(this)
         UploadManager.instance?.uploadSubmitPhotos(this)
