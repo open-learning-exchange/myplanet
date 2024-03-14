@@ -75,7 +75,18 @@ class LibraryDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             ex.printStackTrace()
         }
         fragmentLibraryDetailBinding.btnDownload.visibility = if (TextUtils.isEmpty(library.resourceLocalAddress)) View.GONE else View.VISIBLE
-        fragmentLibraryDetailBinding.btnDownload.setImageResource(if (!library.resourceOffline || library.isResourceOffline()) R.drawable.ic_eye else R.drawable.ic_download)
+        fragmentLibraryDetailBinding.btnDownload.setImageResource(
+            if (!library.resourceOffline || library.isResourceOffline()) {
+                R.drawable.ic_eye
+            } else {
+                R.drawable.ic_download
+            })
+        fragmentLibraryDetailBinding.btnDownload.contentDescription =
+            if (!library.resourceOffline || library.isResourceOffline()) {
+                getString(R.string.view)
+            } else {
+                getString(R.string.download)
+            }
         if (getFileExtension(library.resourceLocalAddress) == "mp4") {
             fragmentLibraryDetailBinding.btnDownload.setImageResource(R.drawable.ic_play)
         }
@@ -92,7 +103,18 @@ class LibraryDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         }
         Utilities.log("user id " + profileDbHandler.userModel!!.id + " " + library.userId!!.contains(profileDbHandler.userModel!!.id))
         val isAdd = !library.userId!!.contains(profileDbHandler.userModel!!.id)
-        fragmentLibraryDetailBinding.btnRemove.setImageResource(if (isAdd) R.drawable.ic_add_library else R.drawable.close_x)
+        fragmentLibraryDetailBinding.btnRemove.setImageResource(
+            if (isAdd) {
+                R.drawable.ic_add_library
+            } else {
+                R.drawable.close_x
+            })
+        fragmentLibraryDetailBinding.btnRemove.contentDescription =
+            if (isAdd) {
+                getString(R.string.add_to_mylib)
+            } else {
+                getString(R.string.btn_remove_lib)
+            }
         fragmentLibraryDetailBinding.btnRemove.setOnClickListener {
             if (!lRealm.isInTransaction) lRealm.beginTransaction()
             if (isAdd) {

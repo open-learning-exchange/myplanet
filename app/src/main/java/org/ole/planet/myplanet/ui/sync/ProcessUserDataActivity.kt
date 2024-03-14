@@ -43,7 +43,7 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action == DashboardActivity.MESSAGE_PROGRESS && progressDialog != null) {
                 val download = intent.getParcelableExtra<Download>("download")
-                checkDownloadResult(download, progressDialog!!)
+                checkDownloadResult(download, progressDialog)
             }
         }
     }
@@ -59,18 +59,16 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         return true
     }
 
-    fun checkDownloadResult(download: Download?, progressDialog: ProgressDialog) {
-        if (!download!!.failed) {
-            progressDialog.setMessage(getString(R.string.downloading) + download.progress + "% " + getString(
-                    R.string.complete
-                ))
+    fun checkDownloadResult(download: Download?, progressDialog: ProgressDialog?) {
+        if (!download?.failed!!) {
+            progressDialog?.setMessage("${getString(R.string.downloading)}${download.progress}% ${getString(R.string.complete)}")
             if (download.completeAll) {
-                progressDialog.dismiss()
-                installApk(this, download.fileUrl!!)
+                progressDialog?.dismiss()
+                installApk(this, download.fileUrl)
             }
         } else {
-            progressDialog.dismiss()
-            showError(progressDialog, download.message!!)
+            progressDialog?.dismiss()
+            showError(progressDialog, download.message)
         }
     }
 
@@ -139,33 +137,33 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
     }
 
     fun startUpload() {
-        progressDialog!!.setMessage(getString(R.string.uploading_data_to_server_please_wait))
-        progressDialog!!.show()
+        progressDialog?.setMessage(getString(R.string.uploading_data_to_server_please_wait))
+        progressDialog?.show()
         Utilities.log("Upload : upload started")
         UploadToShelfService.instance?.uploadUserData {
-            UploadToShelfService.instance!!.uploadHealth()
+            UploadToShelfService.instance?.uploadHealth()
         }
         UploadManager.instance?.uploadUserActivities(this)
-        UploadManager.instance!!.uploadExamResult(this)
-        UploadManager.instance!!.uploadFeedback(this)
-        UploadManager.instance!!.uploadAchievement()
-        UploadManager.instance!!.uploadResourceActivities("")
-        UploadManager.instance!!.uploadCourseActivities()
-        UploadManager.instance!!.uploadSearchActivity()
-        UploadManager.instance!!.uploadNews()
-        UploadManager.instance!!.uploadTeams()
-        UploadManager.instance!!.uploadResource(this)
-        UploadManager.instance!!.uploadRating()
-        UploadManager.instance!!.uploadTeamTask()
-        UploadManager.instance!!.uploadCrashLog(this)
-        UploadManager.instance!!.uploadSubmitPhotos(this)
-        UploadManager.instance!!.uploadActivities(this)
+        UploadManager.instance?.uploadExamResult(this)
+        UploadManager.instance?.uploadFeedback(this)
+        UploadManager.instance?.uploadAchievement()
+        UploadManager.instance?.uploadResourceActivities("")
+        UploadManager.instance?.uploadCourseActivities()
+        UploadManager.instance?.uploadSearchActivity()
+        UploadManager.instance?.uploadNews()
+        UploadManager.instance?.uploadTeams()
+        UploadManager.instance?.uploadResource(this)
+        UploadManager.instance?.uploadRating(this)
+        UploadManager.instance?.uploadTeamTask()
+        UploadManager.instance?.uploadCrashLog(this)
+        UploadManager.instance?.uploadSubmitPhotos(this)
+        UploadManager.instance?.uploadActivities(this)
         Toast.makeText(this, getString(R.string.uploading_activities_to_server_please_wait), Toast.LENGTH_SHORT).show()
     }
 
-    protected fun hideKeyboard(view: View) {
+    protected fun hideKeyboard(view: View?) {
         val `in` = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
-        `in`.hideSoftInputFromWindow(view.windowToken, InputMethodManager.HIDE_NOT_ALWAYS)
+        `in`.hideSoftInputFromWindow(view?.windowToken, InputMethodManager.HIDE_NOT_ALWAYS)
     }
 
     fun saveUserInfoPref(settings: SharedPreferences, password: String?, user: RealmUserModel) {
@@ -177,7 +175,7 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         editor.putString("firstName", user.firstName)
         editor.putString("lastName", user.lastName)
         editor.putString("middleName", user.middleName)
-        editor.putBoolean("isUserAdmin", user.userAdmin!!)
+        user.userAdmin?.let { editor.putBoolean("isUserAdmin", it) }
         editor.putLong("lastLogin", System.currentTimeMillis())
         editor.apply()
     }
@@ -193,10 +191,10 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
 
     private fun getUserInfo(uri: Uri): Array<String> {
         val ar = arrayOf("", "")
-        val info = uri.userInfo!!.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-        if (info.size > 1) {
-            ar[0] = info[0]
-            ar[1] = info[1]
+        val info = uri.userInfo?.split(":".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()
+        if ((info?.size ?: 0) > 1) {
+            ar[0] = "${info?.get(0)}"
+            ar[1] = "${info?.get(1)}"
         }
         return ar
     }

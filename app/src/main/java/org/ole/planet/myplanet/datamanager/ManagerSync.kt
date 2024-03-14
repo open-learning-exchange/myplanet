@@ -29,7 +29,7 @@ class ManagerSync private constructor(context: Context) {
         mRealm = dbService.realmInstance
     }
 
-    fun login(userName: String, password: String, listener: SyncListener) {
+    fun login(userName: String?, password: String?, listener: SyncListener) {
         listener.onSyncStarted()
         Utilities.log(Utilities.getUrl() + "/org.couchdb.user:" + userName)
         val apiInterface = ApiClient.client?.create(ApiInterface::class.java)

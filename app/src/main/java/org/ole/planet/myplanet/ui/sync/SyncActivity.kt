@@ -144,7 +144,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         mRealm = DatabaseService(this).realmInstance
         requestAllPermissions()
         progressDialog = ProgressDialog(this)
-        progressDialog!!.setCancelable(false)
+        progressDialog?.setCancelable(false)
         prefData = SharedPrefManager(this)
         profileDbHandler = UserProfileDbHandler(this)
         defaultPref = PreferenceManager.getDefaultSharedPreferences(this)
@@ -187,25 +187,26 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     @Throws(Exception::class)
     fun isServerReachable(processedUrl: String?): Boolean {
-        progressDialog!!.setMessage(getString(R.string.connecting_to_server))
-        progressDialog!!.show()
-        val apiInterface = client!!.create(ApiInterface::class.java)
+        progressDialog?.setMessage(getString(R.string.connecting_to_server))
+        progressDialog?.show()
+        val apiInterface = client?.create(ApiInterface::class.java)
         Utilities.log("$processedUrl/_all_dbs")
-        apiInterface.isPlanetAvailable("$processedUrl/_all_dbs").enqueue(
+        apiInterface?.isPlanetAvailable("$processedUrl/_all_dbs")?.enqueue(
             object : Callback<ResponseBody?> { override fun onResponse(call: Call<ResponseBody?>, response: Response<ResponseBody?>) {
                 try {
-                    progressDialog!!.dismiss()
-                    val ss = response.body()!!.string()
-                    val myList = listOf(*ss.split(",".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray())
+                    progressDialog?.dismiss()
+                    val ss = response.body()?.string()
+                    val myList = ss?.split(",".toRegex())?.dropLastWhile { it.isEmpty() }
+                        ?.let { listOf(*it.toTypedArray()) }
                     Utilities.log("List size $ss")
-                    if (myList.size < 8) {
+                    if ((myList?.size ?: 0) < 8) {
                         alertDialogOkay(getString(R.string.check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server))
                     } else {
                         startSync()
                     }
                 } catch (e: Exception) {
                     alertDialogOkay(getString(R.string.device_couldn_t_reach_server_check_and_try_again))
-                    progressDialog!!.dismiss()
+                    progressDialog?.dismiss()
                 }
             }
 
@@ -214,7 +215,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     if (!mRealm.isClosed) {
                         mRealm.close()
                     }
-                    progressDialog!!.dismiss()
+                    progressDialog?.dismiss()
                 }
             })
         return connectionResult
@@ -222,7 +223,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     private fun declareHideKeyboardElements() {
         findViewById<View>(R.id.constraintLayout).setOnTouchListener { view: View?, _: MotionEvent? ->
-            hideKeyboard(view!!)
+            hideKeyboard(view)
             false
         }
     }
@@ -263,10 +264,12 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         editor.commit()
     }
 
-    fun authenticateUser(settings: SharedPreferences?, username: String?, password: String, isManagerMode: Boolean): Boolean {
+    fun authenticateUser(settings: SharedPreferences?, username: String?, password: String?, isManagerMode: Boolean): Boolean {
         return try {
             mRealm = Realm.getDefaultInstance()
-            this.settings = settings!!
+            if (settings != null) {
+                this.settings = settings
+            }
             if (mRealm.isEmpty) {
                 alertDialogOkay(getString(R.string.server_not_configured_properly_connect_this_device_with_planet_server))
                 false
@@ -280,19 +283,19 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
     }
 
-    private fun checkName(username: String?, password: String, isManagerMode: Boolean): Boolean {
+    private fun checkName(username: String?, password: String?, isManagerMode: Boolean): Boolean {
         try {
             mRealm = Realm.getDefaultInstance()
 //            val decrypt = AndroidDecrypter()
             val db_users = mRealm.where(RealmUserModel::class.java).equalTo("name", username).findAll()
             for (user in db_users) {
-                if (user._id!!.isEmpty()) {
+                if (user._id?.isEmpty() == true) {
                     if (username == user.name && password == user.password) {
                         saveUserInfoPref(settings, password, user)
                         return true
                     }
                 } else {
-                    if (AndroidDecrypter(username!!, password, user.derived_key!!, user.salt!!)) {
+                    if (AndroidDecrypter(username, password, user.derived_key, user.salt)) {
                         if (isManagerMode && !user.isManager()) return false
                         saveUserInfoPref(settings, password, user)
                         return true
@@ -318,18 +321,18 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         dialog.dismiss()
         saveSyncInfoToPreference()
         var processedUrl = ""
-        val protocol = (dialog.customView!!.findViewById<View>(R.id.input_server_url_protocol) as EditText).text.toString()
-        var url = (dialog.customView!!.findViewById<View>(R.id.input_server_url) as EditText).text.toString()
-        val pin = (dialog.customView!!.findViewById<View>(R.id.input_server_Password) as EditText).text.toString()
-        settings.edit().putString("customDeviceName", (dialog.customView!!.findViewById<View>(R.id.deviceName) as EditText).text.toString()).apply()
+        val protocol = (dialog.customView?.findViewById<View>(R.id.input_server_url_protocol) as EditText).text.toString()
+        var url = (dialog.customView?.findViewById<View>(R.id.input_server_url) as EditText).text.toString()
+        val pin = (dialog.customView?.findViewById<View>(R.id.input_server_Password) as EditText).text.toString()
+        settings.edit().putString("customDeviceName", (dialog.customView?.findViewById<View>(R.id.deviceName) as EditText).text.toString()).apply()
         url = protocol + url
         if (isUrlValid(url)) processedUrl = setUrlParts(url, pin)
         return processedUrl
     }
 
     override fun onSyncStarted() {
-        progressDialog!!.setMessage(getString(R.string.syncing_data_please_wait))
-        progressDialog!!.show()
+        progressDialog?.setMessage(getString(R.string.syncing_data_please_wait))
+        progressDialog?.show()
     }
 
     override fun onSyncFailed(s: String?) {
@@ -346,7 +349,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     override fun onSyncComplete() {
-        progressDialog!!.dismiss()
+        progressDialog?.dismiss()
         if (::syncIconDrawable.isInitialized) {
             runOnUiThread {
                 syncIconDrawable = syncIcon.drawable as AnimationDrawable
@@ -440,7 +443,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             }
             if (isNetworkConnected()) {
                 service.syncPlanetServers(mRealm) { success: String? ->
-                    Utilities.toast(this, success!!)
+                    Utilities.toast(this, success)
                 }
             }
             inputName.addTextChangedListener(object : TextWatcher {
@@ -498,7 +501,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
     }
 
-    fun submitForm(name: String?, password: String) {
+    fun submitForm(name: String?, password: String?) {
         if (forceSyncTrigger()) {
             return
         }
@@ -512,14 +515,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             onLogin()
             saveUsers(inputName.text.toString(), inputPassword.text.toString(), "member")
         } else {
-            instance!!.login(name!!, password, object : SyncListener {
+            instance?.login(name, password, object : SyncListener {
                 override fun onSyncStarted() {
-                    progressDialog!!.setMessage(getString(R.string.please_wait))
-                    progressDialog!!.show()
+                    progressDialog?.setMessage(getString(R.string.please_wait))
+                    progressDialog?.show()
                 }
 
                 override fun onSyncComplete() {
-                    progressDialog!!.dismiss()
+                    progressDialog?.dismiss()
                     Utilities.log("on complete")
                     val log = authenticateUser(settings, name, password, true)
                     if (log) {
@@ -535,7 +538,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
                 override fun onSyncFailed(msg: String?) {
                     Utilities.toast(MainApplication.context, msg)
-                    progressDialog!!.dismiss()
+                    progressDialog?.dismiss()
                     syncIconDrawable.stop()
                     syncIconDrawable.selectDrawable(0)
                 }
@@ -707,9 +710,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     val existingUser = mRealm.where(RealmUserModel::class.java).equalTo("name", username).findFirst()
                     dialog.dismiss()
                     if (existingUser != null) {
-                        if (existingUser._id!!.contains("guest")) {
+                        if (existingUser._id?.contains("guest") == true) {
                             showGuestDialog(username)
-                        } else if (existingUser._id!!.contains("org.couchdb.user:")) {
+                        } else if (existingUser._id?.contains("org.couchdb.user:") == true) {
                             showUserAlreadyMemberDialog(username)
                         }
                     } else {
@@ -770,13 +773,13 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     fun saveUsers(name: String?, password: String?, source: String) {
         if (source === "guest") {
-            val newUser = User("", name!!, password!!, "", "guest")
+            val newUser = User("", name, password, "", "guest")
             val existingUsers: MutableList<User> = ArrayList(
                 prefData.getSAVEDUSERS()
             )
             var newUserExists = false
             for ((_, name1) in existingUsers) {
-                if (name1 == newUser.name.trim { it <= ' ' }) {
+                if (name1 == newUser.name?.trim { it <= ' ' }) {
                     newUserExists = true
                     break
                 }
@@ -786,21 +789,19 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 prefData.setSAVEDUSERS(existingUsers)
             }
         } else if (source === "member") {
-            var userProfile = profileDbHandler.userModel!!.userImage
-            var fullName: String? = profileDbHandler.userModel!!.getFullName()
+            var userProfile = profileDbHandler.userModel?.userImage
+            var fullName: String? = profileDbHandler.userModel?.getFullName()
             if (userProfile == null) {
                 userProfile = ""
             }
-            if (fullName!!.trim { it <= ' ' }.isEmpty()) {
-                fullName = profileDbHandler.userModel!!.name
+            if (fullName?.trim { it <= ' ' }?.isEmpty() == true) {
+                fullName = profileDbHandler.userModel?.name
             }
-            val newUser = User(fullName!!, name!!, password!!, userProfile, "member")
-            val existingUsers: MutableList<User> = ArrayList(
-                prefData.getSAVEDUSERS()
-            )
+            val newUser = User(fullName, name, password, userProfile, "member")
+            val existingUsers: MutableList<User> = ArrayList(prefData.getSAVEDUSERS())
             var newUserExists = false
             for ((fullName1) in existingUsers) {
-                if (fullName1 == newUser.fullName.trim { it <= ' ' }) {
+                if (fullName1 == newUser.fullName?.trim { it <= ' ' }) {
                     newUserExists = true
                     break
                 }
@@ -840,7 +841,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     if (selectedTeamId == null) {
                         saveConfigAndContinue(dialog)
                     } else {
-                        val url = serverUrlProtocol!!.text.toString() + serverUrl.text.toString()
+                        val url = "${serverUrlProtocol?.text}${serverUrl.text}"
                         if (isUrlValid(url)) {
                             prefData.setSELECTEDTEAMID(selectedTeamId)
                             (activity as LoginActivity).getTeamMembers()
@@ -938,17 +939,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 settings.edit().putString("serverProtocol", getString(R.string.http_protocol))
                     .apply()
             }
-            if (settings.getString(
-                    "serverProtocol",
-                    ""
-                ) == getString(R.string.https_protocol) && settings.getString("serverURL", "") != ""
+            if (settings.getString("serverProtocol", "") == getString(R.string.https_protocol)
+                && settings.getString("serverURL", "") != ""
                 && settings.getString("serverURL", "") != "https://planet.learning.ole.org"
             ) {
                 binding.radioHttps.isChecked = true
-                settings.edit().putString("serverProtocol", getString(R.string.https_protocol))
-                    .apply()
+                settings.edit().putString("serverProtocol", getString(R.string.https_protocol)).apply()
             }
-            serverUrl.setText(removeProtocol(settings.getString("serverURL", "")))
+            serverUrl.setText(settings.getString("serverURL", "")?.let { removeProtocol(it) })
             serverPassword.setText(settings.getString("serverPin", ""))
             serverUrl.isEnabled = true
             serverPassword.isEnabled = true
@@ -966,7 +964,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             if (teams.isNotEmpty() && show && binding.inputServerUrl.text.toString() != "") {
                 binding.team.visibility = View.VISIBLE
                 teamAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, teamList)
-                teamAdapter!!.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+                teamAdapter?.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
                 teamList.clear()
                 teamList.add("select team")
                 for (team in teams) {
@@ -987,16 +985,11 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     }
                 }
                 binding.team.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-                    override fun onItemSelected(
-                        parentView: AdapterView<*>?,
-                        selectedItemView: View,
-                        position: Int,
-                        id: Long
-                    ) {
+                    override fun onItemSelected(parentView: AdapterView<*>?, selectedItemView: View, position: Int, id: Long) {
                         if (position > 0) {
                             val selectedTeam = teams[position - 1]
                             if (selectedTeam != null) {
-                                selectedTeamId = selectedTeam._id!!
+                                selectedTeamId = selectedTeam._id
                             }
                         }
                     }
@@ -1039,7 +1032,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         if (checked) {
             onChangeServerUrl()
         } else {
-            serverUrl.setText(removeProtocol(settings.getString("serverURL", "")))
+            serverUrl.setText(settings.getString("serverURL", "")?.let { removeProtocol(it) })
             serverPassword.setText(settings.getString("serverPin", ""))
             protocol_checkin.check(
                 if (TextUtils.equals(settings.getString("serverProtocol", ""), "http://")) {
@@ -1068,9 +1061,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
     }
 
-    private fun removeProtocol(url: String?): String {
+    private fun removeProtocol(url: String): String {
         var url = url
-        url = url!!.replaceFirst(getString(R.string.https_protocol).toRegex(), "")
+        url = url.replaceFirst(getString(R.string.https_protocol).toRegex(), "")
         url = url.replaceFirst(getString(R.string.http_protocol).toRegex(), "")
         return url
     }
@@ -1101,21 +1094,23 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     override fun onSuccess(s: String?) {
         Utilities.log("Sync completed ")
-        if (progressDialog!!.isShowing && s!!.contains("Crash")) progressDialog!!.dismiss()
+        if (progressDialog?.isShowing == true && s?.contains("Crash") == true) {
+            progressDialog?.dismiss()
+        }
         if (::btnSignIn.isInitialized) {
-            showSnack(btnSignIn, s!!)
+            showSnack(btnSignIn, s)
         }
         settings.edit().putLong("lastUsageUploaded", Date().time).apply()
         if (::lblLastSyncDate.isInitialized) {
             lblLastSyncDate.text =
-                getString(R.string.last_sync) + Utilities.getRelativeTime(Date().time) + " >>"
+                "${getString(R.string.last_sync)}${Utilities.getRelativeTime(Date().time)} >>"
         }
     }
 
-    override fun onUpdateAvailable(info: MyPlanet, cancelable: Boolean) {
+    override fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean) {
         try {
             mRealm = Realm.getDefaultInstance()
-            val builder = getUpdateDialog(this, info, progressDialog!!)
+            val builder = getUpdateDialog(this, info, progressDialog)
             if (cancelable || getCustomDeviceName(this).endsWith("###")) {
                 builder.setNegativeButton(R.string.update_later) { _: DialogInterface?, _: Int ->
                     continueSyncProcess(forceSync = false, isSync = true)
@@ -1133,8 +1128,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     override fun onCheckingVersion() {
-        progressDialog!!.setMessage(getString(R.string.checking_version))
-        progressDialog!!.show()
+        progressDialog?.setMessage(getString(R.string.checking_version))
+        progressDialog?.show()
     }
 
     fun registerReceiver() {
@@ -1149,7 +1144,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         if (msg.startsWith("Config")) {
             settingDialog(this)
         }
-        progressDialog!!.dismiss()
+        progressDialog?.dismiss()
         if (!block) continueSyncProcess(forceSync = false, isSync = true) else {
             syncIconDrawable.stop()
             syncIconDrawable.selectDrawable(0)
@@ -1231,8 +1226,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     "serverProtocol",
                     "http://"
                 )
-            if (view!!.id == R.id.input_server_url) positiveAction.isEnabled = s.toString()
-                .trim { it <= ' ' }.isNotEmpty() && URLUtil.isValidUrl(protocol + s.toString())
+            if (view?.id == R.id.input_server_url) {
+                positiveAction.isEnabled = "$s".trim { it <= ' ' }.isNotEmpty() && URLUtil.isValidUrl(protocol + "$s")
+            }
         }
 
         override fun afterTextChanged(editable: Editable) {}

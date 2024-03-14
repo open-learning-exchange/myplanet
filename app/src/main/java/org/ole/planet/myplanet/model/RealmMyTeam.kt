@@ -305,7 +305,7 @@ open class RealmMyTeam : RealmObject() {
         }
 
         @JvmStatic
-        fun getUsers(teamId: String, mRealm: Realm, docType: String): MutableList<RealmUserModel> {
+        fun getUsers(teamId: String?, mRealm: Realm, docType: String): MutableList<RealmUserModel> {
             var query = mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId)
             if (docType.isNotEmpty()) {
                 query = query.equalTo("docType", docType)

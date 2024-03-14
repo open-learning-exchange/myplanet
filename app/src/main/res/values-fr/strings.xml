@@ -979,5 +979,7 @@
     <string name="recycler_chat_label">conversations</string>
     <string name="completed_course">cours terminé</string>
     <string name="menu">menu latéral</string>
+    <string name="view">afficher</string>
+    <string name="chat_history">historique des conversations</string>
 
 </resources>

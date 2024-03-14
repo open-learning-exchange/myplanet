@@ -110,7 +110,8 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
     private fun showActionButton(isMyTeam: Boolean, position: Int) {
         if (isMyTeam) {
             if (RealmMyTeam.isTeamLeader(filteredList[position].teamId, user.id!!, mRealm)) {
-                itemTeamListBinding.joinLeave.text = "Leave"
+                itemTeamListBinding.joinLeave.text = context.getString(R.string.leave)
+                itemTeamListBinding.joinLeave.contentDescription = context.getString(R.string.leave)
             } else {
                 itemTeamListBinding.joinLeave.visibility = View.GONE
                 return
@@ -118,8 +119,10 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
         } else if (filteredList[position].requested(user.id!!, mRealm)) {
             itemTeamListBinding.joinLeave.text = context.getString(R.string.requested)
             itemTeamListBinding.joinLeave.isEnabled = false
+            itemTeamListBinding.joinLeave.contentDescription = context.getString(R.string.requested)
         } else {
             itemTeamListBinding.joinLeave.text = context.getString(R.string.request_to_join)
+            itemTeamListBinding.joinLeave.contentDescription = context.getString(R.string.request_to_join)
         }
         itemTeamListBinding.joinLeave.visibility = View.VISIBLE
     }

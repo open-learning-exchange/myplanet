@@ -174,7 +174,7 @@ open class RealmUserModel : RealmObject() {
 
     companion object {
         @JvmStatic
-        fun createGuestUser(username: String, mRealm: Realm, settings: SharedPreferences): RealmUserModel? {
+        fun createGuestUser(username: String?, mRealm: Realm, settings: SharedPreferences): RealmUserModel? {
             val `object` = JsonObject()
             `object`.addProperty("_id", "guest_$username")
             `object`.addProperty("name", username)
