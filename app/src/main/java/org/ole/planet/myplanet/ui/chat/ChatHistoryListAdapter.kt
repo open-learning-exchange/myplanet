@@ -16,7 +16,7 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
     private var filteredChatHistory: List<RealmChatHistory> = chatHistory
 
     interface ChatHistoryItemClickListener {
-        fun onChatHistoryItemClicked(conversations: RealmList<Conversation>, _id: String, _rev: String)
+        fun onChatHistoryItemClicked(conversations: RealmList<Conversation>?, _id: String, _rev: String?)
     }
 
     fun setChatHistoryItemClickListener(listener: ChatHistoryItemClickListener) {
@@ -25,10 +25,10 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
 
     fun filter(query: String) {
         filteredChatHistory = chatHistory.filter { chat ->
-            if (chat.conversations != null && chat.conversations!!.isNotEmpty()) {
+            if (chat.conversations != null && chat.conversations?.isNotEmpty() == true) {
                 chat.conversations!![0]?.query?.contains(query, ignoreCase = true) == true
             } else {
-                chat.title!!.contains(query, ignoreCase = true)
+                chat.title?.contains(query, ignoreCase = true) ==true
             }
         }
         notifyDataSetChanged()
@@ -45,7 +45,7 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val viewHolderChat = holder as ViewHolderChat
-        if (filteredChatHistory[position].conversations != null && filteredChatHistory[position].conversations!!.isNotEmpty()) {
+        if (filteredChatHistory[position].conversations != null && filteredChatHistory[position].conversations?.isNotEmpty() == true) {
             viewHolderChat.rowChatHistoryBinding.chatTitle.text = filteredChatHistory[position].conversations?.get(0)!!.query
         } else {
             viewHolderChat.rowChatHistoryBinding.chatTitle.text = filteredChatHistory[position].title
@@ -53,9 +53,9 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
 
         viewHolderChat.rowChatHistoryBinding.root.setOnClickListener {
             chatHistoryItemClickListener?.onChatHistoryItemClicked(
-                filteredChatHistory[position].conversations!!,
-                filteredChatHistory[position]._id.toString(),
-                filteredChatHistory[position]._rev!!
+                filteredChatHistory[position].conversations,
+                "${filteredChatHistory[position]._id}",
+                filteredChatHistory[position]._rev
             )
         }
     }
