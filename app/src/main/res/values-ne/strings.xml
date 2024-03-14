@@ -979,5 +979,7 @@
     <string name="recycler_chat_label">चर्चाहरू</string>
     <string name="completed_course">समाप्त पाठ्यक्रम</string>
     <string name="menu">साइड मेนู</string>
+    <string name="view">हेर्नु</string>
+    <string name="chat_history">च्याट इतिहास सूची</string>
 
 </resources>
