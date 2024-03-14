@@ -64,9 +64,9 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         return true
     }
 
-    fun openCallFragment(newfragment: Fragment?, tag: String?) {
+    fun openCallFragment(newfragment: Fragment, tag: String?) {
         val fragmentTransaction = supportFragmentManager.beginTransaction()
-        fragmentTransaction.replace(R.id.fragment_container, newfragment!!, tag)
+        fragmentTransaction.replace(R.id.fragment_container, newfragment, tag)
         supportFragmentManager.addOnBackStackChangedListener(this)
         fragmentTransaction.addToBackStack("")
         fragmentTransaction.commit()
@@ -107,7 +107,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         val mWifi = connManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI)
         val intent = Intent(Settings.ACTION_WIFI_SETTINGS)
         startActivity(intent)
-        if (mWifi!!.isConnected) {
+        if (mWifi?.isConnected == true) {
             wifi.setWifiEnabled(false)
             if (resIcon != null) {
                 DrawableCompat.setTintMode(resIcon.mutate(), PorterDuff.Mode.SRC_ATOP)
@@ -131,7 +131,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         val id = settings.getInt("LastWifiID", -1)
         Utilities.log("LAST SSID $id")
         val wifiManager = applicationContext.getSystemService(WIFI_SERVICE) as WifiManager
-        var netId = -1
+        val netId: Int
         if (wifiManager == null) {
             Utilities.toast(this, getString(R.string.unable_to_connect_to_planet_wifi))
             return

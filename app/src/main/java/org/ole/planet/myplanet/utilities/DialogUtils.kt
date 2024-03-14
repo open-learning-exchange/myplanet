@@ -31,9 +31,9 @@ object DialogUtils {
     }
 
     @JvmStatic
-    fun showError(prgDialog: ProgressDialog, message: String) {
-        prgDialog.setTitle(message)
-        prgDialog.getButton(ProgressDialog.BUTTON_NEGATIVE)?.isEnabled = false
+    fun showError(prgDialog: ProgressDialog?, message: String?) {
+        prgDialog?.setTitle(message)
+        prgDialog?.getButton(ProgressDialog.BUTTON_NEGATIVE)?.isEnabled = false
     }
 
     @JvmStatic
@@ -61,8 +61,10 @@ object DialogUtils {
     }
 
     @JvmStatic
-    fun showSnack(v: View?, s: String) {
-        if (v != null) Snackbar.make(v, s, Snackbar.LENGTH_LONG).show()
+    fun showSnack(v: View?, s: String?) {
+        if (v != null) {
+            s?.let { Snackbar.make(v, it, Snackbar.LENGTH_LONG).show() }
+        }
     }
 
     @JvmStatic
@@ -107,15 +109,15 @@ object DialogUtils {
     }
 
     @JvmStatic
-    fun getUpdateDialog(context: Context, info: MyPlanet, progressDialog: ProgressDialog): AlertDialog.Builder {
+    fun getUpdateDialog(context: Context, info: MyPlanet?, progressDialog: ProgressDialog?): AlertDialog.Builder {
         return AlertDialog.Builder(context)
             .setTitle(R.string.new_version_of_my_planet_available)
             .setMessage(R.string.download_first_to_continue)
             .setNeutralButton(R.string.upgrade_local) { _, _ ->
-                startDownloadUpdate(context, Utilities.getApkUpdateUrl(info.localapkpath!!), progressDialog)
+                startDownloadUpdate(context, Utilities.getApkUpdateUrl(info?.localapkpath), progressDialog)
             }
             .setPositiveButton(R.string.upgrade) { _, _ ->
-                startDownloadUpdate(context, info.apkpath!!, progressDialog)
+                info?.apkpath?.let { startDownloadUpdate(context, it, progressDialog) }
             }
     }
 
