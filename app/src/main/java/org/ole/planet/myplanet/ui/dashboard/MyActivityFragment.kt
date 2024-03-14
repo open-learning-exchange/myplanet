@@ -36,7 +36,7 @@ class MyActivityFragment : Fragment() {
         val calendar = Calendar.getInstance()
 
         calendar.set(Calendar.YEAR, calendar.get(Calendar.YEAR) - 1)
-        val resourceActivity = realm.where(RealmOfflineActivity::class.java).equalTo("userId", userModel!!.id)
+        val resourceActivity = realm.where(RealmOfflineActivity::class.java).equalTo("userId", userModel?.id)
             .between("loginTime", calendar.timeInMillis, Calendar.getInstance().timeInMillis)
             .findAll()
 
@@ -56,7 +56,8 @@ class MyActivityFragment : Fragment() {
         var i = 0
         for (entry in countMap.keys) {
             val key = format.parse(entry)
-            val en = key?.month?.let { BarEntry(it.toFloat(), countMap[entry]!!.toFloat()) }
+            val en = key?.month?.let { countMap[entry]?.toFloat()
+                ?.let { it1 -> BarEntry(it.toFloat(), it1) } }
             if (en != null) {
                 entries.add(en)
             }

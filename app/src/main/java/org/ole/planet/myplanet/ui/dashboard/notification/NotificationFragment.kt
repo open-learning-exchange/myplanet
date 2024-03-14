@@ -53,9 +53,12 @@ class NotificationFragment : BottomSheetDialogFragment() {
         bottomSheetDialog.setOnShowListener { d ->
             val dialog = d as BottomSheetDialog
             val bottomSheet = dialog.findViewById<FrameLayout>(com.google.android.material.R.id.design_bottom_sheet)
-            BottomSheetBehavior.from(bottomSheet!!).state = BottomSheetBehavior.STATE_EXPANDED
-            BottomSheetBehavior.from(bottomSheet).skipCollapsed = true
-            BottomSheetBehavior.from(bottomSheet).setHideable(true)
+            bottomSheet?.let {
+                val behavior = BottomSheetBehavior.from(it)
+                behavior.state = BottomSheetBehavior.STATE_EXPANDED
+                behavior.skipCollapsed = true
+                behavior.isHideable = true
+            }
         }
         return bottomSheetDialog
     }
@@ -91,7 +94,7 @@ class NotificationFragment : BottomSheetDialogFragment() {
         notificationList.add(Notifications(R.drawable.baseline_storage_24, storageNotiText))
 
         if (TextUtils.isEmpty(model.key) || model.getRoleAsString().contains("health")) {
-            if (!model.id!!.startsWith("guest")) {
+            if (!model.id?.startsWith("guest")!!) {
                 notificationList.add(Notifications(R.drawable.ic_myhealth, getString(R.string.health_record_not_available_click_to_sync)))
             }
         }
