@@ -364,7 +364,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
     }
 
     override fun onBackPressed() {
-        if (result != null && result?.isDrawerOpen) {
+        if (result != null && result?.isDrawerOpen == true) {
             result?.closeDrawer()
         } else {
             if (supportFragmentManager.backStackEntryCount > 1) {
