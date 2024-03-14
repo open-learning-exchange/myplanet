@@ -87,7 +87,7 @@ class AchievementFragment : BaseContainerFragment() {
                                     openResource(lib)
                                 } else {
                                     val a = ArrayList<String>()
-                                    a.add(Utilities.getUrl(lib, settings))
+                                    a.add(Utilities.getUrl(lib))
                                     startDownload(a)
                                 }
                             }
@@ -150,7 +150,7 @@ class AchievementFragment : BaseContainerFragment() {
                             openResource(lib)
                         } else {
                             val a = ArrayList<String>()
-                            a.add(Utilities.getUrl(lib, settings))
+                            a.add(Utilities.getUrl(lib))
                             startDownload(a)
                         }
                     }

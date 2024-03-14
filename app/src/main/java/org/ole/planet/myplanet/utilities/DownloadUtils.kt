@@ -8,7 +8,7 @@ object DownloadUtils {
     fun downloadAllFiles(db_myLibrary: List<RealmMyLibrary?>, settings: SharedPreferences?): ArrayList<String> {
         val urls = ArrayList<String>()
         for (i in db_myLibrary.indices) {
-            urls.add(Utilities.getUrl(db_myLibrary[i], settings))
+            urls.add(Utilities.getUrl(db_myLibrary[i]))
         }
         return urls
     }
@@ -17,7 +17,7 @@ object DownloadUtils {
     fun downloadFiles(db_myLibrary: List<RealmMyLibrary?>, selectedItems: ArrayList<Int>, settings: SharedPreferences?): ArrayList<String> {
         val urls = ArrayList<String>()
         for (i in selectedItems.indices) {
-            urls.add(Utilities.getUrl(db_myLibrary[selectedItems[i]], settings))
+            urls.add(Utilities.getUrl(db_myLibrary[selectedItems[i]]))
         }
         return urls
     }

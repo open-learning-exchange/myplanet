@@ -220,15 +220,6 @@ open class RealmMyLibrary : RealmObject() {
         this._rev = _rev
     }
 
-    fun getPublisher(): String? {
-        return publisher
-    }
-
-    fun setPublisher(publisher: String?) {
-        var publisher = publisher
-        publisher = publisher
-    }
-
     override fun toString(): String {
         return title!!
     }
@@ -393,7 +384,7 @@ open class RealmMyLibrary : RealmObject() {
             resource.uploadDate = JsonUtils.getString("uploadDate", doc)
             resource.year = JsonUtils.getString("year", doc)
             resource.addedBy = JsonUtils.getString("addedBy", doc)
-            resource.setPublisher(JsonUtils.getString("publisher", doc))
+            resource.publisher = JsonUtils.getString("publisher", doc)
             resource.linkToLicense = JsonUtils.getString("linkToLicense", doc)
             resource.openWith = JsonUtils.getString("openWith", doc)
             resource.articleDate = JsonUtils.getString("articleDate", doc)

@@ -18,17 +18,17 @@ object KeyboardUtils {
         }
     }
 
-    @JvmStatic
-    fun showSoftKeyboard(activity: Activity) {
-        val inputMethodManager =
-            activity.getSystemService(Activity.INPUT_METHOD_SERVICE) as InputMethodManager
-        inputMethodManager.showSoftInputFromInputMethod(activity.currentFocus!!.windowToken, 0)
-    }
+//    @JvmStatic
+//    fun showSoftKeyboard(activity: Activity) {
+//        val inputMethodManager =
+//            activity.getSystemService(Activity.INPUT_METHOD_SERVICE) as InputMethodManager
+//        inputMethodManager.showSoftInputFromInputMethod(activity.currentFocus!!.windowToken, 0)
+//    }
 
     @JvmStatic
     fun setupUI(v: View, activity: Activity) {
         // Set up touch listener for non-text box views to hide keyboard.
-        val onTouchListener = View.OnTouchListener { v1: View?, event: MotionEvent? ->
+        val onTouchListener = View.OnTouchListener { _: View?, _: MotionEvent? ->
             hideSoftKeyboard(activity)
             false
         }
@@ -38,9 +38,8 @@ object KeyboardUtils {
 
         //If a layout container, iterate over children and seed recursion.
         if (v is ViewGroup) {
-            val vg = v
-            for (i in 0 until vg.childCount) {
-                val innerView = vg.getChildAt(i)
+            for (i in 0 until v.childCount) {
+                val innerView = v.getChildAt(i)
                 setupUI(innerView, activity)
             }
         }

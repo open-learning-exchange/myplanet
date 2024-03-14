@@ -19,7 +19,6 @@ import org.ole.planet.myplanet.model.MyPlanet.Companion.getMyPlanetActivities
 import org.ole.planet.myplanet.model.MyPlanet.Companion.getNormalMyPlanetActivities
 import org.ole.planet.myplanet.model.MyPlanet.Companion.getTabletUsages
 import org.ole.planet.myplanet.model.RealmAchievement
-import org.ole.planet.myplanet.model.RealmAchievement.Companion.serialize
 import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.model.RealmApkLog.Companion.serialize
 import org.ole.planet.myplanet.model.RealmCourseActivity
@@ -159,7 +158,7 @@ class UploadManager(context: Context) : FileUploadService() {
         uploadCourseProgress()
     }
 
-    fun createImage(user: RealmUserModel?, imgObject: JsonObject?): JsonObject {
+    private fun createImage(user: RealmUserModel?, imgObject: JsonObject?): JsonObject {
         val `object` = JsonObject()
         `object`.addProperty("title", getString("fileName", imgObject))
         `object`.addProperty("createdDate", Date().time)
@@ -179,7 +178,7 @@ class UploadManager(context: Context) : FileUploadService() {
 
     fun uploadAchievement() {
         mRealm = dbService.realmInstance
-        val apiInterface = client?.create(ApiInterface::class.java)
+//        val apiInterface = client?.create(ApiInterface::class.java)
         mRealm.executeTransactionAsync { realm: Realm ->
             val list: List<RealmAchievement> = realm.where(RealmAchievement::class.java).findAll()
             for (sub in list) {
@@ -187,10 +186,10 @@ class UploadManager(context: Context) : FileUploadService() {
                     if (sub.get_id()?.startsWith("guest") == true) {
                         continue
                     }
-                    val ob = apiInterface?.putDoc(Utilities.header, "application/json", Utilities.getUrl() + "/achievements/" + sub.get_id(), serialize(sub))?.execute()?.body()
-                    if (ob == null) {
-                        val re = apiInterface?.postDoc(Utilities.header, "application/json", Utilities.getUrl() + "/achievements", serialize(sub))?.execute()?.errorBody()
-                    }
+//                    val ob = apiInterface?.putDoc(Utilities.header, "application/json", Utilities.getUrl() + "/achievements/" + sub.get_id(), serialize(sub))?.execute()?.body()
+//                    if (ob == null) {
+//                        val re = apiInterface?.postDoc(Utilities.header, "application/json", Utilities.getUrl() + "/achievements", serialize(sub))?.execute()?.errorBody()
+//                    }
                 } catch (e: IOException) {
                     e.printStackTrace()
                 }
@@ -198,7 +197,7 @@ class UploadManager(context: Context) : FileUploadService() {
         }
     }
 
-    fun uploadCourseProgress() {
+    private fun uploadCourseProgress() {
         val apiInterface = client?.create(ApiInterface::class.java)
         mRealm = dbService.realmInstance
         mRealm.executeTransactionAsync { realm: Realm ->
@@ -411,7 +410,7 @@ class UploadManager(context: Context) : FileUploadService() {
         Utilities.log("Upload team activities")
     }
 
-    fun uploadRating(listener: SuccessListener?) {
+    fun uploadRating() {
         mRealm = dbService.realmInstance
         val apiInterface = client?.create(ApiInterface::class.java)
         mRealm.executeTransactionAsync { realm: Realm ->
@@ -442,7 +441,7 @@ class UploadManager(context: Context) : FileUploadService() {
     fun uploadNews() {
         mRealm = dbService.realmInstance
         val apiInterface = client?.create(ApiInterface::class.java)
-        val userModel = UserProfileDbHandler(context).userModel
+//        val userModel = UserProfileDbHandler(context).userModel
         mRealm.executeTransactionAsync { realm: Realm ->
             val activities = realm.where(RealmNews::class.java).findAll()
             for (act in activities) {

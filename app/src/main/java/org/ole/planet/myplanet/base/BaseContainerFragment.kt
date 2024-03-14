@@ -77,7 +77,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         lib: List<RealmMyLibrary?>, settings: SharedPreferences?, urls: ArrayList<String>
     ) {
         for (library in lib) {
-            val url = Utilities.getUrl(library, settings)
+            val url = Utilities.getUrl(library)
             if (!FileUtils.checkFileExist(url) && !TextUtils.isEmpty(url)) urls.add(url)
         }
         if (urls.isNotEmpty()) startDownload(urls) else Utilities.toast(
@@ -131,7 +131,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 openFileType(items,  "online")
             } else {
                 val arrayList = ArrayList<String>()
-                arrayList.add(Utilities.getUrl(items, settings))
+                arrayList.add(Utilities.getUrl(items))
                 startDownload(arrayList)
                 profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_DOWNLOAD)
             }
@@ -233,7 +233,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         val bundle = Bundle()
         bundle.putString("videoType", videoType)
         if (videoType == "online") {
-            bundle.putString("videoURL", "" + Utilities.getUrl(items, settings))
+            bundle.putString("videoURL", "" + Utilities.getUrl(items))
             Log.e("AUTH", "" + auth)
             bundle.putString("Auth", "" + auth)
         } else if (videoType == "offline") {

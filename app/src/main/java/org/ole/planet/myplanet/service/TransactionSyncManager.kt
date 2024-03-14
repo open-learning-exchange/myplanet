@@ -80,7 +80,7 @@ object TransactionSyncManager {
         val model = UserProfileDbHandler(MainApplication.context).userModel
         val userName = settings.getString("loginUserName", "")
         val password = settings.getString("loginUserPassword", "")
-        val table = "userdb-" + model?.planetCode?.let { Utilities.toHex(it) } + "-" + model?.name?.let { Utilities.toHex(it) }
+//        val table = "userdb-" + model?.planetCode?.let { Utilities.toHex(it) } + "-" + model?.name?.let { Utilities.toHex(it) }
         val header = "Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)
         val id = model?.id
         mRealm.executeTransactionAsync({ realm: Realm ->
