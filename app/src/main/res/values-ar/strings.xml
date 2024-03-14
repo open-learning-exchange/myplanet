@@ -974,5 +974,7 @@
     <string name="recycler_chat_label">محادثات</string>
     <string name="completed_course">دورة مكتملة</string>
     <string name="menu">القائمة الجانبية</string>
+    <string name="view">عرض</string>
+    <string name="chat_history">قائمة سجل الدردشة</string>
 
 </resources>

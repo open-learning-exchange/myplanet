@@ -340,7 +340,7 @@ class Service(private val context: Context) {
     }
 
     interface CheckVersionCallback {
-        fun onUpdateAvailable(info: MyPlanet, cancelable: Boolean)
+        fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean)
         fun onCheckingVersion()
         fun onError(msg: String, blockSync: Boolean)
     }

@@ -95,9 +95,9 @@ class AndroidDecrypter {
         }
 
         @JvmStatic
-        fun AndroidDecrypter(usr_ID: String, usr_rawPswd: String, db_PswdkeyValue: String, db_Salt: String): Boolean {
+        fun AndroidDecrypter(usr_ID: String?, usr_rawPswd: String?, db_PswdkeyValue: String?, db_Salt: String?): Boolean {
             try {
-                val p = PBKDF2Parameters("HmacSHA1", "utf-8", db_Salt.toByteArray(), 10)
+                val p = PBKDF2Parameters("HmacSHA1", "utf-8", db_Salt?.toByteArray(), 10)
                 val dk = PBKDF2Engine(p).deriveKey(usr_rawPswd, 20)
                 println("$usr_ID Value ${BinTools.bin2hex(dk).lowercase(Locale.ROOT)}")
                 return db_PswdkeyValue.equals(BinTools.bin2hex(dk).lowercase(Locale.ROOT), ignoreCase = true)

@@ -968,5 +968,7 @@
     <string name="recycler_chat_label">dhaqameed</string>
     <string name="completed_course">koorso la dhammaaday</string>
     <string name="menu">liiska dhinaca</string>
+    <string name="view">eeg</string>
+    <string name="chat_history">liiska taariikhda sheekadeeye</string>
 
 </resources>

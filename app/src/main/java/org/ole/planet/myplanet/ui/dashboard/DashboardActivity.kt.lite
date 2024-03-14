@@ -301,7 +301,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
         profileDbHandler.onDestory()
     }
 
-    override fun openCallFragment(f: Fragment?) {
+    override fun openCallFragment(f: Fragment) {
         openCallFragment(f, "")
     }
 

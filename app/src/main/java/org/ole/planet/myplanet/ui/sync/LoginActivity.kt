@@ -65,7 +65,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         }
         if (intent.hasExtra("versionInfo")) {
             onUpdateAvailable(
-                (intent.getSerializableExtra("versionInfo") as MyPlanet?)!!,
+                (intent.getSerializableExtra("versionInfo") as MyPlanet?),
                 intent.getBooleanExtra("cancelable", false)
             )
         } else {
@@ -98,8 +98,8 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
 
     fun getTeamMembers() {
         selectedTeamId = prefData.getSELECTEDTEAMID().toString()
-        if (selectedTeamId!!.isNotEmpty()) {
-            users = RealmMyTeam.getUsers(selectedTeamId!!, mRealm, "")
+        if (selectedTeamId?.isNotEmpty() == true) {
+            users = RealmMyTeam.getUsers(selectedTeamId, mRealm, "")
             val userList = (users as MutableList<RealmUserModel>?)?.map {
                 User(it.getFullName(), it.name ?: "", "", it.userImage ?: "", "team")
             } ?: emptyList()
@@ -113,7 +113,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         mAdapter = if (mAdapter == null) {
             TeamListAdapter(prefData.getSAVEDUSERS().toMutableList(), this, this)
         } else {
-            mAdapter!!.clearList()
+            mAdapter?.clearList()
             TeamListAdapter(prefData.getSAVEDUSERS().toMutableList(), this, this)
         }
 
@@ -131,7 +131,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     }
 
     override fun onItemClick(user: User) {
-        if (user.password.isEmpty() && user.source != "guest") {
+        if (user.password?.isEmpty() == true && user.source != "guest") {
             Glide.with(this)
                 .load(user.image)
                 .placeholder(R.drawable.profile)
