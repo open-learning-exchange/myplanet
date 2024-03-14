@@ -87,6 +87,7 @@
                     android:background="@drawable/buttonyellow"
                     android:padding="@dimen/padding_normal"
                     android:text="@string/more_action"
+                    android:contentDescription="@string/more_action"
                     android:textColor="@color/md_white_1000"
                     app:srcCompat="@drawable/ic_filter" />
 

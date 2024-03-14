@@ -74,12 +74,24 @@ class AdapterLibrary(private val context: Context, private var libraryList: List
             setMarkdownText(holder.rowLibraryBinding.description, libraryList[position]!!.description!!)
             holder.rowLibraryBinding.timesRated.text = "${libraryList[position]!!.timesRated}${context.getString(R.string.total)}"
             holder.rowLibraryBinding.checkbox.isChecked = selectedItems.contains(libraryList[position])
+            holder.rowLibraryBinding.checkbox.contentDescription = "${context.getString(R.string.selected)} ${libraryList[position]!!.title}"
             holder.rowLibraryBinding.rating.text = if (TextUtils.isEmpty(libraryList[position]!!.averageRating)) "0.0"
             else String.format("%.1f", libraryList[position]!!.averageRating!!.toDouble())
             holder.rowLibraryBinding.tvDate.text = formatDate(libraryList[position]!!.createdDate!!.trim { it <= ' ' }.toLong(), "MMM dd, yyyy")
             displayTagCloud(holder.rowLibraryBinding.flexboxDrawable, position)
             holder.itemView.setOnClickListener { openLibrary(libraryList[position]) }
-            holder.rowLibraryBinding.ivDownloaded.setImageResource(if (libraryList[position]!!.isResourceOffline()) R.drawable.ic_eye else R.drawable.ic_download)
+            holder.rowLibraryBinding.ivDownloaded.setImageResource(
+                if (libraryList[position]!!.isResourceOffline()) {
+                    R.drawable.ic_eye
+                } else {
+                    R.drawable.ic_download
+                })
+            holder.rowLibraryBinding.ivDownloaded.contentDescription =
+                if (libraryList[position]!!.isResourceOffline()) {
+                    context.getString(R.string.view)
+                } else {
+                    context.getString(R.string.download)
+                }
             if (ratingMap.containsKey(libraryList[position]!!.resourceId)) {
                 val `object` = ratingMap[libraryList[position]!!.resourceId]
                 AdapterCourses.showRating(`object`, holder.rowLibraryBinding.rating, holder.rowLibraryBinding.timesRated, holder.rowLibraryBinding.ratingBar)
