@@ -20,18 +20,18 @@ import org.ole.planet.myplanet.ui.team.teamMember.MembersFragment
 import org.ole.planet.myplanet.ui.team.teamResource.TeamResourceFragment
 import org.ole.planet.myplanet.ui.team.teamTask.TeamTaskFragment
 
-class TeamPagerAdapter(fm: FragmentManager?, team: RealmMyTeam, private val isInMyTeam: Boolean) : FragmentStatePagerAdapter(fm!!) {
+class TeamPagerAdapter(fm: FragmentManager?, team: RealmMyTeam?, private val isInMyTeam: Boolean) : FragmentStatePagerAdapter(fm!!) {
     private val teamId: String?
     private val list: MutableList<String>
     private val isEnterprise: Boolean
 
     init {
-        teamId = team._id
-        isEnterprise = TextUtils.equals(team.type, "enterprise")
+        teamId = team?._id
+        isEnterprise = TextUtils.equals(team?.type, "enterprise")
         list = ArrayList()
         list.add(MainApplication.context.getString(if (isEnterprise) R.string.mission else R.string.plan))
         list.add(MainApplication.context.getString(if (isEnterprise) R.string.team else R.string.joined_members))
-        if (isInMyTeam || team.isPublic) {
+        if (isInMyTeam || team?.isPublic == true) {
             list.add(MainApplication.context.getString(R.string.chat))
             list.add(MainApplication.context.getString(R.string.tasks))
             list.add(MainApplication.context.getString(R.string.calendar))

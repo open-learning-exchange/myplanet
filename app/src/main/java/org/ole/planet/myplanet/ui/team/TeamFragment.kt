@@ -102,19 +102,20 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
 
                     else -> {
                         if (team == null) {
-                            createTeam(
-                                name,
+                            createTeam(name,
                                 if (alertCreateTeamBinding.spnTeamType.selectedItemPosition == 0) "local" else "sync",
                                 map,
                                 alertCreateTeamBinding.switchPublic.isChecked
                             )
                         } else {
-                            if (!team.realm.isInTransaction) team.realm.beginTransaction()
+                            if (!team.realm.isInTransaction) {
+                                team.realm.beginTransaction()
+                            }
                             team.name = name
-                            team.services = alertCreateTeamBinding.etServices.text.toString()
-                            team.rules = alertCreateTeamBinding.etRules.text.toString()
+                            team.services = "${alertCreateTeamBinding.etServices.text}"
+                            team.rules = "${alertCreateTeamBinding.etRules.text}"
                             team.limit = 12
-                            team.description = alertCreateTeamBinding.etDescription.text.toString()
+                            team.description = "${alertCreateTeamBinding.etDescription.text}"
                             team.createdBy = userId
                             team.updated = true
                             team.realm.commitTransaction()

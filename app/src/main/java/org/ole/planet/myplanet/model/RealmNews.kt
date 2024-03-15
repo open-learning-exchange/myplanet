@@ -199,16 +199,16 @@ open class RealmNews : RealmObject() {
         }
 
         @JvmStatic
-        fun createNews(map: HashMap<String?, String>, mRealm: Realm, user: RealmUserModel, imageUrls: RealmList<String>?): RealmNews {
+        fun createNews(map: HashMap<String?, String>, mRealm: Realm, user: RealmUserModel?, imageUrls: RealmList<String>?): RealmNews {
             if (!mRealm.isInTransaction) mRealm.beginTransaction()
             val news = mRealm.createObject(RealmNews::class.java, UUID.randomUUID().toString())
             news.message = map["message"]
             news.time = Date().time
-            news.createdOn = user.planetCode
+            news.createdOn = user?.planetCode
             news.avatar = ""
             news.docType = "message"
-            news.userName = user.name
-            news.parentCode = user.parentCode
+            news.userName = user?.name
+            news.parentCode = user?.parentCode
             news.messagePlanetCode = map["messagePlanetCode"]
             news.messageType = map["messageType"]
             news.viewIn = getViewInJson(map)
@@ -217,9 +217,13 @@ open class RealmNews : RealmObject() {
             } catch (e: Exception) {
                 e.printStackTrace()
             }
-            news.userId = user.id
-            news.replyTo = if (map.containsKey("replyTo")) map["replyTo"] else ""
-            news.user = Gson().toJson(user.serialize())
+            news.userId = user?.id
+            news.replyTo = if (map.containsKey("replyTo")) {
+                map["replyTo"]
+            } else {
+                ""
+            }
+            news.user = Gson().toJson(user?.serialize())
             news.imageUrls = imageUrls
             mRealm.commitTransaction()
             return news

@@ -79,10 +79,10 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
             feedbackFragment.show(fragmentManager, "")
             feedbackFragment.arguments = getBundle(list[position])
         }
-        itemTeamListBinding.editTeam.setOnClickListener { teamListener!!.onEditTeam(list[position]) }
+        itemTeamListBinding.editTeam.setOnClickListener { teamListener?.onEditTeam(list[position]) }
         itemTeamListBinding.joinLeave.setOnClickListener {
             if (isMyTeam) {
-                if (RealmMyTeam.isTeamLeader(list[position].teamId, user.id!!, mRealm)) {
+                if (RealmMyTeam.isTeamLeader(list[position].teamId, user.id, mRealm)) {
                     AlertDialog.Builder(context).setMessage(R.string.confirm_exit)
                         .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
                             list[position].leave(user, mRealm)
@@ -97,7 +97,7 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
 
     private fun getBundle(team: RealmMyTeam): Bundle {
         val bundle = Bundle()
-        if (team.type!!.isEmpty()) {
+        if (team.type?.isEmpty() == true) {
             bundle.putString("state", "teams")
         } else {
             bundle.putString("state", "${team.type}s")
@@ -109,14 +109,14 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
 
     private fun showActionButton(isMyTeam: Boolean, position: Int) {
         if (isMyTeam) {
-            if (RealmMyTeam.isTeamLeader(filteredList[position].teamId, user.id!!, mRealm)) {
+            if (RealmMyTeam.isTeamLeader(filteredList[position].teamId, user.id, mRealm)) {
                 itemTeamListBinding.joinLeave.text = context.getString(R.string.leave)
                 itemTeamListBinding.joinLeave.contentDescription = context.getString(R.string.leave)
             } else {
                 itemTeamListBinding.joinLeave.visibility = View.GONE
                 return
             }
-        } else if (filteredList[position].requested(user.id!!, mRealm)) {
+        } else if (filteredList[position].requested(user.id, mRealm)) {
             itemTeamListBinding.joinLeave.text = context.getString(R.string.requested)
             itemTeamListBinding.joinLeave.isEnabled = false
             itemTeamListBinding.joinLeave.contentDescription = context.getString(R.string.requested)

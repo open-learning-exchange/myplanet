@@ -202,7 +202,7 @@ open class RealmMyTeam : RealmObject() {
         }
 
         @JvmStatic
-        fun getResourceIds(teamId: String, realm: Realm): MutableList<String> {
+        fun getResourceIds(teamId: String?, realm: Realm): MutableList<String> {
             val teams = realm.where(RealmMyTeam::class.java).equalTo("teamId", teamId).findAll()
             val ids = mutableListOf<String>()
             for (team in teams) {
@@ -239,8 +239,8 @@ open class RealmMyTeam : RealmObject() {
         }
 
         @JvmStatic
-        fun getTeamCreator(teamId: String, realm: Realm): String {
-            val teams = realm.where(RealmMyTeam::class.java).equalTo("teamId", teamId).findFirst()
+        fun getTeamCreator(teamId: String?, realm: Realm?): String {
+            val teams = realm?.where(RealmMyTeam::class.java)?.equalTo("teamId", teamId)?.findFirst()
             return teams?.userId ?: ""
         }
 
@@ -294,7 +294,7 @@ open class RealmMyTeam : RealmObject() {
         }
 
         @JvmStatic
-        fun isTeamLeader(teamId: String?, userId: String, realm: Realm): Boolean {
+        fun isTeamLeader(teamId: String?, userId: String?, realm: Realm): Boolean {
             val team = realm.where(RealmMyTeam::class.java)
                 .equalTo("teamId", teamId)
                 .equalTo("docType", "membership")
@@ -322,7 +322,7 @@ open class RealmMyTeam : RealmObject() {
         }
 
         @JvmStatic
-        fun filterUsers(teamId: String, user: String, mRealm: Realm): MutableList<RealmUserModel> {
+        fun filterUsers(teamId: String?, user: String, mRealm: Realm): MutableList<RealmUserModel> {
             val myteam = mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId).findAll()
             val list = mutableListOf<RealmUserModel>()
             for (team in myteam) {
@@ -401,7 +401,7 @@ open class RealmMyTeam : RealmObject() {
         }
     }
 
-    fun requested(userId: String, mRealm: Realm): Boolean {
+    fun requested(userId: String?, mRealm: Realm): Boolean {
         val m = mRealm.where(RealmMyTeam::class.java)
             .equalTo("docType", "request")
             .equalTo("teamId", _id)

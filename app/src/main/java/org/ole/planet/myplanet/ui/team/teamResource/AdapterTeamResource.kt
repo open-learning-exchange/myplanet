@@ -19,7 +19,7 @@ class AdapterTeamResource(private val context: Context, private val list: List<R
     private val teamCreator: String
 
     init {
-        teamCreator = getTeamCreator(teamId!!, mRealm)
+        teamCreator = getTeamCreator(teamId, mRealm)
         if (context is OnHomeItemClickListener) {
             listener = context
         }

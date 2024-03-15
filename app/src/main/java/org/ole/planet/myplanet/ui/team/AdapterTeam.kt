@@ -44,12 +44,12 @@ class AdapterTeam(private val context: Context, private val list: List<RealmMyTe
 
     private fun showUserList(realmMyTeam: RealmMyTeam) {
         val layoutUserListBinding = LayoutUserListBinding.inflate(LayoutInflater.from(context))
-        users = RealmMyTeam.getUsers(realmMyTeam._id!!, mRealm, "")
+        users = RealmMyTeam.getUsers(realmMyTeam._id, mRealm, "")
         setListAdapter(layoutUserListBinding.listUser, users)
         layoutUserListBinding.etSearch.addTextChangedListener(object : android.text.TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-                users = RealmMyTeam.filterUsers(realmMyTeam._id!!, s.toString(), mRealm)
+                users = RealmMyTeam.filterUsers(realmMyTeam._id, "$s", mRealm)
                 setListAdapter(layoutUserListBinding.listUser, users)
             }
             override fun afterTextChanged(s: android.text.Editable) {}

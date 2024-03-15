@@ -131,7 +131,7 @@ class DiscussionListFragment : BaseTeamFragment() {
             .setView(binding.root)
             .setTitle(getString(R.string.add_message))
             .setPositiveButton(getString(R.string.save)) { _: DialogInterface?, _: Int ->
-                val msg = layout.editText?.text.toString().trim { it <= ' ' }
+                val msg = "${layout.editText?.text}".trim { it <= ' ' }
                 if (msg.isEmpty()) {
                     Utilities.toast(activity, getString(R.string.message_is_required))
                     return@setPositiveButton

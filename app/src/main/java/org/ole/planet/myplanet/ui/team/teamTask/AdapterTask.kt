@@ -16,7 +16,7 @@ import org.ole.planet.myplanet.utilities.DialogUtils.showCloseAlert
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 
-class AdapterTask(private val context: Context, private val realm: Realm, private val list: List<RealmTeamTask>) : RecyclerView.Adapter<ViewHolderTask>() {
+class AdapterTask(private val context: Context, private val realm: Realm, private val list: List<RealmTeamTask>?) : RecyclerView.Adapter<ViewHolderTask>() {
     private lateinit var rowTaskBinding: RowTaskBinding
     private var listener: OnCompletedListener? = null
     fun setListener(listener: OnCompletedListener?) {
@@ -28,27 +28,32 @@ class AdapterTask(private val context: Context, private val realm: Realm, privat
         return ViewHolderTask(rowTaskBinding) }
 
     override fun onBindViewHolder(holder: ViewHolderTask, position: Int) {
-        rowTaskBinding.checkbox.text = list[position].title
-        rowTaskBinding.checkbox.isChecked = list[position].completed
-        Utilities.log(list[position].deadline.toString() + "")
-        rowTaskBinding.deadline.text = context.getString(R.string.deadline_colon) +
-                formatDate(list[position].deadline) + if (list[position].completed)
-                    context.getString(R.string.completed_colon) + formatDate(list[position].completedTime) else ""
-        showAssignee(list[position])
-        rowTaskBinding.checkbox.setOnCheckedChangeListener { _: CompoundButton?, b: Boolean ->
-            if (listener != null) listener!!.onCheckChange(list[position], b)
-        }
-        rowTaskBinding.icMore.setOnClickListener {
-            if (listener != null) listener!!.onClickMore(list[position])
-        }
-        rowTaskBinding.editTask.setOnClickListener {
-            if (listener != null) listener!!.onEdit(list[position])
-        }
-        rowTaskBinding.deleteTask.setOnClickListener {
-            if (listener != null) listener!!.onDelete(list[position])
-        }
-        holder.itemView.setOnClickListener {
-            showCloseAlert(context, list[position].title!!, list[position].description!!)
+        list?.get(position)?.let {
+            rowTaskBinding.checkbox.text = it.title
+            rowTaskBinding.checkbox.isChecked = it.completed
+            Utilities.log("${it.deadline}")
+            rowTaskBinding.deadline.text = context.getString(R.string.deadline_colon) +
+                    formatDate(it.deadline) + if (it.completed) {
+                context.getString(R.string.completed_colon) + formatDate(it.completedTime)
+            } else {
+                ""
+            }
+            showAssignee(it)
+            rowTaskBinding.checkbox.setOnCheckedChangeListener { _: CompoundButton?, b: Boolean ->
+                listener?.onCheckChange(it, b)
+            }
+            rowTaskBinding.icMore.setOnClickListener {
+                listener?.onClickMore(list[position])
+            }
+            rowTaskBinding.editTask.setOnClickListener {
+                listener?.onEdit(list[position])
+            }
+            rowTaskBinding.deleteTask.setOnClickListener {
+                listener?.onDelete(list[position])
+            }
+            holder.itemView.setOnClickListener {
+                showCloseAlert(context, list[position].title, list[position].description!!)
+            }
         }
     }
 
@@ -56,14 +61,14 @@ class AdapterTask(private val context: Context, private val realm: Realm, privat
         if (!TextUtils.isEmpty(realmTeamTask.assignee)) {
             val model = realm.where(RealmUserModel::class.java).equalTo("id", realmTeamTask.assignee).findFirst()
             if (model != null) {
-                rowTaskBinding.assignee.text = context.getString(R.string.assigned_to_colon) + model.name
+                rowTaskBinding.assignee.text = "${context.getString(R.string.assigned_to_colon)}${model.name}"
             }
         } else {
             rowTaskBinding.assignee.setText(R.string.no_assignee) }
     }
 
     override fun getItemCount(): Int {
-        return list.size
+        return list?.size ?: 0
     }
 
     interface OnCompletedListener {

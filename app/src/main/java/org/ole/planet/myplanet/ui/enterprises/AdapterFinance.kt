@@ -28,20 +28,22 @@ class AdapterFinance(private val context: Context, private val list: RealmResult
     }
 
     override fun onBindViewHolder(holder: ViewHolderFinance, position: Int) {
-        rowFinanceBinding.date.text = formatDate(list[position]!!.date, "MMM dd, yyyy")
-        rowFinanceBinding.note.text = list[position]!!.description
-        Utilities.log("Type " + list[position]!!.date)
-        if (TextUtils.equals(list[position]!!.type!!.lowercase(Locale.getDefault()), "debit")) {
-            rowFinanceBinding.debit.text = list[position]!!.amount.toString() + ""
-            rowFinanceBinding.credit.text = " -"
-            rowFinanceBinding.credit.setTextColor(Color.BLACK)
-        } else {
-            rowFinanceBinding.credit.text = list[position]!!.amount.toString() + ""
-            rowFinanceBinding.debit.text = " -"
-            rowFinanceBinding.debit.setTextColor(Color.BLACK)
+        list[position]?.let {
+            rowFinanceBinding.date.text = formatDate(it.date, "MMM dd, yyyy")
+            rowFinanceBinding.note.text = it.description
+            Utilities.log("Type " + it.date)
+            if (TextUtils.equals(it.type?.lowercase(Locale.getDefault()), "debit")) {
+                rowFinanceBinding.debit.text = "${it.amount}"
+                rowFinanceBinding.credit.text = " -"
+                rowFinanceBinding.credit.setTextColor(Color.BLACK)
+            } else {
+                rowFinanceBinding.credit.text = "${it.amount}"
+                rowFinanceBinding.debit.text = " -"
+                rowFinanceBinding.debit.setTextColor(Color.BLACK)
+            }
+            rowFinanceBinding.balance.text = getBalance(position)
+            updateBackgroundColor(rowFinanceBinding.llayout, position)
         }
-        rowFinanceBinding.balance.text = getBalance(position) + ""
-        updateBackgroundColor(rowFinanceBinding.llayout, position)
     }
 
     private fun getBalance(position: Int): String {
@@ -49,8 +51,12 @@ class AdapterFinance(private val context: Context, private val list: RealmResult
         var balance = 0
         Utilities.log(position.toString() + "")
         for (team in list) {
-            if ("debit".equals(team.type!!.lowercase(Locale.getDefault()), ignoreCase = true)) balance -= team.amount
-            else balance += team.amount
+            if ("debit".equals(team.type?.lowercase(Locale.getDefault()), ignoreCase = true)) {
+                balance -= team.amount
+            }
+            else {
+                balance += team.amount
+            }
             if (i == position) break
             i++
         }
