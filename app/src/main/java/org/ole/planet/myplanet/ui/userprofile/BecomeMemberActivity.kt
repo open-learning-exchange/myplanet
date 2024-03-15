@@ -33,7 +33,7 @@ import java.util.regex.Pattern
 
 class BecomeMemberActivity : BaseActivity() {
     private lateinit var activityBecomeMemberBinding: ActivityBecomeMemberBinding
-    var dob: String = "";
+    var dob: String = ""
     lateinit var settings: SharedPreferences
     var guest: Boolean = false
     private fun showDatePickerDialog() {
@@ -54,8 +54,7 @@ class BecomeMemberActivity : BaseActivity() {
         setContentView(activityBecomeMemberBinding.root)
         supportActionBar?.setHomeButtonEnabled(true)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        var mRealm: Realm = DatabaseService(this).realmInstance;
-//        var user = UserProfileDbHandler(this).userModel;
+        val mRealm: Realm = DatabaseService(this).realmInstance
         val languages = resources.getStringArray(R.array.language)
         val adapter = ArrayAdapter(this, R.layout.become_a_member_spinner_layout, languages)
         activityBecomeMemberBinding.spnLang.adapter = adapter
@@ -63,8 +62,8 @@ class BecomeMemberActivity : BaseActivity() {
             showDatePickerDialog()
         }
 
-        val username = intent.getStringExtra("username");
-        guest = intent.getBooleanExtra("guest", false);
+        val username = intent.getStringExtra("username")
+        guest = intent.getBooleanExtra("guest", false)
 
         settings = getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE)
         textChangedListener(mRealm)
@@ -82,7 +81,7 @@ class BecomeMemberActivity : BaseActivity() {
 
                 val firstChar = if (input.isNotEmpty()) input[0] else '\u0000'
                 var hasInvalidCharacters = false
-                var hasSpecialCharacters: Boolean
+                val hasSpecialCharacters: Boolean
                 var hasDiacriticCharacters = false
 
                 val normalizedText = Normalizer.normalize(s, Normalizer.Form.NFD)
@@ -128,21 +127,25 @@ class BecomeMemberActivity : BaseActivity() {
         }
 
         activityBecomeMemberBinding.btnSubmit.setOnClickListener {
-            var username: String? = activityBecomeMemberBinding.etUsername.text.toString()
+            val userName: String = activityBecomeMemberBinding.etUsername.text.toString()
             var password: String? = activityBecomeMemberBinding.etPassword.text.toString()
-            var repassword: String? = activityBecomeMemberBinding.etRePassword.text.toString()
-            var fname: String? = activityBecomeMemberBinding.etFname.text.toString()
-            var lname: String? = activityBecomeMemberBinding.etLname.text.toString()
-            var mname: String? = activityBecomeMemberBinding.etMname.text.toString()
-            var email: String? = activityBecomeMemberBinding.etEmail.text.toString()
-            var language: String? = activityBecomeMemberBinding.spnLang.selectedItem.toString()
-            var phoneNumber: String? = activityBecomeMemberBinding.etPhone.text.toString()
-            var birthDate: String? = dob
-            var level: String? = activityBecomeMemberBinding.spnLevel.selectedItem.toString()
+            val repassword: String = activityBecomeMemberBinding.etRePassword.text.toString()
+            val fname: String = activityBecomeMemberBinding.etFname.text.toString()
+            val lname: String = activityBecomeMemberBinding.etLname.text.toString()
+            val mname: String = activityBecomeMemberBinding.etMname.text.toString()
+            val email: String = activityBecomeMemberBinding.etEmail.text.toString()
+            val language: String = activityBecomeMemberBinding.spnLang.selectedItem.toString()
+            val phoneNumber: String = activityBecomeMemberBinding.etPhone.text.toString()
+            val birthDate: String = dob
+            val level: String = activityBecomeMemberBinding.spnLevel.selectedItem.toString()
             var gender: String? = null
           
-            val firstChar = if (username!!.isNotEmpty()) username[0] else null
-            val hasInvalidCharacters = username.any { char ->
+            val firstChar = if (userName.isNotEmpty()) {
+                userName[0]
+            } else {
+                null
+            }
+            val hasInvalidCharacters = userName.any { char ->
                 char != '_' && char != '.' && char != '-' && !Character.isDigit(char) && !Character.isLetter(char)
             }
 
@@ -150,16 +153,16 @@ class BecomeMemberActivity : BaseActivity() {
 
             val regex = ".*[ßäöüéèêæÆœøØ¿àìòùÀÈÌÒÙáíóúýÁÉÍÓÚÝâîôûÂÊÎÔÛãñõÃÑÕëïÿÄËÏÖÜŸåÅŒçÇðÐ].*"
             val pattern = Pattern.compile(regex)
-            val matcher = pattern.matcher(username)
+            val matcher = pattern.matcher(userName)
 
             val hasSpecialCharacters = matcher.matches()
             val hasDiacriticCharacters = !normalizedText.codePoints().allMatch { codePoint: Int ->
                 Character.isLetterOrDigit(codePoint) || codePoint == '.'.code || codePoint == '-'.code || codePoint == '_'.code
             }
 
-            if (TextUtils.isEmpty(username)) {
+            if (TextUtils.isEmpty(userName)) {
                 activityBecomeMemberBinding.etUsername.error = getString(R.string.please_enter_a_username)
-            } else if (username.contains(" ")) {
+            } else if (userName.contains(" ")) {
                 activityBecomeMemberBinding.etUsername.error = getString(R.string.invalid_username)
             } else if (firstChar != null && !Character.isDigit(firstChar) && !Character.isLetter(firstChar)) {
                 activityBecomeMemberBinding.etUsername.error = getString(R.string.must_start_with_letter_or_number)
@@ -173,8 +176,6 @@ class BecomeMemberActivity : BaseActivity() {
                 activityBecomeMemberBinding.etEmail.error = getString(R.string.invalid_email)
             } else if (activityBecomeMemberBinding.rbGender.checkedRadioButtonId == -1) {
                 Utilities.toast(this, getString(R.string.please_select_gender))
-            } else if (level == null) {
-                Utilities.toast(this, getString(R.string.level_is_required));
             } else {
                 if (activityBecomeMemberBinding.male.isChecked) {
                     gender = "male"
@@ -189,45 +190,24 @@ class BecomeMemberActivity : BaseActivity() {
                 }
 
                 checkMandatoryFieldsAndAddMember(
-                    username,
-                    password!!,
-                    repassword,
-                    fname,
-                    lname,
-                    mname,
-                    email,
-                    language,
-                    level,
-                    phoneNumber,
-                    birthDate,
-                    gender,
-                    mRealm
+                    userName, password, repassword, fname, lname, mname, email, language, level,
+                    phoneNumber, birthDate, gender, mRealm
                 )
             }
         }
     }
 
     private fun checkMandatoryFieldsAndAddMember(
-        username: String,
-        password: String,
-        repassword: String?,
-        fname: String?,
-        lname: String?,
-        mname: String?,
-        email: String?,
-        language: String?,
-        level: String?,
-        phoneNumber: String?,
-        birthDate: String?,
-        gender: String?,
-        mRealm: Realm
+        username: String, password: String, repassword: String?, fname: String?, lname: String?,
+        mname: String?, email: String?, language: String?, level: String?, phoneNumber: String?,
+        birthDate: String?, gender: String?, mRealm: Realm
     ) {
         /**
          * Creates and adds a new member if the username and password
          * are not empty and password matches repassword.
          */
         if (username.isNotEmpty() && password.isNotEmpty() && repassword == password) {
-            var obj = JsonObject()
+            val obj = JsonObject()
             obj.addProperty("name", username)
             obj.addProperty("firstName", fname)
             obj.addProperty("lastName", lname)
@@ -250,7 +230,7 @@ class BecomeMemberActivity : BaseActivity() {
             obj.addProperty(
                 "customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context)
             )
-            var roles = JsonArray()
+            val roles = JsonArray()
             roles.add("learner")
             obj.add("roles", roles)
             activityBecomeMemberBinding.pbar.visibility = View.VISIBLE
@@ -258,10 +238,10 @@ class BecomeMemberActivity : BaseActivity() {
 //
 //            }
             Service(this).becomeMember(mRealm, obj, object : Service.CreateUserCallback {
-                override fun onSuccess(res: String) {
+                override fun onSuccess(message: String) {
                     runOnUiThread {
                         activityBecomeMemberBinding.pbar.visibility = View.GONE
-                        Utilities.toast(this@BecomeMemberActivity, res)
+                        Utilities.toast(this@BecomeMemberActivity, message)
                     }
                     finish()
                 }

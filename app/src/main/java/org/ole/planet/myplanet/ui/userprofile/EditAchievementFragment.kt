@@ -37,7 +37,6 @@ import org.ole.planet.myplanet.utilities.CheckboxListView
 import org.ole.planet.myplanet.utilities.DialogUtils.getAlertDialog
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormatedDate
 import org.ole.planet.myplanet.utilities.Utilities
-import java.lang.Boolean
 import java.util.Calendar
 import java.util.Locale
 import kotlin.Array
@@ -60,7 +59,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     private var achievementArray: JsonArray? = null
     private var resourceArray: JsonArray? = null
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentEditAchievementBinding = FragmentEditAchievementBinding.inflate(inflater, container, false)
         aRealm = DatabaseService(requireActivity()).realmInstance
         user = UserProfileDbHandler(requireContext()).userModel!!
@@ -267,7 +266,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             fragmentEditAchievementBinding.etAchievement.setText(achievement!!.achievementsHeader)
             fragmentEditAchievementBinding.etPurpose.setText(achievement!!.purpose)
             fragmentEditAchievementBinding.etGoals.setText(achievement!!.goals)
-            fragmentEditAchievementBinding.cbSendToNation.isChecked = Boolean.parseBoolean(achievement!!.sendToNation)
+            fragmentEditAchievementBinding.cbSendToNation.isChecked = achievement!!.sendToNation.toBoolean()
         }
         fragmentEditAchievementBinding.txtDob.text = if (TextUtils.isEmpty(user.dob)) getString(R.string.birth_date) else getFormatedDate(user.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
         resourceArray = JsonArray()

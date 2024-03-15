@@ -29,7 +29,7 @@ import java.io.OutputStream
 import java.util.UUID
 
 object FileUtils {
-    val SD_PATH = MainApplication.context.getExternalFilesDir(null).toString() + "/ole"
+    private val SD_PATH = MainApplication.context.getExternalFilesDir(null).toString() + "/ole"
     @JvmStatic
     @Throws(IOException::class)
     fun fullyReadFileToBytes(f: File): ByteArray {
@@ -201,7 +201,7 @@ object FileUtils {
     fun convertStreamToString(`is`: InputStream?): String {
         val reader = BufferedReader(InputStreamReader(`is`))
         val sb = StringBuilder()
-        var line: String? = null
+        var line: String?
         while (reader.readLine().also { line = it } != null) {
             sb.append(line).append("\n")
         }
@@ -346,7 +346,7 @@ object FileUtils {
             suffix = "GB"
             size /= 1024
         }
-        val resultBuffer = StringBuilder(java.lang.Long.toString(size))
+        val resultBuffer = StringBuilder(size.toString())
         var commaOffset = resultBuffer.length - 3
         while (commaOffset > 0) {
             resultBuffer.insert(commaOffset, ',')

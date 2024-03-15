@@ -132,10 +132,6 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         Utilities.log("LAST SSID $id")
         val wifiManager = applicationContext.getSystemService(WIFI_SERVICE) as WifiManager
         val netId: Int
-        if (wifiManager == null) {
-            Utilities.toast(this, getString(R.string.unable_to_connect_to_planet_wifi))
-            return
-        }
         for (tmp in wifiManager.configuredNetworks) {
             if (tmp.networkId > -1 && tmp.networkId == id) {
                 netId = tmp.networkId

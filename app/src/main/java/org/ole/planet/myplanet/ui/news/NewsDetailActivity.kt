@@ -23,7 +23,7 @@ import java.util.Date
 import java.util.UUID
 
 class NewsDetailActivity : BaseActivity() {
-    lateinit var activityNewsDetailBinding: ActivityNewsDetailBinding
+    private lateinit var activityNewsDetailBinding: ActivityNewsDetailBinding
     var news: RealmNews? = null
     lateinit var realm: Realm
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,7 +47,7 @@ class NewsDetailActivity : BaseActivity() {
             newsLog.androidId = NetworkUtils.getUniqueIdentifier()
             newsLog.type = "news"
             newsLog.time = Date().time
-            if (user != null) newsLog.userId = userId
+            newsLog.userId = userId
         }
         initViews()
     }

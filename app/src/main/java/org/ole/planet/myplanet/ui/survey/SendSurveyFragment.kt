@@ -47,7 +47,7 @@ class SendSurveyFragment : BaseDialogFragment() {
             .equalTo("parentId", if (!TextUtils.isEmpty(exam!!.courseId)) id + "@" + exam.courseId else id)
             .sort("lastUpdateTime", Sort.DESCENDING).equalTo("status", "pending").findFirst()
         sub = createSubmission(sub, mRealm)
-        sub!!.parentId = if (!TextUtils.isEmpty(exam.courseId)) id + "@" + exam.courseId else id
+        sub.parentId = if (!TextUtils.isEmpty(exam.courseId)) id + "@" + exam.courseId else id
         sub.userId = userId
         sub.type = "survey"
         sub.status = "pending"

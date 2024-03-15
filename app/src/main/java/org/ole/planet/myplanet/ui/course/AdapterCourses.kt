@@ -292,8 +292,6 @@ class AdapterCourses(private val context: Context, private var courseList: List<
                 if (`object`.has("ratingByUser"))
                     if (ratingBar != null) {
                         ratingBar.rating = `object`["ratingByUser"].asInt.toFloat()
-                    } else if (ratingBar != null) {
-                        ratingBar.rating = 0f
                     }
             }
         }
