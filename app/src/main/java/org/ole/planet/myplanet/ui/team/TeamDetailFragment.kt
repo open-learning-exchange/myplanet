@@ -32,7 +32,7 @@ class TeamDetailFragment : Fragment() {
         val user = UserProfileDbHandler(requireContext()).userModel!!
         mRealm = DatabaseService(requireActivity()).realmInstance
         team = mRealm.where(RealmMyTeam::class.java).equalTo("_id", requireArguments().getString("id")).findFirst()
-        fragmentTeamDetailBinding.viewPager.adapter = TeamPagerAdapter(childFragmentManager, team!!, isMyTeam)
+        fragmentTeamDetailBinding.viewPager.adapter = TeamPagerAdapter(childFragmentManager, team, isMyTeam)
         fragmentTeamDetailBinding.tabLayout.setupWithViewPager(fragmentTeamDetailBinding.viewPager)
         if (!isMyTeam) {
             fragmentTeamDetailBinding.llActionButtons.visibility = View.GONE
@@ -40,9 +40,9 @@ class TeamDetailFragment : Fragment() {
             fragmentTeamDetailBinding.btnLeave.setOnClickListener {
                 AlertDialog.Builder(requireContext()).setMessage(R.string.confirm_exit)
                     .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                        team!!.leave(user, mRealm)
+                        team?.leave(user, mRealm)
                         Utilities.toast(activity, getString(R.string.left_team))
-                        fragmentTeamDetailBinding.viewPager.adapter = TeamPagerAdapter(childFragmentManager, team!!, false)
+                        fragmentTeamDetailBinding.viewPager.adapter = TeamPagerAdapter(childFragmentManager, team, false)
                         fragmentTeamDetailBinding.llActionButtons.visibility = View.GONE
                     }.setNegativeButton(R.string.no, null).show()
             }
@@ -51,11 +51,11 @@ class TeamDetailFragment : Fragment() {
                 fragmentTeamDetailBinding.viewPager.currentItem = 6
                 MainApplication.showDownload = false
                 if (MainApplication.listener != null) {
-                    MainApplication.listener!!.onAddDocument()
+                    MainApplication.listener?.onAddDocument()
                 }
             }
         }
-        if (isTeamLeader(teamId, user.id!!, mRealm)) {
+        if (isTeamLeader(teamId, user.id, mRealm)) {
             fragmentTeamDetailBinding.btnLeave.visibility = View.GONE
         }
         return fragmentTeamDetailBinding.root
@@ -79,7 +79,7 @@ class TeamDetailFragment : Fragment() {
             log.user = user.name
             log.createdOn = user.planetCode
             log.type = "teamVisit"
-            log.teamType = team!!.teamType
+            log.teamType = team?.teamType
             log.parentCode = user.parentCode
             log.time = Date().time
         }

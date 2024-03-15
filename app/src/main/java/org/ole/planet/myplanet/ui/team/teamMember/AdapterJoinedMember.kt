@@ -43,7 +43,7 @@ class AdapterJoinedMember(private val context: Context, private val list: List<R
 
         if (teamLeaderId == list[position].id) {
             rowJoinedUserBinding.tvIsLeader.visibility = View.VISIBLE
-            rowJoinedUserBinding.tvIsLeader.text = "(${R.string.team_leader})"
+            rowJoinedUserBinding.tvIsLeader.text = context.getString(R.string.team_leader)
         } else {
             rowJoinedUserBinding.tvIsLeader.visibility = View.GONE
             val overflowMenuOptions = arrayOf(context.getString(R.string.remove), context.getString(R.string.make_leader))

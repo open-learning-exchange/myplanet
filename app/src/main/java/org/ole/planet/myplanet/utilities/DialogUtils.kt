@@ -68,8 +68,8 @@ object DialogUtils {
     }
 
     @JvmStatic
-    fun showAlert(context: Context, title: String?, message: String?) {
-        if (context is Activity && !(context as Activity).isFinishing) {
+    fun showAlert(context: Context?, title: String?, message: String?) {
+        if (context is Activity && !context.isFinishing) {
             AlertDialog.Builder(context)
                 .setTitle(title)
                 .setMessage(message)
@@ -89,7 +89,7 @@ object DialogUtils {
     }
 
     @JvmStatic
-    fun showCloseAlert(context: Context, title: String, message: String) {
+    fun showCloseAlert(context: Context, title: String?, message: String) {
         AlertDialog.Builder(context)
             .setTitle(title)
             .setMessage(message)

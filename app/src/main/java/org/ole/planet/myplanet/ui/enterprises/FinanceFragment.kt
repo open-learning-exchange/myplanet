@@ -110,7 +110,7 @@ class FinanceFragment : BaseTeamFragment() {
     private fun calculateTotal(list: List<RealmMyTeam>?) {
         var debit = 0
         var credit = 0
-        for (team in list!!) {
+        for (team in list ?: emptyList()) {
             if ("credit".equals(team.type?.lowercase(Locale.getDefault()), ignoreCase = true)) {
                 credit += team.amount
             } else {
@@ -129,8 +129,8 @@ class FinanceFragment : BaseTeamFragment() {
             .setPositiveButton("Submit") { _: DialogInterface?, _: Int ->
                 val type = addTransactionBinding.spnType.selectedItem.toString()
                 Utilities.log("$type type")
-                val note = addTransactionBinding.tlNote.editText!!.text.toString().trim { it <= ' ' }
-                val amount = addTransactionBinding.tlAmount.editText!!.text.toString().trim { it <= ' ' }
+                val note = "${addTransactionBinding.tlNote.editText?.text}".trim { it <= ' ' }
+                val amount = "${addTransactionBinding.tlAmount.editText?.text}".trim { it <= ' ' }
                 if (note.isEmpty()) {
                     Utilities.toast(activity, getString(R.string.note_is_required))
                 } else if (amount.isEmpty()) {
@@ -139,7 +139,7 @@ class FinanceFragment : BaseTeamFragment() {
                     Utilities.toast(activity, getString(R.string.date_is_required))
                 } else {
                     fRealm.executeTransactionAsync(Realm.Transaction { realm: Realm ->
-                        createTransactionObject(realm, type, note, amount, date!!)
+                        createTransactionObject(realm, type, note, amount, date)
                     }, Realm.Transaction.OnSuccess {
                         Utilities.toast(activity, getString(R.string.transaction_added))
                         adapterFinance?.notifyDataSetChanged()
@@ -149,11 +149,15 @@ class FinanceFragment : BaseTeamFragment() {
             }.setNegativeButton("Cancel", null).show()
     }
 
-    private fun createTransactionObject(realm: Realm, type: String?, note: String, amount: String, date: Calendar) {
+    private fun createTransactionObject(realm: Realm, type: String?, note: String, amount: String, date: Calendar?) {
         val team = realm.createObject(RealmMyTeam::class.java, UUID.randomUUID().toString())
         team.status = "active"
-        team.date = date.timeInMillis
-        if (type != null) team.teamType = type
+        if (date != null) {
+            team.date = date.timeInMillis
+        }
+        if (type != null) {
+            team.teamType = type
+        }
         team.type = type
         team.description = note
         team.teamId = teamId

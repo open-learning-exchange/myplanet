@@ -60,7 +60,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
             deadline?.set(Calendar.HOUR_OF_DAY, hourOfDay)
             deadline?.set(Calendar.MINUTE, minute)
             if (datePicker != null) {
-                datePicker!!.text = deadline?.let {
+                datePicker?.text = deadline?.let {
                     formatDate(it.timeInMillis, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
                 }
             }
@@ -116,8 +116,12 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
     private fun createOrUpdateTask(task: String, desc: String, t: RealmTeamTask?) {
         var t = t
         val isCreate = t == null
-        if (!mRealm.isInTransaction) mRealm.beginTransaction()
-        if (t == null) t = mRealm.createObject(RealmTeamTask::class.java, UUID.randomUUID().toString())
+        if (!mRealm.isInTransaction) {
+            mRealm.beginTransaction()
+        }
+        if (t == null) {
+            t = mRealm.createObject(RealmTeamTask::class.java, "${UUID.randomUUID()}")
+        }
         t?.title = task
         t?.description = desc
         t?.deadline = deadline?.timeInMillis!!
@@ -167,7 +171,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
 
     private fun setAdapter() {
         if(isAdded) {
-            adapterTask = AdapterTask(requireContext(), mRealm, list!!)
+            adapterTask = AdapterTask(requireContext(), mRealm, list)
             adapterTask.setListener(this)
             fragmentTeamTaskBinding.rvTask.adapter = adapterTask
         }
@@ -181,7 +185,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
         realmTeamTask?.completedTime = Date().time
         mRealm.commitTransaction()
         try {
-            fragmentTeamTaskBinding.rvTask.adapter!!.notifyDataSetChanged()
+            fragmentTeamTaskBinding.rvTask.adapter?.notifyDataSetChanged()
         } catch (err: Exception) {
             err.printStackTrace()
         }
@@ -199,7 +203,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
         Utilities.toast(activity, getString(R.string.task_deleted_successfully))
         mRealm.commitTransaction()
         setAdapter()
-        showNoData(fragmentTeamTaskBinding.tvNodata, fragmentTeamTaskBinding.rvTask.adapter!!.itemCount)
+        showNoData(fragmentTeamTaskBinding.tvNodata, fragmentTeamTaskBinding.rvTask.adapter?.itemCount)
     }
 
     override fun onClickMore(realmTeamTask: RealmTeamTask?) {

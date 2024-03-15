@@ -27,7 +27,7 @@ class AdapterTeamCourse(private val context: Context, private val list: List<Rea
             listener = context
         }
         this.settings = settings
-        teamCreator = getTeamCreator(teamId!!, mRealm!!)
+        teamCreator = getTeamCreator(teamId, mRealm)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderTeamCourse {
@@ -42,7 +42,7 @@ class AdapterTeamCourse(private val context: Context, private val list: List<Rea
             if (listener != null) {
                 val b = Bundle()
                 b.putString("id", list[position].courseId)
-                listener!!.openCallFragment(TakeCourseFragment.newInstance(b))
+                listener?.openCallFragment(TakeCourseFragment.newInstance(b))
             }
         }
         if (!settings.getString("userId", "--").equals(teamCreator, ignoreCase = true)) {

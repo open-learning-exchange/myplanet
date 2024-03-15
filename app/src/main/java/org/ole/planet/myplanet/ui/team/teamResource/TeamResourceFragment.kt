@@ -22,7 +22,7 @@ import java.util.UUID
 
 class TeamResourceFragment : BaseTeamFragment(), TeamPageListener {
     private lateinit var fragmentTeamResourceBinding: FragmentTeamResourceBinding
-    private var adapterLibrary: AdapterTeamResource? = null
+    private lateinit var adapterLibrary: AdapterTeamResource
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentTeamResourceBinding = FragmentTeamResourceBinding.inflate(inflater, container, false)
         return fragmentTeamResourceBinding.root
@@ -36,10 +36,10 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener {
 
     private fun showLibraryList() {
         val libraries: List<RealmMyLibrary> = mRealm.where(RealmMyLibrary::class.java).`in`("id", getResourceIds(teamId, mRealm).toTypedArray<String>()).findAll()
-        adapterLibrary = settings?.let { AdapterTeamResource(requireActivity(), libraries, mRealm, teamId, it) }
+        adapterLibrary = settings?.let { AdapterTeamResource(requireActivity(), libraries, mRealm, teamId, it) }!!
         fragmentTeamResourceBinding.rvResource.layoutManager = GridLayoutManager(activity, 3)
         fragmentTeamResourceBinding.rvResource.adapter = adapterLibrary
-        showNoData(fragmentTeamResourceBinding.tvNodata, adapterLibrary!!.itemCount)
+        showNoData(fragmentTeamResourceBinding.tvNodata, adapterLibrary.itemCount)
     }
 
     private fun showResourceListDialog() {
@@ -50,7 +50,9 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener {
         alertDialogBuilder.setView(myLibraryAlertdialogBinding.root)
             .setPositiveButton(R.string.add) { _: DialogInterface?, _: Int ->
                 val selected = myLibraryAlertdialogBinding.alertDialogListView.selectedItemsList
-                if (!mRealm.isInTransaction) mRealm.beginTransaction()
+                if (!mRealm.isInTransaction) {
+                    mRealm.beginTransaction()
+                }
                 for (se in selected) {
                     val team = mRealm.createObject(RealmMyTeam::class.java, UUID.randomUUID().toString())
                     team.teamId = teamId
