@@ -335,7 +335,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         progressDialog?.show()
     }
 
-    override fun onSyncFailed(s: String?) {
+    override fun onSyncFailed(msg: String?) {
         if (::syncIconDrawable.isInitialized) {
             syncIconDrawable = syncIcon.drawable as AnimationDrawable
             syncIconDrawable.stop()
@@ -343,7 +343,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             syncIcon.invalidateDrawable(syncIconDrawable)
         }
         runOnUiThread {
-            showAlert(this@SyncActivity, getString(R.string.sync_failed), s)
+            showAlert(this@SyncActivity, getString(R.string.sync_failed), msg)
             showWifiSettingDialog(this@SyncActivity)
         }
     }
@@ -745,7 +745,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         builder.setNegativeButton("cancel") { dialog: DialogInterface, _: Int -> dialog.dismiss() }
         builder.setPositiveButton("continue") { dialog: DialogInterface, _: Int ->
             dialog.dismiss()
-            val model = mRealm.copyFromRealm(createGuestUser(username, mRealm, settings))
+            val model = createGuestUser(username, mRealm, settings)?.let { mRealm.copyFromRealm(it) }
             if (model == null) {
                 Utilities.toast(this, getString(R.string.unable_to_login))
             } else {
@@ -988,9 +988,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     override fun onItemSelected(parentView: AdapterView<*>?, selectedItemView: View, position: Int, id: Long) {
                         if (position > 0) {
                             val selectedTeam = teams[position - 1]
-                            if (selectedTeam != null) {
-                                selectedTeamId = selectedTeam._id
-                            }
+                            selectedTeamId = selectedTeam._id
                         }
                     }
 
@@ -1092,13 +1090,13 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         })
     }
 
-    override fun onSuccess(s: String?) {
+    override fun onSuccess(success: String?) {
         Utilities.log("Sync completed ")
-        if (progressDialog?.isShowing == true && s?.contains("Crash") == true) {
+        if (progressDialog?.isShowing == true && success?.contains("Crash") == true) {
             progressDialog?.dismiss()
         }
         if (::btnSignIn.isInitialized) {
-            showSnack(btnSignIn, s)
+            showSnack(btnSignIn, success)
         }
         settings.edit().putLong("lastUsageUploaded", Date().time).apply()
         if (::lblLastSyncDate.isInitialized) {
@@ -1139,13 +1137,13 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         bManager.registerReceiver(broadcastReceiver, intentFilter)
     }
 
-    override fun onError(msg: String, block: Boolean) {
+    override fun onError(msg: String, blockSync: Boolean) {
         Utilities.toast(this, msg)
         if (msg.startsWith("Config")) {
             settingDialog(this)
         }
         progressDialog?.dismiss()
-        if (!block) continueSyncProcess(forceSync = false, isSync = true) else {
+        if (!blockSync) continueSyncProcess(forceSync = false, isSync = true) else {
             syncIconDrawable.stop()
             syncIconDrawable.selectDrawable(0)
         }

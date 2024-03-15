@@ -102,10 +102,10 @@ abstract class BaseResourceFragment : Fragment() {
                             .setTitle(R.string.download_suggestion)
                         alertDialogBuilder.setPositiveButton(R.string.download_selected) { _: DialogInterface?, _: Int ->
                             lv?.selectedItemsList?.let {
-                                downloadFiles(db_myLibrary, it, settings)
+                                downloadFiles(db_myLibrary, it)
                             }?.let { startDownload(it) }
                         }.setNeutralButton(R.string.download_all) { _: DialogInterface?, _: Int ->
-                            startDownload(downloadAllFiles(db_myLibrary, settings))
+                            startDownload(downloadAllFiles(db_myLibrary))
                         }.setNegativeButton(R.string.txt_cancel, null)
                         val alertDialog = alertDialogBuilder.create()
                         createListView(db_myLibrary, alertDialog)

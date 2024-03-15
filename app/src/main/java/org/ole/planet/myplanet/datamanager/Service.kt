@@ -94,11 +94,11 @@ class Service(private val context: Context) {
             .enqueue(object : Callback<MyPlanet?> {
                 override fun onResponse(call: Call<MyPlanet?>, response: Response<MyPlanet?>) {
                     preferences.edit()
-                        .putInt("LastWifiID", NetworkUtils.getCurrentNetworkId(context)).commit()
+                        .putInt("LastWifiID", NetworkUtils.getCurrentNetworkId(context)).apply()
                     if (response.body() != null) {
                         val p = response.body()
                         preferences.edit()
-                            .putString("versionDetail", Gson().toJson(response.body())).commit()
+                            .putString("versionDetail", Gson().toJson(response.body())).apply()
                         retrofitInterface.getApkVersion(Utilities.getApkVersionUrl(settings))
                             .enqueue(object : Callback<ResponseBody> {
                                 override fun onResponse(
