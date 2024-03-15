@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.sync
 
+import android.app.Dialog
 import android.app.ProgressDialog
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -60,15 +61,29 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
     }
 
     fun checkDownloadResult(download: Download?, progressDialog: ProgressDialog?) {
-        if (!download?.failed!!) {
-            progressDialog?.setMessage("${getString(R.string.downloading)}${download.progress}% ${getString(R.string.complete)}")
-            if (download.completeAll) {
-                progressDialog?.dismiss()
-                installApk(this, download.fileUrl)
+        progressDialog?.let { pd ->
+            if (download != null && !isFinishing) {
+                if (!download.failed) {
+                    pd.setMessage("${getString(R.string.downloading)}${download.progress}% ${getString(R.string.complete)}")
+                    if (download.completeAll) {
+                        safelyDismissDialog(pd)
+                        installApk(this, download.fileUrl)
+                    }
+                } else {
+                    safelyDismissDialog(pd)
+                    showError(progressDialog, download.message)
+                }
             }
-        } else {
-            progressDialog?.dismiss()
-            showError(progressDialog, download.message)
+        }
+    }
+
+    private fun safelyDismissDialog(dialog: Dialog) {
+        if (dialog.isShowing && !isFinishing) {
+            try {
+                dialog.dismiss()
+            } catch (e: IllegalArgumentException) {
+                e.printStackTrace()
+            }
         }
     }
 
@@ -140,9 +155,7 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         progressDialog?.setMessage(getString(R.string.uploading_data_to_server_please_wait))
         progressDialog?.show()
         Utilities.log("Upload : upload started")
-        UploadToShelfService.instance?.uploadUserData {
-            UploadToShelfService.instance?.uploadHealth()
-        }
+        UploadToShelfService.instance?.uploadUserData { UploadToShelfService.instance?.uploadHealth() }
         UploadManager.instance?.uploadUserActivities(this)
         UploadManager.instance?.uploadExamResult(this)
         UploadManager.instance?.uploadFeedback(this)

@@ -299,7 +299,7 @@ class ChatDetailFragment : Fragment() {
             mRealm = Realm.getDefaultInstance()
             addConversationToChatHistory(mRealm, _id, query, chatResponse)
         } finally {
-            if (mRealm != null && !mRealm.isClosed) {
+            if (::mRealm.isInitialized && !mRealm.isClosed) {
                 mRealm.close()
             }
         }

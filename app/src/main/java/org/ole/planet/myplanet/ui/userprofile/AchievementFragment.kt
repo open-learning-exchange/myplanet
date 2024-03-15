@@ -102,8 +102,7 @@ class AchievementFragment : BaseContainerFragment() {
                         fragmentAchievementBinding.rvOtherInfo.adapter = AdapterOtherInfo(MainApplication.context, achievement!!.getreferences()!!)
                     }
                     aRealm.addChangeListener {
-                        if (fragmentAchievementBinding.llAchievement != null)
-                            fragmentAchievementBinding.llAchievement.removeAllViews()
+                        fragmentAchievementBinding.llAchievement.removeAllViews()
                         createAchievementList()
                     }
                 } else {
