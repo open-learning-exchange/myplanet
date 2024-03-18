@@ -26,7 +26,7 @@ import java.io.File
 
 class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompleteListener, OnPageErrorListener, AudioRecordListener {
     private lateinit var activityPdfreaderBinding: ActivityPdfreaderBinding
-    private lateinit var fileName: String
+    private var fileName: String? = null
     private lateinit var audioRecorderService: AudioRecorderService
     private lateinit var library: RealmMyLibrary
     private lateinit var mRealm: Realm
@@ -57,8 +57,8 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
 
     private fun renderPdfFile() {
         val pdfOpenIntent = intent
-        fileName = pdfOpenIntent.getStringExtra("TOUCHED_FILE")!!
-        if (this::fileName.isInitialized && fileName.isNotEmpty()) {
+        fileName = pdfOpenIntent.getStringExtra("TOUCHED_FILE")
+        if (fileName != null && fileName?.isNotEmpty() == true) {
             activityPdfreaderBinding.pdfFileName.text = fileName
             activityPdfreaderBinding.pdfFileName.visibility = View.VISIBLE
         }
