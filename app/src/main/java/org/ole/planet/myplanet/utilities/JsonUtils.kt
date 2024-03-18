@@ -29,7 +29,6 @@ object JsonUtils {
         }
     }
 
-
     @JvmStatic
     fun getString(array: JsonArray, index: Int): String {
         return try {
