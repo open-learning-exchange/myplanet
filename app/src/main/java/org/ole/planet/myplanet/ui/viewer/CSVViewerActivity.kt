@@ -8,14 +8,13 @@ import com.opencsv.CSVReaderBuilder
 import org.ole.planet.myplanet.databinding.ActivityCsvviewerBinding
 import java.io.File
 import java.io.FileReader
-import java.util.Arrays
 
 class CSVViewerActivity : AppCompatActivity() {
-    private var activityCsvviewerBinding: ActivityCsvviewerBinding? = null
+    private lateinit var activityCsvviewerBinding: ActivityCsvviewerBinding
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         activityCsvviewerBinding = ActivityCsvviewerBinding.inflate(layoutInflater)
-        setContentView(activityCsvviewerBinding!!.root)
+        setContentView(activityCsvviewerBinding.root)
         renderCSVFile()
     }
 
@@ -23,8 +22,8 @@ class CSVViewerActivity : AppCompatActivity() {
         val csvFileOpenIntent = intent
         val fileName = csvFileOpenIntent.getStringExtra("TOUCHED_FILE")
         if (!fileName.isNullOrEmpty()) {
-            activityCsvviewerBinding!!.csvFileName.text = fileName
-            activityCsvviewerBinding!!.csvFileName.visibility = View.VISIBLE
+            activityCsvviewerBinding.csvFileName.text = fileName
+            activityCsvviewerBinding.csvFileName.visibility = View.VISIBLE
         }
         try {
             val csvFile: File = if (fileName!!.startsWith("/")) {
@@ -40,8 +39,8 @@ class CSVViewerActivity : AppCompatActivity() {
             ).build()
             val allRows = reader.readAll()
             for (row in allRows) {
-                activityCsvviewerBinding!!.csvFileContent.append(Arrays.toString(row))
-                activityCsvviewerBinding!!.csvFileContent.append("\n")
+                activityCsvviewerBinding.csvFileContent.append(row.contentToString())
+                activityCsvviewerBinding.csvFileContent.append("\n")
             }
         } catch (e: Exception) {
             e.printStackTrace()
