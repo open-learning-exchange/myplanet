@@ -180,15 +180,17 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
         }
         if (user?.id?.startsWith("guest") == true && profileDbHandler.offlineVisits >= 3) {
             val builder = AlertDialog.Builder(this)
-            builder.setTitle("Become a member")
-            builder.setMessage("Trial period ended! Kindly complete registration to continue")
+            builder.setTitle(getString(R.string.become_a_member))
+            builder.setMessage(getString(R.string.trial_period_ended))
             builder.setCancelable(false)
-            builder.setPositiveButton("Become a member", null)
-            builder.setNegativeButton("Logout", null)
+            builder.setPositiveButton(getString(R.string.become_a_member), null)
+            builder.setNegativeButton(getString(R.string.menu_logout), null)
             val dialog = builder.create()
             dialog.show()
             val becomeMember = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
             val logout = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
+            becomeMember.contentDescription = getString(R.string.confirm_membership)
+            logout.contentDescription = getString(R.string.menu_logout)
             becomeMember.setOnClickListener {
                 val guest = true
                 val intent = Intent(this, BecomeMemberActivity::class.java)

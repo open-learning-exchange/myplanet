@@ -23,7 +23,7 @@
     <item
         android:id="@+id/action_feedback"
         android:icon="@drawable/ic_feedback"
-        android:contentDescription="@string/menu_feedback"
+        android:contentDescription="@string/go_to_feedback_page"
         android:title="@string/menu_feedback"
         app:showAsAction="always" />
 

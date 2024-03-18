@@ -976,5 +976,11 @@
     <string name="menu">القائمة الجانبية</string>
     <string name="view">عرض</string>
     <string name="chat_history">قائمة سجل الدردشة</string>
+    <string name="password_toggle_description">إظهار/إخفاء كلمة المرور</string>
+    <string name="skill_level">اختر مستوى المهارة</string>
+    <string name="go_to_feedback_page">انتقل إلى صفحة الملاحظات</string>
+    <string name="select_date_of_birth">اختر تاريخ الميلاد</string>
+    <string name="confirm_membership">تأكيد الاشتراك</string>
+    <string name="trial_period_ended">انتهت الفترة التجريبية! يرجى استكمال التسجيل للمتابعة</string>
 
 </resources>

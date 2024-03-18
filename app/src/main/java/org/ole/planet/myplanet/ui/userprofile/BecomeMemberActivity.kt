@@ -44,6 +44,7 @@ class BecomeMemberActivity : BaseActivity() {
                 activityBecomeMemberBinding.txtDob.text = dob
             }, now[Calendar.YEAR], now[Calendar.MONTH], now[Calendar.DAY_OF_MONTH]
         )
+        dpd.setTitle(getString(R.string.select_date_of_birth))
         dpd.datePicker.maxDate = now.timeInMillis
         dpd.show()
     }

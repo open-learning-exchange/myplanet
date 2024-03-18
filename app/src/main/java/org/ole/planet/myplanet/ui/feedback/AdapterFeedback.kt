@@ -31,15 +31,22 @@ class AdapterFeedback(private val context: Context, private var list: List<Realm
         rowFeedbackBinding.tvType.text = list[position].type
         rowFeedbackBinding.tvPriority.text = list[position].priority
         rowFeedbackBinding.tvStatus.text = list[position].status
-        if ("yes".equals(list[position].priority, ignoreCase = true))
+        val contentDescription = "${list[position].title}, ${list[position].type}, " +
+                "${context.getString(R.string.status)}: ${list[position].status}, ${context.getString(R.string.priority)}: ${list[position].priority}, " +
+                "${context.getString(R.string.open_date)}: ${list[position].openTime?.toLong()?.let { getFormatedDate(it) }}"
+        rowFeedbackBinding.feedbackCardView.contentDescription = contentDescription
+
+        if ("yes".equals(list[position].priority, ignoreCase = true)) {
             rowFeedbackBinding.tvPriority.background = ResourcesCompat.getDrawable(context.resources, R.drawable.bg_primary, null)
-        else
+        } else {
             rowFeedbackBinding.tvPriority.background = ResourcesCompat.getDrawable(context.resources, R.drawable.bg_grey, null)
+        }
         rowFeedbackBinding.tvStatus.background = ResourcesCompat.getDrawable(context.resources,
-            if ("open".equals(list[position].status, ignoreCase = true))
+            if ("open".equals(list[position].status, ignoreCase = true)) {
                 R.drawable.bg_primary
-            else
-                R.drawable.bg_grey, null)
+            } else {
+                R.drawable.bg_grey
+            }, null)
         rowFeedbackBinding.tvOpenDate.text = getFormatedDate(list[position].openTime!!.toLong())
         rowFeedbackBinding.root.setOnClickListener {
             context.startActivity(Intent(context, FeedbackDetailActivity::class.java)
