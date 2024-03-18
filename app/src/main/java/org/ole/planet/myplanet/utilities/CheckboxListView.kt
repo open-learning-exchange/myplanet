@@ -40,6 +40,6 @@ class CheckboxListView : ListView, AdapterView.OnItemClickListener {
         } else {
             selectedItemsList.add(i)
         }
-        if (listener != null) listener!!.onCheckChange()
+        if (listener != null) listener?.onCheckChange()
     }
 }

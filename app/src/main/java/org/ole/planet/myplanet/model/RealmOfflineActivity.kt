@@ -44,7 +44,7 @@ open class RealmOfflineActivity : RealmObject() {
 
     companion object {
         @JvmStatic
-        fun serializeLoginActivities(realm_offlineActivities: RealmOfflineActivity, context: Context?): JsonObject {
+        fun serializeLoginActivities(realm_offlineActivities: RealmOfflineActivity, context: Context): JsonObject {
             val ob = JsonObject()
             ob.addProperty("user", realm_offlineActivities.userName)
             ob.addProperty("type", realm_offlineActivities.type)
