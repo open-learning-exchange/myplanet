@@ -970,11 +970,11 @@
     <string name="menu">liiska dhinaca</string>
     <string name="view">eeg</string>
     <string name="chat_history">liiska taariikhda sheekadeeye</string>
-    <string name="password_toggle_description">Toggle password visibility</string>
-    <string name="skill_level">select skill level</string>
-    <string name="go_to_feedback_page">go to feedback page</string>
-    <string name="select_date_of_birth">select date of birth</string>
-    <string name="confirm_membership">confirm to become a member</string>
-    <string name="trial_period_ended">Trial period ended! Kindly complete registration to continue</string>
+    <string name="password_toggle_description">Eka arrin erayga sirka</string>
+    <string name="skill_level">Khibrad dooro</string>
+    <string name="go_to_feedback_page">Bog aqoon bogagaadibka aad</string>
+    <string name="select_date_of_birth">Taariikhda dhalashada dooro</string>
+    <string name="confirm_membership">Xaqiiji xubinnimada</string>
+    <string name="trial_period_ended">Muddadii tijaabada ahayd way dhammaatay! Fadlan dhammaystir diiwaangelinta si aad u sii wadato</string>
 
 </resources>

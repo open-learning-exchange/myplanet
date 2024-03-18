@@ -981,11 +981,11 @@
     <string name="menu">menu latéral</string>
     <string name="view">afficher</string>
     <string name="chat_history">historique des conversations</string>
-    <string name="password_toggle_description">Toggle password visibility</string>
-    <string name="skill_level">select skill level</string>
-    <string name="go_to_feedback_page">go to feedback page</string>
-    <string name="select_date_of_birth">select date of birth</string>
-    <string name="confirm_membership">confirm to become a member</string>
-    <string name="trial_period_ended">Trial period ended! Kindly complete registration to continue</string>
+    <string name="password_toggle_description">Afficher/masquer le mot de passe</string>
+    <string name="skill_level">Sélectionner le niveau de compétence</string>
+    <string name="go_to_feedback_page">Aller à la page de commentaires</string>
+    <string name="select_date_of_birth">Sélectionner la date de naissance</string>
+    <string name="confirm_membership">Confirmer l\'inscription</string>
+    <string name="trial_period_ended">Période d\'essai terminée ! Veuillez terminer l\'inscription pour continuer</string>
 
 </resources>
