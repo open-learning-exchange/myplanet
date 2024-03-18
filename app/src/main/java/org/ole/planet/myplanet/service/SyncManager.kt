@@ -66,7 +66,7 @@ class SyncManager private constructor(private val context: Context) {
         try {
             if (::mRealm.isInitialized && !mRealm.isClosed) {
                 mRealm.close()
-                td?.stop()
+                td?.interrupt()
             }
         } catch (e: Exception) {
             e.printStackTrace()
