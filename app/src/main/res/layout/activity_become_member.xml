@@ -18,6 +18,7 @@
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:labelFor="@+id/et_username"
                 android:padding="@dimen/padding_normal">
 
                 <EditText
@@ -40,7 +41,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:padding="@dimen/padding_normal"
-                app:passwordToggleEnabled="true">
+                android:labelFor="@+id/et_password"
+                app:passwordToggleEnabled="true"
+                app:passwordToggleContentDescription="@string/password_toggle_description">
 
                 <EditText
                     android:id="@+id/et_password"
@@ -55,9 +58,11 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:padding="@dimen/padding_normal"
-                app:passwordToggleEnabled="true">
+                android:labelFor="@+id/et_re_password"
+                app:passwordToggleEnabled="true"
+                app:passwordToggleContentDescription="@string/password_toggle_description">
 
-                <EditText
+            <EditText
                     android:id="@+id/et_re_password"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -74,6 +79,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
+                    android:labelFor="@+id/et_fname"
                     android:padding="@dimen/padding_normal">
 
                     <EditText
@@ -88,6 +94,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
+                    android:labelFor="@+id/et_mname"
                     android:padding="@dimen/padding_normal">
 
                     <EditText
@@ -102,6 +109,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
+                    android:labelFor="@+id/et_lname"
                     android:padding="@dimen/padding_normal">
 
                     <EditText
@@ -123,6 +131,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
+                    android:labelFor="@+id/et_email"
                     android:padding="@dimen/padding_normal">
 
                     <EditText
@@ -155,7 +164,7 @@
                         android:layout_height="wrap_content"
                         android:background="@drawable/border"
                         android:entries="@array/language"
-                        android:contentDescription="@string/language"
+                        android:contentDescription="@string/select_language"
                         android:padding="@dimen/padding_normal" />
 
                 </LinearLayout>
@@ -169,6 +178,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
+                    android:labelFor="@+id/et_phone"
                     android:padding="@dimen/padding_normal">
 
                     <EditText
@@ -262,7 +272,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:entries="@array/level"
-                        android:contentDescription="@string/level"
+                        android:contentDescription="@string/skill_level"
                         android:padding="@dimen/padding_small" />
                 </RelativeLayout>
             </LinearLayout>

@@ -9,6 +9,7 @@
         android:id="@+id/tl_username"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:labelFor="@+id/et_user_name"
         android:hint="@string/enter_username">
 
         <com.google.android.material.textfield.TextInputEditText

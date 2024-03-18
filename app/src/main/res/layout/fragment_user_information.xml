@@ -98,6 +98,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:entries="@array/language"
+                    android:contentDescription="@string/select_language"
                     android:padding="4dp" />
 
             </LinearLayout>
@@ -195,6 +196,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:entries="@array/level"
+                android:contentDescription="@string/skill_level"
                 android:padding="@dimen/padding_small" />
 
         </LinearLayout>

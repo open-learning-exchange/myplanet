@@ -90,6 +90,7 @@
             android:id="@+id/tl_message"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:labelFor="@+id/et_message"
             android:paddingBottom="@dimen/padding_normal">
 
             <EditText
