@@ -14,18 +14,18 @@ import java.io.File
 import java.util.regex.Pattern
 
 class AudioPlayerActivity : AppCompatActivity(), JcPlayerManagerListener {
-    private var activityAudioPlayerBinding: ActivityAudioPlayerBinding? = null
+    private lateinit var activityAudioPlayerBinding: ActivityAudioPlayerBinding
     private lateinit var jcAudios: ArrayList<JcAudio>
     private var isFullPath = false
     private var filePath: String? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         activityAudioPlayerBinding = ActivityAudioPlayerBinding.inflate(layoutInflater)
-        setContentView(activityAudioPlayerBinding!!.root)
+        setContentView(activityAudioPlayerBinding.root)
         filePath = intent.getStringExtra("TOUCHED_FILE")
         jcAudios = ArrayList()
         isFullPath = intent.getBooleanExtra("isFullPath", false)
-        if (filePath!!.matches(".*[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}//.*".toRegex())) {
+        if (filePath?.matches(".*[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}//.*".toRegex()) == true) {
             playRecordedAudio()
         } else {
             playDownloadedAudio()
@@ -39,7 +39,9 @@ class AudioPlayerActivity : AppCompatActivity(), JcPlayerManagerListener {
             val basePath = getExternalFilesDir(null)
             File(basePath, "ole/$filePath").absolutePath
         }
-        jcAudios.add(JcAudio.createFromFilePath(fullPath!!))
+        fullPath?.let {
+            JcAudio.createFromFilePath(it)
+        }?.let { jcAudios.add(it) }
         initializeJCPlayer()
     }
 
@@ -48,16 +50,18 @@ class AudioPlayerActivity : AppCompatActivity(), JcPlayerManagerListener {
         val matcher = filePath?.let { uuidPattern.matcher(it) }
         if (matcher != null) {
             if (matcher.find()) {
-                filePath = filePath!!.substring(matcher.group().length)
+                filePath = filePath?.substring(matcher.group().length)
             }
         }
-        jcAudios.add(JcAudio.createFromFilePath(filePath!!))
+        filePath?.let {
+            JcAudio.createFromFilePath(it)
+        }?.let { jcAudios.add(it) }
         initializeJCPlayer()
     }
 
     private fun initializeJCPlayer() {
-        activityAudioPlayerBinding!!.jcplayer.initPlaylist(jcAudios, null)
-        val rootView = activityAudioPlayerBinding!!.jcplayer.rootView
+        activityAudioPlayerBinding.jcplayer.initPlaylist(jcAudios, null)
+        val rootView = activityAudioPlayerBinding.jcplayer.rootView
         rootView.findViewById<View>(R.id.btnNext).visibility = View.GONE
         rootView.findViewById<View>(R.id.btnPrev).visibility = View.GONE
         rootView.findViewById<View>(R.id.btnRepeatOne).visibility = View.GONE
@@ -72,20 +76,20 @@ class AudioPlayerActivity : AppCompatActivity(), JcPlayerManagerListener {
 
     override fun onPause() {
         super.onPause()
-        if (activityAudioPlayerBinding!!.jcplayer.isPlaying) {
-            activityAudioPlayerBinding!!.jcplayer.pause()
+        if (activityAudioPlayerBinding.jcplayer.isPlaying) {
+            activityAudioPlayerBinding.jcplayer.pause()
         }
     }
 
     override fun onStop() {
         super.onStop()
-        activityAudioPlayerBinding!!.jcplayer.kill()
+        activityAudioPlayerBinding.jcplayer.kill()
     }
 
     override fun onResume() {
         super.onResume()
         if (jcAudios.size > 0) {
-            activityAudioPlayerBinding!!.jcplayer.playAudio(jcAudios[0])
+            activityAudioPlayerBinding.jcplayer.playAudio(jcAudios[0])
         }
     }
 

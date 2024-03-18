@@ -11,12 +11,12 @@ import java.io.File
 import java.util.regex.Pattern
 
 class ImageViewerActivity : AppCompatActivity() {
-    private var activityImageViewerBinding: ActivityImageViewerBinding? = null
+    private lateinit var activityImageViewerBinding: ActivityImageViewerBinding
     var fileName: String? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         activityImageViewerBinding = ActivityImageViewerBinding.inflate(layoutInflater)
-        setContentView(activityImageViewerBinding!!.root)
+        setContentView(activityImageViewerBinding.root)
         renderImageFile()
     }
 
@@ -24,11 +24,11 @@ class ImageViewerActivity : AppCompatActivity() {
         val isFullPath = intent.getBooleanExtra("isFullPath", false)
         val imageOpenIntent = intent
         fileName = imageOpenIntent.getStringExtra("TOUCHED_FILE")
-        if (fileName != null && fileName!!.isNotEmpty()) {
-            activityImageViewerBinding!!.imageFileName.text = fileName
-            activityImageViewerBinding!!.imageFileName.visibility = View.VISIBLE
+        if (fileName != null && fileName?.isNotEmpty() == true) {
+            activityImageViewerBinding.imageFileName.text = fileName
+            activityImageViewerBinding.imageFileName.visibility = View.VISIBLE
         }
-        if (fileName!!.matches(".*[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}.*".toRegex())) {
+        if (fileName?.matches(".*[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}.*".toRegex()) == true) {
             displayCapturedImage()
         } else {
             try {
@@ -38,7 +38,7 @@ class ImageViewerActivity : AppCompatActivity() {
                     val basePath = getExternalFilesDir(null)
                     File(basePath, "ole/$fileName")
                 }
-                Glide.with(applicationContext).load(imageFile).into(activityImageViewerBinding!!.imageViewer)
+                Glide.with(applicationContext).load(imageFile).into(activityImageViewerBinding.imageViewer)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -50,7 +50,7 @@ class ImageViewerActivity : AppCompatActivity() {
         val matcher = fileName?.let { uuidPattern.matcher(it) }
         if (matcher != null) {
             if (matcher.find()) {
-                fileName = fileName!!.substring(matcher.group().length)
+                fileName = fileName?.substring(matcher.group().length)
             }
         }
         val requestOptions = RequestOptions()
@@ -59,6 +59,6 @@ class ImageViewerActivity : AppCompatActivity() {
         Glide.with(this)
             .load(fileName)
             .apply(requestOptions)
-            .into(activityImageViewerBinding!!.imageViewer)
+            .into(activityImageViewerBinding.imageViewer)
     }
 }
