@@ -44,7 +44,7 @@ open class RealmMyPersonal : RealmObject() {
 
     companion object {
         @JvmStatic
-        fun serialize(personal: RealmMyPersonal, context: Context?): JsonObject {
+        fun serialize(personal: RealmMyPersonal, context: Context): JsonObject {
             val `object` = JsonObject()
             `object`.addProperty("title", personal.title)
             `object`.addProperty("uploadDate", Date().time)

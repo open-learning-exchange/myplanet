@@ -7,7 +7,7 @@ import java.io.IOException
 import java.security.MessageDigest
 
 class Sha256Utils {
-    public fun getCheckSumFromFile(f: File): String {
+    fun getCheckSumFromFile(f: File): String {
         val fis = FileInputStream(f)
         val bos = ByteArrayOutputStream()
         val buf = ByteArray(1024)
@@ -17,9 +17,9 @@ class Sha256Utils {
                 bos.write(buf, 0, readNum)
             }
         } catch (ex: IOException) {
-            ex.printStackTrace();
+            ex.printStackTrace()
         }
-        return generateChecksum(bos);
+        return generateChecksum(bos)
     }
 
     private fun generateChecksum(data: ByteArrayOutputStream): String {
