@@ -13,7 +13,13 @@ object JsonUtils {
         return try {
             if (jsonObject!!.has(fieldName)) {
                 val el: JsonElement = jsonObject.get(fieldName)
-                if (el is JsonNull) "" else el.asString
+                if (el is JsonNull) {
+                    ""
+                } else if (el.isJsonPrimitive && el.asJsonPrimitive.isString) {
+                    el.asString
+                } else {
+                    ""
+                }
             } else {
                 ""
             }
@@ -22,6 +28,7 @@ object JsonUtils {
             ""
         }
     }
+
 
     @JvmStatic
     fun getString(array: JsonArray, index: Int): String {
