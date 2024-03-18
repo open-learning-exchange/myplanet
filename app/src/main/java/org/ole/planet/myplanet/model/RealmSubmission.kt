@@ -112,7 +112,7 @@ open class RealmSubmission : RealmObject() {
             Utilities.log("Insert sub $sub")
         }
 
-        fun serializeExamResult(mRealm: Realm, sub: RealmSubmission, context: Context?): JsonObject {
+        fun serializeExamResult(mRealm: Realm, sub: RealmSubmission, context: Context): JsonObject {
             val `object` = JsonObject()
             val user = mRealm.where(RealmUserModel::class.java).equalTo("id", sub.userId).findFirst()
             var examId = sub.parentId
@@ -170,7 +170,7 @@ open class RealmSubmission : RealmObject() {
 
         @JvmStatic
         @Throws(IOException::class)
-        fun continueResultUpload(sub: RealmSubmission, apiInterface: ApiInterface?, realm: Realm, context: Context?) {
+        fun continueResultUpload(sub: RealmSubmission, apiInterface: ApiInterface?, realm: Realm, context: Context) {
             var `object`: JsonObject? = null
             if (!TextUtils.isEmpty(sub.userId) && sub.userId!!.startsWith("guest")) return
             `object` = if (TextUtils.isEmpty(sub._id)) {

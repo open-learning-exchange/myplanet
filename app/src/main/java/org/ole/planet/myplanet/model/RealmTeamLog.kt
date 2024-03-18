@@ -50,7 +50,7 @@ open class RealmTeamLog : RealmObject() {
         }
 
         @JvmStatic
-        fun serializeTeamActivities(log: RealmTeamLog, context: Context?): JsonObject {
+        fun serializeTeamActivities(log: RealmTeamLog, context: Context): JsonObject {
             val ob = JsonObject()
             ob.addProperty("user", log.user)
             ob.addProperty("type", log.type)

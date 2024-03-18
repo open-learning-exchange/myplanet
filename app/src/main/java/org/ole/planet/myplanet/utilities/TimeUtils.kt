@@ -9,9 +9,9 @@ import java.util.TimeZone
 
 object TimeUtils {
     @JvmStatic
-    fun getFormatedDate(date: Long): String {
+    fun getFormatedDate(date: Long?): String {
         try {
-            val d = Date(date)
+            val d = date?.let { Date(it) }
             val f = SimpleDateFormat("EEEE, MMM dd, yyyy")
             f.timeZone = TimeZone.getTimeZone("UTC")
             return f.format(d)
@@ -44,10 +44,14 @@ object TimeUtils {
         try {
             if (date.contains("T")) {
                 val dt = dateformat1.parse(date.replace("T".toRegex(), " ").replace(".000Z".toRegex(), ""))
-                dob.time = dt!!
+                if (dt != null) {
+                    dob.time = dt
+                }
             } else {
                 val dt2 = dateformat2.parse(date)
-                dob.time = dt2!!
+                if (dt2 != null) {
+                    dob.time = dt2
+                }
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -64,8 +68,8 @@ object TimeUtils {
         return try {
             val sf = SimpleDateFormat(pattern, Locale.getDefault())
             sf.timeZone = TimeZone.getTimeZone("UTC")
-            val date = sf.parse(stringDate!!)
-            getFormatedDate(date!!.time)
+            val date = stringDate?.let { sf.parse(it) }
+            getFormatedDate(date?.time)
         } catch (e: Exception) {
             e.printStackTrace()
             "N/A"
@@ -102,10 +106,10 @@ object TimeUtils {
         return dateformat.format(date)
     }
 
-    fun dateToLong(date: String?): Long {
+    fun dateToLong(date: String?): Any? {
         try {
             val dateformat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-            return dateformat.parse(date!!)!!.time
+            return date?.let { dateformat.parse(it) }?.time
         } catch (e: Exception) {
             e.printStackTrace()
         }

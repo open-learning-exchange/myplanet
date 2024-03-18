@@ -18,22 +18,22 @@ import java.util.Locale
  */
 object LocaleHelper {
     private const val SELECTED_LANGUAGE = "app_language"
-    fun onAttach(context: Context): Context {
+    fun onAttach(context: Context): Context? {
         val lang = getPersistedData(context, Locale.getDefault().language)
-        return setLocale(context, lang)
+        return lang?.let { setLocale(context, it) }
     }
 
-    fun onAttach(context: Context, defaultLanguage: String): Context {
+    fun onAttach(context: Context, defaultLanguage: String): Context? {
         val lang = getPersistedData(context, defaultLanguage)
         Utilities.log("lang _ $lang")
-        return setLocale(context, lang)
+        return lang?.let { setLocale(context, it) }
     }
 
     fun getLanguage(context: Context): String? {
         return getPersistedData(context, Locale.getDefault().language)
     }
 
-    fun setLocale(context: Context, language: String?): Context {
+    fun setLocale(context: Context, language: String): Context {
         persist(context, language)
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             updateResources(context, language)
@@ -56,8 +56,8 @@ object LocaleHelper {
     }
 
     @TargetApi(Build.VERSION_CODES.N)
-    private fun updateResources(context: Context, language: String?): Context {
-        val locale = Locale(language!!)
+    private fun updateResources(context: Context, language: String): Context {
+        val locale = Locale(language)
         Locale.setDefault(locale)
         val configuration = context.resources.configuration
         configuration.setLocale(locale)
@@ -66,8 +66,8 @@ object LocaleHelper {
     }
 
     @Suppress("deprecation")
-    private fun updateResourcesLegacy(context: Context, language: String?): Context {
-        val locale = Locale(language!!)
+    private fun updateResourcesLegacy(context: Context, language: String): Context {
+        val locale = Locale(language)
         Locale.setDefault(locale)
         val resources = context.resources
         val configuration = resources.configuration
