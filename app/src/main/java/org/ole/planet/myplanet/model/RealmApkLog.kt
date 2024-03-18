@@ -70,7 +70,7 @@ open class RealmApkLog : RealmObject() {
         @Ignore
         val ERROR_TYPE_ANR = "AnR"
         @JvmStatic
-        fun serialize(log: RealmApkLog, context: Context?): JsonObject {
+        fun serialize(log: RealmApkLog, context: Context): JsonObject {
             val `object` = JsonObject()
             `object`.addProperty("type", log.type)
             `object`.addProperty("error", log.error)

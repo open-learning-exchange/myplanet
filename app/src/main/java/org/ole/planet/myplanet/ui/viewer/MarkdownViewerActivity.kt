@@ -13,12 +13,12 @@ import java.io.FileReader
 import java.io.IOException
 
 class MarkdownViewerActivity : AppCompatActivity() {
-    private var activityMarkdownViewerBinding: ActivityMarkdownViewerBinding? = null
+    private lateinit var activityMarkdownViewerBinding: ActivityMarkdownViewerBinding
     private var fileName: String? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         activityMarkdownViewerBinding = ActivityMarkdownViewerBinding.inflate(layoutInflater)
-        setContentView(activityMarkdownViewerBinding!!.root)
+        setContentView(activityMarkdownViewerBinding.root)
         renderMarkdownFile()
     }
 
@@ -26,15 +26,15 @@ class MarkdownViewerActivity : AppCompatActivity() {
         val markdownOpenIntent = intent
         fileName = markdownOpenIntent.getStringExtra("TOUCHED_FILE")
         if (!fileName.isNullOrEmpty()) {
-            activityMarkdownViewerBinding!!.markdownFileName.text = fileName
-            activityMarkdownViewerBinding!!.markdownFileName.visibility = View.VISIBLE
+            activityMarkdownViewerBinding.markdownFileName.text = fileName
+            activityMarkdownViewerBinding.markdownFileName.visibility = View.VISIBLE
         }
         try {
             val basePath = getExternalFilesDir(null)
             val markdownFile = File(basePath, "ole/$fileName")
             if (markdownFile.exists()) {
                 val markdownContent = readMarkdownFile(markdownFile)
-                setMarkdownText(activityMarkdownViewerBinding!!.markdownView, markdownContent)
+                setMarkdownText(activityMarkdownViewerBinding.markdownView, markdownContent)
             } else {
                 Toast.makeText(this, getString(R.string.unable_to_load) + fileName, Toast.LENGTH_LONG).show()
             }

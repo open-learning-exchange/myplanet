@@ -17,7 +17,7 @@ object BottomNavigationViewHelper {
             shiftingMode.isAccessible = false
             for (i in 0 until menuView.childCount) {
                 val item = menuView.getChildAt(i) as BottomNavigationItemView
-                item.setChecked(item.itemData!!.isChecked)
+                item.itemData?.isChecked?.let { item.setChecked(it) }
             }
         } catch (e: NoSuchFieldException) {
             e.printStackTrace()
