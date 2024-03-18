@@ -13,7 +13,13 @@ object JsonUtils {
         return try {
             if (jsonObject?.has(fieldName) == true) {
                 val el: JsonElement = jsonObject.get(fieldName)
-                if (el is JsonNull) "" else el.asString
+                if (el is JsonNull) {
+                    ""
+                } else if (el.isJsonPrimitive && el.asJsonPrimitive.isString) {
+                    el.asString
+                } else {
+                    ""
+                }
             } else {
                 ""
             }
