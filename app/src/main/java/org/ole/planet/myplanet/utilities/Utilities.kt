@@ -39,14 +39,14 @@ object Utilities {
     }
 
     fun getUrl(library: RealmMyLibrary?): String {
-        return getUrl(library?.resourceId!!, library.resourceLocalAddress!!)
+        return getUrl(library?.resourceId, library?.resourceLocalAddress)
     }
 
-    fun isValidEmail(target: CharSequence?): Boolean {
-        return !TextUtils.isEmpty(target) && Patterns.EMAIL_ADDRESS.matcher(target!!).matches()
+    fun isValidEmail(target: CharSequence): Boolean {
+        return !TextUtils.isEmpty(target) && Patterns.EMAIL_ADDRESS.matcher(target).matches()
     }
 
-    fun getUrl(id: String, file: String): String {
+    fun getUrl(id: String?, file: String?): String {
         return "${getUrl()}/resources/$id/$file"
     }
 
@@ -104,7 +104,7 @@ object Utilities {
     }
     fun <T> handleCheck(b: Boolean, i: Int, selectedItems: MutableList<T?>, list: List<T?>) {
         if (b) {
-            selectedItems.add(list[i]!!)
+            selectedItems.add(list[i])
         } else if (selectedItems.contains(list[i])) {
             selectedItems.remove(list[i])
         }
@@ -137,7 +137,7 @@ object Utilities {
             val scheme = settings.getString("url_Scheme", "")
             val hostIp = settings.getString("url_Host", "")
             if (settings.contains("url_Host")) {
-                url = if (settings.getString("url_Host", "")!!.endsWith(".org")) {
+                url = if (settings.getString("url_Host", "")?.endsWith(".org") == true) {
                     "$scheme://$hostIp/ml/"
                 } else {
                     "$scheme://$hostIp:5000"

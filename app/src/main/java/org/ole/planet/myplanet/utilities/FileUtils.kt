@@ -74,7 +74,7 @@ object FileUtils {
 
     @JvmStatic
     fun getSDPathFromUrl(url: String?): File {
-        return createFilePath(SD_PATH + "/" + getIdFromUrl(url!!), getFileNameFromUrl(url))
+        return createFilePath(SD_PATH + "/" + getIdFromUrl(url), getFileNameFromUrl(url))
     }
 
     @JvmStatic
@@ -97,13 +97,13 @@ object FileUtils {
     }
 
     @JvmStatic
-    fun getIdFromUrl(url: String): String {
+    fun getIdFromUrl(url: String?): String {
         try {
-            val sp = url.substring(url.indexOf("resources/")).split("/".toRegex())
-                .dropLastWhile { it.isEmpty() }
-                .toTypedArray()
-            Utilities.log("Id " + sp[1])
-            return sp[1]
+            val sp = url?.substring(url.indexOf("resources/"))?.split("/".toRegex())
+                ?.dropLastWhile { it.isEmpty() }
+                ?.toTypedArray()
+            Utilities.log("Id " + (sp?.get(1) ?: ""))
+            return sp?.get(1) ?: ""
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -113,8 +113,8 @@ object FileUtils {
     @JvmStatic
     fun getFileExtension(address: String?): String {
         if (TextUtils.isEmpty(address)) return ""
-        val filenameArray = address?.split("\\.".toRegex())?.dropLastWhile { it.isEmpty() }!!.toTypedArray()
-        return filenameArray[filenameArray.size - 1]
+        val filenameArray = address?.split("\\.".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()
+        return filenameArray?.get(filenameArray.size - 1) ?: ""
     }
 
     @JvmStatic
@@ -183,14 +183,14 @@ object FileUtils {
     }
 
     @JvmStatic
-    fun getRealPathFromURI(context: Context, contentUri: Uri?): String {
+    fun getRealPathFromURI(context: Context, contentUri: Uri?): String? {
         var cursor: Cursor? = null
         return try {
             val proj = arrayOf(MediaStore.Images.Media.DATA)
-            cursor = context.contentResolver.query(contentUri!!, proj, null, null, null)
-            val column_index = cursor!!.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
-            cursor.moveToFirst()
-            cursor.getString(column_index)
+            cursor = contentUri?.let { context.contentResolver.query(it, proj, null, null, null) }
+            val column_index = cursor?.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
+            cursor?.moveToFirst()
+            cursor?.getString(column_index ?: 0)
         } finally {
             cursor?.close()
         }
@@ -228,7 +228,7 @@ object FileUtils {
 
     @JvmStatic
     fun getImagePath(context: Context, uri: Uri?): String? {
-        var cursor = context.contentResolver.query(uri!!, null, null, null, null)
+        var cursor = uri?.let { context.contentResolver.query(it, null, null, null, null) }
         return if (cursor != null && cursor.moveToFirst()) {
             var document_id = cursor.getString(0)
             document_id = document_id.substring(document_id.lastIndexOf(":") + 1)

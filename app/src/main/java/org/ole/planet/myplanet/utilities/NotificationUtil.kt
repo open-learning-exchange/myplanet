@@ -19,14 +19,14 @@ object NotificationUtil {
     }
 
     @JvmStatic
-    fun cancel(context: Context?, id: Int) {
-        val nm = NotificationManagerCompat.from(context!!)
+    fun cancel(context: Context, id: Int) {
+        val nm = NotificationManagerCompat.from(context)
         nm.cancel(id)
     }
 
     @JvmStatic
-    fun cancellAll(context: Context?) {
-        val nm = NotificationManagerCompat.from(context!!)
+    fun cancellAll(context: Context) {
+        val nm = NotificationManagerCompat.from(context)
         nm.cancelAll()
     }
 

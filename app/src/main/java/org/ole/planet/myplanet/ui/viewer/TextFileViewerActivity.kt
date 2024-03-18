@@ -9,21 +9,21 @@ import java.io.File
 import java.io.FileReader
 
 class TextFileViewerActivity : AppCompatActivity() {
-    private var activityTextfileViewerBinding: ActivityTextfileViewerBinding? = null
+    private lateinit var activityTextfileViewerBinding: ActivityTextfileViewerBinding
     private var fileName: String? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         activityTextfileViewerBinding = ActivityTextfileViewerBinding.inflate(layoutInflater)
-        setContentView(activityTextfileViewerBinding!!.root)
+        setContentView(activityTextfileViewerBinding.root)
         renderTextFile()
     }
 
     private fun renderTextFile() {
         val textFileOpenIntent = intent
         fileName = textFileOpenIntent.getStringExtra("TOUCHED_FILE")
-        if (fileName != null && fileName!!.isNotEmpty()) {
-            activityTextfileViewerBinding!!.textFileName.text = fileName
-            activityTextfileViewerBinding!!.textFileName.visibility = View.VISIBLE
+        if (fileName != null && fileName?.isNotEmpty() == true) {
+            activityTextfileViewerBinding.textFileName.text = fileName
+            activityTextfileViewerBinding.textFileName.visibility = View.VISIBLE
         }
         renderTextFileThread()
     }
@@ -42,7 +42,7 @@ class TextFileViewerActivity : AppCompatActivity() {
                         text.append('\n')
                     }
                     reader.close()
-                    activityTextfileViewerBinding!!.textFileContent.text = text.toString()
+                    activityTextfileViewerBinding.textFileContent.text = text.toString()
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }

@@ -52,7 +52,7 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
         openFolderLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
             if (result.resultCode == Activity.RESULT_OK) {
                 val data = result.data
-                var path: String
+                var path: String?
                 val url: Uri? = data?.data
                 path = getRealPathFromURI(requireActivity(), url)
                 if (TextUtils.isEmpty(path)) {
@@ -104,7 +104,7 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
         count?.let { BaseRecyclerFragment.showNoData(v, it) }
     }
 
-    private fun getImagePath(uri: Uri?): String {
+    private fun getImagePath(uri: Uri?): String? {
         var cursor = uri?.let { requireContext().contentResolver.query(it, null, null, null, null) }
         cursor?.moveToFirst()
         var document_id = cursor?.getString(0)
@@ -112,8 +112,8 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
         cursor?.close()
         cursor = requireContext().contentResolver.query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, null, MediaStore.Images.Media._ID + " = ? ", arrayOf(document_id), null)
         cursor?.moveToFirst()
-        val path = cursor!!.getString(cursor.getColumnIndex(MediaStore.Images.Media.DATA))
-        cursor.close()
+        val path = cursor?.getString(cursor.getColumnIndex(MediaStore.Images.Media.DATA))
+        cursor?.close()
         return path
     }
 

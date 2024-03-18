@@ -112,8 +112,8 @@ object NetworkUtils {
     }
 
     @JvmStatic
-    fun getCustomDeviceName(context: Context?): String {
-        return context!!.getSharedPreferences(DashboardFragment.PREFS_NAME, Context.MODE_PRIVATE)
+    fun getCustomDeviceName(context: Context): String {
+        return context.getSharedPreferences(DashboardFragment.PREFS_NAME, Context.MODE_PRIVATE)
             .getString("customDeviceName", "") ?: ""
     }
 }

@@ -11,9 +11,15 @@ object JsonUtils {
     @JvmStatic
     fun getString(fieldName: String, jsonObject: JsonObject?): String {
         return try {
-            if (jsonObject!!.has(fieldName)) {
+            if (jsonObject?.has(fieldName) == true) {
                 val el: JsonElement = jsonObject.get(fieldName)
-                if (el is JsonNull) "" else el.asString
+                if (el is JsonNull) {
+                    ""
+                } else if (el.isJsonPrimitive && el.asJsonPrimitive.isString) {
+                    el.asString
+                } else {
+                    ""
+                }
             } else {
                 ""
             }
@@ -44,9 +50,9 @@ object JsonUtils {
     @JvmStatic
     fun getBoolean(fieldName: String, jsonObject: JsonObject?): Boolean {
         return try {
-            if (jsonObject!!.has(fieldName)) {
-                val el: JsonElement = jsonObject.get(fieldName)
-                el !is JsonNull && el.asBoolean
+            if (jsonObject?.has(fieldName) == true) {
+                val el: JsonElement? = jsonObject.get(fieldName)
+                el !is JsonNull && el?.asBoolean == true
             } else {
                 false
             }
@@ -84,7 +90,7 @@ object JsonUtils {
     @JvmStatic
     fun getInt(fieldName: String, jsonObject: JsonObject?): Int {
         return try {
-            if (jsonObject!!.has(fieldName)) {
+            if (jsonObject?.has(fieldName) == true) {
                 val el: JsonElement = jsonObject.get(fieldName)
                 if (el is JsonNull) 0 else el.asInt
             } else {
@@ -99,7 +105,7 @@ object JsonUtils {
     @JvmStatic
     fun getFloat(fieldName: String, jsonObject: JsonObject?): Float {
         return try {
-            if (jsonObject!!.has(fieldName)) {
+            if (jsonObject?.has(fieldName) == true) {
                 val el: JsonElement = jsonObject.get(fieldName)
                 if (el is JsonNull) 0f else el.asFloat
             } else {
@@ -114,7 +120,9 @@ object JsonUtils {
     @JvmStatic
     fun getJsonArray(fieldName: String, jsonObject: JsonObject?): JsonArray {
         return try {
-            val arry: JsonElement = getJsonElement(fieldName, jsonObject!!, JsonArray::class.java)
+            val arry: JsonElement? = jsonObject?.let {
+                getJsonElement(fieldName, it, JsonArray::class.java)
+            }
             if (arry is JsonNull || arry !is JsonArray) JsonArray() else arry.asJsonArray
         } catch (e: Exception) {
             e.printStackTrace()
@@ -125,7 +133,9 @@ object JsonUtils {
     @JvmStatic
     fun getJsonObject(fieldName: String, jsonObject: JsonObject?): JsonObject {
         return try {
-            val el: JsonElement = getJsonElement(fieldName, jsonObject!!, JsonObject::class.java)
+            val el: JsonElement? = jsonObject?.let {
+                getJsonElement(fieldName, it, JsonObject::class.java)
+            }
             if (el is JsonObject) el else JsonObject()
         } catch (e: Exception) {
             e.printStackTrace()
@@ -151,7 +161,7 @@ object JsonUtils {
     @JvmStatic
     fun getLong(fieldName: String, jsonObject: JsonObject?): Long {
         return try {
-            if (jsonObject!!.has(fieldName)) {
+            if (jsonObject?.has(fieldName) == true) {
                 val el: JsonElement = jsonObject.get(fieldName)
                 if (el is JsonNull) 0L else el.asLong
             } else {
