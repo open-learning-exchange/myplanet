@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.library
 
 import android.content.Context
 import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -75,9 +76,33 @@ class AdapterLibrary(private val context: Context, private var libraryList: List
             holder.rowLibraryBinding.timesRated.text = "${libraryList[position]!!.timesRated}${context.getString(R.string.total)}"
             holder.rowLibraryBinding.checkbox.isChecked = selectedItems.contains(libraryList[position])
             holder.rowLibraryBinding.checkbox.contentDescription = "${context.getString(R.string.selected)} ${libraryList[position]!!.title}"
-            holder.rowLibraryBinding.rating.text = if (TextUtils.isEmpty(libraryList[position]!!.averageRating)) "0.0"
-            else String.format("%.1f", libraryList[position]!!.averageRating!!.toDouble())
-            holder.rowLibraryBinding.tvDate.text = formatDate(libraryList[position]!!.createdDate!!.trim { it <= ' ' }.toLong(), "MMM dd, yyyy")
+            holder.rowLibraryBinding.rating.text =
+                if (TextUtils.isEmpty(libraryList[position]!!.averageRating)) {
+                    "0.0"
+                } else {
+                    String.format("%.1f", libraryList[position]?.averageRating!!.toDouble())
+                }
+            Log.d("AdapterLibrary", "onBindViewHolder: ${libraryList[position]!!.createdDate}")
+//            holder.rowLibraryBinding.tvDate.text = libraryList[position]?.createdDate?.toLong()?.let { formatDate(it, "MMM dd, yyyy") }
+
+//            try {
+//                // Trim the course.createdDate and check if it's not empty
+//                val trimmedDate = libraryList[position]!!.createdDate?.trim { it <= ' ' }
+//                if (trimmedDate?.isNotEmpty() == true) {
+//                    // Only attempt to format the date if trimmedDate is not empty
+//                    val formattedDate = formatDate(trimmedDate.toLong(), "MMM dd, yyyy")
+//                    holder.rowLibraryBinding.tvDate.text = formattedDate
+//                } else {
+//                    // Handle the case where trimmedDate is empty, perhaps set a default text
+//                    holder.rowLibraryBinding.tvDate.text = "Date not available"
+//                }
+//            } catch (e: Exception) {
+//                // It's generally a bad practice to throw new exceptions in catch blocks like this,
+//                // as it can make debugging harder. Consider logging the error or handling it appropriately.
+//                Log.e("AdapterCourses", "Error formatting date", e)
+//                // Optionally set some default text or handle the error state in the UI
+//                holder.rowLibraryBinding.tvDate.text = "Error formatting date"
+//            }
             displayTagCloud(holder.rowLibraryBinding.flexboxDrawable, position)
             holder.itemView.setOnClickListener { openLibrary(libraryList[position]) }
             holder.rowLibraryBinding.ivDownloaded.setImageResource(

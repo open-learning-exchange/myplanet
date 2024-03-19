@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.course
 import android.content.Context
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -115,8 +116,7 @@ class AdapterCourses(private val context: Context, private var courseList: List<
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
-        rowCourseBinding =
-            RowCourseBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        rowCourseBinding = RowCourseBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ViewHoldercourse(rowCourseBinding)
     }
 
@@ -137,10 +137,24 @@ class AdapterCourses(private val context: Context, private var courseList: List<
                 holder.rowCourseBinding.courseProgress.max = course.getnumberOfSteps()
                 displayTagCloud(holder.rowCourseBinding.flexboxDrawable, position)
                 try {
-                    holder.rowCourseBinding.tvDate.text = formatDate(course.createdDate!!.trim { it <= ' ' }.toLong(), "MMM dd, yyyy")
+                    // Trim the course.createdDate and check if it's not empty
+                    val trimmedDate = course.createdDate?.trim { it <= ' ' }
+                    if (trimmedDate?.isNotEmpty() == true) {
+                        // Only attempt to format the date if trimmedDate is not empty
+                        val formattedDate = formatDate(trimmedDate.toLong(), "MMM dd, yyyy")
+                        holder.rowCourseBinding.tvDate.text = formattedDate
+                    } else {
+                        // Handle the case where trimmedDate is empty, perhaps set a default text
+                        holder.rowCourseBinding.tvDate.text = "Date not available"
+                    }
                 } catch (e: Exception) {
-                    throw RuntimeException(e)
+                    // It's generally a bad practice to throw new exceptions in catch blocks like this,
+                    // as it can make debugging harder. Consider logging the error or handling it appropriately.
+                    Log.e("AdapterCourses", "Error formatting date", e)
+                    // Optionally set some default text or handle the error state in the UI
+                    holder.rowCourseBinding.tvDate.text = "Error formatting date"
                 }
+
                 holder.rowCourseBinding.ratingBar.setOnTouchListener { _: View?, event: MotionEvent ->
                     if (event.action == MotionEvent.ACTION_UP) homeItemClickListener!!.showRatingDialog("course", course.courseId, course.courseTitle, ratingChangeListener)
                     true
