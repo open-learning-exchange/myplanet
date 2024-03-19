@@ -137,22 +137,9 @@ class AdapterCourses(private val context: Context, private var courseList: List<
                 holder.rowCourseBinding.courseProgress.max = course.getnumberOfSteps()
                 displayTagCloud(holder.rowCourseBinding.flexboxDrawable, position)
                 try {
-                    // Trim the course.createdDate and check if it's not empty
-                    val trimmedDate = course.createdDate?.trim { it <= ' ' }
-                    if (trimmedDate?.isNotEmpty() == true) {
-                        // Only attempt to format the date if trimmedDate is not empty
-                        val formattedDate = formatDate(trimmedDate.toLong(), "MMM dd, yyyy")
-                        holder.rowCourseBinding.tvDate.text = formattedDate
-                    } else {
-                        // Handle the case where trimmedDate is empty, perhaps set a default text
-                        holder.rowCourseBinding.tvDate.text = "Date not available"
-                    }
+                    holder.rowCourseBinding.tvDate.text = formatDate(course.createdDate!!.trim { it <= ' ' }.toLong(), "MMM dd, yyyy")
                 } catch (e: Exception) {
-                    // It's generally a bad practice to throw new exceptions in catch blocks like this,
-                    // as it can make debugging harder. Consider logging the error or handling it appropriately.
-                    Log.e("AdapterCourses", "Error formatting date", e)
-                    // Optionally set some default text or handle the error state in the UI
-                    holder.rowCourseBinding.tvDate.text = "Error formatting date"
+                    throw RuntimeException(e)
                 }
 
                 holder.rowCourseBinding.ratingBar.setOnTouchListener { _: View?, event: MotionEvent ->
