@@ -1,16 +1,21 @@
 package org.ole.planet.myplanet.utilities
 
 import android.app.Activity
+import android.app.Dialog
 import android.app.ProgressDialog
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.provider.Settings
+import android.view.LayoutInflater
 import androidx.appcompat.app.AlertDialog
 import android.view.View
+import android.widget.ProgressBar
+import android.widget.TextView
 import com.google.android.material.snackbar.Snackbar
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.databinding.DialogProgressBinding
 import org.ole.planet.myplanet.datamanager.MyDownloadService
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.model.MyPlanet
@@ -140,5 +145,46 @@ object DialogUtils {
                 Utilities.openDownloadService(context, url)
             }
         }, path)
+    }
+
+    @JvmStatic
+    fun getCustomProgressDialog(context: Context): CustomProgressDialog {
+        return CustomProgressDialog(context)
+    }
+
+    class CustomProgressDialog(context: Context) {
+        private val dialog: Dialog = Dialog(context)
+        private val binding: DialogProgressBinding = DialogProgressBinding.inflate(LayoutInflater.from(context))
+        private val progressBar = binding.progressBar
+        private val progressText = binding.progressText
+
+        init {
+            dialog.setContentView(binding.root)
+            dialog.setCancelable(false)
+        }
+
+        fun show() {
+            dialog.show()
+        }
+
+        fun dismiss() {
+            dialog.dismiss()
+        }
+
+        fun setCancelable(state: Boolean) {
+            dialog.setCancelable(state)
+        }
+
+        fun setProgress(value: Int) {
+            progressBar.progress = value
+        }
+
+        fun setText(text: String) {
+            progressText.text = text
+        }
+
+        fun isShowing(): Boolean {
+            return dialog.isShowing
+        }
     }
 }

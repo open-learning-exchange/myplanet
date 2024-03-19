@@ -69,6 +69,7 @@ import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.autoSynFeature
+import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DialogUtils.getUpdateDialog
 import org.ole.planet.myplanet.utilities.DialogUtils.showAlert
 import org.ole.planet.myplanet.utilities.DialogUtils.showSnack
@@ -137,14 +138,17 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     lateinit var imgBtnSetting: ImageButton
     lateinit var service: Service
     private lateinit var fallbackLanguage: String
+    private lateinit var customProgressDialog: DialogUtils.CustomProgressDialog
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         editor = settings.edit()
         mRealm = DatabaseService(this).realmInstance
         requestAllPermissions()
-        progressDialog = ProgressDialog(this)
-        progressDialog?.setCancelable(false)
+//        progressDialog = ProgressDialog(this)
+        customProgressDialog = DialogUtils.getCustomProgressDialog(this)
+        customProgressDialog.setCancelable(false)
         prefData = SharedPrefManager(this)
         profileDbHandler = UserProfileDbHandler(this)
         defaultPref = PreferenceManager.getDefaultSharedPreferences(this)
@@ -187,14 +191,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     @Throws(Exception::class)
     fun isServerReachable(processedUrl: String?): Boolean {
-        progressDialog?.setMessage(getString(R.string.connecting_to_server))
-        progressDialog?.show()
+        customProgressDialog.setText(getString(R.string.connecting_to_server))
+        customProgressDialog.show()
         val apiInterface = client?.create(ApiInterface::class.java)
         Utilities.log("$processedUrl/_all_dbs")
         apiInterface?.isPlanetAvailable("$processedUrl/_all_dbs")?.enqueue(
             object : Callback<ResponseBody?> { override fun onResponse(call: Call<ResponseBody?>, response: Response<ResponseBody?>) {
                 try {
-                    progressDialog?.dismiss()
+                    customProgressDialog.dismiss()
                     val ss = response.body()?.string()
                     val myList = ss?.split(",".toRegex())?.dropLastWhile { it.isEmpty() }
                         ?.let { listOf(*it.toTypedArray()) }
@@ -206,7 +210,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     }
                 } catch (e: Exception) {
                     alertDialogOkay(getString(R.string.device_couldn_t_reach_server_check_and_try_again))
-                    progressDialog?.dismiss()
+                    customProgressDialog.dismiss()
                 }
             }
 
@@ -215,7 +219,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     if (!mRealm.isClosed) {
                         mRealm.close()
                     }
-                    progressDialog?.dismiss()
+                    customProgressDialog.dismiss()
                 }
             })
         return connectionResult
@@ -331,8 +335,11 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     override fun onSyncStarted() {
-        progressDialog?.setMessage(getString(R.string.syncing_data_please_wait))
-        progressDialog?.show()
+//        progressDialog?.setMessage(getString(R.string.syncing_data_please_wait))
+//        progressDialog?.show()
+        customProgressDialog.setText(getString(R.string.syncing_data_please_wait))
+        customProgressDialog.show()
+
     }
 
     override fun onSyncFailed(msg: String?) {
@@ -349,7 +356,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     override fun onSyncComplete() {
-        progressDialog?.dismiss()
+        customProgressDialog.dismiss()
+
         if (::syncIconDrawable.isInitialized) {
             runOnUiThread {
                 syncIconDrawable = syncIcon.drawable as AnimationDrawable
@@ -510,19 +518,21 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         editor.putString("loginUserPassword", password)
         val isLoggedIn = authenticateUser(settings, name, password, false)
         if (isLoggedIn) {
-            Toast.makeText(applicationContext, getString(R.string.thank_you), Toast.LENGTH_SHORT)
-                .show()
+            Toast.makeText(applicationContext, getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
             onLogin()
             saveUsers(inputName.text.toString(), inputPassword.text.toString(), "member")
         } else {
             instance?.login(name, password, object : SyncListener {
                 override fun onSyncStarted() {
-                    progressDialog?.setMessage(getString(R.string.please_wait))
-                    progressDialog?.show()
+//                    progressDialog?.setMessage(getString(R.string.please_wait))
+//                    progressDialog?.show()
+                    customProgressDialog.setText(getString(R.string.please_wait))
+                    customProgressDialog.show()
                 }
 
                 override fun onSyncComplete() {
-                    progressDialog?.dismiss()
+//                    progressDialog?.dismiss()
+                    customProgressDialog.dismiss()
                     Utilities.log("on complete")
                     val log = authenticateUser(settings, name, password, true)
                     if (log) {
@@ -538,7 +548,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
                 override fun onSyncFailed(msg: String?) {
                     Utilities.toast(MainApplication.context, msg)
-                    progressDialog?.dismiss()
+//                    progressDialog?.dismiss()
+                    customProgressDialog.dismiss()
                     syncIconDrawable.stop()
                     syncIconDrawable.selectDrawable(0)
                 }
@@ -1075,11 +1086,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
             override fun notAvailable() {
                 if (!isFinishing) {
-                    showAlert(
-                        MainApplication.context,
-                        "Error",
-                        getString(R.string.planet_server_not_reachable)
-                    )
+                    showAlert(MainApplication.context, "Error", getString(R.string.planet_server_not_reachable))
                 }
             }
         })
@@ -1087,8 +1094,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     override fun onSuccess(success: String?) {
         Utilities.log("Sync completed ")
-        if (progressDialog?.isShowing == true && success?.contains("Crash") == true) {
-            progressDialog?.dismiss()
+        if (customProgressDialog.isShowing() && success?.contains("Crash") == true) {
+            customProgressDialog.dismiss()
         }
         if (::btnSignIn.isInitialized) {
             showSnack(btnSignIn, success)
@@ -1121,8 +1128,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     override fun onCheckingVersion() {
-        progressDialog?.setMessage(getString(R.string.checking_version))
-        progressDialog?.show()
+        customProgressDialog.setText(getString(R.string.checking_version))
+        customProgressDialog.show()
     }
 
     fun registerReceiver() {
@@ -1137,7 +1144,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         if (msg.startsWith("Config")) {
             settingDialog(this)
         }
-        progressDialog?.dismiss()
+        customProgressDialog.dismiss()
         if (!blockSync) continueSyncProcess(forceSync = false, isSync = true) else {
             syncIconDrawable.stop()
             syncIconDrawable.selectDrawable(0)
