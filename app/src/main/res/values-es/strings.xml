@@ -13,8 +13,8 @@
     <string name="err_msg_name">Ingresa tu nombre de usuario</string>
     <string name="err_msg_password">Ingresa la contraseña</string>
     <string name="err_msg_login">El nombre de usuario y/o la contraseña no coinciden</string>
-    <string name="hint_serverURl">ip del planeta (ej. 192.168.2.1)</string>
-    <string name="hint_serverPin">pin del servidor (obtenerlo del administrador)</string>
+    <string name="hint_serverURl">ip del planeta</string>
+    <string name="hint_serverPin">pin del servidor</string>
     <string name="radio_protocol">Protocolo:</string>
     <string name="radio_http">http</string>
     <string name="radio_https">https</string>

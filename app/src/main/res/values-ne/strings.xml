@@ -13,8 +13,8 @@
     <string name="err_msg_name">तपाईंको प्रयोगकर्तानाम लेख्नुहोस्</string>
     <string name="err_msg_password">पासवर्ड लेख्नुहोस्</string>
     <string name="err_msg_login">प्रयोगकर्तानाम र/वा पासवर्ड मेल खान्छैन</string>
-    <string name="hint_serverURl">प्लानेट आइपी (उदाहरणका लागि १९२.१६८.२.१)</string>
-    <string name="hint_serverPin">सर्भर पिन (प्रशासकबाट प्राप्त गर्नुहोस्)</string>
+    <string name="hint_serverURl">प्लानेट आइपी</string>
+    <string name="hint_serverPin">सर्भर पिन</string>
     <string name="radio_protocol">प्रोटोकल:</string>
     <string name="radio_http">http</string>
     <string name="radio_https">https</string>
