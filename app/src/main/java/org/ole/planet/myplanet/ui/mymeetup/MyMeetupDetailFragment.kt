@@ -23,7 +23,7 @@ import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 class MyMeetupDetailFragment : Fragment(), View.OnClickListener {
     private lateinit var fragmentMyMeetupDetailBinding: FragmentMyMeetupDetailBinding
     private var meetups: RealmMeetup? = null
-   lateinit var mRealm: Realm
+    lateinit var mRealm: Realm
     private var meetUpId: String? = null
     var profileDbHandler: UserProfileDbHandler? = null
     var user: RealmUserModel? = null
@@ -47,7 +47,7 @@ class MyMeetupDetailFragment : Fragment(), View.OnClickListener {
         fragmentMyMeetupDetailBinding.btnLeave.setOnClickListener(this)
         mRealm = DatabaseService(requireActivity()).realmInstance
         profileDbHandler = UserProfileDbHandler(requireContext())
-        user = profileDbHandler!!.userModel?.let { mRealm.copyFromRealm(it) }
+        user = profileDbHandler?.userModel?.let { mRealm.copyFromRealm(it) }
         return fragmentMyMeetupDetailBinding.root
     }
 
@@ -61,22 +61,22 @@ class MyMeetupDetailFragment : Fragment(), View.OnClickListener {
     private fun setUserList() {
         val ids = getJoinedUserIds(mRealm)
         val users = mRealm.where(RealmUserModel::class.java).`in`("id", ids).findAll()
-        listUsers!!.adapter = ArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, users)
-        tvJoined!!.text = String.format(getString(R.string.joined_members_colon) + " %s", if (users.size == 0) """(0) ${getString(R.string.no_members_has_joined_this_meet_up)}""" else users.size)
+        listUsers?.adapter = ArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, users)
+        tvJoined?.text = String.format(getString(R.string.joined_members_colon) + " %s", if (users.size == 0) """(0) ${getString(R.string.no_members_has_joined_this_meet_up)}""" else users.size)
     }
 
     private fun setUpData() {
-        fragmentMyMeetupDetailBinding.meetupTitle.text = meetups!!.title
-        val map: HashMap<String, String> = getHashMap(meetups!!)
-        val keys = ArrayList(map.keys)
-        listDesc!!.adapter = object : ArrayAdapter<String?>(requireActivity(), R.layout.row_description, keys) {
+        fragmentMyMeetupDetailBinding.meetupTitle.text = meetups?.title
+        val map: HashMap<String, String>? = meetups?.let { getHashMap(it) }
+        val keys = ArrayList(map?.keys ?: emptyList())
+        listDesc?.adapter = object : ArrayAdapter<String?>(requireActivity(), R.layout.row_description, keys) {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
                 var convertView = convertView
                 if (convertView == null) {
                     convertView = LayoutInflater.from(activity).inflate(R.layout.row_description, parent, false)
                 }
-                (convertView!!.findViewById<View>(R.id.title) as TextView).text = "${getItem(position)} : "
-                (convertView.findViewById<View>(R.id.description) as TextView).text = "${map[getItem(position)]}"
+                (convertView?.findViewById<View>(R.id.title) as TextView).text = "${getItem(position)} : "
+                (convertView.findViewById<View>(R.id.description) as TextView).text = "${map?.get(getItem(position))}"
                 return convertView
             }
         }
@@ -90,11 +90,11 @@ class MyMeetupDetailFragment : Fragment(), View.OnClickListener {
 
     private fun leaveJoinMeetUp() {
         mRealm.executeTransaction {
-            if (meetups!!.userId!!.isEmpty()) {
-                meetups!!.userId = user!!.id
+            if (meetups?.userId?.isEmpty() == true) {
+                meetups?.userId = user?.id
                 fragmentMyMeetupDetailBinding.btnLeave.setText(R.string.leave)
             } else {
-                meetups!!.userId = ""
+                meetups?.userId = ""
                 fragmentMyMeetupDetailBinding.btnLeave.setText(R.string.join)
             }
         }

@@ -37,12 +37,7 @@ import org.ole.planet.myplanet.ui.submission.MySubmissionFragment.Companion.newI
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment
 import org.ole.planet.myplanet.utilities.Utilities
 
-class AdapterMyLife(
-    private val context: Context,
-    private val myLifeList: List<RealmMyLife>,
-    private var mRealm: Realm,
-    private val mDragStartListener: OnStartDragListener
-) : RecyclerView.Adapter<RecyclerView.ViewHolder>(), ItemTouchHelperAdapter {
+class AdapterMyLife(private val context: Context, private val myLifeList: List<RealmMyLife>, private var mRealm: Realm, private val mDragStartListener: OnStartDragListener) : RecyclerView.Adapter<RecyclerView.ViewHolder>(), ItemTouchHelperAdapter {
     private val HIDE = 0.5f
     private val SHOW = 1f
     private val user: RealmUserModel = UserProfileDbHandler(context).userModel!!
@@ -83,7 +78,11 @@ class AdapterMyLife(
 
     fun updateVisibility(holder: RecyclerView.ViewHolder, position: Int, isVisible: Boolean) {
         mRealm.executeTransactionAsync({ realm: Realm? ->
-            updateVisibility(!isVisible, myLifeList[position].get_id(), realm!!, myLifeList[position].userId) }, {
+            realm?.let {
+                updateVisibility(!isVisible, myLifeList[position].get_id(),
+                    it, myLifeList[position].userId)
+            }
+        }, {
                 Handler(Looper.getMainLooper()).post {
                     if (isVisible) {
                         changeVisibility(holder, R.drawable.ic_visibility, HIDE)
@@ -138,8 +137,11 @@ class AdapterMyLife(
 
         override fun onItemClear(viewHolder: RecyclerView.ViewHolder?) {
             itemView.setBackgroundColor(0)
-            if (!myLifeList[viewHolder!!.bindingAdapterPosition].isVisible) (viewHolder as ViewHolderMyLife?)!!.rv_item_container.alpha =
-                HIDE
+            if (viewHolder != null) {
+                if (!myLifeList[viewHolder.bindingAdapterPosition].isVisible) {
+                    (viewHolder as ViewHolderMyLife?)?.rv_item_container?.alpha = HIDE
+                }
+            }
         }
     }
 
@@ -165,8 +167,10 @@ class AdapterMyLife(
 
         fun transactionFragment(f: Fragment?, view: View) {
             val activity = view.context as AppCompatActivity
-            activity.supportFragmentManager.beginTransaction().replace(R.id.fragment_container, f!!)
-                .addToBackStack(null).commit()
+            f?.let {
+                activity.supportFragmentManager.beginTransaction().replace(R.id.fragment_container, it)
+                    .addToBackStack(null).commit()
+            }
         }
     }
 }

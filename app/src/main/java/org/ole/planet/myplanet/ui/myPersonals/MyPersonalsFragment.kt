@@ -26,8 +26,8 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
     fun refreshFragment() {
         if (isAdded) {
             setAdapter()
-            if (addResourceFragment != null && addResourceFragment!!.isAdded) {
-                addResourceFragment!!.dismiss()
+            if (addResourceFragment != null && addResourceFragment?.isAdded == true) {
+                addResourceFragment?.dismiss()
             }
         }
     }
@@ -41,9 +41,9 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
             addResourceFragment = AddResourceFragment()
             val b = Bundle()
             b.putInt("type", 1)
-            addResourceFragment!!.arguments = b
-            addResourceFragment!!.setMyPersonalsFragment(this)
-            addResourceFragment!!.show(childFragmentManager, getString(R.string.add_resource))
+            addResourceFragment?.arguments = b
+            addResourceFragment?.setMyPersonalsFragment(this)
+            addResourceFragment?.show(childFragmentManager, getString(R.string.add_resource))
         }
         return fragmentMyPersonalsBinding.root
     }
@@ -70,7 +70,7 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
 
     private fun showNodata() {
         Utilities.log("Show nodata")
-        if (fragmentMyPersonalsBinding.rvMypersonal.adapter!!.itemCount == 0) {
+        if (fragmentMyPersonalsBinding.rvMypersonal.adapter?.itemCount == 0) {
             fragmentMyPersonalsBinding.tvNodata.visibility = View.VISIBLE
             fragmentMyPersonalsBinding.tvNodata.setText(R.string.no_data_available_please_click_button_to_add_new_resource_in_mypersonal)
         } else {
@@ -86,14 +86,14 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
     }
 
     override fun onUpload(personal: RealmMyPersonal?) {
-        pg!!.setMessage("Please wait......")
-        pg!!.show()
+        pg?.setMessage("Please wait......")
+        pg?.show()
         if (personal != null) {
             UploadManager.instance?.uploadMyPersonal(personal) { s: String? ->
                 if (s != null) {
                     Utilities.toast(activity, s)
                 }
-                pg!!.dismiss()
+                pg?.dismiss()
             }
         }
     }
