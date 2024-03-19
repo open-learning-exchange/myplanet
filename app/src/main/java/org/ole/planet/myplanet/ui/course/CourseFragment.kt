@@ -67,7 +67,7 @@ class CourseFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelec
         searchTags = ArrayList()
         initializeView()
         if (isMyCourseLib) {
-            tvDelete.setText(R.string.archive)
+            tvDelete?.setText(R.string.archive)
             btnRemove.visibility = View.VISIBLE
         }
 
@@ -120,11 +120,11 @@ class CourseFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelec
     private fun initializeView() {
         tvAddToLib = requireView().findViewById(R.id.tv_add)
         tvAddToLib.setOnClickListener {
-            if (selectedItems.size > 0) {
+            if ((selectedItems?.size ?: 0) > 0) {
                 confirmation = createAlertDialog()
                 confirmation.show()
                 addToMyList()
-                selectedItems.clear()
+                selectedItems?.clear()
                 tvAddToLib.isEnabled = false // selectedItems will always have a size of 0
                 checkList()
             }
@@ -142,7 +142,7 @@ class CourseFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelec
         selectAll = requireView().findViewById(R.id.selectAll)
         checkList()
         selectAll.setOnClickListener {
-            val allSelected = selectedItems.size == adapterCourses.getCourseList().size
+            val allSelected = selectedItems?.size == adapterCourses.getCourseList().size
             adapterCourses.selectAllItems(!allSelected)
             if (allSelected) {
                 selectAll.isChecked = false
@@ -192,15 +192,15 @@ class CourseFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelec
     private fun createAlertDialog(): AlertDialog {
         val builder = AlertDialog.Builder(requireContext(), 5)
         var msg = getString(R.string.success_you_have_added_the_following_courses)
-        if (selectedItems.size <= 5) {
-            for (i in selectedItems.indices) {
-                msg += " - " + selectedItems[i]?.courseTitle + "\n"
+        if ((selectedItems?.size ?: 0) <= 5) {
+            for (i in selectedItems?.indices!!) {
+                msg += " - " + selectedItems!![i]?.courseTitle + "\n"
             }
         } else {
             for (i in 0..4) {
-                msg += " - " + selectedItems[i]?.courseTitle + "\n"
+                msg += " - " + selectedItems!![i]?.courseTitle + "\n"
             }
-            msg += getString(R.string.and) + (selectedItems.size - 5) + getString(R.string.more_course_s)
+            msg += getString(R.string.and) + ((selectedItems?.size ?: 0) - 5) + getString(R.string.more_course_s)
         }
         msg += getString(R.string.return_to_the_home_tab_to_access_mycourses)
         builder.setMessage(msg)
@@ -228,7 +228,7 @@ class CourseFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelec
     }
 
     private fun changeButtonStatus() {
-        tvAddToLib.isEnabled = selectedItems.size > 0
+        tvAddToLib.isEnabled = (selectedItems?.size ?: 0) > 0
         if (adapterCourses.areAllSelected()) {
             selectAll.isChecked = true
             selectAll.text = getString(R.string.unselect_all)

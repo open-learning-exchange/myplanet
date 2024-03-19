@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.library
 
 import android.content.Context
 import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -75,9 +76,14 @@ class AdapterLibrary(private val context: Context, private var libraryList: List
             holder.rowLibraryBinding.timesRated.text = "${libraryList[position]!!.timesRated}${context.getString(R.string.total)}"
             holder.rowLibraryBinding.checkbox.isChecked = selectedItems.contains(libraryList[position])
             holder.rowLibraryBinding.checkbox.contentDescription = "${context.getString(R.string.selected)} ${libraryList[position]!!.title}"
-            holder.rowLibraryBinding.rating.text = if (TextUtils.isEmpty(libraryList[position]!!.averageRating)) "0.0"
-            else String.format("%.1f", libraryList[position]!!.averageRating!!.toDouble())
-            holder.rowLibraryBinding.tvDate.text = formatDate(libraryList[position]!!.createdDate!!.trim { it <= ' ' }.toLong(), "MMM dd, yyyy")
+            holder.rowLibraryBinding.rating.text =
+                if (TextUtils.isEmpty(libraryList[position]!!.averageRating)) {
+                    "0.0"
+                } else {
+                    String.format("%.1f", libraryList[position]?.averageRating!!.toDouble())
+                }
+            Log.d("AdapterLibrary", "onBindViewHolder: ${libraryList[position]!!.createdDate}")
+            holder.rowLibraryBinding.tvDate.text = libraryList[position]?.createdDate?.toLong()?.let { formatDate(it, "MMM dd, yyyy") }
             displayTagCloud(holder.rowLibraryBinding.flexboxDrawable, position)
             holder.itemView.setOnClickListener { openLibrary(libraryList[position]) }
             holder.rowLibraryBinding.ivDownloaded.setImageResource(
