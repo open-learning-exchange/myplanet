@@ -212,9 +212,9 @@ open class RealmSubmission : RealmObject() {
         }
 
         @JvmStatic
-        fun getExamMap(mRealm: Realm, submissions: List<RealmSubmission>): HashMap<String?, RealmStepExam> {
+        fun getExamMap(mRealm: Realm, submissions: List<RealmSubmission>?): HashMap<String?, RealmStepExam> {
             val exams = HashMap<String?, RealmStepExam>()
-            for (sub in submissions) {
+            for (sub in submissions ?: emptyList()){
                 var id = sub.parentId
                 if (checkParentId(sub.parentId)) {
                     id = sub.parentId!!.split("@".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[0]
