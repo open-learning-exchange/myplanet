@@ -32,13 +32,12 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
         setupUI(view.findViewById(R.id.my_life_parent_layout), requireActivity())
         val callback: ItemTouchHelper.Callback = SimpleItemTouchHelperCallback(adapterMyLife!!)
         mItemTouchHelper = ItemTouchHelper(callback)
-        mItemTouchHelper!!.attachToRecyclerView(recyclerView)
-        val dividerItemDecoration =
-            DividerItemDecoration(recyclerView.context, RecyclerView.VERTICAL)
+        mItemTouchHelper?.attachToRecyclerView(recyclerView)
+        val dividerItemDecoration = DividerItemDecoration(recyclerView.context, RecyclerView.VERTICAL)
         recyclerView.addItemDecoration(dividerItemDecoration)
     }
 
     override fun onStartDrag(viewHolder: RecyclerView.ViewHolder?) {
-        mItemTouchHelper!!.startDrag(viewHolder!!)
+        viewHolder?.let { mItemTouchHelper?.startDrag(it) }
     }
 }

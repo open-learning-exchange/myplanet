@@ -115,7 +115,7 @@ open class RealmMyCourse : RealmObject() {
         }
 
         @JvmStatic
-        fun getMyCourseByUserId(userId: String?, libs: RealmResults<RealmMyCourse>?): List<RealmMyCourse> {
+        fun getMyCourseByUserId(userId: String?, libs: List<RealmMyCourse>?): List<RealmMyCourse> {
             val libraries: MutableList<RealmMyCourse> = ArrayList()
             for (item in libs ?: emptyList()) {
                 if (item.userId!!.contains(userId)) {
@@ -157,9 +157,9 @@ open class RealmMyCourse : RealmObject() {
         }
 
         @JvmStatic
-        fun createMyCourse(course: RealmMyCourse, mRealm: Realm, id: String?) {
+        fun createMyCourse(course: RealmMyCourse?, mRealm: Realm, id: String?) {
             if (!mRealm.isInTransaction) mRealm.beginTransaction()
-            course.setUserId(id)
+            course?.setUserId(id)
             mRealm.commitTransaction()
         }
 

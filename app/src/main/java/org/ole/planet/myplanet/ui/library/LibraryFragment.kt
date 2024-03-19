@@ -82,16 +82,16 @@ class LibraryFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSe
         filter = requireView().findViewById(R.id.filter)
         initArrays()
         tvAddToLib!!.setOnClickListener {
-            if (selectedItems.size > 0) {
+            if ((selectedItems?.size ?: 0) > 0) {
                 confirmation = createAlertDialog()
-                confirmation!!.show()
+                confirmation?.show()
                 addToMyList()
-                selectedItems.clear()
-                tvAddToLib!!.isEnabled = false // After clearing selectedItems size is always 0
+                selectedItems?.clear()
+                tvAddToLib?.isEnabled = false // After clearing selectedItems size is always 0
                 checkList()
             }
         }
-        tvDelete.setOnClickListener {
+        tvDelete?.setOnClickListener {
             AlertDialog.Builder(this.context)
                 .setMessage(R.string.confirm_removal)
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
@@ -123,15 +123,15 @@ class LibraryFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSe
         tvFragmentInfo = requireView().findViewById(R.id.tv_fragment_info)
         if (isMyCourseLib) tvFragmentInfo.setText(R.string.txt_myLibrary)
         checkList()
-        selectAll!!.setOnClickListener {
-            val allSelected = selectedItems.size == adapterLibrary!!.getLibraryList().size
-            adapterLibrary!!.selectAllItems(!allSelected)
+        selectAll?.setOnClickListener {
+            val allSelected = selectedItems?.size == adapterLibrary?.getLibraryList()?.size
+            adapterLibrary?.selectAllItems(!allSelected)
             if (allSelected) {
-                selectAll!!.isChecked = false
-                selectAll!!.text = getString(R.string.select_all)
+                selectAll?.isChecked = false
+                selectAll?.text = getString(R.string.select_all)
             } else {
-                selectAll!!.isChecked = true
-                selectAll!!.text = getString(R.string.unselect_all)
+                selectAll?.isChecked = true
+                selectAll?.text = getString(R.string.unselect_all)
             }
         }
     }
@@ -145,7 +145,7 @@ class LibraryFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSe
             requireView().findViewById<View>(R.id.btn_collections).visibility = View.GONE
             requireView().findViewById<View>(R.id.filter).visibility = View.GONE
             clearTags!!.visibility = View.GONE
-            tvDelete.visibility = View.GONE
+            tvDelete?.visibility = View.GONE
         }
     }
 
@@ -159,15 +159,15 @@ class LibraryFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSe
     private fun createAlertDialog(): AlertDialog {
         val builder = AlertDialog.Builder(requireContext(), 5)
         var msg = getString(R.string.success_you_have_added_these_resources_to_your_mylibrary)
-        if (selectedItems.size <= 5) {
-            for (i in selectedItems.indices) {
-                msg += " - " + selectedItems[i]!!.title + "\n"
+        if ((selectedItems?.size ?: 0) <= 5) {
+            for (i in selectedItems?.indices!!) {
+                msg += " - " + selectedItems!![i]?.title + "\n"
             }
         } else {
             for (i in 0..4) {
-                msg += " - " + selectedItems[i]!!.title + "\n"
+                msg += " - " + selectedItems?.get(i)?.title + "\n"
             }
-            msg += getString(R.string.and) + (selectedItems.size - 5) + getString(R.string.more_resource_s)
+            msg += getString(R.string.and) + ((selectedItems?.size ?: 0) - 5) + getString(R.string.more_resource_s)
         }
         msg += getString(R.string.return_to_the_home_tab_to_access_mylibrary) + getString(R.string.note_you_may_still_need_to_download_the_newly_added_resources)
         builder.setMessage(msg)
@@ -186,10 +186,10 @@ class LibraryFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSe
             searchTags.clear()
             etSearch!!.setText("")
             tvSelected!!.text = ""
-            levels.clear()
-            mediums.clear()
-            subjects.clear()
-            languages.clear()
+            levels?.clear()
+            mediums?.clear()
+            subjects?.clear()
+            languages?.clear()
             adapterLibrary!!.setLibraryList(applyFilter(filterLibraryByTag("", searchTags)))
             showNoData(tvMessage, adapterLibrary!!.itemCount)
         }
@@ -233,7 +233,7 @@ class LibraryFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSe
     }
 
     private fun changeButtonStatus() {
-        tvAddToLib!!.isEnabled = selectedItems.size > 0
+        tvAddToLib!!.isEnabled = (selectedItems?.size ?: 0) > 0
         if (adapterLibrary!!.areAllSelected()) {
             selectAll!!.isChecked = true
             selectAll!!.text = getString(R.string.unselect_all)
@@ -249,7 +249,7 @@ class LibraryFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSe
         showNoData(tvMessage, adapterLibrary!!.itemCount)
     }
 
-    override fun filter(subjects: Set<String>, languages: Set<String>, mediums: Set<String>, levels: Set<String>) {
+    override fun filter(subjects: MutableSet<String>, languages: MutableSet<String>, mediums: MutableSet<String>, levels: MutableSet<String>) {
         this.subjects = subjects
         this.languages = languages
         this.mediums = mediums
@@ -284,7 +284,9 @@ class LibraryFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSe
     }
 
     private fun filterApplied(): Boolean {
-        return !(subjects.isEmpty() && languages.isEmpty() && mediums.isEmpty() && levels.isEmpty() && searchTags.isEmpty() && etSearch!!.text.toString().isEmpty())
+        return !(subjects?.isEmpty() == true && languages?.isEmpty() == true
+                && mediums?.isEmpty() == true && levels?.isEmpty() == true
+                && searchTags.isEmpty() && "${etSearch?.text}".isEmpty())
     }
 
     private fun saveSearchActivity() {

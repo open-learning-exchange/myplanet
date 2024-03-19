@@ -62,8 +62,8 @@ class RatingFragment : DialogFragment() {
         previousRating = mRealm.where(RealmRating::class.java).equalTo("type", type)
             .equalTo("userId", settings.getString("userId", "")).equalTo("item", id).findFirst()
         if (previousRating != null) {
-            fragmentRatingBinding.ratingBar.rating = previousRating!!.rate.toFloat()
-            fragmentRatingBinding.etComment.setText(previousRating!!.comment)
+            fragmentRatingBinding.ratingBar.rating = previousRating?.rate?.toFloat() ?: 0.0f
+            fragmentRatingBinding.etComment.setText(previousRating?.comment)
         }
         fragmentRatingBinding.ratingBar.onRatingBarChangeListener =
             OnRatingBarChangeListener { _: RatingBar?, _: Float, fromUser: Boolean ->
@@ -95,24 +95,24 @@ class RatingFragment : DialogFragment() {
             setData(model, ratingObject, comment, rating)
         }, Realm.Transaction.OnSuccess {
             Utilities.toast(activity, "Thank you, your rating is submitted.")
-            if (ratingListener != null) ratingListener!!.onRatingChanged()
+            if (ratingListener != null) ratingListener?.onRatingChanged()
             dismiss()
         })
     }
 
     private fun setData(model: RealmUserModel?, ratingObject: RealmRating?, comment: String, rating: Float) {
-        ratingObject!!.isUpdated = true
-        ratingObject.comment = comment
-        ratingObject.rate = rating.toInt()
-        ratingObject.time = Date().time
-        ratingObject.userId = model!!.id
-        ratingObject.createdOn = model.parentCode
-        ratingObject.parentCode = model.parentCode
-        ratingObject.planetCode = model.planetCode
-        ratingObject.user = Gson().toJson(model.serialize())
-        ratingObject.type = type
-        ratingObject.item = id
-        ratingObject.title = title
+        ratingObject?.isUpdated = true
+        ratingObject?.comment = comment
+        ratingObject?.rate = rating.toInt()
+        ratingObject?.time = Date().time
+        ratingObject?.userId = model?.id
+        ratingObject?.createdOn = model?.parentCode
+        ratingObject?.parentCode = model?.parentCode
+        ratingObject?.planetCode = model?.planetCode
+        ratingObject?.user = Gson().toJson(model?.serialize())
+        ratingObject?.type = type
+        ratingObject?.item = id
+        ratingObject?.title = title
     }
 
     companion object {

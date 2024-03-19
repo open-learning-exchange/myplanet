@@ -340,9 +340,9 @@ open class RealmMyLibrary : RealmObject() {
         }
 
         @JvmStatic
-        fun createFromResource(resource: RealmMyLibrary, mRealm: Realm, userId: String?) {
+        fun createFromResource(resource: RealmMyLibrary?, mRealm: Realm, userId: String?) {
             if (!mRealm.isInTransaction) mRealm.beginTransaction()
-            resource.setUserId(userId)
+            resource?.setUserId(userId)
             mRealm.commitTransaction()
         }
 
