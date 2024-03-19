@@ -1,7 +1,7 @@
 package org.ole.planet.myplanet.callback
 
 interface OnFilterListener {
-    fun filter(subjects: Set<String>, languages: Set<String>, mediums: Set<String>, levels: Set<String>)
+    fun filter(subjects: MutableSet<String>, languages: MutableSet<String>, mediums: MutableSet<String>, levels: MutableSet<String>)
 
     fun getData(): Map<String, Set<String>>
 

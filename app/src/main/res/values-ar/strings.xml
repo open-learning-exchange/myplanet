@@ -13,8 +13,8 @@
     <string name="err_msg_name">الرجاء إدخال اسم المستخدم</string>
     <string name="err_msg_password">الرجاء إدخال كلمة المرور</string>
     <string name="err_msg_login">اسم المستخدم و/أو كلمة المرور غير متطابقة</string>
-    <string name="hint_serverURl">عنوان ip للكوكب (مثلاً 192.168.2.1)</string>
-    <string name="hint_serverPin">رمز pin للخادم (احصل عليه من المسؤول)</string>
+    <string name="hint_serverURl">عنوان ip للكوكب</string>
+    <string name="hint_serverPin">رمز pin للخادم</string>
     <string name="radio_protocol">البروتوكول:</string>
     <string name="radio_http">http</string>
     <string name="radio_https">https</string>

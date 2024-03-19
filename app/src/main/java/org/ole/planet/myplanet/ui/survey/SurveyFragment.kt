@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.View
 import android.widget.AdapterView
 import android.widget.Spinner
+import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import io.realm.Sort
 import org.ole.planet.myplanet.R
@@ -18,8 +19,8 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>() {
         return R.layout.fragment_survey
     }
 
-    override fun getAdapter(): AdapterSurvey? {
-        return model.id?.let { AdapterSurvey(requireActivity(), getList(RealmStepExam::class.java, "name", Sort.ASCENDING) as List<RealmStepExam>, mRealm, it) }
+    override fun getAdapter(): RecyclerView.Adapter<*> {
+        return model.id?.let { AdapterSurvey(requireActivity(), getList(RealmStepExam::class.java, "name", Sort.ASCENDING) as List<RealmStepExam>, mRealm, it) }!!
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

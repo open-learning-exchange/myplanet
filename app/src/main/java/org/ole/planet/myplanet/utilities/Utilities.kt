@@ -16,7 +16,8 @@ import com.bumptech.glide.Glide
 import fisk.chipcloud.ChipCloudConfig
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.base.BaseRecyclerFragment.PREFS_NAME
+import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.PREFS_NAME
+
 import org.ole.planet.myplanet.datamanager.MyDownloadService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import java.lang.ref.WeakReference
