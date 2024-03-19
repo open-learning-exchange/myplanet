@@ -389,7 +389,7 @@ open class RealmMyLibrary : RealmObject() {
             resource.openWith = JsonUtils.getString("openWith", doc)
             resource.articleDate = JsonUtils.getString("articleDate", doc)
             resource.kind = JsonUtils.getString("kind", doc)
-            resource.createdDate = JsonUtils.getString("createdDate", doc)
+            resource.createdDate = JsonUtils.getLongAsString("createdDate", doc)
             resource.language = JsonUtils.getString("language", doc)
             resource.author = JsonUtils.getString("author", doc)
             resource.mediaType = JsonUtils.getString("mediaType", doc)

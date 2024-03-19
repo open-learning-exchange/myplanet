@@ -93,7 +93,7 @@ open class RealmMyCourse : RealmObject() {
             myMyCoursesDB.method = JsonUtils.getString("method", myCousesDoc)
             myMyCoursesDB.gradeLevel = JsonUtils.getString("gradeLevel", myCousesDoc)
             myMyCoursesDB.subjectLevel = JsonUtils.getString("subjectLevel", myCousesDoc)
-            myMyCoursesDB.createdDate = JsonUtils.getString("createdDate", myCousesDoc)
+            myMyCoursesDB.createdDate = JsonUtils.getLongAsString("createdDate", myCousesDoc)
             myMyCoursesDB.setnumberOfSteps(JsonUtils.getJsonArray("steps", myCousesDoc).size())
             RealmCourseStep.insertCourseSteps(myMyCoursesDB.courseId,
                 JsonUtils.getJsonArray("steps", myCousesDoc),
