@@ -114,7 +114,7 @@ object DialogUtils {
     }
 
     @JvmStatic
-    fun getUpdateDialog(context: Context, info: MyPlanet?, progressDialog: ProgressDialog?): AlertDialog.Builder {
+    fun getUpdateDialog(context: Context, info: MyPlanet?, progressDialog: CustomProgressDialog?): AlertDialog.Builder {
         return AlertDialog.Builder(context)
             .setTitle(R.string.new_version_of_my_planet_available)
             .setMessage(R.string.download_first_to_continue)
@@ -127,7 +127,7 @@ object DialogUtils {
     }
 
     @JvmStatic
-    fun startDownloadUpdate(context: Context, path: String, progressDialog: ProgressDialog?) {
+    fun startDownloadUpdate(context: Context, path: String, progressDialog: CustomProgressDialog?) {
         Service(MainApplication.context).checkCheckSum(object : Service.ChecksumCallback {
             override fun onMatch() {
                 Utilities.toast(MainApplication.context, context.getString(R.string.apk_already_exists))
@@ -138,7 +138,7 @@ object DialogUtils {
                 val url = ArrayList<String>()
                 url.add(path)
                 if (progressDialog != null) {
-                    progressDialog.setMessage(context.getString(R.string.downloading_file))
+                    progressDialog.setText(context.getString(R.string.downloading_file))
                     progressDialog.setCancelable(false)
                     progressDialog.show()
                 }

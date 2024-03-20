@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.sync
 
 import android.Manifest
-import android.app.ProgressDialog
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.IntentFilter
@@ -1110,7 +1109,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     override fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean) {
         try {
             mRealm = Realm.getDefaultInstance()
-            val builder = getUpdateDialog(this, info, progressDialog)
+            val builder = getUpdateDialog(this, info, customProgressDialog)
             if (cancelable || getCustomDeviceName(this).endsWith("###")) {
                 builder.setNegativeButton(R.string.update_later) { _: DialogInterface?, _: Int ->
                     continueSyncProcess(forceSync = false, isSync = true)

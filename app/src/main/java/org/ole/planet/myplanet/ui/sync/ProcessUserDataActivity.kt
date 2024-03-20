@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.sync
 
+import android.app.ProgressDialog
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.DialogInterface
@@ -19,6 +20,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import com.google.android.material.textfield.TextInputLayout
+import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.PermissionActivity
 import org.ole.planet.myplanet.callback.SuccessListener
@@ -46,6 +48,7 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
             }
         }
     }
+    private val customProgressDialog = DialogUtils.CustomProgressDialog(context)
 
     fun validateEditText(textField: EditText, textLayout: TextInputLayout, err_message: String?): Boolean {
         if (textField.text.toString().trim { it <= ' ' }.isEmpty()) {
@@ -61,7 +64,7 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
     fun checkDownloadResult(download: Download?) {
         runOnUiThread {
             if (!isFinishing) {
-                val customProgressDialog = DialogUtils.CustomProgressDialog(this)
+//                val customProgressDialog = DialogUtils.CustomProgressDialog(this)
                 customProgressDialog.show()
                 customProgressDialog.setText("${getString(R.string.downloading)} ${download?.progress}% ${getString(R.string.complete)}")
                 customProgressDialog.setProgress(download?.progress ?: 0)
