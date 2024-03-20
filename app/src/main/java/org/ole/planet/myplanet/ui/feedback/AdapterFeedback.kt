@@ -13,7 +13,7 @@ import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.ui.feedback.AdapterFeedback.ViewHolderFeedback
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormatedDate
 
-class AdapterFeedback(private val context: Context, private var list: List<RealmFeedback>) : RecyclerView.Adapter<ViewHolderFeedback>() {
+class AdapterFeedback(private val context: Context, private var list: List<RealmFeedback>?) : RecyclerView.Adapter<ViewHolderFeedback>() {
     private lateinit var rowFeedbackBinding: RowFeedbackBinding
 
     fun updateData(newData: RealmResults<RealmFeedback>) {
@@ -27,35 +27,35 @@ class AdapterFeedback(private val context: Context, private var list: List<Realm
     }
 
     override fun onBindViewHolder(holder: ViewHolderFeedback, position: Int) {
-        rowFeedbackBinding.tvTitle.text = list[position].title
-        rowFeedbackBinding.tvType.text = list[position].type
-        rowFeedbackBinding.tvPriority.text = list[position].priority
-        rowFeedbackBinding.tvStatus.text = list[position].status
-        val contentDescription = "${list[position].title}, ${list[position].type}, " +
-                "${context.getString(R.string.status)}: ${list[position].status}, ${context.getString(R.string.priority)}: ${list[position].priority}, " +
-                "${context.getString(R.string.open_date)}: ${list[position].openTime?.toLong()?.let { getFormatedDate(it) }}"
+        rowFeedbackBinding.tvTitle.text = list?.get(position)?.title
+        rowFeedbackBinding.tvType.text = list?.get(position)?.type
+        rowFeedbackBinding.tvPriority.text = list?.get(position)?.priority
+        rowFeedbackBinding.tvStatus.text = list?.get(position)?.status
+        val contentDescription = "${list?.get(position)?.title}, ${list?.get(position)?.type}, " +
+                "${context.getString(R.string.status)}: ${list?.get(position)?.status}, ${context.getString(R.string.priority)}: ${list?.get(position)?.priority}, " +
+                "${context.getString(R.string.open_date)}: ${list?.get(position)?.openTime?.toLong()?.let { getFormatedDate(it) }}"
         rowFeedbackBinding.feedbackCardView.contentDescription = contentDescription
 
-        if ("yes".equals(list[position].priority, ignoreCase = true)) {
+        if ("yes".equals(list?.get(position)?.priority, ignoreCase = true)) {
             rowFeedbackBinding.tvPriority.background = ResourcesCompat.getDrawable(context.resources, R.drawable.bg_primary, null)
         } else {
             rowFeedbackBinding.tvPriority.background = ResourcesCompat.getDrawable(context.resources, R.drawable.bg_grey, null)
         }
         rowFeedbackBinding.tvStatus.background = ResourcesCompat.getDrawable(context.resources,
-            if ("open".equals(list[position].status, ignoreCase = true)) {
+            if ("open".equals(list?.get(position)?.status, ignoreCase = true)) {
                 R.drawable.bg_primary
             } else {
                 R.drawable.bg_grey
             }, null)
-        rowFeedbackBinding.tvOpenDate.text = getFormatedDate(list[position].openTime!!.toLong())
+        rowFeedbackBinding.tvOpenDate.text = getFormatedDate(list?.get(position)?.openTime?.toLong())
         rowFeedbackBinding.root.setOnClickListener {
             context.startActivity(Intent(context, FeedbackDetailActivity::class.java)
-                .putExtra("id", list[position].id))
+                .putExtra("id", list?.get(position)?.id))
         }
     }
 
     override fun getItemCount(): Int {
-        return list.size
+        return list?.size ?: 0
     }
 
     class ViewHolderFeedback(rowFeedbackBinding: RowFeedbackBinding) : RecyclerView.ViewHolder(rowFeedbackBinding.root)

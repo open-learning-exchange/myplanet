@@ -70,43 +70,43 @@ class AdapterLibrary(private val context: Context, private var libraryList: List
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         if (holder is ViewHolderLibrary) {
             holder.bind()
-            holder.rowLibraryBinding.title.text = libraryList[position]!!.title
-            Utilities.log(libraryList[position]!!.description!!)
-            setMarkdownText(holder.rowLibraryBinding.description, libraryList[position]!!.description!!)
-            holder.rowLibraryBinding.timesRated.text = "${libraryList[position]!!.timesRated}${context.getString(R.string.total)}"
+            holder.rowLibraryBinding.title.text = libraryList[position]?.title
+            Utilities.log(libraryList[position]?.description!!)
+            setMarkdownText(holder.rowLibraryBinding.description, libraryList[position]?.description!!)
+            holder.rowLibraryBinding.timesRated.text = "${libraryList[position]?.timesRated}${context.getString(R.string.total)}"
             holder.rowLibraryBinding.checkbox.isChecked = selectedItems.contains(libraryList[position])
-            holder.rowLibraryBinding.checkbox.contentDescription = "${context.getString(R.string.selected)} ${libraryList[position]!!.title}"
+            holder.rowLibraryBinding.checkbox.contentDescription = "${context.getString(R.string.selected)} ${libraryList[position]?.title}"
             holder.rowLibraryBinding.rating.text =
-                if (TextUtils.isEmpty(libraryList[position]!!.averageRating)) {
+                if (TextUtils.isEmpty(libraryList[position]?.averageRating)) {
                     "0.0"
                 } else {
                     String.format("%.1f", libraryList[position]?.averageRating!!.toDouble())
                 }
-            Log.d("AdapterLibrary", "onBindViewHolder: ${libraryList[position]!!.createdDate}")
+            Log.d("AdapterLibrary", "onBindViewHolder: ${libraryList[position]?.createdDate}")
             holder.rowLibraryBinding.tvDate.text = libraryList[position]?.createdDate?.toLong()?.let { formatDate(it, "MMM dd, yyyy") }
             displayTagCloud(holder.rowLibraryBinding.flexboxDrawable, position)
             holder.itemView.setOnClickListener { openLibrary(libraryList[position]) }
             holder.rowLibraryBinding.ivDownloaded.setImageResource(
-                if (libraryList[position]!!.isResourceOffline()) {
+                if (libraryList[position]?.isResourceOffline() == true) {
                     R.drawable.ic_eye
                 } else {
                     R.drawable.ic_download
                 })
             holder.rowLibraryBinding.ivDownloaded.contentDescription =
-                if (libraryList[position]!!.isResourceOffline()) {
+                if (libraryList[position]?.isResourceOffline() == true) {
                     context.getString(R.string.view)
                 } else {
                     context.getString(R.string.download)
                 }
-            if (ratingMap.containsKey(libraryList[position]!!.resourceId)) {
-                val `object` = ratingMap[libraryList[position]!!.resourceId]
+            if (ratingMap.containsKey(libraryList[position]?.resourceId)) {
+                val `object` = ratingMap[libraryList[position]?.resourceId]
                 AdapterCourses.showRating(`object`, holder.rowLibraryBinding.rating, holder.rowLibraryBinding.timesRated, holder.rowLibraryBinding.ratingBar)
             } else {
                 holder.rowLibraryBinding.ratingBar.rating = 0f
             }
             holder.rowLibraryBinding.checkbox.setOnClickListener { view: View ->
                 Utilities.handleCheck((view as CheckBox).isChecked, position, selectedItems, libraryList)
-                if (listener != null) listener!!.onSelectedListChange(selectedItems)
+                if (listener != null) listener?.onSelectedListChange(selectedItems)
             }
         }
     }
@@ -124,7 +124,7 @@ class AdapterLibrary(private val context: Context, private var libraryList: List
         }
         notifyDataSetChanged()
         if (listener != null) {
-            listener!!.onSelectedListChange(selectedItems)
+            listener?.onSelectedListChange(selectedItems)
         }
     }
 
@@ -135,17 +135,19 @@ class AdapterLibrary(private val context: Context, private var libraryList: List
     private fun displayTagCloud(flexboxDrawable: FlexboxLayout, position: Int) {
         flexboxDrawable.removeAllViews()
         val chipCloud = ChipCloud(context, flexboxDrawable, config)
-        val tags: List<RealmTag> = realm.where(RealmTag::class.java).equalTo("db", "resources").equalTo("linkId", libraryList[position]!!.id).findAll()
+        val tags: List<RealmTag> = realm.where(RealmTag::class.java).equalTo("db", "resources").equalTo("linkId", libraryList[position]?.id).findAll()
         for (tag in tags) {
             val parent = realm.where(RealmTag::class.java).equalTo("id", tag.tagId).findFirst()
             try {
-                chipCloud.addChip(parent!!.name)
+                chipCloud.addChip(parent?.name)
             } catch (err: Exception) {
                 chipCloud.addChip("--")
             }
             chipCloud.setListener { _: Int, _: Boolean, b1: Boolean ->
                 if (b1 && listener != null) {
-                    listener!!.onTagClicked(parent!!)
+                    if (parent != null) {
+                        listener?.onTagClicked(parent)
+                    }
                 }
             }
         }
@@ -188,9 +190,9 @@ class AdapterLibrary(private val context: Context, private var libraryList: List
             init {
                 rowLibraryBinding.ratingBar.setOnTouchListener { _: View?, event: MotionEvent ->
                     if (event.action == MotionEvent.ACTION_UP) {
-                        homeItemClickListener!!.showRatingDialog("resource",
-                            libraryList[bindingAdapterPosition]!!.resourceId,
-                            libraryList[bindingAdapterPosition]!!.title,
+                        homeItemClickListener?.showRatingDialog("resource",
+                            libraryList[bindingAdapterPosition]?.resourceId,
+                            libraryList[bindingAdapterPosition]?.title,
                             ratingChangeListener
                         )
                     }

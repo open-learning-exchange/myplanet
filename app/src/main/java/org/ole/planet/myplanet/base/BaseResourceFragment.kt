@@ -280,12 +280,12 @@ abstract class BaseResourceFragment : Fragment() {
         registerReceiver()
     }
 
-    fun showTagText(list: List<RealmTag>, tvSelected: TextView) {
+    fun showTagText(list: List<RealmTag>, tvSelected: TextView?) {
         val selected = StringBuilder(getString(R.string.selected))
         for (tags in list) {
             selected.append(tags.name).append(",")
         }
-        tvSelected.text = selected.subSequence(0, selected.length - 1)
+        tvSelected?.text = selected.subSequence(0, selected.length - 1)
     }
 
     companion object {

@@ -14,7 +14,7 @@ open class RealmRemovedLog : RealmObject() {
 
     companion object {
         @JvmStatic
-        fun onAdd(mRealm: Realm, type: String, userId: String?, docId: String?) {
+        fun onAdd(mRealm: Realm, type: String?, userId: String?, docId: String?) {
             if (!mRealm.isInTransaction) mRealm.beginTransaction()
             mRealm.where(RealmRemovedLog::class.java)
                 .equalTo("type", type)

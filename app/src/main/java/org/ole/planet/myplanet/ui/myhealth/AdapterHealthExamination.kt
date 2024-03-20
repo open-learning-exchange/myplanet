@@ -24,7 +24,7 @@ import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Date
 
-class AdapterHealthExamination(private val context: Context, private val list: List<RealmMyHealthPojo>, private val mh: RealmMyHealthPojo, private val userModel: RealmUserModel) : RecyclerView.Adapter<ViewHolderMyHealthExamination>() {
+class AdapterHealthExamination(private val context: Context, private val list: List<RealmMyHealthPojo>?, private val mh: RealmMyHealthPojo, private val userModel: RealmUserModel?) : RecyclerView.Adapter<ViewHolderMyHealthExamination>() {
     private lateinit var rowExaminationBinding: RowExaminationBinding
     private lateinit var mRealm: Realm
     fun setmRealm(mRealm: Realm?) {
@@ -41,27 +41,35 @@ class AdapterHealthExamination(private val context: Context, private val list: L
     }
 
     override fun onBindViewHolder(holder: ViewHolderMyHealthExamination, position: Int) {
-        rowExaminationBinding.txtTemp.text = checkEmpty(list[position].temperature)
-        rowExaminationBinding.txtDate.text = formatDate(list[position].date, "MMM dd, yyyy")
-        val encrypted = list[position].getEncryptedDataAsJson(userModel)
+            rowExaminationBinding.txtTemp.text = list?.get(position)?.temperature.toString()
+            rowExaminationBinding.txtTemp.text = list?.get(position)?.let { checkEmpty(it.temperature) }
+            rowExaminationBinding.txtDate.text = list?.get(position)?.let { formatDate(it.date, "MMM dd, yyyy") }
+            val encrypted = userModel?.let { it1 -> list?.get(position)?.getEncryptedDataAsJson(it1) }
+
+
         val createdBy = getString("createdBy", encrypted)
-        if (!TextUtils.isEmpty(createdBy) && !TextUtils.equals(createdBy, userModel.id)) {
+        if (!TextUtils.isEmpty(createdBy) && !TextUtils.equals(createdBy, userModel?.id)) {
             val model = mRealm.where(RealmUserModel::class.java).equalTo("id", createdBy).findFirst()
             val name: String = model?.getFullName() ?: createdBy.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[1]
             rowExaminationBinding.txtDate.text = "${rowExaminationBinding.txtDate.text} $name".trimIndent()
             holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.md_grey_50))
 
         } else {
-            rowExaminationBinding.txtDate.text = rowExaminationBinding.txtDate.text.toString() + context.getString(R.string.self_examination)
+            rowExaminationBinding.txtDate.text = "${rowExaminationBinding.txtDate.text}${context.getString(R.string.self_examination)}"
             holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.md_green_50))
         }
-        rowExaminationBinding.txtPulse.text = checkEmptyInt(list[position].pulse)
-        rowExaminationBinding.txtBp.text = list[position].bp
-        rowExaminationBinding.txtHearing.text = list[position].hearing
-        rowExaminationBinding.txtHearing.text = checkEmpty(list[position].height)
-        rowExaminationBinding.txtWeight.text = checkEmpty(list[position].weight)
-        rowExaminationBinding.txtVision.text = list[position].vision
-        holder.itemView.setOnClickListener { showAlert(position, encrypted) }
+
+        rowExaminationBinding.txtPulse.text = list?.get(position)?.let { checkEmptyInt(it.pulse) }
+        rowExaminationBinding.txtBp.text = list?.get(position)?.bp
+        rowExaminationBinding.txtHearing.text = list?.get(position)?.hearing
+        rowExaminationBinding.txtHearing.text = list?.get(position)?.let { checkEmpty(it.height) }
+        rowExaminationBinding.txtWeight.text = list?.get(position)?.let { checkEmpty(it.weight) }
+        rowExaminationBinding.txtVision.text = list?.get(position)?.vision
+        holder.itemView.setOnClickListener {
+            if (encrypted != null) {
+                showAlert(position, encrypted)
+            }
+        }
     }
 
     private fun checkEmpty(value: Float): String {
@@ -73,37 +81,40 @@ class AdapterHealthExamination(private val context: Context, private val list: L
     }
 
     private fun showAlert(position: Int, encrypted: JsonObject) {
-        val realmExamination = list[position]
+        val realmExamination = list?.get(position)
         val alertExaminationBinding = AlertExaminationBinding.inflate(LayoutInflater.from(context))
-        alertExaminationBinding.tvVitals.text = """
-            ${context.getString(R.string.temperature_colon)}${checkEmpty(realmExamination.temperature)}
-            ${context.getString(R.string.pulse_colon)}${checkEmptyInt(realmExamination.pulse)}
-            ${context.getString(R.string.blood_pressure_colon)}${realmExamination.bp}
-            ${context.getString(R.string.height_colon)}${checkEmpty(realmExamination.height)}
-            ${context.getString(R.string.weight_colon)}${checkEmpty(realmExamination.weight)}
-            ${context.getString(R.string.vision_colon)}${realmExamination.vision}
-            ${context.getString(R.string.hearing_colon)}${realmExamination.hearing}
-            
-            """.trimIndent()
+        if (realmExamination != null) {
+            alertExaminationBinding.tvVitals.text = """
+                ${context.getString(R.string.temperature_colon)}${checkEmpty(realmExamination.temperature)}
+                ${context.getString(R.string.pulse_colon)}${checkEmptyInt(realmExamination.pulse)}
+                ${context.getString(R.string.blood_pressure_colon)}${realmExamination.bp}
+                ${context.getString(R.string.height_colon)}${checkEmpty(realmExamination.height)}
+                ${context.getString(R.string.weight_colon)}${checkEmpty(realmExamination.weight)}
+                ${context.getString(R.string.vision_colon)}${realmExamination.vision}
+                ${context.getString(R.string.hearing_colon)}${realmExamination.hearing}
+                
+                """.trimIndent()
+        }
         showConditions(alertExaminationBinding.tvCondition, realmExamination)
         showEncryptedData(alertExaminationBinding.tvOtherNotes, encrypted)
         val dialog = AlertDialog.Builder(context)
-            .setTitle(formatDate(realmExamination.date, "MMM dd, yyyy"))
+            .setTitle(realmExamination?.let { formatDate(it.date, "MMM dd, yyyy") })
             .setView(alertExaminationBinding.root)
             .setPositiveButton("OK", null).create()
         val time = Date().time - 5000 * 60
-        if (realmExamination.date >= time) { dialog.setButton(DialogInterface.BUTTON_NEUTRAL, context.getString(R.string.edit)) {
-            _: DialogInterface?, _: Int ->
-            context.startActivity(Intent(context, AddExaminationActivity::class.java)
-                .putExtra("id", list[position].get_id())
-                .putExtra("userId", mh.get_id()))
+        if (realmExamination != null) {
+            if (realmExamination.date >= time) { dialog.setButton(DialogInterface.BUTTON_NEUTRAL, context.getString(R.string.edit)) { _: DialogInterface?, _: Int ->
+                context.startActivity(Intent(context, AddExaminationActivity::class.java)
+                    .putExtra("id", list?.get(position)?.get_id())
+                    .putExtra("userId", mh.get_id()))
+            }
             }
         }
         dialog.show()
     }
 
-    private fun showConditions(tvCondition: TextView, realmExamination: RealmMyHealthPojo) {
-        val conditionsMap = Gson().fromJson(realmExamination.conditions, JsonObject::class.java)
+    private fun showConditions(tvCondition: TextView, realmExamination: RealmMyHealthPojo?) {
+        val conditionsMap = Gson().fromJson(realmExamination?.conditions, JsonObject::class.java)
         val keys = conditionsMap.keySet()
         val conditions = StringBuilder()
         for (key in keys) {
@@ -137,7 +148,7 @@ class AdapterHealthExamination(private val context: Context, private val list: L
     }
 
     override fun getItemCount(): Int {
-        return list.size
+        return list?.size ?: 0
     }
 
     class ViewHolderMyHealthExamination(rowExaminationBinding: RowExaminationBinding) : RecyclerView.ViewHolder(rowExaminationBinding.root)
