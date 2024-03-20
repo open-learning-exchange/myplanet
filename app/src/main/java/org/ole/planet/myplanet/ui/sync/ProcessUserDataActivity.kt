@@ -48,7 +48,6 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
             }
         }
     }
-    private val customProgressDialog = DialogUtils.CustomProgressDialog(context)
 
     fun validateEditText(textField: EditText, textLayout: TextInputLayout, err_message: String?): Boolean {
         if (textField.text.toString().trim { it <= ' ' }.isEmpty()) {
@@ -64,7 +63,7 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
     fun checkDownloadResult(download: Download?) {
         runOnUiThread {
             if (!isFinishing) {
-//                val customProgressDialog = DialogUtils.CustomProgressDialog(this)
+                val customProgressDialog = DialogUtils.CustomProgressDialog(this)
                 customProgressDialog.show()
                 customProgressDialog.setText("${getString(R.string.downloading)} ${download?.progress}% ${getString(R.string.complete)}")
                 customProgressDialog.setProgress(download?.progress ?: 0)
@@ -151,6 +150,7 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
     }
 
     fun startUpload() {
+        val customProgressDialog = DialogUtils.CustomProgressDialog(this)
         customProgressDialog.setText(getString(R.string.uploading_data_to_server_please_wait))
         customProgressDialog.show()
         Utilities.log("Upload : upload started")
