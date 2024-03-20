@@ -220,7 +220,7 @@ class MyDownloadService : IntentService("Download Service") {
     fun realmConfig() {
         Realm.init(this)
         val config = RealmConfiguration.Builder().name(Realm.DEFAULT_REALM_NAME)
-            .deleteRealmIfMigrationNeeded().schemaVersion(4).build()
+            .deleteRealmIfMigrationNeeded().build()
         Realm.setDefaultConfiguration(config)
         mRealm = Realm.getInstance(config)
     }
