@@ -60,11 +60,11 @@ class MyHealthFragment : Fragment() {
 
         fragmentVitalSignBinding.rvRecords.addItemDecoration(DividerItemDecoration(activity, DividerItemDecoration.VERTICAL))
         profileDbHandler = UserProfileDbHandler(alertMyPersonalBinding.root.context)
-        userId = if (TextUtils.isEmpty(profileDbHandler!!.userModel?._id)) profileDbHandler!!.userModel?.id else profileDbHandler!!.userModel?._id
+        userId = if (TextUtils.isEmpty(profileDbHandler?.userModel?._id)) profileDbHandler?.userModel?.id else profileDbHandler?.userModel?._id
         getHealthRecords(userId)
 
         Utilities.log("ROLE " + profileDbHandler?.userModel?.getRoleAsString()!!)
-        if (profileDbHandler?.userModel?.getRoleAsString()!!.contains("health", true)) {
+        if (profileDbHandler?.userModel?.getRoleAsString()?.contains("health", true) == true) {
             fragmentVitalSignBinding.btnnewPatient.visibility = View.VISIBLE
             fragmentVitalSignBinding.btnnewPatient.setOnClickListener { selectPatient() }
             fragmentVitalSignBinding.fabAddMember.show(true)
@@ -82,7 +82,7 @@ class MyHealthFragment : Fragment() {
     private fun getHealthRecords(memberId: String?) {
         userId = memberId
         userModel = mRealm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
-        fragmentVitalSignBinding.lblHealthName.text = userModel!!.getFullName()
+        fragmentVitalSignBinding.lblHealthName.text = userModel?.getFullName()
         fragmentVitalSignBinding.addNewRecord.setOnClickListener {
             startActivity(Intent(activity, AddExaminationActivity::class.java).putExtra("userId", userId))
         }
@@ -107,7 +107,7 @@ class MyHealthFragment : Fragment() {
             val selected = alertHealthListBinding.list.adapter.getItem(i) as RealmUserModel
             userId = if (selected._id.isNullOrEmpty()) selected.id else selected._id
             getHealthRecords(userId)
-            dialog!!.dismiss()
+            dialog?.dismiss()
         }
         sortList(alertHealthListBinding.spnSort, alertHealthListBinding.list)
         dialog = AlertDialog.Builder(requireActivity())
@@ -142,7 +142,7 @@ class MyHealthFragment : Fragment() {
                     }
                 }
                 userModelList = mRealm.where(RealmUserModel::class.java).sort(sortBy, sort).findAll()
-                adapter = UserListArrayAdapter(activity!!, android.R.layout.simple_list_item_1, userModelList)
+                adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, userModelList)
                 lv.adapter = adapter
             }
         }
@@ -165,7 +165,7 @@ class MyHealthFragment : Fragment() {
                             .contains("name", editable.toString(), Case.INSENSITIVE)
                             .sort("joinDate", Sort.DESCENDING).findAll()
 
-                        val adapter = UserListArrayAdapter(activity!!, android.R.layout.simple_list_item_1, userModelList)
+                        val adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, userModelList)
                         lv.adapter = adapter
                         btnAddMember.visibility = if (adapter.count == 0) View.VISIBLE else View.GONE
                     }
@@ -183,9 +183,9 @@ class MyHealthFragment : Fragment() {
         fragmentVitalSignBinding.layoutUserDetail.visibility = View.VISIBLE
         fragmentVitalSignBinding.tvMessage.visibility = View.GONE
         fragmentVitalSignBinding.txtFullName.text = "${userModel?.firstName} ${userModel?.middleName} ${userModel?.lastName}"
-        fragmentVitalSignBinding.txtEmail.text = Utilities.checkNA(userModel!!.email!!)
-        fragmentVitalSignBinding.txtLanguage.text = Utilities.checkNA(userModel!!.language!!)
-        fragmentVitalSignBinding.txtDob.text = Utilities.checkNA(userModel!!.dob!!)
+        fragmentVitalSignBinding.txtEmail.text = Utilities.checkNA(userModel?.email!!)
+        fragmentVitalSignBinding.txtLanguage.text = Utilities.checkNA(userModel?.language!!)
+        fragmentVitalSignBinding.txtDob.text = Utilities.checkNA(userModel?.dob!!)
         var mh = mRealm.where(RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
         if (mh == null) {
             mh = mRealm.where(RealmMyHealthPojo::class.java).equalTo("userId", userId).findFirst()
@@ -206,14 +206,16 @@ class MyHealthFragment : Fragment() {
                     "${getString(R.string.contact_colon)} ${Utilities.checkNA(myHealths.emergencyContact)}").trimIndent()
             val list = getExaminations(mm)
 
-            val adap = AdapterHealthExamination(requireActivity(), list, mh, userModel!!)
+            val adap = AdapterHealthExamination(requireActivity(), list, mh, userModel)
             adap.setmRealm(mRealm)
             fragmentVitalSignBinding.rvRecords.apply {
                 layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
                 isNestedScrollingEnabled = false
                 adapter = adap
             }
-            fragmentVitalSignBinding.rvRecords.post { fragmentVitalSignBinding.rvRecords.scrollToPosition(list.size - 1) }
+            fragmentVitalSignBinding.rvRecords.post {
+                fragmentVitalSignBinding.rvRecords.scrollToPosition(list?.size ?: (0 - 1))
+            }
         } else {
             fragmentVitalSignBinding.txtOtherNeed.text = ""
             fragmentVitalSignBinding.txtSpecialNeeds.text = ""
@@ -223,18 +225,18 @@ class MyHealthFragment : Fragment() {
         }
     }
 
-    private fun getExaminations(mm: RealmMyHealth): List<RealmMyHealthPojo> {
-        var healths = mRealm.where(RealmMyHealthPojo::class.java)!!.findAll()
-        healths.forEach {
-            Utilities.log(it.profileId!!)
+    private fun getExaminations(mm: RealmMyHealth): List<RealmMyHealthPojo>? {
+        var healths = mRealm.where(RealmMyHealthPojo::class.java)?.findAll()
+        healths?.forEach {
+            it.profileId?.let { it1 -> Utilities.log(it1) }
         }
-        healths = mRealm.where(RealmMyHealthPojo::class.java)!!.equalTo("profileId", mm.userKey)!!.findAll()
-        return healths!!
+        healths = mRealm.where(RealmMyHealthPojo::class.java)?.equalTo("profileId", mm.userKey)?.findAll()
+        return healths
     }
 
     private fun getHealthProfile(mh: RealmMyHealthPojo): RealmMyHealth? {
-        Utilities.log(mh.data!!)
-        val json = AndroidDecrypter.decrypt(mh.data, userModel!!.key, userModel!!.iv)
+        mh.data?.let { Utilities.log(it) }
+        val json = AndroidDecrypter.decrypt(mh.data, userModel?.key, userModel?.iv)
         return if (TextUtils.isEmpty(json)) {
             null
         } else {

@@ -12,7 +12,7 @@ class DatabaseService(context: Context) {
     val realmInstance: Realm
         get() {
             val config = RealmConfiguration.Builder().name(Realm.DEFAULT_REALM_NAME)
-                .deleteRealmIfMigrationNeeded().build()
+                .deleteRealmIfMigrationNeeded().allowWritesOnUiThread(true).build()
             Realm.setDefaultConfiguration(config)
             return Realm.getInstance(config)
         }

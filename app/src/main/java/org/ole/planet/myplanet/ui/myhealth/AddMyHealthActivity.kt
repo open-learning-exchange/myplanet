@@ -32,8 +32,8 @@ class AddMyHealthActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         activityAddMyHealthBinding = ActivityAddMyHealthBinding.inflate(layoutInflater)
         setContentView(activityAddMyHealthBinding.root)
-        supportActionBar!!.setDisplayHomeAsUpEnabled(true)
-        supportActionBar!!.setHomeButtonEnabled(true)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.setHomeButtonEnabled(true)
         realm = DatabaseService(this).realmInstance
         userId = intent.getStringExtra("userId")
         healthPojo = realm.where(RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
@@ -41,8 +41,8 @@ class AddMyHealthActivity : AppCompatActivity() {
             healthPojo = realm.where(RealmMyHealthPojo::class.java).equalTo("userId", userId).findFirst()
         }
         userModelB = realm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
-        key = userModelB!!.key
-        iv = userModelB!!.iv
+        key = userModelB?.key
+        iv = userModelB?.iv
         findViewById<View>(R.id.btn_submit).setOnClickListener {
             createMyHealth()
             Utilities.toast(this@AddMyHealthActivity, getString(R.string.my_health_saved_successfully))
@@ -53,32 +53,32 @@ class AddMyHealthActivity : AppCompatActivity() {
     private fun createMyHealth() {
         if (!realm.isInTransaction) realm.beginTransaction()
         val health = RealmMyHealthProfile()
-        userModelB!!.firstName = activityAddMyHealthBinding.etFname.editText!!.text.toString().trim { it <= ' ' }
-        userModelB!!.middleName = activityAddMyHealthBinding.etMname.editText!!.text.toString().trim { it <= ' ' }
-        userModelB!!.lastName = activityAddMyHealthBinding.etLname.editText!!.text.toString().trim { it <= ' ' }
-        userModelB!!.email = activityAddMyHealthBinding.etEmail.editText!!.text.toString().trim { it <= ' ' }
-        userModelB!!.dob = activityAddMyHealthBinding.etBirthdate.editText!!.text.toString().trim { it <= ' ' }
-        userModelB!!.birthPlace = activityAddMyHealthBinding.etBirthplace.editText!!.text.toString().trim { it <= ' ' }
-        userModelB!!.phoneNumber = activityAddMyHealthBinding.etPhone.editText!!.text.toString().trim { it <= ' ' }
-        health.emergencyContactName = activityAddMyHealthBinding.etEmergency.editText!!.text.toString().trim { it <= ' ' }
-        health.emergencyContact = activityAddMyHealthBinding.etContact.editText!!.text.toString().trim { it <= ' ' }
-        health.emergencyContactType = activityAddMyHealthBinding.spnContactType.selectedItem.toString()
-        health.specialNeeds = activityAddMyHealthBinding.etSpecialNeed.editText!!.text.toString().trim { it <= ' ' }
-        health.notes = activityAddMyHealthBinding.etOtherNeed.editText!!.text.toString().trim { it <= ' ' }
+        userModelB?.firstName = "${activityAddMyHealthBinding.etFname.editText?.text}".trim { it <= ' ' }
+        userModelB?.middleName = "${activityAddMyHealthBinding.etMname.editText?.text}".trim { it <= ' ' }
+        userModelB?.lastName = "${activityAddMyHealthBinding.etLname.editText?.text}".trim { it <= ' ' }
+        userModelB?.email = "${activityAddMyHealthBinding.etEmail.editText?.text}".trim { it <= ' ' }
+        userModelB?.dob = "${activityAddMyHealthBinding.etBirthdate.editText?.text}".trim { it <= ' ' }
+        userModelB?.birthPlace = "${activityAddMyHealthBinding.etBirthplace.editText?.text}".trim { it <= ' ' }
+        userModelB?.phoneNumber = "${activityAddMyHealthBinding.etPhone.editText?.text}".trim { it <= ' ' }
+        health.emergencyContactName = "${activityAddMyHealthBinding.etEmergency.editText?.text}".trim { it <= ' ' }
+        health.emergencyContact = "${activityAddMyHealthBinding.etContact.editText?.text}".trim { it <= ' ' }
+        health.emergencyContactType = "${activityAddMyHealthBinding.spnContactType.selectedItem}"
+        health.specialNeeds = "${activityAddMyHealthBinding.etSpecialNeed.editText?.text}".trim { it <= ' ' }
+        health.notes = "${activityAddMyHealthBinding.etOtherNeed.editText?.text}".trim { it <= ' ' }
         if (myHealth == null) {
             myHealth = RealmMyHealth()
         }
-        if (TextUtils.isEmpty(myHealth!!.userKey)) {
-            myHealth!!.userKey = generateKey()
+        if (TextUtils.isEmpty(myHealth?.userKey)) {
+            myHealth?.userKey = generateKey()
         }
-        myHealth!!.profile = health
+        myHealth?.profile = health
         if (healthPojo == null) {
             healthPojo = realm.createObject(RealmMyHealthPojo::class.java, userId)
         }
-        healthPojo!!.isUpdated = true
-        healthPojo!!.userId = userModelB!!._id
+        healthPojo?.isUpdated = true
+        healthPojo?.userId = userModelB?._id
         try {
-            healthPojo!!.data = encrypt(Gson().toJson(myHealth), key!!, iv!!)
+            healthPojo?.data = encrypt(Gson().toJson(myHealth), key, iv)
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -91,24 +91,24 @@ class AddMyHealthActivity : AppCompatActivity() {
     }
 
     private fun populate() {
-        if (healthPojo != null && !TextUtils.isEmpty(healthPojo!!.data)) {
+        if (healthPojo != null && !TextUtils.isEmpty(healthPojo?.data)) {
             myHealth = Gson().fromJson(
-                decrypt(healthPojo!!.data, userModelB!!.key, userModelB!!.iv),
+                decrypt(healthPojo?.data, userModelB?.key, userModelB?.iv),
                 RealmMyHealth::class.java
             )
-            val health = myHealth!!.profile
-            activityAddMyHealthBinding.etEmergency.editText!!.setText(health!!.emergencyContactName)
-            activityAddMyHealthBinding.etSpecialNeed.editText!!.setText(health.specialNeeds)
-            activityAddMyHealthBinding.etOtherNeed.editText!!.setText(health.notes)
+            val health = myHealth?.profile
+            activityAddMyHealthBinding.etEmergency.editText?.setText(health?.emergencyContactName)
+            activityAddMyHealthBinding.etSpecialNeed.editText?.setText(health?.specialNeeds)
+            activityAddMyHealthBinding.etOtherNeed.editText?.setText(health?.notes)
         }
         if (userModelB != null) {
-            activityAddMyHealthBinding.etFname.editText!!.setText(userModelB!!.firstName)
-            activityAddMyHealthBinding.etMname.editText!!.setText(userModelB!!.middleName)
-            activityAddMyHealthBinding.etLname.editText!!.setText(userModelB!!.lastName)
-            activityAddMyHealthBinding.etEmail.editText!!.setText(userModelB!!.email)
-            activityAddMyHealthBinding.etPhone.editText!!.setText(userModelB!!.phoneNumber)
-            activityAddMyHealthBinding.etBirthdate.editText!!.setText(userModelB!!.dob)
-            activityAddMyHealthBinding.etBirthplace.editText!!.setText(userModelB!!.birthPlace)
+            activityAddMyHealthBinding.etFname.editText?.setText(userModelB?.firstName)
+            activityAddMyHealthBinding.etMname.editText?.setText(userModelB?.middleName)
+            activityAddMyHealthBinding.etLname.editText?.setText(userModelB?.lastName)
+            activityAddMyHealthBinding.etEmail.editText?.setText(userModelB?.email)
+            activityAddMyHealthBinding.etPhone.editText?.setText(userModelB?.phoneNumber)
+            activityAddMyHealthBinding.etBirthdate.editText?.setText(userModelB?.dob)
+            activityAddMyHealthBinding.etBirthplace.editText?.setText(userModelB?.birthPlace)
         }
     }
 

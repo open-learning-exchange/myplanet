@@ -82,9 +82,11 @@ class AddResourceFragment : BottomSheetDialogFragment() {
         bottomSheetDialog.setOnShowListener { d: DialogInterface ->
             val dialog = d as BottomSheetDialog
             val bottomSheet = dialog.findViewById<FrameLayout>(com.google.android.material.R.id.design_bottom_sheet)
-            BottomSheetBehavior.from(bottomSheet!!).state = BottomSheetBehavior.STATE_EXPANDED
-            BottomSheetBehavior.from(bottomSheet).skipCollapsed = true
-            BottomSheetBehavior.from(bottomSheet).setHideable(true)
+            bottomSheet?.let {
+                BottomSheetBehavior.from(it).state = BottomSheetBehavior.STATE_EXPANDED
+                BottomSheetBehavior.from(it).skipCollapsed = true
+                BottomSheetBehavior.from(it).setHideable(true)
+            }
         }
         return bottomSheetDialog
     }
@@ -109,15 +111,15 @@ class AddResourceFragment : BottomSheetDialogFragment() {
             .create()
         createAudioRecorderService(dialog)
         alertSoundRecorderBinding.fabRecord.setOnClickListener {
-            if (!audioRecorderService!!.isRecording()) {
-                audioRecorderService!!.startRecording()
+            if (!audioRecorderService?.isRecording()!!) {
+                audioRecorderService?.startRecording()
             } else {
-                audioRecorderService!!.stopRecording()
+                audioRecorderService?.stopRecording()
             }
         }
         dialog.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.dismiss)) { _: DialogInterface?, _: Int ->
-            if (audioRecorderService != null && audioRecorderService!!.isRecording()) {
-                audioRecorderService!!.forceStop()
+            if (audioRecorderService != null && audioRecorderService?.isRecording() == true) {
+                audioRecorderService?.forceStop()
             }
             dialog.dismiss()
         }
@@ -127,15 +129,15 @@ class AddResourceFragment : BottomSheetDialogFragment() {
     private fun createAudioRecorderService(dialog: AlertDialog) {
         audioRecorderService = AudioRecorderService().setAudioRecordListener(object : AudioRecordListener {
             override fun onRecordStarted() {
-                tvTime!!.setText(R.string.recording_audio)
-                floatingActionButton!!.setImageResource(R.drawable.ic_stop)
+                tvTime?.setText(R.string.recording_audio)
+                floatingActionButton?.setImageResource(R.drawable.ic_stop)
             }
 
             override fun onRecordStopped(outputFile: String?) {
-                tvTime!!.text = ""
+                tvTime?.text = ""
                 dialog.dismiss()
                 audioStartIntent(outputFile)
-                floatingActionButton!!.setImageResource(R.drawable.ic_mic)
+                floatingActionButton?.setImageResource(R.drawable.ic_mic)
             }
 
             override fun onError(error: String?) {
@@ -197,10 +199,12 @@ class AddResourceFragment : BottomSheetDialogFragment() {
 
     private fun getRealPathFromUri(uri: Uri?): String {
         val projection = arrayOf(MediaStore.Images.Media.DATA)
-        requireActivity().contentResolver.query(uri!!, projection, null, null, null).use { cursor ->
-            if (cursor != null && cursor.moveToFirst()) {
-                val columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
-                return cursor.getString(columnIndex)
+        if (uri != null) {
+            requireActivity().contentResolver.query(uri, projection, null, null, null).use { cursor ->
+                if (cursor != null && cursor.moveToFirst()) {
+                    val columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
+                    return cursor.getString(columnIndex)
+                }
             }
         }
         return ""
@@ -210,7 +214,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
         if (type == 0) {
             startActivity(Intent(activity, AddResourceActivity::class.java).putExtra("resource_local_url", path))
         } else {
-            showAlert(activity, path)
+            showAlert(requireContext(), path)
         }
     }
 
@@ -224,14 +228,14 @@ class AddResourceFragment : BottomSheetDialogFragment() {
         const val REQUEST_FILE_SELECTION = 3
         var type = 0
         private val myPersonalsFragment: MyPersonalsFragment? = null
-        fun showAlert(context: Context?, path: String?) {
+        fun showAlert(context: Context, path: String?) {
             val v = LayoutInflater.from(context).inflate(R.layout.alert_my_personal, null)
             val etTitle = v.findViewById<EditText>(R.id.et_title)
             val etDesc = v.findViewById<EditText>(R.id.et_description)
             val realmUserModel = UserProfileDbHandler(MainApplication.context).userModel!!
             val userId = realmUserModel.id
             val userName = realmUserModel.name
-            AlertDialog.Builder(context!!).setTitle(R.string.enter_resource_detail).setView(v)
+            AlertDialog.Builder(context).setTitle(R.string.enter_resource_detail).setView(v)
                 .setPositiveButton("Save") { _: DialogInterface?, _: Int ->
                     val title = etTitle.text.toString().trim { it <= ' ' }
                     if (title.isEmpty()) {

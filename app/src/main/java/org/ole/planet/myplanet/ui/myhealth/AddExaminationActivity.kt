@@ -52,7 +52,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
     private fun initViews() {
         config = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.close)
         activityAddExaminationBinding.btnAddDiag.setOnClickListener {
-            customDiag!!.add(activityAddExaminationBinding.etOtherDiag.text.toString())
+            customDiag?.add("${activityAddExaminationBinding.etOtherDiag.text}")
             activityAddExaminationBinding.etOtherDiag.setText("")
             showOtherDiagnosis()
         }
@@ -62,21 +62,21 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         super.onCreate(savedInstanceState)
         activityAddExaminationBinding = ActivityAddExaminationBinding.inflate(layoutInflater)
         setContentView(activityAddExaminationBinding.root)
-        supportActionBar!!.setHomeButtonEnabled(true)
-        supportActionBar!!.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.setHomeButtonEnabled(true)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
         customDiag = HashSet()
         initViews()
         currentUser = UserProfileDbHandler(this).userModel!!
         mapConditions = HashMap()
         mRealm = DatabaseService(this).realmInstance
-        userId = intent.getStringExtra("userId").toString()
+        userId = intent.getStringExtra("userId")!!
         pojo = mRealm.where(RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
         if (pojo == null) {
             pojo = mRealm.where(RealmMyHealthPojo::class.java).equalTo("userId", userId).findFirst()
         }
         user = mRealm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
-        if (pojo != null && !TextUtils.isEmpty(pojo!!.data)) {
-            health = Gson().fromJson(decrypt(pojo!!.data, user!!.key, user!!.iv), RealmMyHealth::class.java)
+        if (pojo != null && !TextUtils.isEmpty(pojo?.data)) {
+            health = Gson().fromJson(decrypt(pojo?.data, user?.key, user?.iv), RealmMyHealth::class.java)
         }
         if (health == null) {
             initHealth()
@@ -95,14 +95,14 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
     private fun initExamination() {
         if (intent.hasExtra("id")) {
             examination = mRealm.where(RealmMyHealthPojo::class.java).equalTo("_id", intent.getStringExtra("id")).findFirst()!!
-            activityAddExaminationBinding.etTemperature.setText("${examination!!.temperature}")
-            activityAddExaminationBinding.etPulseRate.setText("${examination!!.pulse}")
-            activityAddExaminationBinding.etBloodpressure.setText("${examination!!.bp}")
-            activityAddExaminationBinding.etHeight.setText("${examination!!.height}")
-            activityAddExaminationBinding.etWeight.setText("${examination!!.weight}")
-            activityAddExaminationBinding.etVision.setText(examination!!.vision)
-            activityAddExaminationBinding.etHearing.setText(examination!!.hearing)
-            val encrypted = examination!!.getEncryptedDataAsJson(user!!)
+            activityAddExaminationBinding.etTemperature.setText("${examination?.temperature}")
+            activityAddExaminationBinding.etPulseRate.setText("${examination?.pulse}")
+            activityAddExaminationBinding.etBloodpressure.setText("${examination?.bp}")
+            activityAddExaminationBinding.etHeight.setText("${examination?.height}")
+            activityAddExaminationBinding.etWeight.setText("${examination?.weight}")
+            activityAddExaminationBinding.etVision.setText(examination?.vision)
+            activityAddExaminationBinding.etHearing.setText(examination?.hearing)
+            val encrypted = user?.let { examination?.getEncryptedDataAsJson(it) }
             activityAddExaminationBinding.etObservation.setText(getString(getString(R.string.note_), encrypted))
             activityAddExaminationBinding.etDiag.setText(getString(getString(R.string.diagno), encrypted))
             activityAddExaminationBinding.etTreatments.setText(getString(getString(R.string.treat), encrypted))
@@ -124,11 +124,11 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
             override fun afterTextChanged(s: Editable) {}
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-                if (!activityAddExaminationBinding.etBloodpressure.text.toString().contains("/")) {
+                if (!"${activityAddExaminationBinding.etBloodpressure.text}".contains("/")) {
                     activityAddExaminationBinding.etBloodpressure.error = getString(R.string.blood_pressure_should_be_numeric_systolic_diastolic)
                     allowSubmission = false
                 } else {
-                    val sysDia = activityAddExaminationBinding.etBloodpressure.text.toString()
+                    val sysDia = "${activityAddExaminationBinding.etBloodpressure.text}"
                         .trim { it <= ' ' }
                         .split("/".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
                     if (sysDia.size > 2 || sysDia.isEmpty()) {
@@ -157,25 +157,25 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
     private fun showOtherDiagnosis() {
         activityAddExaminationBinding.containerOtherDiagnosis.removeAllViews()
         val chipCloud = ChipCloud(this, activityAddExaminationBinding.containerOtherDiagnosis, config)
-        for (s in customDiag!!) {
+        for (s in customDiag?: emptySet()) {
             chipCloud.addChip(s)
         }
-        chipCloud.setDeleteListener { _: Int, s1: String? -> customDiag!!.remove(s1) }
+        chipCloud.setDeleteListener { _: Int, s1: String? -> customDiag?.remove(s1) }
         preloadCustomDiagnosis(chipCloud)
     }
 
     private fun preloadCustomDiagnosis(chipCloud: ChipCloud) {
         val arr = resources.getStringArray(R.array.diagnosis_list)
         val mainList = listOf(*arr)
-        if (customDiag!!.isEmpty() && examination != null) {
-            val conditions = Gson().fromJson(examination!!.conditions, JsonObject::class.java)
+        if (customDiag?.isEmpty() == true && examination != null) {
+            val conditions = Gson().fromJson(examination?.conditions, JsonObject::class.java)
             for (s in conditions.keySet()) {
                 if (!mainList.contains(s) && getBoolean(s, conditions)) {
                     chipCloud.addChip(s)
                     chipCloud.setDeleteListener { _: Int, s1: String? ->
-                        customDiag!!.remove(Constants.LABELS[s1])
+                        customDiag?.remove(Constants.LABELS[s1])
                     }
-                    customDiag!!.add(s)
+                    customDiag?.add(s)
                 }
             }
         }
@@ -200,8 +200,8 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
 
     private val otherConditions: Unit
         get() {
-            for (s in customDiag!!) {
-                mapConditions!![s] = true
+            for (s in customDiag?: emptySet()) {
+                mapConditions?.set(s, true)
             }
         }
 
@@ -209,9 +209,9 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         if (!mRealm.isInTransaction) mRealm.beginTransaction()
         health = RealmMyHealth()
         val profile = RealmMyHealthProfile()
-        health!!.lastExamination = Date().time
-        health!!.userKey = generateKey()
-        health!!.profile = profile
+        health?.lastExamination = Date().time
+        health?.userKey = generateKey()
+        health?.profile = profile
         mRealm.commitTransaction()
     }
 
@@ -221,42 +221,42 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         if (examination == null) {
             val userId = generateIv()
             examination = mRealm.createObject(RealmMyHealthPojo::class.java, userId)
-            examination!!.userId = userId
+            examination?.userId = userId
         }
-        examination!!.profileId = health!!.userKey
-        examination!!.creatorId = health!!.userKey
-        examination!!.gender = user!!.gender
-        examination!!.age = getAge(user!!.dob!!)
-        examination!!.isSelfExamination = currentUser._id == pojo!!.get_id()
-        examination!!.date = Date().time
-        examination!!.planetCode = user!!.planetCode
+        examination?.profileId = health?.userKey
+        examination?.creatorId = health?.userKey
+        examination?.gender = user?.gender
+        examination?.age = user?.dob?.let { getAge(it) }!!
+        examination?.isSelfExamination = currentUser._id == pojo?.get_id()
+        examination?.date = Date().time
+        examination?.planetCode = user?.planetCode
         val sign = RealmExamination()
-        sign.allergies = activityAddExaminationBinding.etAllergies.text.toString().trim { it <= ' ' }
+        sign.allergies = "${activityAddExaminationBinding.etAllergies.text}".trim { it <= ' ' }
         sign.createdBy = currentUser._id
-        examination!!.bp = activityAddExaminationBinding.etBloodpressure.text.toString().trim { it <= ' ' }
-        examination!!.setTemperature(getFloat(activityAddExaminationBinding.etTemperature.text.toString().trim { it <= ' ' }))
-        examination!!.pulse = getInt(activityAddExaminationBinding.etPulseRate.text.toString().trim { it <= ' ' })
-        examination!!.setWeight(getFloat(activityAddExaminationBinding.etWeight.text.toString().trim { it <= ' ' }))
-        examination!!.height = getFloat(activityAddExaminationBinding.etHeight.text.toString().trim { it <= ' ' })
+        examination?.bp = "${activityAddExaminationBinding.etBloodpressure.text}".trim { it <= ' ' }
+        examination?.setTemperature(getFloat("${activityAddExaminationBinding.etTemperature.text}".trim { it <= ' ' }))
+        examination?.pulse = getInt("${activityAddExaminationBinding.etPulseRate.text}".trim { it <= ' ' })
+        examination?.setWeight(getFloat("${activityAddExaminationBinding.etWeight.text}".trim { it <= ' ' }))
+        examination?.height = getFloat("${activityAddExaminationBinding.etHeight.text}".trim { it <= ' ' })
         otherConditions
-        examination!!.conditions = Gson().toJson(mapConditions)
-        examination!!.hearing = activityAddExaminationBinding.etHearing.text.toString().trim { it <= ' ' }
-        sign.immunizations = activityAddExaminationBinding.etImmunization.text.toString().trim { it <= ' ' }
-        sign.tests = activityAddExaminationBinding.etLabtest.text.toString().trim { it <= ' ' }
-        sign.xrays = activityAddExaminationBinding.etXray.text.toString().trim { it <= ' ' }
-        examination!!.vision = activityAddExaminationBinding.etVision.text.toString().trim { it <= ' ' }
-        sign.treatments = activityAddExaminationBinding.etTreatments.text.toString().trim { it <= ' ' }
-        sign.referrals = activityAddExaminationBinding.etReferrals.text.toString().trim { it <= ' ' }
-        sign.notes = activityAddExaminationBinding.etObservation.text.toString().trim { it <= ' ' }
-        sign.diagnosis = activityAddExaminationBinding.etDiag.text.toString().trim { it <= ' ' }
-        sign.medications = activityAddExaminationBinding.etMedications.text.toString().trim { it <= ' ' }
-        examination!!.date = Date().time
-        examination!!.isUpdated = true
-        examination!!.isHasInfo = hasInfo
-        pojo!!.isUpdated = true
+        examination?.conditions = Gson().toJson(mapConditions)
+        examination?.hearing = "${activityAddExaminationBinding.etHearing.text}".trim { it <= ' ' }
+        sign.immunizations = "${activityAddExaminationBinding.etImmunization.text}".trim { it <= ' ' }
+        sign.tests = "${activityAddExaminationBinding.etLabtest.text}".trim { it <= ' ' }
+        sign.xrays = "${activityAddExaminationBinding.etXray.text}".trim { it <= ' ' }
+        examination?.vision = "${activityAddExaminationBinding.etVision.text}".trim { it <= ' ' }
+        sign.treatments = "${activityAddExaminationBinding.etTreatments.text}".trim { it <= ' ' }
+        sign.referrals = "${activityAddExaminationBinding.etReferrals.text}".trim { it <= ' ' }
+        sign.notes = "${activityAddExaminationBinding.etObservation.text}".trim { it <= ' ' }
+        sign.diagnosis = "${activityAddExaminationBinding.etDiag.text}".trim { it <= ' ' }
+        sign.medications = "${activityAddExaminationBinding.etMedications.text}".trim { it <= ' ' }
+        examination?.date = Date().time
+        examination?.isUpdated = true
+        examination?.isHasInfo = hasInfo
+        pojo?.isUpdated = true
         try {
             Utilities.log(Gson().toJson(sign))
-            examination!!.data = encrypt(Gson().toJson(sign), user!!.key!!, user!!.iv!!)
+            examination?.data = encrypt(Gson().toJson(sign), user?.key!!, user?.iv!!)
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -266,25 +266,25 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
     }
 
     private val hasInfo: Boolean
-        get() = !TextUtils.isEmpty(activityAddExaminationBinding.etAllergies.text.toString()) ||
-                !TextUtils.isEmpty(activityAddExaminationBinding.etDiag.text.toString()) ||
-                !TextUtils.isEmpty(activityAddExaminationBinding.etImmunization.text.toString()) ||
-                !TextUtils.isEmpty(activityAddExaminationBinding.etMedications.text.toString()) ||
-                !TextUtils.isEmpty(activityAddExaminationBinding.etObservation.text.toString()) ||
-                !TextUtils.isEmpty(activityAddExaminationBinding.etReferrals.text.toString()) ||
-                !TextUtils.isEmpty(activityAddExaminationBinding.etLabtest.text.toString()) ||
-                !TextUtils.isEmpty(activityAddExaminationBinding.etTreatments.text.toString()) ||
-                !TextUtils.isEmpty(activityAddExaminationBinding.etXray.text.toString())
+        get() = !TextUtils.isEmpty("${activityAddExaminationBinding.etAllergies.text}") ||
+                !TextUtils.isEmpty("${activityAddExaminationBinding.etDiag.text}") ||
+                !TextUtils.isEmpty("${activityAddExaminationBinding.etImmunization.text}") ||
+                !TextUtils.isEmpty("${activityAddExaminationBinding.etMedications.text}") ||
+                !TextUtils.isEmpty("${activityAddExaminationBinding.etObservation.text}") ||
+                !TextUtils.isEmpty("${activityAddExaminationBinding.etReferrals.text}") ||
+                !TextUtils.isEmpty("${activityAddExaminationBinding.etLabtest.text}") ||
+                !TextUtils.isEmpty("${activityAddExaminationBinding.etTreatments.text}") ||
+                !TextUtils.isEmpty("${activityAddExaminationBinding.etXray.text}")
     private val isValidInput: Boolean
         get() {
-            val isValidTemp = getFloat(activityAddExaminationBinding.etTemperature.text.toString().trim { it <= ' ' }) in 30.0..40.0 ||
-                        getFloat(activityAddExaminationBinding.etTemperature.text.toString().trim { it <= ' ' }) == 0f
-            val isValidPulse = getInt(activityAddExaminationBinding.etPulseRate.text.toString().trim { it <= ' ' }) in 40..120 ||
-                    getFloat(activityAddExaminationBinding.etPulseRate.text.toString().trim { it <= ' ' }) == 0f
-            val isValidHeight = getFloat(activityAddExaminationBinding.etHeight.text.toString().trim { it <= ' ' }) in 1.0..250.0 ||
-                    getFloat(activityAddExaminationBinding.etHeight.text.toString().trim { it <= ' ' }) == 0f
-            val isValidWeight = getFloat(activityAddExaminationBinding.etWeight.text.toString().trim { it <= ' ' }) in 1.0..150.0 ||
-                    getFloat(activityAddExaminationBinding.etWeight.text.toString().trim { it <= ' ' }) == 0f
+            val isValidTemp = getFloat("${activityAddExaminationBinding.etTemperature.text}".trim { it <= ' ' }) in 30.0..40.0 ||
+                        getFloat("${activityAddExaminationBinding.etTemperature.text}".trim { it <= ' ' }) == 0f
+            val isValidPulse = getInt("${activityAddExaminationBinding.etPulseRate.text}".trim { it <= ' ' }) in 40..120 ||
+                    getFloat("${activityAddExaminationBinding.etPulseRate.text}".trim { it <= ' ' }) == 0f
+            val isValidHeight = getFloat("${activityAddExaminationBinding.etHeight.text}".trim { it <= ' ' }) in 1.0..250.0 ||
+                    getFloat("${activityAddExaminationBinding.etHeight.text}".trim { it <= ' ' }) == 0f
+            val isValidWeight = getFloat("${activityAddExaminationBinding.etWeight.text}".trim { it <= ' ' }) in 1.0..150.0 ||
+                    getFloat("${activityAddExaminationBinding.etWeight.text}".trim { it <= ' ' }) == 0f
             if (!isValidTemp) {
                 activityAddExaminationBinding.etTemperature.error = getString(R.string.invalid_input_must_be_between_30_and_40)
             }
@@ -322,10 +322,10 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         try {
             if (pojo == null) {
                 pojo = mRealm.createObject(RealmMyHealthPojo::class.java, userId)
-                pojo!!.userId = user!!._id
+                pojo?.userId = user?._id
             }
-            health!!.lastExamination = Date().time
-            pojo!!.data = encrypt(Gson().toJson(health), user!!.key!!, user!!.iv!!)
+            health?.lastExamination = Date().time
+            pojo?.data = encrypt(Gson().toJson(health), user?.key, user?.iv)
         } catch (e: Exception) {
             e.printStackTrace()
             Utilities.toast(this, getString(R.string.unable_to_add_health_record))
@@ -348,7 +348,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
     }
 
     override fun onCheckedChanged(compoundButton: CompoundButton, b: Boolean) {
-        val text = compoundButton.text.toString().trim { it <= ' ' }
-        mapConditions!![text] = b
+        val text = "${compoundButton.text}".trim { it <= ' ' }
+        mapConditions?.set(text, b)
     }
 }
