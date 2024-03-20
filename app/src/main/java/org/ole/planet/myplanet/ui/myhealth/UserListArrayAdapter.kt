@@ -37,14 +37,18 @@ class UserListArrayAdapter(activity: Activity, val view: Int, var list: List<Rea
 
         val um = getItem(position)
         holder.tvName?.text = "${um?.getFullName()} (${um?.name})"
-        holder.joined?.text = "${context.getString(R.string.joined_colon)} ${TimeUtils.formatDate(um!!.joinDate)}"
+        if (um != null) {
+            holder.joined?.text = "${context.getString(R.string.joined_colon)} ${TimeUtils.formatDate(um.joinDate)}"
+        }
 
-        if (!TextUtils.isEmpty(um.userImage)) {
-            Glide.with(context)
-                .load(um.userImage)
-                .placeholder(R.drawable.profile)
-                .error(R.drawable.profile)
-                .into(holder.image!!)
+        if (!TextUtils.isEmpty(um?.userImage)) {
+            holder.image?.let {
+                Glide.with(context)
+                    .load(um?.userImage)
+                    .placeholder(R.drawable.profile)
+                    .error(R.drawable.profile)
+                    .into(it)
+            }
         } else {
             holder.image?.setImageResource(R.drawable.profile)
         }

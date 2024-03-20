@@ -46,7 +46,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
         var list: List<RealmFeedback>? = mRealm.where(RealmFeedback::class.java)
             .equalTo("owner", userModel.name).findAll()
         if (userModel.isManager()) list = mRealm.where(RealmFeedback::class.java).findAll()
-        val adapterFeedback = AdapterFeedback(requireActivity(), list!!)
+        val adapterFeedback = AdapterFeedback(requireActivity(), list)
         fragmentFeedbackListBinding.rvFeedback.adapter = adapterFeedback
     }
 

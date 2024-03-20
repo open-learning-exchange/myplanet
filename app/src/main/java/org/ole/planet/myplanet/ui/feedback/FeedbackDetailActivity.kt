@@ -32,19 +32,22 @@ class FeedbackDetailActivity : AppCompatActivity() {
     private var mAdapter: RecyclerView.Adapter<*>? = null
     private var layoutManager: RecyclerView.LayoutManager? = null
     private lateinit var feedback: RealmFeedback
-    var realm: Realm? = null
+    lateinit var realm: Realm
+    private lateinit var rowFeedbackReplyBinding: RowFeedbackReplyBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         activityFeedbackDetailBinding = ActivityFeedbackDetailBinding.inflate(layoutInflater)
         setContentView(activityFeedbackDetailBinding.root)
-        supportActionBar!!.setHomeButtonEnabled(true)
-        supportActionBar!!.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.setHomeButtonEnabled(true)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
         setTitle(R.string.feedback)
         realm = DatabaseService(this).realmInstance
-        feedback = realm!!.where(RealmFeedback::class.java).equalTo("id", intent.getStringExtra("id")).findFirst()!!
+        feedback = realm.where(RealmFeedback::class.java).equalTo("id", intent.getStringExtra("id")).findFirst()!!
         if (!TextUtils.isEmpty(feedback.openTime))
-            activityFeedbackDetailBinding.tvDate.text = getFormatedDateWithTime(feedback.openTime!!.toLong())
+            activityFeedbackDetailBinding.tvDate.text = feedback.openTime?.let {
+                getFormatedDateWithTime(it.toLong())
+            }
         else
             activityFeedbackDetailBinding.tvDate.setText(R.string.date_n_a)
         activityFeedbackDetailBinding.tvMessage.text = if (TextUtils.isEmpty(feedback.message))
@@ -61,10 +64,9 @@ class FeedbackDetailActivity : AppCompatActivity() {
         mAdapter = RvFeedbackAdapter(feedback.messageList, applicationContext)
         activityFeedbackDetailBinding.rvFeedbackReply.adapter = mAdapter
         activityFeedbackDetailBinding.closeFeedback.setOnClickListener {
-            realm!!.executeTransactionAsync(Realm.Transaction { realm1: Realm ->
-                val feedback1 = realm1.where(RealmFeedback::class.java)
-                    .equalTo("id", intent.getStringExtra("id")).findFirst()
-                feedback1!!.status = "Closed" },
+            realm.executeTransactionAsync(Realm.Transaction { realm1: Realm ->
+                val feedback1 = realm1.where(RealmFeedback::class.java).equalTo("id", intent.getStringExtra("id")).findFirst()
+                feedback1?.status = "Closed" },
                 Realm.Transaction.OnSuccess { updateForClosed() })
         }
         activityFeedbackDetailBinding.replyFeedback.setOnClickListener {
@@ -103,7 +105,7 @@ class FeedbackDetailActivity : AppCompatActivity() {
     }
 
     private fun addReply(obj: JsonObject?, id: String?) {
-        realm!!.executeTransactionAsync(Realm.Transaction { realm: Realm ->
+        realm.executeTransactionAsync(Realm.Transaction { realm: Realm ->
             val feedback = realm.where(RealmFeedback::class.java).equalTo("id", id).findFirst()
             if (feedback != null) {
                 val con = Gson()
@@ -125,22 +127,21 @@ class FeedbackDetailActivity : AppCompatActivity() {
     }
 
     inner class RvFeedbackAdapter(private val replyList: List<FeedbackReply>?, var context: Context) : RecyclerView.Adapter<ReplyViewHolder>() {
-        private var rowFeedbackReplyBinding: RowFeedbackReplyBinding? = null
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ReplyViewHolder {
-            rowFeedbackReplyBinding = RowFeedbackReplyBinding.inflate(
-                LayoutInflater.from(context), parent, false
-            )
-            return ReplyViewHolder(rowFeedbackReplyBinding!!)
+            rowFeedbackReplyBinding = RowFeedbackReplyBinding.inflate(LayoutInflater.from(context), parent, false)
+            return ReplyViewHolder(rowFeedbackReplyBinding)
         }
 
         override fun onBindViewHolder(holder: ReplyViewHolder, position: Int) {
-            rowFeedbackReplyBinding!!.tvDate.text = getFormatedDateWithTime(replyList!![position].date.toLong())
-            rowFeedbackReplyBinding!!.tvUser.text = replyList[position].user
-            rowFeedbackReplyBinding!!.tvMessage.text = replyList[position].message
+            rowFeedbackReplyBinding.tvDate.text = replyList?.get(position)?.date?.let {
+                getFormatedDateWithTime(it.toLong())
+            }
+            rowFeedbackReplyBinding.tvUser.text = replyList?.get(position)?.user
+            rowFeedbackReplyBinding.tvMessage.text = replyList?.get(position)?.message
         }
 
         override fun getItemCount(): Int {
-            return replyList!!.size
+            return replyList?.size ?: 0
         }
 
         inner class ReplyViewHolder(rowFeedbackReplyBinding: RowFeedbackReplyBinding) : RecyclerView.ViewHolder(rowFeedbackReplyBinding.root)

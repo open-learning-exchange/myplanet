@@ -101,7 +101,7 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
         })
         Toast.makeText(activity, R.string.thank_you_your_feedback_has_been_submitted, Toast.LENGTH_SHORT).show()
         if (mListener != null) {
-            mListener!!.onFeedbackSubmitted()
+            mListener?.onFeedbackSubmitted()
         }
     }
 

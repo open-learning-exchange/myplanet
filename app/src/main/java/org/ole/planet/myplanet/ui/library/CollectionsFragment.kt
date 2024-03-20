@@ -96,7 +96,7 @@ class CollectionsFragment : DialogFragment(), TagExpandableAdapter.OnClickTagIte
         t.attachedTo?.forEach { s ->
             val l: MutableList<RealmTag> = ArrayList()
             if (childMap.containsKey(s)) {
-                l.addAll(childMap[s]!!)
+                childMap[s]?.let { l.addAll(it) }
             }
             if (!l.contains(t)) l.add(t)
             childMap[s] = l
