@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.base
 
-import android.app.ProgressDialog
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.DialogInterface
@@ -42,6 +41,7 @@ import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.CheckboxListView
+import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DialogUtils.getProgressDialog
 import org.ole.planet.myplanet.utilities.DialogUtils.showError
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
@@ -56,6 +56,7 @@ abstract class BaseResourceFragment : Fragment() {
     var editor: SharedPreferences.Editor? = null
     var lv: CheckboxListView? = null
     var convertView: View? = null
+    private lateinit var prgDialog: DialogUtils.CustomProgressDialog
 
     private var receiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -76,12 +77,12 @@ abstract class BaseResourceFragment : Fragment() {
     }
     private val broadcastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            if (intent.action == DashboardActivity.MESSAGE_PROGRESS && prgDialog != null) {
+            if (intent.action == DashboardActivity.MESSAGE_PROGRESS) {
                 val download = intent.getParcelableExtra<Download>("download")
                 if (!download?.failed!!) {
                     setProgress(download)
                 } else {
-                    download.message?.let { showError(prgDialog!!, it) }
+                    download.message?.let { showError(prgDialog, it) }
                 }
             }
         }
@@ -163,7 +164,7 @@ abstract class BaseResourceFragment : Fragment() {
             Service(requireActivity()).isPlanetAvailable(object : PlanetAvailableListener {
                 override fun isAvailable() {
                     if (urls.isNotEmpty()) {
-                        prgDialog?.show()
+                        prgDialog.show()
                         Utilities.openDownloadService(activity, urls)
                     }
                 }
@@ -178,12 +179,12 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     fun setProgress(download: Download) {
-        prgDialog?.progress = download.progress
+        prgDialog.setProgress(download.progress)
         if (!TextUtils.isEmpty(download.fileName)) {
-            prgDialog?.setTitle(download.fileName)
+            prgDialog.setTitle(download.fileName)
         }
         if (download.completeAll) {
-            showError(prgDialog!!, getString(R.string.all_files_downloaded_successfully))
+            showError(prgDialog, getString(R.string.all_files_downloaded_successfully))
             onDownloadComplete()
         }
     }
@@ -291,6 +292,5 @@ abstract class BaseResourceFragment : Fragment() {
     companion object {
         var settings: SharedPreferences? = null
         var auth = ""
-        var prgDialog: ProgressDialog? = null
     }
 }

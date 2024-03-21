@@ -5,6 +5,15 @@
     android:orientation="vertical"
     android:padding="20dp">
 
+    <TextView
+        android:id="@+id/progressTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="5dp"
+        android:textStyle="bold"
+        android:visibility="gone"
+        android:textAlignment="center"/>
+
     <ProgressBar
         android:id="@+id/progressBar"
         style="?android:attr/progressBarStyleHorizontal"
@@ -17,8 +26,32 @@
 
     <TextView
         android:id="@+id/progressText"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
+        android:visibility="gone"
         android:textAlignment="center"/>
+
+    <LinearLayout
+        android:id="@+id/buttonLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="10dp"
+        android:gravity="end">
+
+        <Button
+            android:id="@+id/buttonNegative"
+            android:layout_width="wrap_content"
+            android:visibility="gone"
+            style="?android:attr/borderlessButtonStyle"
+            android:layout_height="wrap_content" />
+
+        <Button
+            android:id="@+id/buttonPositive"
+            android:layout_width="wrap_content"
+            android:visibility="gone"
+            style="?android:attr/borderlessButtonStyle"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
 </LinearLayout>

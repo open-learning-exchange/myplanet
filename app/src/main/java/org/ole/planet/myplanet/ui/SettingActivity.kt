@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui
 
-import android.app.ProgressDialog
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
@@ -26,12 +25,14 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.dashboard.DashboardFragment
 import org.ole.planet.myplanet.ui.sync.LoginActivity
+import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryFormattedString
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.Utilities
 import java.io.File
 
 class SettingActivity : AppCompatActivity() {
+
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(LocaleHelper.onAttach(base))
     }
@@ -64,14 +65,16 @@ class SettingActivity : AppCompatActivity() {
     class SettingFragment : PreferenceFragmentCompat() {
         lateinit var profileDbHandler: UserProfileDbHandler
         var user: RealmUserModel? = null
-        var dialog: ProgressDialog? = null
+//        var dialog: ProgressDialog? = null
+        private lateinit var dialog: DialogUtils.CustomProgressDialog
 
         @RequiresApi(Build.VERSION_CODES.O)
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
             setPreferencesFromResource(R.xml.pref, rootKey)
             profileDbHandler = UserProfileDbHandler(requireActivity())
             user = profileDbHandler.userModel
-            dialog = ProgressDialog(requireActivity())
+//            dialog = ProgressDialog(requireActivity())
+            dialog = DialogUtils.getCustomProgressDialog(requireActivity())
             setBetaToggleOn()
             setAutoSyncToggleOn()
             val lp = findPreference<ListPreference>("app_language")

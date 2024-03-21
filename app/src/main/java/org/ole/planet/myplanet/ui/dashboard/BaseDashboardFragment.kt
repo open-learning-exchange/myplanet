@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.dashboard
 
 import android.app.DatePickerDialog
-import android.app.ProgressDialog
 import android.content.Intent
 import android.graphics.Typeface
 import android.text.TextUtils
@@ -45,6 +44,7 @@ import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.ui.userprofile.UserProfileFragment
 import org.ole.planet.myplanet.utilities.Constants
+import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Calendar
@@ -55,7 +55,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     private var fullName: String? = null
     lateinit var dbService: DatabaseService
     private var params = LinearLayout.LayoutParams(250, 100)
-    private var di: ProgressDialog? = null
+    private var di: DialogUtils.CustomProgressDialog? = null
 
     fun onLoaded(v: View) {
         profileDbHandler = UserProfileDbHandler(requireContext())
@@ -360,8 +360,8 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     override fun syncKeyId() {
-        di = ProgressDialog(activity)
-        di?.setMessage(getString(R.string.syncing_health_please_wait))
+        di = DialogUtils.CustomProgressDialog(requireContext())
+        di?.setText(getString(R.string.syncing_health_please_wait))
         Utilities.log(model.getRoleAsString())
         if (model.getRoleAsString().contains("health")) {
             settings?.let { TransactionSyncManager.syncAllHealthData(mRealm, it, this) }

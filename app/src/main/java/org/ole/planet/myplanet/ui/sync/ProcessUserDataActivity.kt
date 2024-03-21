@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.sync
 
-import android.app.ProgressDialog
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.DialogInterface
@@ -10,6 +9,7 @@ import android.graphics.Color
 import android.graphics.PorterDuff
 import android.net.Uri
 import android.text.TextUtils
+import android.util.Log
 import android.view.View
 import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
@@ -20,7 +20,6 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import com.google.android.material.textfield.TextInputLayout
-import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.PermissionActivity
 import org.ole.planet.myplanet.callback.SuccessListener
@@ -37,8 +36,11 @@ import kotlin.math.roundToInt
 
 abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
     lateinit var settings: SharedPreferences
-//    @JvmField
-//    var progressDialog: ProgressDialog? = null
+
+    private val customProgressDialog by lazy {
+        DialogUtils.CustomProgressDialog(this)
+    }
+
     @JvmField
     var broadcastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -63,22 +65,22 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
     fun checkDownloadResult(download: Download?) {
         runOnUiThread {
             if (!isFinishing) {
-                val customProgressDialog = DialogUtils.CustomProgressDialog(this)
                 customProgressDialog.show()
                 customProgressDialog.setText("${getString(R.string.downloading)} ${download?.progress}% ${getString(R.string.complete)}")
                 customProgressDialog.setProgress(download?.progress ?: 0)
+                Log.d("Download", "checkDownloadResult: ${download?.completeAll}")
                 if (download?.completeAll == true) {
-                    safelyDismissDialog(customProgressDialog)
+                    safelyDismissDialog()
                     installApk(this, download.fileUrl)
                 }
             }
         }
     }
 
-    private fun safelyDismissDialog(dialog: DialogUtils.CustomProgressDialog) {
-        if (dialog.isShowing() && !isFinishing) {
+    private fun safelyDismissDialog() {
+        if (customProgressDialog.isShowing() && !isFinishing) {
             try {
-                dialog.dismiss()
+                customProgressDialog.dismiss()
             } catch (e: IllegalArgumentException) {
                 e.printStackTrace()
             }
@@ -150,7 +152,6 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
     }
 
     fun startUpload() {
-        val customProgressDialog = DialogUtils.CustomProgressDialog(this)
         customProgressDialog.setText(getString(R.string.uploading_data_to_server_please_wait))
         customProgressDialog.show()
         Utilities.log("Upload : upload started")
