@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.provider.Settings
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import androidx.appcompat.app.AlertDialog
@@ -176,18 +175,9 @@ object DialogUtils {
             binding.buttonPositive.visibility = if (isVisible) View.VISIBLE else View.GONE
         }
 
-//        fun setNegativeButton(text: String = "Cancel", isVisible: Boolean = true, listener: () -> Unit) {
-//            binding.buttonNegative.text = text
-//            negativeButtonAction = listener
-//            binding.buttonNegative.visibility = if (isVisible) View.VISIBLE else View.GONE
-//        }
-
-        fun setNegativeButton(text: String = "Cancel", isVisible: Boolean = true, onClickListener: () -> Unit) {
+        fun setNegativeButton(text: String = "Cancel", isVisible: Boolean = true, listener: () -> Unit) {
             binding.buttonNegative.text = text
-            negativeButtonAction = {
-                Log.d("CustomProgressDialog", "NegativeButton clicked")
-                onClickListener()
-            }
+            negativeButtonAction = listener
             binding.buttonNegative.visibility = if (isVisible) View.VISIBLE else View.GONE
         }
 
