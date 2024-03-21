@@ -9,6 +9,7 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
+import android.util.Log
 import android.view.View
 import android.widget.ArrayAdapter
 import com.google.gson.JsonArray
@@ -63,7 +64,7 @@ class BecomeMemberActivity : BaseActivity() {
             showDatePickerDialog()
         }
 
-        val username = intent.getStringExtra("username")
+        val username = intent.getStringExtra("username") ?: ""
         guest = intent.getBooleanExtra("guest", false)
 
         settings = getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE)
