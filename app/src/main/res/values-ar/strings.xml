@@ -488,7 +488,7 @@
     <string name="recording_audio">جارٍ تسجيل الصوت......</string>
     <string name="show_replies">"عرض الردود "</string>
     <string name="selected">"المحدد: "</string>
-    <string name="last_sync"><![CDATA["<< آخر مزامنة مع الخادم: "]]></string>
+    <string name="last_sync"><![CDATA["آخر مزامنة مع الخادم: "]]></string>
     <string name="last_syncs">آخر مزامنة</string>
     <string name="login_user">اسم المستخدم لتسجيل الدخول</string>
     <string name="login_password">كلمة مرور المستخدم لتسجيل الدخول</string>
@@ -833,7 +833,7 @@
     <string name="data_cleared">تم مسح البيانات</string>
     <string name="are_you_sure_want_to_delete_all_the_files">هل أنت متأكد أنك ترغب في حذف جميع الملفات؟</string>
     <string name="unable_to_clear_files">غير قادر على مسح الملفات</string>
-    <string name="last_synced_never">آخر مزامنة: أبدًا</string>
+    <string name="last_synced_never">لم يتم المزامنة أبدا</string>
     <string name="last_synced_colon">آخر مزامنة: </string>
     <string name="disclaimer">
     <![CDATA[
