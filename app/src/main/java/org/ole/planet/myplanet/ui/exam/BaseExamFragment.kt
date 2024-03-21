@@ -69,9 +69,9 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
             if (isMySurvey) {
                 sub = mRealm.where(RealmSubmission::class.java).equalTo("id", id).findFirst()
                 id = if (sub?.parentId?.contains("@") == true) {
-                    sub!!.parentId?.split("@".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()?.get(0)
+                    sub?.parentId?.split("@".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()?.get(0)
                 } else {
-                    sub!!.parentId
+                    sub?.parentId
                 }
             }
         }

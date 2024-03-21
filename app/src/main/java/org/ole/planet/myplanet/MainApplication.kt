@@ -39,10 +39,7 @@ class MainApplication : Application() {
         val androidId: String
             get() {
                 try {
-                    return Settings.Secure.getString(
-                        context.contentResolver,
-                        Settings.Secure.ANDROID_ID
-                    )
+                    return Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
@@ -60,8 +57,8 @@ class MainApplication : Application() {
         builder.detectFileUriExposure()
 
         // Set up auto-sync using WorkManager
-        if (preferences!!.getBoolean("autoSync", false) && preferences!!.contains("autoSyncInterval")) {
-            val syncInterval = preferences!!.getInt("autoSyncInterval", 60 * 60)
+        if (preferences?.getBoolean("autoSync", false) == true && preferences?.contains("autoSyncInterval")!!) {
+            val syncInterval = preferences?.getInt("autoSyncInterval", 60 * 60)
             scheduleAutoSyncWork(syncInterval)
         } else {
             cancelAutoSyncWork()
@@ -72,10 +69,12 @@ class MainApplication : Application() {
         scheduleTaskNotificationWork()
     }
 
-    private fun scheduleAutoSyncWork(syncInterval: Int) {
-        val autoSyncWork: PeriodicWorkRequest = PeriodicWorkRequest.Builder(AutoSyncWorker::class.java, syncInterval.toLong(), TimeUnit.SECONDS).build()
+    private fun scheduleAutoSyncWork(syncInterval: Int?) {
+        val autoSyncWork: PeriodicWorkRequest? = syncInterval?.let { PeriodicWorkRequest.Builder(AutoSyncWorker::class.java, it.toLong(), TimeUnit.SECONDS).build() }
         val workManager = WorkManager.getInstance(this)
-        workManager.enqueueUniquePeriodicWork(AUTO_SYNC_WORK_TAG, ExistingPeriodicWorkPolicy.UPDATE, autoSyncWork)
+        if (autoSyncWork != null) {
+            workManager.enqueueUniquePeriodicWork(AUTO_SYNC_WORK_TAG, ExistingPeriodicWorkPolicy.UPDATE, autoSyncWork)
+        }
     }
 
     private fun cancelAutoSyncWork() {
