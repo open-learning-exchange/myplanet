@@ -26,12 +26,9 @@ object DialogUtils {
         prgDialog.setPositiveButton(context.getString(R.string.finish), isVisible = true) {
             prgDialog.dismiss()
         }
-//        prgDialog.setNegativeButton(context.getString(R.string.stop_download), isVisible = true) {
-//            context.stopService(Intent(context, MyDownloadService::class.java))
-//        }
         prgDialog.setNegativeButton(context.getString(R.string.stop_download), isVisible = true) {
-            Log.d("DownloadDialog", "Stopping download service")
             context.stopService(Intent(context, MyDownloadService::class.java))
+            prgDialog.dismiss()
         }
         return prgDialog
     }
