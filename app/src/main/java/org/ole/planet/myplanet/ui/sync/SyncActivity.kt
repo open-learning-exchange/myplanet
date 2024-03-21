@@ -573,17 +573,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         return false
     }
 
-//    fun forceSyncTrigger(): Boolean {
-//        lblLastSyncDate.text = getString(R.string.last_sync) + Utilities.getRelativeTime(settings.getLong(getString(R.string.last_syncs), 0)) + " >>"
-//        if (autoSynFeature(Constants.KEY_AUTOSYNC_, applicationContext) && autoSynFeature(Constants.KEY_AUTOSYNC_WEEKLY, applicationContext)) {
-//            return checkForceSync(7)
-//        } else if (autoSynFeature(Constants.KEY_AUTOSYNC_, applicationContext) && autoSynFeature(Constants.KEY_AUTOSYNC_MONTHLY, applicationContext)
-//        ) {
-//            return checkForceSync(30)
-//        }
-//        return false
-//    }
-
     fun showWifiDialog() {
         if (intent.getBooleanExtra("showWifiDialog", false)) {
             showWifiSettingDialog(this)
