@@ -139,7 +139,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private lateinit var defaultPref: SharedPreferences
     lateinit var imgBtnSetting: ImageButton
     lateinit var service: Service
-    private lateinit var fallbackLanguage: String
+    private var fallbackLanguage: String = "en"
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
@@ -480,7 +480,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             pref.edit().putString("app_language", systemLanguage).apply()
             index = languageKeyList.indexOf(systemLanguage)
         } else {
-            fallbackLanguage = "en"
             pref.edit().putString("app_language", fallbackLanguage).apply()
             index = languageKeyList.indexOf(fallbackLanguage)
         }
