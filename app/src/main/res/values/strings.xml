@@ -579,7 +579,7 @@
     <string name="recording_audio">Recording audio......</string>
     <string name="show_replies">"Show replies "</string>
     <string name="selected">"Selected: "</string>
-    <string name="last_sync"><![CDATA["<< Last sync with server: "]]></string>
+    <string name="last_sync"><![CDATA["Last sync with server: "]]></string>
     <string name="last_syncs">LastSync</string>
     <string name="login_user">loginUserName</string>
     <string name="login_password">loginUserPassword</string>
@@ -925,7 +925,7 @@
     <string name="data_cleared">Data cleared</string>
     <string name="are_you_sure_want_to_delete_all_the_files">Are you sure want to delete all the files?</string>
     <string name="unable_to_clear_files">Unable to clear files</string>
-    <string name="last_synced_never">Last Synced: Never</string>
+    <string name="last_synced_never">never synced</string>
     <string name="last_synced_colon">"Last Synced: "</string>
     <string name="disclaimer">
     <![CDATA[
