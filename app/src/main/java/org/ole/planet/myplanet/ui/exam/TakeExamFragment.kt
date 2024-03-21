@@ -62,10 +62,10 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         sub = q.findFirst() as RealmSubmission?
         val courseId = exam?.courseId
         isCertified = isCourseCertified(mRealm, courseId)
-        if (questions?.size!! > 0) {
+        if ((questions?.size ?: 0) > 0) {
             createSubmission()
             Utilities.log("Current index $currentIndex")
-            startExam(questions!![currentIndex])
+            startExam(questions?.get(currentIndex))
         } else {
             container?.visibility = View.GONE
             fragmentTakeExamBinding.btnSubmit.visibility = View.GONE
@@ -96,9 +96,9 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         sub?.type = type
         sub?.startTime = Date().time
         if (sub?.answers != null) {
-            currentIndex = sub?.answers!!.size
+            currentIndex = sub?.answers?.size ?: 0
         }
-        if (sub?.answers!!.size == questions?.size && sub?.type == "survey") {
+        if (sub?.answers?.size == questions?.size && sub?.type == "survey") {
             currentIndex = 0
         }
         mRealm.commitTransaction()
@@ -113,8 +113,8 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         fragmentTakeExamBinding.groupChoices.visibility = View.GONE
         fragmentTakeExamBinding.llCheckbox.visibility = View.GONE
         clearAnswer()
-        if (sub?.answers!!.size > currentIndex) {
-            ans = sub?.answers!![currentIndex]?.value!!
+        if ((sub?.answers?.size ?: 0) > currentIndex) {
+            ans = sub?.answers?.get(currentIndex)?.value ?: ""
         }
         if (question?.type.equals("select", ignoreCase = true)) {
             fragmentTakeExamBinding.groupChoices.visibility = View.VISIBLE
@@ -138,7 +138,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     private fun clearAnswer() {
         ans = ""
         fragmentTakeExamBinding.etAnswer.setText("")
-        listAns!!.clear()
+        listAns?.clear()
     }
 
     private fun setButtonText() {
@@ -197,7 +197,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
     override fun onClick(view: View) {
         if (view.id == R.id.btn_submit) {
-            val type = questions!![currentIndex]!!.type
+            val type = questions?.get(currentIndex)?.type
             showTextInput(type)
             if (showErrorMessage(getString(R.string.please_select_write_your_answer_to_continue))) {
                 return
@@ -240,24 +240,24 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         answer?.value = ans
         answer?.setValueChoices(listAns, isLastAnsvalid)
         answer?.submissionId = sub?.id
-        Submit_id = answer?.submissionId!!
+        Submit_id = answer?.submissionId ?: ""
         if ((que?.getCorrectChoice()?.size ?: 0) == 0) {
-            answer.grade = 0
-            answer.mistakes = 0
+            answer?.grade = 0
+            answer?.mistakes = 0
             flag = true
         } else {
             flag = checkCorrectAns(answer, que)
         }
         removeOldAnswer(list)
-        list!!.add(currentIndex, answer)
+        list?.add(currentIndex, answer)
         sub?.answers = list
         mRealm.commitTransaction()
         return flag
     }
 
     private fun removeOldAnswer(list: RealmList<RealmAnswer>?) {
-        if (sub?.type == "survey" && list?.size!! > currentIndex) {
-            list.removeAt(currentIndex)
+        if (sub?.type == "survey" && (list?.size ?: 0) > currentIndex) {
+            list?.removeAt(currentIndex)
         } else if ((list?.size ?: 0) > currentIndex && !isLastAnsvalid) {
             list?.removeAt(currentIndex)
         }
@@ -271,12 +271,14 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         val selectedAns = listAns?.values?.toTypedArray<String>()
         val correctChoices = que?.getCorrectChoice()?.toTypedArray<String>()
         if (!isEqual(selectedAns, correctChoices)) {
-            mistake = mistake!! + 1
+            if (mistake != null) {
+                mistake += 1
+            }
         } else {
             flag = true
         }
         if (answer != null) {
-            answer.mistakes = mistake!!
+            answer.mistakes = mistake ?: 0
         }
         return flag
     }

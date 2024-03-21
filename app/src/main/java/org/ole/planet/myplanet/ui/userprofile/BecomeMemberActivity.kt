@@ -63,7 +63,7 @@ class BecomeMemberActivity : BaseActivity() {
             showDatePickerDialog()
         }
 
-        val username = intent.getStringExtra("username")
+        val username = intent.getStringExtra("username") ?: ""
         guest = intent.getBooleanExtra("guest", false)
 
         settings = getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE)

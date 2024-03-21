@@ -489,7 +489,7 @@
     <string name="recording_audio">Grabando audio......</string>
     <string name="show_replies">"Mostrar respuestas "</string>
     <string name="selected">"Seleccionado: "</string>
-    <string name="last_sync"><![CDATA["<< Última sincronización con el servidor: "]]></string>
+    <string name="last_sync"><![CDATA["Última sincronización con el servidor: "]]></string>
     <string name="last_syncs">Última Sincronización</string>
     <string name="login_user">iniciarsesión Nombre de usuario</string>
     <string name="login_password">Iniciar sesión Usuario Contraseña</string>
@@ -834,7 +834,7 @@
     <string name="data_cleared">Datos eliminados</string>
     <string name="are_you_sure_want_to_delete_all_the_files">¿Estás seguro de que quieres eliminar todos los archivos?</string>
     <string name="unable_to_clear_files">No se pueden eliminar los archivos</string>
-    <string name="last_synced_never">Última sincronización: Nunca</string>
+    <string name="last_synced_never">nunca sincronizado</string>
     <string name="last_synced_colon">"Última sincronización: "</string>
     <string name="disclaimer">
     <![CDATA[
