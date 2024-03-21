@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.course
 import android.content.Context
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -115,8 +116,7 @@ class AdapterCourses(private val context: Context, private var courseList: List<
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
-        rowCourseBinding =
-            RowCourseBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        rowCourseBinding = RowCourseBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ViewHoldercourse(rowCourseBinding)
     }
 
@@ -141,6 +141,7 @@ class AdapterCourses(private val context: Context, private var courseList: List<
                 } catch (e: Exception) {
                     throw RuntimeException(e)
                 }
+
                 holder.rowCourseBinding.ratingBar.setOnTouchListener { _: View?, event: MotionEvent ->
                     if (event.action == MotionEvent.ACTION_UP) homeItemClickListener!!.showRatingDialog("course", course.courseId, course.courseTitle, ratingChangeListener)
                     true

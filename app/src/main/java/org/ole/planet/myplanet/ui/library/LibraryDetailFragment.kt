@@ -60,7 +60,7 @@ class LibraryDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     }
 
     private fun setLibraryData() {
-        fragmentLibraryDetailBinding.tvTitle.text = String.format("%s%s", if (openFrom!!.isEmpty()) "" else "$openFrom-", library.title)
+        fragmentLibraryDetailBinding.tvTitle.text = String.format("%s%s", if (openFrom?.isEmpty() == true) "" else "$openFrom-", library.title)
         fragmentLibraryDetailBinding.tvAuthor.text = library.author
         fragmentLibraryDetailBinding.tvPublished.text = library.publisher
         fragmentLibraryDetailBinding.tvMedia.text = library.mediaType
@@ -101,8 +101,8 @@ class LibraryDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             }
             openResource(library)
         }
-        Utilities.log("user id " + profileDbHandler.userModel!!.id + " " + library.userId!!.contains(profileDbHandler.userModel!!.id))
-        val isAdd = !library.userId!!.contains(profileDbHandler.userModel!!.id)
+        Utilities.log("user id " + profileDbHandler.userModel?.id + " " + library.userId?.contains(profileDbHandler.userModel?.id))
+        val isAdd = !library.userId?.contains(profileDbHandler.userModel?.id)!!
         fragmentLibraryDetailBinding.btnRemove.setImageResource(
             if (isAdd) {
                 R.drawable.ic_add_library
@@ -118,11 +118,11 @@ class LibraryDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         fragmentLibraryDetailBinding.btnRemove.setOnClickListener {
             if (!lRealm.isInTransaction) lRealm.beginTransaction()
             if (isAdd) {
-                library.setUserId(profileDbHandler.userModel!!.id)
-                onAdd(lRealm, "resources", profileDbHandler.userModel!!.id!!, libraryId!!)
+                library.setUserId(profileDbHandler.userModel?.id)
+                onAdd(lRealm, "resources", profileDbHandler.userModel?.id, libraryId)
             } else {
-                library.removeUserId(profileDbHandler.userModel!!.id)
-                onRemove(lRealm, "resources", profileDbHandler.userModel!!.id!!, libraryId!!)
+                library.removeUserId(profileDbHandler.userModel?.id)
+                onRemove(lRealm, "resources", profileDbHandler.userModel?.id, libraryId)
             }
             Utilities.toast(activity, getString(R.string.resources) + if (isAdd) getString(R.string.added_to) else getString(R.string.removed_from) + getString(R.string.my_library))
             setLibraryData()
@@ -131,7 +131,7 @@ class LibraryDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     }
 
     override fun onRatingChanged() {
-        val `object` = getRatingsById(lRealm, "resource", library.resourceId, userModel!!.id)
+        val `object` = getRatingsById(lRealm, "resource", library.resourceId, userModel?.id)
         setRatings(`object`)
     }
 }

@@ -34,8 +34,8 @@ class AddResourceActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         activityAddResourceBinding = ActivityAddResourceBinding.inflate(layoutInflater)
         setContentView(activityAddResourceBinding.root)
-        supportActionBar!!.setDisplayHomeAsUpEnabled(true)
-        supportActionBar!!.setHomeButtonEnabled(true)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.setHomeButtonEnabled(true)
         userModel = UserProfileDbHandler(this).userModel!!
         resourceUrl = intent.getStringExtra("resource_local_url")
         levels = RealmList()
@@ -101,7 +101,7 @@ class AddResourceActivity : AppCompatActivity() {
         resource.resourceFor = resourceFor
         resource.resourceLocalAddress = resourceUrl
         resource.resourceOffline = true
-        resource.filename = resourceUrl!!.substring(resourceUrl!!.lastIndexOf("/"))
+        resource.filename = resourceUrl?.let { it.substring(it.lastIndexOf("/")) }
     }
 
     private fun validate(title: String): Boolean {
@@ -109,11 +109,11 @@ class AddResourceActivity : AppCompatActivity() {
             activityAddResourceBinding.tlTitle.error = getString(R.string.title_is_required)
             return false
         }
-        if (levels!!.isEmpty()) {
+        if (levels?.isEmpty() == true) {
             Utilities.toast(this, getString(R.string.level_is_required))
             return false
         }
-        if (subjects!!.isEmpty()) {
+        if (subjects?.isEmpty() == true) {
             Utilities.toast(this, getString(R.string.subject_is_required))
             return false
         }
@@ -127,12 +127,12 @@ class AddResourceActivity : AppCompatActivity() {
         listView.adapter = adapter
         AlertDialog.Builder(this).setView(listView).setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
             val selected = listView.selectedItemsList
-            items!!.clear()
+            items?.clear()
             var selection = ""
             for (index in selected) {
                 val s = list[index]
                 selection += "$s ,"
-                items.add(s)
+                items?.add(s)
             }
             (view as TextView).text = selection
         }.setNegativeButton(R.string.dismiss, null).show()

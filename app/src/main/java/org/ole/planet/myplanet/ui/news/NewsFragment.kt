@@ -30,7 +30,6 @@ import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.FileUtils.openOleFolder
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
-import org.ole.planet.myplanet.utilities.Utilities
 
 @RequiresApi(api = Build.VERSION_CODES.O)
 class NewsFragment : BaseNewsFragment() {

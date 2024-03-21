@@ -93,7 +93,7 @@ open class RealmMyCourse : RealmObject() {
             myMyCoursesDB.method = JsonUtils.getString("method", myCousesDoc)
             myMyCoursesDB.gradeLevel = JsonUtils.getString("gradeLevel", myCousesDoc)
             myMyCoursesDB.subjectLevel = JsonUtils.getString("subjectLevel", myCousesDoc)
-            myMyCoursesDB.createdDate = JsonUtils.getString("createdDate", myCousesDoc)
+            myMyCoursesDB.createdDate = JsonUtils.getLongAsString("createdDate", myCousesDoc)
             myMyCoursesDB.setnumberOfSteps(JsonUtils.getJsonArray("steps", myCousesDoc).size())
             RealmCourseStep.insertCourseSteps(myMyCoursesDB.courseId,
                 JsonUtils.getJsonArray("steps", myCousesDoc),
@@ -115,7 +115,7 @@ open class RealmMyCourse : RealmObject() {
         }
 
         @JvmStatic
-        fun getMyCourseByUserId(userId: String?, libs: RealmResults<RealmMyCourse>?): List<RealmMyCourse> {
+        fun getMyCourseByUserId(userId: String?, libs: List<RealmMyCourse>?): List<RealmMyCourse> {
             val libraries: MutableList<RealmMyCourse> = ArrayList()
             for (item in libs ?: emptyList()) {
                 if (item.userId!!.contains(userId)) {
@@ -157,9 +157,9 @@ open class RealmMyCourse : RealmObject() {
         }
 
         @JvmStatic
-        fun createMyCourse(course: RealmMyCourse, mRealm: Realm, id: String?) {
+        fun createMyCourse(course: RealmMyCourse?, mRealm: Realm, id: String?) {
             if (!mRealm.isInTransaction) mRealm.beginTransaction()
-            course.setUserId(id)
+            course?.setUserId(id)
             mRealm.commitTransaction()
         }
 

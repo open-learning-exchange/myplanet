@@ -48,8 +48,8 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         super.onCreate(savedInstanceState)
         activityReplyBinding = ActivityReplyBinding.inflate(layoutInflater)
         setContentView(activityReplyBinding.root)
-        supportActionBar!!.setDisplayHomeAsUpEnabled(true)
-        supportActionBar!!.setHomeButtonEnabled(true)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.setHomeButtonEnabled(true)
         mRealm = DatabaseService(this).realmInstance
         title = "Reply"
         imageList = RealmList()
@@ -60,7 +60,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         showData(id)
         openFolderLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
             if (result.resultCode == RESULT_OK && result.data != null) {
-                val url = result.data!!.data
+                val url = result.data?.data
                 handleImageSelection(url)
             }
         }
@@ -77,7 +77,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     }
 
     override fun showReply(news: RealmNews?, fromLogin: Boolean) {
-        startActivity(Intent(this, ReplyActivity::class.java).putExtra("id", news!!.id))
+        startActivity(Intent(this, ReplyActivity::class.java).putExtra("id", news?.id))
     }
 
     override fun addImage(llImage: LinearLayout?) {
@@ -105,14 +105,14 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     }
 
     private fun showSelectedImages() {
-        llImage!!.removeAllViews()
-        llImage!!.visibility = View.VISIBLE
+        llImage?.removeAllViews()
+        llImage?.visibility = View.VISIBLE
         for (img in imageList) {
             val ob = Gson().fromJson(img, JsonObject::class.java)
             val inflater = LayoutInflater.from(this).inflate(R.layout.image_thumb, llImage, false)
             val imgView = inflater.findViewById<ImageView>(R.id.thumb)
             Glide.with(this).load(File(getString("imageUrl", ob))).into(imgView)
-            llImage!!.addView(inflater)
+            llImage?.addView(inflater)
         }
         newsAdapter.setImageList(imageList)
     }

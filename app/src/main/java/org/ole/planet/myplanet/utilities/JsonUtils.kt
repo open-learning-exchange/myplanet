@@ -30,6 +30,25 @@ object JsonUtils {
     }
 
     @JvmStatic
+    fun getLongAsString(fieldName: String, jsonObject: JsonObject?): String {
+        return try {
+            if (jsonObject?.has(fieldName) == true) {
+                val el: JsonElement = jsonObject.get(fieldName)
+                if (el is JsonNull || !el.isJsonPrimitive) {
+                    ""
+                } else {
+                    el.asJsonPrimitive.asString
+                }
+            } else {
+                ""
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            ""
+        }
+    }
+
+    @JvmStatic
     fun getString(array: JsonArray, index: Int): String {
         return try {
             val el: JsonElement = array.get(index)

@@ -39,14 +39,14 @@ class AndroidDecrypter {
 
         @JvmStatic
         @Throws(Exception::class)
-        fun encrypt(plainText: String, key: String, iv: String): String {
+        fun encrypt(plainText: String, key: String?, iv: String?): String {
             val clean = plainText.toByteArray()
             val ivSize = 16
             val ivBytes = ByteArray(ivSize)
-            System.arraycopy(hexStringToByteArray(iv), 0, ivBytes, 0, ivBytes.size)
+            iv?.let { hexStringToByteArray(it) }?.let { System.arraycopy(it, 0, ivBytes, 0, ivBytes.size) }
             val ivParameterSpec = IvParameterSpec(ivBytes)
             val keyBytes = ByteArray(32)
-            System.arraycopy(hexStringToByteArray(key), 0, keyBytes, 0, keyBytes.size)
+            key?.let { hexStringToByteArray(it) }?.let { System.arraycopy(it, 0, keyBytes, 0, keyBytes.size) }
             val secretKeySpec = SecretKeySpec(keyBytes, "AES")
             val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
             cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec, ivParameterSpec)

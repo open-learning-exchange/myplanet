@@ -48,13 +48,13 @@ class AdapterMyPersonal(private val context: Context, private val list: List<Rea
         rowMyPersonalBinding.imgDelete.setOnClickListener {
             AlertDialog.Builder(context).setMessage(R.string.delete_record)
                 .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
-                    if (!realm!!.isInTransaction) realm!!.beginTransaction()
-                    val personal = realm!!.where(RealmMyPersonal::class.java)
-                        .equalTo("_id", list[position].get_id()).findFirst()
-                    personal!!.deleteFromRealm()
-                    realm!!.commitTransaction()
+                    if (!realm?.isInTransaction!!) realm?.beginTransaction()
+                    val personal = realm?.where(RealmMyPersonal::class.java)
+                        ?.equalTo("_id", list[position].get_id())?.findFirst()
+                    personal?.deleteFromRealm()
+                    realm?.commitTransaction()
                     notifyDataSetChanged()
-                    listener!!.onAddedResource()
+                    listener?.onAddedResource()
                 }.setNegativeButton(R.string.cancel, null).show()
         }
         rowMyPersonalBinding.imgEdit.setOnClickListener {
@@ -64,15 +64,15 @@ class AdapterMyPersonal(private val context: Context, private val list: List<Rea
             openResource(list[position].path)
         }
         rowMyPersonalBinding.imgUpload.setOnClickListener {
-            if (listener != null) listener!!.onUpload(
-                list[position]
-            )
+            if (listener != null) {
+                listener?.onUpload(list[position])
+            }
         }
     }
 
     private fun openResource(path: String?) {
-        val arr = path!!.split("\\.".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-        when (arr[arr.size - 1]) {
+        val arr = path?.split("\\.".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()
+        when (arr?.get(arr.size - 1)) {
             "pdf" -> context.startActivity(
                 Intent(context, PDFReaderActivity::class.java).putExtra("TOUCHED_FILE", path)
             )
@@ -113,12 +113,12 @@ class AdapterMyPersonal(private val context: Context, private val list: List<Rea
                     Utilities.toast(context, R.string.please_enter_title.toString())
                     return@setPositiveButton
                 }
-                if (!realm!!.isInTransaction) realm!!.beginTransaction()
+                if (!realm?.isInTransaction!!) realm?.beginTransaction()
                 personal.description = desc
                 personal.title = title
-                realm!!.commitTransaction()
+                realm?.commitTransaction()
                 notifyDataSetChanged()
-                listener!!.onAddedResource()
+                listener?.onAddedResource()
             }
             .setNegativeButton(R.string.cancel, null)
             .show()

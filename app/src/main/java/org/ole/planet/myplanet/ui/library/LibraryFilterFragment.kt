@@ -14,7 +14,7 @@ import org.ole.planet.myplanet.callback.OnFilterListener
 import org.ole.planet.myplanet.databinding.FragmentLibraryFilterBinding
 
 class LibraryFilterFragment : DialogFragment(), AdapterView.OnItemClickListener {
-    private var fragmentLibraryFilterBinding: FragmentLibraryFilterBinding? = null
+    private lateinit var fragmentLibraryFilterBinding: FragmentLibraryFilterBinding
     var languages: Set<String>? = null
     var subjects: Set<String>? = null
     var mediums: Set<String>? = null
@@ -31,12 +31,12 @@ class LibraryFilterFragment : DialogFragment(), AdapterView.OnItemClickListener 
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentLibraryFilterBinding = FragmentLibraryFilterBinding.inflate(inflater, container, false)
-        fragmentLibraryFilterBinding!!.listMedium.onItemClickListener = this
-        fragmentLibraryFilterBinding!!.listLang.onItemClickListener = this
-        fragmentLibraryFilterBinding!!.listLevel.onItemClickListener = this
-        fragmentLibraryFilterBinding!!.listSub.onItemClickListener = this
-        fragmentLibraryFilterBinding!!.ivClose.setOnClickListener { dismiss() }
-        return fragmentLibraryFilterBinding!!.root
+        fragmentLibraryFilterBinding.listMedium.onItemClickListener = this
+        fragmentLibraryFilterBinding.listLang.onItemClickListener = this
+        fragmentLibraryFilterBinding.listLevel.onItemClickListener = this
+        fragmentLibraryFilterBinding.listSub.onItemClickListener = this
+        fragmentLibraryFilterBinding.ivClose.setOnClickListener { dismiss() }
+        return fragmentLibraryFilterBinding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -45,18 +45,18 @@ class LibraryFilterFragment : DialogFragment(), AdapterView.OnItemClickListener 
     }
 
     private fun initList() {
-        languages = filterListener!!.getData()["languages"]
-        subjects = filterListener!!.getData()["subjects"]
-        mediums = filterListener!!.getData()["mediums"]
-        levels = filterListener!!.getData()["levels"]
-        selectedLvls = filterListener!!.getSelectedFilter()["levels"] as MutableSet<String>
-        selectedSubs = filterListener!!.getSelectedFilter()["subjects"] as MutableSet<String>
-        selectedMeds = filterListener!!.getSelectedFilter()["mediums"] as MutableSet<String>
-        selectedLang = filterListener!!.getSelectedFilter()["languages"] as MutableSet<String>
-        setAdapter(fragmentLibraryFilterBinding!!.listLevel, levels, selectedLvls)
-        setAdapter(fragmentLibraryFilterBinding!!.listLang, languages, selectedLang)
-        setAdapter(fragmentLibraryFilterBinding!!.listMedium, mediums, selectedMeds)
-        setAdapter(fragmentLibraryFilterBinding!!.listSub, subjects, selectedSubs)
+        languages = filterListener?.getData()?.get("languages")
+        subjects = filterListener?.getData()?.get("subjects")
+        mediums = filterListener?.getData()?.get("mediums")
+        levels = filterListener?.getData()?.get("levels")
+        selectedLvls = filterListener?.getSelectedFilter()?.get("levels") as MutableSet<String>
+        selectedSubs = filterListener?.getSelectedFilter()?.get("subjects") as MutableSet<String>
+        selectedMeds = filterListener?.getSelectedFilter()?.get("mediums") as MutableSet<String>
+        selectedLang = filterListener?.getSelectedFilter()?.get("languages") as MutableSet<String>
+        setAdapter(fragmentLibraryFilterBinding.listLevel, levels, selectedLvls)
+        setAdapter(fragmentLibraryFilterBinding.listLang, languages, selectedLang)
+        setAdapter(fragmentLibraryFilterBinding.listMedium, mediums, selectedMeds)
+        setAdapter(fragmentLibraryFilterBinding.listSub, subjects, selectedSubs)
     }
 
     private fun setAdapter(listView: ListView, ar: Set<String>?, set: Set<String>) {
@@ -64,7 +64,7 @@ class LibraryFilterFragment : DialogFragment(), AdapterView.OnItemClickListener 
         listView.choiceMode = AbsListView.CHOICE_MODE_MULTIPLE
         listView.adapter = ArrayAdapter(requireActivity(), R.layout.rowlayout, R.id.checkBoxRowLayout, arr!!)
         for (i in arr.indices) {
-                listView.setItemChecked(i, set.contains(arr[i]!!))
+                listView.setItemChecked(i, set.contains(arr[i]))
             }
     }
 
@@ -77,7 +77,7 @@ class LibraryFilterFragment : DialogFragment(), AdapterView.OnItemClickListener 
                 R.id.list_level -> addToList(s, selectedLvls)
                 R.id.list_medium -> addToList(s, selectedMeds)
             }
-            filterListener!!.filter(selectedSubs, selectedLang, selectedMeds, selectedLvls)
+            filterListener?.filter(selectedSubs, selectedLang, selectedMeds, selectedLvls)
             initList()
         }
     }

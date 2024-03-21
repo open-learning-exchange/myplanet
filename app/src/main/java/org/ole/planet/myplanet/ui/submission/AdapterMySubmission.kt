@@ -23,7 +23,7 @@ import org.ole.planet.myplanet.ui.submission.AdapterMySubmission.ViewHolderMySur
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormatedDate
 import org.ole.planet.myplanet.utilities.Utilities
 
-class AdapterMySubmission(private val context: Context, private val list: List<RealmSubmission>?, private val examHashMap: HashMap<String?, RealmStepExam>) : RecyclerView.Adapter<ViewHolderMySurvey>() {
+class AdapterMySubmission(private val context: Context, private val list: List<RealmSubmission>?, private val examHashMap: HashMap<String?, RealmStepExam>?) : RecyclerView.Adapter<ViewHolderMySurvey>() {
     private lateinit var rowMysurveyBinding: RowMysurveyBinding
     private var listener: OnHomeItemClickListener? = null
     private var type = ""
@@ -48,29 +48,31 @@ class AdapterMySubmission(private val context: Context, private val list: List<R
     }
 
     override fun onBindViewHolder(holder: ViewHolderMySurvey, position: Int) {
-        rowMysurveyBinding.status.text = list!![position].status
-        rowMysurveyBinding.date.text = getFormatedDate(list[position].startTime)
+        rowMysurveyBinding.status.text = list?.get(position)?.status
+        rowMysurveyBinding.date.text = getFormatedDate(list?.get(position)?.startTime)
         showSubmittedBy(rowMysurveyBinding.submittedBy, position)
-        if (examHashMap.containsKey(list[position].parentId))
-            rowMysurveyBinding.title.text = examHashMap[list[position].parentId]!!.name
+        if (examHashMap?.containsKey(list?.get(position)?.parentId) == true)
+            rowMysurveyBinding.title.text = examHashMap[list?.get(position)?.parentId]?.name
         holder.itemView.setOnClickListener {
             if (type == "survey")
-                openSurvey(listener, list[position].id, true)
+                openSurvey(listener, list?.get(position)?.id, true)
             else
-                openSubmissionDetail(listener, list[position].id)
+                openSubmissionDetail(listener, list?.get(position)?.id)
         }
     }
 
     private fun showSubmittedBy(submitted_by: TextView, position: Int) {
         submitted_by.visibility = View.VISIBLE
         try {
-            val ob = list!![position].user?.let { JSONObject(it) }
+            val ob = list?.get(position)?.user?.let { JSONObject(it) }
             if (ob != null) {
                 submitted_by.text = ob.optString("name")
             }
         } catch (e: Exception) {
-            val user = mRealm!!.where(RealmUserModel::class.java).equalTo("id", list!![position].userId).findFirst()
-            if (user != null) submitted_by.text = user.name
+            val user = mRealm?.where(RealmUserModel::class.java)?.equalTo("id", list?.get(position)?.userId)?.findFirst()
+            if (user != null) {
+                submitted_by.text = user.name
+            }
         }
     }
 
@@ -84,11 +86,13 @@ class AdapterMySubmission(private val context: Context, private val list: List<R
     }
 
     override fun getItemCount(): Int {
-        return list!!.size
+        return list?.size ?: 0
     }
 
-    fun setType(type: String) {
-        this.type = type
+    fun setType(type: String?) {
+        if (type != null) {
+            this.type = type
+        }
     }
 
     class ViewHolderMySurvey(rowMysurveyBinding: RowMysurveyBinding) : RecyclerView.ViewHolder(rowMysurveyBinding.root)
