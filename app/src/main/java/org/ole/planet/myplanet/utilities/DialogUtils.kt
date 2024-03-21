@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.provider.Settings
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import androidx.appcompat.app.AlertDialog
@@ -25,7 +26,11 @@ object DialogUtils {
         prgDialog.setPositiveButton(context.getString(R.string.finish), isVisible = true) {
             prgDialog.dismiss()
         }
+//        prgDialog.setNegativeButton(context.getString(R.string.stop_download), isVisible = true) {
+//            context.stopService(Intent(context, MyDownloadService::class.java))
+//        }
         prgDialog.setNegativeButton(context.getString(R.string.stop_download), isVisible = true) {
+            Log.d("DownloadDialog", "Stopping download service")
             context.stopService(Intent(context, MyDownloadService::class.java))
         }
         return prgDialog
@@ -174,9 +179,18 @@ object DialogUtils {
             binding.buttonPositive.visibility = if (isVisible) View.VISIBLE else View.GONE
         }
 
-        fun setNegativeButton(text: String = "Cancel", isVisible: Boolean = true, listener: () -> Unit) {
+//        fun setNegativeButton(text: String = "Cancel", isVisible: Boolean = true, listener: () -> Unit) {
+//            binding.buttonNegative.text = text
+//            negativeButtonAction = listener
+//            binding.buttonNegative.visibility = if (isVisible) View.VISIBLE else View.GONE
+//        }
+
+        fun setNegativeButton(text: String = "Cancel", isVisible: Boolean = true, onClickListener: () -> Unit) {
             binding.buttonNegative.text = text
-            negativeButtonAction = listener
+            negativeButtonAction = {
+                Log.d("CustomProgressDialog", "NegativeButton clicked")
+                onClickListener()
+            }
             binding.buttonNegative.visibility = if (isVisible) View.VISIBLE else View.GONE
         }
 
