@@ -80,6 +80,7 @@ import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnected
 import org.ole.planet.myplanet.utilities.NotificationUtil.cancellAll
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.Utilities.getRelativeTime
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -88,8 +89,10 @@ import java.text.Normalizer
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import java.util.Objects
 import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
+
 
 abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVersionCallback,
     OnUserSelectedListener {
@@ -136,7 +139,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private lateinit var defaultPref: SharedPreferences
     lateinit var imgBtnSetting: ImageButton
     lateinit var service: Service
-    private lateinit var fallbackLanguage: String
+    private var fallbackLanguage: String = "en"
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
@@ -477,7 +480,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             pref.edit().putString("app_language", systemLanguage).apply()
             index = languageKeyList.indexOf(systemLanguage)
         } else {
-            fallbackLanguage = "en"
             pref.edit().putString("app_language", fallbackLanguage).apply()
             index = languageKeyList.indexOf(fallbackLanguage)
         }
@@ -557,11 +559,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     fun forceSyncTrigger(): Boolean {
-        lblLastSyncDate.text = getString(R.string.last_sync) + Utilities.getRelativeTime(settings.getLong(getString(R.string.last_syncs), 0)) + " >>"
+        if (Objects.equals(getRelativeTime(settings.getLong(getString(R.string.last_syncs), 0)), "Jan 1, 1970")) {
+            lblLastSyncDate.text = getString(R.string.last_synced_never)
+        } else {
+            lblLastSyncDate.text = "${getString(R.string.last_sync)} ${getRelativeTime(settings.getLong(getString(R.string.last_syncs), 0))}"
+        }
         if (autoSynFeature(Constants.KEY_AUTOSYNC_, applicationContext) && autoSynFeature(Constants.KEY_AUTOSYNC_WEEKLY, applicationContext)) {
             return checkForceSync(7)
-        } else if (autoSynFeature(Constants.KEY_AUTOSYNC_, applicationContext) && autoSynFeature(Constants.KEY_AUTOSYNC_MONTHLY, applicationContext)
-        ) {
+        } else if (autoSynFeature(Constants.KEY_AUTOSYNC_, applicationContext) && autoSynFeature(Constants.KEY_AUTOSYNC_MONTHLY, applicationContext)) {
             return checkForceSync(30)
         }
         return false
