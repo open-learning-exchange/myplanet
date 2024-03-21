@@ -9,7 +9,6 @@ import android.graphics.Color
 import android.graphics.PorterDuff
 import android.net.Uri
 import android.text.TextUtils
-import android.util.Log
 import android.view.View
 import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
@@ -68,7 +67,6 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
                 customProgressDialog.show()
                 customProgressDialog.setText("${getString(R.string.downloading)} ${download?.progress}% ${getString(R.string.complete)}")
                 customProgressDialog.setProgress(download?.progress ?: 0)
-                Log.d("Download", "checkDownloadResult: ${download?.completeAll}")
                 if (download?.completeAll == true) {
                     safelyDismissDialog()
                     installApk(this, download.fileUrl)

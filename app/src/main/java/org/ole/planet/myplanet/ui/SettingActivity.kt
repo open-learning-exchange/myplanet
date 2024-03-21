@@ -65,7 +65,6 @@ class SettingActivity : AppCompatActivity() {
     class SettingFragment : PreferenceFragmentCompat() {
         lateinit var profileDbHandler: UserProfileDbHandler
         var user: RealmUserModel? = null
-//        var dialog: ProgressDialog? = null
         private lateinit var dialog: DialogUtils.CustomProgressDialog
 
         @RequiresApi(Build.VERSION_CODES.O)
@@ -73,7 +72,6 @@ class SettingActivity : AppCompatActivity() {
             setPreferencesFromResource(R.xml.pref, rootKey)
             profileDbHandler = UserProfileDbHandler(requireActivity())
             user = profileDbHandler.userModel
-//            dialog = ProgressDialog(requireActivity())
             dialog = DialogUtils.getCustomProgressDialog(requireActivity())
             setBetaToggleOn()
             setAutoSyncToggleOn()

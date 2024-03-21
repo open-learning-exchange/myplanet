@@ -145,7 +145,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         editor = settings.edit()
         mRealm = DatabaseService(this).realmInstance
         requestAllPermissions()
-//        progressDialog = ProgressDialog(this)
         customProgressDialog = DialogUtils.getCustomProgressDialog(this)
         customProgressDialog.setCancelable(false)
         prefData = SharedPrefManager(this)
@@ -334,8 +333,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     override fun onSyncStarted() {
-//        progressDialog?.setMessage(getString(R.string.syncing_data_please_wait))
-//        progressDialog?.show()
         customProgressDialog.setText(getString(R.string.syncing_data_please_wait))
         customProgressDialog.show()
 
@@ -523,14 +520,11 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         } else {
             instance?.login(name, password, object : SyncListener {
                 override fun onSyncStarted() {
-//                    progressDialog?.setMessage(getString(R.string.please_wait))
-//                    progressDialog?.show()
                     customProgressDialog.setText(getString(R.string.please_wait))
                     customProgressDialog.show()
                 }
 
                 override fun onSyncComplete() {
-//                    progressDialog?.dismiss()
                     customProgressDialog.dismiss()
                     Utilities.log("on complete")
                     val log = authenticateUser(settings, name, password, true)
@@ -547,7 +541,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
                 override fun onSyncFailed(msg: String?) {
                     Utilities.toast(MainApplication.context, msg)
-//                    progressDialog?.dismiss()
                     customProgressDialog.dismiss()
                     syncIconDrawable.stop()
                     syncIconDrawable.selectDrawable(0)

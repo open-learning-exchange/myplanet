@@ -21,9 +21,8 @@ import org.ole.planet.myplanet.utilities.Utilities
 class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
     private lateinit var fragmentMyPersonalsBinding: FragmentMyPersonalsBinding
     lateinit var mRealm: Realm
-//    private var pg: ProgressDialog? = null
-    private var addResourceFragment: AddResourceFragment? = null
     private lateinit var pg: DialogUtils.CustomProgressDialog
+    private var addResourceFragment: AddResourceFragment? = null
     fun refreshFragment() {
         if (isAdded) {
             setAdapter()
@@ -35,7 +34,6 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentMyPersonalsBinding = FragmentMyPersonalsBinding.inflate(inflater, container, false)
-//        pg = ProgressDialog(activity)
         pg = DialogUtils.getCustomProgressDialog(requireContext())
         mRealm = DatabaseService(requireActivity()).realmInstance
         fragmentMyPersonalsBinding.rvMypersonal.layoutManager = LinearLayoutManager(activity)
