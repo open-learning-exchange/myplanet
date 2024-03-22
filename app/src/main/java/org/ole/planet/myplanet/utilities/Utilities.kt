@@ -51,7 +51,7 @@ object Utilities {
         return "${getUrl()}/resources/$id/$file"
     }
 
-    fun getUserImageUrl(userId: String, imageName: String): String {
+    fun getUserImageUrl(userId: String?, imageName: String): String {
         return "${getUrl()}/_users/$userId/$imageName"
     }
 

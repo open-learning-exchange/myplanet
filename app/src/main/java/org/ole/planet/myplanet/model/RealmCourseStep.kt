@@ -43,10 +43,10 @@ open class RealmCourseStep : RealmObject() {
                 if (myCourseStepDB == null) {
                     myCourseStepDB = mRealm.createObject(RealmCourseStep::class.java, step_id)
                 }
-                myCourseStepDB!!.courseId = myCoursesID
+                myCourseStepDB?.courseId = myCoursesID
                 val stepContainer = steps[step].asJsonObject
-                myCourseStepDB.stepTitle = JsonUtils.getString("stepTitle", stepContainer)
-                myCourseStepDB.description = JsonUtils.getString("description", stepContainer)
+                myCourseStepDB?.stepTitle = JsonUtils.getString("stepTitle", stepContainer)
+                myCourseStepDB?.description = JsonUtils.getString("description", stepContainer)
                 val description = JsonUtils.getString("description", stepContainer)
                 val links = extractLinks(description)
                 val concatenatedLinks = ArrayList<String>()
@@ -56,7 +56,7 @@ open class RealmCourseStep : RealmObject() {
                     concatenatedLinks.add(concatenatedLink)
                 }
                 Utilities.openDownloadService(MainApplication.context, concatenatedLinks)
-                myCourseStepDB.setNoOfResources(JsonUtils.getJsonArray("resources", stepContainer).size())
+                myCourseStepDB?.setNoOfResources(JsonUtils.getJsonArray("resources", stepContainer).size())
                 insertCourseStepsAttachments(myCoursesID, step_id, JsonUtils.getJsonArray("resources", stepContainer), mRealm)
                 insertExam(stepContainer, mRealm, step_id, step + 1, myCoursesID)
             }

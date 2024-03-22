@@ -116,12 +116,16 @@ open class RealmSubmission : RealmObject() {
             val `object` = JsonObject()
             val user = mRealm.where(RealmUserModel::class.java).equalTo("id", sub.userId).findFirst()
             var examId = sub.parentId
-            if (sub.parentId!!.contains("@")) {
+            if (sub.parentId?.contains("@") == true) {
                 examId = sub.parentId!!.split("@".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[0]
             }
             val exam = mRealm.where(RealmStepExam::class.java).equalTo("id", examId).findFirst()
-            if (!TextUtils.isEmpty(sub._id)) `object`.addProperty("_id", sub._id)
-            if (!TextUtils.isEmpty(sub._rev)) `object`.addProperty("_rev", sub._rev)
+            if (!TextUtils.isEmpty(sub._id)) {
+                `object`.addProperty("_id", sub._id)
+            }
+            if (!TextUtils.isEmpty(sub._rev)) {
+                `object`.addProperty("_rev", sub._rev)
+            }
             `object`.addProperty("parentId", sub.parentId)
             `object`.addProperty("type", sub.type)
             `object`.addProperty("grade", sub.grade)
@@ -141,7 +145,7 @@ open class RealmSubmission : RealmObject() {
             Utilities.log("Parent Exam " + (exam == null))
             if (exam != null && parent == null) `object`.add("parent", RealmStepExam.serializeExam(mRealm, exam))
             if (TextUtils.isEmpty(sub.user)) {
-                `object`.add("user", user!!.serialize())
+                `object`.add("user", user?.serialize())
             } else {
                 `object`.add("user", JsonParser.parseString(sub.user))
             }
@@ -172,7 +176,7 @@ open class RealmSubmission : RealmObject() {
         @Throws(IOException::class)
         fun continueResultUpload(sub: RealmSubmission, apiInterface: ApiInterface?, realm: Realm, context: Context) {
             var `object`: JsonObject? = null
-            if (!TextUtils.isEmpty(sub.userId) && sub.userId!!.startsWith("guest")) return
+            if (!TextUtils.isEmpty(sub.userId) && sub.userId?.startsWith("guest") == true) return
             `object` = if (TextUtils.isEmpty(sub._id)) {
                 apiInterface?.postDoc(Utilities.header, "application/json", Utilities.getUrl() + "/submissions", serializeExamResult(realm, sub, context))?.execute()?.body()
             } else {
@@ -206,9 +210,11 @@ open class RealmSubmission : RealmObject() {
         @JvmStatic
         fun getRecentSubmissionDate(id: String?, userId: String?, mRealm: Realm): String {
             val s = mRealm.where(RealmSubmission::class.java).equalTo("parentId", id).equalTo("userId", userId).sort("startTime", Sort.DESCENDING).findFirst()
-            return if (s == null) "" else TimeUtils.getFormatedDateWithTime(
-                s.startTime
-            ) + ""
+            return if (s == null) {
+                ""
+            } else {
+                TimeUtils.getFormatedDateWithTime(s.startTime)
+            }
         }
 
         @JvmStatic
@@ -220,7 +226,9 @@ open class RealmSubmission : RealmObject() {
                     id = sub.parentId!!.split("@".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[0]
                 }
                 val survey = mRealm.where(RealmStepExam::class.java).equalTo("id", id).findFirst()
-                if (survey != null) exams[sub.parentId] = survey
+                if (survey != null) {
+                    exams[sub.parentId] = survey
+                }
             }
             return exams
         }

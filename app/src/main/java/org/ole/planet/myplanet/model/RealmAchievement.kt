@@ -53,7 +53,7 @@ open class RealmAchievement : RealmObject() {
     val achievementsArray: JsonArray
         get() {
             val array = JsonArray()
-            for (s in achievements!!) {
+            for (s in achievements ?: emptyList()) {
                 val ob = Gson().fromJson(s, JsonElement::class.java)
                 array.add(ob)
             }
@@ -62,7 +62,7 @@ open class RealmAchievement : RealmObject() {
 
     fun getreferencesArray(): JsonArray {
         val array = JsonArray()
-        for (s in references!!) {
+        for (s in references ?: emptyList()) {
             val ob = Gson().fromJson(s, JsonElement::class.java)
             array.add(ob)
         }
@@ -73,7 +73,9 @@ open class RealmAchievement : RealmObject() {
         achievements = RealmList()
         for (el in ac) {
             val achi = Gson().toJson(el)
-            if (!achievements!!.contains(achi)) achievements!!.add(achi)
+            if (!achievements?.contains(achi)!!) {
+                achievements?.add(achi)
+            }
         }
     }
 
@@ -83,7 +85,9 @@ open class RealmAchievement : RealmObject() {
         for (el in of) {
             Utilities.log("Set references")
             val e = Gson().toJson(el)
-            if (!references!!.contains(e)) references!!.add(e)
+            if (!references?.contains(e)!!) {
+                references?.add(e)
+            }
         }
     }
 
@@ -103,12 +107,7 @@ open class RealmAchievement : RealmObject() {
         }
 
         @JvmStatic
-        fun createReference(
-            name: String?,
-            relation: EditText,
-            phone: EditText,
-            email: EditText
-        ): JsonObject {
+        fun createReference(name: String?, relation: EditText, phone: EditText, email: EditText): JsonObject {
             val ob = JsonObject()
             ob.addProperty("name", name)
             ob.addProperty("phone", phone.text.toString())
@@ -123,12 +122,12 @@ open class RealmAchievement : RealmObject() {
             if (achievement == null) achievement = mRealm.createObject(
                 RealmAchievement::class.java, JsonUtils.getString("_id", act)
             )
-            achievement!!.set_rev(JsonUtils.getString("_rev", act))
-            achievement.purpose = JsonUtils.getString("purpose", act)
-            achievement.goals = JsonUtils.getString("goals", act)
-            achievement.achievementsHeader = JsonUtils.getString("achievementsHeader", act)
-            achievement.setreferences(JsonUtils.getJsonArray("references", act))
-            achievement.setAchievements(JsonUtils.getJsonArray("achievements", act))
+            achievement?.set_rev(JsonUtils.getString("_rev", act))
+            achievement?.purpose = JsonUtils.getString("purpose", act)
+            achievement?.goals = JsonUtils.getString("goals", act)
+            achievement?.achievementsHeader = JsonUtils.getString("achievementsHeader", act)
+            achievement?.setreferences(JsonUtils.getJsonArray("references", act))
+            achievement?.setAchievements(JsonUtils.getJsonArray("achievements", act))
         }
     }
 }

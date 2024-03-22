@@ -56,17 +56,17 @@ open class RealmMyLife : RealmObject {
 
         @JvmStatic
         fun updateWeight(weight: Int, _id: String?, realm: Realm, userId: String?) {
-            realm.executeTransaction { realm ->
+            realm.executeTransaction { mRealm ->
                 var currentWeight = -1
-                val myLifeList = getMyLifeByUserId(realm, userId)
+                val myLifeList = getMyLifeByUserId(mRealm, userId)
                 for (item in myLifeList) {
-                    if (item.get_id()!!.contains(_id!!)) {
+                    if (_id?.let { item.get_id()?.contains(it) } == true) {
                         currentWeight = item.weight
                         item.weight = weight
                     }
                 }
                 for (item in myLifeList) {
-                    if (currentWeight != -1 && item.weight == weight && !item.get_id()!!.contains(_id!!)) {
+                    if (currentWeight != -1 && item.weight == weight && !_id?.let { item.get_id()?.contains(it) }!!) {
                         item.weight = currentWeight
                     }
                 }
@@ -75,10 +75,10 @@ open class RealmMyLife : RealmObject {
 
         @JvmStatic
         fun updateVisibility(isVisible: Boolean, _id: String?, realm: Realm, userId: String?) {
-            realm.executeTransaction { realm ->
-                val myLifeList = getMyLifeByUserId(realm, userId)
+            realm.executeTransaction { mRealm ->
+                val myLifeList = getMyLifeByUserId(mRealm, userId)
                 for (item in myLifeList) {
-                    if (item.get_id()!!.contains(_id!!)) {
+                    if (_id?.let { item.get_id()?.contains(it) } == true) {
                         item.isVisible = isVisible
                     }
                 }

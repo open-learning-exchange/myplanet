@@ -58,33 +58,29 @@ open class RealmStepExam : RealmObject() {
                 )
             }
             checkIdsAndInsert(myCoursesID, step_id, myExam)
-            myExam!!.type = if (exam.has("type")) JsonUtils.getString("type", exam) else "exam"
-            myExam.name = JsonUtils.getString("name", exam)
-            myExam.passingPercentage = JsonUtils.getString("passingPercentage", exam)
-            myExam._rev = JsonUtils.getString("_rev", exam)
-            myExam.createdBy = JsonUtils.getString("createdBy", exam)
-            myExam.sourcePlanet = JsonUtils.getString("sourcePlanet", exam)
-            myExam.createdDate = JsonUtils.getLong("createdDate", exam)
-            myExam.updatedDate = JsonUtils.getLong("updatedDate", exam)
-            myExam.totalMarks = JsonUtils.getInt("totalMarks", exam)
-            myExam.noOfQuestions = JsonUtils.getJsonArray("questions", exam).size()
-            myExam.isFromNation = !TextUtils.isEmpty(parentId)
+            myExam?.type = if (exam.has("type")) JsonUtils.getString("type", exam) else "exam"
+            myExam?.name = JsonUtils.getString("name", exam)
+            myExam?.passingPercentage = JsonUtils.getString("passingPercentage", exam)
+            myExam?._rev = JsonUtils.getString("_rev", exam)
+            myExam?.createdBy = JsonUtils.getString("createdBy", exam)
+            myExam?.sourcePlanet = JsonUtils.getString("sourcePlanet", exam)
+            myExam?.createdDate = JsonUtils.getLong("createdDate", exam)
+            myExam?.updatedDate = JsonUtils.getLong("updatedDate", exam)
+            myExam?.totalMarks = JsonUtils.getInt("totalMarks", exam)
+            myExam?.noOfQuestions = JsonUtils.getJsonArray("questions", exam).size()
+            myExam?.isFromNation = !TextUtils.isEmpty(parentId)
             val oldQuestions: RealmResults<*>? = mRealm.where(RealmExamQuestion::class.java).equalTo("examId", JsonUtils.getString("_id", exam)).findAll()
             if (oldQuestions == null || oldQuestions.isEmpty()) {
-                RealmExamQuestion.insertExamQuestions(
-                    JsonUtils.getJsonArray("questions", exam),
-                    JsonUtils.getString("_id", exam),
-                    mRealm
-                )
+                RealmExamQuestion.insertExamQuestions(JsonUtils.getJsonArray("questions", exam), JsonUtils.getString("_id", exam), mRealm)
             }
         }
 
         private fun checkIdsAndInsert(myCoursesID: String?, step_id: String?, myExam: RealmStepExam?) {
             if (!TextUtils.isEmpty(myCoursesID)) {
-                myExam!!.courseId = myCoursesID
+                myExam?.courseId = myCoursesID
             }
             if (!TextUtils.isEmpty(step_id)) {
-                myExam!!.stepId = step_id
+                myExam?.stepId = step_id
             }
         }
 
@@ -115,11 +111,12 @@ open class RealmStepExam : RealmObject() {
         @JvmStatic
         fun getIds(list: List<RealmStepExam>): Array<String?> {
             val ids = arrayOfNulls<String>(list.size)
-            var i = 0
-            for (e in list) {
-                if (e.type!!.startsWith("survey")) ids[i] = e.id else ids[i] =
-                    e.id + "@" + e.courseId
-                i++
+            for ((i, e) in list.withIndex()) {
+                if (e.type?.startsWith("survey") == true) {
+                    ids[i] = e.id
+                } else {
+                    ids[i] = e.id + "@" + e.courseId
+                }
             }
             Utilities.log(Gson().toJson(ids))
             return ids

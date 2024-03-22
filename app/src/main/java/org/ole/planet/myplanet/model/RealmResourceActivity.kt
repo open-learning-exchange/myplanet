@@ -53,18 +53,15 @@ open class RealmResourceActivity : RealmObject() {
         @JvmStatic
         fun onSynced(mRealm: Realm, settings: SharedPreferences) {
             if (!mRealm.isInTransaction) mRealm.beginTransaction()
-            val user = mRealm.where(RealmUserModel::class.java)
-                .equalTo("id", settings.getString("userId", "")).findFirst()
+            val user = mRealm.where(RealmUserModel::class.java).equalTo("id", settings.getString("userId", "")).findFirst()
             if (user == null) {
                 Utilities.log("User is null")
                 return
             }
-            if (user.id!!.startsWith("guest")) {
+            if (user.id?.startsWith("guest") == true) {
                 return
             }
-            val activities = mRealm.createObject(
-                RealmResourceActivity::class.java, UUID.randomUUID().toString()
-            )
+            val activities = mRealm.createObject(RealmResourceActivity::class.java, UUID.randomUUID().toString())
             activities.user = user.name
             activities._rev = null
             activities._id = null
