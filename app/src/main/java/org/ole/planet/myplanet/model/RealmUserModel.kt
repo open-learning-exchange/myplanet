@@ -145,8 +145,8 @@ open class RealmUserModel : RealmObject() {
         return "$firstName $lastName"
     }
 
-    fun addImageUrl(jsonDoc: JsonObject) {
-        if (jsonDoc.has("_attachments")) {
+    fun addImageUrl(jsonDoc: JsonObject?) {
+        if (jsonDoc?.has("_attachments") == true) {
             val element = JsonParser.parseString(jsonDoc["_attachments"].asJsonObject.toString())
             val obj = element.asJsonObject
             val entries = obj.entrySet()
@@ -187,13 +187,13 @@ open class RealmUserModel : RealmObject() {
         }
 
         @JvmStatic
-        fun populateUsersTable(jsonDoc: JsonObject, mRealm: Realm, settings: SharedPreferences): RealmUserModel? {
+        fun populateUsersTable(jsonDoc: JsonObject?, mRealm: Realm?, settings: SharedPreferences): RealmUserModel? {
             try {
                 var _id = JsonUtils.getString("_id", jsonDoc)
                 if (_id.isEmpty()) _id = UUID.randomUUID().toString()
-                var user = mRealm.where(RealmUserModel::class.java).equalTo("_id", _id).findFirst()
+                var user = mRealm?.where(RealmUserModel::class.java)?.equalTo("_id", _id)?.findFirst()
                 if (user == null) {
-                    user = mRealm.createObject(RealmUserModel::class.java, _id)
+                    user = mRealm?.createObject(RealmUserModel::class.java, _id)
                 }
                 insertIntoUsers(jsonDoc, user, settings)
                 return user
@@ -208,7 +208,7 @@ open class RealmUserModel : RealmObject() {
             return realm.where(RealmUserModel::class.java).equalTo("name", name).count() > 0
         }
 
-        private fun insertIntoUsers(jsonDoc: JsonObject, user: RealmUserModel?, settings: SharedPreferences) {
+        private fun insertIntoUsers(jsonDoc: JsonObject?, user: RealmUserModel?, settings: SharedPreferences) {
             Utilities.log("Insert into users " + Gson().toJson(jsonDoc))
             if (user != null) {
                 user._rev = JsonUtils.getString("_rev", jsonDoc)
