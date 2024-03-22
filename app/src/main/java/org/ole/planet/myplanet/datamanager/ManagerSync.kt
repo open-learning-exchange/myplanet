@@ -38,7 +38,7 @@ class ManagerSync private constructor(context: Context) {
                 override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
                     if (response.isSuccessful && response.body() != null) {
                         val jsonDoc = response.body()
-                        if (jsonDoc!!.has("derived_key") && jsonDoc.has("salt")) {
+                        if (jsonDoc?.has("derived_key") == true && jsonDoc.has("salt")) {
 //                          val decrypt = AndroidDecrypter()
                             val derivedKey = jsonDoc["derived_key"].asString
                             val salt = jsonDoc["salt"].asString
@@ -86,7 +86,7 @@ class ManagerSync private constructor(context: Context) {
     private fun checkManagerAndInsert(jsonDoc: JsonObject?, realm: Realm, listener: SyncListener) {
         Utilities.log("Check manager and insert")
         if (isManager(jsonDoc)) {
-            populateUsersTable(jsonDoc!!, realm, settings)
+            populateUsersTable(jsonDoc, realm, settings)
             listener.onSyncComplete()
         } else {
             listener.onSyncFailed("The user is not a manager.")
@@ -94,9 +94,9 @@ class ManagerSync private constructor(context: Context) {
     }
 
     private fun isManager(jsonDoc: JsonObject?): Boolean {
-        val roles = jsonDoc!!["roles"].asJsonArray
+        val roles = jsonDoc?.get("roles")?.asJsonArray
         val isManager = roles.toString().lowercase(Locale.getDefault()).contains("manager")
-        return jsonDoc["isUserAdmin"].asBoolean || isManager
+        return jsonDoc?.get("isUserAdmin")?.asBoolean == true || isManager
     }
 
     companion object {

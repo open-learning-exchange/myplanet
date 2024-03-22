@@ -34,10 +34,10 @@ import java.io.IOException
 
 class Service(private val context: Context) {
     private val preferences: SharedPreferences = context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE)
-    private val retrofitInterface: ApiInterface = ApiClient.client!!.create(ApiInterface::class.java)
+    private val retrofitInterface: ApiInterface? = ApiClient.client?.create(ApiInterface::class.java)
 
     fun healthAccess(listener: SuccessListener) {
-        retrofitInterface.healthAccess(Utilities.getHealthAccessUrl(preferences)).enqueue(object : Callback<ResponseBody> {
+        retrofitInterface?.healthAccess(Utilities.getHealthAccessUrl(preferences))?.enqueue(object : Callback<ResponseBody> {
             override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
                 if (response.code() == 200) {
                     listener.onSuccess("Successfully synced")
@@ -53,170 +53,142 @@ class Service(private val context: Context) {
     }
 
     fun checkCheckSum(callback: ChecksumCallback, path: String?) {
-        retrofitInterface.getChecksum(Utilities.getChecksumUrl(preferences))
-            .enqueue(object : Callback<ResponseBody> {
-                override fun onResponse(
-                    call: Call<ResponseBody>,
-                    response: Response<ResponseBody>
-                ) {
-                    if (response.code() == 200) {
-                        try {
-                            val checksum = response.body()!!.string()
-                            if (TextUtils.isEmpty(checksum)) {
-                                val f = FileUtils.getSDPathFromUrl(path)
-                                if (f.exists()) {
-                                    val sha256 = Sha256Utils().getCheckSumFromFile(f)
-                                    if (checksum.contains(sha256)) {
-                                        callback.onMatch()
-                                        return
-                                    }
+        retrofitInterface?.getChecksum(Utilities.getChecksumUrl(preferences))?.enqueue(object : Callback<ResponseBody> {
+            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+                if (response.code() == 200) {
+                    try {
+                        val checksum = response.body()?.string()
+                        if (TextUtils.isEmpty(checksum)) {
+                            val f = FileUtils.getSDPathFromUrl(path)
+                            if (f.exists()) {
+                                val sha256 = Sha256Utils().getCheckSumFromFile(f)
+                                if (checksum?.contains(sha256) == true) {
+                                    callback.onMatch()
+                                    return
                                 }
                             }
-                        } catch (e: IOException) {
-                            e.printStackTrace()
                         }
+                    } catch (e: IOException) {
+                        e.printStackTrace()
                     }
-                    callback.onFail()
                 }
+                callback.onFail()
+            }
 
-                override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-                    callback.onFail()
-                }
-            })
+            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+                callback.onFail()
+            }
+        })
     }
 
     fun checkVersion(callback: CheckVersionCallback, settings: SharedPreferences) {
-        if (settings.getString("couchdbURL", "")!!.isEmpty()) {
+        if (settings.getString("couchdbURL", "")?.isEmpty() == true) {
             callback.onError(context.getString(R.string.config_not_available), true)
             return
         }
-        retrofitInterface.checkVersion(Utilities.getUpdateUrl(settings))
-            .enqueue(object : Callback<MyPlanet?> {
-                override fun onResponse(call: Call<MyPlanet?>, response: Response<MyPlanet?>) {
-                    preferences.edit()
-                        .putInt("LastWifiID", NetworkUtils.getCurrentNetworkId(context)).apply()
-                    if (response.body() != null) {
-                        val p = response.body()
-                        preferences.edit()
-                            .putString("versionDetail", Gson().toJson(response.body())).apply()
-                        retrofitInterface.getApkVersion(Utilities.getApkVersionUrl(settings))
-                            .enqueue(object : Callback<ResponseBody> {
-                                override fun onResponse(
-                                    call: Call<ResponseBody>,
-                                    response: Response<ResponseBody>
-                                ) {
-                                    val responses: String?
-                                    try {
-                                        responses = Gson().fromJson(
-                                            response.body()!!.string(),
-                                            String::class.java
-                                        )
-                                        if (responses.isEmpty()) {
-                                            callback.onError("Planet up to date", false)
-                                            return
-                                        }
-                                        var vsn = responses.replace("v".toRegex(), "")
-                                        vsn = vsn.replace("\\.".toRegex(), "")
-                                        val apkVersion = (if (vsn.startsWith("0")) vsn.replace(
-                                            "0",
-                                            ""
-                                        ) else vsn).toInt()
-                                        val currentVersion = VersionUtils.getVersionCode(context)
-                                        if (showBetaFeature(
-                                                KEY_UPGRADE_MAX,
-                                                context
-                                            ) && p!!.latestapkcode > currentVersion
-                                        ) {
-                                            callback.onUpdateAvailable(p, false)
-                                            return
-                                        }
-                                        if (apkVersion > currentVersion) {
-                                            if (p != null) {
-                                                callback.onUpdateAvailable(p,
-                                                    currentVersion >= p.minapkcode
-                                                )
-                                            }
-                                            return
-                                        }
-                                        if (currentVersion < p!!.minapkcode && apkVersion < p.minapkcode) {
-                                            callback.onUpdateAvailable(p, true)
-                                        } else {
-                                            callback.onError("Planet up to date", false)
-                                        }
-                                    } catch (e: Exception) {
-                                        e.localizedMessage?.let { Log.e("Error", it) }
-                                        callback.onError(
-                                            "New apk version required  but not found on server - Contact admin",
-                                            false
-                                        )
+        retrofitInterface?.checkVersion(Utilities.getUpdateUrl(settings))?.enqueue(object : Callback<MyPlanet?> {
+            override fun onResponse(call: Call<MyPlanet?>, response: Response<MyPlanet?>) {
+                preferences.edit().putInt("LastWifiID", NetworkUtils.getCurrentNetworkId(context)).apply()
+                if (response.body() != null) {
+                    val p = response.body()
+                    preferences.edit().putString("versionDetail", Gson().toJson(response.body())).apply()
+                    retrofitInterface.getApkVersion(Utilities.getApkVersionUrl(settings)).enqueue(object : Callback<ResponseBody> {
+                        override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+                            val responses: String?
+                            try {
+                                responses = Gson().fromJson(response.body()?.string(), String::class.java)
+                                if (responses.isEmpty()) {
+                                    callback.onError("Planet up to date", false)
+                                    return
+                                }
+                                var vsn = responses.replace("v".toRegex(), "")
+                                vsn = vsn.replace("\\.".toRegex(), "")
+                                val apkVersion = (if (vsn.startsWith("0")) vsn.replace("0", "") else vsn).toInt()
+                                val currentVersion = VersionUtils.getVersionCode(context)
+                                if (p != null) {
+                                    if (showBetaFeature(KEY_UPGRADE_MAX, context) && p.latestapkcode > currentVersion) {
+                                        callback.onUpdateAvailable(p, false)
+                                        return
                                     }
                                 }
+                                if (apkVersion > currentVersion) {
+                                    if (p != null) {
+                                        callback.onUpdateAvailable(p, currentVersion >= p.minapkcode)
+                                    }
+                                    return
+                                }
+                                if (p != null) {
+                                    if (currentVersion < p.minapkcode && apkVersion < p.minapkcode) {
+                                        callback.onUpdateAvailable(p, true)
+                                    } else {
+                                        callback.onError("Planet up to date", false)
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                e.localizedMessage?.let { Log.e("Error", it) }
+                                callback.onError("New apk version required  but not found on server - Contact admin", false)
+                            }
+                        }
 
-                                override fun onFailure(call: Call<ResponseBody>, t: Throwable) {}
-                            })
-                    } else {
-                        callback.onError("Version not found", true)
-                    }
+                        override fun onFailure(call: Call<ResponseBody>, t: Throwable) {}
+                    })
+                } else {
+                    callback.onError("Version not found", true)
                 }
+            }
 
-                override fun onFailure(call: Call<MyPlanet?>, t: Throwable) {
-                    t.printStackTrace()
-                    callback.onError("Connection failed.", true)
-                }
-            })
+            override fun onFailure(call: Call<MyPlanet?>, t: Throwable) {
+                t.printStackTrace()
+                callback.onError("Connection failed.", true)
+            }
+        })
     }
 
     fun isPlanetAvailable(callback: PlanetAvailableListener?) {
-        retrofitInterface.isPlanetAvailable(Utilities.getUpdateUrl(preferences))
-            .enqueue(object : Callback<ResponseBody?> {
-                override fun onResponse(
-                    call: Call<ResponseBody?>,
-                    response: Response<ResponseBody?>
-                ) {
-                    if (callback != null && response.code() == 200) {
-                        callback.isAvailable()
-                    } else {
-                        callback!!.notAvailable()
-                    }
+        retrofitInterface?.isPlanetAvailable(Utilities.getUpdateUrl(preferences))?.enqueue(object : Callback<ResponseBody?> {
+            override fun onResponse(call: Call<ResponseBody?>, response: Response<ResponseBody?>) {
+                if (callback != null && response.code() == 200) {
+                    callback.isAvailable()
+                } else {
+                    callback?.notAvailable()
                 }
+            }
 
-                override fun onFailure(call: Call<ResponseBody?>, t: Throwable) {
-                    callback!!.notAvailable()
-                }
-            })
+            override fun onFailure(call: Call<ResponseBody?>, t: Throwable) {
+                callback?.notAvailable()
+            }
+        })
     }
 
     fun becomeMember(realm: Realm, obj: JsonObject, callback: CreateUserCallback) {
         isPlanetAvailable(object : PlanetAvailableListener {
             override fun isAvailable() {
-                retrofitInterface.getJsonObject(Utilities.header, "${Utilities.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}")
-                    .enqueue(object : Callback<JsonObject> {
-                        override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
-                            if (response.body() != null && response.body()!!.has("_id")) {
-                                callback.onSuccess("Unable to create user, user already exists")
-                            } else {
-                                retrofitInterface.putDoc(null, "application/json", "${Utilities.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}", obj)
-                                    .enqueue(object : Callback<JsonObject> {
-                                        override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
-                                            if (response.body() != null && response.body()!!.has("id")) {
-                                                uploadToShelf(obj)
-                                                saveUserToDb(realm, response.body()!!.get("id").asString, obj, callback)
-                                            } else {
-                                                callback.onSuccess("Unable to create user")
-                                            }
-                                        }
+                retrofitInterface?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}")?.enqueue(object : Callback<JsonObject> {
+                    override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
+                        if (response.body() != null && response.body()?.has("_id") == true) {
+                            callback.onSuccess("Unable to create user, user already exists")
+                        } else {
+                            retrofitInterface.putDoc(null, "application/json", "${Utilities.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}", obj).enqueue(object : Callback<JsonObject> {
+                                override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
+                                    if (response.body() != null && response.body()!!.has("id")) {
+                                        uploadToShelf(obj)
+                                        saveUserToDb(realm, response.body()!!.get("id").asString, obj, callback)
+                                    } else {
+                                        callback.onSuccess("Unable to create user")
+                                    }
+                                }
 
-                                        override fun onFailure(call: Call<JsonObject>, t: Throwable) {
-                                            callback.onSuccess("Unable to create user")
-                                        }
-                                    })
-                            }
+                                override fun onFailure(call: Call<JsonObject>, t: Throwable) {
+                                    callback.onSuccess("Unable to create user")
+                                }
+                            })
                         }
+                    }
 
-                        override fun onFailure(call: Call<JsonObject>, t: Throwable) {
-                            callback.onSuccess("Unable to create user")
-                        }
-                    })
+                    override fun onFailure(call: Call<JsonObject>, t: Throwable) {
+                        callback.onSuccess("Unable to create user")
+                    }
+                })
             }
 
             override fun notAvailable() {
@@ -242,12 +214,7 @@ class Service(private val context: Context) {
 
 
     private fun uploadToShelf(obj: JsonObject) {
-        retrofitInterface.putDoc(
-            null,
-            "application/json",
-            Utilities.getUrl() + "/shelf/org.couchdb.user:" + obj["name"].asString,
-            JsonObject()
-        ).enqueue(object : Callback<JsonObject?> {
+        retrofitInterface?.putDoc(null, "application/json", Utilities.getUrl() + "/shelf/org.couchdb.user:" + obj["name"].asString, JsonObject())?.enqueue(object : Callback<JsonObject?> {
             override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
                 if (response.isSuccessful) {
                     Utilities.log("Successful uploaded to shelf")
@@ -257,34 +224,21 @@ class Service(private val context: Context) {
             }
 
             override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
-                Utilities.log(t.message!!)
+                t.message?.let { Utilities.log(it) }
             }
         })
     }
 
-    private fun saveUserToDb(
-        realm: Realm,
-        id: String,
-        obj: JsonObject,
-        callback: CreateUserCallback
-    ) {
-        val settings = MainApplication.context.getSharedPreferences(
-            SyncActivity.PREFS_NAME,
-            Context.MODE_PRIVATE
-        )
+    private fun saveUserToDb(realm: Realm, id: String, obj: JsonObject, callback: CreateUserCallback) {
+        val settings = MainApplication.context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE)
         realm.executeTransactionAsync({ realm1: Realm? ->
             try {
-                val res = retrofitInterface.getJsonObject(
-                    Utilities.header,
-                    Utilities.getUrl() + "/_users/" + id
-                ).execute()
-                if (res.body() != null) {
-                    val model = populateUsersTable(res.body()!!, realm1!!, settings)
-                    if (model != null) UploadToShelfService(MainApplication.context).saveKeyIv(
-                        retrofitInterface,
-                        model,
-                        obj
-                    )
+                val res = retrofitInterface?.getJsonObject(Utilities.header, Utilities.getUrl() + "/_users/" + id)?.execute()
+                if (res?.body() != null) {
+                    val model = populateUsersTable(res.body(), realm1, settings)
+                    if (model != null) {
+                        UploadToShelfService(MainApplication.context).saveKeyIv(retrofitInterface, model, obj)
+                    }
                 }
             } catch (e: IOException) {
                 e.printStackTrace()
@@ -296,10 +250,7 @@ class Service(private val context: Context) {
     }
 
     fun syncPlanetServers(realm: Realm, callback: SuccessListener) {
-        retrofitInterface.getJsonObject(
-            "",
-            "https://planet.earth.ole.org/db/communityregistrationrequests/_all_docs?include_docs=true"
-        ).enqueue(object : Callback<JsonObject?> {
+        retrofitInterface?.getJsonObject("", "https://planet.earth.ole.org/db/communityregistrationrequests/_all_docs?include_docs=true")?.enqueue(object : Callback<JsonObject?> {
             override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
                 if (response.body() != null) {
                     val arr = JsonUtils.getJsonArray("rows", response.body())
@@ -309,17 +260,14 @@ class Service(private val context: Context) {
                             var jsonDoc = j.asJsonObject
                             jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
                             val id = JsonUtils.getString("_id", jsonDoc)
-                            val community = realm1.createObject(
-                                RealmCommunity::class.java, id
-                            )
+                            val community = realm1.createObject(RealmCommunity::class.java, id)
                             if (JsonUtils.getString("name", jsonDoc) == "learning") {
                                 community.weight = 0
                             }
                             community.localDomain = JsonUtils.getString("localDomain", jsonDoc)
                             community.name = JsonUtils.getString("name", jsonDoc)
                             community.parentDomain = JsonUtils.getString("parentDomain", jsonDoc)
-                            community.registrationRequest =
-                                JsonUtils.getString("registrationRequest", jsonDoc)
+                            community.registrationRequest = JsonUtils.getString("registrationRequest", jsonDoc)
                         }
                     }, {
                         realm.close()

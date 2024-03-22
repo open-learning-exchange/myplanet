@@ -1,39 +1,41 @@
 package org.ole.planet.myplanet.utilities
 
 import android.app.Activity
-import android.app.ProgressDialog
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.provider.Settings
-import androidx.appcompat.app.AlertDialog
+import android.view.LayoutInflater
 import android.view.View
+import androidx.appcompat.app.AlertDialog
 import com.google.android.material.snackbar.Snackbar
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.databinding.DialogProgressBinding
 import org.ole.planet.myplanet.datamanager.MyDownloadService
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.model.MyPlanet
 
 object DialogUtils {
     @JvmStatic
-    fun getProgressDialog(context: Context): ProgressDialog {
-        val prgDialog = ProgressDialog(context)
+    fun getProgressDialog(context: Context): CustomProgressDialog {
+        val prgDialog = CustomProgressDialog(context)
         prgDialog.setTitle(context.getString(R.string.downloading_file))
-        prgDialog.max = 100
-        prgDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL)
-        prgDialog.setCancelable(false)
-        prgDialog.setButton(DialogInterface.BUTTON_POSITIVE, context.getString(R.string.finish)) { _, _ -> prgDialog.dismiss() }
-        prgDialog.setButton(DialogInterface.BUTTON_NEGATIVE, context.getString(R.string.stop_download)) { _, _ ->
+        prgDialog.setMax(100)
+        prgDialog.setPositiveButton(context.getString(R.string.finish), isVisible = true) {
+            prgDialog.dismiss()
+        }
+        prgDialog.setNegativeButton(context.getString(R.string.stop_download), isVisible = true) {
             context.stopService(Intent(context, MyDownloadService::class.java))
+            prgDialog.dismiss()
         }
         return prgDialog
     }
 
     @JvmStatic
-    fun showError(prgDialog: ProgressDialog?, message: String?) {
+    fun showError(prgDialog: CustomProgressDialog?, message: String?) {
         prgDialog?.setTitle(message)
-        prgDialog?.getButton(ProgressDialog.BUTTON_NEGATIVE)?.isEnabled = false
+        prgDialog?.disableNegativeButton()
     }
 
     @JvmStatic
@@ -109,7 +111,7 @@ object DialogUtils {
     }
 
     @JvmStatic
-    fun getUpdateDialog(context: Context, info: MyPlanet?, progressDialog: ProgressDialog?): AlertDialog.Builder {
+    fun getUpdateDialog(context: Context, info: MyPlanet?, progressDialog: CustomProgressDialog?): AlertDialog.Builder {
         return AlertDialog.Builder(context)
             .setTitle(R.string.new_version_of_my_planet_available)
             .setMessage(R.string.download_first_to_continue)
@@ -122,7 +124,7 @@ object DialogUtils {
     }
 
     @JvmStatic
-    fun startDownloadUpdate(context: Context, path: String, progressDialog: ProgressDialog?) {
+    fun startDownloadUpdate(context: Context, path: String, progressDialog: CustomProgressDialog?) {
         Service(MainApplication.context).checkCheckSum(object : Service.ChecksumCallback {
             override fun onMatch() {
                 Utilities.toast(MainApplication.context, context.getString(R.string.apk_already_exists))
@@ -133,12 +135,95 @@ object DialogUtils {
                 val url = ArrayList<String>()
                 url.add(path)
                 if (progressDialog != null) {
-                    progressDialog.setMessage(context.getString(R.string.downloading_file))
+                    progressDialog.setText(context.getString(R.string.downloading_file))
                     progressDialog.setCancelable(false)
                     progressDialog.show()
                 }
                 Utilities.openDownloadService(context, url)
             }
         }, path)
+    }
+
+    @JvmStatic
+    fun getCustomProgressDialog(context: Context): CustomProgressDialog {
+        return CustomProgressDialog(context)
+    }
+
+    class CustomProgressDialog(context: Context) {
+        private val binding: DialogProgressBinding = DialogProgressBinding.inflate(LayoutInflater.from(context))
+        private val dialogBuilder: AlertDialog.Builder = AlertDialog.Builder(context)
+        private val progressBar = binding.progressBar
+        private val progressText = binding.progressText
+        private val progressTitle = binding.progressTitle
+        private var dialog: AlertDialog? = null
+        private var positiveButtonAction: (() -> Unit)? = null
+        private var negativeButtonAction: (() -> Unit)? = null
+
+        init {
+            dialogBuilder.setView(binding.root)
+            dialogBuilder.setCancelable(false)
+            binding.buttonPositive.setOnClickListener {
+                positiveButtonAction?.invoke()
+            }
+            binding.buttonNegative.setOnClickListener {
+                negativeButtonAction?.invoke()
+            }
+        }
+        fun setPositiveButton(text: String, isVisible: Boolean = true, listener: () -> Unit) {
+            binding.buttonPositive.text = text
+            positiveButtonAction = listener
+            binding.buttonPositive.visibility = if (isVisible) View.VISIBLE else View.GONE
+        }
+
+        fun setNegativeButton(text: String = "Cancel", isVisible: Boolean = true, listener: () -> Unit) {
+            binding.buttonNegative.text = text
+            negativeButtonAction = listener
+            binding.buttonNegative.visibility = if (isVisible) View.VISIBLE else View.GONE
+        }
+
+        fun show() {
+            if (dialog == null) {
+                dialog = dialogBuilder.create()
+            }
+            dialog?.show()
+        }
+
+        fun dismiss() {
+            dialog?.dismiss()
+        }
+
+        fun setCancelable(state: Boolean) {
+            dialog?.setCancelable(state)
+        }
+
+        fun setIndeterminate(isIndeterminate: Boolean) {
+            progressBar.isIndeterminate = isIndeterminate
+        }
+
+        fun setMax(maxValue: Int) {
+            progressBar.max = maxValue
+        }
+
+        fun setProgress(value: Int) {
+            setIndeterminate(false)
+            progressBar.progress = value
+        }
+
+        fun setText(text: String) {
+            progressText.text = text
+            progressText.visibility = View.VISIBLE
+        }
+
+        fun setTitle(text: String?) {
+            progressTitle.visibility = View.VISIBLE
+            progressTitle.text = text
+        }
+        fun isShowing(): Boolean {
+            return dialog?.isShowing ?: false
+        }
+
+        fun disableNegativeButton() {
+            binding.buttonNegative.isEnabled = false
+        }
     }
 }
