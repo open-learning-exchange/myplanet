@@ -45,15 +45,17 @@ open class RealmMyCourse : RealmObject() {
         if (this.userId == null) {
             this.userId = RealmList()
         }
-        if (!this.userId!!.contains(userId) && !TextUtils.isEmpty(userId)) this.userId!!.add(userId)
+        if (!this.userId?.contains(userId)!! && !TextUtils.isEmpty(userId)) {
+            this.userId?.add(userId)
+        }
     }
 
     fun removeUserId(userId: String?) {
-        this.userId!!.remove(userId)
+        this.userId?.remove(userId)
     }
 
     fun getnumberOfSteps(): Int {
-        return if (numberOfSteps == null) 0 else numberOfSteps!!
+        return numberOfSteps ?: 0
     }
 
     fun setnumberOfSteps(numberOfSteps: Int?) {
@@ -61,7 +63,7 @@ open class RealmMyCourse : RealmObject() {
     }
 
     override fun toString(): String {
-        return courseTitle!!
+        return courseTitle ?: ""
     }
 
     companion object {
@@ -74,13 +76,13 @@ open class RealmMyCourse : RealmObject() {
             if (myMyCoursesDB == null) {
                 myMyCoursesDB = mRealm.createObject(RealmMyCourse::class.java, id)
             }
-            myMyCoursesDB!!.setUserId(userId)
-            myMyCoursesDB.courseId = JsonUtils.getString("_id", myCousesDoc)
-            myMyCoursesDB.course_rev = JsonUtils.getString("_rev", myCousesDoc)
-            myMyCoursesDB.languageOfInstruction = JsonUtils.getString("languageOfInstruction", myCousesDoc)
-            myMyCoursesDB.courseTitle = JsonUtils.getString("courseTitle", myCousesDoc)
-            myMyCoursesDB.memberLimit = JsonUtils.getInt("memberLimit", myCousesDoc)
-            myMyCoursesDB.description = JsonUtils.getString("description", myCousesDoc)
+            myMyCoursesDB?.setUserId(userId)
+            myMyCoursesDB?.courseId = JsonUtils.getString("_id", myCousesDoc)
+            myMyCoursesDB?.course_rev = JsonUtils.getString("_rev", myCousesDoc)
+            myMyCoursesDB?.languageOfInstruction = JsonUtils.getString("languageOfInstruction", myCousesDoc)
+            myMyCoursesDB?.courseTitle = JsonUtils.getString("courseTitle", myCousesDoc)
+            myMyCoursesDB?.memberLimit = JsonUtils.getInt("memberLimit", myCousesDoc)
+            myMyCoursesDB?.description = JsonUtils.getString("description", myCousesDoc)
             val description = JsonUtils.getString("description", myCousesDoc)
             val links = RealmCourseStep.extractLinks(description)
             val concatenatedLinks = ArrayList<String>()
@@ -90,12 +92,12 @@ open class RealmMyCourse : RealmObject() {
                 concatenatedLinks.add(concatenatedLink)
             }
             Utilities.openDownloadService(MainApplication.context, concatenatedLinks)
-            myMyCoursesDB.method = JsonUtils.getString("method", myCousesDoc)
-            myMyCoursesDB.gradeLevel = JsonUtils.getString("gradeLevel", myCousesDoc)
-            myMyCoursesDB.subjectLevel = JsonUtils.getString("subjectLevel", myCousesDoc)
-            myMyCoursesDB.createdDate = JsonUtils.getLongAsString("createdDate", myCousesDoc)
-            myMyCoursesDB.setnumberOfSteps(JsonUtils.getJsonArray("steps", myCousesDoc).size())
-            RealmCourseStep.insertCourseSteps(myMyCoursesDB.courseId,
+            myMyCoursesDB?.method = JsonUtils.getString("method", myCousesDoc)
+            myMyCoursesDB?.gradeLevel = JsonUtils.getString("gradeLevel", myCousesDoc)
+            myMyCoursesDB?.subjectLevel = JsonUtils.getString("subjectLevel", myCousesDoc)
+            myMyCoursesDB?.createdDate = JsonUtils.getLongAsString("createdDate", myCousesDoc)
+            myMyCoursesDB?.setnumberOfSteps(JsonUtils.getJsonArray("steps", myCousesDoc).size())
+            RealmCourseStep.insertCourseSteps(myMyCoursesDB?.courseId,
                 JsonUtils.getJsonArray("steps", myCousesDoc),
                 JsonUtils.getJsonArray("steps", myCousesDoc).size(),
                 mRealm
@@ -118,7 +120,7 @@ open class RealmMyCourse : RealmObject() {
         fun getMyCourseByUserId(userId: String?, libs: List<RealmMyCourse>?): List<RealmMyCourse> {
             val libraries: MutableList<RealmMyCourse> = ArrayList()
             for (item in libs ?: emptyList()) {
-                if (item.userId!!.contains(userId)) {
+                if (item.userId?.contains(userId) == true) {
                     libraries.add(item)
                 }
             }
@@ -129,7 +131,7 @@ open class RealmMyCourse : RealmObject() {
         fun getOurCourse(userId: String?, libs: List<RealmMyCourse>): List<RealmMyCourse> {
             val libraries: MutableList<RealmMyCourse> = ArrayList()
             for (item in libs) {
-                if (!item.userId!!.contains(userId)) {
+                if (!item.userId?.contains(userId)!!) {
                     libraries.add(item)
                 }
             }

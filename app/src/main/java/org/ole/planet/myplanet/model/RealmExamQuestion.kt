@@ -32,9 +32,7 @@ open class RealmExamQuestion : RealmObject() {
     var choices: String? = null
     private fun setCorrectChoiceArray(array: JsonArray, question: RealmExamQuestion?) {
         for (i in 0 until array.size()) {
-            question!!.correctChoice!!.add(
-                JsonUtils.getString(array, i).lowercase(Locale.getDefault())
-            )
+            question?.correctChoice?.add(JsonUtils.getString(array, i).lowercase(Locale.getDefault()))
         }
     }
 
@@ -45,7 +43,7 @@ open class RealmExamQuestion : RealmObject() {
     val correctChoiceArray: JsonArray
         get() {
             val array = JsonArray()
-            for (s in correctChoice!!) {
+            for (s in correctChoice ?: emptyList()){
                 array.add(s)
             }
             return array
@@ -65,20 +63,16 @@ open class RealmExamQuestion : RealmObject() {
                 if (myQuestion == null) {
                     myQuestion = mRealm.createObject(RealmExamQuestion::class.java, questionId)
                 }
-                myQuestion!!.examId = examId
-                myQuestion.body = JsonUtils.getString("body", question)
-                myQuestion.type = JsonUtils.getString("type", question)
-                myQuestion.header = JsonUtils.getString("title", question)
-                myQuestion.marks = JsonUtils.getString("marks", question)
-                myQuestion.choices = Gson().toJson(JsonUtils.getJsonArray("choices", question))
-                val isMultipleChoice =
-                    question.has("correctChoice") && JsonUtils.getString("type", question)
-                        .startsWith("select")
-                if (isMultipleChoice) insertCorrectChoice(
-                    question["choices"].asJsonArray,
-                    question,
-                    myQuestion
-                )
+                myQuestion?.examId = examId
+                myQuestion?.body = JsonUtils.getString("body", question)
+                myQuestion?.type = JsonUtils.getString("type", question)
+                myQuestion?.header = JsonUtils.getString("title", question)
+                myQuestion?.marks = JsonUtils.getString("marks", question)
+                myQuestion?.choices = Gson().toJson(JsonUtils.getJsonArray("choices", question))
+                val isMultipleChoice = question.has("correctChoice") && JsonUtils.getString("type", question).startsWith("select")
+                if (isMultipleChoice) {
+                    insertCorrectChoice(question["choices"].asJsonArray, question, myQuestion)
+                }
             }
         }
 
@@ -86,11 +80,11 @@ open class RealmExamQuestion : RealmObject() {
             for (a in 0 until array.size()) {
                 val res = array[a].asJsonObject
                 if (question["correctChoice"].isJsonArray) {
-                    myQuestion!!.correctChoice = RealmList()
-                    myQuestion.setCorrectChoiceArray(JsonUtils.getJsonArray("correctChoice", question), myQuestion)
+                    myQuestion?.correctChoice = RealmList()
+                    myQuestion?.setCorrectChoiceArray(JsonUtils.getJsonArray("correctChoice", question), myQuestion)
                 } else if (JsonUtils.getString("correctChoice", question) == JsonUtils.getString("id", res)) {
-                    myQuestion!!.correctChoice = RealmList()
-                    myQuestion.correctChoice!!.add(JsonUtils.getString("res", res))
+                    myQuestion?.correctChoice = RealmList()
+                    myQuestion?.correctChoice?.add(JsonUtils.getString("res", res))
                 }
             }
         }

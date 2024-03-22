@@ -60,22 +60,22 @@ open class RealmMeetup : RealmObject() {
             if (myMeetupsDB == null) {
                 myMeetupsDB = mRealm.createObject(RealmMeetup::class.java, JsonUtils.getString("_id", meetupDoc))
             }
-            myMeetupsDB!!.meetupId = JsonUtils.getString("_id", meetupDoc)
-            myMeetupsDB.userId = userId
-            myMeetupsDB.meetupId_rev = JsonUtils.getString("_rev", meetupDoc)
-            myMeetupsDB.title = JsonUtils.getString("title", meetupDoc)
-            myMeetupsDB.description = JsonUtils.getString("description", meetupDoc)
-            myMeetupsDB.startDate = JsonUtils.getLong("startDate", meetupDoc)
-            myMeetupsDB.endDate = JsonUtils.getLong("endDate", meetupDoc)
-            myMeetupsDB.recurring = JsonUtils.getString("recurring", meetupDoc)
-            myMeetupsDB.startTime = JsonUtils.getString("startTime", meetupDoc)
-            myMeetupsDB.endTime = JsonUtils.getString("endTime", meetupDoc)
-            myMeetupsDB.category = JsonUtils.getString("category", meetupDoc)
-            myMeetupsDB.meetupLocation = JsonUtils.getString("meetupLocation", meetupDoc)
-            myMeetupsDB.creator = JsonUtils.getString("creator", meetupDoc)
-            myMeetupsDB.day = JsonUtils.getJsonArray("day", meetupDoc).toString()
-            myMeetupsDB.links = JsonUtils.getJsonObject("links", meetupDoc).toString()
-            myMeetupsDB.teamId = JsonUtils.getString("teams", JsonUtils.getJsonObject("links", meetupDoc))
+            myMeetupsDB?.meetupId = JsonUtils.getString("_id", meetupDoc)
+            myMeetupsDB?.userId = userId
+            myMeetupsDB?.meetupId_rev = JsonUtils.getString("_rev", meetupDoc)
+            myMeetupsDB?.title = JsonUtils.getString("title", meetupDoc)
+            myMeetupsDB?.description = JsonUtils.getString("description", meetupDoc)
+            myMeetupsDB?.startDate = JsonUtils.getLong("startDate", meetupDoc)
+            myMeetupsDB?.endDate = JsonUtils.getLong("endDate", meetupDoc)
+            myMeetupsDB?.recurring = JsonUtils.getString("recurring", meetupDoc)
+            myMeetupsDB?.startTime = JsonUtils.getString("startTime", meetupDoc)
+            myMeetupsDB?.endTime = JsonUtils.getString("endTime", meetupDoc)
+            myMeetupsDB?.category = JsonUtils.getString("category", meetupDoc)
+            myMeetupsDB?.meetupLocation = JsonUtils.getString("meetupLocation", meetupDoc)
+            myMeetupsDB?.creator = JsonUtils.getString("creator", meetupDoc)
+            myMeetupsDB?.day = JsonUtils.getJsonArray("day", meetupDoc).toString()
+            myMeetupsDB?.links = JsonUtils.getJsonObject("links", meetupDoc).toString()
+            myMeetupsDB?.teamId = JsonUtils.getString("teams", JsonUtils.getJsonObject("links", meetupDoc))
         }
 
         @JvmStatic
