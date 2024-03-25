@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.model;
 
 import android.content.SharedPreferences
-import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
@@ -9,7 +8,6 @@ import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.settings
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.Utilities
@@ -141,10 +139,6 @@ open class RealmMyTeam : RealmObject() {
                     for (e in coursesArray) {
                         val id = e.asJsonObject["_id"].asString
                         if (!myTeams.courses?.contains(id)!!) myTeams.courses?.add(id)
-                    }
-                    if (JsonUtils.getString("teamId", doc).isEmpty()){
-                        settings.edit().putString("planetCode", JsonUtils.getString("teamPlanetCode", doc)).apply()
-                        Log.d("planetCde", JsonUtils.getString("teamPlanetCode", doc))
                     }
                 }
             }

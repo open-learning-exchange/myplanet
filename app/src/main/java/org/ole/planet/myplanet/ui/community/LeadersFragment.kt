@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.community
 
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -26,7 +25,6 @@ class LeadersFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         val mRealm = DatabaseService(requireActivity()).realmInstance
         val leaders = mRealm.where(RealmMyTeam::class.java).equalTo("isLeader", true).findAll()
-        logLargeString("LeadersFragment", "Leaders: $leaders")
         if (leaders.isEmpty()) {
             fragmentMembersBinding.tvNodata.text = getString(R.string.no_data_available)
         } else {
@@ -38,15 +36,6 @@ class LeadersFragment : Fragment() {
                 if (model != null && !list.contains(model)) list.add(model)
             }
             fragmentMembersBinding.rvMember.adapter = AdapterLeader(requireActivity(), list)
-        }
-    }
-
-    fun logLargeString(tag: String, content: String) {
-        if (content.length > 3000) {
-            Log.d(tag, content.substring(0, 3000))
-            logLargeString(tag, content.substring(3000))
-        } else {
-            Log.d(tag, content)
         }
     }
 }
