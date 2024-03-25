@@ -45,8 +45,8 @@ open class RealmCertification : RealmObject() {
             if (certification == null) {
                 certification = mRealm.createObject(RealmCertification::class.java, id)
             }
-            certification!!.name = JsonUtils.getString("name", `object`)
-            certification.setCourseIds(JsonUtils.getJsonArray("courseIds", `object`))
+            certification?.name = JsonUtils.getString("name", `object`)
+            certification?.setCourseIds(JsonUtils.getJsonArray("courseIds", `object`))
         }
 
         @JvmStatic

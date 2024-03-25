@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.myPersonals
 
-import android.app.ProgressDialog
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -16,12 +15,13 @@ import org.ole.planet.myplanet.model.RealmMyPersonal
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.library.AddResourceFragment
+import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
     private lateinit var fragmentMyPersonalsBinding: FragmentMyPersonalsBinding
     lateinit var mRealm: Realm
-    private var pg: ProgressDialog? = null
+    private lateinit var pg: DialogUtils.CustomProgressDialog
     private var addResourceFragment: AddResourceFragment? = null
     fun refreshFragment() {
         if (isAdded) {
@@ -34,7 +34,7 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentMyPersonalsBinding = FragmentMyPersonalsBinding.inflate(inflater, container, false)
-        pg = ProgressDialog(activity)
+        pg = DialogUtils.getCustomProgressDialog(requireContext())
         mRealm = DatabaseService(requireActivity()).realmInstance
         fragmentMyPersonalsBinding.rvMypersonal.layoutManager = LinearLayoutManager(activity)
         fragmentMyPersonalsBinding.addMyPersonal.setOnClickListener {
@@ -86,14 +86,14 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
     }
 
     override fun onUpload(personal: RealmMyPersonal?) {
-        pg?.setMessage("Please wait......")
-        pg?.show()
+        pg.setText("Please wait......")
+        pg.show()
         if (personal != null) {
             UploadManager.instance?.uploadMyPersonal(personal) { s: String? ->
                 if (s != null) {
                     Utilities.toast(activity, s)
                 }
-                pg?.dismiss()
+                pg.dismiss()
             }
         }
     }

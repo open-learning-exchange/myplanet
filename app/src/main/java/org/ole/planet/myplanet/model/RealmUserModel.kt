@@ -85,13 +85,13 @@ open class RealmUserModel : RealmObject() {
     var isArchived = false
     fun serialize(): JsonObject {
         val `object` = JsonObject()
-        if (_id!!.isNotEmpty()) {
+        if (_id?.isNotEmpty() == true) {
             `object`.addProperty("_id", _id)
             `object`.addProperty("_rev", _rev)
         }
         `object`.addProperty("name", name)
         `object`.add("roles", getRoles())
-        if (_id!!.isEmpty()) {
+        if (_id?.isEmpty() == true) {
             `object`.addProperty("password", password)
             `object`.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
             `object`.addProperty("uniqueAndroidId", VersionUtils.getAndroidId(MainApplication.context))
@@ -114,7 +114,7 @@ open class RealmUserModel : RealmObject() {
         `object`.addProperty("phoneNumber", phoneNumber)
         `object`.addProperty("birthDate", dob)
         try {
-            `object`.addProperty("iterations", iterations!!.toInt())
+            `object`.addProperty("iterations", iterations?.toInt())
         } catch (e: Exception) {
             `object`.addProperty("iterations", 10)
         }
@@ -127,7 +127,7 @@ open class RealmUserModel : RealmObject() {
 
     fun getRoles(): JsonArray {
         val ar = JsonArray()
-        for (s in rolesList!!) {
+        for (s in rolesList ?: emptyList())    {
             ar.add(s)
         }
         return ar
@@ -145,13 +145,13 @@ open class RealmUserModel : RealmObject() {
         return "$firstName $lastName"
     }
 
-    fun addImageUrl(jsonDoc: JsonObject) {
-        if (jsonDoc.has("_attachments")) {
+    fun addImageUrl(jsonDoc: JsonObject?) {
+        if (jsonDoc?.has("_attachments") == true) {
             val element = JsonParser.parseString(jsonDoc["_attachments"].asJsonObject.toString())
             val obj = element.asJsonObject
             val entries = obj.entrySet()
             for ((key1) in entries) {
-                userImage = Utilities.getUserImageUrl(id!!, key1)
+                userImage = Utilities.getUserImageUrl(id, key1)
                 break
             }
         }
@@ -187,13 +187,13 @@ open class RealmUserModel : RealmObject() {
         }
 
         @JvmStatic
-        fun populateUsersTable(jsonDoc: JsonObject, mRealm: Realm, settings: SharedPreferences): RealmUserModel? {
+        fun populateUsersTable(jsonDoc: JsonObject?, mRealm: Realm?, settings: SharedPreferences): RealmUserModel? {
             try {
                 var _id = JsonUtils.getString("_id", jsonDoc)
                 if (_id.isEmpty()) _id = UUID.randomUUID().toString()
-                var user = mRealm.where(RealmUserModel::class.java).equalTo("_id", _id).findFirst()
+                var user = mRealm?.where(RealmUserModel::class.java)?.equalTo("_id", _id)?.findFirst()
                 if (user == null) {
-                    user = mRealm.createObject(RealmUserModel::class.java, _id)
+                    user = mRealm?.createObject(RealmUserModel::class.java, _id)
                 }
                 insertIntoUsers(jsonDoc, user, settings)
                 return user
@@ -208,7 +208,7 @@ open class RealmUserModel : RealmObject() {
             return realm.where(RealmUserModel::class.java).equalTo("name", name).count() > 0
         }
 
-        private fun insertIntoUsers(jsonDoc: JsonObject, user: RealmUserModel?, settings: SharedPreferences) {
+        private fun insertIntoUsers(jsonDoc: JsonObject?, user: RealmUserModel?, settings: SharedPreferences) {
             Utilities.log("Insert into users " + Gson().toJson(jsonDoc))
             if (user != null) {
                 user._rev = JsonUtils.getString("_rev", jsonDoc)
@@ -228,7 +228,9 @@ open class RealmUserModel : RealmObject() {
                 user.planetCode = JsonUtils.getString("planetCode", jsonDoc)
                 user.parentCode = JsonUtils.getString("parentCode", jsonDoc)
                 user.email = JsonUtils.getString("email", jsonDoc)
-                if (user._id!!.isEmpty()) user.password = JsonUtils.getString("password", jsonDoc)
+                if (user._id?.isEmpty() == true) {
+                    user.password = JsonUtils.getString("password", jsonDoc)
+                }
                 user.phoneNumber = JsonUtils.getString("phoneNumber", jsonDoc)
                 user.password_scheme = JsonUtils.getString("password_scheme", jsonDoc)
                 user.iterations = JsonUtils.getString("iterations", jsonDoc)

@@ -834,7 +834,7 @@
     <string name="data_cleared">Données effacées</string>
     <string name="are_you_sure_want_to_delete_all_the_files">Êtes-vous sûr de vouloir supprimer tous les fichiers ?</string>
     <string name="unable_to_clear_files">Impossible de supprimer les fichiers</string>
-    <string name="last_synced_never">Dernière synchronisation: Jamais</string>
+    <string name="last_synced_never">jamais synchronisé</string>
     <string name="last_synced_colon">"Dernière synchronisation: "</string>
     <string name="disclaimer">
     <![CDATA[

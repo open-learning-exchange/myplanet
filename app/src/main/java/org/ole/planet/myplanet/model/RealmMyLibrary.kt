@@ -159,7 +159,9 @@ open class RealmMyLibrary : RealmObject() {
         if (this.userId == null) {
             this.userId = RealmList()
         }
-        if (!this.userId!!.contains(userId) && !TextUtils.isEmpty(userId)) this.userId!!.add(userId)
+        if (!this.userId?.contains(userId)!! && !TextUtils.isEmpty(userId)) {
+            this.userId?.add(userId)
+        }
     }
 
     fun isResourceOffline(): Boolean {
@@ -168,31 +170,41 @@ open class RealmMyLibrary : RealmObject() {
 
     fun setResourceFor(array: JsonArray, resource: RealmMyLibrary?) {
         for (s in array) {
-            if (s !is JsonNull && !resource!!.resourceFor!!.contains(s.asString)) resource.resourceFor!!.add(s.asString)
+            if (s !is JsonNull && !resource?.resourceFor?.contains(s.asString)!!) {
+                resource.resourceFor?.add(s.asString)
+            }
         }
     }
 
     fun setSubject(array: JsonArray, resource: RealmMyLibrary?) {
         for (s in array) {
-            if (s !is JsonNull && !resource!!.subject!!.contains(s.asString)) resource.subject!!.add(s.asString)
+            if (s !is JsonNull && !resource?.subject?.contains(s.asString)!!) {
+                resource.subject?.add(s.asString)
+            }
         }
     }
 
     fun setLevel(array: JsonArray, resource: RealmMyLibrary?) {
         for (s in array) {
-            if (s !is JsonNull && !resource!!.level!!.contains(s.asString)) resource.level!!.add(s.asString)
+            if (s !is JsonNull && !resource?.level?.contains(s.asString)!!) {
+                resource.level?.add(s.asString)
+            }
         }
     }
 
     fun setTag(array: JsonArray, resource: RealmMyLibrary?) {
         for (s in array) {
-            if (s !is JsonNull && !resource!!.tag!!.contains(s.asString)) resource.tag!!.add(s.asString)
+            if (s !is JsonNull && !resource?.tag?.contains(s.asString)!!) {
+                resource.tag?.add(s.asString)
+            }
         }
     }
 
     fun setLanguages(array: JsonArray, resource: RealmMyLibrary?) {
         for (s in array) {
-            if (s !is JsonNull && !resource!!.languages!!.contains(s.asString)) resource.languages!!.add(s.asString)
+            if (s !is JsonNull && !resource?.languages?.contains(s.asString)!!) {
+                resource.languages?.add(s.asString)
+            }
         }
     }
 
@@ -202,11 +214,11 @@ open class RealmMyLibrary : RealmObject() {
 
     val subjectsAsString: String
         get() {
-            if (subject!!.isEmpty()) {
+            if (subject?.isEmpty() == true) {
                 return ""
             }
             var str = ""
-            for (s in subject!!) {
+            for (s in subject ?: emptyList()) {
                 str += "$s, "
             }
             return str.substring(0, str.length - 1)
@@ -221,18 +233,15 @@ open class RealmMyLibrary : RealmObject() {
     }
 
     override fun toString(): String {
-        return title!!
+        return title ?: ""
     }
 
     fun removeUserId(id: String?) {
-        userId!!.remove(id)
+        userId?.remove(id)
     }
 
     fun needToUpdate(): Boolean {
-        return resourceLocalAddress != null && !resourceOffline || !TextUtils.equals(
-            get_rev(),
-            downloadedRev
-        )
+        return resourceLocalAddress != null && !resourceOffline || !TextUtils.equals(get_rev(), downloadedRev)
     }
 
     companion object {
@@ -245,7 +254,7 @@ open class RealmMyLibrary : RealmObject() {
             val libraries: MutableList<RealmMyLibrary> = ArrayList()
             val ids = RealmMyTeam.getResourceIdsByUser(userId, mRealm)
             for (item in libs) {
-                if (item.userId!!.contains(userId) || ids.contains(item.resourceId)) {
+                if (item.userId?.contains(userId) == true || ids.contains(item.resourceId)) {
                     libraries.add(item)
                 }
             }
@@ -256,7 +265,7 @@ open class RealmMyLibrary : RealmObject() {
         fun getMyLibraryByUserId(userId: String?, libs: List<RealmMyLibrary>): List<RealmMyLibrary> {
             val libraries: MutableList<RealmMyLibrary> = ArrayList()
             for (item in libs) {
-                if (item.userId!!.contains(userId)) {
+                if (item.userId?.contains(userId) == true) {
                     libraries.add(item)
                 }
             }
@@ -267,7 +276,7 @@ open class RealmMyLibrary : RealmObject() {
         fun getOurLibrary(userId: String?, libs: List<RealmMyLibrary>): List<RealmMyLibrary> {
             val libraries: MutableList<RealmMyLibrary> = ArrayList()
             for (item in libs) {
-                if (!item.userId!!.contains(userId)) {
+                if (!item.userId?.contains(userId)!!) {
                     libraries.add(item)
                 }
             }
@@ -277,10 +286,8 @@ open class RealmMyLibrary : RealmObject() {
         fun getIds(mRealm: Realm): Array<String?> {
             val list: List<RealmMyLibrary> = mRealm.where(RealmMyLibrary::class.java).findAll()
             val ids = arrayOfNulls<String>(list.size)
-            var i = 0
-            for (library in list) {
+            for ((i, library) in list.withIndex()) {
                 ids[i] = library.resourceId
-                i++
             }
             return ids
         }
@@ -341,7 +348,9 @@ open class RealmMyLibrary : RealmObject() {
 
         @JvmStatic
         fun createFromResource(resource: RealmMyLibrary?, mRealm: Realm, userId: String?) {
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
+            if (!mRealm.isInTransaction) {
+                mRealm.beginTransaction()
+            }
             resource?.setUserId(userId)
             mRealm.commitTransaction()
         }
@@ -354,18 +363,18 @@ open class RealmMyLibrary : RealmObject() {
             if (resource == null) {
                 resource = mRealm.createObject(RealmMyLibrary::class.java, resourceId)
             }
-            resource!!.setUserId(userId)
-            resource.set_id(resourceId)
+            resource?.setUserId(userId)
+            resource?.set_id(resourceId)
             if (!TextUtils.isEmpty(stepId)) {
-                resource.stepId = stepId
+                resource?.stepId = stepId
             }
             if (!TextUtils.isEmpty(courseId)) {
-                resource.courseId = courseId
+                resource?.courseId = courseId
             }
-            resource.set_rev(JsonUtils.getString("_rev", doc))
-            resource.resourceId = resourceId
-            resource.title = JsonUtils.getString("title", doc)
-            resource.description = JsonUtils.getString("description", doc)
+            resource?.set_rev(JsonUtils.getString("_rev", doc))
+            resource?.resourceId = resourceId
+            resource?.title = JsonUtils.getString("title", doc)
+            resource?.description = JsonUtils.getString("description", doc)
             if (doc.has("_attachments")) {
                 val attachments = doc["_attachments"].asJsonObject
                 val element = JsonParser.parseString(attachments.toString())
@@ -373,42 +382,42 @@ open class RealmMyLibrary : RealmObject() {
                 val entries = obj.entrySet()
                 for ((key) in entries) {
                     if (key.indexOf("/") < 0) {
-                        resource.resourceRemoteAddress = settings.getString("couchdbURL", "http://") + "/resources/" + resourceId + "/" + key
-                        resource.resourceLocalAddress = key
-                        resource.resourceOffline = FileUtils.checkFileExist(resource.resourceRemoteAddress)
+                        resource?.resourceRemoteAddress = settings.getString("couchdbURL", "http://") + "/resources/" + resourceId + "/" + key
+                        resource?.resourceLocalAddress = key
+                        resource?.resourceOffline = FileUtils.checkFileExist(resource?.resourceRemoteAddress)
                     }
                 }
             }
-            resource.filename = JsonUtils.getString("filename", doc)
-            resource.averageRating = JsonUtils.getString("averageRating", doc)
-            resource.uploadDate = JsonUtils.getString("uploadDate", doc)
-            resource.year = JsonUtils.getString("year", doc)
-            resource.addedBy = JsonUtils.getString("addedBy", doc)
-            resource.publisher = JsonUtils.getString("publisher", doc)
-            resource.linkToLicense = JsonUtils.getString("linkToLicense", doc)
-            resource.openWith = JsonUtils.getString("openWith", doc)
-            resource.articleDate = JsonUtils.getString("articleDate", doc)
-            resource.kind = JsonUtils.getString("kind", doc)
-            resource.createdDate = JsonUtils.getLongAsString("createdDate", doc)
-            resource.language = JsonUtils.getString("language", doc)
-            resource.author = JsonUtils.getString("author", doc)
-            resource.mediaType = JsonUtils.getString("mediaType", doc)
-            resource.resourceType = JsonUtils.getString("resourceType", doc)
-            resource.timesRated = JsonUtils.getInt("timesRated", doc)
-            resource.medium = JsonUtils.getString("medium", doc)
-            resource.setResourceFor(JsonUtils.getJsonArray("resourceFor", doc), resource)
-            resource.setSubject(JsonUtils.getJsonArray("subject", doc), resource)
-            resource.setLevel(JsonUtils.getJsonArray("level", doc), resource)
-            resource.setTag(JsonUtils.getJsonArray("tags", doc), resource)
-            resource.isPrivate = JsonUtils.getBoolean("private", doc)
-            resource.setLanguages(JsonUtils.getJsonArray("languages", doc), resource)
+            resource?.filename = JsonUtils.getString("filename", doc)
+            resource?.averageRating = JsonUtils.getString("averageRating", doc)
+            resource?.uploadDate = JsonUtils.getString("uploadDate", doc)
+            resource?.year = JsonUtils.getString("year", doc)
+            resource?.addedBy = JsonUtils.getString("addedBy", doc)
+            resource?.publisher = JsonUtils.getString("publisher", doc)
+            resource?.linkToLicense = JsonUtils.getString("linkToLicense", doc)
+            resource?.openWith = JsonUtils.getString("openWith", doc)
+            resource?.articleDate = JsonUtils.getString("articleDate", doc)
+            resource?.kind = JsonUtils.getString("kind", doc)
+            resource?.createdDate = JsonUtils.getLongAsString("createdDate", doc)
+            resource?.language = JsonUtils.getString("language", doc)
+            resource?.author = JsonUtils.getString("author", doc)
+            resource?.mediaType = JsonUtils.getString("mediaType", doc)
+            resource?.resourceType = JsonUtils.getString("resourceType", doc)
+            resource?.timesRated = JsonUtils.getInt("timesRated", doc)
+            resource?.medium = JsonUtils.getString("medium", doc)
+            resource?.setResourceFor(JsonUtils.getJsonArray("resourceFor", doc), resource)
+            resource?.setSubject(JsonUtils.getJsonArray("subject", doc), resource)
+            resource?.setLevel(JsonUtils.getJsonArray("level", doc), resource)
+            resource?.setTag(JsonUtils.getJsonArray("tags", doc), resource)
+            resource?.isPrivate = JsonUtils.getBoolean("private", doc)
+            resource?.setLanguages(JsonUtils.getJsonArray("languages", doc), resource)
         }
 
         @JvmStatic
         fun getListAsArray(db_myLibrary: RealmResults<RealmMyLibrary>): Array<CharSequence?> {
             val array = arrayOfNulls<CharSequence>(db_myLibrary.size)
             for (i in db_myLibrary.indices) {
-                array[i] = db_myLibrary[i]!!.title
+                array[i] = db_myLibrary[i]?.title
             }
             return array
         }
@@ -452,7 +461,7 @@ open class RealmMyLibrary : RealmObject() {
         fun getLevels(libraries: List<RealmMyLibrary>): Set<String> {
             val list: MutableSet<String> = HashSet()
             for (li in libraries) {
-                list.addAll(li.level!!)
+                li.level?.let { list.addAll(it) }
             }
             return list
         }
@@ -471,7 +480,7 @@ open class RealmMyLibrary : RealmObject() {
         fun getSubjects(libraries: List<RealmMyLibrary>): Set<String> {
             val list: MutableSet<String> = HashSet()
             for (li in libraries) {
-                list.addAll(li.subject!!)
+                li.subject?.let { list.addAll(it) }
             }
             return list
         }

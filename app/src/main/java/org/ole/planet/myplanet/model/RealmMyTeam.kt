@@ -138,7 +138,9 @@ open class RealmMyTeam : RealmObject() {
                     myTeams.courses = RealmList()
                     for (e in coursesArray) {
                         val id = e.asJsonObject["_id"].asString
-                        if (!myTeams.courses?.contains(id)!!) myTeams.courses?.add(id)
+                        if (!myTeams.courses?.contains(id)!!) {
+                            myTeams.courses?.add(id)
+                        }
                     }
                 }
             }
@@ -329,7 +331,9 @@ open class RealmMyTeam : RealmObject() {
                 val model = mRealm.where(RealmUserModel::class.java)
                     .equalTo("id", team.userId)
                     .findFirst()
-                if (model != null && model.name!!.contains(user)) list.add(model)
+                if (model != null && model.name?.contains(user) == true) {
+                    list.add(model)
+                }
             }
             return list
         }
