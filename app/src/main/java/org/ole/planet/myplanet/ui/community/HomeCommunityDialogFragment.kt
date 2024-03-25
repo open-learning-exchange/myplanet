@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.community
 
 import android.content.Context.MODE_PRIVATE
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -9,6 +10,7 @@ import androidx.core.content.ContextCompat
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
+import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.TimeUtils
 import java.util.*
@@ -31,10 +33,13 @@ class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
         fragmentTeamDetailBinding.llActionButtons.visibility = View.GONE
         val settings = requireActivity().getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE)
         val sPlanetcode = settings.getString("planetCode", "")
+        Log.d("HomeCommunity", "PlanetCode: $sPlanetcode")
         val sParentcode = settings.getString("parentCode", "")
-        fragmentTeamDetailBinding.viewPager.adapter =
-            CommunityPagerAdapter(childFragmentManager, "$sPlanetcode@$sParentcode", true)
-        fragmentTeamDetailBinding.title.text = sPlanetcode
+        Log.d("HomeCommunity", "PlanetCode: $sPlanetcode, ParentCode: $sParentcode")
+        val user = UserProfileDbHandler(requireActivity()).userModel
+        Log.d("HomeCommunity", "User: ${user?.planetCode}")
+        fragmentTeamDetailBinding.viewPager.adapter = CommunityPagerAdapter(childFragmentManager, user?.planetCode + "@" + sParentcode, true)
+        fragmentTeamDetailBinding.title.text = user?.planetCode
         fragmentTeamDetailBinding.title.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
         fragmentTeamDetailBinding.subtitle.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
         fragmentTeamDetailBinding.subtitle.text = TimeUtils.getFormatedDateWithTime(Date().time)

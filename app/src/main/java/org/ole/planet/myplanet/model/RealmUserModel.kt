@@ -242,9 +242,9 @@ open class RealmUserModel : RealmObject() {
                 user.isShowTopbar = true
                 user.addImageUrl(jsonDoc)
                 user.isArchived = JsonUtils.getBoolean("isArchived", jsonDoc)
-                if (!TextUtils.isEmpty(JsonUtils.getString("planetCode", jsonDoc))) {
-                    settings.edit().putString("planetCode", JsonUtils.getString("planetCode", jsonDoc)).apply()
-                }
+//                if (!TextUtils.isEmpty(JsonUtils.getString("planetCode", jsonDoc))) {
+//                    settings.edit().putString("planetCode", JsonUtils.getString("planetCode", jsonDoc)).apply()
+//                }
                 if (!TextUtils.isEmpty(JsonUtils.getString("parentCode", jsonDoc))) settings.edit()
                     .putString("parentCode", JsonUtils.getString("parentCode", jsonDoc)).apply()
             }
