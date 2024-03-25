@@ -9,9 +9,10 @@ import androidx.core.content.ContextCompat
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
+import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.TimeUtils
-import java.util.*
+import java.util.Date
 
 class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
     private lateinit var fragmentTeamDetailBinding: FragmentTeamDetailBinding
@@ -32,9 +33,9 @@ class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
         val settings = requireActivity().getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE)
         val sPlanetcode = settings.getString("planetCode", "")
         val sParentcode = settings.getString("parentCode", "")
-        fragmentTeamDetailBinding.viewPager.adapter =
-            CommunityPagerAdapter(childFragmentManager, "$sPlanetcode@$sParentcode", true)
-        fragmentTeamDetailBinding.title.text = sPlanetcode
+        val user = UserProfileDbHandler(requireActivity()).userModel
+        fragmentTeamDetailBinding.viewPager.adapter = CommunityPagerAdapter(childFragmentManager, user?.planetCode + "@" + sParentcode, true)
+        fragmentTeamDetailBinding.title.text = user?.planetCode
         fragmentTeamDetailBinding.title.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
         fragmentTeamDetailBinding.subtitle.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
         fragmentTeamDetailBinding.subtitle.text = TimeUtils.getFormatedDateWithTime(Date().time)
