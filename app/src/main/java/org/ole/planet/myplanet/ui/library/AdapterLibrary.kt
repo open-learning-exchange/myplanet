@@ -105,6 +105,7 @@ class AdapterLibrary(private val context: Context, private var libraryList: List
                 holder.rowLibraryBinding.ratingBar.rating = 0f
             }
             holder.rowLibraryBinding.checkbox.setOnClickListener { view: View ->
+                holder.rowLibraryBinding.checkbox.contentDescription = context.getString(R.string.select_res_course, libraryList[position]?.title)
                 Utilities.handleCheck((view as CheckBox).isChecked, position, selectedItems, libraryList)
                 if (listener != null) listener?.onSelectedListChange(selectedItems)
             }

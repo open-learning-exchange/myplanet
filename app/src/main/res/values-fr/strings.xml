@@ -987,5 +987,10 @@
     <string name="select_date_of_birth">Sélectionner la date de naissance</string>
     <string name="confirm_membership">Confirmer l\'inscription</string>
     <string name="trial_period_ended">Période d\'essai terminée ! Veuillez terminer l\'inscription pour continuer</string>
+    <string name="drag">glisser %1$s</string>
+    <string name="visibility_of">basculer la visibilité de %1$s</string>
+    <string name="actions_menu">menu d\'actions</string>
+    <string name="icon">icône %1$s</string>
+    <string name="select_res_course">sélectionner %1$s</string>
 
 </resources>
