@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import com.google.android.material.tabs.TabLayoutMediator
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.sync.SyncActivity
@@ -14,9 +15,7 @@ import java.util.Date
 
 class CommunityTabFragment : Fragment() {
     private lateinit var fragmentTeamDetailBinding: FragmentTeamDetailBinding
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
-    ): View {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentTeamDetailBinding = FragmentTeamDetailBinding.inflate(inflater, container, false)
         return fragmentTeamDetailBinding.root
     }
@@ -25,11 +24,14 @@ class CommunityTabFragment : Fragment() {
         val settings = requireActivity().getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE)
         val sParentcode = settings.getString("parentCode", "")
         val user = UserProfileDbHandler(requireActivity()).userModel
-        fragmentTeamDetailBinding.viewPager.adapter = CommunityPagerAdapter(childFragmentManager, user?.planetCode + "@" + sParentcode, false)
-        fragmentTeamDetailBinding.tabLayout.setupWithViewPager(fragmentTeamDetailBinding.viewPager)
+        fragmentTeamDetailBinding.viewPager2?.adapter = CommunityPagerAdapter(requireActivity(), user?.planetCode + "@" + sParentcode, false)
+        fragmentTeamDetailBinding.viewPager2?.let {
+            TabLayoutMediator(fragmentTeamDetailBinding.tabLayout, it) { tab, position ->
+                tab.text = (fragmentTeamDetailBinding.viewPager2?.adapter as CommunityPagerAdapter).getPageTitle(position)
+            }.attach()
+        }
         fragmentTeamDetailBinding.title.text = user?.planetCode
         fragmentTeamDetailBinding.subtitle.text = TimeUtils.getFormatedDateWithTime(Date().time)
         fragmentTeamDetailBinding.llActionButtons.visibility = View.GONE
-        fragmentTeamDetailBinding.tabLayout.setupWithViewPager(fragmentTeamDetailBinding.viewPager)
     }
 }

@@ -5,8 +5,8 @@ import android.os.Bundle
 import android.text.TextUtils
 import androidx.annotation.RequiresApi
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentManager
-import androidx.fragment.app.FragmentStatePagerAdapter
+import androidx.fragment.app.FragmentActivity
+import androidx.viewpager2.adapter.FragmentStateAdapter
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmMyTeam
@@ -20,7 +20,7 @@ import org.ole.planet.myplanet.ui.team.teamMember.MembersFragment
 import org.ole.planet.myplanet.ui.team.teamResource.TeamResourceFragment
 import org.ole.planet.myplanet.ui.team.teamTask.TeamTaskFragment
 
-class TeamPagerAdapter(fm: FragmentManager?, team: RealmMyTeam?, private val isInMyTeam: Boolean) : FragmentStatePagerAdapter(fm!!) {
+class TeamPagerAdapter(fm: FragmentActivity, team: RealmMyTeam?, private val isInMyTeam: Boolean) : FragmentStateAdapter(fm) {
     private val teamId: String?
     private val list: MutableList<String>
     private val isEnterprise: Boolean
@@ -48,12 +48,12 @@ class TeamPagerAdapter(fm: FragmentManager?, team: RealmMyTeam?, private val isI
         }
     }
 
-    override fun getPageTitle(position: Int): CharSequence {
+    fun getPageTitle(position: Int): CharSequence {
         return list[position]
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    override fun getItem(position: Int): Fragment {
+    override fun createFragment(position: Int): Fragment {
         val f: Fragment? = if (!isInMyTeam) {
             if (position == 0) PlanFragment() else {
                 JoinedMemberFragment()
@@ -105,7 +105,7 @@ class TeamPagerAdapter(fm: FragmentManager?, team: RealmMyTeam?, private val isI
     private val fragment: Fragment
         get() = if (isEnterprise) FinanceFragment() else TeamCourseFragment()
 
-    override fun getCount(): Int {
+    override fun getItemCount(): Int {
         return list.size
     }
 }
