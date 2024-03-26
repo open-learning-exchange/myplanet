@@ -114,10 +114,11 @@
                             android:layout_width="200dp"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="10dp"
+                            android:hint="@string/hint_name"
+                            android:labelFor="@+id/inputName"
                             app:boxBackgroundColor="@color/md_white_1000"
                             app:boxStrokeColor="@color/md_white_1000"
                             app:boxStrokeWidth="0dp"
-                            android:labelFor="@+id/inputName"
                             app:boxStrokeWidthFocused="0dp"
                             app:layout_constraintEnd_toEndOf="parent"
                             app:layout_constraintStart_toStartOf="parent"
@@ -131,7 +132,7 @@
                                 android:layout_centerVertical="true"
                                 android:autofillHints=""
                                 android:drawablePadding="12dp"
-                                android:hint="@string/hint_name"
+
                                 android:inputType="text"
                                 android:paddingStart="10dp"
                                 android:paddingEnd="8dp"
@@ -143,10 +144,11 @@
                             android:layout_width="200dp"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="10dp"
+                            android:labelFor="@+id/input_password"
+                            android:hint="@string/password"
                             app:boxBackgroundColor="@color/md_white_1000"
                             app:boxStrokeColor="@color/md_white_1000"
                             app:boxStrokeWidth="0dp"
-                            android:labelFor="@+id/input_password"
                             app:boxStrokeWidthFocused="0dp"
                             app:layout_constraintEnd_toEndOf="parent"
                             app:layout_constraintStart_toStartOf="parent"
@@ -161,7 +163,6 @@
                                 android:layout_centerVertical="true"
                                 android:autofillHints=""
                                 android:drawablePadding="12dp"
-                                android:hint="@string/password"
                                 android:inputType="textPassword"
                                 android:paddingStart="10dp"
                                 android:paddingEnd="8dp"
@@ -251,8 +252,8 @@
 
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
-                android:layout_marginTop="40dp"
-                android:layout_height="wrap_content">
+                android:layout_height="wrap_content"
+                android:layout_marginTop="40dp">
 
                 <ImageView
                     android:id="@+id/logoImageView"
@@ -318,7 +319,7 @@
                     android:textSize="12sp"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/btn_lang"/>
+                    app:layout_constraintTop_toBottomOf="@+id/btn_lang" />
 
                 <LinearLayout
                     android:id="@+id/ltAvailablaSpace"

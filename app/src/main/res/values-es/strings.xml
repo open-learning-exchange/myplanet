@@ -987,5 +987,10 @@
     <string name="select_date_of_birth">selecciona la fecha de nacimiento</string>
     <string name="confirm_membership">confirma para convertirte en miembro</string>
     <string name="trial_period_ended">¡El período de prueba ha terminado! Por favor, completa el registro para continuar</string>
+    <string name="drag">arrastrar %1$s</string>
+    <string name="visibility_of">alternar visibilidad de %1$s</string>
+    <string name="actions_menu">menú de acciones</string>
+    <string name="icon">icono de %1$s</string>
+    <string name="select_res_course">seleccionar %1$s</string>
 
 </resources>

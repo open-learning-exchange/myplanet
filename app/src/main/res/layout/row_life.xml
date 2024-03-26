@@ -33,9 +33,9 @@
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:layout_marginTop="@dimen/_20dp"
-            android:layout_marginRight="8dp"
+            android:layout_marginEnd="8dp"
             android:layout_marginBottom="@dimen/_20dp"
-            android:layout_toLeftOf="@id/edit_image_button"
+            android:layout_toStartOf="@id/edit_image_button"
             android:background="@drawable/roundcorner"
             android:padding="@dimen/padding_normal"
             app:srcCompat="@drawable/ic_visibility" />
@@ -46,7 +46,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/_20dp"
             android:layout_marginBottom="@dimen/_20dp"
-            android:layout_toLeftOf="@id/drag_image_button"
+            android:layout_toStartOf="@id/drag_image_button"
             android:background="@drawable/roundcorner"
             android:padding="@dimen/padding_normal"
             app:srcCompat="@drawable/ic_edit" />

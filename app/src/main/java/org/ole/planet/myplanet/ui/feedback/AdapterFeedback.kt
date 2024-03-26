@@ -49,6 +49,7 @@ class AdapterFeedback(private val context: Context, private var list: List<Realm
             }, null)
         rowFeedbackBinding.tvOpenDate.text = getFormatedDate(list?.get(position)?.openTime?.toLong())
         rowFeedbackBinding.root.setOnClickListener {
+            rowFeedbackBinding.root.contentDescription = list?.get(position)?.title
             context.startActivity(Intent(context, FeedbackDetailActivity::class.java)
                 .putExtra("id", list?.get(position)?.id))
         }

@@ -976,5 +976,10 @@
     <string name="select_date_of_birth">Taariikhda dhalashada dooro</string>
     <string name="confirm_membership">Xaqiiji xubinnimada</string>
     <string name="trial_period_ended">Muddadii tijaabada ahayd way dhammaatay! Fadlan dhammaystir diiwaangelinta si aad u sii wadato</string>
+    <string name="drag">jiid %1$s</string>
+    <string name="visibility_of">toggle muuqashada %1$s</string>
+    <string name="actions_menu">menu falalka</string>
+    <string name="icon">astan %1$s</string>
+    <string name="select_res_course">xulo %1$s</string>
 
 </resources>

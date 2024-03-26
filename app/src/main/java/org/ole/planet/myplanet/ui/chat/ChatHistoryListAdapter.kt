@@ -14,7 +14,7 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
     private lateinit var rowChatHistoryBinding: RowChatHistoryBinding
     private var chatHistoryItemClickListener: ChatHistoryItemClickListener? = null
     private var filteredChatHistory: List<RealmChatHistory> = chatHistory
-
+    var chatTitle: String? = ""
     interface ChatHistoryItemClickListener {
         fun onChatHistoryItemClicked(conversations: RealmList<Conversation>?, _id: String, _rev: String?)
     }
@@ -46,14 +46,15 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val viewHolderChat = holder as ViewHolderChat
         if (filteredChatHistory[position].conversations != null && filteredChatHistory[position].conversations?.isNotEmpty() == true) {
-            viewHolderChat.rowChatHistoryBinding.chatTitle.text = filteredChatHistory[position].conversations?.get(0)!!.query
-            viewHolderChat.rowChatHistoryBinding.chatCardView.contentDescription = filteredChatHistory[position].conversations?.get(0)!!.query
+            viewHolderChat.rowChatHistoryBinding.chatTitle.text = filteredChatHistory[position].conversations?.get(0)?.query
+            chatTitle = filteredChatHistory[position].conversations?.get(0)?.query
         } else {
             viewHolderChat.rowChatHistoryBinding.chatTitle.text = filteredChatHistory[position].title
-            viewHolderChat.rowChatHistoryBinding.chatCardView.contentDescription = filteredChatHistory[position].title
+            chatTitle = filteredChatHistory[position].title
         }
 
         viewHolderChat.rowChatHistoryBinding.root.setOnClickListener {
+            viewHolderChat.rowChatHistoryBinding.chatCardView.contentDescription = chatTitle
             chatHistoryItemClickListener?.onChatHistoryItemClicked(
                 filteredChatHistory[position].conversations,
                 "${filteredChatHistory[position]._id}",

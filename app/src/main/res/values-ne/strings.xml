@@ -987,5 +987,10 @@
     <string name="select_date_of_birth">जन्म मिति छान्नुहोस्</string>
     <string name="confirm_membership">सदस्य बन्न पुष्टि गर्नुहोस्</string>
     <string name="trial_period_ended">अनुमति अवधि समाप्त भयो! निरन्तरताको लागि दर्ता पूरा गर्नुहोस्</string>
+    <string name="drag">%1$s तान्नुहोस्</string>
+    <string name="visibility_of">%1$s को दृश्यता टगल गर्नुहोस्</string>
+    <string name="actions_menu">क्रियाहरूको मेनु</string>
+    <string name="icon">%1$s आइकन</string>
+    <string name="select_res_course">%1$s चयन गर्नुहोस्</string>
 
 </resources>
