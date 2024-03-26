@@ -982,5 +982,10 @@
     <string name="select_date_of_birth">اختر تاريخ الميلاد</string>
     <string name="confirm_membership">تأكيد الاشتراك</string>
     <string name="trial_period_ended">انتهت الفترة التجريبية! يرجى استكمال التسجيل للمتابعة</string>
+    <string name="drag">اسحب %1$s</string>
+    <string name="visibility_of">تبديل ظهور %1$s</string>
+    <string name="actions_menu">قائمة الإجراءات</string>
+    <string name="icon">أيقونة %1$s</string>
+    <string name="select_res_course">اختر %1$s</string>
 
 </resources>

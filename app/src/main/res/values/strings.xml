@@ -1077,5 +1077,10 @@
     <string name="select_date_of_birth">select date of birth</string>
     <string name="confirm_membership">confirm to become a member</string>
     <string name="trial_period_ended">Trial period ended! Kindly complete registration to continue</string>
+    <string name="drag">drag %1$s</string>
+    <string name="visibility_of">toggle visibility of %1$s</string>
+    <string name="actions_menu">actions menu</string>
+    <string name="icon">%1$s icon</string>
+    <string name="select_res_course">select %1$s</string>
 
 </resources>

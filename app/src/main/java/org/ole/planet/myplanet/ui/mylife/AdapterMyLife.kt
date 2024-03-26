@@ -53,6 +53,7 @@ class AdapterMyLife(private val context: Context, private val myLifeList: List<R
             Utilities.log("On bind $position")
             holder.title.text = myLifeList[position].title
             holder.imageView.setImageResource(context.resources.getIdentifier(myLifeList[position].imageId, "drawable", context.packageName))
+            holder.imageView.contentDescription = context.getString(R.string.icon, myLifeList[position].title)
             val fragment = find_fragment(myLifeList[position].imageId)
             if (fragment != null) {
                 holder.imageView.setOnClickListener { view: View ->
@@ -60,12 +61,14 @@ class AdapterMyLife(private val context: Context, private val myLifeList: List<R
                 }
             }
             holder.dragImageButton.setOnTouchListener { _: View?, event: MotionEvent ->
+                holder.dragImageButton.contentDescription = context.getString(R.string.drag, myLifeList[position].title)
                 if (event.actionMasked == MotionEvent.ACTION_DOWN) {
                     mDragStartListener.onStartDrag(holder)
                 }
                 false
             }
             holder.visibility.setOnClickListener {
+                holder.visibility.contentDescription = context.getString(R.string.visibility_of, myLifeList[position].title)
                 updateVisibility(holder, holder.bindingAdapterPosition, myLifeList[holder.bindingAdapterPosition].isVisible)
             }
             if (!myLifeList[position].isVisible) {
