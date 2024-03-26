@@ -117,8 +117,8 @@
 
                 </LinearLayout>
 
-                <org.ole.planet.myplanet.utilities.CustomViewPager
-                    android:id="@+id/view_pager_course"
+                <androidx.viewpager2.widget.ViewPager2
+                    android:id="@+id/viewPager2"
                     android:layout_width="match_parent"
                     android:layout_height="0dp"
                     android:layout_weight="1" />
