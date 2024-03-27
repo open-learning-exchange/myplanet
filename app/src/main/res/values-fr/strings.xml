@@ -834,7 +834,7 @@
     <string name="data_cleared">Données effacées</string>
     <string name="are_you_sure_want_to_delete_all_the_files">Êtes-vous sûr de vouloir supprimer tous les fichiers ?</string>
     <string name="unable_to_clear_files">Impossible de supprimer les fichiers</string>
-    <string name="last_synced_never">Dernière synchronisation: Jamais</string>
+    <string name="last_synced_never">jamais synchronisé</string>
     <string name="last_synced_colon">"Dernière synchronisation: "</string>
     <string name="disclaimer">
     <![CDATA[
@@ -987,5 +987,10 @@
     <string name="select_date_of_birth">Sélectionner la date de naissance</string>
     <string name="confirm_membership">Confirmer l\'inscription</string>
     <string name="trial_period_ended">Période d\'essai terminée ! Veuillez terminer l\'inscription pour continuer</string>
+    <string name="drag">glisser %1$s</string>
+    <string name="visibility_of">basculer la visibilité de %1$s</string>
+    <string name="actions_menu">menu d\'actions</string>
+    <string name="icon">icône %1$s</string>
+    <string name="select_res_course">sélectionner %1$s</string>
 
 </resources>

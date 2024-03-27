@@ -2,11 +2,13 @@ package org.ole.planet.myplanet.ui.course
 
 import android.os.Bundle
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentStatePagerAdapter
+import androidx.viewpager2.adapter.FragmentStateAdapter
 
-class CoursePagerAdapter(fm: FragmentManager, private val courseId: String?, private val steps: Array<String?>) : FragmentStatePagerAdapter(fm) {
-    override fun getItem(position: Int): Fragment {
+class CoursePagerAdapter(fm: Fragment, private val courseId: String?, private val steps: Array<String?>) : FragmentStateAdapter(fm) {
+    override fun createFragment(position: Int): Fragment {
         val b = Bundle()
         val f: Fragment
         if (position == 0) {
@@ -21,7 +23,7 @@ class CoursePagerAdapter(fm: FragmentManager, private val courseId: String?, pri
         return f
     }
 
-    override fun getCount(): Int {
+    override fun getItemCount(): Int {
         return steps.size + 1
     }
 }

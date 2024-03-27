@@ -34,19 +34,23 @@ open class RealmAnswer : RealmObject() {
             if (valueChoices == null) {
                 return array
             }
-            for (choice in valueChoices!!) {
+            for (choice in valueChoices ?: emptyList()) {
                 array.add(Gson().fromJson(choice, JsonObject::class.java))
             }
             return array
         }
 
     fun setValueChoices(map: HashMap<String, String>?, isLastAnsvalid: Boolean) {
-        if (!isLastAnsvalid) valueChoices!!.clear()
-        for (key in map!!.keys) {
-            val ob = JsonObject()
-            ob.addProperty("id", map[key])
-            ob.addProperty("text", key)
-            valueChoices!!.add(Gson().toJson(ob))
+        if (!isLastAnsvalid) {
+            valueChoices?.clear()
+        }
+        if (map != null) {
+            for (key in map.keys) {
+                val ob = JsonObject()
+                ob.addProperty("id", map[key])
+                ob.addProperty("text", key)
+                valueChoices?.add(Gson().toJson(ob))
+            }
         }
     }
 

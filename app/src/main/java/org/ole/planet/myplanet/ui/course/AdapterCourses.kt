@@ -147,6 +147,7 @@ class AdapterCourses(private val context: Context, private var courseList: List<
                     true
                 }
                 holder.rowCourseBinding.checkbox.setOnClickListener { view: View ->
+                    holder.rowCourseBinding.checkbox.contentDescription = context.getString(R.string.select_res_course, course.courseTitle)
                     Utilities.handleCheck((view as CheckBox).isChecked, position, selectedItems, courseList)
                     if (listener != null) listener!!.onSelectedListChange(selectedItems)
                 }

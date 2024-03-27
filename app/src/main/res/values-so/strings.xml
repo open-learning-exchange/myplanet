@@ -489,7 +489,7 @@
     <string name="recording_audio">Furayaasha Sireyska......</string>
     <string name="show_replies">"Muuqaalka Jawaabo "</string>
     <string name="selected">"La Xulo: "</string>
-    <string name="last_sync"><![CDATA["<< Halkan jeedadda hore ee iskaashiga: "]]></string>
+    <string name="last_sync"><![CDATA["Halkan jeedadda hore ee iskaashiga: "]]></string>
     <string name="last_syncs">Halkan jeedadda ee Hore</string>
     <string name="login_user">Magaca Login</string>
     <string name="login_password">Furaha Erayga Login</string>
@@ -834,7 +834,7 @@
     <string name="data_cleared">Macluumaadka waa la la abuuray</string>
     <string name="are_you_sure_want_to_delete_all_the_files">Ma hubtaa inaad tirtirto faylasha oo dhan?</string>
     <string name="unable_to_clear_files">Lama xarigo faylasha</string>
-    <string name="last_synced_never">Kor u kac: Ma heli karin</string>
+    <string name="last_synced_never">waligeyn la isku midayn</string>
     <string name="last_synced_colon">"Kor u kac: "</string>
     <string name="disclaimer">
     <![CDATA[
@@ -976,5 +976,10 @@
     <string name="select_date_of_birth">Taariikhda dhalashada dooro</string>
     <string name="confirm_membership">Xaqiiji xubinnimada</string>
     <string name="trial_period_ended">Muddadii tijaabada ahayd way dhammaatay! Fadlan dhammaystir diiwaangelinta si aad u sii wadato</string>
+    <string name="drag">jiid %1$s</string>
+    <string name="visibility_of">toggle muuqashada %1$s</string>
+    <string name="actions_menu">menu falalka</string>
+    <string name="icon">astan %1$s</string>
+    <string name="select_res_course">xulo %1$s</string>
 
 </resources>

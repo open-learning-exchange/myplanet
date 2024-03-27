@@ -56,7 +56,7 @@ open class RealmChatHistory : RealmObject() {
                     if (chatHistory.conversations == null) {
                         chatHistory.conversations = RealmList()
                     }
-                    chatHistory.conversations!!.add(conversation)
+                    chatHistory.conversations?.add(conversation)
                     mRealm.copyToRealmOrUpdate(chatHistory)
                     mRealm.commitTransaction()
                 } catch (e: Exception) {

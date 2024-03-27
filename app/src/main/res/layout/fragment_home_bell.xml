@@ -62,7 +62,7 @@
         android:layout_margin="@dimen/padding_large"
         app:menu_icon="@drawable/ic_dashboard"
         app:menu_open="arc_left"
-        android:contentDescription=""
+        android:contentDescription="@string/actions_menu"
         app:menu_scr="@drawable/ic_dashboard">
 
         <com.github.clans.fab.FloatingActionButton

@@ -213,7 +213,7 @@ open class RealmNews : RealmObject() {
             news.messageType = map["messageType"]
             news.viewIn = getViewInJson(map)
             try {
-                news.updatedDate = map["updatedDate"]!!.toLong()
+                news.updatedDate = map["updatedDate"]?.toLong()!!
             } catch (e: Exception) {
                 e.printStackTrace()
             }
