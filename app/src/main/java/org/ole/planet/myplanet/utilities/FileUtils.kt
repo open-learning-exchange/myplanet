@@ -57,30 +57,29 @@ object FileUtils {
     }
 
     private fun createFilePath(folder: String, filename: String): File {
-        val directory = File(folder)
+        val directory = File(MainApplication.context.getExternalFilesDir(null), folder)
         if (!directory.exists()) {
             try {
                 if (!directory.mkdirs()) {
-                    throw IOException("Failed to create directory: " + directory.absolutePath)
+                    throw IOException("Failed to create directory: ${directory.absolutePath}")
                 }
             } catch (e: IOException) {
                 e.printStackTrace()
-                throw RuntimeException("Failed to create directory: " + directory.absolutePath, e)
+                throw RuntimeException("Failed to create directory: ${directory.absolutePath}", e)
             }
         }
-        Utilities.log("Return file $folder/$filename")
         return File(directory, filename)
     }
 
     @JvmStatic
     fun getSDPathFromUrl(url: String?): File {
-        return createFilePath(SD_PATH + "/" + getIdFromUrl(url), getFileNameFromUrl(url))
+        return createFilePath("/ole/" + getIdFromUrl(url), getFileNameFromUrl(url))
     }
 
     @JvmStatic
     fun checkFileExist(url: String?): Boolean {
         if (url.isNullOrEmpty()) return false
-        val f = createFilePath(SD_PATH + "/" + getIdFromUrl(url), getFileNameFromUrl(url))
+        val f = getSDPathFromUrl(url)
         return f.exists()
     }
 
