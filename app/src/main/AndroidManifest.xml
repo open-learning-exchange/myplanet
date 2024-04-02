@@ -52,7 +52,9 @@
         </activity>
         <activity
             android:name=".ui.sync.LoginActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:configChanges="screenSize|screenLayout|orientation|keyboardHidden|keyboard"/>
+
         <activity
             android:name=".ui.userprofile.BecomeMemberActivity"
             android:theme="@style/AppTheme" />
