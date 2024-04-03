@@ -450,7 +450,10 @@ open class RealmMyLibrary : RealmObject() {
 
         @JvmStatic
         fun getMyLibIds(realm: Realm?, userId: String?): JsonArray {
-            val myLibraries: RealmResults<RealmMyLibrary>? = realm?.where(RealmMyLibrary::class.java)?.contains("userId", userId)?.findAll()
+            val myLibraries: RealmResults<RealmMyLibrary>? =
+                userId?.let {
+                    realm?.where(RealmMyLibrary::class.java)?.contains("userId", it)?.findAll()
+                }
             val ids = JsonArray()
             for (lib in myLibraries ?: emptyList()) {
                 ids.add(lib.id)
