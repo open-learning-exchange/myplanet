@@ -33,13 +33,10 @@ class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
         val sPlanetcode = settings.getString("planetCode", "")
         val sParentcode = settings.getString("parentCode", "")
         val user = UserProfileDbHandler(requireActivity()).userModel
-        fragmentTeamDetailBinding.viewPager2?.adapter = CommunityPagerAdapter(requireActivity(), user?.planetCode + "@" + sParentcode, true)
-        fragmentTeamDetailBinding.viewPager2?.let {
-            TabLayoutMediator(fragmentTeamDetailBinding.tabLayout, it) { tab, position ->
-                tab.text = (fragmentTeamDetailBinding.viewPager2?.adapter as CommunityPagerAdapter).getPageTitle(position)
-            }.attach()
-        }
-
+        fragmentTeamDetailBinding.viewPager2.adapter = CommunityPagerAdapter(requireActivity(), user?.planetCode + "@" + sParentcode, true)
+        TabLayoutMediator(fragmentTeamDetailBinding.tabLayout, fragmentTeamDetailBinding.viewPager2) { tab, position ->
+            tab.text = (fragmentTeamDetailBinding.viewPager2.adapter as CommunityPagerAdapter).getPageTitle(position)
+        }.attach()
         fragmentTeamDetailBinding.title.text = user?.planetCode
         fragmentTeamDetailBinding.title.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
         fragmentTeamDetailBinding.subtitle.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
