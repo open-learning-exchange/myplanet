@@ -68,7 +68,7 @@ class WebViewActivity : AppCompatActivity() {
     private fun setListeners() {
         activityWebViewBinding.contentWebView.wv.webChromeClient = object : WebChromeClient() {
             override fun onProgressChanged(view: WebView, newProgress: Int) {
-                this@WebViewActivity.setProgress(newProgress)
+                activityWebViewBinding.contentWebView.pBar.progress = newProgress
                 Utilities.log("Url " + view.url)
                 if (view.url?.endsWith("/eng/") == true) {
                     finish()
