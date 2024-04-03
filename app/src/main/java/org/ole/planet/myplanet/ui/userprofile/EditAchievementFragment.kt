@@ -78,12 +78,12 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             setUserInfo()
             setAchievementInfo()
             aRealm.commitTransaction()
-            val fragmentManager = fragmentManager
-            fragmentManager?.popBackStack()
+            val fragmentManager = parentFragmentManager
+            fragmentManager.popBackStack()
         }
         fragmentEditAchievementBinding.btnCancel.setOnClickListener {
-            val fragmentManager = fragmentManager
-            fragmentManager?.popBackStack()
+            val fragmentManager = parentFragmentManager
+            fragmentManager.popBackStack()
         }
         fragmentEditAchievementBinding.btnAchievement.setOnClickListener {
             showAddachievementAlert(null)
