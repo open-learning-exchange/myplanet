@@ -11,6 +11,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Case
+import io.realm.RealmList
 import io.realm.RealmModel
 import io.realm.RealmObject
 import io.realm.RealmResults
@@ -196,20 +197,23 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     fun filterCourseByTag(s: String, tags: List<RealmTag>): List<RealmMyCourse> {
-        val initialList: List<RealmMyCourse> = getList(RealmMyCourse::class.java) as List<RealmMyCourse>
-        val list: List<RealmMyCourse> = if (isMyCourseLib) {
-            getMyCourseByUserId(model.id, initialList)
+        if (tags.isEmpty() && s.isEmpty()) {
+            return applyCourseFilter(getList(RealmMyCourse::class.java) as List<RealmMyCourse>)
+        }
+        var list = getData(s, RealmMyCourse::class.java)
+        list = if (isMyCourseLib) {
+            getMyCourseByUserId(model.id, list)
         } else {
-            getOurCourse(model.id, initialList)
+            getOurCourse(model.id, list)
         }
         if (tags.isEmpty()) {
-            return applyCourseFilter(list)
+            return list
         }
-        val courses = mutableListOf<RealmMyCourse>()
-        for (course in list) {
+        val courses = RealmList<RealmMyCourse>()
+        list.forEach { course ->
             checkAndAddToList(course, courses, tags)
         }
-        return applyCourseFilter(courses)
+        return applyCourseFilter(list)
     }
 
     private fun filter(tags: List<RealmTag>, library: RealmMyLibrary?, libraries: MutableList<RealmMyLibrary>) {

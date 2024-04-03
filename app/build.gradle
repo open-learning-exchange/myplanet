@@ -9,8 +9,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdkVersion 21
         targetSdkVersion 34
-        versionCode 1453
-        versionName "0.14.53"
+        versionCode 1462
+        versionName "0.14.62"
         ndkVersion '21.3.6528147'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -103,8 +103,8 @@ dependencies {
 
     implementation 'com.github.jeancsanchez:jcplayer:2.7.2'
 
-    implementation "com.google.dagger:hilt-android:2.51"
-    kapt "com.google.dagger:hilt-android-compiler:2.51"
+    implementation "com.google.dagger:hilt-android:2.51.1"
+    kapt "com.google.dagger:hilt-android-compiler:2.51.1"
 
     implementation 'com.mikepenz:crossfader:1.6.0@aar'
     implementation 'com.mikepenz:crossfadedrawerlayout:1.1.0@aar'
@@ -113,8 +113,8 @@ dependencies {
     implementation 'com.google.android:flexbox:1.0.0'
     implementation 'com.firebase:firebase-jobdispatcher:0.8.6'
     implementation 'androidx.cardview:cardview:1.0.0'
-    implementation 'com.squareup.retrofit2:retrofit:2.10.0'
-    implementation 'com.squareup.retrofit2:converter-gson:2.10.0'
+    implementation 'com.squareup.retrofit2:retrofit:2.11.0'
+    implementation 'com.squareup.retrofit2:converter-gson:2.11.0'
     implementation 'de.rtner:PBKDF2:1.1.4'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     testImplementation 'junit:junit:4.13.2'
@@ -142,7 +142,7 @@ dependencies {
     implementation "androidx.core:core-ktx:1.12.0"
     implementation "com.github.VaibhavLakhera:Circular-Progress-View:0.1.2"
     implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
-    implementation 'com.applandeo:material-calendar-view:1.9.0'
+    implementation 'com.applandeo:material-calendar-view:1.9.1'
     implementation "androidx.work:work-runtime:2.9.0"
     implementation(platform("org.jetbrains.kotlin:kotlin-bom:1.9.23"))
     implementation"androidx.slidingpanelayout:slidingpanelayout:1.2.0"
