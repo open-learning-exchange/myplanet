@@ -29,16 +29,14 @@ import org.ole.planet.myplanet.service.UploadToShelfService
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DialogUtils.showAlert
+import org.ole.planet.myplanet.utilities.DialogUtils.showError
 import org.ole.planet.myplanet.utilities.FileUtils.installApk
 import org.ole.planet.myplanet.utilities.Utilities
 import kotlin.math.roundToInt
 
 abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
     lateinit var settings: SharedPreferences
-
-    private val customProgressDialog by lazy {
-        DialogUtils.CustomProgressDialog(this)
-    }
+    var customProgressDialog: DialogUtils.CustomProgressDialog? = null
 
     @JvmField
     var broadcastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
@@ -64,21 +62,24 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
     fun checkDownloadResult(download: Download?) {
         runOnUiThread {
             if (!isFinishing) {
-                customProgressDialog.show()
-                customProgressDialog.setText("${getString(R.string.downloading)} ${download?.progress}% ${getString(R.string.complete)}")
-                customProgressDialog.setProgress(download?.progress ?: 0)
+                customProgressDialog?.show()
+                customProgressDialog?.setText("${getString(R.string.downloading)} ${download?.progress}% ${getString(R.string.complete)}")
+                customProgressDialog?.setProgress(download?.progress ?: 0)
                 if (download?.completeAll == true) {
                     safelyDismissDialog()
                     installApk(this, download.fileUrl)
+                } else {
+                    safelyDismissDialog()
+                    showError(customProgressDialog, download?.message)
                 }
             }
         }
     }
 
     private fun safelyDismissDialog() {
-        if (customProgressDialog.isShowing() && !isFinishing) {
+        if (customProgressDialog?.isShowing() == true && !isFinishing) {
             try {
-                customProgressDialog.dismiss()
+                customProgressDialog?.dismiss()
             } catch (e: IllegalArgumentException) {
                 e.printStackTrace()
             }
@@ -150,8 +151,8 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
     }
 
     fun startUpload() {
-        customProgressDialog.setText(getString(R.string.uploading_data_to_server_please_wait))
-        customProgressDialog.show()
+        customProgressDialog?.setText(getString(R.string.uploading_data_to_server_please_wait))
+        customProgressDialog?.show()
         Utilities.log("Upload : upload started")
         UploadToShelfService.instance?.uploadUserData { UploadToShelfService.instance?.uploadHealth() }
         UploadManager.instance?.uploadUserActivities(this)
