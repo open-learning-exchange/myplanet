@@ -178,8 +178,9 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
                 return
             }
             else -> {
-                mRealm.where(c as Class<RealmObject>).contains("userId", userId, Case.INSENSITIVE)
-                    .findAll()
+                userId?.let {
+                    mRealm.where(c as Class<RealmObject>).contains("userId", it, Case.INSENSITIVE).findAll()
+                }
             }
         }) as List<RealmObject>
         setCountText(dbMycourses.size, c, view)

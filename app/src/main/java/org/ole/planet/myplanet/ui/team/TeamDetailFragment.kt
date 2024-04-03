@@ -33,12 +33,11 @@ class TeamDetailFragment : Fragment() {
         val user = UserProfileDbHandler(requireContext()).userModel!!
         mRealm = DatabaseService(requireActivity()).realmInstance
         team = mRealm.where(RealmMyTeam::class.java).equalTo("_id", requireArguments().getString("id")).findFirst()
-        fragmentTeamDetailBinding.viewPager2?.adapter = TeamPagerAdapter(requireActivity(), team, isMyTeam)
-        fragmentTeamDetailBinding.viewPager2?.let {
-            TabLayoutMediator(fragmentTeamDetailBinding.tabLayout, it) { tab, position ->
-                tab.text = (fragmentTeamDetailBinding.viewPager2?.adapter as TeamPagerAdapter).getPageTitle(position)
-            }.attach()
-        }
+        fragmentTeamDetailBinding.viewPager2.adapter = TeamPagerAdapter(requireActivity(), team, isMyTeam)
+        TabLayoutMediator(fragmentTeamDetailBinding.tabLayout, fragmentTeamDetailBinding.viewPager2) { tab, position ->
+            tab.text = (fragmentTeamDetailBinding.viewPager2.adapter as TeamPagerAdapter).getPageTitle(position)
+        }.attach()
+
         if (!isMyTeam) {
             fragmentTeamDetailBinding.llActionButtons.visibility = View.GONE
         } else {
@@ -47,18 +46,16 @@ class TeamDetailFragment : Fragment() {
                     .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
                         team?.leave(user, mRealm)
                         Utilities.toast(activity, getString(R.string.left_team))
-                        fragmentTeamDetailBinding.viewPager2?.adapter = TeamPagerAdapter(requireActivity(), team, false)
-                        fragmentTeamDetailBinding.viewPager2?.let {
-                            TabLayoutMediator(fragmentTeamDetailBinding.tabLayout, it) { tab, position ->
-                                tab.text = (fragmentTeamDetailBinding.viewPager2?.adapter as TeamPagerAdapter).getPageTitle(position)
-                            }.attach()
-                        }
+                        fragmentTeamDetailBinding.viewPager2.adapter = TeamPagerAdapter(requireActivity(), team, false)
+                        TabLayoutMediator(fragmentTeamDetailBinding.tabLayout, fragmentTeamDetailBinding.viewPager2) { tab, position ->
+                            tab.text = (fragmentTeamDetailBinding.viewPager2.adapter as TeamPagerAdapter).getPageTitle(position)
+                        }.attach()
                         fragmentTeamDetailBinding.llActionButtons.visibility = View.GONE
                     }.setNegativeButton(R.string.no, null).show()
             }
             fragmentTeamDetailBinding.btnAddDoc.setOnClickListener {
                 MainApplication.showDownload = true
-                fragmentTeamDetailBinding.viewPager2?.currentItem = 6
+                fragmentTeamDetailBinding.viewPager2.currentItem = 6
                 MainApplication.showDownload = false
                 if (MainApplication.listener != null) {
                     MainApplication.listener?.onAddDocument()
