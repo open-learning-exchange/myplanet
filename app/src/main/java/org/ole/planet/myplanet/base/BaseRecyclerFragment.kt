@@ -81,7 +81,9 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         profileDbHandler = UserProfileDbHandler(requireActivity())
         model = profileDbHandler.userModel!!
         recyclerView.adapter = getAdapter()
-        if (isMyCourseLib) showDownloadDialog(getLibraryList(mRealm))
+        if (isMyCourseLib) {
+            showDownloadDialog(getLibraryList(mRealm))
+        }
         return v
     }
 
@@ -129,11 +131,8 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
     private fun deleteCourseProgress(deleteProgress: Boolean, `object`: RealmObject) {
         if (deleteProgress && `object` is RealmMyCourse) {
-            mRealm.where(RealmCourseProgress::class.java).equalTo("courseId", `object`.courseId)
-                .findAll().deleteAllFromRealm()
-            val examList: List<RealmStepExam> = mRealm.where(
-                RealmStepExam::class.java
-            ).equalTo("courseId", `object`.courseId).findAll()
+            mRealm.where(RealmCourseProgress::class.java).equalTo("courseId", `object`.courseId).findAll().deleteAllFromRealm()
+            val examList: List<RealmStepExam> = mRealm.where(RealmStepExam::class.java).equalTo("courseId", `object`.courseId).findAll()
             for (exam in examList) {
                 mRealm.where(RealmSubmission::class.java).equalTo("parentId", exam.id)
                     .notEqualTo("type", "survey").equalTo("uploaded", false).findAll()
@@ -147,48 +146,15 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         mRealm.close()
     }
 
-    private fun checkAndAddToList(
-        course: RealmMyCourse?,
-        courses: MutableList<RealmMyCourse>,
-        tags: List<RealmTag>
-    ) {
+    private fun checkAndAddToList(course: RealmMyCourse?, courses: MutableList<RealmMyCourse>, tags: List<RealmTag>) {
         for (tg in tags) {
-            val count =
-                mRealm.where(RealmTag::class.java).equalTo("db", "courses").equalTo("tagId", tg.id)
-                    .equalTo("linkId", course?.courseId).count()
-            if (count > 0 && !courses.contains(course)) course?.let { courses.add(it) }
+            val count = mRealm.where(RealmTag::class.java).equalTo("db", "courses").equalTo("tagId", tg.id)
+                .equalTo("linkId", course?.courseId).count()
+            if (count > 0 && !courses.contains(course)) {
+                course?.let { courses.add(it) }
+            }
         }
     }
-
-//    private fun <LI : RealmModel> getData(s: String, c: Class<LI>): List<LI> {
-//        val li: MutableList<LI>
-//        if (!s.contains(" ")) {
-//            li = mRealm.where(c).contains(
-//                if (c == RealmMyLibrary::class.java) "title" else "courseTitle",
-//                s, Case.INSENSITIVE
-//            ).findAll()
-//        } else {
-//            val query = s.split(" ").filterNot { it.isEmpty() }
-//            val data: RealmResults<LI> = mRealm.where(c).findAll()
-//            // Create a snapshot of data to work with a stable collection
-//            li = data.toList().toMutableList()
-//            li.clear() // Clear the mutable list to fill it in the loop below
-//            for (l in data) {
-//                searchAndAddToList(l, c, query, li)
-//            }
-//        }
-//        return li
-//    }
-//
-//    private fun searchAndAddToList(l: LI, c: Class<out RealmModel>, query: Array<String>, li: MutableList<LI>) {
-//        val title = if (c.isAssignableFrom(RealmMyLibrary::class.java)) (l as RealmMyLibrary).title else (l as RealmMyCourse).courseTitle
-//        var isExists = false
-//        for (q in query) {
-//            isExists = title?.lowercase(Locale.getDefault())?.contains(q.lowercase(Locale.getDefault())) == true
-//            if (!isExists) break
-//        }
-//        if (isExists) li.add(l)
-//    }
 
     private fun <LI : RealmModel> getData(s: String, c: Class<LI>): List<LI> {
         val queryParts = s.split(" ").filterNot { it.isEmpty() }
@@ -198,136 +164,37 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                 searchAndMatch(item, c, queryParts)
             }
         } else {
-            mRealm.where(c).contains(
-                if (c == RealmMyLibrary::class.java) "title" else "courseTitle",
-                s, Case.INSENSITIVE
-            ).findAll()
+            mRealm.where(c).contains(if (c == RealmMyLibrary::class.java) "title" else "courseTitle", s, Case.INSENSITIVE).findAll()
         }
     }
 
     private fun <LI : RealmModel> searchAndMatch(item: LI, c: Class<out RealmModel>, queryParts: List<String>): Boolean {
-        val title = if (c.isAssignableFrom(RealmMyLibrary::class.java)) (item as RealmMyLibrary).title else (item as RealmMyCourse).courseTitle
+        val title = if (c.isAssignableFrom(RealmMyLibrary::class.java)) {
+            (item as RealmMyLibrary).title
+        } else {
+            (item as RealmMyCourse).courseTitle
+        }
         return queryParts.all { queryPart ->
             title?.lowercase(Locale.getDefault())?.contains(queryPart.lowercase(Locale.getDefault())) == true
         }
     }
 
     fun filterLibraryByTag(s: String, tags: List<RealmTag>): List<RealmMyLibrary> {
-        // No need for casting if getData returns the correct type
         var list = getData(s, RealmMyLibrary::class.java)
         list = if (isMyCourseLib) {
-            // Assuming model.id is a String? that represents the user ID
             getMyLibraryByUserId(model.id, list)
         } else {
-            getOurLibrary(model.id, list) // Assuming getOurLibrary is implemented similarly
+            getOurLibrary(model.id, list)
         }
-        if (tags.isEmpty()) return list
-
-        // Assuming filter(...) is correctly implemented to work with non-nullable lists
+        if (tags.isEmpty()) {
+            return list
+        }
         val libraries = mutableListOf<RealmMyLibrary>()
         for (library in list) {
             filter(tags, library, libraries)
         }
         return libraries
     }
-
-
-
-
-//    private fun getData(s: String, c: Class<*>): List<LI?> {
-//        var li: MutableList<LI?> = ArrayList()
-//        if (!s.contains(" ")) {
-//            li = mRealm.where<RealmModel?>(c).contains(
-//                if (c == RealmMyLibrary::class.java) {
-//                    "title"
-//                } else {
-//                    "courseTitle"
-//                }, s, Case.INSENSITIVE
-//            ).findAll()
-//        } else {
-//            val query = s.split(" ".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-//            val data: List<LI> = mRealm.where<RealmModel>(c).findAll()
-//            for (l in data) {
-//                searchAndAddToList(l, c, query, li)
-//            }
-//        }
-//        return li
-//    }
-
-//    private fun searchAndAddToList(l: LI, c: Class<*>, query: List<String>, li: MutableList<LI?>) {
-//        val title =
-//            if (c == RealmMyLibrary::class.java) (l as RealmMyLibrary).title else (l as RealmMyCourse).courseTitle
-//        var isExists = false
-//        for (q in query) {
-//            isExists =
-//                title!!.lowercase(Locale.getDefault()).contains(q.lowercase(Locale.getDefault()))
-//            log(title.lowercase(Locale.getDefault()) + " " + q.lowercase(Locale.getDefault()) + " is exists " + isExists)
-//            if (!isExists) break
-//        }
-//        if (isExists) li.add(l)
-//    }
-
-//    fun filterLibraryByTag(s: String, tags: List<RealmTag>): List<RealmMyLibrary?> {
-//        if (tags.isEmpty() && s.isEmpty()) {
-//            return getList(RealmMyLibrary::class.java) as List<RealmMyLibrary?>
-//        }
-//        var list = getData(s, RealmMyLibrary::class.java) as List<RealmMyLibrary?>
-//        if (isMyCourseLib) {
-//            list = getMyLibraryByUserId(model.id, list)
-//        } else {
-//            list = getOurLibrary(model.id, list)
-//        }
-//        if (tags.isEmpty()) {
-//            return list
-//        }
-//        val libraries = RealmList<RealmMyLibrary?>()
-//        for (library in list) {
-//            filter(tags, library, libraries)
-//        }
-//        return libraries
-//    }
-
-//    fun filterCourseByTag(s: String, tags: List<RealmTag>): List<RealmMyCourse?> {
-//        if (tags.isEmpty() && s.isEmpty()) {
-//            return applyCourseFilter(getList(RealmMyCourse::class.java) as List<RealmMyCourse?>)
-//        }
-//        var list = getData(s, RealmMyCourse::class.java) as RealmResults<RealmMyCourse?>
-//        list = if (isMyCourseLib) {
-//            getMyCourseByUserId(model.id, list) as RealmResults<RealmMyCourse?>
-//        } else getOurCourse(model.id, list) as RealmResults<RealmMyCourse?>
-//        if (tags.isEmpty()) return list
-//        val courses = RealmList<RealmMyCourse?>()
-//        for (course in list) {
-//            checkAndAddToList(course, courses, tags)
-//        }
-//        return applyCourseFilter(list)
-//    }
-
-//    fun filterCourseByTag(s: String, tags: List<RealmTag>): List<RealmMyCourse> {
-//        val initialList = if (s.isEmpty()) {
-//            getList(RealmMyCourse::class.java) // This should return List<RealmMyCourse>
-//        } else {
-//            getData(s, RealmMyCourse::class.java) // Ensure getData returns List<RealmMyCourse>
-//        }
-//
-//        val list: List<RealmMyCourse> =
-//            if (isMyCourseLib) {
-//                getMyCourseByUserId(model.id, initialList)
-//            } else {
-//                getOurCourse(model.id, initialList)
-//            }
-//
-//        if (tags.isEmpty()) {
-//            return applyCourseFilter(list)
-//        }
-//
-//        val courses = mutableListOf<RealmMyCourse>()
-//        for (course in list) {
-//            checkAndAddToList(course, courses, tags)
-//        }
-//
-//        return applyCourseFilter(courses)
-//    }
 
     fun filterCourseByTag(s: String, tags: List<RealmTag>): List<RealmMyCourse> {
         if (tags.isEmpty() && s.isEmpty()) {
@@ -348,7 +215,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
         return applyCourseFilter(list)
     }
-    
+
     private fun filter(tags: List<RealmTag>, library: RealmMyLibrary?, libraries: MutableList<RealmMyLibrary>) {
         for (tg in tags) {
             val count = mRealm.where(RealmTag::class.java).equalTo("db", "resources")
