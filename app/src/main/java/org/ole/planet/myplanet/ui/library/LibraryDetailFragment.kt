@@ -127,7 +127,10 @@ class LibraryDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             Utilities.toast(activity, getString(R.string.resources) + if (isAdd) getString(R.string.added_to) else getString(R.string.removed_from) + getString(R.string.my_library))
             setLibraryData()
         }
-        fragmentLibraryDetailBinding.btnBack.setOnClickListener { requireActivity().onBackPressed() }
+        fragmentLibraryDetailBinding.btnBack.setOnClickListener {
+            val fragmentManager = parentFragmentManager
+            fragmentManager.popBackStack()
+        }
     }
 
     override fun onRatingChanged() {
