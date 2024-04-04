@@ -1012,8 +1012,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     fun onChangeServerUrl() {
         try {
             mRealm = Realm.getDefaultInstance()
-            val selected = spnCloud.selectedItem as RealmCommunity
-            if (selected.isValid) {
+            val selected = spnCloud.selectedItem
+            if (selected is RealmCommunity && selected.isValid) {
                 serverUrl.setText(selected.localDomain)
                 protocol_checkin.check(R.id.radio_https)
                 settings.getString("serverProtocol", getString(R.string.https_protocol))
