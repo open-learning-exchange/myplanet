@@ -61,7 +61,7 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
 
     fun checkDownloadResult(download: Download?) {
         runOnUiThread {
-            if (!isFinishing) {
+            if (!isFinishing && !isDestroyed) {
                 customProgressDialog?.show()
                 customProgressDialog?.setText("${getString(R.string.downloading)} ${download?.progress}% ${getString(R.string.complete)}")
                 customProgressDialog?.setProgress(download?.progress ?: 0)
