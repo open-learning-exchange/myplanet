@@ -24,7 +24,7 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
     private lateinit var fragmentFeedbackBinding: FragmentFeedbackBinding
     private lateinit var mRealm: Realm
     private lateinit var databaseService: DatabaseService
-    private var model: RealmUserModel? = null
+    private lateinit var model: RealmUserModel
     var user: String? = ""
 
     interface OnFeedbackSubmittedListener {
@@ -45,10 +45,8 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
         fragmentFeedbackBinding = FragmentFeedbackBinding.inflate(inflater, container, false)
         databaseService = DatabaseService(requireActivity())
         mRealm = databaseService.realmInstance
-        if (model != null) {
-            model = UserProfileDbHandler(requireContext()).userModel
-        }
-        user = model?.name
+        model = UserProfileDbHandler(requireContext()).userModel!!
+        user = model.name
         fragmentFeedbackBinding.btnSubmit.setOnClickListener(this)
         fragmentFeedbackBinding.btnCancel.setOnClickListener(this)
         return fragmentFeedbackBinding.root
@@ -124,7 +122,7 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
     private fun saveData(realm: Realm, urgent: String, type: String, message: String) {
         val feedback = realm.createObject(RealmFeedback::class.java, UUID.randomUUID().toString())
         feedback.title = "Question regarding /"
-        feedback.openTime = Date().time.toString() + ""
+        feedback.openTime = Date().time
         feedback.url = "/"
         feedback.owner = user
         feedback.source = user
@@ -145,7 +143,7 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
     private fun saveData(realm: Realm, urgent: String, type: String, argumentArray: Array<String?>) {
         val feedback = realm.createObject(RealmFeedback::class.java, UUID.randomUUID().toString())
         feedback.title = "Question regarding /" + argumentArray[2]
-        feedback.openTime = Date().time.toString() + ""
+        feedback.openTime = Date().time
         feedback.url = "/" + argumentArray[2]
         feedback.owner = user
         feedback.source = user

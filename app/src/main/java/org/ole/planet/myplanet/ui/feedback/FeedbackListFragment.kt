@@ -31,12 +31,15 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
             feedbackFragment.show(childFragmentManager, "")
         }
 
-        feedbackList = mRealm.where(RealmFeedback::class.java)
-            .equalTo("owner", userModel.name).findAllAsync()
-
-        feedbackList?.addChangeListener { results ->
-            updatedFeedbackList(results)
-        }
+        mRealm.executeTransactionAsync(
+            Realm.Transaction { },
+            Realm.Transaction.OnSuccess {
+                feedbackList = mRealm.where(RealmFeedback::class.java)
+                    .equalTo("owner", userModel.name).findAllAsync()
+                feedbackList?.addChangeListener { results ->
+                    updatedFeedbackList(results)
+                }
+            })
         return fragmentFeedbackListBinding.root
     }
 

@@ -44,12 +44,7 @@ class FeedbackDetailActivity : AppCompatActivity() {
         setTitle(R.string.feedback)
         realm = DatabaseService(this).realmInstance
         feedback = realm.where(RealmFeedback::class.java).equalTo("id", intent.getStringExtra("id")).findFirst()!!
-        if (!TextUtils.isEmpty(feedback.openTime))
-            activityFeedbackDetailBinding.tvDate.text = feedback.openTime?.let {
-                getFormatedDateWithTime(it.toLong())
-            }
-        else
-            activityFeedbackDetailBinding.tvDate.setText(R.string.date_n_a)
+        activityFeedbackDetailBinding.tvDate.text = getFormatedDateWithTime(feedback.openTime)
         activityFeedbackDetailBinding.tvMessage.text = if (TextUtils.isEmpty(feedback.message))
             "N/A"
         else
