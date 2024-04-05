@@ -33,7 +33,7 @@ class AdapterFeedback(private val context: Context, private var list: List<Realm
         rowFeedbackBinding.tvStatus.text = list?.get(position)?.status
         val contentDescription = "${list?.get(position)?.title}, ${list?.get(position)?.type}, " +
                 "${context.getString(R.string.status)}: ${list?.get(position)?.status}, ${context.getString(R.string.priority)}: ${list?.get(position)?.priority}, " +
-                "${context.getString(R.string.open_date)}: ${list?.get(position)?.openTime?.toLong()?.let { getFormatedDate(it) }}"
+                "${context.getString(R.string.open_date)}: ${getFormatedDate(list?.get(position)?.openTime)}"
         rowFeedbackBinding.feedbackCardView.contentDescription = contentDescription
 
         if ("yes".equals(list?.get(position)?.priority, ignoreCase = true)) {
@@ -47,7 +47,7 @@ class AdapterFeedback(private val context: Context, private var list: List<Realm
             } else {
                 R.drawable.bg_grey
             }, null)
-        rowFeedbackBinding.tvOpenDate.text = getFormatedDate(list?.get(position)?.openTime?.toLong())
+        rowFeedbackBinding.tvOpenDate.text = getFormatedDate(list?.get(position)?.openTime)
         rowFeedbackBinding.root.setOnClickListener {
             rowFeedbackBinding.root.contentDescription = list?.get(position)?.title
             context.startActivity(Intent(context, FeedbackDetailActivity::class.java)

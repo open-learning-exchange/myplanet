@@ -29,7 +29,7 @@ open class RealmFeedback : RealmObject() {
     @JvmField
     var owner: String? = null
     @JvmField
-    var openTime: String? = null
+    var openTime: Long = 0
     @JvmField
     var type: String? = null
     @JvmField
@@ -151,7 +151,7 @@ open class RealmFeedback : RealmObject() {
                 feedback?.status = JsonUtils.getString("status", act)
                 feedback?.priority = JsonUtils.getString("priority", act)
                 feedback?.owner = JsonUtils.getString("owner", act)
-                feedback?.openTime = JsonUtils.getString("openTime", act)
+                feedback?.openTime = JsonUtils.getLong("openTime", act)
                 feedback?.type = JsonUtils.getString("type", act)
                 feedback?.url = JsonUtils.getString("url", act)
                 feedback?.parentCode = JsonUtils.getString("parentCode", act)
