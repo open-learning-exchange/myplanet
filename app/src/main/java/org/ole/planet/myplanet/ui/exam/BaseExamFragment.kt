@@ -113,7 +113,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
             AlertDialog.Builder(requireActivity())
                 .setTitle(getString(R.string.thank_you_for_taking_this) + type + getString(R.string.we_wish_you_all_the_best))
                 .setPositiveButton("Finish") { _: DialogInterface?, _: Int ->
-                    requireActivity().onBackPressed()
+                    parentFragmentManager.popBackStack()
                     try {
                     } catch (e: Exception) {
                         e.printStackTrace()
@@ -141,7 +141,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
             sub?.status = "complete"
             mRealm.commitTransaction()
             Utilities.toast(activity, getString(R.string.thank_you_for_taking_this_survey))
-            requireActivity().onBackPressed()
+            parentFragmentManager.popBackStack()
         }
     }
 
