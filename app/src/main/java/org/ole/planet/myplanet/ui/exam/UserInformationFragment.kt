@@ -130,7 +130,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     override fun onDismiss(dialog: DialogInterface) {
         super.onDismiss(dialog)
         Utilities.toast(activity, getString(R.string.thank_you_for_taking_this_survey))
-        requireActivity().onBackPressed()
+        parentFragmentManager.popBackStack()
     }
 
     private fun showDatePickerDialog() {
