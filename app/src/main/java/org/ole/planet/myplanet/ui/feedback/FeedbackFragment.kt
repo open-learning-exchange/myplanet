@@ -24,7 +24,7 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
     private lateinit var fragmentFeedbackBinding: FragmentFeedbackBinding
     private lateinit var mRealm: Realm
     private lateinit var databaseService: DatabaseService
-    private lateinit var model: RealmUserModel
+    private var model: RealmUserModel ?= null
     var user: String? = ""
 
     interface OnFeedbackSubmittedListener {
@@ -45,8 +45,8 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
         fragmentFeedbackBinding = FragmentFeedbackBinding.inflate(inflater, container, false)
         databaseService = DatabaseService(requireActivity())
         mRealm = databaseService.realmInstance
-        model = UserProfileDbHandler(requireContext()).userModel!!
-        user = model.name
+        model = UserProfileDbHandler(requireContext()).userModel
+        user = model?.name
         fragmentFeedbackBinding.btnSubmit.setOnClickListener(this)
         fragmentFeedbackBinding.btnCancel.setOnClickListener(this)
         return fragmentFeedbackBinding.root
