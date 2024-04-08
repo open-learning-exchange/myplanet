@@ -35,9 +35,9 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     lateinit var dbService: DatabaseService
     lateinit var mRealm: Realm
     var courseId: String? = null
-    private lateinit var currentCourse: RealmMyCourse
+    private var currentCourse: RealmMyCourse ?= null
     lateinit var steps: List<RealmCourseStep?>
-    lateinit var userModel: RealmUserModel
+    var userModel: RealmUserModel ?= null
     var position = 0
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,14 +53,14 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         fragmentTakeCourseBinding = FragmentTakeCourseBinding.inflate(inflater, container, false)
         dbService = DatabaseService(requireActivity())
         mRealm = dbService.realmInstance
-        userModel = UserProfileDbHandler(requireContext()).userModel!!
-        currentCourse = mRealm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()!!
+        userModel = UserProfileDbHandler(requireContext()).userModel
+        currentCourse = mRealm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
         return fragmentTakeCourseBinding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        fragmentTakeCourseBinding.tvCourseTitle.text = currentCourse.courseTitle
+        fragmentTakeCourseBinding.tvCourseTitle.text = currentCourse?.courseTitle
         steps = getSteps(mRealm, courseId)
         if (steps.isEmpty()) {
             fragmentTakeCourseBinding.nextStep.visibility = View.GONE
@@ -84,8 +84,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         fragmentTakeCourseBinding.courseProgress.setOnSeekBarChangeListener(object :
             OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar, i: Int, b: Boolean) {
-                val currentProgress =
-                    getCurrentProgress(steps, mRealm, userModel.id, courseId)
+                val currentProgress = getCurrentProgress(steps, mRealm, userModel?.id, courseId)
                 if (b && i <= currentProgress + 1) {
                     fragmentTakeCourseBinding.viewPager2.currentItem = i
                 }
@@ -97,8 +96,8 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private fun setCourseData() {
-        fragmentTakeCourseBinding.tvStepTitle.text = currentCourse.courseTitle
-        if (!currentCourse.userId?.contains(userModel.id)!!) {
+        fragmentTakeCourseBinding.tvStepTitle.text = currentCourse?.courseTitle
+        if (currentCourse?.userId?.contains(userModel?.id) != true) {
             fragmentTakeCourseBinding.btnRemove.visibility = View.VISIBLE
             fragmentTakeCourseBinding.btnRemove.text = getString(R.string.join)
             getAlertDialog(requireActivity(), getString(R.string.do_you_want_to_join_this_course), getString(R.string.join_this_course)) { _: DialogInterface?, _: Int -> addRemoveCourse() }
@@ -108,11 +107,11 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         createActivity(mRealm, userModel, currentCourse)
         fragmentTakeCourseBinding.tvStep.text = String.format("Step %d/%d", fragmentTakeCourseBinding.viewPager2.currentItem, steps.size)
         fragmentTakeCourseBinding.courseProgress.max = steps.size
-        val i = getCurrentProgress(steps, mRealm, userModel.id, courseId)
+        val i = getCurrentProgress(steps, mRealm, userModel?.id, courseId)
         if (i < steps.size) fragmentTakeCourseBinding.courseProgress.secondaryProgress = i + 1
         fragmentTakeCourseBinding.courseProgress.progress = i
         fragmentTakeCourseBinding.courseProgress.visibility =
-            if (currentCourse.userId!!.contains(userModel.id))
+            if (currentCourse?.userId?.contains(userModel?.id) == true)
                 View.VISIBLE
             else View.GONE
     }
@@ -126,17 +125,17 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         } else {
             fragmentTakeCourseBinding.nextStep.isClickable = true
             fragmentTakeCourseBinding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
-            fragmentTakeCourseBinding.tvStepTitle.text = currentCourse.courseTitle
+            fragmentTakeCourseBinding.tvStepTitle.text = currentCourse?.courseTitle
         }
-        val i = getCurrentProgress(steps, mRealm, userModel.id, courseId)
+        val i = getCurrentProgress(steps, mRealm, userModel?.id, courseId)
         if (i < steps.size) fragmentTakeCourseBinding.courseProgress.secondaryProgress = i + 1
         fragmentTakeCourseBinding.courseProgress.progress = i
         fragmentTakeCourseBinding.tvStep.text = String.format("Step %d/%d", position, steps.size)
     }
 
     private fun changeNextButtonState(position: Int) {
-        Utilities.log("${isStepCompleted(mRealm, steps[position - 1]?.id, userModel.id)} is step completed")
-        if (isStepCompleted(mRealm, steps[position - 1]?.id, userModel.id) || !showBetaFeature(Constants.KEY_EXAM, requireContext())) {
+        Utilities.log("${isStepCompleted(mRealm, steps[position - 1]?.id, userModel?.id)} is step completed")
+        if (isStepCompleted(mRealm, steps[position - 1]?.id, userModel?.id) || !showBetaFeature(Constants.KEY_EXAM, requireContext())) {
             fragmentTakeCourseBinding.nextStep.isClickable = true
             fragmentTakeCourseBinding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
         } else {
@@ -192,17 +191,18 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
 
     private fun addRemoveCourse() {
         if (!mRealm.isInTransaction) mRealm.beginTransaction()
-        if (currentCourse.userId?.contains(userModel.id) == true) {
-            currentCourse.removeUserId(userModel.id)
-            onRemove(mRealm, "courses", userModel.id, courseId)
+        if (currentCourse?.userId?.contains(userModel?.id) == true) {
+            currentCourse?.removeUserId(userModel?.id)
+            onRemove(mRealm, "courses", userModel?.id, courseId)
         } else {
-            currentCourse.setUserId(userModel.id)
-            onAdd(mRealm, "courses", userModel.id, courseId)
+            currentCourse?.setUserId(userModel?.id)
+            onAdd(mRealm, "courses", userModel?.id, courseId)
         }
-        Utilities.toast(activity, "Course " + (
-                if (currentCourse.userId?.contains(userModel.id) == true) {
-                    getString(R.string.added_to)
-                } else getString(R.string.removed_from)) + " " + getString(R.string.my_courses))
+        Utilities.toast(activity, "Course ${(if (currentCourse?.userId?.contains(userModel?.id) == true) { 
+            getString(R.string.added_to) 
+        } else {
+            getString(R.string.removed_from)
+        })} ${getString(R.string.my_courses)}")
         setCourseData()
     }
 
