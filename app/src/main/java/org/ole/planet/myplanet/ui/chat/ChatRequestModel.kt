@@ -8,7 +8,9 @@ data class ChatRequestModel(
 )
 
 data class ContentData(
-    @SerializedName("content") val content: String
+    @SerializedName("user") var user: String,
+    @SerializedName("content") val content: String,
+    @SerializedName("aiProvider") val aiProvider: AiProvider
 )
 
 data class ContinueChatModel(
@@ -17,7 +19,14 @@ data class ContinueChatModel(
 )
 
 data class Data(
+    @SerializedName("user") var user: String,
     @SerializedName("content") var content: String,
+    @SerializedName("aiProvider") val aiProvider: AiProvider,
     @SerializedName("_id") var Id: String,
-    @SerializedName("_rev") var rev: String,
+    @SerializedName("_rev") var rev: String
+)
+
+data class AiProvider (
+    @SerializedName("name") val name: String,
+    @SerializedName("model") val model: String
 )

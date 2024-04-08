@@ -1082,5 +1082,9 @@
     <string name="actions_menu">actions menu</string>
     <string name="icon">%1$s icon</string>
     <string name="select_res_course">select %1$s</string>
+    <string name="perplexity">perplexity</string>
+    <string name="openai">openai</string>
+    <string name="gemini">gemini</string>
+    <string name="kindly_enter_message">Kindly enter message</string>
 
 </resources>

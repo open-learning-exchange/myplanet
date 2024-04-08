@@ -18,6 +18,7 @@
     <dimen name="_20dp">20dp</dimen>
     <dimen name="_10dp">10dp</dimen>
     <dimen name="_1dp">1dp</dimen>
+    <dimen name="_2dp">2dp</dimen>
     <dimen name="_80dp">80dp</dimen>
     <dimen name="_24dp">24dp</dimen>
     <dimen name="calendar_width">320dp</dimen>

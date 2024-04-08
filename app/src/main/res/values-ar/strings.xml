@@ -987,5 +987,9 @@
     <string name="actions_menu">قائمة الإجراءات</string>
     <string name="icon">أيقونة %1$s</string>
     <string name="select_res_course">اختر %1$s</string>
+    <string name="perplexity">perplexity</string>
+    <string name="openai">openai</string>
+    <string name="gemini">gemini</string>
+    <string name="kindly_enter_message">الرجاء إدخال الرسالة</string>
 
 </resources>

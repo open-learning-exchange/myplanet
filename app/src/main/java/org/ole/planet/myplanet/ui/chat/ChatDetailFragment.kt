@@ -25,6 +25,7 @@ import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmChatHistory.Companion.addConversationToChatHistory
+import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Utilities
 import retrofit2.Call
 import retrofit2.Callback
@@ -36,6 +37,8 @@ class ChatDetailFragment : Fragment() {
     private lateinit var sharedViewModel: ChatViewModel
     private var _id: String = ""
     private var _rev: String = ""
+    private var aiName: String = getString(R.string.openai)
+    private var aiModel: String = "gpt-3.5-turbo"
     private lateinit var mRealm: Realm
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,7 +53,7 @@ class ChatDetailFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         mRealm = DatabaseService(requireContext()).realmInstance
-        
+        val user = UserProfileDbHandler(requireContext()).userModel
         mAdapter = ChatAdapter(ArrayList(), requireContext(), fragmentChatDetailBinding.recyclerGchat)
         fragmentChatDetailBinding.recyclerGchat.adapter = mAdapter
         val layoutManager: RecyclerView.LayoutManager = LinearLayoutManager(requireContext())
@@ -63,21 +66,41 @@ class ChatDetailFragment : Fragment() {
             fragmentChatDetailBinding.recyclerGchat.smoothScrollToPosition(mAdapter.itemCount - 1)
         }
 
-        fragmentChatDetailBinding.buttonGchatSend.setOnClickListener {
+        fragmentChatDetailBinding.tvOpenai.setOnClickListener {
+            clearChatDetail()
             fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
-            if (TextUtils.isEmpty(fragmentChatDetailBinding.editGchatMessage.text.toString().trim())) {
+            aiName = getString(R.string.openai)
+            aiModel = "gpt-3.5-turbo"
+        }
+        fragmentChatDetailBinding.tvPerplexity.setOnClickListener {
+            clearChatDetail()
+            fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
+            aiName = getString(R.string.perplexity)
+            aiModel= "pplx-7b-online"
+        }
+        fragmentChatDetailBinding.tvGemini.setOnClickListener {
+            clearChatDetail()
+            fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
+            aiName= getString(R.string.gemini)
+            aiModel= "gemini-pro"
+        }
+
+        fragmentChatDetailBinding.buttonGchatSend.setOnClickListener {
+            val aiProvider = AiProvider(name = aiName, model = aiModel)
+            fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
+            if (TextUtils.isEmpty("${fragmentChatDetailBinding.editGchatMessage.text}".trim())) {
                 fragmentChatDetailBinding.textGchatIndicator.visibility = View.VISIBLE
-                fragmentChatDetailBinding.textGchatIndicator.text = "Kindly enter message"
+                fragmentChatDetailBinding.textGchatIndicator.text = getString(R.string.kindly_enter_message)
             } else {
                 val message = "${fragmentChatDetailBinding.editGchatMessage.text}".replace("\n", " ")
                 mAdapter.addQuery(message)
                 if (_id != "") {
-                    val continueChatData = ContinueChatModel(data = Data(message, _id, _rev), save = true)
+                    val continueChatData = ContinueChatModel(data = Data("${user?.name}", message, aiProvider, _id, _rev), save = true)
                     val jsonContent = Gson().toJson(continueChatData)
                     val requestBody = RequestBody.create(MediaType.parse("application/json"), jsonContent)
                     continueChatRequest(requestBody, _id, message)
                 } else {
-                    val chatData = ChatRequestModel(data = ContentData(message), save = true)
+                    val chatData = ChatRequestModel(data = ContentData("${user?.name}", message, aiProvider), save = true)
                     val jsonContent = Gson().toJson(chatData)
                     val requestBody = RequestBody.create(MediaType.parse("application/json"), jsonContent)
                     makePostRequest(requestBody, message)
@@ -198,7 +221,11 @@ class ChatDetailFragment : Fragment() {
                     }
                 } else {
                     fragmentChatDetailBinding.textGchatIndicator.visibility = View.VISIBLE
-                    fragmentChatDetailBinding.textGchatIndicator.text = getString(R.string.request_failed_please_retry)
+                    fragmentChatDetailBinding.textGchatIndicator.text = if (response.message() == "null"){
+                        getString(R.string.request_failed_please_retry)
+                    } else {
+                        response.message()
+                    }
                     val jsonObject = JsonObject()
                     jsonObject.addProperty("_rev", "")
                     jsonObject.addProperty("_id", "")
