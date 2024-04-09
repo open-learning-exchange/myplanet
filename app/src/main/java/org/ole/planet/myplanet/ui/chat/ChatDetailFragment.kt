@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.chat
 
-import android.content.Context
 import android.os.Bundle
 import android.text.*
 import android.view.*
@@ -18,9 +17,7 @@ import org.ole.planet.myplanet.model.*
 import org.ole.planet.myplanet.model.RealmChatHistory.Companion.addConversationToChatHistory
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Utilities
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
+import retrofit2.*
 
 class ChatDetailFragment : Fragment() {
     lateinit var fragmentChatDetailBinding: FragmentChatDetailBinding
@@ -29,13 +26,8 @@ class ChatDetailFragment : Fragment() {
     private var _id: String = ""
     private var _rev: String = ""
     private var aiName: String = ""
-    private var aiModel: String = "gpt-3.5-turbo"
+    private var aiModel: String = ""
     private lateinit var mRealm: Realm
-
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        aiName = getString(R.string.openai)
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -90,11 +82,9 @@ class ChatDetailFragment : Fragment() {
         fragmentChatDetailBinding.editGchatMessage.setOnKeyListener { _, _, event ->
             if (event.action == KeyEvent.ACTION_DOWN) {
                 if (event.keyCode == KeyEvent.KEYCODE_ENTER && event.isShiftPressed) {
-                    // Insert a new line when Shift + Enter is pressed
                     fragmentChatDetailBinding.editGchatMessage.append("\n")
                     return@setOnKeyListener true
                 } else if (event.keyCode == KeyEvent.KEYCODE_ENTER) {
-                    // Call the functionality inside buttonGchatSend click listener
                     fragmentChatDetailBinding.buttonGchatSend.performClick()
                     return@setOnKeyListener true
                 }
@@ -155,6 +145,8 @@ class ChatDetailFragment : Fragment() {
                             fragmentChatDetailBinding.tvOpenai.visibility = View.VISIBLE
                             fragmentChatDetailBinding.view1.visibility = View.VISIBLE
 
+                            aiName = getString(R.string.openai)
+                            aiModel = "gpt-3.5-turbo"
                             fragmentChatDetailBinding.tvOpenai.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.colorPrimary))
                             fragmentChatDetailBinding.tvOpenai.setTextColor(ContextCompat.getColor(requireContext(), R.color.textColorPrimary))
 
@@ -183,6 +175,8 @@ class ChatDetailFragment : Fragment() {
                             fragmentChatDetailBinding.view2.visibility = View.VISIBLE
 
                             if (!aiProvidersResponse.openai) {
+                                aiName = getString(R.string.perplexity)
+                                aiModel= "pplx-7b-online"
                                 fragmentChatDetailBinding.tvPerplexity.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.colorPrimary))
                                 fragmentChatDetailBinding.tvPerplexity.setTextColor(ContextCompat.getColor(requireContext(), R.color.textColorPrimary))
                             }
@@ -209,6 +203,8 @@ class ChatDetailFragment : Fragment() {
 
                         if (aiProvidersResponse.gemini) {
                             if (!aiProvidersResponse.openai && !aiProvidersResponse.perplexity) {
+                                aiName= getString(R.string.gemini)
+                                aiModel= "gemini-pro"
                                 fragmentChatDetailBinding.tvGemini.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.colorPrimary))
                                 fragmentChatDetailBinding.tvGemini.setTextColor(ContextCompat.getColor(requireContext(), R.color.textColorPrimary))
                             }
