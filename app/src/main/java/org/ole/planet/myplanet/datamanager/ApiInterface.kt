@@ -56,4 +56,7 @@ interface ApiInterface {
 
     @POST
     fun chatGpt(@Url url: String?, @Body requestBody: RequestBody?): Call<ChatModel>
+
+    @GET
+    fun checkAiProviders(@Url url: String?): Call<ResponseBody>
 }

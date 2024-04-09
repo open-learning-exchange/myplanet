@@ -1086,5 +1086,6 @@
     <string name="openai">openai</string>
     <string name="gemini">gemini</string>
     <string name="kindly_enter_message">Kindly enter message</string>
+    <string name="virtual_assistant_currently_not_available">virtual assistant currently not available</string>
 
 </resources>
