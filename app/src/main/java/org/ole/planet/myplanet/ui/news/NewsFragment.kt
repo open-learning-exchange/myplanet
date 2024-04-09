@@ -26,6 +26,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.Constants
+import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.FileUtils.openOleFolder
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
@@ -162,7 +163,7 @@ class NewsFragment : BaseNewsFragment() {
                 }
             }
             val urls = ArrayList<String>()
-            val settings = requireActivity().getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE)
+            val settings = requireActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             val stringArray: Array<String?> = resourceIds.toTypedArray()
             val lib: List<RealmMyLibrary?> = mRealm.where(RealmMyLibrary::class.java)
                 .`in`("_id", stringArray)

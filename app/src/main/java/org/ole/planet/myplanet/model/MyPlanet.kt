@@ -11,6 +11,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.ui.sync.SyncActivity
+import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.VersionUtils
 import java.io.Serializable
@@ -42,7 +43,7 @@ class MyPlanet : Serializable {
         @JvmStatic
         fun getMyPlanetActivities(context: Context, pref: SharedPreferences, model: RealmUserModel): JsonObject {
             val postJSON = JsonObject()
-            val preferences = context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE)
+            val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             val planet = Gson().fromJson(preferences.getString("versionDetail", ""), MyPlanet::class.java)
             if (planet != null) postJSON.addProperty("planetVersion", planet.planetVersion)
             postJSON.addProperty("_id", VersionUtils.getAndroidId(MainApplication.context) + "@" + NetworkUtils.getUniqueIdentifier())
@@ -57,7 +58,7 @@ class MyPlanet : Serializable {
         @JvmStatic
         fun getNormalMyPlanetActivities(context: Context, pref: SharedPreferences, model: RealmUserModel): JsonObject {
             val postJSON = JsonObject()
-            val preferences = context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE)
+            val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             val planet = Gson().fromJson(preferences.getString("versionDetail", ""), MyPlanet::class.java)
             if (planet != null) postJSON.addProperty("planetVersion", planet.planetVersion)
             postJSON.addProperty("last_synced", pref.getLong("LastSync", 0))
@@ -77,7 +78,7 @@ class MyPlanet : Serializable {
         @JvmStatic
         fun getTabletUsages(context: Context): JsonArray {
             val cal = Calendar.getInstance()
-            val settings = MainApplication.context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE)
+            val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             cal.timeInMillis = settings.getLong("lastUsageUploaded", 0)
             val arr = JsonArray()
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {

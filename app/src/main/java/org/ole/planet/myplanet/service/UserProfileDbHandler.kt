@@ -10,6 +10,7 @@ import org.ole.planet.myplanet.model.RealmOfflineActivity.Companion.getRecentLog
 import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.sync.SyncActivity
+import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Date
 import java.util.UUID
@@ -22,7 +23,7 @@ class UserProfileDbHandler(context: Context) {
 
     init {
         realmService = DatabaseService(context)
-        settings = context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE)
+        settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         fullName = Utilities.getUserName(settings)
         mRealm = realmService.realmInstance
     }

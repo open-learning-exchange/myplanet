@@ -14,6 +14,7 @@ import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.sync.SyncActivity
+import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.NotificationUtil
 import org.ole.planet.myplanet.utilities.Utilities
@@ -42,7 +43,7 @@ class MyDownloadService : IntentService("Download Service") {
     private var request: Call<ResponseBody>? = null
     private var completeAll = false
     override fun onHandleIntent(intent: Intent?) {
-        preferences = applicationContext.getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE)
+        preferences = applicationContext.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         if (urls == null) {
             stopSelf()

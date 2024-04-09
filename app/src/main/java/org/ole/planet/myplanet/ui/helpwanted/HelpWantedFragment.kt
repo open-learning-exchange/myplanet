@@ -13,6 +13,7 @@ import com.google.gson.JsonParser
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentHelpWantedBinding
 import org.ole.planet.myplanet.ui.sync.SyncActivity
+import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 
 class HelpWantedFragment : Fragment() {
@@ -21,7 +22,7 @@ class HelpWantedFragment : Fragment() {
     private var manager: JsonObject? = null
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentHelpWantedBinding = FragmentHelpWantedBinding.inflate(inflater, container, false)
-        settings = requireActivity().getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE)
+        settings = requireActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         if (settings.contains("user_admin")) manager = JsonParser().parse(settings.getString("user_admin", "")).asJsonObject
         return fragmentHelpWantedBinding.root
     }

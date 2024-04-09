@@ -67,6 +67,7 @@ import org.ole.planet.myplanet.ui.team.AdapterTeam.OnUserSelectedListener
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.Constants
+import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Constants.autoSynFeature
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DialogUtils.getUpdateDialog
@@ -1237,7 +1238,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     companion object {
-        const val PREFS_NAME = "OLE_PLANET"
         lateinit var cal_today: Calendar
         lateinit var cal_last_Sync: Calendar
     }

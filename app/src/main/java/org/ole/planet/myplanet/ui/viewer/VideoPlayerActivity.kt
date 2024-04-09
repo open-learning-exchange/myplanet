@@ -22,6 +22,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityExoPlayerVideoBinding
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.AuthSessionUpdater
+import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Utilities
 
 class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback {
@@ -35,7 +36,7 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
         super.onCreate(savedInstanceState)
         binding = ActivityExoPlayerVideoBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        settings = getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE)
+        settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
 
         val extras = intent.extras
         val videoType = extras?.getString("videoType")

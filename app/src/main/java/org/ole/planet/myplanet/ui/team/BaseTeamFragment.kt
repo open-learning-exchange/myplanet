@@ -9,6 +9,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.sync.SyncActivity
+import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Utilities
 
 abstract class BaseTeamFragment : BaseNewsFragment() {
@@ -34,7 +35,7 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
             }
         }
 
-        settings = requireActivity().getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE)
+        settings = requireActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     }
 
     override fun setData(list: List<RealmNews?>?) {}

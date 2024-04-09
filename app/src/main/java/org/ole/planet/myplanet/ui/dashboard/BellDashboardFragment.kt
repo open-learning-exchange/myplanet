@@ -167,8 +167,4 @@ class BellDashboardFragment : BaseDashboardFragment() {
         f.arguments = b
         homeItemClickListener?.openCallFragment(f)
     }
-
-    companion object {
-        const val PREFS_NAME = "OLE_PLANET"
-    }
 }

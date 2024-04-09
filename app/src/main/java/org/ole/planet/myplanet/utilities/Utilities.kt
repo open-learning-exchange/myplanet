@@ -16,10 +16,10 @@ import com.bumptech.glide.Glide
 import fisk.chipcloud.ChipCloudConfig
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.PREFS_NAME
 
 import org.ole.planet.myplanet.datamanager.MyDownloadService
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import java.lang.ref.WeakReference
 import java.math.BigInteger
 

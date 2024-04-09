@@ -33,6 +33,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Utilities.log
 import org.ole.planet.myplanet.utilities.Utilities.toast
 import java.util.Locale
@@ -260,7 +261,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     companion object {
-        const val PREFS_NAME = "OLE_PLANET"
         lateinit var settings: SharedPreferences
 
         fun showNoData(v: View?, count: Int?) {

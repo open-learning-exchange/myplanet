@@ -14,6 +14,7 @@ import org.ole.planet.myplanet.service.AutoSyncWorker
 import org.ole.planet.myplanet.service.StayOnlineWorker
 import org.ole.planet.myplanet.service.TaskNotificationWorker
 import org.ole.planet.myplanet.ui.sync.SyncActivity
+import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.concurrent.TimeUnit
@@ -49,7 +50,7 @@ class MainApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         context = this
-        preferences = getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE)
+        preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
 
         // Initialize libraries and settings
         val builder = VmPolicy.Builder()

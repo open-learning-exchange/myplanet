@@ -23,6 +23,7 @@ import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.ui.sync.SyncActivity
+import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils
@@ -66,7 +67,7 @@ class BecomeMemberActivity : BaseActivity() {
         val username = intent.getStringExtra("username") ?: ""
         guest = intent.getBooleanExtra("guest", false)
 
-        settings = getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE)
+        settings = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         textChangedListener(mRealm)
 
         if (guest) {
