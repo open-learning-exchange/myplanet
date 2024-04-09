@@ -41,6 +41,7 @@ import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.CheckboxListView
+import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DialogUtils.getProgressDialog
 import org.ole.planet.myplanet.utilities.DialogUtils.showError
@@ -249,7 +250,7 @@ abstract class BaseResourceFragment : Fragment() {
         super.onCreate(savedInstanceState)
         mRealm = DatabaseService(requireActivity()).realmInstance
         prgDialog = getProgressDialog(requireActivity())
-        settings = requireActivity().getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE)
+        settings = requireActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         editor = settings?.edit()
     }
 

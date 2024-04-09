@@ -26,6 +26,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam.Companion.insertMyTeams
 import org.ole.planet.myplanet.model.RealmResourceActivity.Companion.onSynced
 import org.ole.planet.myplanet.model.Rows
 import org.ole.planet.myplanet.utilities.Constants
+import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Constants.ShelfData
 import org.ole.planet.myplanet.utilities.JsonUtils.getJsonArray
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
@@ -241,7 +242,6 @@ class SyncManager private constructor(private val context: Context) {
     }
 
     companion object {
-        const val PREFS_NAME = "OLE_PLANET"
         private var ourInstance: SyncManager? = null
         val instance: SyncManager?
             get() {

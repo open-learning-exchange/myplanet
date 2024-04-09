@@ -54,8 +54,4 @@ class DashboardFragment : BaseDashboardFragment() {
             AddResourceFragment().show(childFragmentManager, getString(R.string.add_res))
         }
     }
-
-    companion object {
-        const val PREFS_NAME = "OLE_PLANET"
-    }
 }

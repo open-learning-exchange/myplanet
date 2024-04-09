@@ -54,6 +54,7 @@ import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmTeamTask.Companion.serialize
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.sync.SyncActivity
+import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.FileUtils.fullyReadFileToBytes
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
@@ -78,7 +79,7 @@ class UploadManager(context: Context) : FileUploadService() {
     init {
         dbService = DatabaseService(context)
         this.context = context
-        pref = context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE)
+        pref = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     }
 
     private fun uploadNewsActivities() {

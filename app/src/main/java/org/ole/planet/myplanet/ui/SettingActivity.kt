@@ -25,6 +25,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.dashboard.DashboardFragment
 import org.ole.planet.myplanet.ui.sync.LoginActivity
+import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryFormattedString
 import org.ole.planet.myplanet.utilities.LocaleHelper
@@ -175,7 +176,7 @@ class SettingActivity : AppCompatActivity() {
             }
             autoForceSync(autoSync, autoForceWeeklySync!!, autoForceMonthlySync!!)
             autoForceSync(autoSync, autoForceMonthlySync, autoForceWeeklySync)
-            val settings = requireActivity().getSharedPreferences(DashboardFragment.PREFS_NAME, MODE_PRIVATE)
+            val settings = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             val lastSynced = settings.getLong("LastSync", 0)
             if (lastSynced == 0L) {
                 lastSyncDate?.setTitle(R.string.last_synced_never)

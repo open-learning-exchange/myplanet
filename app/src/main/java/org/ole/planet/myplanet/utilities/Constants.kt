@@ -43,6 +43,7 @@ object Constants {
     const val KEY_UPGRADE_MAX = "beta_upgrade_max"
     const val DISCLAIMER = R.string.disclaimer
     const val ABOUT = R.string.about
+    const val PREFS_NAME = "OLE_PLANET"
     val COLOR_MAP = HashMap<Class<*>, Int>()
     @JvmField
     var classList = HashMap<String, Class<*>>()

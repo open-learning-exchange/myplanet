@@ -11,6 +11,7 @@ import android.provider.Settings
 import android.text.TextUtils
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.ui.dashboard.DashboardFragment
+import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import java.net.NetworkInterface
 import java.util.Collections
 import java.util.Locale
@@ -113,7 +114,7 @@ object NetworkUtils {
 
     @JvmStatic
     fun getCustomDeviceName(context: Context): String {
-        return context.getSharedPreferences(DashboardFragment.PREFS_NAME, Context.MODE_PRIVATE)
+        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .getString("customDeviceName", "") ?: ""
     }
 }

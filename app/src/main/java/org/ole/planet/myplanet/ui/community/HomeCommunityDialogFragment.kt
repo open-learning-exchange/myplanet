@@ -12,6 +12,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.sync.SyncActivity
+import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.TimeUtils
 import java.util.Date
 
@@ -29,7 +30,7 @@ class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
 
     private fun initCommunityTab() {
         fragmentTeamDetailBinding.llActionButtons.visibility = View.GONE
-        val settings = requireActivity().getSharedPreferences(SyncActivity.PREFS_NAME, MODE_PRIVATE)
+        val settings = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         val sPlanetcode = settings.getString("planetCode", "")
         val sParentcode = settings.getString("parentCode", "")
         val user = UserProfileDbHandler(requireActivity()).userModel

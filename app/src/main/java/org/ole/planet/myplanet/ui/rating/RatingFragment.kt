@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.sync.SyncActivity
+import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Date
 import java.util.UUID
@@ -51,7 +52,7 @@ class RatingFragment : DialogFragment() {
         fragmentRatingBinding = FragmentRatingBinding.inflate(inflater, container, false)
         databaseService = DatabaseService(requireActivity())
         mRealm = databaseService.realmInstance
-        settings = requireActivity().getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE)
+        settings = requireActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         return fragmentRatingBinding.root
     }
 
