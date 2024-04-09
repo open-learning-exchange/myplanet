@@ -14,6 +14,7 @@ import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.Constants
+import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.FileUtils.copyAssets
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 
@@ -24,10 +25,6 @@ class OnBoardingActivity : AppCompatActivity() {
     private var dotsCount = 0
     private lateinit var dots: Array<ImageView?>
     lateinit var prefData: SharedPrefManager
-
-    companion object {
-        const val PREFS_NAME = "OLE_PLANET"
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

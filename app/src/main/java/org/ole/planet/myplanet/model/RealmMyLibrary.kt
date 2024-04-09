@@ -14,6 +14,7 @@ import io.realm.RealmResults
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.ui.sync.SyncActivity
+import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
@@ -358,7 +359,7 @@ open class RealmMyLibrary : RealmObject() {
         @JvmStatic
         fun insertMyLibrary(userId: String?, stepId: String?, courseId: String?, doc: JsonObject, mRealm: Realm) {
             val resourceId = JsonUtils.getString("_id", doc)
-            val settings = MainApplication.context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE)
+            val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             var resource = mRealm.where(RealmMyLibrary::class.java).equalTo("id", resourceId).findFirst()
             if (resource == null) {
                 resource = mRealm.createObject(RealmMyLibrary::class.java, resourceId)

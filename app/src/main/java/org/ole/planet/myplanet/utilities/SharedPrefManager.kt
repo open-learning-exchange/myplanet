@@ -6,12 +6,12 @@ import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 import org.ole.planet.myplanet.model.User
+import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 
 class SharedPrefManager(context: Context) {
     var PRIVATE_MODE = 0
     var pref: SharedPreferences
     var editor: SharedPreferences.Editor
-    var SHARED_PREF_NAME = "OLEmyPlanetPrefData"
 
     var SAVEDUSERS = "savedUsers"
     var REPLIEDNEWSID = "repliedNewsId"
@@ -21,7 +21,7 @@ class SharedPrefManager(context: Context) {
     var TEAMNAME = "teamName"
 
     init {
-        pref = context.getSharedPreferences(SHARED_PREF_NAME, PRIVATE_MODE)
+        pref = context.getSharedPreferences(PREFS_NAME, PRIVATE_MODE)
         editor = pref.edit()
     }
 

@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.Constants
+import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils.startDownloadUpdate
 import org.ole.planet.myplanet.utilities.FileUtils.installApk
 import org.ole.planet.myplanet.utilities.Utilities
@@ -28,7 +29,7 @@ import java.util.Date
 class AutoSyncWorker(private val context: Context, workerParams: WorkerParameters) : Worker(context, workerParams), SyncListener, CheckVersionCallback, SuccessListener {
     private lateinit var preferences: SharedPreferences
     override fun doWork(): Result {
-        preferences = context.getSharedPreferences(SyncManager.PREFS_NAME, Context.MODE_PRIVATE)
+        preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val lastSync = preferences.getLong("LastSync", 0)
         val currentTime = System.currentTimeMillis()
         val syncInterval = preferences.getInt("autoSyncInterval", 60 * 60)
@@ -118,7 +119,7 @@ class AutoSyncWorker(private val context: Context, workerParams: WorkerParameter
     }
 
     override fun onSuccess(s: String?) {
-        val settings = MainApplication.context.getSharedPreferences(SyncActivity.PREFS_NAME, Context.MODE_PRIVATE)
+        val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         settings.edit().putLong("lastUsageUploaded", Date().time).apply()
     }
 }
