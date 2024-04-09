@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.chat
+package org.ole.planet.myplanet.model
 
 import com.google.gson.annotations.SerializedName
 

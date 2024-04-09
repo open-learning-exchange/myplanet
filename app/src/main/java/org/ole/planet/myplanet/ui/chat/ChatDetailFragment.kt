@@ -1,30 +1,21 @@
 package org.ole.planet.myplanet.ui.chat
 
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextUtils
-import android.text.TextWatcher
-import android.view.KeyEvent
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.text.*
+import android.view.*
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import com.google.gson.Gson
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
+import androidx.recyclerview.widget.*
+import com.google.gson.*
 import io.realm.Realm
-import okhttp3.MediaType
-import okhttp3.RequestBody
+import okhttp3.*
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentChatDetailBinding
-import org.ole.planet.myplanet.datamanager.ApiClient
-import org.ole.planet.myplanet.datamanager.ApiInterface
-import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.model.RealmChatHistory
+import org.ole.planet.myplanet.datamanager.*
+import org.ole.planet.myplanet.model.*
 import org.ole.planet.myplanet.model.RealmChatHistory.Companion.addConversationToChatHistory
+import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Utilities
 import retrofit2.Call
 import retrofit2.Callback
@@ -36,6 +27,8 @@ class ChatDetailFragment : Fragment() {
     private lateinit var sharedViewModel: ChatViewModel
     private var _id: String = ""
     private var _rev: String = ""
+    private var aiName: String = ""
+    private var aiModel: String = ""
     private lateinit var mRealm: Realm
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,34 +43,35 @@ class ChatDetailFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         mRealm = DatabaseService(requireContext()).realmInstance
-        
+        val user = UserProfileDbHandler(requireContext()).userModel
         mAdapter = ChatAdapter(ArrayList(), requireContext(), fragmentChatDetailBinding.recyclerGchat)
         fragmentChatDetailBinding.recyclerGchat.adapter = mAdapter
         val layoutManager: RecyclerView.LayoutManager = LinearLayoutManager(requireContext())
         fragmentChatDetailBinding.recyclerGchat.layoutManager = layoutManager
         fragmentChatDetailBinding.recyclerGchat.isNestedScrollingEnabled = true
         fragmentChatDetailBinding.recyclerGchat.setHasFixedSize(true)
-
+        checkAiProviders()
         if (mAdapter.itemCount > 0) {
             fragmentChatDetailBinding.recyclerGchat.scrollToPosition(mAdapter.itemCount - 1)
             fragmentChatDetailBinding.recyclerGchat.smoothScrollToPosition(mAdapter.itemCount - 1)
         }
 
         fragmentChatDetailBinding.buttonGchatSend.setOnClickListener {
+            val aiProvider = AiProvider(name = aiName, model = aiModel)
             fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
-            if (TextUtils.isEmpty(fragmentChatDetailBinding.editGchatMessage.text.toString().trim())) {
+            if (TextUtils.isEmpty("${fragmentChatDetailBinding.editGchatMessage.text}".trim())) {
                 fragmentChatDetailBinding.textGchatIndicator.visibility = View.VISIBLE
-                fragmentChatDetailBinding.textGchatIndicator.text = "Kindly enter message"
+                fragmentChatDetailBinding.textGchatIndicator.text = getString(R.string.kindly_enter_message)
             } else {
                 val message = "${fragmentChatDetailBinding.editGchatMessage.text}".replace("\n", " ")
                 mAdapter.addQuery(message)
                 if (_id != "") {
-                    val continueChatData = ContinueChatModel(data = Data(message, _id, _rev), save = true)
+                    val continueChatData = ContinueChatModel(data = Data("${user?.name}", message, aiProvider, _id, _rev), save = true)
                     val jsonContent = Gson().toJson(continueChatData)
                     val requestBody = RequestBody.create(MediaType.parse("application/json"), jsonContent)
                     continueChatRequest(requestBody, _id, message)
                 } else {
-                    val chatData = ChatRequestModel(data = ContentData(message), save = true)
+                    val chatData = ChatRequestModel(data = ContentData("${user?.name}", message, aiProvider), save = true)
                     val jsonContent = Gson().toJson(chatData)
                     val requestBody = RequestBody.create(MediaType.parse("application/json"), jsonContent)
                     makePostRequest(requestBody, message)
@@ -90,11 +84,9 @@ class ChatDetailFragment : Fragment() {
         fragmentChatDetailBinding.editGchatMessage.setOnKeyListener { _, _, event ->
             if (event.action == KeyEvent.ACTION_DOWN) {
                 if (event.keyCode == KeyEvent.KEYCODE_ENTER && event.isShiftPressed) {
-                    // Insert a new line when Shift + Enter is pressed
                     fragmentChatDetailBinding.editGchatMessage.append("\n")
                     return@setOnKeyListener true
                 } else if (event.keyCode == KeyEvent.KEYCODE_ENTER) {
-                    // Call the functionality inside buttonGchatSend click listener
                     fragmentChatDetailBinding.buttonGchatSend.performClick()
                     return@setOnKeyListener true
                 }
@@ -141,6 +133,115 @@ class ChatDetailFragment : Fragment() {
         view.post {
             clearChatDetail()
         }
+    }
+
+    private fun checkAiProviders() {
+        val apiInterface = ApiClient.client?.create(ApiInterface::class.java)
+        apiInterface?.checkAiProviders("${Utilities.hostUrl}/checkproviders")?.enqueue(object : Callback<ResponseBody> {
+            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+                if (response.isSuccessful) {
+                    response.body()?.let { responseBody ->
+                        val gson = Gson()
+                        val aiProvidersResponse = gson.fromJson(responseBody.string(), AiProvidersResponse::class.java)
+                        if (aiProvidersResponse.openai) {
+                            fragmentChatDetailBinding.tvOpenai.visibility = View.VISIBLE
+                            fragmentChatDetailBinding.view1.visibility = View.VISIBLE
+
+                            aiName = getString(R.string.openai)
+                            aiModel = "gpt-3.5-turbo"
+                            fragmentChatDetailBinding.tvOpenai.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.colorPrimary))
+                            fragmentChatDetailBinding.tvOpenai.setTextColor(ContextCompat.getColor(requireContext(), R.color.textColorPrimary))
+
+                            fragmentChatDetailBinding.tvOpenai.setOnClickListener {
+                                fragmentChatDetailBinding.tvOpenai.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.colorPrimary))
+                                fragmentChatDetailBinding.tvOpenai.setTextColor(ContextCompat.getColor(requireContext(), R.color.textColorPrimary))
+
+                                fragmentChatDetailBinding.tvPerplexity.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.disable_color))
+                                fragmentChatDetailBinding.tvPerplexity.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
+
+                                fragmentChatDetailBinding.tvGemini.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.disable_color))
+                                fragmentChatDetailBinding.tvGemini.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
+
+                                clearChatDetail()
+                                fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
+                                aiName = getString(R.string.openai)
+                                aiModel = "gpt-3.5-turbo"
+                            }
+                        } else {
+                            fragmentChatDetailBinding.tvOpenai.visibility = View.GONE
+                            fragmentChatDetailBinding.view1.visibility = View.GONE
+                        }
+
+                        if (aiProvidersResponse.perplexity) {
+                            fragmentChatDetailBinding.tvPerplexity.visibility = View.VISIBLE
+                            fragmentChatDetailBinding.view2.visibility = View.VISIBLE
+
+                            if (!aiProvidersResponse.openai) {
+                                aiName = getString(R.string.perplexity)
+                                aiModel= "pplx-7b-online"
+                                fragmentChatDetailBinding.tvPerplexity.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.colorPrimary))
+                                fragmentChatDetailBinding.tvPerplexity.setTextColor(ContextCompat.getColor(requireContext(), R.color.textColorPrimary))
+                            }
+
+                            fragmentChatDetailBinding.tvPerplexity.setOnClickListener {
+                                fragmentChatDetailBinding.tvPerplexity.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.colorPrimary))
+                                fragmentChatDetailBinding.tvPerplexity.setTextColor(ContextCompat.getColor(requireContext(), R.color.textColorPrimary))
+
+                                fragmentChatDetailBinding.tvOpenai.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.disable_color))
+                                fragmentChatDetailBinding.tvOpenai.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
+
+                                fragmentChatDetailBinding.tvGemini.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.disable_color))
+                                fragmentChatDetailBinding.tvGemini.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
+
+                                clearChatDetail()
+                                fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
+                                aiName = getString(R.string.perplexity)
+                                aiModel= "pplx-7b-online"
+                            }
+                        } else {
+                            fragmentChatDetailBinding.tvPerplexity.visibility = View.GONE
+                            fragmentChatDetailBinding.view2.visibility = View.GONE
+                        }
+
+                        if (aiProvidersResponse.gemini) {
+                            if (!aiProvidersResponse.openai && !aiProvidersResponse.perplexity) {
+                                aiName= getString(R.string.gemini)
+                                aiModel= "gemini-pro"
+                                fragmentChatDetailBinding.tvGemini.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.colorPrimary))
+                                fragmentChatDetailBinding.tvGemini.setTextColor(ContextCompat.getColor(requireContext(), R.color.textColorPrimary))
+                            }
+
+                            fragmentChatDetailBinding.tvGemini.visibility = View.VISIBLE
+
+                            fragmentChatDetailBinding.tvGemini.setOnClickListener {
+                                fragmentChatDetailBinding.tvGemini.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.colorPrimary))
+                                fragmentChatDetailBinding.tvGemini.setTextColor(ContextCompat.getColor(requireContext(), R.color.textColorPrimary))
+
+                                fragmentChatDetailBinding.tvPerplexity.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.disable_color))
+                                fragmentChatDetailBinding.tvPerplexity.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
+
+                                fragmentChatDetailBinding.tvOpenai.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.disable_color))
+                                fragmentChatDetailBinding.tvOpenai.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
+
+                                clearChatDetail()
+                                fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
+                                aiName= getString(R.string.gemini)
+                                aiModel= "gemini-pro"
+                            }
+                        } else {
+                            fragmentChatDetailBinding.tvGemini.visibility = View.GONE
+                        }
+                    }
+                }
+            }
+
+            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+                fragmentChatDetailBinding.textGchatIndicator.visibility = View.VISIBLE
+                fragmentChatDetailBinding.textGchatIndicator.text = getString(R.string.virtual_assistant_currently_not_available)
+                fragmentChatDetailBinding.editGchatMessage.isEnabled = false
+                fragmentChatDetailBinding.buttonGchatSend.isEnabled = false
+            }
+        })
     }
 
     private fun makePostRequest(content: RequestBody, query: String) {
@@ -198,7 +299,11 @@ class ChatDetailFragment : Fragment() {
                     }
                 } else {
                     fragmentChatDetailBinding.textGchatIndicator.visibility = View.VISIBLE
-                    fragmentChatDetailBinding.textGchatIndicator.text = getString(R.string.request_failed_please_retry)
+                    fragmentChatDetailBinding.textGchatIndicator.text = if (response.message() == "null"){
+                        getString(R.string.request_failed_please_retry)
+                    } else {
+                        response.message()
+                    }
                     val jsonObject = JsonObject()
                     jsonObject.addProperty("_rev", "")
                     jsonObject.addProperty("_id", "")

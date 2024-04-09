@@ -5,7 +5,7 @@ import okhttp3.RequestBody
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.model.DocumentResponse
 import org.ole.planet.myplanet.model.MyPlanet
-import org.ole.planet.myplanet.ui.chat.ChatModel
+import org.ole.planet.myplanet.model.ChatModel
 import retrofit2.Call
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -56,4 +56,7 @@ interface ApiInterface {
 
     @POST
     fun chatGpt(@Url url: String?, @Body requestBody: RequestBody?): Call<ChatModel>
+
+    @GET
+    fun checkAiProviders(@Url url: String?): Call<ResponseBody>
 }
