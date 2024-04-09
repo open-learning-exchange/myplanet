@@ -2,32 +2,19 @@ package org.ole.planet.myplanet.ui.chat
 
 import android.content.Context
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextUtils
-import android.text.TextWatcher
-import android.util.Log
-import android.view.KeyEvent
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.text.*
+import android.view.*
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import com.google.gson.Gson
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
+import androidx.recyclerview.widget.*
+import com.google.gson.*
 import io.realm.Realm
-import okhttp3.MediaType
-import okhttp3.RequestBody
-import okhttp3.ResponseBody
+import okhttp3.*
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentChatDetailBinding
-import org.ole.planet.myplanet.datamanager.ApiClient
-import org.ole.planet.myplanet.datamanager.ApiInterface
-import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.model.RealmChatHistory
+import org.ole.planet.myplanet.datamanager.*
+import org.ole.planet.myplanet.model.*
 import org.ole.planet.myplanet.model.RealmChatHistory.Companion.addConversationToChatHistory
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Utilities
@@ -164,7 +151,6 @@ class ChatDetailFragment : Fragment() {
                     response.body()?.let { responseBody ->
                         val gson = Gson()
                         val aiProvidersResponse = gson.fromJson(responseBody.string(), AiProvidersResponse::class.java)
-                        Log.d("AI Providers", "OpenAI: ${aiProvidersResponse.openai}, Perplexity: ${aiProvidersResponse.perplexity}, Gemini: ${aiProvidersResponse.gemini}")
                         if (aiProvidersResponse.openai) {
                             fragmentChatDetailBinding.tvOpenai.visibility = View.VISIBLE
                             fragmentChatDetailBinding.view1.visibility = View.VISIBLE
