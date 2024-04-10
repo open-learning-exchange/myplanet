@@ -7,7 +7,6 @@ import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.content.res.Resources
 import android.graphics.drawable.AnimationDrawable
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.text.Editable
@@ -54,8 +53,8 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.ManagerSync.Companion.instance
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.datamanager.Service.CheckVersionCallback
-import org.ole.planet.myplanet.datamanager.Service.PlanetAvailableListener
 import org.ole.planet.myplanet.datamanager.Service.ConfigurationIdListener
+import org.ole.planet.myplanet.datamanager.Service.PlanetAvailableListener
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmCommunity
 import org.ole.planet.myplanet.model.RealmMyTeam
@@ -198,16 +197,42 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         AlertDialog.Builder(this)
             .setMessage("You want to connect to a different server. Clear app data to proceed")
             .setPositiveButton("Clear Data") { _, _ ->
-                clearAppData()
+                clearRealmDb()
+                clearSharedPref()
+                restartApp()
             }
             .setNegativeButton("Cancel", null)
             .show()
     }
 
-    private fun clearAppData() {
-        val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-        intent.setData(Uri.parse("package:$packageName"))
-        startActivity(intent)
+    private fun clearSharedPref() {
+        val keysToKeep = setOf(prefData.FIRSTLAUNCH)
+        val tempStorage = HashMap<String, Boolean>()
+        for (key in keysToKeep) {
+            tempStorage[key] = settings.getBoolean(key, false)
+        }
+        settings.edit().clear().commit()
+        val sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val editor = sharedPreferences.edit()
+        for ((key, value) in tempStorage) {
+            editor.putBoolean(key, value)
+        }
+        editor.commit()
+    }
+
+    private fun clearRealmDb(){
+        val realm = Realm.getDefaultInstance()
+        realm.executeTransaction { transactionRealm ->
+            transactionRealm.deleteAll()
+        }
+        realm.close()
+    }
+
+    private fun restartApp() {
+        val intent = packageManager.getLaunchIntentForPackage(packageName)
+        val mainIntent = Intent.makeRestartActivityTask(intent?.component)
+        startActivity(mainIntent)
+        Runtime.getRuntime().exit(0)
     }
 
     private fun clearInternalStorage() {
@@ -906,26 +931,26 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 }
                 .onNeutral { dialog: MaterialDialog, _: DialogAction? ->
                     serverConfigAction = "save"
-//                    val protocol = "${serverUrlProtocol?.text}"
-//                    var url = "${serverUrl.text}"
-//                    val pin = "${serverPassword.text}"
-//                    url = protocol + url
-//                    if (isUrlValid(url)) {
-//                        currentDialog = dialog
-//                        service.getConfig(this, url, pin)
-//                    }
-                    if (selectedTeamId == null) {
-                        saveConfigAndContinue(dialog)
-                    } else {
-                        val url = "${serverUrlProtocol?.text}${serverUrl.text}"
-                        if (isUrlValid(url)) {
-                            prefData.setSELECTEDTEAMID(selectedTeamId)
-                            (activity as LoginActivity).getTeamMembers()
-                            saveConfigAndContinue(dialog)
-                        } else {
-                            saveConfigAndContinue(dialog)
-                        }
+                    val protocol = "${serverUrlProtocol?.text}"
+                    var url = "${serverUrl.text}"
+                    val pin = "${serverPassword.text}"
+                    url = protocol + url
+                    if (isUrlValid(url)) {
+                        currentDialog = dialog
+                        service.getConfig(this, url, pin)
                     }
+//                    if (selectedTeamId == null) {
+//                        saveConfigAndContinue(dialog)
+//                    } else {
+//                        val url = "${serverUrlProtocol?.text}${serverUrl.text}"
+//                        if (isUrlValid(url)) {
+//                            prefData.setSELECTEDTEAMID(selectedTeamId)
+//                            (activity as LoginActivity).getTeamMembers()
+//                            saveConfigAndContinue(dialog)
+//                        } else {
+//                            saveConfigAndContinue(dialog)
+//                        }
+//                    }
                 }
             if (!prefData.getMANUALCONFIG()) {
                 dialogServerUrlBinding.manualConfiguration.isChecked = false
