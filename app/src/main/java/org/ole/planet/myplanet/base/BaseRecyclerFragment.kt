@@ -199,7 +199,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
     fun filterCourseByTag(s: String, tags: List<RealmTag>): List<RealmMyCourse> {
         if (tags.isEmpty() && s.isEmpty()) {
-            return applyCourseFilter(getList(RealmMyCourse::class.java) as List<RealmMyCourse>)
+            return applyCourseFilter(filterRealmMyCourseList(getList(RealmMyCourse::class.java)))
         }
         var list = getData(s, RealmMyCourse::class.java)
         list = if (isMyCourseLib) {
@@ -215,6 +215,10 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             checkAndAddToList(course, courses, tags)
         }
         return applyCourseFilter(list)
+    }
+
+    private fun filterRealmMyCourseList(items: List<Any?>): List<RealmMyCourse> {
+        return items.filterIsInstance<RealmMyCourse>()
     }
 
     private fun filter(tags: List<RealmTag>, library: RealmMyLibrary?, libraries: MutableList<RealmMyLibrary>) {

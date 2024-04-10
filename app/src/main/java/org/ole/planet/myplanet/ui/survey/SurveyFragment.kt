@@ -20,7 +20,9 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>() {
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
-        return model.id?.let { AdapterSurvey(requireActivity(), getList(RealmStepExam::class.java, "name", Sort.ASCENDING) as List<RealmStepExam>, mRealm, it) }!!
+        return model.id?.let {
+            AdapterSurvey(requireActivity(), safeCastList(getList(RealmStepExam::class.java, "name", Sort.ASCENDING), RealmStepExam::class.java), mRealm, it)
+        }!!
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -34,14 +36,18 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>() {
                 Utilities.log("i $i")
                 if (view != null) {
                     if (i == 0) {
-                        recyclerView.adapter = activity?.let { model.id?.let { it1 -> AdapterSurvey(it, getList(RealmStepExam::class.java, "name", Sort.ASCENDING) as List<RealmStepExam>, mRealm, it1) } }
+                        recyclerView.adapter = activity?.let { act -> model.id?.let { id -> AdapterSurvey(act, safeCastList(getList(RealmStepExam::class.java, "name", Sort.ASCENDING), RealmStepExam::class.java), mRealm, id) } }
                     } else {
-                        recyclerView.adapter = activity?.let { model.id?.let { it1 -> AdapterSurvey(it, getList(RealmStepExam::class.java, "name", Sort.DESCENDING) as List<RealmStepExam>, mRealm, it1) } }
+                        recyclerView.adapter = activity?.let { act -> model.id?.let { id -> AdapterSurvey(act, safeCastList(getList(RealmStepExam::class.java, "name", Sort.DESCENDING), RealmStepExam::class.java), mRealm, id) } }
                     }
                 }
             }
 
             override fun onNothingSelected(adapterView: AdapterView<*>?) {}
         }
+    }
+
+    fun <T> safeCastList(items: List<Any?>, clazz: Class<T>): List<T> {
+        return items.mapNotNull { it?.takeIf(clazz::isInstance)?.let(clazz::cast) }
     }
 }

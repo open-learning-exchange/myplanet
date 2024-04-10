@@ -105,8 +105,9 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
             q?.`in`("parentId", getIds(ex))
         }
         if (q != null) {
-            submissions = q.findAll() as List<RealmSubmission>?
+            submissions = q.findAll().mapNotNull { it as? RealmSubmission }
         }
+
         val adapter = AdapterMySubmission(requireActivity(), submissions, exams)
         adapter.setmRealm(mRealm)
         adapter.setType(type)
