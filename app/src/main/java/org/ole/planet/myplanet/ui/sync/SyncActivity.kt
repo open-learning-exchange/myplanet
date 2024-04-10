@@ -1109,7 +1109,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             val builder = getUpdateDialog(this, info, customProgressDialog)
             if (cancelable || getCustomDeviceName(this).endsWith("###")) {
                 builder.setNegativeButton(R.string.update_later) { _: DialogInterface?, _: Int ->
-                    continueSyncProcess(forceSync = false, isSync = true)
+                    continueSyncProcess()
                 }
             } else {
                 mRealm.executeTransactionAsync { realm: Realm -> realm.deleteAll() }
@@ -1141,13 +1141,13 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             settingDialog(this)
         }
         customProgressDialog?.dismiss()
-        if (!blockSync) continueSyncProcess(forceSync = false, isSync = true) else {
+        if (!blockSync) continueSyncProcess() else {
             syncIconDrawable.stop()
             syncIconDrawable.selectDrawable(0)
         }
     }
 
-    fun continueSyncProcess(forceSync: Boolean, isSync: Boolean) {
+    fun continueSyncProcess() {
         Utilities.log("Upload : Continue sync process")
         try {
             if (isSync) {
