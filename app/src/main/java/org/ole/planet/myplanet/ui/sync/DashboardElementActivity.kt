@@ -94,7 +94,8 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
                 startActivity(Intent(this, SettingActivity::class.java))
             }
             R.id.action_sync -> {
-                continueSyncProcess(true, false)
+                isServerReachable(Utilities.getUrl())
+                startUpload()
             }
         }
         return super.onOptionsItemSelected(item)

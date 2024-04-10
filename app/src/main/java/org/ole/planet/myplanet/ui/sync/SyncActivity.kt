@@ -53,6 +53,7 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.ManagerSync.Companion.instance
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.datamanager.Service.CheckVersionCallback
+import org.ole.planet.myplanet.datamanager.Service.ConfigurationIdListener
 import org.ole.planet.myplanet.datamanager.Service.PlanetAvailableListener
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmCommunity
@@ -94,9 +95,8 @@ import java.util.Objects
 import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
 
-
 abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVersionCallback,
-    OnUserSelectedListener {
+    OnUserSelectedListener, ConfigurationIdListener {
     private lateinit var syncDate: TextView
     lateinit var lblLastSyncDate: TextView
     private lateinit var intervalLabel: TextView
@@ -141,6 +141,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     lateinit var imgBtnSetting: ImageButton
     lateinit var service: Service
     private var fallbackLanguage: String = "en"
+    private var currentDialog: MaterialDialog? = null
+    private var serverConfigAction = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -153,6 +155,80 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         profileDbHandler = UserProfileDbHandler(this)
         defaultPref = PreferenceManager.getDefaultSharedPreferences(this)
         processedUrl = Utilities.getUrl()
+    }
+
+    override fun onConfigurationIdReceived(id: String) {
+        val savedId = settings.getString("configurationId", null)
+        if (serverConfigAction == "sync") {
+            if (savedId == null) {
+                settings.edit().putString("configurationId", id).apply()
+                currentDialog?.let { continueSync(it) }
+            } else if (id == savedId) {
+                currentDialog?.let { continueSync(it) }
+            } else {
+                showDifferentServerDialog()
+            }
+        } else if (serverConfigAction == "save") {
+            if (savedId == null || id == savedId) {
+                if (selectedTeamId == null) {
+                    currentDialog?.let { saveConfigAndContinue(it) }
+                } else {
+                    val url = "${serverUrlProtocol?.text}${serverUrl.text}"
+                    if (isUrlValid(url)) {
+                        prefData.setSELECTEDTEAMID(selectedTeamId)
+                        if (this is LoginActivity) {
+                            this.getTeamMembers()
+                        }
+                        currentDialog?.let { saveConfigAndContinue(it) }
+                    } else {
+                        currentDialog?.let { saveConfigAndContinue(it) }
+                    }
+                }
+            } else {
+                showDifferentServerDialog()
+            }
+        }
+    }
+
+    private fun showDifferentServerDialog() {
+        AlertDialog.Builder(this)
+            .setMessage("You want to connect to a different server. Clear app data to proceed")
+            .setPositiveButton("Clear Data") { _, _ ->
+                clearRealmDb()
+                clearSharedPref()
+                restartApp()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun clearSharedPref() {
+        val keysToKeep = setOf(prefData.FIRSTLAUNCH)
+        val tempStorage = HashMap<String, Boolean>()
+        for (key in keysToKeep) {
+            tempStorage[key] = settings.getBoolean(key, false)
+        }
+        settings.edit().clear().commit()
+        val editor = settings.edit()
+        for ((key, value) in tempStorage) {
+            editor.putBoolean(key, value)
+        }
+        editor.commit()
+    }
+
+    private fun clearRealmDb(){
+        val realm = Realm.getDefaultInstance()
+        realm.executeTransaction { transactionRealm ->
+            transactionRealm.deleteAll()
+        }
+        realm.close()
+    }
+
+    private fun restartApp() {
+        val intent = packageManager.getLaunchIntentForPackage(packageName)
+        val mainIntent = Intent.makeRestartActivityTask(intent?.component)
+        startActivity(mainIntent)
+        Runtime.getRuntime().exit(0)
     }
 
     private fun clearInternalStorage() {
@@ -246,7 +322,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         return if (lastSynced == 0L) {
             " Never Synced"
         } else {
-            Utilities.getRelativeTime(lastSynced)
+            getRelativeTime(lastSynced)
         }
         // <=== modify this when implementing this method
     }
@@ -838,20 +914,39 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 .positiveText(R.string.btn_sync)
                 .negativeText(R.string.btn_sync_cancel)
                 .neutralText(R.string.btn_sync_save)
-                .onPositive { dialog: MaterialDialog, _: DialogAction? -> continueSync(dialog) }
-                .onNeutral { dialog: MaterialDialog, _: DialogAction? ->
-                    if (selectedTeamId == null) {
-                        saveConfigAndContinue(dialog)
-                    } else {
-                        val url = "${serverUrlProtocol?.text}${serverUrl.text}"
-                        if (isUrlValid(url)) {
-                            prefData.setSELECTEDTEAMID(selectedTeamId)
-                            (activity as LoginActivity).getTeamMembers()
-                            saveConfigAndContinue(dialog)
-                        } else {
-                            saveConfigAndContinue(dialog)
-                        }
+                .onPositive { dialog: MaterialDialog, _: DialogAction? ->
+                    serverConfigAction = "sync"
+                    val protocol = "${serverUrlProtocol?.text}"
+                    var url = "${serverUrl.text}"
+                    val pin = "${serverPassword.text}"
+                    url = protocol + url
+                    if (isUrlValid(url)) {
+                        currentDialog = dialog
+                        service.getConfig(this, url, pin)
                     }
+                }
+                .onNeutral { dialog: MaterialDialog, _: DialogAction? ->
+                    serverConfigAction = "save"
+                    val protocol = "${serverUrlProtocol?.text}"
+                    var url = "${serverUrl.text}"
+                    val pin = "${serverPassword.text}"
+                    url = protocol + url
+                    if (isUrlValid(url)) {
+                        currentDialog = dialog
+                        service.getConfig(this, url, pin)
+                    }
+//                    if (selectedTeamId == null) {
+//                        saveConfigAndContinue(dialog)
+//                    } else {
+//                        val url = "${serverUrlProtocol?.text}${serverUrl.text}"
+//                        if (isUrlValid(url)) {
+//                            prefData.setSELECTEDTEAMID(selectedTeamId)
+//                            (activity as LoginActivity).getTeamMembers()
+//                            saveConfigAndContinue(dialog)
+//                        } else {
+//                            saveConfigAndContinue(dialog)
+//                        }
+//                    }
                 }
             if (!prefData.getMANUALCONFIG()) {
                 dialogServerUrlBinding.manualConfiguration.isChecked = false
@@ -1099,7 +1194,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         settings.edit().putLong("lastUsageUploaded", Date().time).apply()
         if (::lblLastSyncDate.isInitialized) {
             lblLastSyncDate.text =
-                "${getString(R.string.last_sync)}${Utilities.getRelativeTime(Date().time)} >>"
+                "${getString(R.string.last_sync)}${getRelativeTime(Date().time)} >>"
         }
     }
 
@@ -1109,7 +1204,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             val builder = getUpdateDialog(this, info, customProgressDialog)
             if (cancelable || getCustomDeviceName(this).endsWith("###")) {
                 builder.setNegativeButton(R.string.update_later) { _: DialogInterface?, _: Int ->
-                    continueSyncProcess(forceSync = false, isSync = true)
+                    continueSyncProcess()
                 }
             } else {
                 mRealm.executeTransactionAsync { realm: Realm -> realm.deleteAll() }
@@ -1141,13 +1236,13 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             settingDialog(this)
         }
         customProgressDialog?.dismiss()
-        if (!blockSync) continueSyncProcess(forceSync = false, isSync = true) else {
+        if (!blockSync) continueSyncProcess() else {
             syncIconDrawable.stop()
             syncIconDrawable.selectDrawable(0)
         }
     }
 
-    fun continueSyncProcess(forceSync: Boolean, isSync: Boolean) {
+    fun continueSyncProcess() {
         Utilities.log("Upload : Continue sync process")
         try {
             if (isSync) {
