@@ -52,9 +52,8 @@ class CourseFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelec
     override fun getAdapter(): RecyclerView.Adapter<*> {
         val map = getRatings(mRealm, "course", model.id)
         val progressMap = getCourseProgress(mRealm, model.id)
-        adapterCourses = AdapterCourses(requireActivity(), getList(RealmMyCourse::class.java) as List<RealmMyCourse?>,
-            map
-        )
+        val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>()
+        adapterCourses = AdapterCourses(requireActivity(), courseList, map)
         adapterCourses.setProgressMap(progressMap)
         adapterCourses.setmRealm(mRealm)
         adapterCourses.setListener(this)

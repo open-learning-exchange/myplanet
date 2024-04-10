@@ -154,17 +154,17 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         }
     }
 
-    private fun initializeFlexBoxView(v: View, id: Int, c: Class<*>) {
+    private fun initializeFlexBoxView(v: View, id: Int, c: Class<out RealmObject>) {
         val flexboxLayout: FlexboxLayout = v.findViewById(id)
         flexboxLayout.flexDirection = FlexDirection.ROW
         setUpMyList(c, flexboxLayout, v)
     }
 
-    private fun setUpMyList(c: Class<*>, flexboxLayout: FlexboxLayout, view: View) {
+    private fun setUpMyList(c: Class<out RealmObject>, flexboxLayout: FlexboxLayout, view: View) {
         val dbMycourses: List<RealmObject>
         val userId = settings?.getString("userId", "--")
         setUpMyLife(userId)
-        dbMycourses = (when (c) {
+        dbMycourses = when (c) {
             RealmMyCourse::class.java -> {
                 RealmMyCourse.getMyByUserId(mRealm, settings)
             }
@@ -179,10 +179,10 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             }
             else -> {
                 userId?.let {
-                    mRealm.where(c as Class<RealmObject>).contains("userId", it, Case.INSENSITIVE).findAll()
-                }
+                    mRealm.where(c).contains("userId", it, Case.INSENSITIVE).findAll()
+                } ?: listOf()
             }
-        }) as List<RealmObject>
+        }
         setCountText(dbMycourses.size, c, view)
         val myCoursesTextViewArray = arrayOfNulls<TextView>(dbMycourses.size)
         for ((itemCnt, items) in dbMycourses.withIndex()) {
