@@ -159,8 +159,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     override fun onConfigurationIdReceived(id: String) {
         val savedId = settings.getString("configurationId", null)
-        Log.d("SyncActivity", "onConfigurationIdReceived: $id")
-        Log.d("SyncActivity", "onConfigurationIdsaved: $savedId")
         if (serverConfigAction == "sync") {
             if (savedId == null) {
                 settings.edit().putString("configurationId", id).apply()
@@ -171,7 +169,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 showDifferentServerDialog()
             }
         } else if (serverConfigAction == "save") {
-            Log.d("SyncActivity", "serverConfigAction: save")
             if (savedId == null || id == savedId) {
                 if (selectedTeamId == null) {
                     currentDialog?.let { saveConfigAndContinue(it) }
@@ -212,8 +209,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             tempStorage[key] = settings.getBoolean(key, false)
         }
         settings.edit().clear().commit()
-        val sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        val editor = sharedPreferences.edit()
+        val editor = settings.edit()
         for ((key, value) in tempStorage) {
             editor.putBoolean(key, value)
         }
