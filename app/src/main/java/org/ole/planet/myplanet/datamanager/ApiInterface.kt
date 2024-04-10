@@ -59,4 +59,7 @@ interface ApiInterface {
 
     @GET
     fun checkAiProviders(@Url url: String?): Call<ResponseBody>
+
+    @GET
+    fun getConfiguration(@Header("Authorization") header: String?, @Url url: String?): Call<JsonObject>
 }

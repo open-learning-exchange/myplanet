@@ -2,7 +2,9 @@ package org.ole.planet.myplanet.datamanager
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.net.Uri
 import android.text.TextUtils
+import android.util.Base64
 import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonObject
@@ -16,12 +18,12 @@ import org.ole.planet.myplanet.model.RealmCommunity
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.isUserExists
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.populateUsersTable
 import org.ole.planet.myplanet.service.UploadToShelfService
-import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateIv
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateKey
 import org.ole.planet.myplanet.utilities.Constants.KEY_UPGRADE_MAX
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
+import org.ole.planet.myplanet.utilities.DialogUtils.CustomProgressDialog
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
@@ -213,7 +215,6 @@ class Service(private val context: Context) {
         })
     }
 
-
     private fun uploadToShelf(obj: JsonObject) {
         retrofitInterface?.putDoc(null, "application/json", Utilities.getUrl() + "/shelf/org.couchdb.user:" + obj["name"].asString, JsonObject())?.enqueue(object : Callback<JsonObject?> {
             override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
@@ -288,6 +289,70 @@ class Service(private val context: Context) {
         })
     }
 
+    fun getConfig(listener: ConfigurationIdListener?, url: String, pin: String) {
+        val customProgressDialog = CustomProgressDialog(context).apply {
+            setText("Checking Server")
+            show()
+        }
+        val uri = Uri.parse(url)
+        val url_user: String
+        val url_pwd: String
+        val couchdbURL: String
+        if (url.contains("@")) {
+            val userinfo = getUserInfo(uri)
+            url_user = userinfo[0]
+            url_pwd = userinfo[1]
+            couchdbURL = url
+        } else {
+            url_user = "satellite"
+            url_pwd = pin
+            couchdbURL = uri.scheme + "://" + url_user + ":" + url_pwd + "@" + uri.host + ":" + if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port
+        }
+
+        val header= "Basic " + Base64.encodeToString(("$url_user:$url_pwd").toByteArray(), Base64.NO_WRAP)
+        retrofitInterface?.getConfiguration(header, getUrl(couchdbURL) + "/configurations/_all_docs")?.enqueue(object : Callback<JsonObject?> {
+            override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
+                if (response.isSuccessful) {
+                    val jsonObject = response.body()
+                    val rows = jsonObject?.getAsJsonArray("rows")
+                    if (rows != null && rows.size() > 0) {
+                        val firstRow = rows.get(0).asJsonObject
+                        val id = firstRow.getAsJsonPrimitive("id").asString
+                        listener?.onConfigurationIdReceived(id)
+                        customProgressDialog.dismiss()
+                    }
+                } else {
+                    Utilities.log("Failed to get id")
+                    customProgressDialog.dismiss()
+                }
+            }
+
+            override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
+                t.message?.let { Utilities.log(it) }
+                customProgressDialog.dismiss()
+            }
+        })
+    }
+
+    private fun getUrl(couchdbURL: String): String {
+        var url = couchdbURL
+
+        if (!url.endsWith("/db")) {
+            url += "/db"
+        }
+        return url
+    }
+
+    private fun getUserInfo(uri: Uri): Array<String> {
+        val ar = arrayOf("", "")
+        val info = uri.userInfo?.split(":".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()
+        if ((info?.size ?: 0) > 1) {
+            ar[0] = "${info?.get(0)}"
+            ar[1] = "${info?.get(1)}"
+        }
+        return ar
+    }
+
     interface CheckVersionCallback {
         fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean)
         fun onCheckingVersion()
@@ -308,4 +373,7 @@ class Service(private val context: Context) {
         fun notAvailable()
     }
 
+    interface ConfigurationIdListener {
+        fun onConfigurationIdReceived(id: String)
+    }
 }
