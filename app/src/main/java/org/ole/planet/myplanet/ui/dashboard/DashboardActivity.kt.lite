@@ -139,14 +139,18 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
             activityDashboardBinding.appBarBell.bellToolbar.visibility = View.VISIBLE
         }
         activityDashboardBinding.appBarBell.ivSync.setOnClickListener {
-            continueSyncProcess(forceSync = true, isSync = false)
+            isServerReachable(Utilities.getUrl())
+            startUpload()
         }
         activityDashboardBinding.appBarBell.imgLogo.setOnClickListener { result?.openDrawer() }
         activityDashboardBinding.appBarBell.bellToolbar.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 R.id.action_chat -> openCallFragment(ChatHistoryListFragment())
                 R.id.menu_goOnline -> wifiStatusSwitch()
-                R.id.action_sync -> continueSyncProcess(forceSync = true, isSync = false)
+                R.id.action_sync -> {
+                    isServerReachable(Utilities.getUrl())
+                    startUpload()
+                }
                 R.id.action_feedback -> openCallFragment(FeedbackListFragment())
                 R.id.action_settings -> startActivity(Intent(this@DashboardActivity, SettingActivity::class.java))
                 R.id.action_disclaimer -> openCallFragment(DisclaimerFragment())
