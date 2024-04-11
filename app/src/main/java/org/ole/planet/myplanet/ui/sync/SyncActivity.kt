@@ -157,11 +157,12 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         processedUrl = Utilities.getUrl()
     }
 
-    override fun onConfigurationIdReceived(id: String) {
+    override fun onConfigurationIdReceived(id: String, code:String) {
         val savedId = settings.getString("configurationId", null)
         if (serverConfigAction == "sync") {
             if (savedId == null) {
                 settings.edit().putString("configurationId", id).apply()
+                settings.edit().putString("communityName", code).apply()
                 currentDialog?.let { continueSync(it) }
             } else if (id == savedId) {
                 currentDialog?.let { continueSync(it) }
