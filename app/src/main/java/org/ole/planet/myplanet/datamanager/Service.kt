@@ -310,7 +310,7 @@ class Service(private val context: Context) {
         }
 
         val header= "Basic " + Base64.encodeToString(("$url_user:$url_pwd").toByteArray(), Base64.NO_WRAP)
-        retrofitInterface?.getConfiguration(header, getUrl(couchdbURL) + "/configurations/_all_docs")?.enqueue(object : Callback<JsonObject?> {
+        retrofitInterface?.getConfiguration(header, getUrl(couchdbURL) + "/configurations/_all_docs?include_docs=true")?.enqueue(object : Callback<JsonObject?> {
             override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
                 if (response.isSuccessful) {
                     val jsonObject = response.body()
@@ -318,7 +318,9 @@ class Service(private val context: Context) {
                     if (rows != null && rows.size() > 0) {
                         val firstRow = rows.get(0).asJsonObject
                         val id = firstRow.getAsJsonPrimitive("id").asString
-                        listener?.onConfigurationIdReceived(id)
+                        val doc = firstRow.getAsJsonObject("doc")
+                        val code = doc.getAsJsonPrimitive("code").asString
+                        listener?.onConfigurationIdReceived(id, code)
                         customProgressDialog.dismiss()
                     }
                 } else {
@@ -374,6 +376,6 @@ class Service(private val context: Context) {
     }
 
     interface ConfigurationIdListener {
-        fun onConfigurationIdReceived(id: String)
+        fun onConfigurationIdReceived(id: String, code: String)
     }
 }
