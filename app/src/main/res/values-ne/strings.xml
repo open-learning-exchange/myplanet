@@ -997,5 +997,6 @@
     <string name="gemini">gemini</string>
     <string name="kindly_enter_message">कृपया सन्देश प्रविष्ट गर्नुहोस्</string>
     <string name="virtual_assistant_currently_not_available">भर्चुअल सहायक हाललाई उपलब्ध छैन</string>
+    <string name="edit_image">Edit profile image</string>
 
 </resources>

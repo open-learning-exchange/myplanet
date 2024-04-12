@@ -992,5 +992,6 @@
     <string name="gemini">gemini</string>
     <string name="kindly_enter_message">الرجاء إدخال الرسالة</string>
     <string name="virtual_assistant_currently_not_available">المساعد الافتراضي غير متاح حاليا</string>
+    <string name="edit_image">Edit profile image</string>
 
 </resources>

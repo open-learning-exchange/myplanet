@@ -997,5 +997,6 @@
     <string name="gemini">gemini</string>
     <string name="kindly_enter_message">Veuillez entrer le message</string>
     <string name="virtual_assistant_currently_not_available">assistant virtuel actuellement non disponible</string>
+    <string name="edit_image">Edit profile image</string>
 
 </resources>

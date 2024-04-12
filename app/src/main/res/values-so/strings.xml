@@ -986,5 +986,6 @@
     <string name="gemini">gemini</string>
     <string name="kindly_enter_message">Fadlan geli farriinta</string>
     <string name="virtual_assistant_currently_not_available">kaaliyaha farsamada hadda lama heli karo</string>
+    <string name="edit_image">Edit profile image</string>
 
 </resources>
