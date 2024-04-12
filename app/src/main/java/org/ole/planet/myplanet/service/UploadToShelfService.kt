@@ -45,7 +45,7 @@ class UploadToShelfService(context: Context) {
         val apiInterface = client?.create(ApiInterface::class.java)
         mRealm = dbService.realmInstance
         mRealm.executeTransactionAsync({ realm: Realm ->
-            val userModels: List<RealmUserModel> = realm.where(RealmUserModel::class.java).isEmpty("_id").or().equalTo("updated", true).findAll()
+            val userModels: List<RealmUserModel> = realm.where(RealmUserModel::class.java).isEmpty("_id").or().equalTo("isUpdated", true).findAll()
             Utilities.log("USER LIST SIZE + " + userModels.size)
             for (model in userModels) {
                 try {

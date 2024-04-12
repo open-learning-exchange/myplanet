@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.service
 import android.content.Context
 import android.content.SharedPreferences
 import android.text.TextUtils
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.realm.Realm
@@ -347,6 +348,31 @@ class UploadManager(context: Context) : FileUploadService() {
             }
         }
     }
+
+    fun uploadTabletUserData() {
+        mRealm = DatabaseService(context).realmInstance
+        val apiInterface = client?.create(ApiInterface::class.java)
+        mRealm.executeTransactionAsync { realm: Realm ->
+            val userList: List<RealmUserModel> = realm.where(RealmUserModel::class.java).findAll()
+            for (user in userList) {
+                if (user.isUpdated) {
+                    var `object`: JsonObject?
+                    try {
+                        `object` = apiInterface?.postDoc(Utilities.header, "application/json", Utilities.getUrl() + "/tablet_users", user.serialize())?.execute()?.body()
+                        if (`object` != null) {
+                            val _rev = getString("rev", `object`)
+                            val _id = getString("id", `object`)
+                            user._rev = _rev
+                            user._id = _id
+                        }
+                    } catch (e: IOException) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+        }
+    }
+
 
     fun uploadTeams() {
         val apiInterface = client?.create(ApiInterface::class.java)

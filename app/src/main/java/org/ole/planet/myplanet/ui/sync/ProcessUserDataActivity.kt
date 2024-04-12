@@ -154,6 +154,7 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         customProgressDialog?.setText(getString(R.string.uploading_data_to_server_please_wait))
         customProgressDialog?.show()
         Utilities.log("Upload : upload started")
+        UploadManager.instance?.uploadTabletUserData()
         UploadToShelfService.instance?.uploadUserData { UploadToShelfService.instance?.uploadHealth() }
         UploadManager.instance?.uploadUserActivities(this)
         UploadManager.instance?.uploadExamResult(this)

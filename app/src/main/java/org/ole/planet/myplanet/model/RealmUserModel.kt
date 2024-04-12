@@ -95,8 +95,8 @@ open class RealmUserModel : RealmObject() {
         if (_id?.isEmpty() == true) {
             `object`.addProperty("password", password)
             `object`.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
-            `object`.addProperty("uniqueAndroidId", VersionUtils.getAndroidId(MainApplication.context))
-            `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
+            `object`.addProperty("uniqueAndroidId", VersionUtils.getAndroidId(context))
+            `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
         } else {
             `object`.addProperty("derived_key", derived_key)
             `object`.addProperty("salt", salt)
@@ -253,7 +253,9 @@ open class RealmUserModel : RealmObject() {
             }
         }
 
-        fun updateUserDetails(realm: Realm, userId: String?, firstName: String?, lastName: String?, middleName: String?, email: String?, phoneNumber: String?, level: String?, language: String?, gender: String?, dob: String?) {
+        fun updateUserDetails(realm: Realm, userId: String?, firstName: String?, lastName: String?,
+                              middleName: String?, email: String?, phoneNumber: String?, level: String?,
+                              language: String?, gender: String?, dob: String?) {
             realm.executeTransactionAsync({ realm ->
                 val user = realm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
                 if (user != null) {
@@ -266,6 +268,7 @@ open class RealmUserModel : RealmObject() {
                     user.language = language
                     user.gender = gender
                     user.dob = dob
+                    user.isUpdated = true
                 } }, {
                 Utilities.toast(context, "User details updated successfully")
             }) {
