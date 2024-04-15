@@ -49,40 +49,63 @@ class UploadToShelfService(context: Context) {
             Utilities.log("USER LIST SIZE + " + userModels.size)
             for (model in userModels) {
                 try {
-                    var res = apiInterface?.getJsonObject(Utilities.header, Utilities.getUrl() + "/_users/org.couchdb.user:" + model.name)?.execute()
+                    val res = apiInterface?.getJsonObject(Utilities.header, Utilities.getUrl() + "/_users/org.couchdb.user:" + model.name)?.execute()
                     if (res?.body() == null) {
                         val obj = model.serialize()
-                        res = apiInterface?.putDoc(null, "application/json", Utilities.getUrl() + "/_users/org.couchdb.user:" + model.name, obj)?.execute()
-                        if (res?.body() != null) {
-                            val id = res.body()?.get("id")?.asString
-                            val rev = res.body()?.get("rev")?.asString
-                            res = apiInterface?.getJsonObject(Utilities.header, Utilities.getUrl() + "/_users/" + id)?.execute()
-                            if (res?.body() != null) {
-                                model._id = id
-                                model._rev = rev
-                                model.password_scheme = getString("password_scheme", res.body())
-                                model.derived_key = getString("derived_key", res.body())
-                                model.salt = getString("salt", res.body())
-                                model.iterations = getString("iterations", res.body())
+                        val createResponse = apiInterface?.putDoc(null, "application/json", Utilities.getUrl() + "/_users/org.couchdb.user:" + model.name, obj)?.execute()
+                        if (createResponse?.isSuccessful == true) {
+                            val id = createResponse.body()?.get("id")?.asString
+                            val rev = createResponse.body()?.get("rev")?.asString
+                            model._id = id
+                            model._rev = rev
+                            val fetchDataResponse = apiInterface.getJsonObject(Utilities.header, Utilities.getUrl() + "/_users/" + id).execute()
+                            if (fetchDataResponse.isSuccessful) {
+                                model.password_scheme = getString("password_scheme", fetchDataResponse.body())
+                                model.derived_key = getString("derived_key", fetchDataResponse.body())
+                                model.salt = getString("salt", fetchDataResponse.body())
+                                model.iterations = getString("iterations", fetchDataResponse.body())
                                 if (saveKeyIv(apiInterface, model, obj)) {
                                     updateHealthData(realm, model)
                                 }
                             }
+                        } else {
+                            createResponse?.errorBody()?.let { Utilities.log(it.string()) }
                         }
                     } else if (model.isUpdated) {
                         Utilities.log("UPDATED MODEL " + model.serialize())
-                        val obj = model.serialize()
-                        res = apiInterface?.putDoc(null, "application/json", Utilities.getUrl() + "/_users/org.couchdb.user:" + model.name, obj)?.execute()
-                        if (res?.body() != null) {
-                            Utilities.log(Gson().toJson(res?.body()))
-                            val rev = res?.body()!!["rev"].asString
-                            model._rev = rev
-                            model.isUpdated = false
-                        } else {
-                            res?.errorBody()?.let { Utilities.log(it.string()) }
+                        try {
+                            val latestDocResponse = apiInterface.getJsonObject(Utilities.header, Utilities.getUrl() + "/_users/org.couchdb.user:" + model.name).execute()
+                            if (latestDocResponse.isSuccessful) {
+                                val latestRev = latestDocResponse.body()?.get("_rev")?.asString
+                                val obj = model.serialize()
+                                val objMap = obj.entrySet().associate { (key, value) -> key to value }
+                                val mutableObj = mutableMapOf<String, Any>().apply {
+                                    putAll(objMap)
+                                }
+                                latestRev?.let { rev ->
+                                    mutableObj["_rev"] = rev as Any
+                                }
+                                val gson = Gson()
+                                val jsonElement = gson.toJsonTree(mutableObj)
+                                val jsonObject = jsonElement.asJsonObject
+
+                                val updateResponse = apiInterface.putDoc(null, "application/json", Utilities.getUrl() + "/_users/org.couchdb.user:" + model.name, jsonObject).execute()
+
+                                if (updateResponse.isSuccessful) {
+                                    val updatedRev = updateResponse.body()?.get("rev")?.asString
+                                    model._rev = updatedRev
+                                    model.isUpdated = false
+                                } else {
+                                    updateResponse.errorBody()?.let { Utilities.log(it.string()) }
+                                }
+                            } else {
+                                latestDocResponse.errorBody()?.let { Utilities.log(it.string()) }
+                            }
+                        } catch (e: IOException) {
+                            e.printStackTrace()
                         }
                     } else {
-                        Utilities.toast(MainApplication.context, "User " + model.name + " already exist")
+                        Utilities.toast(MainApplication.context, "User " + model.name + " already exists")
                     }
                 } catch (e: IOException) {
                     e.printStackTrace()
