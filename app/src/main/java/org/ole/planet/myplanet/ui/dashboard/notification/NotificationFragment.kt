@@ -73,9 +73,9 @@ class NotificationFragment : BottomSheetDialogFragment() {
         fragmentNotificationBinding.icBack.setOnClickListener {
             dismiss()
         }
-        val tasks: List<RealmTeamTask> = mRealm.where(RealmTeamTask::class.java).equalTo("assignee", model.id)
+        val tasks = mRealm.where(RealmTeamTask::class.java).notEqualTo("status", "archived")
             .equalTo("completed", false)
-            .greaterThan("deadline", Calendar.getInstance().timeInMillis).findAll()
+            .equalTo("assignee", model.id).findAll()
         val notificationList: MutableList<Notifications> = ArrayList()
         notificationList.add(Notifications(R.drawable.mylibrary, "${getLibraryList(mRealm, model.id).size} ${getString(R.string.resource_not_downloaded)}"))
         notificationList.add(Notifications(R.drawable.mylibrary, getString(R.string.bulk_resource_download)))
