@@ -37,13 +37,15 @@ class CourseProgressActivity : BaseActivity() {
         val progress = courseProgress[courseId]
         val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
         if (progress != null) {
-            activityCourseProgressBinding.progressView.setProgress(
-                (progress["current"].asInt.div(progress["max"].asInt)) * 100, true
-            )
+            val maxProgress = progress["max"].asInt
+            if (maxProgress != 0) {
+                activityCourseProgressBinding.progressView.setProgress((progress["current"].asInt.toDouble() / maxProgress.toDouble() * 100).toInt(), true)
+            } else {
+                activityCourseProgressBinding.progressView.setProgress(0, true)
+            }
         }
         activityCourseProgressBinding.tvCourse.text = course?.courseTitle
-        activityCourseProgressBinding.tvProgress.text =
-                "${getString(R.string.progress)}${courseProgress[courseId]?.get(" current ")?.asString}${getString(R.string.of)}${courseProgress[courseId]?.get(" max ")?.asString}"
+        activityCourseProgressBinding.tvProgress.text = "${getString(R.string.progress)}${courseProgress[courseId]?.get("current")?.asString}${getString(R.string.of)}${courseProgress[courseId]?.get("max")?.asString}"
         activityCourseProgressBinding.rvProgress.layoutManager = GridLayoutManager(this, 4)
         showProgress()
     }
