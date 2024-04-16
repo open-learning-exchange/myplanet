@@ -15,6 +15,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import io.realm.Realm
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getLibraryList
 import org.ole.planet.myplanet.callback.NotificationCallback
 import org.ole.planet.myplanet.databinding.FragmentNotificationBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -76,7 +77,7 @@ class NotificationFragment : BottomSheetDialogFragment() {
             .equalTo("completed", false)
             .greaterThan("deadline", Calendar.getInstance().timeInMillis).findAll()
         val notificationList: MutableList<Notifications> = ArrayList()
-        notificationList.add(Notifications(R.drawable.mylibrary, "${resourceList.size} ${getString(R.string.resource_not_downloaded)}"))
+        notificationList.add(Notifications(R.drawable.mylibrary, "${getLibraryList(mRealm, model.id).size} ${getString(R.string.resource_not_downloaded)}"))
         notificationList.add(Notifications(R.drawable.mylibrary, getString(R.string.bulk_resource_download)))
         notificationList.add(Notifications(R.drawable.survey, "${surveyList.size} ${getString(R.string.pending_survey)}"))
         notificationList.add(Notifications(R.drawable.ic_news, getString(R.string.download_news_images)))
@@ -94,7 +95,7 @@ class NotificationFragment : BottomSheetDialogFragment() {
         notificationList.add(Notifications(R.drawable.baseline_storage_24, storageNotiText))
 
         if (TextUtils.isEmpty(model.key) || model.getRoleAsString().contains("health")) {
-            if (!model.id?.startsWith("guest")!!) {
+            if (model.id?.startsWith("guest") != true) {
                 notificationList.add(Notifications(R.drawable.ic_myhealth, getString(R.string.health_record_not_available_click_to_sync)))
             }
         }
