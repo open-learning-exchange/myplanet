@@ -21,10 +21,10 @@ import org.ole.planet.myplanet.databinding.AddMeetupBinding
 import org.ole.planet.myplanet.databinding.FragmentEnterpriseCalendarBinding
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
-import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities
-import java.util.*
+import java.util.Calendar
+import java.util.UUID
 
 @RequiresApi(Build.VERSION_CODES.O)
 class EnterpriseCalendarFragment : BaseTeamFragment() {
@@ -82,7 +82,7 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
                     meetup.title = ttl
                     meetup.description = desc
                     meetup.meetupLocation = loc
-                    meetup.creator = user?.id
+                    meetup.creator = user?.name
                     meetup.startDate = start.timeInMillis
                     meetup.endDate = end.timeInMillis
                     meetup.endTime = "${addMeetupBinding.tvEndTime.text}"
@@ -132,10 +132,13 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
         calendarEventsMap = mutableMapOf()
         calendar.setOnCalendarDayClickListener(object : OnCalendarDayClickListener {
             override fun onClick(calendarDay: CalendarDay) {
-                val realmMeetup = calendarEventsMap[calendarDay]
-                realmMeetup?.let {
-                    DialogUtils.showAlert(context, it.title, it.description)
+                if (arguments?.getBoolean("fromLogin", false) != true && arguments?.getBoolean("fromCommunity", false) == true ) {
+                    showMeetupAlert()
                 }
+//                val realmMeetup = calendarEventsMap[calendarDay]
+//                realmMeetup?.let {
+//                    DialogUtils.showAlert(context, it.title, it.description)
+//                }
             }
         })
 
@@ -145,7 +148,7 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
     private fun refreshCalendarView() {
         list.clear()
         calendarEventsMap.clear()
-        val meetupList = mRealm.where(RealmMeetup::class.java).equalTo("teamId", teamId).greaterThanOrEqualTo("endDate", TimeUtils.currentDateLong()).findAll()
+        val meetupList = mRealm.where(RealmMeetup::class.java).equalTo("teamId", teamId).findAll()
         meetupList.forEach { realmMeetup ->
             val start = CalendarDay(Calendar.getInstance().apply { timeInMillis = realmMeetup.startDate })
             val end = CalendarDay(Calendar.getInstance().apply { timeInMillis = realmMeetup.endDate })
@@ -156,5 +159,4 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
         }
         calendar.setCalendarDays(list)
     }
-
 }
