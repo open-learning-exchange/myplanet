@@ -5,6 +5,7 @@ import android.content.ContentValues
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
+import android.database.Cursor
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -36,6 +37,8 @@ import org.ole.planet.myplanet.service.AudioRecorderService.AudioRecordListener
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.myPersonals.MyPersonalsFragment
 import org.ole.planet.myplanet.utilities.Utilities
+import java.io.File
+import java.io.FileOutputStream
 import java.util.Date
 import java.util.UUID
 
@@ -180,8 +183,9 @@ class AddResourceFragment : BottomSheetDialogFragment() {
         var path: String? = null
         if (requestCode == REQUEST_CAPTURE_PICTURE || requestCode == REQUEST_VIDEO_CAPTURE) {
             path = getRealPathFromUri(uri)
+        } else if (requestCode == REQUEST_FILE_SELECTION) {
+            path = getPathFromURI(uri)
         }
-
         if (!path.isNullOrEmpty()) {
             addResource(path)
         } else {
@@ -209,6 +213,38 @@ class AddResourceFragment : BottomSheetDialogFragment() {
         }
         return ""
     }
+
+    private fun getPathFromURI(uri: Uri?): String? {
+        var filePath: String? = null
+        if (uri != null) {
+            val scheme = uri.scheme
+            if (scheme == "content") {
+                val cursor: Cursor? = requireActivity().contentResolver.query(uri, null, null, null, null)
+                cursor?.use {
+                    if (it.moveToFirst()) {
+                        val columnIndex = it.getColumnIndexOrThrow(MediaStore.Images.Media.DISPLAY_NAME)
+                        val fileName = it.getString(columnIndex)
+                        val cacheDir = requireActivity().cacheDir
+                        val destinationFile = File(cacheDir, fileName)
+                        copyFile(uri, destinationFile)
+                        filePath = destinationFile.absolutePath
+                    }
+                }
+            } else if (scheme == "file") {
+                filePath = uri.path
+            }
+        }
+        return filePath
+    }
+
+    private fun copyFile(sourceUri: Uri, destinationFile: File) {
+        requireActivity().contentResolver.openInputStream(sourceUri)?.use { inputStream ->
+            FileOutputStream(destinationFile).use { outputStream ->
+                inputStream.copyTo(outputStream)
+            }
+        }
+    }
+
 
     private fun addResource(path: String?) {
         if (type == 0) {
