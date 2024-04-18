@@ -100,8 +100,8 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
     }
 
     abstract fun setData(list: List<RealmNews?>?)
-    fun showNoData(v: View?, count: Int?) {
-        count?.let { BaseRecyclerFragment.showNoData(v, it) }
+    fun showNoData(v: View?, count: Int?, source: String) {
+        count?.let { BaseRecyclerFragment.showNoData(v, it, source) }
     }
 
     private fun getImagePath(uri: Uri?): String? {

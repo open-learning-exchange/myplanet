@@ -104,7 +104,7 @@ class FinanceFragment : BaseTeamFragment() {
             .equalTo("teamId", teamId).equalTo("docType", "transaction")
             .sort("date", Sort.DESCENDING).findAll()
         updatedFinanceList(list as RealmResults<RealmMyTeam>)
-        showNoData(fragmentFinanceBinding.tvNodata, list?.size)
+        showNoData(fragmentFinanceBinding.tvNodata, list?.size, "finance")
     }
 
     private fun calculateTotal(list: List<RealmMyTeam>?) {
@@ -143,7 +143,7 @@ class FinanceFragment : BaseTeamFragment() {
                     }, Realm.Transaction.OnSuccess {
                         Utilities.toast(activity, getString(R.string.transaction_added))
                         adapterFinance?.notifyDataSetChanged()
-                        showNoData(fragmentFinanceBinding.tvNodata, adapterFinance?.itemCount)
+                        showNoData(fragmentFinanceBinding.tvNodata, adapterFinance?.itemCount, "finance")
                     })
                 }
             }.setNegativeButton("Cancel", null).show()

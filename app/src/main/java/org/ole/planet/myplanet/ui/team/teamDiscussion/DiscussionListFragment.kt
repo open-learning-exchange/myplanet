@@ -113,7 +113,7 @@ class DiscussionListFragment : BaseTeamFragment() {
         adapterNews?.setListener(this)
         fragmentDiscussionListBinding.rvDiscussion.adapter = adapterNews
         if (adapterNews != null) {
-            showNoData(fragmentDiscussionListBinding.tvNodata, adapterNews.itemCount)
+            showNoData(fragmentDiscussionListBinding.tvNodata, adapterNews.itemCount, "discussion")
         }
         adapterNews?.notifyDataSetChanged()
     }

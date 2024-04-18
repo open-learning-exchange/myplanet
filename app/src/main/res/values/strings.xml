@@ -1087,5 +1087,15 @@
     <string name="gemini">gemini</string>
     <string name="kindly_enter_message">Kindly enter message</string>
     <string name="virtual_assistant_currently_not_available">virtual assistant currently not available</string>
+    <string name="no_courses">no courses available</string>
+    <string name="no_resources">no resources available</string>
+    <string name="no_finance_record">finance record not available</string>
+    <string name="no_stories">stories not available</string>
+    <string name="no_team_courses">team courses not available</string>
+    <string name="no_team_resources">team resources not available</string>
+    <string name="no_tasks">tasks not available</string>
+    <string name="no_join_request_available">no join request available</string>
+    <string name="no_news">news not available</string>
+    <string name="no_surveys">surveys not available</string>
 
 </resources>

@@ -997,5 +997,16 @@
     <string name="gemini">gemini</string>
     <string name="kindly_enter_message">कृपया सन्देश प्रविष्ट गर्नुहोस्</string>
     <string name="virtual_assistant_currently_not_available">भर्चुअल सहायक हाललाई उपलब्ध छैन</string>
+    <string name="no_courses">कुनै पाठ्यक्रम उपलब्ध छैन</string>
+    <string name="no_resources">कुनै स्रोतहरू उपलब्ध छैनन्</string>
+    <string name="no_finance_record">वित्तीय रेकर्ड उपलब्ध छैन</string>
+    <string name="no_stories">कुनै कथाहरू उपलब्ध छैनन्</string>
+    <string name="no_team_courses">कुनै टिम पाठ्यक्रमहरू उपलब्ध छैनन्</string>
+    <string name="no_team_resources">कुनै टिम स्रोतहरू उपलब्ध छैनन्</string>
+    <string name="no_tasks">कुनै कामहरू उपलब्ध छैनन्</string>
+    <string name="no_join_request_available">सामिल हुने अनुरोध उपलब्ध छैन</string>
+    <string name="no_news">समाचार उपलब्ध छैन</string>
+    <string name="no_surveys">सर्वेक्षण उपलब्ध छैन</string>
+
 
 </resources>
