@@ -141,107 +141,115 @@ class ChatDetailFragment : Fragment() {
             override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
                 if (response.isSuccessful) {
                     response.body()?.let { responseBody ->
-                        val gson = Gson()
-                        val aiProvidersResponse = gson.fromJson(responseBody.string(), AiProvidersResponse::class.java)
-                        if (aiProvidersResponse.openai) {
-                            fragmentChatDetailBinding.tvOpenai.visibility = View.VISIBLE
-                            fragmentChatDetailBinding.view1.visibility = View.VISIBLE
+                        try {
+                            val gson = Gson()
+                            val aiProvidersResponse = gson.fromJson(responseBody.string(), AiProvidersResponse::class.java)
+                            if (aiProvidersResponse.openai) {
+                                fragmentChatDetailBinding.tvOpenai.visibility = View.VISIBLE
+                                fragmentChatDetailBinding.view1.visibility = View.VISIBLE
 
-                            aiName = getString(R.string.openai)
-                            aiModel = "gpt-3.5-turbo"
-                            fragmentChatDetailBinding.tvOpenai.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.colorPrimary))
-                            fragmentChatDetailBinding.tvOpenai.setTextColor(ContextCompat.getColor(requireContext(), R.color.textColorPrimary))
-
-                            fragmentChatDetailBinding.tvOpenai.setOnClickListener {
+                                aiName = getString(R.string.openai)
+                                aiModel = "gpt-3.5-turbo"
                                 fragmentChatDetailBinding.tvOpenai.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.colorPrimary))
                                 fragmentChatDetailBinding.tvOpenai.setTextColor(ContextCompat.getColor(requireContext(), R.color.textColorPrimary))
 
-                                fragmentChatDetailBinding.tvPerplexity.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.disable_color))
-                                fragmentChatDetailBinding.tvPerplexity.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
+                                fragmentChatDetailBinding.tvOpenai.setOnClickListener {
+                                    fragmentChatDetailBinding.tvOpenai.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.colorPrimary))
+                                    fragmentChatDetailBinding.tvOpenai.setTextColor(ContextCompat.getColor(requireContext(), R.color.textColorPrimary))
 
-                                fragmentChatDetailBinding.tvGemini.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.disable_color))
-                                fragmentChatDetailBinding.tvGemini.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
+                                    fragmentChatDetailBinding.tvPerplexity.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.disable_color))
+                                    fragmentChatDetailBinding.tvPerplexity.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
 
-                                clearChatDetail()
-                                fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
-                                aiName = getString(R.string.openai)
-                                aiModel = "gpt-3.5-turbo"
-                            }
-                        } else {
-                            fragmentChatDetailBinding.tvOpenai.visibility = View.GONE
-                            fragmentChatDetailBinding.view1.visibility = View.GONE
-                        }
+                                    fragmentChatDetailBinding.tvGemini.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.disable_color))
+                                    fragmentChatDetailBinding.tvGemini.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
 
-                        if (aiProvidersResponse.perplexity) {
-                            fragmentChatDetailBinding.tvPerplexity.visibility = View.VISIBLE
-                            fragmentChatDetailBinding.view2.visibility = View.VISIBLE
-
-                            if (!aiProvidersResponse.openai) {
-                                aiName = getString(R.string.perplexity)
-                                aiModel= "pplx-7b-online"
-                                fragmentChatDetailBinding.tvPerplexity.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.colorPrimary))
-                                fragmentChatDetailBinding.tvPerplexity.setTextColor(ContextCompat.getColor(requireContext(), R.color.textColorPrimary))
+                                    clearChatDetail()
+                                    fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
+                                    aiName = getString(R.string.openai)
+                                    aiModel = "gpt-3.5-turbo"
+                                }
+                            } else {
+                                fragmentChatDetailBinding.tvOpenai.visibility = View.GONE
+                                fragmentChatDetailBinding.view1.visibility = View.GONE
                             }
 
-                            fragmentChatDetailBinding.tvPerplexity.setOnClickListener {
-                                fragmentChatDetailBinding.tvPerplexity.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.colorPrimary))
-                                fragmentChatDetailBinding.tvPerplexity.setTextColor(ContextCompat.getColor(requireContext(), R.color.textColorPrimary))
+                            if (aiProvidersResponse.perplexity) {
+                                fragmentChatDetailBinding.tvPerplexity.visibility = View.VISIBLE
+                                fragmentChatDetailBinding.view2.visibility = View.VISIBLE
 
-                                fragmentChatDetailBinding.tvOpenai.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.disable_color))
-                                fragmentChatDetailBinding.tvOpenai.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
+                                if (!aiProvidersResponse.openai) {
+                                    aiName = getString(R.string.perplexity)
+                                    aiModel = "pplx-7b-online"
+                                    fragmentChatDetailBinding.tvPerplexity.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.colorPrimary))
+                                    fragmentChatDetailBinding.tvPerplexity.setTextColor(ContextCompat.getColor(requireContext(), R.color.textColorPrimary))
+                                }
 
-                                fragmentChatDetailBinding.tvGemini.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.disable_color))
-                                fragmentChatDetailBinding.tvGemini.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
+                                fragmentChatDetailBinding.tvPerplexity.setOnClickListener {
+                                    fragmentChatDetailBinding.tvPerplexity.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.colorPrimary))
+                                    fragmentChatDetailBinding.tvPerplexity.setTextColor(ContextCompat.getColor(requireContext(), R.color.textColorPrimary))
 
-                                clearChatDetail()
-                                fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
-                                aiName = getString(R.string.perplexity)
-                                aiModel= "pplx-7b-online"
+                                    fragmentChatDetailBinding.tvOpenai.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.disable_color))
+                                    fragmentChatDetailBinding.tvOpenai.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
+
+                                    fragmentChatDetailBinding.tvGemini.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.disable_color))
+                                    fragmentChatDetailBinding.tvGemini.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
+
+                                    clearChatDetail()
+                                    fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
+                                    aiName = getString(R.string.perplexity)
+                                    aiModel = "pplx-7b-online"
+                                }
+                            } else {
+                                fragmentChatDetailBinding.tvPerplexity.visibility = View.GONE
+                                fragmentChatDetailBinding.view2.visibility = View.GONE
                             }
-                        } else {
-                            fragmentChatDetailBinding.tvPerplexity.visibility = View.GONE
-                            fragmentChatDetailBinding.view2.visibility = View.GONE
-                        }
 
-                        if (aiProvidersResponse.gemini) {
-                            if (!aiProvidersResponse.openai && !aiProvidersResponse.perplexity) {
-                                aiName= getString(R.string.gemini)
-                                aiModel= "gemini-pro"
-                                fragmentChatDetailBinding.tvGemini.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.colorPrimary))
-                                fragmentChatDetailBinding.tvGemini.setTextColor(ContextCompat.getColor(requireContext(), R.color.textColorPrimary))
+                            if (aiProvidersResponse.gemini) {
+                                if (!aiProvidersResponse.openai && !aiProvidersResponse.perplexity) {
+                                    aiName = getString(R.string.gemini)
+                                    aiModel = "gemini-pro"
+                                    fragmentChatDetailBinding.tvGemini.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.colorPrimary))
+                                    fragmentChatDetailBinding.tvGemini.setTextColor(ContextCompat.getColor(requireContext(), R.color.textColorPrimary))
+                                }
+
+                                fragmentChatDetailBinding.tvGemini.visibility = View.VISIBLE
+
+                                fragmentChatDetailBinding.tvGemini.setOnClickListener {
+                                    fragmentChatDetailBinding.tvGemini.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.colorPrimary))
+                                    fragmentChatDetailBinding.tvGemini.setTextColor(ContextCompat.getColor(requireContext(), R.color.textColorPrimary))
+
+                                    fragmentChatDetailBinding.tvPerplexity.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.disable_color))
+                                    fragmentChatDetailBinding.tvPerplexity.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
+
+                                    fragmentChatDetailBinding.tvOpenai.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.disable_color))
+                                    fragmentChatDetailBinding.tvOpenai.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
+
+                                    clearChatDetail()
+                                    fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
+                                    aiName = getString(R.string.gemini)
+                                    aiModel = "gemini-pro"
+                                }
+                            } else {
+                                fragmentChatDetailBinding.tvGemini.visibility = View.GONE
                             }
-
-                            fragmentChatDetailBinding.tvGemini.visibility = View.VISIBLE
-
-                            fragmentChatDetailBinding.tvGemini.setOnClickListener {
-                                fragmentChatDetailBinding.tvGemini.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.colorPrimary))
-                                fragmentChatDetailBinding.tvGemini.setTextColor(ContextCompat.getColor(requireContext(), R.color.textColorPrimary))
-
-                                fragmentChatDetailBinding.tvPerplexity.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.disable_color))
-                                fragmentChatDetailBinding.tvPerplexity.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
-
-                                fragmentChatDetailBinding.tvOpenai.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.disable_color))
-                                fragmentChatDetailBinding.tvOpenai.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
-
-                                clearChatDetail()
-                                fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
-                                aiName= getString(R.string.gemini)
-                                aiModel= "gemini-pro"
-                            }
-                        } else {
-                            fragmentChatDetailBinding.tvGemini.visibility = View.GONE
+                        } catch (e: JsonSyntaxException) {
+                            onFailError()
                         }
                     }
                 }
             }
 
             override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-                fragmentChatDetailBinding.textGchatIndicator.visibility = View.VISIBLE
-                fragmentChatDetailBinding.textGchatIndicator.text = getString(R.string.virtual_assistant_currently_not_available)
-                fragmentChatDetailBinding.editGchatMessage.isEnabled = false
-                fragmentChatDetailBinding.buttonGchatSend.isEnabled = false
+                onFailError()
             }
         })
+    }
+
+    private fun onFailError() {
+        fragmentChatDetailBinding.textGchatIndicator.visibility = View.VISIBLE
+        fragmentChatDetailBinding.textGchatIndicator.text = getString(R.string.virtual_assistant_currently_not_available)
+        fragmentChatDetailBinding.editGchatMessage.isEnabled = false
+        fragmentChatDetailBinding.buttonGchatSend.isEnabled = false
     }
 
     private fun makePostRequest(content: RequestBody, query: String) {
