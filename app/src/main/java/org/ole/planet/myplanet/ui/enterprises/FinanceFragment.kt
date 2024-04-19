@@ -143,7 +143,7 @@ class FinanceFragment : BaseTeamFragment() {
                     }, Realm.Transaction.OnSuccess {
                         Utilities.toast(activity, getString(R.string.transaction_added))
                         adapterFinance?.notifyDataSetChanged()
-                        showNoData(fragmentFinanceBinding.tvNodata, adapterFinance?.itemCount, "finance")
+                        showNoData(fragmentFinanceBinding.tvNodata, adapterFinance?.itemCount, "finances")
                     })
                 }
             }.setNegativeButton("Cancel", null).show()
