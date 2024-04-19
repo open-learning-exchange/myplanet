@@ -104,7 +104,7 @@ class FinanceFragment : BaseTeamFragment() {
             .equalTo("teamId", teamId).equalTo("docType", "transaction")
             .sort("date", Sort.DESCENDING).findAll()
         updatedFinanceList(list as RealmResults<RealmMyTeam>)
-        showNoData(fragmentFinanceBinding.tvNodata, list?.size, "finance")
+        showNoData(fragmentFinanceBinding.tvNodata, list?.size, "finances")
     }
 
     private fun calculateTotal(list: List<RealmMyTeam>?) {
