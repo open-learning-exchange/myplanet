@@ -117,7 +117,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             }
         }
         recyclerView.adapter = getAdapter()
-        showNoData(tvMessage, getAdapter().itemCount, "addToMyList")
+        showNoData(tvMessage, getAdapter().itemCount, "")
     }
 
     fun deleteSelected(deleteProgress: Boolean) {
@@ -127,7 +127,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             deleteCourseProgress(deleteProgress, `object`)
             removeFromShelf(`object`)
             recyclerView.adapter = getAdapter()
-            showNoData(tvMessage, getAdapter().itemCount, "deleteSelected")
+            showNoData(tvMessage, getAdapter().itemCount, "")
         }
     }
 
@@ -280,11 +280,11 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                 "resources" -> (v as TextView).setText(R.string.no_resources)
                 "finances" -> (v as TextView).setText(R.string.no_finance_record)
                 "news" -> (v as TextView).setText(R.string.no_stories)
-                "teamCourse" -> (v as TextView).setText(R.string.no_team_courses)
-                "teamResource" -> (v as TextView).setText(R.string.no_team_resources)
-                "task" -> (v as TextView).setText(R.string.no_tasks)
+                "teamCourses" -> (v as TextView).setText(R.string.no_team_courses)
+                "teamResources" -> (v as TextView).setText(R.string.no_team_resources)
+                "tasks" -> (v as TextView).setText(R.string.no_tasks)
                 "members" -> (v as TextView).setText(R.string.no_join_request_available)
-                "discussion" -> (v as TextView).setText(R.string.no_news)
+                "discussions" -> (v as TextView).setText(R.string.no_news)
                 "survey" -> (v as TextView).setText(R.string.no_surveys)
                 else -> (v as TextView).setText(R.string.no_data_available_please_check_and_try_again)
             }

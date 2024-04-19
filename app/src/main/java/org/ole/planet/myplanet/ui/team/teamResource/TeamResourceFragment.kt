@@ -39,7 +39,7 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener {
         adapterLibrary = settings?.let { AdapterTeamResource(requireActivity(), libraries, mRealm, teamId, it) }!!
         fragmentTeamResourceBinding.rvResource.layoutManager = GridLayoutManager(activity, 3)
         fragmentTeamResourceBinding.rvResource.adapter = adapterLibrary
-        showNoData(fragmentTeamResourceBinding.tvNodata, adapterLibrary.itemCount, "teamResource")
+        showNoData(fragmentTeamResourceBinding.tvNodata, adapterLibrary.itemCount, "teamResources")
     }
 
     private fun showResourceListDialog() {
