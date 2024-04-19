@@ -100,7 +100,7 @@ class AutoSyncWorker(private val context: Context, workerParams: WorkerParameter
             }
             if (!MainApplication.isSyncRunning) {
                 MainApplication.isSyncRunning = true
-                UploadManager.instance?.uploadTabletUserData()
+//                UploadManager.instance?.uploadTabletUserData()
                 UploadManager.instance?.uploadExamResult(this)
                 UploadManager.instance?.uploadFeedback(this)
                 UploadManager.instance?.uploadAchievement()

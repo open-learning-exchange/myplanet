@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.model
 
 import android.content.SharedPreferences
 import android.text.TextUtils
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -17,6 +18,7 @@ import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils
+import java.io.File
 import java.util.Locale
 import java.util.UUID
 
@@ -114,6 +116,7 @@ open class RealmUserModel : RealmObject() {
         `object`.addProperty("gender", gender)
         `object`.addProperty("phoneNumber", phoneNumber)
         `object`.addProperty("birthDate", dob)
+        Log.d("ollonde realm", "$dob")
         try {
             `object`.addProperty("iterations", iterations?.toInt())
         } catch (e: Exception) {
@@ -123,6 +126,18 @@ open class RealmUserModel : RealmObject() {
         `object`.addProperty("planetCode", planetCode)
         `object`.addProperty("birthPlace", birthPlace)
         `object`.addProperty("isArchived", isArchived)
+
+//        val imageFile = File(imagePath)
+//        if (imageFile.exists()) {
+//            val bytes = imageFile.readBytes()
+//            val base64Image = Base64.encodeToString(bytes, Base64.DEFAULT)
+//            val attachments = JsonObject()
+//            val img = JsonObject()
+//            img.addProperty("content_type", "image/jpeg") // Assuming JPEG format
+//            img.addProperty("data", base64Image)
+//            attachments.add("img", img)
+//            jsonObject.add("_attachments", attachments)
+//        }
         return `object`
     }
 
@@ -254,10 +269,10 @@ open class RealmUserModel : RealmObject() {
         }
 
         fun updateUserDetails(realm: Realm, userId: String?, firstName: String?, lastName: String?,
-                              middleName: String?, email: String?, phoneNumber: String?, level: String?,
-                              language: String?, gender: String?, dob: String?) {
-            realm.executeTransactionAsync({ realm ->
-                val user = realm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
+            middleName: String?, email: String?, phoneNumber: String?, level: String?, language: String?,
+            gender: String?, dob: String?) {
+            realm.executeTransactionAsync({ mRealm ->
+                val user = mRealm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
                 if (user != null) {
                     user.firstName = firstName
                     user.lastName = lastName
@@ -269,6 +284,7 @@ open class RealmUserModel : RealmObject() {
                     user.gender = gender
                     user.dob = dob
                     user.isUpdated = true
+                    Log.d("ollonde","$dob")
                 } }, {
                 Utilities.toast(context, "User details updated successfully")
             }) {

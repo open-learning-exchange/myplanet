@@ -10,6 +10,7 @@ import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.provider.MediaStore
 import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -45,6 +46,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Calendar
 import java.util.LinkedList
 import java.util.Locale
+import java.lang.String.format
 
 class UserProfileFragment : Fragment() {
     private lateinit var fragmentUserProfileBinding: FragmentUserProfileBinding
@@ -109,6 +111,7 @@ class UserProfileFragment : Fragment() {
         fragmentUserProfileBinding.txtLevel.text = "Level: ${Utilities.checkNA(model?.level)}"
 
         model?.userImage.let {
+            Log.d("ollonde", "${model?.userImage}")
             Glide.with(requireContext())
                 .load(it)
                 .apply(RequestOptions().placeholder(R.drawable.profile).error(R.drawable.profile))
@@ -176,13 +179,18 @@ class UserProfileFragment : Fragment() {
             levelAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             editProfileDialogBinding.level.setAdapter(levelAdapter)
             if (model?.level != null) {
-                val levelPosition = levelList.indexOf(model?.level)
+                val level = resources.getStringArray(subject_level)
+                val leveList = level.filter { it != "All" }
+                val levelPosition = leveList.indexOf(model?.level)
                 if (levelPosition >= 0) {
                     editProfileDialogBinding.level.setSelection(levelPosition + 1)
+                } else {
+                    editProfileDialogBinding.level.setSelection(0)
                 }
             } else {
                 editProfileDialogBinding.level.setSelection(0)
             }
+
             editProfileDialogBinding.level.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
                 override fun onItemSelected(parent: AdapterView<*>, view: View, position: Int, id: Long) {
                     selectedLevel = parent.getItemAtPosition(position).toString()
@@ -199,8 +207,9 @@ class UserProfileFragment : Fragment() {
             editProfileDialogBinding.dateOfBirth.setOnClickListener {
                 val now: Calendar = Calendar.getInstance()
                 val dpd = DatePickerDialog(requireContext(), { _, year, monthOfYear, dayOfMonth ->
-                    val dob2 = java.lang.String.format(Locale.US, "%04d-%02d-%02d", year, monthOfYear + 1, dayOfMonth)
-                    date = java.lang.String.format(Locale.US, "%04d-%02d-%02dT00:00:00.000Z", year, monthOfYear + 1, dayOfMonth)
+                    val dob2 = format(Locale.US, "%04d-%02d-%02d", year, monthOfYear + 1, dayOfMonth)
+                    date = format(Locale.US, "%04d-%02d-%02dT00:00:00.000Z", year, monthOfYear + 1, dayOfMonth)
+                    Log.d("ollonde", "$date")
                     editProfileDialogBinding.dateOfBirth.text = dob2 },
                     now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH)
                 )
@@ -210,8 +219,6 @@ class UserProfileFragment : Fragment() {
             editProfileDialogBinding.btnSave.setOnClickListener {
                 if (TextUtils.isEmpty("${editProfileDialogBinding.firstName.text}".trim())) {
                     editProfileDialogBinding.firstName.error = "first name required"
-                } else if (TextUtils.isEmpty("${editProfileDialogBinding.middleName.text}".trim())) {
-                    editProfileDialogBinding.middleName.error = "middle name is required"
                 } else if (TextUtils.isEmpty("${editProfileDialogBinding.lastName.text}".trim())) {
                     editProfileDialogBinding.lastName.error = "last name is required"
                 } else if (TextUtils.isEmpty("${editProfileDialogBinding.email.text}".trim())) {
@@ -231,8 +238,7 @@ class UserProfileFragment : Fragment() {
                     val realm = Realm.getDefaultInstance()
                     val userId = settings.getString("userId", "")
                     RealmUserModel.updateUserDetails(
-                        realm, userId,
-                        "${editProfileDialogBinding.firstName.text}",
+                        realm, userId, "${editProfileDialogBinding.firstName.text}",
                         "${editProfileDialogBinding.lastName.text}",
                         "${editProfileDialogBinding.middleName.text}",
                         "${editProfileDialogBinding.email.text}",
@@ -242,6 +248,7 @@ class UserProfileFragment : Fragment() {
                     realm.close()
                     dialog.dismiss()
                 }
+                Log.d("ollonde", "$date")
             }
             editProfileDialogBinding.btnCancel.setOnClickListener { dialog.dismiss() }
             dialog.show()
