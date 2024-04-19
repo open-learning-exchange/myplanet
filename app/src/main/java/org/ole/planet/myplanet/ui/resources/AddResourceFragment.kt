@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.library
+package org.ole.planet.myplanet.ui.resources
 
 import android.app.Dialog
 import android.content.ContentValues
