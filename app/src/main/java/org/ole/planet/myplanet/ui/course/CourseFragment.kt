@@ -74,7 +74,7 @@ class CourseFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelec
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
                 adapterCourses.setCourseList(filterCourseByTag(etSearch.text.toString(), searchTags))
-                showNoData(tvMessage, adapterCourses.itemCount)
+                showNoData(tvMessage, adapterCourses.itemCount, "courses")
             }
 
             override fun afterTextChanged(s: Editable) {}
@@ -98,7 +98,7 @@ class CourseFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelec
         }
 
         clearTags()
-        showNoData(tvMessage, adapterCourses.itemCount)
+        showNoData(tvMessage, adapterCourses.itemCount, "courses")
         setupUI(requireView().findViewById(R.id.my_course_parent_layout), requireActivity())
         changeButtonStatus()
         if (!isMyCourseLib) tvFragmentInfo.setText(R.string.our_courses)
@@ -182,7 +182,7 @@ class CourseFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelec
             etSearch.setText("")
             tvSelected.text = ""
             adapterCourses.setCourseList(filterCourseByTag("", searchTags))
-            showNoData(tvMessage, adapterCourses.itemCount)
+            showNoData(tvMessage, adapterCourses.itemCount, "courses")
             spnGrade.setSelection(0)
             spnSubject.setSelection(0)
         }
@@ -223,7 +223,7 @@ class CourseFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelec
         }
         adapterCourses.setCourseList(filterCourseByTag(etSearch.text.toString(), searchTags))
         showTagText(searchTags, tvSelected)
-        showNoData(tvMessage, adapterCourses.itemCount)
+        showNoData(tvMessage, adapterCourses.itemCount, "courses")
     }
 
     private fun changeButtonStatus() {
@@ -243,14 +243,14 @@ class CourseFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelec
         searchTags = li
         tvSelected.text = R.string.selected.toString() + tag.name
         adapterCourses.setCourseList(filterCourseByTag(etSearch.text.toString(), li))
-        showNoData(tvMessage, adapterCourses.itemCount)
+        showNoData(tvMessage, adapterCourses.itemCount, "courses")
     }
 
     override fun onOkClicked(list: List<RealmTag>?) {
         if (list?.isEmpty() == true) {
             searchTags.clear()
             adapterCourses.setCourseList(filterCourseByTag(etSearch.text.toString(), searchTags))
-            showNoData(tvMessage, adapterCourses.itemCount)
+            showNoData(tvMessage, adapterCourses.itemCount, "courses")
         } else {
             for (tag in list ?: emptyList()) {
                 onTagClicked(tag)

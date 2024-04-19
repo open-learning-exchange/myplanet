@@ -27,6 +27,6 @@ abstract class BaseMemberFragment : BaseTeamFragment() {
         super.onViewCreated(view, savedInstanceState)
         rvMember.layoutManager = layoutManager
         rvMember.adapter = adapter
-        showNoData(tvNodata, list.size)
+        showNoData(tvNodata, list.size, "members")
     }
 }

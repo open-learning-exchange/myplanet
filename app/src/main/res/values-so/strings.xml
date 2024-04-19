@@ -986,5 +986,15 @@
     <string name="gemini">gemini</string>
     <string name="kindly_enter_message">Fadlan geli farriinta</string>
     <string name="virtual_assistant_currently_not_available">kaaliyaha farsamada hadda lama heli karo</string>
+    <string name="no_courses">ma jiro koorsad la helin</string>
+    <string name="no_resources">ma jiraan ilaha la heli karo</string>
+    <string name="no_finance_record">hisaabka ma jiro</string>
+    <string name="no_stories">sheekooyinka ma jiraan</string>
+    <string name="no_team_courses">koorsadaha kooxiga ma jiraan</string>
+    <string name="no_team_resources">ilaha kooxiga ma jiraan</string>
+    <string name="no_tasks">tallabada ma jiraan</string>
+    <string name="no_join_request_available">ma jirto codsi qaadasho</string>
+    <string name="no_news">warka ma jiraan</string>
+    <string name="no_surveys">saamayn ma jiraan</string>
 
 </resources>
