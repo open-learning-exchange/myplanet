@@ -13,7 +13,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnFilterListener
 import org.ole.planet.myplanet.databinding.FragmentLibraryFilterBinding
 
-class LibraryFilterFragment : DialogFragment(), AdapterView.OnItemClickListener {
+class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListener {
     private lateinit var fragmentLibraryFilterBinding: FragmentLibraryFilterBinding
     var languages: Set<String>? = null
     var subjects: Set<String>? = null

@@ -22,7 +22,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.FileUtils.getFileExtension
 import org.ole.planet.myplanet.utilities.Utilities
 
-class LibraryDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
+class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private lateinit var fragmentLibraryDetailBinding: FragmentLibraryDetailBinding
     private var libraryId: String? = null
     private lateinit var dbService: DatabaseService
@@ -55,7 +55,7 @@ class LibraryDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        initRatingView("resource", library.resourceId, library.title, this@LibraryDetailFragment)
+        initRatingView("resource", library.resourceId, library.title, this@ResourceDetailFragment)
         setLibraryData()
     }
 
