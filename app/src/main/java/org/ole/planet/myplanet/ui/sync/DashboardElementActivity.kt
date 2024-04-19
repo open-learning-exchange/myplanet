@@ -27,7 +27,7 @@ import org.ole.planet.myplanet.ui.course.CourseFragment
 import org.ole.planet.myplanet.ui.dashboard.BellDashboardFragment
 import org.ole.planet.myplanet.ui.dashboard.DashboardFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
-import org.ole.planet.myplanet.ui.library.LibraryFragment
+import org.ole.planet.myplanet.ui.resources.LibraryFragment
 import org.ole.planet.myplanet.ui.rating.RatingFragment.Companion.newInstance
 import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.ui.team.TeamFragment

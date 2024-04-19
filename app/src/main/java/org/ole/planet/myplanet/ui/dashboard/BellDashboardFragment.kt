@@ -25,8 +25,8 @@ import org.ole.planet.myplanet.ui.course.CourseFragment
 import org.ole.planet.myplanet.ui.course.MyProgressFragment
 import org.ole.planet.myplanet.ui.course.TakeCourseFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
-import org.ole.planet.myplanet.ui.library.AddResourceFragment
-import org.ole.planet.myplanet.ui.library.LibraryFragment
+import org.ole.planet.myplanet.ui.resources.AddResourceFragment
+import org.ole.planet.myplanet.ui.resources.LibraryFragment
 import org.ole.planet.myplanet.ui.mylife.LifeFragment
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment

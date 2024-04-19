@@ -34,7 +34,7 @@ import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamLog.Companion.getVisitCount
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.course.TakeCourseFragment
-import org.ole.planet.myplanet.ui.library.LibraryDetailFragment
+import org.ole.planet.myplanet.ui.resources.LibraryDetailFragment
 import org.ole.planet.myplanet.ui.news.AdapterNews
 import org.ole.planet.myplanet.ui.userprofile.UserDetailFragment
 import org.ole.planet.myplanet.utilities.Constants
