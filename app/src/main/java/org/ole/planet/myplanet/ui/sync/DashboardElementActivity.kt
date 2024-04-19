@@ -27,7 +27,7 @@ import org.ole.planet.myplanet.ui.course.CourseFragment
 import org.ole.planet.myplanet.ui.dashboard.BellDashboardFragment
 import org.ole.planet.myplanet.ui.dashboard.DashboardFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
-import org.ole.planet.myplanet.ui.library.LibraryFragment
+import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.rating.RatingFragment.Companion.newInstance
 import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.ui.team.TeamFragment
@@ -51,7 +51,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
     fun onClickTabItems(position: Int) {
         when (position) {
             0 -> openCallFragment(BellDashboardFragment(), "dashboard")
-            1 -> openCallFragment(LibraryFragment(), "library")
+            1 -> openCallFragment(ResourcesFragment(), "library")
             2 -> openCallFragment(CourseFragment(), "course")
             4 -> openEnterpriseFragment()
             3 -> openCallFragment(TeamFragment(), "survey")
@@ -182,7 +182,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
             if ("shelf" == fragmentTag) navigationView.menu.findItem(R.id.menu_mycourses)
                 .setChecked(true) else navigationView.menu.findItem(R.id.menu_courses)
                 .setChecked(true)
-        } else if (f is LibraryFragment) {
+        } else if (f is ResourcesFragment) {
             if ("shelf" == fragmentTag) navigationView.menu.findItem(R.id.menu_mylibrary)
                 .setChecked(true) else navigationView.menu.findItem(R.id.menu_library)
                 .setChecked(true)

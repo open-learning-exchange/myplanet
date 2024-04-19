@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.library
+package org.ole.planet.myplanet.ui.resources
 
 import android.content.Context
 import android.text.TextUtils
@@ -27,7 +27,7 @@ import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Locale
 
-class AdapterLibrary(private val context: Context, private var libraryList: List<RealmMyLibrary?>, private val ratingMap: HashMap<String?, JsonObject>, private val realm: Realm) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+class AdapterResource(private val context: Context, private var libraryList: List<RealmMyLibrary?>, private val ratingMap: HashMap<String?, JsonObject>, private val realm: Realm) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private val selectedItems: MutableList<RealmMyLibrary?>
     private var listener: OnLibraryItemSelected? = null
     private val config: ChipCloudConfig

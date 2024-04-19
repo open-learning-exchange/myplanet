@@ -10,7 +10,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentHomeBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.getNoOfSurveySubmissionByUser
-import org.ole.planet.myplanet.ui.library.AddResourceFragment
+import org.ole.planet.myplanet.ui.resources.AddResourceFragment
 import org.ole.planet.myplanet.ui.news.NewsFragment
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment

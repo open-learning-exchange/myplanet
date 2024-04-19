@@ -34,7 +34,7 @@ import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamLog.Companion.getVisitCount
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.course.TakeCourseFragment
-import org.ole.planet.myplanet.ui.library.LibraryDetailFragment
+import org.ole.planet.myplanet.ui.resources.ResourceDetailFragment
 import org.ole.planet.myplanet.ui.news.AdapterNews
 import org.ole.planet.myplanet.ui.userprofile.UserDetailFragment
 import org.ole.planet.myplanet.utilities.Constants
@@ -202,7 +202,7 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
         listContent.adapter = ArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, libraries!!)
         listContent.onItemClickListener = AdapterView.OnItemClickListener { _: AdapterView<*>?, _: View?, i: Int, _: Long ->
             if (homeItemClickListener != null) {
-                val f = LibraryDetailFragment()
+                val f = ResourceDetailFragment()
                 val b = Bundle()
                 b.putString("libraryId", libraries!![i]?.id)
                 b.putString("openFrom", team?.teamType + "-" + team?.title)

@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="@dimen/padding_normal"
-    tools:context=".ui.library.AddResourceActivity">
+    tools:context=".ui.resources.AddResourceActivity">
 
     <ScrollView
         android:layout_width="match_parent"
