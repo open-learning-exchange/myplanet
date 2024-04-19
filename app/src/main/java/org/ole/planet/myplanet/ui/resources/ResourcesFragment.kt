@@ -37,13 +37,13 @@ import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Calendar
 import java.util.UUID
 
-class LibraryFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSelected,
+class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSelected,
     ChipDeletedListener, TagClickListener, OnFilterListener {
     private var tvAddToLib: TextView? = null
     private var tvSelected: TextView? = null
     var etSearch: EditText? = null
     private var etTags: EditText? = null
-    var adapterLibrary: AdapterLibrary? = null
+    var adapterLibrary: AdapterResource? = null
     private var flexBoxTags: FlexboxLayout? = null
     lateinit var searchTags: MutableList<RealmTag>
     var config: ChipCloudConfig? = null
@@ -61,7 +61,7 @@ class LibraryFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSe
     override fun getAdapter(): RecyclerView.Adapter<*> {
         map = getRatings(mRealm, "resource", model.id)
         val libraryList: List<RealmMyLibrary?> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary?>()
-        adapterLibrary = AdapterLibrary(requireActivity(), libraryList, map!!, mRealm)
+        adapterLibrary = AdapterResource(requireActivity(), libraryList, map!!, mRealm)
         adapterLibrary?.setRatingChangeListener(this)
         adapterLibrary?.setListener(this)
         return adapterLibrary!!
@@ -96,7 +96,7 @@ class LibraryFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSe
                 .setMessage(R.string.confirm_removal)
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
                     deleteSelected(true)
-                    val newFragment = LibraryFragment()
+                    val newFragment = ResourcesFragment()
                     recreateFragment(newFragment)
                 }
                 .setNegativeButton(R.string.no, null).show()
@@ -112,7 +112,7 @@ class LibraryFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSe
         })
         requireView().findViewById<View>(R.id.btn_collections).setOnClickListener {
             val f = CollectionsFragment.getInstance(searchTags, "resources")
-            f.setListener(this@LibraryFragment)
+            f.setListener(this@ResourcesFragment)
             f.show(childFragmentManager, "")
         }
         showNoData(tvMessage, adapterLibrary?.itemCount)
@@ -174,7 +174,7 @@ class LibraryFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSe
         builder.setCancelable(true)
         builder.setPositiveButton(getString(R.string.ok)) { dialog: DialogInterface, _: Int ->
             dialog.cancel()
-            val newFragment = LibraryFragment()
+            val newFragment = ResourcesFragment()
             recreateFragment(newFragment)
         }
         return builder.create()
@@ -335,7 +335,7 @@ class LibraryFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSe
         orderByDate = requireView().findViewById(R.id.order_by_date_button)
         orderByTitle = requireView().findViewById(R.id.order_by_title_button)
         requireView().findViewById<View>(R.id.filterCategories).setOnClickListener {
-            val f = LibraryFilterFragment()
+            val f = ResourcesFilterFragment()
             f.setListener(this)
             f.show(childFragmentManager, "")
             bottomSheet.visibility = View.GONE
