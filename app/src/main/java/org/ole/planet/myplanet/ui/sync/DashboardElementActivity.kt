@@ -23,7 +23,7 @@ import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
-import org.ole.planet.myplanet.ui.course.CourseFragment
+import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.dashboard.BellDashboardFragment
 import org.ole.planet.myplanet.ui.dashboard.DashboardFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
@@ -52,7 +52,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         when (position) {
             0 -> openCallFragment(BellDashboardFragment(), "dashboard")
             1 -> openCallFragment(ResourcesFragment(), "library")
-            2 -> openCallFragment(CourseFragment(), "course")
+            2 -> openCallFragment(CoursesFragment(), "course")
             4 -> openEnterpriseFragment()
             3 -> openCallFragment(TeamFragment(), "survey")
             5 -> openCallFragment(CommunityTabFragment(), "community")
@@ -178,7 +178,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
     override fun onBackStackChanged() {
         val f = supportFragmentManager.findFragmentById(R.id.fragment_container)
         val fragmentTag = f?.tag
-        if (f is CourseFragment) {
+        if (f is CoursesFragment) {
             if ("shelf" == fragmentTag) navigationView.menu.findItem(R.id.menu_mycourses)
                 .setChecked(true) else navigationView.menu.findItem(R.id.menu_courses)
                 .setChecked(true)

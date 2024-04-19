@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.course
+package org.ole.planet.myplanet.ui.courses
 
 import android.content.Context
 import android.view.LayoutInflater
