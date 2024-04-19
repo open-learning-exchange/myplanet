@@ -276,7 +276,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                 View.GONE
             }
             when (source) {
-                "course" -> (v as TextView).setText(R.string.no_courses)
+                "courses" -> (v as TextView).setText(R.string.no_courses)
                 "library" -> (v as TextView).setText(R.string.no_resources)
                 "finance" -> (v as TextView).setText(R.string.no_finance_record)
                 "news" -> (v as TextView).setText(R.string.no_stories)
