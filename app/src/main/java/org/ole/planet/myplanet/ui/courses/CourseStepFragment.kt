@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.course
+package org.ole.planet.myplanet.ui.courses
 
 import android.os.Bundle
 import android.text.Spannable

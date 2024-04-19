@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.course
+package org.ole.planet.myplanet.ui.courses
 
 import android.app.AlertDialog
 import android.content.DialogInterface
@@ -32,7 +32,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Calendar
 import java.util.UUID
 
-class CourseFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelected, TagClickListener {
+class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelected, TagClickListener {
     private lateinit var tvAddToLib: TextView
     private lateinit var tvSelected: TextView
     private lateinit var etSearch: EditText
@@ -85,7 +85,7 @@ class CourseFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelec
                 .setMessage(R.string.are_you_sure_you_want_to_delete_these_courses)
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
                     deleteSelected(true)
-                    val newFragment = CourseFragment()
+                    val newFragment = CoursesFragment()
                     recreateFragment(newFragment)
                 }
                 .setNegativeButton(R.string.no, null).show()
@@ -206,7 +206,7 @@ class CourseFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelec
         builder.setCancelable(true)
         builder.setPositiveButton(R.string.ok) { dialog: DialogInterface, _: Int ->
             dialog.cancel()
-            val newFragment = CourseFragment()
+            val newFragment = CoursesFragment()
             recreateFragment(newFragment)
         }
         return builder.create()

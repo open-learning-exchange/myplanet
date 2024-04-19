@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.course
+package org.ole.planet.myplanet.ui.courses
 
 import android.content.DialogInterface
 import android.os.Bundle
@@ -66,7 +66,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             fragmentTakeCourseBinding.nextStep.visibility = View.GONE
             fragmentTakeCourseBinding.previousStep.visibility = View.GONE
         }
-        fragmentTakeCourseBinding.viewPager2.adapter = CoursePagerAdapter(this, courseId, getStepIds(mRealm, courseId))
+        fragmentTakeCourseBinding.viewPager2.adapter = CoursesPagerAdapter(this, courseId, getStepIds(mRealm, courseId))
         fragmentTakeCourseBinding.viewPager2.isUserInputEnabled = false
         if (fragmentTakeCourseBinding.viewPager2.currentItem == 0) {
             fragmentTakeCourseBinding.previousStep.visibility = View.GONE
