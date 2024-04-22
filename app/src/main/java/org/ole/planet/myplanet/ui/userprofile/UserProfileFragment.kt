@@ -243,7 +243,9 @@ class UserProfileFragment : Fragment() {
                         "${editProfileDialogBinding.email.text}",
                         "${editProfileDialogBinding.phoneNumber.text}",
                         selectedLevel, selectedLanguage, selectedGender, date
-                    )
+                    ){
+                        updateUIWithUserData(model)
+                    }
                     realm.close()
                     dialog.dismiss()
                 }
@@ -289,6 +291,19 @@ class UserProfileFragment : Fragment() {
         val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI)
         pickImageLauncher.launch(intent)
     }
+
+    private fun updateUIWithUserData(model: RealmUserModel?) {
+        model?.let {
+            fragmentUserProfileBinding.txtName.text = String.format("%s %s %s", it.firstName, it.middleName, it.lastName)
+            fragmentUserProfileBinding.txtEmail.text = getString(R.string.email_colon) + Utilities.checkNA(it.email)
+            val dob = if (TextUtils.isEmpty(it.dob)) "N/A" else TimeUtils.getFormatedDate(it.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+            fragmentUserProfileBinding.txtDob.text = "${getString(R.string.date_of_birth)}$dob"
+            fragmentUserProfileBinding.txtGender.text = "Gender: ${Utilities.checkNA(it.gender)}"
+            fragmentUserProfileBinding.txtLanguage.text = "${getString(R.string.language_colon)}${Utilities.checkNA(it.language)}"
+            fragmentUserProfileBinding.txtLevel.text = "Level: ${Utilities.checkNA(it.level)}"
+        }
+    }
+
 
     companion object {
         const val IMAGE_TO_USE = 100

@@ -270,8 +270,8 @@ open class RealmUserModel : RealmObject() {
         }
 
         fun updateUserDetails(realm: Realm, userId: String?, firstName: String?, lastName: String?,
-            middleName: String?, email: String?, phoneNumber: String?, level: String?, language: String?,
-            gender: String?, dob: String?) {
+        middleName: String?, email: String?, phoneNumber: String?, level: String?, language: String?,
+        gender: String?, dob: String?, onSuccess: () -> Unit) {
             realm.executeTransactionAsync({ mRealm ->
                 val user = mRealm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
                 if (user != null) {
@@ -286,7 +286,9 @@ open class RealmUserModel : RealmObject() {
                     user.dob = dob
                     user.isUpdated = true
                     Log.d("ollonde","$dob")
-                } }, {
+                }
+            }, {
+                onSuccess.invoke()
                 Utilities.toast(context, "User details updated successfully")
             }) {
                 Utilities.toast(context, "User details update failed")
