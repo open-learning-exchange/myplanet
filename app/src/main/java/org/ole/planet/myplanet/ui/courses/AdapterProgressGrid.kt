@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.course
+package org.ole.planet.myplanet.ui.courses
 
 import android.content.Context
 import android.view.LayoutInflater
@@ -21,7 +21,7 @@ class AdapterProgressGrid(private val context: Context, private val list: JsonAr
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         if (holder is ViewHolderMyProgress) {
             if (list[position].asJsonObject.has("percentage")) {
-                holder.tvProgress.text = "${list[position].asJsonObject[" percentage "].asString}%"
+                holder.tvProgress.text = "${list[position].asJsonObject["percentage"].asString}%"
                 if (list[position].asJsonObject["completed"].asBoolean) {
                     holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.md_green_500))
                 } else {

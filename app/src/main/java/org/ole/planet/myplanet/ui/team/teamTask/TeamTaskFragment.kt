@@ -137,7 +137,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
         mRealm.commitTransaction()
         if (fragmentTeamTaskBinding.rvTask.adapter != null) {
             fragmentTeamTaskBinding.rvTask.adapter?.notifyDataSetChanged()
-            showNoData(fragmentTeamTaskBinding.tvNodata, fragmentTeamTaskBinding.rvTask.adapter?.itemCount)
+            showNoData(fragmentTeamTaskBinding.tvNodata, fragmentTeamTaskBinding.rvTask.adapter?.itemCount, "tasks")
         }
         Utilities.toast(activity, String.format(getString(R.string.task_s_successfully), if (isCreate) getString(R.string.added) else getString(R.string.updated)))
     }
@@ -147,7 +147,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
         fragmentTeamTaskBinding.rvTask.layoutManager = LinearLayoutManager(activity)
         list = mRealm.where(RealmTeamTask::class.java).equalTo("teamId", teamId).findAll()
         setAdapter()
-        showNoData(fragmentTeamTaskBinding.tvNodata, list?.size)
+        showNoData(fragmentTeamTaskBinding.tvNodata, list?.size,"tasks")
         fragmentTeamTaskBinding.taskToggle.setOnCheckedChangeListener { _: SingleSelectToggleGroup?, checkedId: Int ->
             list = when (checkedId) {
                 R.id.btn_my -> {
@@ -203,7 +203,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
         Utilities.toast(activity, getString(R.string.task_deleted_successfully))
         mRealm.commitTransaction()
         setAdapter()
-        showNoData(fragmentTeamTaskBinding.tvNodata, fragmentTeamTaskBinding.rvTask.adapter?.itemCount)
+        showNoData(fragmentTeamTaskBinding.tvNodata, fragmentTeamTaskBinding.rvTask.adapter?.itemCount, "tasks")
     }
 
     override fun onClickMore(realmTeamTask: RealmTeamTask?) {

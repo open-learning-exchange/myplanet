@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.library
+package org.ole.planet.myplanet.ui.resources
 
 import android.content.DialogInterface
 import android.os.Bundle

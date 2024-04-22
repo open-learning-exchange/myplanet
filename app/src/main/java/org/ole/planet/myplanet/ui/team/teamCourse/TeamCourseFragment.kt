@@ -23,7 +23,7 @@ class TeamCourseFragment : BaseTeamFragment() {
         fragmentTeamCourseBinding.rvCourse.layoutManager = LinearLayoutManager(activity)
         fragmentTeamCourseBinding.rvCourse.adapter = adapterTeamCourse
         if (adapterTeamCourse != null) {
-            showNoData(fragmentTeamCourseBinding.tvNodata, adapterTeamCourse.itemCount)
+            showNoData(fragmentTeamCourseBinding.tvNodata, adapterTeamCourse.itemCount, "teamCourses")
         }
     }
 }

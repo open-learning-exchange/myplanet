@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.library
+package org.ole.planet.myplanet.ui.resources
 
 import android.app.AlertDialog
 import android.content.DialogInterface
@@ -37,13 +37,13 @@ import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Calendar
 import java.util.UUID
 
-class LibraryFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSelected,
+class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSelected,
     ChipDeletedListener, TagClickListener, OnFilterListener {
     private var tvAddToLib: TextView? = null
     private var tvSelected: TextView? = null
     var etSearch: EditText? = null
     private var etTags: EditText? = null
-    var adapterLibrary: AdapterLibrary? = null
+    var adapterLibrary: AdapterResource? = null
     private var flexBoxTags: FlexboxLayout? = null
     lateinit var searchTags: MutableList<RealmTag>
     var config: ChipCloudConfig? = null
@@ -61,7 +61,7 @@ class LibraryFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSe
     override fun getAdapter(): RecyclerView.Adapter<*> {
         map = getRatings(mRealm, "resource", model.id)
         val libraryList: List<RealmMyLibrary?> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary?>()
-        adapterLibrary = AdapterLibrary(requireActivity(), libraryList, map!!, mRealm)
+        adapterLibrary = AdapterResource(requireActivity(), libraryList, map!!, mRealm)
         adapterLibrary?.setRatingChangeListener(this)
         adapterLibrary?.setListener(this)
         return adapterLibrary!!
@@ -96,7 +96,7 @@ class LibraryFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSe
                 .setMessage(R.string.confirm_removal)
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
                     deleteSelected(true)
-                    val newFragment = LibraryFragment()
+                    val newFragment = ResourcesFragment()
                     recreateFragment(newFragment)
                 }
                 .setNegativeButton(R.string.no, null).show()
@@ -105,17 +105,17 @@ class LibraryFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSe
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
                 adapterLibrary?.setLibraryList(applyFilter(filterLibraryByTag(etSearch?.text.toString().trim { it <= ' ' }, searchTags)))
-                showNoData(tvMessage, adapterLibrary?.itemCount)
+                showNoData(tvMessage, adapterLibrary?.itemCount, "resources")
             }
 
             override fun afterTextChanged(s: Editable) {}
         })
         requireView().findViewById<View>(R.id.btn_collections).setOnClickListener {
             val f = CollectionsFragment.getInstance(searchTags, "resources")
-            f.setListener(this@LibraryFragment)
+            f.setListener(this@ResourcesFragment)
             f.show(childFragmentManager, "")
         }
-        showNoData(tvMessage, adapterLibrary?.itemCount)
+        showNoData(tvMessage, adapterLibrary?.itemCount, "resources")
         clearTagsButton()
         setupUI(requireView().findViewById(R.id.my_library_parent_layout), requireActivity())
         changeButtonStatus()
@@ -174,7 +174,7 @@ class LibraryFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSe
         builder.setCancelable(true)
         builder.setPositiveButton(getString(R.string.ok)) { dialog: DialogInterface, _: Int ->
             dialog.cancel()
-            val newFragment = LibraryFragment()
+            val newFragment = ResourcesFragment()
             recreateFragment(newFragment)
         }
         return builder.create()
@@ -191,7 +191,7 @@ class LibraryFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSe
             subjects.clear()
             languages.clear()
             adapterLibrary?.setLibraryList(applyFilter(filterLibraryByTag("", searchTags)))
-            showNoData(tvMessage, adapterLibrary?.itemCount)
+            showNoData(tvMessage, adapterLibrary?.itemCount, "resources")
         }
     }
 
@@ -208,7 +208,7 @@ class LibraryFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSe
         chipCloud.addChips(searchTags)
         adapterLibrary?.setLibraryList(applyFilter(filterLibraryByTag(etSearch?.text.toString(), searchTags)))
         showTagText(searchTags, tvSelected)
-        showNoData(tvMessage, adapterLibrary?.itemCount)
+        showNoData(tvMessage, adapterLibrary?.itemCount, "resources")
     }
 
     override fun onTagSelected(tag: RealmTag) {
@@ -217,14 +217,14 @@ class LibraryFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSe
         searchTags = li
         tvSelected?.text = "${getString(R.string.selected)}${tag.name}"
         adapterLibrary?.setLibraryList(applyFilter(filterLibraryByTag(etSearch?.text.toString(), li)))
-        showNoData(tvMessage, adapterLibrary?.itemCount)
+        showNoData(tvMessage, adapterLibrary?.itemCount, "resources")
     }
 
     override fun onOkClicked(list: List<RealmTag>?) {
         if (list?.isEmpty() == true) {
             searchTags.clear()
             adapterLibrary?.setLibraryList(applyFilter(filterLibraryByTag(etSearch?.text.toString(), searchTags)))
-            showNoData(tvMessage, adapterLibrary?.itemCount)
+            showNoData(tvMessage, adapterLibrary?.itemCount, "resources")
         } else {
             for (tag in list ?: emptyList()) {
                 onTagClicked(tag)
@@ -246,7 +246,7 @@ class LibraryFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSe
     override fun chipDeleted(i: Int, s: String) {
         searchTags.removeAt(i)
         adapterLibrary?.setLibraryList(applyFilter(filterLibraryByTag(etSearch?.text.toString(), searchTags)))
-        showNoData(tvMessage, adapterLibrary?.itemCount)
+        showNoData(tvMessage, adapterLibrary?.itemCount, "resources")
     }
 
     override fun filter(subjects: MutableSet<String>, languages: MutableSet<String>, mediums: MutableSet<String>, levels: MutableSet<String>) {
@@ -255,7 +255,7 @@ class LibraryFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSe
         this.mediums = mediums
         this.levels = levels
         adapterLibrary?.setLibraryList(applyFilter(filterLibraryByTag(etSearch?.text.toString().trim { it <= ' ' }, searchTags)))
-        showNoData(tvMessage, adapterLibrary?.itemCount)
+        showNoData(tvMessage, adapterLibrary?.itemCount, "resources")
     }
 
     override fun getData(): Map<String, Set<String>> {
@@ -335,7 +335,7 @@ class LibraryFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSe
         orderByDate = requireView().findViewById(R.id.order_by_date_button)
         orderByTitle = requireView().findViewById(R.id.order_by_title_button)
         requireView().findViewById<View>(R.id.filterCategories).setOnClickListener {
-            val f = LibraryFilterFragment()
+            val f = ResourcesFilterFragment()
             f.setListener(this)
             f.show(childFragmentManager, "")
             bottomSheet.visibility = View.GONE

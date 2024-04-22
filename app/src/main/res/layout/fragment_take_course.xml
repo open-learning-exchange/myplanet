@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/colorPrimaryDark"
-    tools:context=".ui.course.TakeCourseFragment">
+    tools:context=".ui.courses.TakeCourseFragment">
 
     <LinearLayout
         android:layout_width="match_parent"

@@ -182,7 +182,7 @@ class NewsFragment : BaseNewsFragment() {
             adapterNews?.setListener(this)
             adapterNews?.registerAdapterDataObserver(observer)
             fragmentNewsBinding.rvNews.adapter = adapterNews
-            adapterNews?.let { showNoData(fragmentNewsBinding.tvMessage, it.itemCount) }
+            adapterNews?.let { showNoData(fragmentNewsBinding.tvMessage, it.itemCount, "news") }
             fragmentNewsBinding.llAddNews.visibility = View.GONE
             fragmentNewsBinding.btnAddStory.text = getString(R.string.add_story)
             adapterNews?.notifyDataSetChanged()
@@ -197,15 +197,15 @@ class NewsFragment : BaseNewsFragment() {
 
     private val observer: AdapterDataObserver = object : AdapterDataObserver() {
         override fun onChanged() {
-            adapterNews?.let { showNoData(fragmentNewsBinding.tvMessage, it.itemCount) }
+            adapterNews?.let { showNoData(fragmentNewsBinding.tvMessage, it.itemCount, "news") }
         }
 
         override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
-            adapterNews?.let { showNoData(fragmentNewsBinding.tvMessage, it.itemCount) }
+            adapterNews?.let { showNoData(fragmentNewsBinding.tvMessage, it.itemCount, "news") }
         }
 
         override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) {
-            adapterNews?.let { showNoData(fragmentNewsBinding.tvMessage, it.itemCount) }
+            adapterNews?.let { showNoData(fragmentNewsBinding.tvMessage, it.itemCount, "news") }
         }
     }
 }

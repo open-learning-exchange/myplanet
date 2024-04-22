@@ -116,7 +116,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             }
         }
         recyclerView.adapter = getAdapter()
-        showNoData(tvMessage, getAdapter().itemCount)
+        showNoData(tvMessage, getAdapter().itemCount, "")
     }
 
     fun deleteSelected(deleteProgress: Boolean) {
@@ -126,7 +126,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             deleteCourseProgress(deleteProgress, `object`)
             removeFromShelf(`object`)
             recyclerView.adapter = getAdapter()
-            showNoData(tvMessage, getAdapter().itemCount)
+            showNoData(tvMessage, getAdapter().itemCount, "")
         }
     }
 
@@ -267,10 +267,26 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     companion object {
         lateinit var settings: SharedPreferences
 
-        fun showNoData(v: View?, count: Int?) {
+        fun showNoData(v: View?, count: Int?, source: String) {
             v ?: return
-            v.visibility = if (count == 0) View.VISIBLE else View.GONE
-            (v as TextView).setText(R.string.no_data_available_please_check_and_try_again)
+            v.visibility = if (count == 0) {
+                View.VISIBLE
+            } else {
+                View.GONE
+            }
+            when (source) {
+                "courses" -> (v as TextView).setText(R.string.no_courses)
+                "resources" -> (v as TextView).setText(R.string.no_resources)
+                "finances" -> (v as TextView).setText(R.string.no_finance_record)
+                "news" -> (v as TextView).setText(R.string.no_stories)
+                "teamCourses" -> (v as TextView).setText(R.string.no_team_courses)
+                "teamResources" -> (v as TextView).setText(R.string.no_team_resources)
+                "tasks" -> (v as TextView).setText(R.string.no_tasks)
+                "members" -> (v as TextView).setText(R.string.no_join_request_available)
+                "discussions" -> (v as TextView).setText(R.string.no_news)
+                "survey" -> (v as TextView).setText(R.string.no_surveys)
+                else -> (v as TextView).setText(R.string.no_data_available_please_check_and_try_again)
+            }
         }
 
         fun showNoFilter(v: View?, count: Int) {

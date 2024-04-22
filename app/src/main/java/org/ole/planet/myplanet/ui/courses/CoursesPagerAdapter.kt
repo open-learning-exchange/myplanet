@@ -1,13 +1,10 @@
-package org.ole.planet.myplanet.ui.course
+package org.ole.planet.myplanet.ui.courses
 
 import android.os.Bundle
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentActivity
-import androidx.fragment.app.FragmentManager
-import androidx.fragment.app.FragmentStatePagerAdapter
 import androidx.viewpager2.adapter.FragmentStateAdapter
 
-class CoursePagerAdapter(fm: Fragment, private val courseId: String?, private val steps: Array<String?>) : FragmentStateAdapter(fm) {
+class CoursesPagerAdapter(fm: Fragment, private val courseId: String?, private val steps: Array<String?>) : FragmentStateAdapter(fm) {
     override fun createFragment(position: Int): Fragment {
         val b = Bundle()
         val f: Fragment

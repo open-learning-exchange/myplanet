@@ -224,28 +224,6 @@ abstract class BaseResourceFragment : Fragment() {
         return getLibraryList(mRealm, settings?.getString("userId", "--"))
     }
 
-    fun getLibraryList(mRealm: Realm, userId: String?): List<RealmMyLibrary> {
-        val l = mRealm.where(RealmMyLibrary::class.java).equalTo("isPrivate", false).findAll()
-        val libList: MutableList<RealmMyLibrary> = ArrayList()
-        val libraries = getLibraries(l)
-        for (item in libraries) {
-            if (item.userId?.contains(userId) == true) {
-                libList.add(item)
-            }
-        }
-        return libList
-    }
-
-    private fun getLibraries(l: RealmResults<RealmMyLibrary>): List<RealmMyLibrary> {
-        val libraries: MutableList<RealmMyLibrary> = ArrayList()
-        for (lib in l) {
-            if (lib.needToUpdate()) {
-                libraries.add(lib)
-            }
-        }
-        return libraries
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         mRealm = DatabaseService(requireActivity()).realmInstance
@@ -293,5 +271,27 @@ abstract class BaseResourceFragment : Fragment() {
     companion object {
         var settings: SharedPreferences? = null
         var auth = ""
+
+        fun getLibraryList(mRealm: Realm, userId: String?): List<RealmMyLibrary> {
+            val l = mRealm.where(RealmMyLibrary::class.java).equalTo("isPrivate", false).findAll()
+            val libList: MutableList<RealmMyLibrary> = ArrayList()
+            val libraries = getLibraries(l)
+            for (item in libraries) {
+                if (item.userId?.contains(userId) == true) {
+                    libList.add(item)
+                }
+            }
+            return libList
+        }
+
+        fun getLibraries(l: RealmResults<RealmMyLibrary>): List<RealmMyLibrary> {
+            val libraries: MutableList<RealmMyLibrary> = ArrayList()
+            for (lib in l) {
+                if (lib.needToUpdate()) {
+                    libraries.add(lib)
+                }
+            }
+            return libraries
+        }
     }
 }

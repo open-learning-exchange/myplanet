@@ -992,6 +992,16 @@
     <string name="gemini">gemini</string>
     <string name="kindly_enter_message">الرجاء إدخال الرسالة</string>
     <string name="virtual_assistant_currently_not_available">المساعد الافتراضي غير متاح حاليا</string>
+    <string name="no_courses">"لا توجد دورات متاحة"</string>
+    <string name="no_resources">لا توجد موارد متاحة</string>
+    <string name="no_finance_record">لا يوجد سجل مالي متاح</string>
+    <string name="no_stories">لا توجد قصص متاحة</string>
+    <string name="no_team_courses">لا توجد دورات فريق متاحة</string>
+    <string name="no_team_resources">لا توجد موارد فريق متاحة</string>
+    <string name="no_tasks">لا توجد مهام متاحة</string>
+    <string name="no_join_request_available">لا يوجد طلب انضمام متاح</string>
+    <string name="no_news">لا توجد أخبار متاحة</string>
+    <string name="no_surveys">لا توجد استطلاعات متاحة</string>
     <string name="edit_image">تعديل الصورة الشخصية</string>
     <string name="compulsory_first_name">الاسم الأول مطلوب</string>
     <string name="compulsory_last_name">اسم العائلة مطلوب</string>

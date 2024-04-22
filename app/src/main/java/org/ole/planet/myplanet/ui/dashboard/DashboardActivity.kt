@@ -42,10 +42,10 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.chat.ChatHistoryListFragment
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
-import org.ole.planet.myplanet.ui.course.CourseFragment
+import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
-import org.ole.planet.myplanet.ui.library.LibraryDetailFragment
-import org.ole.planet.myplanet.ui.library.LibraryFragment
+import org.ole.planet.myplanet.ui.resources.ResourceDetailFragment
+import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.survey.SendSurveyFragment
 import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.ui.sync.DashboardElementActivity
@@ -281,14 +281,14 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
         Utilities.log("Selected")
         when (selectedMenuId) {
             R.string.menu_myplanet -> openCallFragment(BellDashboardFragment())
-            R.string.menu_library -> openCallFragment(LibraryFragment())
+            R.string.menu_library -> openCallFragment(ResourcesFragment())
             R.string.menu_meetups -> {}
             R.string.menu_surveys -> openCallFragment(SurveyFragment())
-            R.string.menu_courses -> openCallFragment(CourseFragment())
+            R.string.menu_courses -> openCallFragment(CoursesFragment())
             R.string.menu_community -> openCallFragment(CommunityTabFragment())
-            R.string.txt_myLibrary -> openMyFragment(LibraryFragment())
+            R.string.txt_myLibrary -> openMyFragment(ResourcesFragment())
             R.string.team -> openMyFragment(TeamFragment())
-            R.string.txt_myCourses -> openMyFragment(CourseFragment())
+            R.string.txt_myCourses -> openMyFragment(CoursesFragment())
             R.string.enterprises -> openEnterpriseFragment()
             R.string.menu_logout -> logout()
             else -> openCallFragment(BellDashboardFragment())
@@ -312,7 +312,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
     }
 
     override fun openLibraryDetailFragment(library: RealmMyLibrary?) {
-        val f: Fragment = LibraryDetailFragment()
+        val f: Fragment = ResourceDetailFragment()
         val b = Bundle()
         b.putString("libraryId", library?.resourceId)
         b.putString("openFrom", "Dashboard")
@@ -397,16 +397,16 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.menu_library -> {
-                openCallFragment(LibraryFragment())
+                openCallFragment(ResourcesFragment())
             }
             R.id.menu_courses -> {
-                openCallFragment(CourseFragment())
+                openCallFragment(CoursesFragment())
             }
             R.id.menu_mycourses -> {
-                openMyFragment(CourseFragment())
+                openMyFragment(CoursesFragment())
             }
             R.id.menu_mylibrary -> {
-                openMyFragment(LibraryFragment())
+                openMyFragment(ResourcesFragment())
             }
             R.id.menu_enterprises -> {
                 openEnterpriseFragment()

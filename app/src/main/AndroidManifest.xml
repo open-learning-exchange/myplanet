@@ -59,7 +59,7 @@
             android:name=".ui.userprofile.BecomeMemberActivity"
             android:theme="@style/AppTheme" />
         <activity
-            android:name=".ui.course.CourseProgressActivity"
+            android:name=".ui.courses.CourseProgressActivity"
             android:theme="@style/AppTheme" />
         <activity
             android:name=".ui.news.NewsDetailActivity"
@@ -76,7 +76,7 @@
             android:name=".ui.news.ReplyActivity"
             android:theme="@style/AppTheme" />
         <activity
-            android:name=".ui.library.AddResourceActivity"
+            android:name=".ui.resources.AddResourceActivity"
             android:theme="@style/AppTheme" />
         <activity android:name=".ui.viewer.AudioPlayerActivity" />
         <activity

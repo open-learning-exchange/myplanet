@@ -997,6 +997,16 @@
     <string name="gemini">gemini</string>
     <string name="kindly_enter_message">Por favor, introduzca el mensaje</string>
     <string name="virtual_assistant_currently_not_available">asistente virtual actualmente no disponible</string>
+    <string name="no_courses">no hay cursos disponibles</string>
+    <string name="no_resources">no hay recursos disponibles</string>
+    <string name="no_finance_record">registro financiero no disponible</string>
+    <string name="no_stories">historias no disponibles</string>
+    <string name="no_team_courses">cursos de equipo no disponibles</string>
+    <string name="no_team_resources">recursos de equipo no disponibles</string>
+    <string name="no_tasks">tareas no disponibles</string>
+    <string name="no_join_request_available">no hay solicitud de unirse disponible</string>
+    <string name="no_news">noticias no disponibles</string>
+    <string name="no_surveys">encuestas no disponibles</string>
     <string name="edit_image">editar imagen de perfil</string>
     <string name="compulsory_first_name">nombre requerido</string>
     <string name="compulsory_last_name">apellido requerido</string>
