@@ -18,7 +18,6 @@ import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.sync.LoginActivity
-import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils.startDownloadUpdate
@@ -100,7 +99,6 @@ class AutoSyncWorker(private val context: Context, workerParams: WorkerParameter
             }
             if (!MainApplication.isSyncRunning) {
                 MainApplication.isSyncRunning = true
-//                UploadManager.instance?.uploadTabletUserData()
                 UploadManager.instance?.uploadExamResult(this)
                 UploadManager.instance?.uploadFeedback(this)
                 UploadManager.instance?.uploadAchievement()

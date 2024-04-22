@@ -10,12 +10,10 @@ import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.provider.MediaStore
 import android.text.TextUtils
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
+import android.widget.*
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
@@ -43,10 +41,8 @@ import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities
-import java.util.Calendar
-import java.util.LinkedList
-import java.util.Locale
 import java.lang.String.format
+import java.util.*
 
 class UserProfileFragment : Fragment() {
     private lateinit var fragmentUserProfileBinding: FragmentUserProfileBinding
@@ -302,11 +298,6 @@ class UserProfileFragment : Fragment() {
             fragmentUserProfileBinding.txtLanguage.text = "${getString(R.string.language_colon)}${Utilities.checkNA(it.language)}"
             fragmentUserProfileBinding.txtLevel.text = "Level: ${Utilities.checkNA(it.level)}"
         }
-    }
-
-
-    companion object {
-        const val IMAGE_TO_USE = 100
     }
 
     inner class ViewHolderRowStat(rowStatBinding: RowStatBinding) : RecyclerView.ViewHolder(rowStatBinding.root)

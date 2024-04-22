@@ -2,8 +2,6 @@ package org.ole.planet.myplanet.model
 
 import android.content.SharedPreferences
 import android.text.TextUtils
-import android.util.Base64
-import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -13,13 +11,11 @@ import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import org.apache.commons.lang3.StringUtils
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils
-import java.io.File
 import java.util.Locale
 import java.util.UUID
 
@@ -117,7 +113,6 @@ open class RealmUserModel : RealmObject() {
         `object`.addProperty("gender", gender)
         `object`.addProperty("phoneNumber", phoneNumber)
         `object`.addProperty("birthDate", dob)
-        Log.d("ollonde realm", "$dob")
         try {
             `object`.addProperty("iterations", iterations?.toInt())
         } catch (e: Exception) {
@@ -127,18 +122,6 @@ open class RealmUserModel : RealmObject() {
         `object`.addProperty("planetCode", planetCode)
         `object`.addProperty("birthPlace", birthPlace)
         `object`.addProperty("isArchived", isArchived)
-
-//        val imageFile = File(userImage ?: "")
-//        if (imageFile.exists()) {
-//            val bytes = imageFile.readBytes()
-//            val base64Image = Base64.encodeToString(bytes, Base64.DEFAULT)
-//            val attachments = JsonObject()
-//            val img = JsonObject()
-//            img.addProperty("content_type", "image/jpeg") // Assuming JPEG format
-//            img.addProperty("data", base64Image)
-//            attachments.add("img", img)
-//            `object`.add("_attachments", attachments)
-//        }
         return `object`
     }
 
@@ -285,7 +268,6 @@ open class RealmUserModel : RealmObject() {
                     user.gender = gender
                     user.dob = dob
                     user.isUpdated = true
-                    Log.d("ollonde","$dob")
                 }
             }, {
                 onSuccess.invoke()
