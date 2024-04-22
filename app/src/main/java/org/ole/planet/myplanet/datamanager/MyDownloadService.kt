@@ -7,13 +7,11 @@ import android.content.SharedPreferences
 import androidx.core.app.NotificationCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import io.realm.Realm
-import io.realm.RealmConfiguration
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
-import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.NotificationUtil
@@ -31,7 +29,7 @@ import kotlin.math.roundToInt
 class MyDownloadService : IntentService("Download Service") {
     var count = 0
     var data = ByteArray(1024 * 4)
-    var outputFile: File? = null
+    private var outputFile: File? = null
     private var notificationBuilder: NotificationCompat.Builder? = null
     private var notificationManager: NotificationManager? = null
     private var totalFileSize = 0
@@ -39,9 +37,16 @@ class MyDownloadService : IntentService("Download Service") {
     private var url: String? = null
     private var urls: ArrayList<String>? = null
     private var currentIndex = 0
-    private var mRealm: Realm? = null
     private var request: Call<ResponseBody>? = null
     private var completeAll = false
+    private val databaseService: DatabaseService by lazy {
+        DatabaseService(applicationContext)
+    }
+
+    private val mRealm: Realm by lazy {
+        databaseService.realmInstance
+    }
+
     override fun onHandleIntent(intent: Intent?) {
         preferences = applicationContext.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
@@ -55,7 +60,6 @@ class MyDownloadService : IntentService("Download Service") {
             ?.setAutoCancel(true)?.build()
         notificationManager?.notify(0, noti)
         urls = intent?.getStringArrayListExtra("urls")
-        realmConfig()
         for (i in urls?.indices ?: emptyList()) {
             url = urls?.get(i)
             currentIndex = i
@@ -86,7 +90,6 @@ class MyDownloadService : IntentService("Download Service") {
                 e.printStackTrace()
             }
         }
-
     }
 
     private fun downloadFiled(message: String) {
@@ -203,7 +206,7 @@ class MyDownloadService : IntentService("Download Service") {
 
     private fun changeOfflineStatus() {
         val currentFileName = FileUtils.getFileNameFromUrl(url)
-        mRealm?.executeTransaction { realm: Realm ->
+        mRealm.executeTransaction { realm: Realm ->
             val matchingItems = realm.where(RealmMyLibrary::class.java)
                 .equalTo("resourceLocalAddress", currentFileName)
                 .findAll()
@@ -216,14 +219,6 @@ class MyDownloadService : IntentService("Download Service") {
                 Utilities.log("No matching objects found")
             }
         }
-    }
-
-    fun realmConfig() {
-        Realm.init(this)
-        val config = RealmConfiguration.Builder().name(Realm.DEFAULT_REALM_NAME)
-            .deleteRealmIfMigrationNeeded().schemaVersion(4).allowWritesOnUiThread(true).build()
-        Realm.setDefaultConfiguration(config)
-        mRealm = Realm.getInstance(config)
     }
 
     override fun onTaskRemoved(rootIntent: Intent) {
