@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.model
 
 import android.content.SharedPreferences
 import android.text.TextUtils
+import android.util.Base64
 import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonArray
@@ -127,7 +128,7 @@ open class RealmUserModel : RealmObject() {
         `object`.addProperty("birthPlace", birthPlace)
         `object`.addProperty("isArchived", isArchived)
 
-//        val imageFile = File(imagePath)
+//        val imageFile = File(userImage ?: "")
 //        if (imageFile.exists()) {
 //            val bytes = imageFile.readBytes()
 //            val base64Image = Base64.encodeToString(bytes, Base64.DEFAULT)
@@ -136,7 +137,7 @@ open class RealmUserModel : RealmObject() {
 //            img.addProperty("content_type", "image/jpeg") // Assuming JPEG format
 //            img.addProperty("data", base64Image)
 //            attachments.add("img", img)
-//            jsonObject.add("_attachments", attachments)
+//            `object`.add("_attachments", attachments)
 //        }
         return `object`
     }

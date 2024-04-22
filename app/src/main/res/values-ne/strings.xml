@@ -997,6 +997,12 @@
     <string name="gemini">gemini</string>
     <string name="kindly_enter_message">कृपया सन्देश प्रविष्ट गर्नुहोस्</string>
     <string name="virtual_assistant_currently_not_available">भर्चुअल सहायक हाललाई उपलब्ध छैन</string>
-    <string name="edit_image">Edit profile image</string>
+    <string name="edit_image">प्रोफाइल तस्वीर सम्पादन गर्नुहोस्</string>
+    <string name="compulsory_first_name">पहिलो नाम आवश्यक छ</string>
+    <string name="compulsory_last_name">थर आवश्यक छ</string>
+    <string name="compulsory_email">ईमेल आवश्यक छ</string>
+    <string name="compulsory_phone_number">फोन नम्बर आवश्यक छ</string>
+    <string name="compulsory_date_of_birth">जन्म मिति आवश्यक छ</string>
+    <string name="gender_not_picked">लिङ्ग छानिएको छैन</string>
 
 </resources>

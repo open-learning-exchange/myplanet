@@ -1087,6 +1087,12 @@
     <string name="gemini">gemini</string>
     <string name="kindly_enter_message">Kindly enter message</string>
     <string name="virtual_assistant_currently_not_available">virtual assistant currently not available</string>
-    <string name="edit_image">Edit profile image</string>
+    <string name="edit_image">edit profile image</string>
+    <string name="compulsory_first_name">first name required</string>
+    <string name="compulsory_last_name">last name is required</string>
+    <string name="compulsory_email">email is required</string>
+    <string name="compulsory_phone_number">phone number is required</string>
+    <string name="compulsory_date_of_birth">date of birth is required</string>
+    <string name="gender_not_picked">gender not picked</string>
 
 </resources>

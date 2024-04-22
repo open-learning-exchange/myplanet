@@ -986,6 +986,12 @@
     <string name="gemini">gemini</string>
     <string name="kindly_enter_message">Fadlan geli farriinta</string>
     <string name="virtual_assistant_currently_not_available">kaaliyaha farsamada hadda lama heli karo</string>
-    <string name="edit_image">Edit profile image</string>
+    <string name="edit_image">tubinta sawirka xogta muuqaalka</string>
+    <string name="compulsory_first_name">magaca hore loo baahan yahay</string>
+    <string name="compulsory_last_name">magaca dambe loo baahan yahay</string>
+    <string name="compulsory_email">imeelka loo baahan yahay</string>
+    <string name="compulsory_phone_number">numberka telefoonka loo baahan yahay</string>
+    <string name="compulsory_date_of_birth">taariikhda dhalashada loo baahan yahay</string>
+    <string name="gender_not_picked">nooca loo dooran maayo</string>
 
 </resources>

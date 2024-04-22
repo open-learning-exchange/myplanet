@@ -83,6 +83,7 @@ class UserProfileFragment : Fragment() {
                     }
                     val path = FileUtils.getRealPathFromURI(requireActivity(), url)
                     model?.userImage = path
+                    model?.isUpdated = true
                     it.commitTransaction()
                 }
                 fragmentUserProfileBinding.image.setImageURI(url)
@@ -111,7 +112,6 @@ class UserProfileFragment : Fragment() {
         fragmentUserProfileBinding.txtLevel.text = "Level: ${Utilities.checkNA(model?.level)}"
 
         model?.userImage.let {
-            Log.d("ollonde", "${model?.userImage}")
             Glide.with(requireContext())
                 .load(it)
                 .apply(RequestOptions().placeholder(R.drawable.profile).error(R.drawable.profile))
@@ -209,7 +209,6 @@ class UserProfileFragment : Fragment() {
                 val dpd = DatePickerDialog(requireContext(), { _, year, monthOfYear, dayOfMonth ->
                     val dob2 = format(Locale.US, "%04d-%02d-%02d", year, monthOfYear + 1, dayOfMonth)
                     date = format(Locale.US, "%04d-%02d-%02dT00:00:00.000Z", year, monthOfYear + 1, dayOfMonth)
-                    Log.d("ollonde", "$date")
                     editProfileDialogBinding.dateOfBirth.text = dob2 },
                     now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH)
                 )
@@ -218,17 +217,17 @@ class UserProfileFragment : Fragment() {
             }
             editProfileDialogBinding.btnSave.setOnClickListener {
                 if (TextUtils.isEmpty("${editProfileDialogBinding.firstName.text}".trim())) {
-                    editProfileDialogBinding.firstName.error = "first name required"
+                    editProfileDialogBinding.firstName.error = resources.getString(R.string.compulsory_first_name)
                 } else if (TextUtils.isEmpty("${editProfileDialogBinding.lastName.text}".trim())) {
-                    editProfileDialogBinding.lastName.error = "last name is required"
+                    editProfileDialogBinding.lastName.error = getString(R.string.compulsory_last_name)
                 } else if (TextUtils.isEmpty("${editProfileDialogBinding.email.text}".trim())) {
-                    editProfileDialogBinding.email.error = "email name is required"
+                    editProfileDialogBinding.email.error = getString(R.string.compulsory_email)
                 } else if (TextUtils.isEmpty("${editProfileDialogBinding.phoneNumber.text}".trim())) {
-                    editProfileDialogBinding.phoneNumber.error = "phone number is required"
+                    editProfileDialogBinding.phoneNumber.error = getString(R.string.compulsory_phone_number)
                 } else if (resources.getString(R.string.birth_date) == "${editProfileDialogBinding.dateOfBirth.text}") {
-                    editProfileDialogBinding.dateOfBirth.error = "date of birth is required"
+                    editProfileDialogBinding.dateOfBirth.error = getString(R.string.compulsory_date_of_birth)
                 } else if (editProfileDialogBinding.rdGender.checkedRadioButtonId == -1) {
-                    Snackbar.make(editProfileDialogBinding.root, "gender not picked", Snackbar.LENGTH_SHORT).show()
+                    Snackbar.make(editProfileDialogBinding.root, getString(R.string.gender_not_picked), Snackbar.LENGTH_SHORT).show()
                 } else {
                     if (editProfileDialogBinding.rbMale.isChecked) {
                         selectedGender = "male"
@@ -248,7 +247,6 @@ class UserProfileFragment : Fragment() {
                     realm.close()
                     dialog.dismiss()
                 }
-                Log.d("ollonde", "$date")
             }
             editProfileDialogBinding.btnCancel.setOnClickListener { dialog.dismiss() }
             dialog.show()

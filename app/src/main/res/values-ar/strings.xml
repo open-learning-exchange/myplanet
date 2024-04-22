@@ -992,6 +992,12 @@
     <string name="gemini">gemini</string>
     <string name="kindly_enter_message">الرجاء إدخال الرسالة</string>
     <string name="virtual_assistant_currently_not_available">المساعد الافتراضي غير متاح حاليا</string>
-    <string name="edit_image">Edit profile image</string>
+    <string name="edit_image">تعديل الصورة الشخصية</string>
+    <string name="compulsory_first_name">الاسم الأول مطلوب</string>
+    <string name="compulsory_last_name">اسم العائلة مطلوب</string>
+    <string name="compulsory_email">البريد الإلكتروني مطلوب</string>
+    <string name="compulsory_phone_number">رقم الهاتف مطلوب</string>
+    <string name="compulsory_date_of_birth">تاريخ الميلاد مطلوب</string>
+    <string name="gender_not_picked">لم يتم اختيار الجنس</string>
 
 </resources>
