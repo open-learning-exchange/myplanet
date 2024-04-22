@@ -11,7 +11,7 @@ import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import org.apache.commons.lang3.StringUtils
-import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.Utilities
@@ -94,8 +94,8 @@ open class RealmUserModel : RealmObject() {
         if (_id?.isEmpty() == true) {
             `object`.addProperty("password", password)
             `object`.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
-            `object`.addProperty("uniqueAndroidId", VersionUtils.getAndroidId(MainApplication.context))
-            `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
+            `object`.addProperty("uniqueAndroidId", VersionUtils.getAndroidId(context))
+            `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
         } else {
             `object`.addProperty("derived_key", derived_key)
             `object`.addProperty("salt", salt)
@@ -249,6 +249,31 @@ open class RealmUserModel : RealmObject() {
                 }
                 if (!TextUtils.isEmpty(JsonUtils.getString("parentCode", jsonDoc))) settings.edit()
                     .putString("parentCode", JsonUtils.getString("parentCode", jsonDoc)).apply()
+            }
+        }
+
+        fun updateUserDetails(realm: Realm, userId: String?, firstName: String?, lastName: String?,
+        middleName: String?, email: String?, phoneNumber: String?, level: String?, language: String?,
+        gender: String?, dob: String?, onSuccess: () -> Unit) {
+            realm.executeTransactionAsync({ mRealm ->
+                val user = mRealm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
+                if (user != null) {
+                    user.firstName = firstName
+                    user.lastName = lastName
+                    user.middleName = middleName
+                    user.email = email
+                    user.phoneNumber = phoneNumber
+                    user.level = level
+                    user.language = language
+                    user.gender = gender
+                    user.dob = dob
+                    user.isUpdated = true
+                }
+            }, {
+                onSuccess.invoke()
+                Utilities.toast(context, "User details updated successfully")
+            }) {
+                Utilities.toast(context, "User details update failed")
             }
         }
     }

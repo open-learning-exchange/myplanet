@@ -1007,6 +1007,12 @@
     <string name="no_join_request_available">सामिल हुने अनुरोध उपलब्ध छैन</string>
     <string name="no_news">समाचार उपलब्ध छैन</string>
     <string name="no_surveys">सर्वेक्षण उपलब्ध छैन</string>
-
+    <string name="edit_image">प्रोफाइल तस्वीर सम्पादन गर्नुहोस्</string>
+    <string name="compulsory_first_name">पहिलो नाम आवश्यक छ</string>
+    <string name="compulsory_last_name">थर आवश्यक छ</string>
+    <string name="compulsory_email">ईमेल आवश्यक छ</string>
+    <string name="compulsory_phone_number">फोन नम्बर आवश्यक छ</string>
+    <string name="compulsory_date_of_birth">जन्म मिति आवश्यक छ</string>
+    <string name="gender_not_picked">लिङ्ग छानिएको छैन</string>
 
 </resources>

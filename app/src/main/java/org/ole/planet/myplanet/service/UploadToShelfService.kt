@@ -20,7 +20,6 @@ import org.ole.planet.myplanet.model.RealmMyHealthPojo.Companion.serialize
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getMyLibIds
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.removedIds
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateIv
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateKey
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
@@ -45,50 +44,79 @@ class UploadToShelfService(context: Context) {
         val apiInterface = client?.create(ApiInterface::class.java)
         mRealm = dbService.realmInstance
         mRealm.executeTransactionAsync({ realm: Realm ->
-            val userModels: List<RealmUserModel> = realm.where(RealmUserModel::class.java).isEmpty("_id").or().equalTo("updated", true).findAll()
+            val userModels: List<RealmUserModel> = realm.where(RealmUserModel::class.java).isEmpty("_id").or().equalTo("isUpdated", true).findAll()
             Utilities.log("USER LIST SIZE + " + userModels.size)
             for (model in userModels) {
                 try {
-                    var res = apiInterface?.getJsonObject(Utilities.header, Utilities.getUrl() + "/_users/org.couchdb.user:" + model.name)?.execute()
+                    val password = sharedPreferences.getString("loginUserPassword", "")
+                    val header = "Basic " + Base64.encodeToString(("${model.name}:${password}").toByteArray(), Base64.NO_WRAP)
+                    val res = apiInterface?.getJsonObject(header,  "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}")?.execute()
                     if (res?.body() == null) {
                         val obj = model.serialize()
-                        res = apiInterface?.putDoc(null, "application/json", Utilities.getUrl() + "/_users/org.couchdb.user:" + model.name, obj)?.execute()
-                        if (res?.body() != null) {
-                            val id = res.body()?.get("id")?.asString
-                            val rev = res.body()?.get("rev")?.asString
-                            res = apiInterface?.getJsonObject(Utilities.header, Utilities.getUrl() + "/_users/" + id)?.execute()
-                            if (res?.body() != null) {
-                                model._id = id
-                                model._rev = rev
-                                model.password_scheme = getString("password_scheme", res.body())
-                                model.derived_key = getString("derived_key", res.body())
-                                model.salt = getString("salt", res.body())
-                                model.iterations = getString("iterations", res.body())
+                        val createResponse = apiInterface?.putDoc(null, "application/json",  "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", obj)?.execute()
+                        if (createResponse?.isSuccessful == true) {
+                            val id = createResponse.body()?.get("id")?.asString
+                            val rev = createResponse.body()?.get("rev")?.asString
+                            model._id = id
+                            model._rev = rev
+                            val fetchDataResponse = apiInterface.getJsonObject(header, "${replacedUrl(model)}/_users/$id").execute()
+                            if (fetchDataResponse.isSuccessful) {
+                                model.password_scheme = getString("password_scheme", fetchDataResponse.body())
+                                model.derived_key = getString("derived_key", fetchDataResponse.body())
+                                model.salt = getString("salt", fetchDataResponse.body())
+                                model.iterations = getString("iterations", fetchDataResponse.body())
                                 if (saveKeyIv(apiInterface, model, obj)) {
                                     updateHealthData(realm, model)
                                 }
                             }
+                        } else {
+                            createResponse?.errorBody()?.let { Utilities.log(it.string()) }
                         }
                     } else if (model.isUpdated) {
                         Utilities.log("UPDATED MODEL " + model.serialize())
-                        val obj = model.serialize()
-                        res = apiInterface?.putDoc(null, "application/json", Utilities.getUrl() + "/_users/org.couchdb.user:" + model.name, obj)?.execute()
-                        if (res?.body() != null) {
-                            Utilities.log(Gson().toJson(res?.body()))
-                            val rev = res?.body()!!["rev"].asString
-                            model._rev = rev
-                            model.isUpdated = false
-                        } else {
-                            res?.errorBody()?.let { Utilities.log(it.string()) }
+                        try {
+                            val latestDocResponse = apiInterface.getJsonObject(header, "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}").execute()
+                            if (latestDocResponse.isSuccessful) {
+                                val latestRev = latestDocResponse.body()?.get("_rev")?.asString
+                                val obj = model.serialize()
+                                val objMap = obj.entrySet().associate { (key, value) -> key to value }
+                                val mutableObj = mutableMapOf<String, Any>().apply { putAll(objMap) }
+                                latestRev?.let { rev -> mutableObj["_rev"] = rev as Any }
+                                val gson = Gson()
+                                val jsonElement = gson.toJsonTree(mutableObj)
+                                val jsonObject = jsonElement.asJsonObject
+
+                                val updateResponse = apiInterface.putDoc(header, "application/json", "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", jsonObject).execute()
+                                if (updateResponse.isSuccessful) {
+                                    val updatedRev = updateResponse.body()?.get("rev")?.asString
+                                    model._rev = updatedRev
+                                    model.isUpdated = false
+                                } else {
+                                    updateResponse.errorBody()?.let { Utilities.log(it.string()) }
+                                }
+                            } else {
+                                latestDocResponse.errorBody()?.let { Utilities.log(it.string()) }
+                            }
+                        } catch (e: IOException) {
+                            e.printStackTrace()
                         }
                     } else {
-                        Utilities.toast(MainApplication.context, "User " + model.name + " already exist")
+                        Utilities.toast(MainApplication.context, "User ${model.name} already exists")
                     }
                 } catch (e: IOException) {
                     e.printStackTrace()
                 }
             }
         }, { uploadToshelf(listener) }) { uploadToshelf(listener) }
+    }
+
+    fun replacedUrl(model: RealmUserModel): String {
+        val url = Utilities.getUrl()
+        val password = sharedPreferences.getString("loginUserPassword", "")
+        val replacedUrl = url.replaceFirst("[^:]+:[^@]+@".toRegex(), "${model.name}:${password}@")
+        val protocolIndex = url.indexOf("://") // Find the index of "://"
+        val protocol = url.substring(0, protocolIndex) // Extract the protocol (http or https)
+        return "$protocol://$replacedUrl" // Append the protocol to the modified URL
     }
 
     private fun updateHealthData(realm: Realm, model: RealmUserModel) {

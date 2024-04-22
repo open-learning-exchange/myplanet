@@ -996,5 +996,12 @@
     <string name="no_join_request_available">ma jirto codsi qaadasho</string>
     <string name="no_news">warka ma jiraan</string>
     <string name="no_surveys">saamayn ma jiraan</string>
+    <string name="edit_image">tubinta sawirka xogta muuqaalka</string>
+    <string name="compulsory_first_name">magaca hore loo baahan yahay</string>
+    <string name="compulsory_last_name">magaca dambe loo baahan yahay</string>
+    <string name="compulsory_email">imeelka loo baahan yahay</string>
+    <string name="compulsory_phone_number">numberka telefoonka loo baahan yahay</string>
+    <string name="compulsory_date_of_birth">taariikhda dhalashada loo baahan yahay</string>
+    <string name="gender_not_picked">nooca loo dooran maayo</string>
 
 </resources>

@@ -1007,5 +1007,12 @@
     <string name="no_join_request_available">no hay solicitud de unirse disponible</string>
     <string name="no_news">noticias no disponibles</string>
     <string name="no_surveys">encuestas no disponibles</string>
+    <string name="edit_image">editar imagen de perfil</string>
+    <string name="compulsory_first_name">nombre requerido</string>
+    <string name="compulsory_last_name">apellido requerido</string>
+    <string name="compulsory_email">correo electrónico requerido</string>
+    <string name="compulsory_phone_number">número de teléfono requerido</string>
+    <string name="compulsory_date_of_birth">fecha de nacimiento requerida</string>
+    <string name="gender_not_picked">género no seleccionado</string>
 
 </resources>
