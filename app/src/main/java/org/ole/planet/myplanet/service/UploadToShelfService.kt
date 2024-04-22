@@ -20,7 +20,6 @@ import org.ole.planet.myplanet.model.RealmMyHealthPojo.Companion.serialize
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getMyLibIds
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.removedIds
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateIv
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateKey
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
@@ -49,19 +48,18 @@ class UploadToShelfService(context: Context) {
             Utilities.log("USER LIST SIZE + " + userModels.size)
             for (model in userModels) {
                 try {
-                    val head = "Basic " + Base64.encodeToString(("${model.name}:${model.name}").toByteArray(), Base64.NO_WRAP)
-                    val url = "http://${model.name}:${model.name}@192.168.88.20:80/db"
-                    val res = apiInterface?.getJsonObject(head, url + "/_users/org.couchdb.user:" + model.name)?.execute()
-
+                    val password = sharedPreferences.getString("loginUserPassword", "")
+                    val header = "Basic " + Base64.encodeToString(("${model.name}:${password}").toByteArray(), Base64.NO_WRAP)
+                    val res = apiInterface?.getJsonObject(header,  "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}")?.execute()
                     if (res?.body() == null) {
                         val obj = model.serialize()
-                        val createResponse = apiInterface?.putDoc(null, "application/json", url + "/_users/org.couchdb.user:" + model.name, obj)?.execute()
+                        val createResponse = apiInterface?.putDoc(null, "application/json",  "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", obj)?.execute()
                         if (createResponse?.isSuccessful == true) {
                             val id = createResponse.body()?.get("id")?.asString
                             val rev = createResponse.body()?.get("rev")?.asString
                             model._id = id
                             model._rev = rev
-                            val fetchDataResponse = apiInterface.getJsonObject(head, "$url/_users/$id").execute()
+                            val fetchDataResponse = apiInterface.getJsonObject(header, "${replacedUrl(model)}/_users/$id").execute()
                             if (fetchDataResponse.isSuccessful) {
                                 model.password_scheme = getString("password_scheme", fetchDataResponse.body())
                                 model.derived_key = getString("derived_key", fetchDataResponse.body())
@@ -77,23 +75,18 @@ class UploadToShelfService(context: Context) {
                     } else if (model.isUpdated) {
                         Utilities.log("UPDATED MODEL " + model.serialize())
                         try {
-                            val latestDocResponse = apiInterface.getJsonObject(head, url + "/_users/org.couchdb.user:" + model.name).execute()
+                            val latestDocResponse = apiInterface.getJsonObject(header, "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}").execute()
                             if (latestDocResponse.isSuccessful) {
                                 val latestRev = latestDocResponse.body()?.get("_rev")?.asString
                                 val obj = model.serialize()
                                 val objMap = obj.entrySet().associate { (key, value) -> key to value }
-                                val mutableObj = mutableMapOf<String, Any>().apply {
-                                    putAll(objMap)
-                                }
-                                latestRev?.let { rev ->
-                                    mutableObj["_rev"] = rev as Any
-                                }
+                                val mutableObj = mutableMapOf<String, Any>().apply { putAll(objMap) }
+                                latestRev?.let { rev -> mutableObj["_rev"] = rev as Any }
                                 val gson = Gson()
                                 val jsonElement = gson.toJsonTree(mutableObj)
                                 val jsonObject = jsonElement.asJsonObject
 
-                                val updateResponse = apiInterface.putDoc(head, "application/json", url + "/_users/org.couchdb.user:" + model.name, jsonObject).execute()
-
+                                val updateResponse = apiInterface.putDoc(header, "application/json", "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", jsonObject).execute()
                                 if (updateResponse.isSuccessful) {
                                     val updatedRev = updateResponse.body()?.get("rev")?.asString
                                     model._rev = updatedRev
@@ -108,13 +101,22 @@ class UploadToShelfService(context: Context) {
                             e.printStackTrace()
                         }
                     } else {
-                        Utilities.toast(MainApplication.context, "User " + model.name + " already exists")
+                        Utilities.toast(MainApplication.context, "User ${model.name} already exists")
                     }
                 } catch (e: IOException) {
                     e.printStackTrace()
                 }
             }
         }, { uploadToshelf(listener) }) { uploadToshelf(listener) }
+    }
+
+    fun replacedUrl(model: RealmUserModel): String {
+        val url = Utilities.getUrl()
+        val password = sharedPreferences.getString("loginUserPassword", "")
+        val replacedUrl = url.replaceFirst("[^:]+:[^@]+@".toRegex(), "${model.name}:${password}@")
+        val protocolIndex = url.indexOf("://") // Find the index of "://"
+        val protocol = url.substring(0, protocolIndex) // Extract the protocol (http or https)
+        return "$protocol://$replacedUrl" // Append the protocol to the modified URL
     }
 
     private fun updateHealthData(realm: Realm, model: RealmUserModel) {
