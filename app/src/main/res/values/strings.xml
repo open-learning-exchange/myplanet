@@ -348,15 +348,15 @@
     <string name="hearing">Hearing</string>
     <string name="vitals">Vitals</string>
     <string name="condition_and_treatment">Condition and Treatment</string>
-    <string name="observation" translatable="false">Observations and Notes</string>
-    <string name="diagnosis" translatable="false">Diagnosis</string>
-    <string name="treatments" translatable="false">Treatments</string>
-    <string name="medications" translatable="false">Medications</string>
-    <string name="immunization" translatable="false">Immunization Dates</string>
-    <string name="allergies" translatable="false">Allergies</string>
-    <string name="xray" translatable="false">X-rays</string>
-    <string name="labtest" translatable="false">Lab Tests</string>
-    <string name="referrals" translatable="false">Referrals</string>
+    <string name="observation">Observations and Notes</string>
+    <string name="diagnosis">Diagnosis</string>
+    <string name="treatments">Treatments</string>
+    <string name="medications">Medications</string>
+    <string name="immunization">Immunization Dates</string>
+    <string name="allergies">Allergies</string>
+    <string name="xray">X-rays</string>
+    <string name="labtest">Lab Tests</string>
+    <string name="referrals">Referrals</string>
     <string name="full_name">Full Name</string>
     <string name="weight">Weight (kg)</string>
     <string name="no_records">No records found</string>
@@ -959,7 +959,7 @@
     <string name="kindly_give_a_rating">Kindly give a rating</string>
     <string name="must_start_with_letter_or_number">Must start with letter or number</string>
     <string name="only_letters_numbers_and_are_allowed">Only letters a-z, numbers and "_" , ".", "-" are allowed</string>
-    <string name="config_not_available" translatable="false">Config not available.</string>
+    <string name="config_not_available">Config not available.</string>
     <string name="unselect_all">Unselect All</string>
     <string name="select_all">Select All</string>
     <string name="request_failed_please_retry">Request failed, please retry</string>

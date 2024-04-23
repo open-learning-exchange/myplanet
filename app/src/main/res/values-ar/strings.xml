@@ -348,15 +348,15 @@
     <string name="hearing">السمع</string>
     <string name="vitals">مؤشرات الصحة</string>
     <string name="condition_and_treatment">الحالة والعلاج</string>
-    <string name="observation" translatable="false">الملاحظات والملاحظات</string>
-    <string name="diagnosis" translatable="false">التشخيص</string>
-    <string name="treatments" translatable="false">العلاجات</string>
-    <string name="medications" translatable="false">الأدوية</string>
-    <string name="immunization" translatable="false">تواريخ التطعيم</string>
-    <string name="allergies" translatable="false">الحساسية</string>
-    <string name="xray" translatable="false">الأشعة السينية</string>
-    <string name="labtest" translatable="false">اختبارات المختبر</string>
-    <string name="referrals" translatable="false">الإحالات</string>
+    <string name="observation">الملاحظات والملاحظات</string>
+    <string name="diagnosis">التشخيص</string>
+    <string name="treatments">العلاجات</string>
+    <string name="medications">الأدوية</string>
+    <string name="immunization">تواريخ التطعيم</string>
+    <string name="allergies">الحساسية</string>
+    <string name="xray">الأشعة السينية</string>
+    <string name="labtest">اختبارات المختبر</string>
+    <string name="referrals">الإحالات</string>
     <string name="full_name">الاسم الكامل</string>
     <string name="weight">الوزن (كجم)</string>
     <string name="no_records">لم يتم العثور على سجلات</string>
@@ -959,7 +959,7 @@
     <string name="kindly_give_a_rating">يرجى التقييم</string>
     <string name="must_start_with_letter_or_number">يجب أن تبدأ بحرف أو رقم</string>
     <string name="only_letters_numbers_and_are_allowed">فقط الأحرف من a إلى z والأرقام و "_" و "." و "-" مسموح بها</string>
-    <string name="config_not_available" translatable="false">التكوين غير متوفر.</string>
+    <string name="config_not_available">التكوين غير متوفر.</string>
     <string name="unselect_all">إلغاء تحديد الكل</string>
     <string name="select_all">تحديد الكل</string>
     <string name="request_failed_please_retry">الطلب فشل، يرجى إعادة المحاولة</string>

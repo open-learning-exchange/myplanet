@@ -348,15 +348,15 @@
     <string name="hearing">Audition</string>
     <string name="vitals">Signes vitaux</string>
     <string name="condition_and_treatment">État et traitement</string>
-    <string name="observation" translatable="false">Observations et notes</string>
-    <string name="diagnosis" translatable="false">Diagnostic</string>
-    <string name="treatments" translatable="false">Traitements</string>
-    <string name="medications" translatable="false">Médicaments</string>
-    <string name="immunization" translatable="false">Dates de vaccination</string>
-    <string name="allergies" translatable="false">Allergies</string>
-    <string name="xray" translatable="false">Radiographies</string>
-    <string name="labtest" translatable="false">Analyses de laboratoire</string>
-    <string name="referrals" translatable="false">Références</string>
+    <string name="observation">Observations et notes</string>
+    <string name="diagnosis">Diagnostic</string>
+    <string name="treatments">Traitements</string>
+    <string name="medications">Médicaments</string>
+    <string name="immunization">Dates de vaccination</string>
+    <string name="allergies">Allergies</string>
+    <string name="xray">Radiographies</string>
+    <string name="labtest">Analyses de laboratoire</string>
+    <string name="referrals">Références</string>
     <string name="full_name">Nom complet</string>
     <string name="weight">Poids (kg)</string>
     <string name="no_records">Aucun enregistrement trouvé</string>
@@ -959,7 +959,7 @@
     <string name="kindly_give_a_rating">Veuillez donner une note</string>
     <string name="must_start_with_letter_or_number">Doit commencer par une lettre ou un chiffre</string>
     <string name="only_letters_numbers_and_are_allowed">Seules les lettres de a à z, les chiffres, le "_", ".", et "-" sont autorisés</string>
-    <string name="config_not_available" translatable="false">Configuration non disponible.</string>
+    <string name="config_not_available">Configuration non disponible.</string>
     <string name="unselect_all">Désélectionner tout</string>
     <string name="select_all">Sélectionner tout</string>
     <string name="request_failed_please_retry">La demande a échoué, veuillez réessayer</string>

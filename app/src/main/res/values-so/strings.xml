@@ -348,15 +348,15 @@
     <string name="hearing">Gurinaan</string>
     <string name="vitals">Calaamaddaha</string>
     <string name="condition_and_treatment">Caddaaladda iyo Dib u dhiska</string>
-    <string name="observation" translatable="false">La xiriira iyo falanqeynta</string>
-    <string name="diagnosis" translatable="false">Baaris</string>
-    <string name="treatments" translatable="false">Dib u dhiska</string>
-    <string name="medications" translatable="false">Daaweynaha</string>
-    <string name="immunization" translatable="false">Taariikhda xoojinta</string>
-    <string name="allergies" translatable="false">Alargada</string>
-    <string name="xray" translatable="false">X-ray</string>
-    <string name="labtest" translatable="false">Baarista labada</string>
-    <string name="referrals" translatable="false">Dabaqyo</string>
+    <string name="observation">La xiriira iyo falanqeynta</string>
+    <string name="diagnosis">Baaris</string>
+    <string name="treatments">Dib u dhiska</string>
+    <string name="medications">Daaweynaha</string>
+    <string name="immunization">Taariikhda xoojinta</string>
+    <string name="allergies">Alargada</string>
+    <string name="xray">X-ray</string>
+    <string name="labtest">Baarista labada</string>
+    <string name="referrals">Dabaqyo</string>
     <string name="full_name">Magaca Buugaagta oo Dhan</string>
     <string name="weight">Cirka (kg)</string>
     <string name="no_records">Wax ma jirin</string>
@@ -959,7 +959,7 @@
     <string name="kindly_give_a_rating">si naxariis leh u bixi rating</string>
     <string name="must_start_with_letter_or_number">Waa in la bilaabo lambarka ama tirada</string>
     <string name="only_letters_numbers_and_are_allowed">Waa kaliya luuqadaha a-z, lambarka, "_", ".", iyo "-" ayaa la oggolaaday</string>
-    <string name="config_not_available" translatable="false">Configuración no disponible.</string>
+    <string name="config_not_available">Configuración no disponible.</string>
     <string name="unselect_all">Dhammaad Maareey</string>
     <string name="select_all">Dhammaad Dhammaadee</string>
     <string name="request_failed_please_retry">Codka lama yimaado, fadlan dib ugu ciyaar</string>

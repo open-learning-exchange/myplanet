@@ -348,15 +348,15 @@
     <string name="hearing">श्रवण</string>
     <string name="vitals">महत्वपूर्ण चिन्हहरू</string>
     <string name="condition_and_treatment">अवस्था र उपचार</string>
-    <string name="observation" translatable="false">अवलोकन र नोटहरू</string>
-    <string name="diagnosis" translatable="false">निदान</string>
-    <string name="treatments" translatable="false">उपचारहरू</string>
-    <string name="medications" translatable="false">औषधि</string>
-    <string name="immunization" translatable="false">टिका लिने मितिहरू</string>
-    <string name="allergies" translatable="false">एलर्जीहरू</string>
-    <string name="xray" translatable="false">एक्सरे</string>
-    <string name="labtest" translatable="false">प्रयोगशालामा परीक्षण</string>
-    <string name="referrals" translatable="false">रेफरल</string>
+    <string name="observation">अवलोकन र नोटहरू</string>
+    <string name="diagnosis">निदान</string>
+    <string name="treatments">उपचारहरू</string>
+    <string name="medications">औषधि</string>
+    <string name="immunization">टिका लिने मितिहरू</string>
+    <string name="allergies">एलर्जीहरू</string>
+    <string name="xray">एक्सरे</string>
+    <string name="labtest">प्रयोगशालामा परीक्षण</string>
+    <string name="referrals">रेफरल</string>
     <string name="full_name">पुरा नाम</string>
     <string name="weight">वजन (केजी)</string>
     <string name="no_records">कुनै रेकर्ड भेटिएन</string>
@@ -959,7 +959,7 @@
     <string name="kindly_give_a_rating">कृपया मूल्याङ्कन दिनुहोस्</string>
     <string name="must_start_with_letter_or_number">पात्र वा नम्बरसँग सुरु गर्नु पर्दछ</string>
     <string name="only_letters_numbers_and_are_allowed">केवल अक्षरहरू a- z, नम्बर र "_" , "." , "-" पार्स्याद छ</string>
-    <string name="config_not_available" translatable="false">कन्फिगरेसन उपलब्ध छैन।</string>
+    <string name="config_not_available">कन्फिगरेसन उपलब्ध छैन।</string>
     <string name="unselect_all">सबै चयन गर्दिन</string>
     <string name="select_all">सबै चयन गर्नुहोस्</string>
     <string name="request_failed_please_retry">अनुरोध असफल भयो, कृपया पुन: प्रयास गर्नुहोस्</string>
