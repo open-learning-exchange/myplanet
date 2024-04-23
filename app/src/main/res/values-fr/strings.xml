@@ -13,9 +13,9 @@
     <string name="err_msg_name">Entrez votre nom d\'utilisateur</string>
     <string name="err_msg_password">Entrez le mot de passe</string>
     <string name="err_msg_login">Le nom d\'utilisateur et/ou le mot de passe ne correspondent pas</string>
-    <string name="hint_serverURl">ip de la planète</string>
-    <string name="hint_serverPin">code pin du serveur</string>
-    <string name="radio_protocol">Protocole :</string>
+    <string name="hint_serverURl">planet ip</string>
+    <string name="hint_serverPin">code serveur</string>
+    <string name="radio_protocol">Protocole:</string>
     <string name="radio_http">http</string>
     <string name="radio_https">https</string>
     <string name="title_activity_dashboard">Tableau de bord</string>
@@ -97,7 +97,7 @@
     <string name="stop_download">Arrêter le téléchargement</string>
     <string name="downloading_file">Téléchargement du fichier en cours…</string>
     <string name="cancel">Annuler</string>
-    <string name="add_to_mycourses">Ajouter à mes cours</string>
+    <string name="add_to_mycourses">Ajouter à mesCours</string>
     <string name="added_to">ajouté à</string>
     <string name="removed_from">supprimé de</string>
     <string name="my_courses">Mes cours</string>
@@ -177,6 +177,7 @@
     <string name="showing_reply_of">Affichage de la réponse de :</string>
     <string name="open_date">Date d\'ouverture</string>
     <string name="my_survey">Mon sondage</string>
+
     <string-array name="level">
         <item></item>
         <item>Débutant</item>
@@ -212,6 +213,7 @@
         <item>Stages</item>
         <item>Distinctions</item>
     </string-array>
+
     <string-array name="open_With">
         <item>HTML</item>
         <item>PDF.js</item>
@@ -221,6 +223,7 @@
         <item>Lecteur de livres vidéo BeLL</item>
         <item>Vidéo native</item>
     </string-array>
+
     <string-array name="media">
         <item>Texte</item>
         <item>Graphique/Images</item>
@@ -246,6 +249,7 @@
         <item>Diplômé</item>
         <item>Professionnel</item>
     </string-array>
+
     <string-array name="array_subjects">
         <item>Agriculture</item>
         <item>Arts</item>
@@ -260,11 +264,13 @@
         <item>Loi</item>
         <item>Apprentissage</item>
     </string-array>
+
     <string-array name="array_resource_for">
         <item>Par défaut</item>
         <item>Chef</item>
         <item>Apprenant</item>
     </string-array>
+
     <string name="dictionaries">Dictionnaires</string>
     <string name="bible">Bibles</string>
     <string name="feature_not">Fonctionnalité non disponible</string>
@@ -326,6 +332,7 @@
     <string name="weekly">Hebdomadaire</string>
     <string name="recurring_frequency">Fréquence récurrente</string>
     <string name="filter_by_date">Filtrer par date</string>
+    <string name="date_reset">Réinitialisation de la date</string>
     <string name="emergency_contact">Contact d\'urgence</string>
     <string name="contact">Contact</string>
     <string name="special_needs">Besoins spéciaux</string>
@@ -341,19 +348,19 @@
     <string name="hearing">Audition</string>
     <string name="vitals">Signes vitaux</string>
     <string name="condition_and_treatment">État et traitement</string>
-    <string name="observation" translatable="false">Observations et notes</string>
-    <string name="diagnosis" translatable="false">Diagnostic</string>
-    <string name="treatments" translatable="false">Traitements</string>
-    <string name="medications" translatable="false">Médicaments</string>
-    <string name="immunization" translatable="false">Dates de vaccination</string>
-    <string name="allergies" translatable="false">Allergies</string>
-    <string name="xray" translatable="false">Radiographies</string>
-    <string name="labtest" translatable="false">Analyses de laboratoire</string>
-    <string name="referrals" translatable="false">Références</string>
+    <string name="observation">Observations et notes</string>
+    <string name="diagnosis">Diagnostic</string>
+    <string name="treatments">Traitements</string>
+    <string name="medications">Médicaments</string>
+    <string name="immunization">Dates de vaccination</string>
+    <string name="allergies">Allergies</string>
+    <string name="xray">Radiographies</string>
+    <string name="labtest">Analyses de laboratoire</string>
+    <string name="referrals">Références</string>
     <string name="full_name">Nom complet</string>
     <string name="weight">Poids (kg)</string>
     <string name="no_records">Aucun enregistrement trouvé</string>
-    <string name="chats">Discussions</string>
+    <string name="chats">Chats</string>
     <string name="select_health_member">Sélectionner un membre</string>
     <string name="notifications">Notifications</string>
     <string name="incorrect_ans">Réponse incorrecte, veuillez réessayer</string>
@@ -387,8 +394,8 @@
     </string-array>
 
     <string-array name="add_link_options">
-        <item>Teams</item>
-        <item>Enterprises</item>
+        <item>Équipes</item>
+        <item>Entreprises</item>
     </string-array>
 
     <string-array name="transaction_type">
@@ -397,21 +404,21 @@
     </string-array>
 
     <string-array name="sort_by_date">
-        <item>Trier par date - Ascendant</item>
-        <item>Trier par date - Descendant</item>
-        <item>Trier par titre</item>
+        <item>Ordre par date - Asc</item>
+        <item>Ordre par date - Desc</item>
+        <item>Ordre par titre</item>
     </string-array>
 
     <string-array name="sort_member">
-        <item>Trier par date - Ascendant</item>
-        <item>Trier par date - Descendant</item>
-        <item>Trier par nom - Ascendant</item>
-        <item>Trier par nom - Descendant</item>
+        <item>Ordre par date - Asc</item>
+        <item>Ordre par date - Desc</item>
+        <item>Ordre par nom - Asc</item>
+        <item>Ordre par nom - Desc</item>
     </string-array>
 
     <string-array name="grade_level">
         <item>Tous</item>
-        <item>Prématernelle</item>
+        <item>Pré-maternelle</item>
         <item>Maternelle</item>
         <item>1</item>
         <item>2</item>
@@ -425,8 +432,8 @@
         <item>10</item>
         <item>11</item>
         <item>12</item>
-        <item>Collège</item>
-        <item>Post-Gradué</item>
+        <item>Université</item>
+        <item>Post-Graduate</item>
     </string-array>
 
     <string-array name="subject_level">
@@ -439,18 +446,18 @@
 
     <string-array name="diagnosis_list">
         <item>Cancer</item>
-        <item>Troubles cardiovasculaires</item>
+        <item>Maladies cardiovasculaires</item>
         <item>Cirrhose du foie</item>
         <item>COVID-19</item>
         <item>Diabète</item>
         <item>Maladies diarrhéiques</item>
-        <item>Ebola</item>
+        <item>Ébola</item>
         <item>Épilepsie</item>
-        <item>MGF</item>
+        <item>FGM</item>
         <item>Grippe</item>
-        <item>Maladie cardiaque ischémique</item>
-        <item>Paludisme</item>
-        <item>Malnutrition</item>
+        <item>Maladie coronarienne ischémique</item>
+        <item>Malaria</item>
+        <item>Mauvaise nutrition</item>
         <item>Méningite</item>
         <item>Sepsis néonatal et infections</item>
         <item>VIH/SIDA</item>
@@ -459,7 +466,8 @@
         <item>Tuberculose</item>
         <item>Traumatisme</item>
     </string-array>
-    <string name="title_activity_news_detail">NewsDetailActivity</string>
+
+    <string name="title_activity_news_detail">Detalles de noticias</string>
     <string name="add_story">Ajouter une histoire</string>
     <string name="txt_myprogress">myProgress</string>
     <string name="more_action">Filtrer</string>
@@ -595,6 +603,7 @@
     <string name="select_resource_to_open">Sélectionnez la ressource à ouvrir: </string>
     <string name="shared_to_community">Partagé avec la communauté</string>
     <string name="no_data_available_please_check_and_try_again">Aucune donnée disponible, veuillez vérifier et réessayer.</string>
+    <string name="no_course_matched_filter">Aucun cours correspondant au filtre</string>
     <string name="added_to_my_library">Ajouté à ma bibliothèque</string>
     <string name="added_to_my_courses">Ajouté à mes cours</string>
     <string name="do_you_want_to_stay_online">Voulez-vous rester en ligne ?</string>
@@ -836,6 +845,7 @@
     <string name="unable_to_clear_files">Impossible de supprimer les fichiers</string>
     <string name="last_synced_never">jamais synchronisé</string>
     <string name="last_synced_colon">"Dernière synchronisation: "</string>
+
     <string name="disclaimer">
     <![CDATA[
     <h1>Avertissement</h1>
@@ -890,6 +900,7 @@
     </ul>
     ]]>
     </string>
+
     <string name="about">
     <![CDATA[
     <h3>MyPlanet</h3>
@@ -912,6 +923,7 @@
         dans des écoles du Népal, du Ghana, du Kenya et du Rwanda, ainsi que parmi les réfugiés syriens en Jordanie, les réfugiés somaliens au Kenya et les travailleurs de la santé des villages en Ouganda.</p>
     ]]>
     </string>
+
     <string name="is_on_please_turn_of_to_save_battery">" est activé, veuillez le désactiver pour économiser la batterie"</string>
     <string name="go_to_settings">Aller aux paramètres</string>
     <string name="new_version_of_my_planet_available">Nouvelle version de My Planet disponible</string>
@@ -936,8 +948,8 @@
     <string name="select_user_to_login">Sélectionner l\'utilisateur à connecter</string>
     <string name="dismiss">Ignorer</string>
     <string name="gps_is_settings">Le GPS est un paramètre</string>
-    <string name="gps_is_not_enabled_do_you_want_to_go_to_settings_menu">Le GPS n\'est pas activé. Voulez-vous accéder au menu des paramètres ?</string>
-    <string name="available_space_colon">Espace disponible : </string>
+    <string name="gps_is_not_enabled_do_you_want_to_go_to_settings_menu">Le GPS n\'est pas activé. Voulez-vous accéder au menu des paramètres ?</string>
+    <string name="available_space_colon">Espace disponible : </string>
     <string name="community_leaders">Dirigeants de communauté</string>
     <string name="services">Services</string>
     <string name="survey_taken">Enquête effectuée</string>
@@ -947,6 +959,7 @@
     <string name="kindly_give_a_rating">Veuillez donner une note</string>
     <string name="must_start_with_letter_or_number">Doit commencer par une lettre ou un chiffre</string>
     <string name="only_letters_numbers_and_are_allowed">Seules les lettres de a à z, les chiffres, le "_", ".", et "-" sont autorisés</string>
+    <string name="config_not_available">Configuration non disponible.</string>
     <string name="unselect_all">Désélectionner tout</string>
     <string name="select_all">Sélectionner tout</string>
     <string name="request_failed_please_retry">La demande a échoué, veuillez réessayer</string>
@@ -960,8 +973,6 @@
     <string name="progress_bar">barre de progression</string>
     <string name="web_view">vue web</string>
     <string name="invalid_configuration">Configurations de serveur invalides</string>
-    <string name="date_reset">Réinitialisation des dates</string>
-    <string name="no_course_matched_filter">Aucun cours ne correspond au filtre</string>
     <string name="welcome_to_myPlanet">Bienvenue sur myPlanet</string>
     <string name="learn_offline">Apprendre hors ligne</string>
     <string name="open_learning">Apprentissage ouvert</string>

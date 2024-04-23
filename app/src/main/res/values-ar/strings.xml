@@ -13,8 +13,8 @@
     <string name="err_msg_name">الرجاء إدخال اسم المستخدم</string>
     <string name="err_msg_password">الرجاء إدخال كلمة المرور</string>
     <string name="err_msg_login">اسم المستخدم و/أو كلمة المرور غير متطابقة</string>
-    <string name="hint_serverURl">عنوان ip للكوكب</string>
-    <string name="hint_serverPin">رمز pin للخادم</string>
+    <string name="hint_serverURl">planet ip</string>
+    <string name="hint_serverPin">رمز الخادم</string>
     <string name="radio_protocol">البروتوكول:</string>
     <string name="radio_http">http</string>
     <string name="radio_https">https</string>
@@ -177,6 +177,7 @@
     <string name="showing_reply_of">عرض الرد على:</string>
     <string name="open_date">تاريخ الافتتاح</string>
     <string name="my_survey">استطلاعي</string>
+
     <string-array name="level">
         <item></item>
         <item>مبتدئ</item>
@@ -202,6 +203,7 @@
         <item>ar</item>
         <item>so</item>
     </string-array>
+
     <string-array name="info_type">
         <item>اللغات</item>
         <item>التعليم</item>
@@ -211,6 +213,7 @@
         <item>التدريبات الصيفية</item>
         <item>الجوائز</item>
     </string-array>
+
     <string-array name="open_With">
         <item>HTML</item>
         <item>PDF.js</item>
@@ -220,6 +223,7 @@
         <item>مشغل كتاب فيديو BeLL</item>
         <item>فيديو Native</item>
     </string-array>
+
     <string-array name="media">
         <item>نص</item>
         <item>جرافيك/صور</item>
@@ -245,6 +249,7 @@
         <item>الدراسات العليا</item>
         <item>المهني</item>
     </string-array>
+
     <string-array name="array_subjects">
         <item>الزراعة</item>
         <item>الفنون</item>
@@ -259,11 +264,13 @@
         <item>القانون</item>
         <item>التعلم</item>
     </string-array>
+
     <string-array name="array_resource_for">
         <item>الافتراضي</item>
         <item>القائد</item>
         <item>المتعلم</item>
     </string-array>
+
     <string name="dictionaries">القواميس</string>
     <string name="bible">الكتاب المقدس</string>
     <string name="feature_not">الميزة غير متوفرة</string>
@@ -325,6 +332,7 @@
     <string name="weekly">أسبوعيًا</string>
     <string name="recurring_frequency">تكرار التكرار</string>
     <string name="filter_by_date">تصفية حسب التاريخ</string>
+    <string name="date_reset">إعادة تعيين التاريخ</string>
     <string name="emergency_contact">جهة الاتصال الطارئة</string>
     <string name="contact">اتصال</string>
     <string name="special_needs">احتياجات خاصة</string>
@@ -340,15 +348,15 @@
     <string name="hearing">السمع</string>
     <string name="vitals">مؤشرات الصحة</string>
     <string name="condition_and_treatment">الحالة والعلاج</string>
-    <string name="observation" translatable="false">الملاحظات والملاحظات</string>
-    <string name="diagnosis" translatable="false">التشخيص</string>
-    <string name="treatments" translatable="false">العلاجات</string>
-    <string name="medications" translatable="false">الأدوية</string>
-    <string name="immunization" translatable="false">تواريخ التطعيم</string>
-    <string name="allergies" translatable="false">الحساسية</string>
-    <string name="xray" translatable="false">الأشعة السينية</string>
-    <string name="labtest" translatable="false">اختبارات المختبر</string>
-    <string name="referrals" translatable="false">الإحالات</string>
+    <string name="observation">الملاحظات والملاحظات</string>
+    <string name="diagnosis">التشخيص</string>
+    <string name="treatments">العلاجات</string>
+    <string name="medications">الأدوية</string>
+    <string name="immunization">تواريخ التطعيم</string>
+    <string name="allergies">الحساسية</string>
+    <string name="xray">الأشعة السينية</string>
+    <string name="labtest">اختبارات المختبر</string>
+    <string name="referrals">الإحالات</string>
     <string name="full_name">الاسم الكامل</string>
     <string name="weight">الوزن (كجم)</string>
     <string name="no_records">لم يتم العثور على سجلات</string>
@@ -458,6 +466,7 @@
         <item>السل</item>
         <item>الإصابات</item>
     </string-array>
+
     <string name="title_activity_news_detail">تفاصيل الأخبار</string>
     <string name="add_story">إضافة قصة</string>
     <string name="txt_myprogress">تقدمي</string>
@@ -485,7 +494,7 @@
     <string name="submit">إرسال</string>
     <string name="our_courses">دوراتنا</string>
     <string name="file">"ملف: "</string>
-    <string name="recording_audio">جارٍ تسجيل الصوت......</string>
+    <string name="recording_audio">جارٍ تسجيل الصوت…</string>
     <string name="show_replies">"عرض الردود "</string>
     <string name="selected">"المحدد: "</string>
     <string name="last_sync"><![CDATA["آخر مزامنة مع الخادم: "]]></string>
@@ -594,6 +603,7 @@
     <string name="select_resource_to_open">"حدد المصدر للفتح: "</string>
     <string name="shared_to_community">مشاركة مع المجتمع</string>
     <string name="no_data_available_please_check_and_try_again">لا تتوفر بيانات، يرجى التحقق والمحاولة مرة أخرى.</string>
+    <string name="no_course_matched_filter">لا توجد دورات تطابقت مع الفلتر</string>
     <string name="added_to_my_library">تمت الإضافة إلى مكتبتي</string>
     <string name="added_to_my_courses">تمت الإضافة إلى دوراتي</string>
     <string name="do_you_want_to_stay_online">هل ترغب في البقاء متصلاً على الإنترنت؟</string>
@@ -835,6 +845,7 @@
     <string name="unable_to_clear_files">غير قادر على مسح الملفات</string>
     <string name="last_synced_never">لم يتم المزامنة أبدا</string>
     <string name="last_synced_colon">آخر مزامنة: </string>
+
     <string name="disclaimer">
     <![CDATA[
     <h1>تنصل من المسؤولية</h1>
@@ -888,7 +899,8 @@
         <li>عن طريق زيارة هذه الصفحة على موقعنا على الويب: <a href="https://ole.org/contact">https://ole.org/contact</a></li>
     </ul>
     ]]>
-</string>
+    </string>
+
     <string name="about">
     <![CDATA[
     <h3>ماي بلانت</h3>
@@ -896,17 +908,22 @@
     تم استخدامه لتحسين التعليم المبكر، والمدارس الثانوية، وصحة القرى، وتنمية قوى العمل الشبابية،
     والتنمية الاقتصادية والمجتمعية.</p>
     <p>بلانت هاوس هو مستودع للموارد المجانية ومفتوحة الوصول والمجال العام لصالح جميع المتعلمين.</p>
+
     <p>تم تصميم ماي بلانت ليكون متاحًا للجميع، في كل مكان، في كل وقت. إنه قابل للنقل وبأسعار معقولة وقابل للتوسع ومستدام.
     يعمل على أي جهاز أندرويد مثل الأجهزة اللوحية والهواتف المحمولة. يعمل مع أو بدون اتصال بالإنترنت.</p>
+
     <p>يتيح هذا التطبيق للمدارس والمجتمعات الحصول على مكتبة ونظام تعلم متعدد الوسائط كامل يتصل ببلانت بشكل دوري.
     يمكن أن تحتوي الأجهزة المكونة على لوحة القيادة الشخصية للمتعلمين. يتأكد هذا من قدرة المتعلمين على قراءة الكتب على رفهم وأخذ الدورات بدون اتصال - أي
     بدون اتصال بخادم مركزي. يتم تشجيع المتعلمين على تقييم الموارد والدورات التي يستخدمونها من خلال نظام تصنيف من واحد إلى خمس نجوم.
     يمكن للمتعلمين بشكل دوري مزامنة بياناتهم مع الخادم. يتم تحميل بيانات الأنشطة وتحميل الموارد الجديدة في غضون دقائق قليلة إلى ماي بلانت للاستخدام دون اتصال.</p>
+
     <p>تحتوي لوحة القيادة أيضًا على سجل إنجازات وتقويم أحداث ونظام محادثة داخلي للتواصل مع أعضاء الفريق.</p>
+
     <p>ثبت أن ماي بلانت فعالة للغاية في تحسين فرص التعلم لأكثر من خمسين ألف متعلم في أكثر من 100 موقع،
     في المدارس في جميع أنحاء نيبال وغانا وكينيا ورواندا، مع اللاجئين السوريين في الأردن، واللاجئين الصوماليين في كينيا، وعمال الصحة في القرى في أوغندا.</p>
     ]]>
     </string>
+
     <string name="is_on_please_turn_of_to_save_battery">تم تشغيله، يرجى إيقافه لتوفير البطارية</string>
     <string name="go_to_settings">الذهاب إلى الإعدادات</string>
     <string name="new_version_of_my_planet_available">إصدار جديد من my planet متاح</string>
@@ -942,6 +959,7 @@
     <string name="kindly_give_a_rating">يرجى التقييم</string>
     <string name="must_start_with_letter_or_number">يجب أن تبدأ بحرف أو رقم</string>
     <string name="only_letters_numbers_and_are_allowed">فقط الأحرف من a إلى z والأرقام و "_" و "." و "-" مسموح بها</string>
+    <string name="config_not_available">التكوين غير متوفر.</string>
     <string name="unselect_all">إلغاء تحديد الكل</string>
     <string name="select_all">تحديد الكل</string>
     <string name="request_failed_please_retry">الطلب فشل، يرجى إعادة المحاولة</string>
@@ -955,8 +973,6 @@
     <string name="progress_bar">شريط التقدم</string>
     <string name="web_view">عرض الويب</string>
     <string name="invalid_configuration">تكوينات الخادم غير صالحة</string>
-    <string name="date_reset">إعادة ضبط التاريخ</string>
-    <string name="no_course_matched_filter">لا توجد دورات تطابق الفلتر</string>
     <string name="welcome_to_myPlanet">مرحبًا بكم في myPlanet</string>
     <string name="learn_offline">تعلم بدون اتصال</string>
     <string name="open_learning">فتح التعلم</string>
@@ -986,23 +1002,23 @@
     <string name="visibility_of">تبديل ظهور %1$s</string>
     <string name="actions_menu">قائمة الإجراءات</string>
     <string name="icon">أيقونة %1$s</string>
-    <string name="select_res_course">اختر %1$s</string>
-    <string name="perplexity">perplexity</string>
-    <string name="openai">openai</string>
-    <string name="gemini">gemini</string>
-    <string name="kindly_enter_message">الرجاء إدخال الرسالة</string>
-    <string name="virtual_assistant_currently_not_available">المساعد الافتراضي غير متاح حاليا</string>
-    <string name="no_courses">"لا توجد دورات متاحة"</string>
-    <string name="no_resources">لا توجد موارد متاحة</string>
-    <string name="no_finance_record">لا يوجد سجل مالي متاح</string>
-    <string name="no_stories">لا توجد قصص متاحة</string>
-    <string name="no_team_courses">لا توجد دورات فريق متاحة</string>
-    <string name="no_team_resources">لا توجد موارد فريق متاحة</string>
-    <string name="no_tasks">لا توجد مهام متاحة</string>
-    <string name="no_join_request_available">لا يوجد طلب انضمام متاح</string>
-    <string name="no_news">لا توجد أخبار متاحة</string>
-    <string name="no_surveys">لا توجد استطلاعات متاحة</string>
-    <string name="edit_image">تعديل الصورة الشخصية</string>
+    <string name="select_res_course">حدد %1$s</string>
+    <string name="perplexity">التعقيد</string>
+    <string name="openai">أوبين أي</string>
+    <string name="gemini">جيميني</string>
+    <string name="kindly_enter_message">يرجى إدخال رسالة</string>
+    <string name="virtual_assistant_currently_not_available">المساعد الافتراضي غير متاح حالياً</string>
+    <string name="no_courses">لا تتوفر دورات</string>
+    <string name="no_resources">لا تتوفر موارد</string>
+    <string name="no_finance_record">لا يتوفر سجل مالي</string>
+    <string name="no_stories">لا تتوفر قصص</string>
+    <string name="no_team_courses">لا تتوفر دورات الفريق</string>
+    <string name="no_team_resources">لا تتوفر موارد الفريق</string>
+    <string name="no_tasks">لا تتوفر مهام</string>
+    <string name="no_join_request_available">لا تتوفر طلبات الانضمام</string>
+    <string name="no_news">لا تتوفر أخبار</string>
+    <string name="no_surveys">لا تتوفر استطلاعات</string>
+    <string name="edit_image">تحرير صورة الملف الشخصي</string>
     <string name="compulsory_first_name">الاسم الأول مطلوب</string>
     <string name="compulsory_last_name">اسم العائلة مطلوب</string>
     <string name="compulsory_email">البريد الإلكتروني مطلوب</string>

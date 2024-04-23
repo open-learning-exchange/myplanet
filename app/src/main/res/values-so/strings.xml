@@ -2,9 +2,9 @@
 <resources>
     <string name="app_name">My Planet</string>
     <string name="app_project_name">myPlanet</string>
-    <string name="action_settings">Settings</string>
+    <string name="action_settings">goobooyinka</string>
     <string name="hint_name">Magaca isticmaalaha</string>
-    <string name="hint_password">Password</string>
+    <string name="hint_password">Furaha</string>
     <string name="btn_back">Dib</string>
     <string name="btn_sign_in">Soo gal</string>
     <string name="btn_sync">Isku xidh </string>
@@ -14,14 +14,14 @@
     <string name="err_msg_password">Geli erayga sirta ah</string>
     <string name="err_msg_login">Magaca isticmaalaha iyo/ama erayga sirta ah isma dhigmaan</string>
     <string name="hint_serverURl">planet ip</string>
-    <string name="hint_serverPin">pin server</string>
-    <string name="radio_protocol">Protocol:</string>
+    <string name="hint_serverPin">pin-ka adeegsiga</string>
+    <string name="radio_protocol">Protokolka:</string>
     <string name="radio_http">http</string>
     <string name="radio_https">https</string>
-    <string name="title_activity_dashboard">dashboard</string>
+    <string name="title_activity_dashboard">Bogga Goobta</string>
     <string name="menu_myplanet">myPlanet</string>
     <string name="menu_home">Guriga</string>
-    <string name="menu_library">Library</string>
+    <string name="menu_library">maktabada</string>
     <string name="menu_courses">Koorsooyin</string>
     <string name="menu_meetups">Kulamo</string>
     <string name="menu_surveys">Sahaminta</string>
@@ -96,7 +96,7 @@
     <string name="remove_selected">saar la xushay</string>
     <string name="stop_download">jooji soo dejinta</string>
     <string name="downloading_file">soo dejinta faylka…</string>
-    <string name= "cancel">burin</string>
+    <string name="cancel">burin</string>
     <string name="add_to_mycourses">Ku dar Koorasyadayda</string>
     <string name="added_to">ku daray</string>
     <string name="removed_from">laga saaray</string>
@@ -104,9 +104,9 @@
     <string name="filter_collections">Uruurinta shaandhaynta</string>
     <string name="select_many_collections">Dooro Ururo Badan</string>
     <string name="collections">Ururinta</string>
-    <string name="ok">OK</string>
+    <string name="ok">Sax</string>
     <string name="inactive_message">Isticmalahu ma hawlgelin, fadlan la xidhiidh maamulaha ama maareeyaha si aad u hawlgeliso akoonkaaga.</string>
-    <string name= "archive_mycourse">Kaydi myCourse</string>
+    <string name="archive_mycourse">Kaydi myCourse</string>
     <string name="menu_achievement">Guulaha</string>
     <string name="edit_achievement">wax ka beddel guul </string>
     <string name="add_resources">Kudar Khayraadka</string>
@@ -177,6 +177,7 @@
     <string name="showing_reply_of">muujinaya jawaabta:</string>
     <string name="open_date">Taariikhda Furan</string>
     <string name="my_survey">Galmadaayda</string>
+
     <string-array name="level">
         <item></item>
         <item>Bilow</item>
@@ -212,15 +213,17 @@
         <item>Maqal</item>
         <item>Dhamaan</item>
     </string-array>
+
     <string-array name="open_With">
         <item>HTML</item>
         <item>PDF.js</item>
-        <item>BeLL-Reader</item>
+        <item>Lecturerka BeLL</item>
         <item>Mp3</item>
-        <item>Flow Video Player</item>
-        <item>BeLL Video Book Player</item>
-        <item>Native Video</item>
+        <item>Manshaarta Flow ee Fiidiyowga</item>
+        <item>Lecturerka Buuga Fiidiyowga BeLL</item>
+        <item>Fiidiyowga Nayeefka</item>
     </string-array>
+
     <string-array name="media">
         <item>Qoraal</item>
         <item>Sawir/Diirada</item>
@@ -246,6 +249,7 @@
         <item>Graduate</item>
         <item>Xirfadle</item>
     </string-array>
+
     <string-array name="array_subjects">
         <item>Beeraha</item>
         <item>Fanka</item>
@@ -260,11 +264,13 @@
         <item>Sharci</item>
         <item>Barashada</item>
     </string-array>
+
     <string-array name="array_resource_for">
         <item>Default</item>
         <item>Ra\'iis</item>
         <item>Arday</item>
     </string-array>
+
     <string name="dictionaries">Qaamuusyada</string>
     <string name="bible">Quraan</string>
     <string name="feature_not">Heerkaan lama helin</string>
@@ -326,6 +332,7 @@
     <string name="weekly">Toddobaad</string>
     <string name="recurring_frequency">Inta soo bixiyay oo socota</string>
     <string name="filter_by_date">Filtiirka Tariikhda</string>
+    <string name="date_reset">Dib-u-eegis Taariikhda</string>
     <string name="emergency_contact">Xiriirka Gargaarka</string>
     <string name="contact">Xiriir</string>
     <string name="special_needs">Dib-u-xuso</string>
@@ -341,15 +348,15 @@
     <string name="hearing">Gurinaan</string>
     <string name="vitals">Calaamaddaha</string>
     <string name="condition_and_treatment">Caddaaladda iyo Dib u dhiska</string>
-    <string name="observation" translatable="false">La xiriira iyo falanqeynta</string>
-    <string name="diagnosis" translatable="false">Baaris</string>
-    <string name="treatments" translatable="false">Dib u dhiska</string>
-    <string name="medications" translatable="false">Daaweynaha</string>
-    <string name="immunization" translatable="false">Taariikhda xoojinta</string>
-    <string name="allergies" translatable="false">Alargada</string>
-    <string name="xray" translatable="false">X-ray</string>
-    <string name="labtest" translatable="false">Baarista labada</string>
-    <string name="referrals" translatable="false">Dabaqyo</string>
+    <string name="observation">La xiriira iyo falanqeynta</string>
+    <string name="diagnosis">Baaris</string>
+    <string name="treatments">Dib u dhiska</string>
+    <string name="medications">Daaweynaha</string>
+    <string name="immunization">Taariikhda xoojinta</string>
+    <string name="allergies">Alargada</string>
+    <string name="xray">X-ray</string>
+    <string name="labtest">Baarista labada</string>
+    <string name="referrals">Dabaqyo</string>
     <string name="full_name">Magaca Buugaagta oo Dhan</string>
     <string name="weight">Cirka (kg)</string>
     <string name="no_records">Wax ma jirin</string>
@@ -459,6 +466,7 @@
         <item>Tuberculosis</item>
         <item>Waji</item>
     </string-array>
+
     <string name="title_activity_news_detail">XogtaFareeysaActivity</string>
     <string name="add_story">Ku Dar Hees</string>
     <string name="txt_myprogress">Halistaaga</string>
@@ -580,7 +588,7 @@
     <string name="completed">La Dhameystiray</string>
     <string name="add_profile_picture">Ku Dar Sawirka Profaylka</string>
     <string name="two_dash">--</string>
-    <string name="n_a">Maa jiro</string>
+    <string name="n_a">N/A</string>
     <string name="request_to_join">Codso Inaad Ku Dhaqmeyso</string>
     <string name="filter_labels">Gaaji Lambarka</string>
     <string name="message">farriin</string>
@@ -595,6 +603,7 @@
     <string name="select_resource_to_open">"Xulasho ka doona xogta si aad u furato: "</string>
     <string name="shared_to_community">Lagu wadaa bulshada</string>
     <string name="no_data_available_please_check_and_try_again">Ma jiro wax macluumaad, fadlan mari karo oo isku day.</string>
+    <string name="no_course_matched_filter">Ma jiro kursiga laga cabsi qabo</string>
     <string name="added_to_my_library">Ku daray maktabaddayda</string>
     <string name="added_to_my_courses">Ku daray kursiyada kayga</string>
     <string name="do_you_want_to_stay_online">Ma rabtid inaad joogto internetka?</string>
@@ -836,14 +845,17 @@
     <string name="unable_to_clear_files">Lama xarigo faylasha</string>
     <string name="last_synced_never">waligeyn la isku midayn</string>
     <string name="last_synced_colon">"Kor u kac: "</string>
+
     <string name="disclaimer">
     <![CDATA[
     <h1>Fikir ku saabsan</h1>
     <p>Kusoo dhowoow: Janaayo 10, 2020</p>
     <h1>Fara-xijo iyo Macluumaad</h1>
     <h2>Fara-xijo</h2>
+
     <p>Ereyada oo asal ahaan loo casumay (yaala) waxay leeyihiin macluumaadka la soo jeediyay halkan hoose.</p>
     <p>Astaamahaynta soo jeediyay ee ku saabsan waxaa ka kooban fara-xijo ay ku yaallaan mar hore iyo mar kale.</p>
+
     <h2>Macluumaadka</h2>
     <p>Astaamaha soo jeediyay waxaa loo yaqaan astaamaha mar walba oo ay ka mid yihiin:</p>
     <ul>
@@ -852,26 +864,35 @@
         <li><strong>Kalmadaha</strong> waxay ku yeelan kartaa barnaamijyada fureta Shirkadda oo ku dhow keenay adiga inaad shirkaddeeda haanad adkaysanayso.</li>
         <li><strong>Adeegga</strong> wuxuu leeyahay barnaamijka.</li>
     </ul>
+
     <h1>Fikir ku saabsan</h1>
     <p>Warbixintan oo laga helay adeegga waxaa ay tahay warbixino guud oo shaqaalaha kale kala duwan. </p>
     <p>Shirkadda wuxuu xilka ha ku taagan farsamo ama xaggii ay ku jirtay xogta adeegga.</p>
     <p>Xiligaas, shirkaddu wuxuu u oggolaanayaa inuu sameeyo kabadan, murugsan, aan saxnayn, ama kabadan ku dhacdo xogta adeegga iyadoona sidaas darteed haddii shirkaddu la socdo.</p>
     <p>Shirkaddu wuxuu kuwaas oggolaanayaa in adeegga aan lahayn fayruso ama xubno kale oo ka dhammaato.</p>
+
     <h1>Fikirka Xogaha Caafimaadka</h1>
     <p>Warbixinta ku saabsan caafimaadka ee loo bixiyo adeegga waxaa lagu tusaa inay la mid yihiin inuu saxo, xanaanado, nafta iyo jiritaankaba ha ka wareego cudurro. Tiro badeed, adeegga, macluumaad iyo kontent kale oo loo bixiyo adeegga, oo ka mid ah warbixinta la qalinka ah ee hawada lagu xidhiidho ayaa loo bixiyaa iyada oo kaliya iyada oo uu ogolaanshaha Shirkadda.</p>
     <p>Warbixinta ee la bixinayaa adeegga ma mid maamuleysa iyo ma maamuleyso dhamaan cudurro, maraakiibta, xaaladaha jidhka ah, ama tallaabooyinkooda.</p>
     <p>Shakhsiyaad waxaa leh wax kasta oo kordhinta ah oo ay ku jiraan inay si keliya u reejin kala fogaadaan xubnaha ka hortagga adeegga iyo aragti la xidhiidha. Faallooyin oo lagu qoray adeegga oo laga helay xubnaha, shaqaalaha kale ama shaqaalaha kale oo kale waxaa ay ku jiri karaan mas\'uuliyaddooda shaqsiyaddooda, iyo shaqaalaha wuxuu ka mid yahay dhibaatada loo xasuusto xubnaha oo u baahana sababta aan qorin.</p>
+
     <p>Shirkaddu waa inuu fogaadaan macluumaadka ay bixiso adeegga si toos ah. Shirkaddu waa inuu dhammaan mashaariicda ama adeegyada ay isku beegsado ku tilmaami karo.</p>
+
     <h1>Fikirka la xidhiidha Liinka Waajahan</h1>
     <p>Adeegga waxaa ku leeyahay liinka waajahan oo aan laga bixin ama laga sugayo Shirkadda.</p>
     <p>Fadlan ogeysi in Shirkaddu aan oggolaanayn dhammaan cinwaanka, caawinta, wakhtiyo, ama buuxinta awoodaha liinka waajahan la qoray.</p>
+
     <h1>Fikirka Cilmi Baariseedka iyo Daboolid</h1>
     <p>Warbixinta laga bixinayaa adeegga waxaa lagu taageeray cilmi baariseed oo kuwaas oo qayb ka ah cilmi baariseedka Caalamiga ah.</p>
+
     <p>Shirkaddu waa inuu u oggolaan doono xiligaan cilmi baariseed ee cilmi baarisada caalamiga ah oo lagu heli karo qodob 107 ee xeerka Caalamiga ee soo jiitaanka.</p>
+
     <p>Haddii aad rabto inaad adeegga ka isticmaasho cilmi baariseed caalamiga ah ama qiimeynta kaladuwan, waad heli kartaan idinkoo hortaaganin oggolaanshaha milkiilaha xuquuqda cilmi baarisada.</p>
     <h1>Fikirka Fikradaha Qaybta</h1>
+
     <p>Adeegga waxaa ku leeyahay fikradda iyo fikraddaha oo ahaan jira oo ah kuwa qoraaga oo ku leh Shirkadda ama kuwa kale u aragnaan ama kuwa kale ee shaqaalaha ama shirkadda, kuwaasoo ka kooban Shirkadda.</p>
     <p>Caqliga u dirayey shaqaalayaasha ayaa waa mas\'uuliyaddooda kaliya iyo ka maamulayaa shaqaalayaasha shirkadda ee ay ku soo baxaan fikradan. Shirkaddu ma lahan shaqsiyaad meesha loogu talagalay qoraalka kasta oo ay ku jiraan shirkadda iyo wuxuu awoodi doonaa inuu tirtiro fikradda kasta oo sababta ah.</p>
+
     <h1>Fikirka Maamulka</h1>
     <p>Warbixinta ku saabsan adeegga waxaa loo bixiyaa fahansashada in Shirkaddu ma ku dhaqmeyn cilmi baarisada, xisaabaadka, sii wadda caawinaada, ama adeegga kale oo wax ka beddel, sahlan karo.</p>
     <p>Marxalad walba ma wuxuu Shirkadda ama sareecadda ku haya in laqaado oo ku saabsan qaababka adeegga ama u isticmaala adeegga.</p>
@@ -886,6 +907,7 @@
     </ul>
     ]]>
     </string>
+
     <string name="about">
     <![CDATA[
     <h3>myPlanet</h3>
@@ -901,6 +923,7 @@
     <p>myPlanet waxay la dul saaray in ay hirgeliso waxbarasho oo fudud oo ku saabsan in ay ka fogaadaan waxbarashada labaatan iyo kun in degmooyinka ka badan, dugsiyada ayaa la dul saaray dhammaan wadashada Nepal, Ghana, Kenya, iyo Rwanda, dhaqan celinta Syria ee Yordani, dhaqan celinta Soomaaliya ee Kenya, iyo shaqaalaha caafimaadka degmooyinka Uganda.</p>
     ]]>
     </string>
+
     <string name="is_on_please_turn_of_to_save_battery">waa la xiriiriyay fadlan na soo bandhig si aad u kala wareegto shidaalka</string>
     <string name="go_to_settings">Tag fariimaha</string>
     <string name="new_version_of_my_planet_available">Vershanka cusub ee my planet ayaa la heli karaa</string>
@@ -936,6 +959,7 @@
     <string name="kindly_give_a_rating">si naxariis leh u bixi rating</string>
     <string name="must_start_with_letter_or_number">Waa in la bilaabo lambarka ama tirada</string>
     <string name="only_letters_numbers_and_are_allowed">Waa kaliya luuqadaha a-z, lambarka, "_", ".", iyo "-" ayaa la oggolaaday</string>
+    <string name="config_not_available">Configuración no disponible.</string>
     <string name="unselect_all">Dhammaad Maareey</string>
     <string name="select_all">Dhammaad Dhammaadee</string>
     <string name="request_failed_please_retry">Codka lama yimaado, fadlan dib ugu ciyaar</string>
@@ -949,8 +973,6 @@
     <string name="progress_bar">balka soo socda</string>
     <string name="web_view">barashada webka</string>
     <string name="invalid_configuration">Dhamaan Suurtagal ah oo Serveryaasha ah</string>
-    <string name="date_reset">Dib u habeynta taariikhda</string>
-    <string name="no_course_matched_filter">Ma jiro koorsooyin u dhigma filtarrada</string>
     <string name="welcome_to_myPlanet">Soo dhawow myPlanet</string>
     <string name="learn_offline">Baro horumarinta</string>
     <string name="open_learning">Waxbarasho Fur</string>

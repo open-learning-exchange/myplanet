@@ -13,7 +13,7 @@
     <string name="err_msg_name">तपाईंको प्रयोगकर्तानाम लेख्नुहोस्</string>
     <string name="err_msg_password">पासवर्ड लेख्नुहोस्</string>
     <string name="err_msg_login">प्रयोगकर्तानाम र/वा पासवर्ड मेल खान्छैन</string>
-    <string name="hint_serverURl">प्लानेट आइपी</string>
+    <string name="hint_serverURl">planet ip</string>
     <string name="hint_serverPin">सर्भर पिन</string>
     <string name="radio_protocol">प्रोटोकल:</string>
     <string name="radio_http">http</string>
@@ -177,6 +177,7 @@
     <string name="showing_reply_of">उत्तर देखाउँदै:</string>
     <string name="open_date">खोल्ने मिति</string>
     <string name="my_survey">मेरो सर्वेक्षण</string>
+
     <string-array name="level">
         <item></item>
         <item>प्रारम्भिक</item>
@@ -212,15 +213,17 @@
         <item>इन्टर्नशिपहरू</item>
         <item>पुरस्कारहरू</item>
     </string-array>
+
     <string-array name="open_With">
         <item>HTML</item>
         <item>PDF.js</item>
         <item>BeLL-Reader</item>
         <item>Mp3</item>
         <item>फ्लो भिडियो प्लेयर</item>
-        <item>BeLL भिडियो बुक प्लेयर</item>
+        <item>बेल भिडियो बुक प्लेयर</item>
         <item>नेटिभ भिडियो</item>
     </string-array>
+
     <string-array name="media">
         <item>पाठ</item>
         <item>ग्राफिक/तस्वीरहरू</item>
@@ -246,6 +249,7 @@
         <item>स्नातक</item>
         <item>पेशेवर</item>
     </string-array>
+
     <string-array name="array_subjects">
         <item>कृषि</item>
         <item>कला</item>
@@ -260,11 +264,13 @@
         <item>कानून</item>
         <item>शिक्षा</item>
     </string-array>
+
     <string-array name="array_resource_for">
         <item>पूर्वनिर्धारित</item>
         <item>नेतृत्व गर्ने व्यक्ति</item>
         <item>शिक्षार्थी</item>
     </string-array>
+
     <string name="dictionaries">शब्दकोशहरू</string>
     <string name="bible">बाइबलहरू</string>
     <string name="feature_not">सुविधा उपलब्ध छैन</string>
@@ -326,6 +332,7 @@
     <string name="weekly">साप्ताहिक</string>
     <string name="recurring_frequency">आवर्तीता आवद्धता</string>
     <string name="filter_by_date">मिति फिल्टर</string>
+    <string name="date_reset">मिति रिसेट गर्नुहोस्</string>
     <string name="emergency_contact">आपतकालिन सम्पर्क</string>
     <string name="contact">सम्पर्क</string>
     <string name="special_needs">विशेष आवश्यकता</string>
@@ -341,15 +348,15 @@
     <string name="hearing">श्रवण</string>
     <string name="vitals">महत्वपूर्ण चिन्हहरू</string>
     <string name="condition_and_treatment">अवस्था र उपचार</string>
-    <string name="observation" translatable="false">अवलोकन र नोटहरू</string>
-    <string name="diagnosis" translatable="false">निदान</string>
-    <string name="treatments" translatable="false">उपचारहरू</string>
-    <string name="medications" translatable="false">औषधि</string>
-    <string name="immunization" translatable="false">टिका लिने मितिहरू</string>
-    <string name="allergies" translatable="false">एलर्जीहरू</string>
-    <string name="xray" translatable="false">एक्सरे</string>
-    <string name="labtest" translatable="false">प्रयोगशालामा परीक्षण</string>
-    <string name="referrals" translatable="false">रेफरल</string>
+    <string name="observation">अवलोकन र नोटहरू</string>
+    <string name="diagnosis">निदान</string>
+    <string name="treatments">उपचारहरू</string>
+    <string name="medications">औषधि</string>
+    <string name="immunization">टिका लिने मितिहरू</string>
+    <string name="allergies">एलर्जीहरू</string>
+    <string name="xray">एक्सरे</string>
+    <string name="labtest">प्रयोगशालामा परीक्षण</string>
+    <string name="referrals">रेफरल</string>
     <string name="full_name">पुरा नाम</string>
     <string name="weight">वजन (केजी)</string>
     <string name="no_records">कुनै रेकर्ड भेटिएन</string>
@@ -459,6 +466,7 @@
         <item>तपेदिक</item>
         <item>घायली</item>
     </string-array>
+
     <string name="title_activity_news_detail">समाचार विवरण गतिविधि</string>
     <string name="add_story">गप्तप्रतिनिधि थप्नुहोस्</string>
     <string name="txt_myprogress">मेरो प्रगति</string>
@@ -595,6 +603,7 @@
     <string name="select_resource_to_open">"खोल्नका लागि स्रोत छनौट गर्नुहोस्: "</string>
     <string name="shared_to_community">समुदायसँग साझा गरियो</string>
     <string name="no_data_available_please_check_and_try_again">कुनै डाटा उपलब्ध छैन, कृपया जाँच गर्नुहोस् र पुन: प्रयास गर्नुहोस्।</string>
+    <string name="no_course_matched_filter">कुनै पाठ्यक्रम मिलेन</string>
     <string name="added_to_my_library">मेरो पुस्तकालयमा थपियो</string>
     <string name="added_to_my_courses">मेरो पाठ्यक्रममा थपियो</string>
     <string name="do_you_want_to_stay_online">के तपाइँ अनलाइन बस्न चाहनुहुन्छ?</string>
@@ -769,17 +778,17 @@
     <string name="planet_server_not_reachable">प्लानेट सर्भर सम्पर्क गर्न सकिएन।</string>
     <string name="select_language">भाषा चयन गर्नुहोस्</string>
     <string name="thank_you">धन्यवाद!</string>
-    <string name="please_wait">कृपया प्रतीक्षा गर्नुहोस्....</string>
+    <string name="please_wait">कृपया प्रतीक्षा गर्नुहोस्…</string>
     <string name="update_later">पछील्लो अद्यावधिक गर्नुहोस्</string>
-    <string name="checking_version">संस्करण जाँच गर्दै....</string>
+    <string name="checking_version">संस्करण जाँच गर्दै…</string>
     <string name="please_enter_your_password">कृपया आफ्नो पासवर्ड लेख्नुहोस्</string>
-    <string name="downloading">"डाउनलोड गर्दै.... "</string>
+    <string name="downloading">"डाउनलोड गर्दै… "</string>
     <string name="pin_is_required">पिन आवश्यक छ।</string>
     <string name="invalid_url">अमान्य URL</string>
     <string name="please_enter_valid_url_to_continue">कृपया जारी राख्नका लागि वैध URL लेख्नुहोस्।</string>
-    <string name="uploading_data_to_server_please_wait">सर्भरमा डाटा अपलोड गर्दै, कृपया प्रतीक्षा गर्नुहोस्.....</string>
+    <string name="uploading_data_to_server_please_wait">सर्भरमा डाटा अपलोड गर्दै, कृपया प्रतीक्षा गर्नुहोस्…</string>
     <string name="uploading_activities_to_server_please_wait">सर्भरमा गतिविधिहरू अपलोड गर्दै, कृपया प्रतीक्षा गर्नुहोस्…</string>
-    <string name="connecting_to_server">सर्भरसँग कनेक्ट गर्दै....</string>
+    <string name="connecting_to_server">सर्भरसँग कनेक्ट गर्दै…</string>
     <string name="check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server">कृपया पुन: सर्भर ठेगाना जाँच गर्नुहोस्। म जुन सर्भरसँग कनेक्ट गरें भनेर थिएन त्यो प्लानेट सर्भर थिएन</string>
     <string name="device_couldn_t_reach_server_check_and_try_again">डिभाइसले सर्भरसँग सम्पर्क गर्न सकिएन। जाँच गर्नुहोस् र पुन: प्रयास गर्नुहोस्</string>
     <string name="server_not_configured_properly_connect_this_device_with_planet_server">सर्भर सही ढंगले कन्फिगर गरिएको छैन। यो डिभाइसलाई प्लानेट सर्भरसँग कनेक्ट गर्नुहोस्</string>
@@ -836,6 +845,7 @@
     <string name="unable_to_clear_files">फाइलहरू हटाउन सकिएन</string>
     <string name="last_synced_never">कहिले पनि समक्रमित भएन</string>
     <string name="last_synced_colon">"पिछ्लो सिंक: "</string>
+
     <string name="disclaimer">
     <![CDATA[
     <h1>अस्वीकरण</h1>
@@ -890,6 +900,7 @@
     </ul>
     ]]>
     </string>
+
     <string name="about">
     <![CDATA[
     <h3>मेरो सन्दर्भ</h3>
@@ -912,6 +923,7 @@
     जो जोर्डनमा सिरियन शरणार्थीहरू, केन्यामा सोमाली शरणार्थीहरू, र उगाण्डामा गाउँ स्वास्थ्य कार्यकर्ताहरूसँग छ।</p>
     ]]>
     </string>
+
     <string name="is_on_please_turn_of_to_save_battery">"चालू छ, कृपया बैटरी बचाउनका लागि बन्द गर्नुहोस्"</string>
     <string name="go_to_settings">सेटिङ्गमा जानुहोस्</string>
     <string name="new_version_of_my_planet_available">माई प्लानेटको नयाँ संस्करण उपलब्ध छ</string>
@@ -947,6 +959,7 @@
     <string name="kindly_give_a_rating">कृपया मूल्याङ्कन दिनुहोस्</string>
     <string name="must_start_with_letter_or_number">पात्र वा नम्बरसँग सुरु गर्नु पर्दछ</string>
     <string name="only_letters_numbers_and_are_allowed">केवल अक्षरहरू a- z, नम्बर र "_" , "." , "-" पार्स्याद छ</string>
+    <string name="config_not_available">कन्फिगरेसन उपलब्ध छैन।</string>
     <string name="unselect_all">सबै चयन गर्दिन</string>
     <string name="select_all">सबै चयन गर्नुहोस्</string>
     <string name="request_failed_please_retry">अनुरोध असफल भयो, कृपया पुन: प्रयास गर्नुहोस्</string>
@@ -960,8 +973,6 @@
     <string name="progress_bar">प्रगति पट्टि</string>
     <string name="web_view">वेब दृश्य</string>
     <string name="invalid_configuration">अमान्य सर्भर विन्यास</string>
-    <string name="date_reset">मिति रिसेट</string>
-    <string name="no_course_matched_filter">कुनै पनि पाठ्यक्रम मेल खाँदैन</string>
     <string name="welcome_to_myPlanet">मेरो प्ल्यानेटमा स्वागत छ</string>
     <string name="learn_offline">अफलाइनमा सिक्नुहोस्</string>
     <string name="open_learning">खुला सिकाइ</string>

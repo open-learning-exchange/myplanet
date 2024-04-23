@@ -13,7 +13,7 @@
     <string name="err_msg_name">Ingresa tu nombre de usuario</string>
     <string name="err_msg_password">Ingresa la contraseña</string>
     <string name="err_msg_login">El nombre de usuario y/o la contraseña no coinciden</string>
-    <string name="hint_serverURl">ip del planeta</string>
+    <string name="hint_serverURl">planet ip</string>
     <string name="hint_serverPin">pin del servidor</string>
     <string name="radio_protocol">Protocolo:</string>
     <string name="radio_http">http</string>
@@ -40,8 +40,8 @@
     <string name="download_all">Descargar todo</string>
     <string name="hello_blank_fragment">Hola fragmento en blanco</string>
     <string name="add_to_mycourse">Agregar a misCursos</string>
-    <string name="join_selected">Join Selected</string>
-    <string name="join">Join</string>
+    <string name="join_selected">Unirse a los seleccionados</string>
+    <string name="join">Unirse</string>
     <string name="add_to_mylib">Agregar a miBiblioteca</string>
     <string name="step">paso</string>
     <string name="submission">misEnvíos</string>
@@ -80,7 +80,7 @@
     <string name="subject">Asunto/s:</string>
     <string name="license">Licencia:</string>
     <string name="type">Tipo:</string>
-    <string name="resource_colon">Resource:</string>
+    <string name="resource_colon">Recurso:</string>
     <string name="your_rating">Tu calificación</string>
     <string name="your_comment">Deja tu comentario</string>
     <string name="show_top_nav">Mostrar la barra de navegación superior en el panel de control</string>
@@ -95,7 +95,7 @@
     <string name="user">Usuario</string>
     <string name="remove_selected">Eliminar seleccionados</string>
     <string name="stop_download">Detener descarga</string>
-    <string name="downloading_file">Descargando archivo...</string>
+    <string name="downloading_file">Descargando archivo…</string>
     <string name="cancel">Cancelar</string>
     <string name="add_to_mycourses">Agregar a MisCursos</string>
     <string name="added_to">agregado a</string>
@@ -177,6 +177,7 @@
     <string name="showing_reply_of">mostrando la respuesta de:</string>
     <string name="open_date">Fecha de apertura</string>
     <string name="my_survey">miEncuesta</string>
+
     <string-array name="level">
         <item></item>
         <item>Principiante</item>
@@ -209,62 +210,67 @@
         <item>Historial laboral</item>
         <item>Insignias</item>
         <item>Certificados</item>
-        <item>Pasantías</item>
+        <item>Prácticas</item>
         <item>Premios</item>
     </string-array>
+
     <string-array name="open_With">
         <item>HTML</item>
         <item>PDF.js</item>
-        <item>BeLL-Reader</item>
+        <item>Lector BeLL</item>
         <item>Mp3</item>
-        <item>Flow Video Player</item>
-        <item>BeLL Video Book Player</item>
-        <item>Native Video</item>
+        <item>Reproductor de video Flow</item>
+        <item>Lector de libros de video BeLL</item>
+        <item>Video nativo</item>
     </string-array>
+
     <string-array name="media">
-        <item>Text</item>
-        <item>Graphic/Pictures</item>
-        <item>Audio/Music/Book</item>
+        <item>Texto</item>
+        <item>Gráfico/Imágenes</item>
+        <item>Audio/Música/Libro</item>
         <item>Video</item>
     </string-array>
 
     <string-array name="resource_type">
-        <item>Textbook</item>
-        <item>Lesson Plan</item>
-        <item>Activities</item>
-        <item>Exercises</item>
-        <item>Discussion Questions</item>
+        <item>Libro de texto</item>
+        <item>Plan de lecciones</item>
+        <item>Actividades</item>
+        <item>Ejercicios</item>
+        <item>Preguntas de discusión</item>
     </string-array>
 
     <string-array name="array_levels">
-        <item>Early Education</item>
-        <item>Lower Primary</item>
-        <item>Upper Primary</item>
-        <item>Lower Secondary</item>
-        <item>Upper Secondary</item>
-        <item>Undergraduate</item>
-        <item>Graduate</item>
-        <item>Professional</item>
+        <item>Educación temprana</item>
+        <item>Primaria inferior</item>
+        <item>Primaria superior</item>
+        <item>Secundaria inferior</item>
+        <item>Secundaria superior</item>
+        <item>Pregrado</item>
+        <item>Posgrado</item>
+        <item>Profesional</item>
     </string-array>
+
     <string-array name="array_subjects">
-        <item>Agriculture</item>
-        <item>Arts</item>
-        <item>Business and Finance</item>
-        <item>Environment</item>
-        <item>Food and Nutrition</item>
-        <item>Geography</item>
-        <item>Health and Medicine</item>
-        <item>History</item>
-        <item>Human Development</item>
-        <item>Languages</item>
-        <item>Law</item>
-        <item>Learning</item>
+        <item>Agricultura</item>
+        <item>Artes</item>
+        <item>Negocios y Finanzas</item>
+        <item>Medio ambiente</item>
+        <item>Alimentación y Nutrición</item>
+        <item>Geografía</item>
+        <item>Salud y Medicina</item>
+        <item>Historia</item>
+        <item>Desarrollo humano</item>
+        <item>Idiomas</item>
+        <item>Derecho</item>
+        <item>Aprendizaje</item>
     </string-array>
+
     <string-array name="array_resource_for">
-        <item>Default</item>
-        <item>Leader</item>
-        <item>Learner</item>
+        <item>Predeterminado</item>
+        <item>Líder</item>
+        <item>Estudiante</item>
     </string-array>
+
     <string name="dictionaries">Diccionarios</string>
     <string name="bible">Biblias</string>
     <string name="feature_not">Función no disponible</string>
@@ -326,6 +332,7 @@
     <string name="weekly">Semanal</string>
     <string name="recurring_frequency">Frecuencia recurrente</string>
     <string name="filter_by_date">Filtro fecha </string>
+    <string name="date_reset">Restablecer Fecha</string>
     <string name="emergency_contact">Contacto de emergencia</string>
     <string name="contact">Contacto</string>
     <string name="special_needs">Necesidades especiales</string>
@@ -368,17 +375,17 @@
     <string name="tasks">Tareas</string>
     <string name="join_requests">Solicitudes de unión</string>
     <string name="add_image">Agregar imagen</string>
-    <string name="addImageToMessage">Agregar imagen al mensaje (Beta)</string>
+    <string name="addImageToMessage">Beta Agregar imagen al mensaje</string>
     <string name="clear_data">Borrar datos</string>
     <string name="reset_app">Restablecer aplicación</string>
     <string name="freeup_space">Liberar espacio en disco</string>
     <string name="action_disclaimer">Descargo de responsabilidad</string>
     <string name="action_about">Acerca de</string>
-    <string name="engilsh_dictionary">Diccionario de inglés</string>
+    <string name="engilsh_dictionary">Diccionario inglés</string>
 
     <string-array name="team_type">
         <item>Equipo local</item>
-        <item>Conéctese con la nación</item>
+        <item>Conectar con la nación</item>
     </string-array>
 
     <string-array name="contact_type">
@@ -406,13 +413,13 @@
         <item>Ordenar por fecha - Asc</item>
         <item>Ordenar por fecha - Desc</item>
         <item>Ordenar por nombre - Asc</item>
-        <item>Ordenar por nombre - Descripción</item>
+        <item>Ordenar por nombre - Desc</item>
     </string-array>
 
     <string-array name="grade_level">
-        <item>Todo</item>
-        <item>Preescolar</item>
-        <item>Jardín de infancia</item>
+        <item>Todos</item>
+        <item>Pre-Jardín de infancia</item>
+        <item>Jardín de infantes</item>
         <item>1</item>
         <item>2</item>
         <item>3</item>
@@ -426,11 +433,11 @@
         <item>11</item>
         <item>12</item>
         <item>Universidad</item>
-        <item>Postgrado</item>
+        <item>Post-Graduate</item>
     </string-array>
 
     <string-array name="subject_level">
-        <item>Todo</item>
+        <item>Todos</item>
         <item>Principiante</item>
         <item>Intermedio</item>
         <item>Avanzado</item>
@@ -440,25 +447,26 @@
     <string-array name="diagnosis_list">
         <item>Cáncer</item>
         <item>Trastornos cardiovasculares</item>
-        <item>Cirrosis del hígado</item>
+        <item>Cirrosis hepática</item>
         <item>COVID-19</item>
         <item>Diabetes</item>
         <item>Enfermedades diarreicas</item>
-        <item>Ébola</item>
+        <item>Ebola</item>
         <item>Epilepsia</item>
-        <item>MGF</item>
+        <item>FGM</item>
         <item>Gripe</item>
-        <item>Enfermedad isquémica por calor</item>
+        <item>Enfermedad cardíaca isquémica</item>
         <item>Malaria</item>
         <item>Desnutrición</item>
         <item>Meningitis</item>
-        <item>Sepsis e infecciones neonatales</item>
+        <item>Sepsis neonatal e infecciones</item>
         <item>VIH/SIDA</item>
         <item>Neumonía</item>
-        <item>Trazo</item>
+        <item>Accidente cerebrovascular</item>
         <item>Tuberculosis</item>
         <item>Trauma</item>
     </string-array>
+
     <string name="title_activity_news_detail">Actividad de detalle de noticias</string>
     <string name="add_story">Agregar historia</string>
     <string name="txt_myprogress">miProgreso</string>
@@ -486,7 +494,7 @@
     <string name="submit">Enviar</string>
     <string name="our_courses">Nuestros Cursos</string>
     <string name="file">"Archivo: "</string>
-    <string name="recording_audio">Grabando audio......</string>
+    <string name="recording_audio">Grabando audio…</string>
     <string name="show_replies">"Mostrar respuestas "</string>
     <string name="selected">"Seleccionado: "</string>
     <string name="last_sync"><![CDATA["Última sincronización con el servidor: "]]></string>
@@ -595,6 +603,7 @@
     <string name="select_resource_to_open">"Selecciona el recurso para abrir: "</string>
     <string name="shared_to_community">Compartido con la comunidad.</string>
     <string name="no_data_available_please_check_and_try_again">No hay datos disponibles, por favor verifica e intenta nuevamente.</string>
+    <string name="no_course_matched_filter">No hay cursos que coincidan con el filtro</string>
     <string name="added_to_my_library">Añadido a mi biblioteca.</string>
     <string name="added_to_my_courses">Añadido a mis cursos.</string>
     <string name="do_you_want_to_stay_online">¿Deseas permanecer en línea?</string>
@@ -836,6 +845,7 @@
     <string name="unable_to_clear_files">No se pueden eliminar los archivos</string>
     <string name="last_synced_never">nunca sincronizado</string>
     <string name="last_synced_colon">"Última sincronización: "</string>
+
     <string name="disclaimer">
     <![CDATA[
     <h1>Renuncia de responsabilidad</h1>
@@ -890,6 +900,7 @@
     </ul>
     ]]>
     </string>
+
     <string name="about">
     <![CDATA[
     <h3>MyPlanet</h3>
@@ -912,6 +923,7 @@
     en escuelas de Nepal, Ghana, Kenya y Rwanda, con refugiados Syrian en Jordan, refugiados Somali en Kenya y trabajadores de salud en aldeas de Uganda.</p>
     ]]>
     </string>
+
     <string name="is_on_please_turn_of_to_save_battery">" está encendido, por favor apágalo para ahorrar batería"</string>
     <string name="go_to_settings">Ir a configuración</string>
     <string name="new_version_of_my_planet_available">Nueva versión de myPlanet disponible</string>
@@ -947,6 +959,7 @@
     <string name="kindly_give_a_rating">Por favor, dé una calificación</string>
     <string name="must_start_with_letter_or_number">Debe comenzar con una letra o número</string>
     <string name="only_letters_numbers_and_are_allowed">Solo se permiten letras de la a a la z, números y "_", ".", y "-"</string>
+    <string name="config_not_available">Configuración no disponible.</string>
     <string name="unselect_all">Deseleccionar todo</string>
     <string name="select_all">Seleccionar todo</string>
     <string name="request_failed_please_retry">La solicitud ha fallado, por favor inténtelo de nuevo</string>
@@ -960,8 +973,6 @@
     <string name="progress_bar">barra de progreso</string>
     <string name="web_view">vista web</string>
     <string name="invalid_configuration">Configuraciones de servidor no válidas</string>
-    <string name="date_reset">Restablecer fecha</string>
-    <string name="no_course_matched_filter">Ningún curso coincide con el filtro</string>
     <string name="welcome_to_myPlanet">Bienvenido a myPlanet</string>
     <string name="learn_offline">Aprende sin conexión</string>
     <string name="open_learning">Aprendizaje abierto</string>
