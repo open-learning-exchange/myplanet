@@ -9,7 +9,6 @@ import io.realm.Realm
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.populateUsersTable
-import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.JsonUtils
@@ -71,6 +70,7 @@ class ManagerSync private constructor(context: Context) {
         apiInterface?.findDocs(Utilities.header, "application/json", Utilities.getUrl() + "/_users/_find", `object`)?.enqueue(object : Callback<JsonObject?> {
             override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
                 if (response.body() != null) {
+                    settings.edit().putString("communityLeaders", "${response.body()}").apply()
                     val array = JsonUtils.getJsonArray("docs", response.body())
                     if (array.size() > 0) {
                         settings.edit().putString("user_admin", Gson().toJson(array[0])).apply()
