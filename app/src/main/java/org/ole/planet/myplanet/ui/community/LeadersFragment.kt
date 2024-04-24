@@ -9,14 +9,14 @@ import org.json.*
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentMembersBinding
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.utilities.Constants
+import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 
 class LeadersFragment : Fragment() {
     private lateinit var fragmentMembersBinding: FragmentMembersBinding
     lateinit var settings: SharedPreferences
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentMembersBinding = FragmentMembersBinding.inflate(inflater, container, false)
-        settings = requireActivity().getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+        settings = requireActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         return fragmentMembersBinding.root
     }
 
