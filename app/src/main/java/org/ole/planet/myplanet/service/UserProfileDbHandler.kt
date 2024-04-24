@@ -9,7 +9,6 @@ import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmOfflineActivity.Companion.getRecentLogin
 import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Date
@@ -22,11 +21,18 @@ class UserProfileDbHandler(context: Context) {
     private val fullName: String
 
     init {
-        realmService = DatabaseService(context)
-        settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        fullName = Utilities.getUserName(settings)
-        mRealm = realmService.realmInstance
+        try {
+            val validContext = context.applicationContext ?: throw IllegalArgumentException("Invalid context provided")
+            realmService = DatabaseService(validContext)
+            settings = validContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            fullName = Utilities.getUserName(settings)
+            mRealm = realmService.realmInstance
+        } catch (e: IllegalArgumentException) {
+            Utilities.log("Error initializing UserProfileDbHandler: ${e.message}")
+            throw e
+        }
     }
+
 
     val userModel: RealmUserModel?
         get() = mRealm.where(RealmUserModel::class.java)
