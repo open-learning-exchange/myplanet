@@ -15,15 +15,32 @@
             android:id="@+id/calendarView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cv_dayViewResource="@layout/calendar_day"
-            app:cv_hasBoundaries="true"
-            app:cv_monthHeaderResource="@layout/calendar_month"
-            app:cv_orientation="horizontal"
-            app:cv_scrollMode="continuous" />
+            app:abbreviationsBarColor="@color/bg_white"
+            app:abbreviationsLabelsColor="@color/disable_color"
+            app:anotherMonthsDaysLabelsColor="@color/disable_color"
+            app:daysLabelsColor="@color/md_black_1000"
+            app:eventsEnabled="false"
+            app:headerColor="@color/colorPrimary"
+            app:pagesColor="@color/md_white_1000"
+            app:selectionColor="@color/colorAccent"
+            app:selectionLabelColor="@color/md_white_1000"
+            app:todayLabelColor="@color/colorPrimary"
+            app:type="many_days_picker" />
 
+        <TextView
+            android:id="@+id/meetup"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/_10dp"
+            android:layout_marginTop="@dimen/_10dp"
+            android:visibility="gone"
+            android:layout_marginBottom="4dp"
+            android:text="@string/txt_myMeetups"
+            android:textColor="@color/md_black_1000"
+            android:textStyle="bold" />
 
         <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rv_calendar"
+            android:id="@+id/rvMeetups"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 

@@ -68,7 +68,7 @@ open class RealmMeetup : RealmObject() {
             myMeetupsDB?.endTime = JsonUtils.getString("endTime", meetupDoc)
             myMeetupsDB?.category = JsonUtils.getString("category", meetupDoc)
             myMeetupsDB?.meetupLocation = JsonUtils.getString("meetupLocation", meetupDoc)
-            myMeetupsDB?.creator = JsonUtils.getString("creator", meetupDoc)
+            myMeetupsDB?.creator = JsonUtils.getString("createdBy", meetupDoc)
             myMeetupsDB?.day = JsonUtils.getJsonArray("day", meetupDoc).toString()
             myMeetupsDB?.links = JsonUtils.getJsonObject("link", meetupDoc).toString()
             myMeetupsDB?.teamId = JsonUtils.getString("teams", JsonUtils.getJsonObject("link", meetupDoc))

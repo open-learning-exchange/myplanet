@@ -6,6 +6,7 @@ import android.view.*
 import android.widget.*
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.applandeo.materialcalendarview.CalendarDay
 import com.applandeo.materialcalendarview.CalendarView
 import com.applandeo.materialcalendarview.listeners.OnCalendarDayClickListener
@@ -13,6 +14,7 @@ import com.google.gson.*
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.*
 import org.ole.planet.myplanet.model.RealmMeetup
+import org.ole.planet.myplanet.ui.mymeetup.AdapterMeetup
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.*
 import java.util.*
@@ -20,8 +22,9 @@ import java.util.*
 @RequiresApi(Build.VERSION_CODES.O)
 class EnterpriseCalendarFragment : BaseTeamFragment() {
     private lateinit var fragmentEnterpriseCalendarBinding: FragmentEnterpriseCalendarBinding
+    private val selectedDates: MutableList<Calendar> = mutableListOf()
     private lateinit var calendar: CalendarView
-    private lateinit var list: MutableList<CalendarDay>
+    private lateinit var list: List<Calendar>
     private lateinit var start: Calendar
     private lateinit var end: Calendar
     private lateinit var calendarEventsMap: MutableMap<CalendarDay, RealmMeetup>
@@ -30,23 +33,8 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
         fragmentEnterpriseCalendarBinding = FragmentEnterpriseCalendarBinding.inflate(inflater, container, false)
         start = Calendar.getInstance()
         end = Calendar.getInstance()
-        showHideFab()
         fragmentEnterpriseCalendarBinding.addEvent.setOnClickListener { showMeetupAlert() }
         return fragmentEnterpriseCalendarBinding.root
-    }
-
-    private fun showHideFab() {
-        if (requireArguments().getBoolean("fromLogin", false)) {
-            fragmentEnterpriseCalendarBinding.addEvent.visibility = View.GONE
-        } else if (user != null) {
-            if (user?.isManager() == true || user?.isLeader() == true) {
-                fragmentEnterpriseCalendarBinding.addEvent.visibility = View.VISIBLE
-            } else {
-                fragmentEnterpriseCalendarBinding.addEvent.visibility = View.GONE
-            }
-        } else {
-            fragmentEnterpriseCalendarBinding.addEvent.visibility = View.GONE
-        }
     }
 
     private fun showMeetupAlert() {
@@ -121,33 +109,68 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
         list = mutableListOf()
         calendar = fragmentEnterpriseCalendarBinding.calendarView
         calendarEventsMap = mutableMapOf()
-        calendar.setOnCalendarDayClickListener(object : OnCalendarDayClickListener {
+        fragmentEnterpriseCalendarBinding.calendarView.setOnCalendarDayClickListener(object : OnCalendarDayClickListener {
             override fun onClick(calendarDay: CalendarDay) {
-                if (arguments?.getBoolean("fromLogin", false) != true && arguments?.getBoolean("fromCommunity", false) == true ) {
-                    showMeetupAlert()
+                val clickedCalendar = calendarDay.calendar
+                val clickedDateInMillis = clickedCalendar.timeInMillis
+
+                val meetupList = mRealm.where(RealmMeetup::class.java).equalTo("teamId", teamId).findAll()
+                val isDateMarked = meetupList.any { meetup ->
+                    meetup.startDate == clickedDateInMillis
                 }
-//                val realmMeetup = calendarEventsMap[calendarDay]
-//                realmMeetup?.let {
-//                    DialogUtils.showAlert(context, it.title, it.description)
-//                }
+
+                if (isDateMarked) {
+                    showMeetupDetails(clickedDateInMillis)
+                    showHideFab()
+                } else {
+                    if (arguments?.getBoolean("fromLogin", false) != true && arguments?.getBoolean("fromCommunity", false) == true) {
+                        showMeetupAlert()
+                    }
+                }
+                if (!selectedDates.contains(clickedCalendar)) {
+                    selectedDates.add(clickedCalendar)
+                } else {
+                    selectedDates.remove(clickedCalendar)
+                }
             }
         })
 
         refreshCalendarView()
     }
 
+    private fun showMeetupDetails(dateInMillis: Long) {
+        fragmentEnterpriseCalendarBinding.meetup.visibility = View.VISIBLE
+
+        val meetupList = mRealm.where(RealmMeetup::class.java).equalTo("startDate", dateInMillis).findAll()
+        fragmentEnterpriseCalendarBinding.rvMeetups.layoutManager = LinearLayoutManager(requireContext())
+        fragmentEnterpriseCalendarBinding.rvMeetups.adapter = AdapterMeetup(meetupList)
+    }
+
     private fun refreshCalendarView() {
-        list.clear()
-        calendarEventsMap.clear()
         val meetupList = mRealm.where(RealmMeetup::class.java).equalTo("teamId", teamId).findAll()
-        meetupList.forEach { realmMeetup ->
-            val start = CalendarDay(Calendar.getInstance().apply { timeInMillis = realmMeetup.startDate })
-            val end = CalendarDay(Calendar.getInstance().apply { timeInMillis = realmMeetup.endDate })
-            list.add(start)
-            list.add(end)
-            calendarEventsMap[start] = realmMeetup
-            calendarEventsMap[end] = realmMeetup
+        val eventDates: MutableList<Calendar> = mutableListOf()
+        val calendarInstance = Calendar.getInstance()
+
+        for (meetup in meetupList) {
+            val startDateMillis = meetup.startDate
+            calendarInstance.timeInMillis = startDateMillis
+            eventDates.add(calendarInstance.clone() as Calendar)
         }
-        calendar.setCalendarDays(list)
+
+        fragmentEnterpriseCalendarBinding.calendarView.selectedDates = eventDates
+    }
+
+    private fun showHideFab() {
+        if (requireArguments().getBoolean("fromLogin", false)) {
+            fragmentEnterpriseCalendarBinding.addEvent.visibility = View.GONE
+        } else if (user != null) {
+            if (user?.isManager() == true || user?.isLeader() == true) {
+                fragmentEnterpriseCalendarBinding.addEvent.visibility = View.VISIBLE
+            } else {
+                fragmentEnterpriseCalendarBinding.addEvent.visibility = View.GONE
+            }
+        } else {
+            fragmentEnterpriseCalendarBinding.addEvent.visibility = View.GONE
+        }
     }
 }
