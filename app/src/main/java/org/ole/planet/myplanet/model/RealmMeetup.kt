@@ -1,16 +1,11 @@
 package org.ole.planet.myplanet.model
 
 import android.text.TextUtils
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
-import io.realm.Case
-import io.realm.Realm
-import io.realm.RealmObject
+import com.google.gson.*
+import io.realm.*
 import io.realm.annotations.PrimaryKey
 import org.json.JSONArray
-import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.TimeUtils
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.*
 
 open class RealmMeetup : RealmObject() {
     @PrimaryKey
@@ -49,6 +44,7 @@ open class RealmMeetup : RealmObject() {
     var teamId: String? = null
 
     companion object {
+        @JvmStatic
         fun insert(mRealm: Realm, meetupDoc: JsonObject) {
             insert("", meetupDoc, mRealm)
         }
@@ -74,12 +70,10 @@ open class RealmMeetup : RealmObject() {
             myMeetupsDB?.meetupLocation = JsonUtils.getString("meetupLocation", meetupDoc)
             myMeetupsDB?.creator = JsonUtils.getString("creator", meetupDoc)
             myMeetupsDB?.day = JsonUtils.getJsonArray("day", meetupDoc).toString()
-            myMeetupsDB?.links = JsonUtils.getJsonObject("links", meetupDoc).toString()
-            myMeetupsDB?.teamId = JsonUtils.getString("teams", JsonUtils.getJsonObject("links", meetupDoc))
+            myMeetupsDB?.links = JsonUtils.getJsonObject("link", meetupDoc).toString()
+            myMeetupsDB?.teamId = JsonUtils.getString("teams", JsonUtils.getJsonObject("link", meetupDoc))
         }
 
-        @JvmStatic
-        fun insertMyMeetups() {}
         @JvmStatic
         fun getMyMeetUpIds(realm: Realm?, userId: String?): JsonArray {
             val meetups = realm?.where(RealmMeetup::class.java)?.isNotEmpty("userId")

@@ -17,7 +17,7 @@ import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.ManagerSync
-import org.ole.planet.myplanet.model.RealmMeetup.Companion.insertMyMeetups
+import org.ole.planet.myplanet.model.RealmMeetup.Companion.insert
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.insertMyCourses
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.insertMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.removeDeletedResource
@@ -235,7 +235,7 @@ class SyncManager private constructor(private val context: Context) {
     private fun triggerInsert(stringArray: Array<String?>, resourceDoc: JsonObject) {
         when (stringArray[2]) {
             "resources" -> insertMyLibrary(stringArray[0], resourceDoc, mRealm)
-            "meetups" -> insertMyMeetups()
+            "meetups" -> insert(mRealm, resourceDoc)
             "courses" -> insertMyCourses(stringArray[0], resourceDoc, mRealm)
             "teams" -> insertMyTeams(resourceDoc, mRealm)
         }
