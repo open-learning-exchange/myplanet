@@ -1025,5 +1025,11 @@
     <string name="compulsory_phone_number">numéro de téléphone requis</string>
     <string name="compulsory_date_of_birth">date de naissance requise</string>
     <string name="gender_not_picked">genre non sélectionné</string>
+    <string name="title_colon">titre:</string>
+    <string name="date_from_colon">date de:</string>
+    <string name="date_to_colon">date à:</string>
+    <string name="location_colon">emplacement:</string>
+    <string name="recurring_colon">récurrent:</string>
+    <string name="created_by_colon">créé par:</string>
 
 </resources>

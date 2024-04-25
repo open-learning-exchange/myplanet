@@ -1025,5 +1025,11 @@
     <string name="compulsory_phone_number">फोन नम्बर आवश्यक छ</string>
     <string name="compulsory_date_of_birth">जन्म मिति आवश्यक छ</string>
     <string name="gender_not_picked">लिङ्ग छानिएको छैन</string>
+    <string name="title_colon">शीर्षक:</string>
+    <string name="date_from_colon">मिति बाट:</string>
+    <string name="date_to_colon">मिति सम्म:</string>
+    <string name="location_colon">स्थान:</string>
+    <string name="recurring_colon">आवर्तमान:</string>
+    <string name="created_by_colon">बनाएको:</string>
 
 </resources>

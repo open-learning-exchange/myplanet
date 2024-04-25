@@ -35,6 +35,7 @@ class CommunityPagerAdapter(fm: FragmentActivity, private val id: String, privat
         val b = Bundle()
         b.putString("id", id)
         b.putBoolean("fromLogin", fromLogin)
+        b.putBoolean("fromCommunity", true)
         fragment.arguments = b
         return fragment
     }
