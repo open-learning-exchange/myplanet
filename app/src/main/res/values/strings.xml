@@ -558,7 +558,7 @@
     <string name="language_colon">Language:</string>
     <string name="method">Method:</string>
     <string name="number_of_exams">Number of exams:</string>
-    <string name="description_colon">Description:</string>
+    <string name="description_colon">description:</string>
     <string name="download_resources">Download Resources</string>
     <string name="take_test">Take Test</string>
     <string name="search">search</string>
@@ -822,7 +822,7 @@
     <string name="team_created">Team Created</string>
     <string name="please_select_gender">Please select gender</string>
     <string name="please_enter_a_username">Please enter a username</string>
-    <string name="invalid_username">Invalid usernamfdatee</string>
+    <string name="invalid_username">Invalid username</string>
     <string name="please_enter_a_password">Please enter a password</string>
     <string name="password_doesn_t_match">Password doesn\'t match</string>
     <string name="invalid_email">Invalid email.</string>
@@ -1025,5 +1025,11 @@
     <string name="compulsory_phone_number">phone number is required</string>
     <string name="compulsory_date_of_birth">date of birth is required</string>
     <string name="gender_not_picked">gender not picked</string>
+    <string name="title_colon">title:</string>
+    <string name="date_from_colon">date from:</string>
+    <string name="date_to_colon">date to:</string>
+    <string name="location_colon">location:</string>
+    <string name="recurring_colon">recurring:</string>
+    <string name="created_by_colon">created by:</string>
 
 </resources>

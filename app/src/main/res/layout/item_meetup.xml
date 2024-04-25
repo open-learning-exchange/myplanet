@@ -27,7 +27,7 @@
                 android:id="@+id/title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="title:"
+                android:text="@string/title_colon"
                 android:textColor="@color/md_black_1000"
                 android:textStyle="bold" />
 
@@ -51,7 +51,7 @@
                 android:id="@+id/description"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="description:"
+                android:text="@string/description_colon"
                 android:textColor="@color/md_black_1000"
                 android:textStyle="bold" />
 
@@ -70,7 +70,8 @@
             android:padding="4dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/ltDescription">
+            app:layout_constraintTop_toBottomOf="@+id/ltDescription"
+            android:baselineAligned="false">
 
             <LinearLayout
                 android:id="@+id/ltDateFrom"
@@ -82,7 +83,7 @@
                     android:id="@+id/date"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="date from:"
+                    android:text="@string/date_from_colon"
                     android:textColor="@color/md_black_1000"
                     android:textStyle="bold" />
 
@@ -103,7 +104,7 @@
                     android:id="@+id/dateTo"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="date to:"
+                    android:text="@string/date_to_colon"
                     android:textColor="@color/md_black_1000"
                     android:textStyle="bold" />
 
@@ -129,7 +130,7 @@
                 android:id="@+id/location"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="location:"
+                android:text="@string/location_colon"
                 android:textColor="@color/md_black_1000"
                 android:textStyle="bold" />
 
@@ -153,7 +154,7 @@
                 android:id="@+id/recurring"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="recurring:"
+                android:text="@string/recurring_colon"
                 android:textColor="@color/md_black_1000"
                 android:textStyle="bold" />
 
@@ -177,12 +178,12 @@
                 android:id="@+id/creator"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="created by:"
+                android:text="@string/created_by_colon"
                 android:textColor="@color/md_black_1000"
                 android:textStyle="bold" />
 
             <TextView
-                android:id="@+id/tvcreator"
+                android:id="@+id/tvCreator"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textColor="@color/md_black_1000" />

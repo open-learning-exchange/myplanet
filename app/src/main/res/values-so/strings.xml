@@ -1025,5 +1025,11 @@
     <string name="compulsory_phone_number">numberka telefoonka loo baahan yahay</string>
     <string name="compulsory_date_of_birth">taariikhda dhalashada loo baahan yahay</string>
     <string name="gender_not_picked">nooca loo dooran maayo</string>
+    <string name="title_colon">saraakiisha:</string>
+    <string name="date_from_colon">taariikhda:</string>
+    <string name="date_to_colon">ilaa:</string>
+    <string name="location_colon">goobta:</string>
+    <string name="recurring_colon">ku dhaqan:</string>
+    <string name="created_by_colon">lagu sameeyay:</string>
 
 </resources>

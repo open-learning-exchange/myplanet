@@ -1025,5 +1025,11 @@
     <string name="compulsory_phone_number">رقم الهاتف مطلوب</string>
     <string name="compulsory_date_of_birth">تاريخ الميلاد مطلوب</string>
     <string name="gender_not_picked">لم يتم اختيار الجنس</string>
+    <string name="title_colon">العنوان:</string>
+    <string name="date_from_colon">التاريخ من:</string>
+    <string name="date_to_colon">التاريخ إلى:</string>
+    <string name="location_colon">الموقع:</string>
+    <string name="recurring_colon">متكرر:</string>
+    <string name="created_by_colon">تم إنشاؤه بواسطة:</string>
 
 </resources>
