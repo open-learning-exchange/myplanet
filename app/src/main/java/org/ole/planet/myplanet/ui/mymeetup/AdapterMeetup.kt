@@ -22,7 +22,7 @@ class AdapterMeetup(private val list: List<RealmMeetup>) : RecyclerView.Adapter<
         itemMeetupBinding.tvDateTo.text = formatDate(meetup.endDate)
         itemMeetupBinding.tvLocation.text = "${meetup.meetupLocation}"
         itemMeetupBinding.tvRecurring.text = "${meetup.recurring}"
-        itemMeetupBinding.tvcreator.text = "${meetup.creator}"
+        itemMeetupBinding.tvCreator.text = "${meetup.creator}"
     }
 
     override fun getItemCount(): Int {
