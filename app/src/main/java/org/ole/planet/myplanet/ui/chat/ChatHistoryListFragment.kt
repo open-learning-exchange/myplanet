@@ -7,15 +7,17 @@ import androidx.activity.OnBackPressedCallback
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.slidingpanelayout.widget.SlidingPaneLayout
-import io.realm.RealmList
+import io.realm.*
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentChatHistoryListBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.*
+import org.ole.planet.myplanet.service.UserProfileDbHandler
 
 class ChatHistoryListFragment : Fragment() {
     private lateinit var fragmentChatHistoryListBinding: FragmentChatHistoryListBinding
     private lateinit var sharedViewModel: ChatViewModel
+    var user: RealmUserModel? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         sharedViewModel = ViewModelProvider(requireActivity())[ChatViewModel::class.java]
@@ -23,6 +25,7 @@ class ChatHistoryListFragment : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentChatHistoryListBinding = FragmentChatHistoryListBinding.inflate(inflater, container, false)
+        user = UserProfileDbHandler(requireContext()).userModel
         return fragmentChatHistoryListBinding.root
     }
 
@@ -53,10 +56,16 @@ class ChatHistoryListFragment : Fragment() {
         val mRealm = DatabaseService(requireActivity()).realmInstance
         val chats = mRealm.where(RealmChatHistory::class.java).findAll()
 
-        val list = ArrayList<RealmChatHistory>()
+        val list = mRealm.where(RealmChatHistory::class.java).equalTo("user", user?.name)
+            .sort("id", Sort.DESCENDING)
+            .findAll()
+
+        val filteredHistoryList = ArrayList<RealmChatHistory>()
         for (chat in chats) {
-            val model = mRealm.where(RealmChatHistory::class.java).equalTo("id", chat.id).findFirst()
-            if (model != null && !list.contains(model)) list.add(model)
+            val model = list.find { it.id == chat.id }
+            if (model != null && !filteredHistoryList.contains(model)) {
+                filteredHistoryList.add(model)
+            }
         }
         val adapter = ChatHistoryListAdapter(requireContext(), list)
         adapter.setChatHistoryItemClickListener(object : ChatHistoryListAdapter.ChatHistoryItemClickListener {
