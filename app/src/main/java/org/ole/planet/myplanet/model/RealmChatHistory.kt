@@ -30,7 +30,7 @@ open class RealmChatHistory : RealmObject() {
             chatHistory._id = JsonUtils.getString("_id", act)
             chatHistory.title = JsonUtils.getString("title", act)
             chatHistory.updatedTime = JsonUtils.getString("updatedTime", act)
-            chatHistory.user = Gson().toJson(JsonUtils.getJsonObject("user", act))
+            chatHistory.user = JsonUtils.getString("user", act)
             chatHistory.conversations = parseConversations(mRealm, JsonUtils.getJsonArray("conversations", act))
         }
 
