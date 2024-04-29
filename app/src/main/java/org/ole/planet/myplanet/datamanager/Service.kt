@@ -1,6 +1,8 @@
 package org.ole.planet.myplanet.datamanager
 
+import android.app.AlertDialog
 import android.content.Context
+import android.content.DialogInterface
 import android.content.SharedPreferences
 import android.net.Uri
 import android.text.TextUtils
@@ -18,6 +20,7 @@ import org.ole.planet.myplanet.model.RealmCommunity
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.isUserExists
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.populateUsersTable
 import org.ole.planet.myplanet.service.UploadToShelfService
+import org.ole.planet.myplanet.ui.sync.ProcessUserDataActivity
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateIv
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateKey
 import org.ole.planet.myplanet.utilities.Constants.KEY_UPGRADE_MAX
@@ -324,16 +327,26 @@ class Service(private val context: Context) {
                         customProgressDialog.dismiss()
                     }
                 } else {
-                    Utilities.log("Failed to get id")
                     customProgressDialog.dismiss()
+                    showAlertDialog(context.getString(R.string.failed_to_get_configuration_id))
                 }
             }
 
             override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
                 t.message?.let { Utilities.log(it) }
                 customProgressDialog.dismiss()
+                showAlertDialog(context.getString(R.string.device_couldn_t_reach_server_check_and_try_again))
             }
         })
+    }
+
+    fun showAlertDialog(message: String?) {
+        val builder = AlertDialog.Builder(context)
+        builder.setMessage(message)
+        builder.setCancelable(true)
+        builder.setNegativeButton(R.string.okay) { dialog: DialogInterface, _: Int -> dialog.cancel() }
+        val alert = builder.create()
+        alert.show()
     }
 
     private fun getUrl(couchdbURL: String): String {

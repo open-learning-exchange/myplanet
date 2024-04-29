@@ -1031,5 +1031,6 @@
     <string name="location_colon">स्थान:</string>
     <string name="recurring_colon">आवर्तमान:</string>
     <string name="created_by_colon">बनाएको:</string>
+    <string name="failed_to_get_configuration_id">बनावट आईडी प्राप्त गर्न असफल भयो। कृपया व्यवस्थापकसँग सम्पर्क गर्नुहोस्।</string>
 
 </resources>

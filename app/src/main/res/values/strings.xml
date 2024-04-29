@@ -1031,5 +1031,6 @@
     <string name="location_colon">location:</string>
     <string name="recurring_colon">recurring:</string>
     <string name="created_by_colon">created by:</string>
+    <string name="failed_to_get_configuration_id">failed to get configuration id. kindly contact admin</string>
 
 </resources>
