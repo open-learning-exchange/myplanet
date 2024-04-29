@@ -1031,5 +1031,6 @@
     <string name="location_colon">الموقع:</string>
     <string name="recurring_colon">متكرر:</string>
     <string name="created_by_colon">تم إنشاؤه بواسطة:</string>
+    <string name="failed_to_get_configuration_id">فشل في الحصول على معرف التكوين. يرجى الاتصال بالمسؤول</string>
 
 </resources>

@@ -1031,5 +1031,6 @@
     <string name="location_colon">goobta:</string>
     <string name="recurring_colon">ku dhaqan:</string>
     <string name="created_by_colon">lagu sameeyay:</string>
+    <string name="failed_to_get_configuration_id">Ma jirin ID-ka qaababka. Fadlan la xiriir maamulaha</string>
 
 </resources>

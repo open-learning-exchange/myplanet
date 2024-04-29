@@ -1031,5 +1031,6 @@
     <string name="location_colon">ubicación:</string>
     <string name="recurring_colon">recurrente:</string>
     <string name="created_by_colon">creado por:</string>
+    <string name="failed_to_get_configuration_id">No se pudo obtener el ID de configuración. Por favor, contacte al administrador</string>
 
 </resources>
