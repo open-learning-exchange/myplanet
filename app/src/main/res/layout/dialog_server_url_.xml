@@ -127,17 +127,6 @@
             android:textSize="16sp" />
     </com.google.android.material.textfield.TextInputLayout>
 
-    <EditText
-        android:id="@+id/input_server_url_protocol"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:inputType="textUri"
-        android:singleLine="true"
-        android:text="@string/http_protocol"
-        android:textSize="16sp"
-        android:visibility="gone"
-        app:layout_constraintTop_toTopOf="@+id/input_layout_name" />
-
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/input_layout_password"
         android:layout_width="match_parent"
