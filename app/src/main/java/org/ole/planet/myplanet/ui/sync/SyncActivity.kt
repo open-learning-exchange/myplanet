@@ -167,7 +167,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             } else if (id == savedId) {
                 currentDialog?.let { continueSync(it) }
             } else {
-                showDifferentServerDialog()
+                clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server))
             }
         } else if (serverConfigAction == "save") {
             if (savedId == null || id == savedId) {
@@ -186,20 +186,20 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     }
                 }
             } else {
-                showDifferentServerDialog()
+                clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server))
             }
         }
     }
 
-    private fun showDifferentServerDialog() {
+    private fun clearDataDialog(message: String) {
         AlertDialog.Builder(this)
-            .setMessage("You want to connect to a different server. Clear app data to proceed")
-            .setPositiveButton("Clear Data") { _, _ ->
+            .setMessage(message)
+            .setPositiveButton(getString(R.string.clear_data)) { _, _ ->
                 clearRealmDb()
                 clearSharedPref()
                 restartApp()
             }
-            .setNegativeButton("Cancel", null)
+            .setNegativeButton(getString(R.string.cancel), null)
             .show()
     }
 
@@ -952,7 +952,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             if (!prefData.getMANUALCONFIG()) {
                 dialogServerUrlBinding.manualConfiguration.isChecked = false
                 showConfigurationUIElements(dialogServerUrlBinding, false)
-            } else {
+            }
+            else {
                 dialogServerUrlBinding.manualConfiguration.isChecked = true
                 showConfigurationUIElements(dialogServerUrlBinding, true)
             }
@@ -1010,6 +1011,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     R.id.radio_https -> settings.edit()
                         .putString("serverProtocol", getString(R.string.https_protocol)).apply()
                 }
+            }
+            dialogServerUrlBinding.clearData.setOnClickListener {
+                clearDataDialog(getString(R.string.are_you_sure_you_want_to_clear_data))
             }
             dialog.show()
             sync(dialog)
