@@ -44,11 +44,12 @@ open class RealmChatHistory : RealmObject() {
             return conversations
         }
 
-        @JvmStatic
         fun addConversationToChatHistory(mRealm: Realm, chatHistoryId: String?, query: String?, response: String?) {
             val chatHistory = mRealm.where(RealmChatHistory::class.java).equalTo("_id", chatHistoryId).findFirst()
             if (chatHistory != null) {
-                mRealm.beginTransaction()
+                if (!mRealm.isInTransaction) {
+                    mRealm.beginTransaction()
+                }
                 try {
                     val conversation = Conversation()
                     conversation.query = query
@@ -58,7 +59,6 @@ open class RealmChatHistory : RealmObject() {
                     }
                     chatHistory.conversations?.add(conversation)
                     mRealm.copyToRealmOrUpdate(chatHistory)
-                    mRealm.commitTransaction()
                 } catch (e: Exception) {
                     mRealm.cancelTransaction()
                     e.printStackTrace()
