@@ -312,8 +312,7 @@ class Service(private val context: Context) {
             couchdbURL = uri.scheme + "://" + url_user + ":" + url_pwd + "@" + uri.host + ":" + if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port
         }
 
-        val header= "Basic " + Base64.encodeToString(("$url_user:$url_pwd").toByteArray(), Base64.NO_WRAP)
-        retrofitInterface?.getConfiguration(header, getUrl(couchdbURL) + "/configurations/_all_docs?include_docs=true")?.enqueue(object : Callback<JsonObject?> {
+        retrofitInterface?.getConfiguration("${getUrl(couchdbURL)}/configurations/_all_docs?include_docs=true")?.enqueue(object : Callback<JsonObject?> {
             override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
                 if (response.isSuccessful) {
                     val jsonObject = response.body()
