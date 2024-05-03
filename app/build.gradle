@@ -9,15 +9,15 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdkVersion 21
         targetSdkVersion 34
-        versionCode 1507
-        versionName "0.15.7"
+        versionCode 1508
+        versionName "0.15.8"
         ndkVersion '21.3.6528147'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
         multiDexEnabled true
     }
     configurations.all {
-        resolutionStrategy.force 'com.google.android.material:material:1.11.0'
+        resolutionStrategy.force 'com.google.android.material:material:1.12.0'
     }
     buildTypes {
         release {
@@ -99,7 +99,7 @@ dependencies {
     implementation 'androidx.preference:preference-ktx:1.2.1'
 
     implementation 'com.google.code.gson:gson:2.10.1'
-    implementation 'com.google.android.material:material:1.11.0'
+    implementation 'com.google.android.material:material:1.12.0'
     implementation 'com.google.android:flexbox:1.0.0'
 
     implementation "com.github.VaibhavLakhera:Circular-Progress-View:0.1.2"
