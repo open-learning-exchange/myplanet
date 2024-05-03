@@ -96,7 +96,7 @@
     <string name="remove_selected">Remove Selected</string>
     <string name="stop_download">Stop Download</string>
     <string name="downloading_file">Downloading file…</string>
-    <string name="cancel">Cancel</string>
+    <string name="cancel">cancel</string>
     <string name="add_to_mycourses">Add To My Courses</string>
     <string name="added_to">added to</string>
     <string name="removed_from">removed from</string>
@@ -376,7 +376,7 @@
     <string name="join_requests">Join Requests</string>
     <string name="add_image">Add Image</string>
     <string name="addImageToMessage">Beta Add image to message</string>
-    <string name="clear_data">Clear Data</string>
+    <string name="clear_data">clear data</string>
     <string name="reset_app">Reset App</string>
     <string name="freeup_space">Free-up disk space</string>
     <string name="action_disclaimer">Disclaimer</string>
@@ -1032,5 +1032,7 @@
     <string name="recurring_colon">recurring:</string>
     <string name="created_by_colon">created by:</string>
     <string name="failed_to_get_configuration_id">failed to get configuration id. kindly contact admin</string>
+    <string name="you_want_to_connect_to_a_different_server">You want to connect to a different server. Clear app data to proceed</string>
+    <string name="are_you_sure_you_want_to_clear_data">are you sure you want to clear all data?</string>
 
 </resources>
