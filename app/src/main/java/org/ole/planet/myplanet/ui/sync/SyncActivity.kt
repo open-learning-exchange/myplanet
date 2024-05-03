@@ -113,7 +113,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     lateinit var inputName: EditText
     lateinit var inputPassword: EditText
     private lateinit var serverUrl: EditText
-    var serverUrlProtocol: EditText? = null
     private lateinit var serverPassword: EditText
     lateinit var inputLayoutName: TextInputLayout
     lateinit var inputLayoutPassword: TextInputLayout
@@ -167,14 +166,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             } else if (id == savedId) {
                 currentDialog?.let { continueSync(it) }
             } else {
-                showDifferentServerDialog()
+                clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server))
             }
         } else if (serverConfigAction == "save") {
             if (savedId == null || id == savedId) {
                 if (selectedTeamId == null) {
                     currentDialog?.let { saveConfigAndContinue(it) }
                 } else {
-                    val url = "${serverUrlProtocol?.text}${serverUrl.text}"
+                    val url = "${settings.getString("serverProtocol", "")}${serverUrl.text}"
                     if (isUrlValid(url)) {
                         prefData.setSELECTEDTEAMID(selectedTeamId)
                         if (this is LoginActivity) {
@@ -186,20 +185,20 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     }
                 }
             } else {
-                showDifferentServerDialog()
+                clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server))
             }
         }
     }
 
-    private fun showDifferentServerDialog() {
+    private fun clearDataDialog(message: String) {
         AlertDialog.Builder(this)
-            .setMessage("You want to connect to a different server. Clear app data to proceed")
-            .setPositiveButton("Clear Data") { _, _ ->
+            .setMessage(message)
+            .setPositiveButton(getString(R.string.clear_data)) { _, _ ->
                 clearRealmDb()
                 clearSharedPref()
                 restartApp()
             }
-            .setNegativeButton("Cancel", null)
+            .setNegativeButton(getString(R.string.cancel), null)
             .show()
     }
 
@@ -402,7 +401,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         dialog.dismiss()
         saveSyncInfoToPreference()
         var processedUrl = ""
-        val protocol = (dialog.customView?.findViewById<View>(R.id.input_server_url_protocol) as EditText).text.toString()
+        val protocol = settings.getString("serverProtocol", "")
         var url = (dialog.customView?.findViewById<View>(R.id.input_server_url) as EditText).text.toString()
         val pin = (dialog.customView?.findViewById<View>(R.id.input_server_Password) as EditText).text.toString()
         settings.edit().putString("customDeviceName", (dialog.customView?.findViewById<View>(R.id.deviceName) as EditText).text.toString()).apply()
@@ -706,9 +705,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     var hasDiacriticCharacters = false
                     val normalizedText = Normalizer.normalize(s, Normalizer.Form.NFD)
                     for (element in input) {
-                        if (element != '_' && element != '.' && element != '-' && !Character.isDigit(
-                                element
-                            ) && !Character.isLetter(element)) {
+                        if (element != '_' && element != '.' && element != '-' && !Character.isDigit(element) && !Character.isLetter(element)) {
                             hasInvalidCharacters = true
                             break
                         }
@@ -718,8 +715,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     val matcher = pattern.matcher(input)
                     hasSpecialCharacters = matcher.matches()
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                        hasDiacriticCharacters = !normalizedText.codePoints()
-                            .allMatch { codePoint: Int -> Character.isLetterOrDigit(codePoint) || codePoint == '.'.code || codePoint == '-'.code || codePoint == '_'.code }
+                        hasDiacriticCharacters = !normalizedText.codePoints().allMatch { codePoint: Int -> Character.isLetterOrDigit(codePoint) || codePoint == '.'.code || codePoint == '-'.code || codePoint == '_'.code }
                     }
                     if (!Character.isDigit(firstChar) && !Character.isLetter(firstChar)) {
                         alertGuestLoginBinding.etUserName.error = getString(R.string.must_start_with_letter_or_number)
@@ -908,7 +904,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             protocol_checkin = dialogServerUrlBinding.radioProtocol
             serverUrl = dialogServerUrlBinding.inputServerUrl
             serverPassword = dialogServerUrlBinding.inputServerPassword
-            serverUrlProtocol = dialogServerUrlBinding.inputServerUrlProtocol
             dialogServerUrlBinding.deviceName.setText(getDeviceName())
             val builder = MaterialDialog.Builder(this)
             builder.customView(dialogServerUrlBinding.root, true)
@@ -917,7 +912,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 .neutralText(R.string.btn_sync_save)
                 .onPositive { dialog: MaterialDialog, _: DialogAction? ->
                     serverConfigAction = "sync"
-                    val protocol = "${serverUrlProtocol?.text}"
+                    val protocol = "${settings.getString("serverProtocol", "")}"
                     var url = "${serverUrl.text}"
                     val pin = "${serverPassword.text}"
                     url = protocol + url
@@ -928,7 +923,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 }
                 .onNeutral { dialog: MaterialDialog, _: DialogAction? ->
                     serverConfigAction = "save"
-                    val protocol = "${serverUrlProtocol?.text}"
+                    val protocol = "${settings.getString("serverProtocol", "")}"
                     var url = "${serverUrl.text}"
                     val pin = "${serverPassword.text}"
                     url = protocol + url
@@ -936,23 +931,12 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                         currentDialog = dialog
                         service.getConfig(this, url, pin)
                     }
-//                    if (selectedTeamId == null) {
-//                        saveConfigAndContinue(dialog)
-//                    } else {
-//                        val url = "${serverUrlProtocol?.text}${serverUrl.text}"
-//                        if (isUrlValid(url)) {
-//                            prefData.setSELECTEDTEAMID(selectedTeamId)
-//                            (activity as LoginActivity).getTeamMembers()
-//                            saveConfigAndContinue(dialog)
-//                        } else {
-//                            saveConfigAndContinue(dialog)
-//                        }
-//                    }
                 }
             if (!prefData.getMANUALCONFIG()) {
                 dialogServerUrlBinding.manualConfiguration.isChecked = false
                 showConfigurationUIElements(dialogServerUrlBinding, false)
-            } else {
+            }
+            else {
                 dialogServerUrlBinding.manualConfiguration.isChecked = true
                 showConfigurationUIElements(dialogServerUrlBinding, true)
             }
@@ -966,9 +950,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     dialogServerUrlBinding.radioHttp.isChecked = true
                     settings.edit().putString("serverProtocol", getString(R.string.http_protocol)).apply()
                     showConfigurationUIElements(dialogServerUrlBinding, true)
-                    val communities: List<RealmCommunity> = mRealm.where(
-                        RealmCommunity::class.java
-                    ).sort("weight", Sort.ASCENDING).findAll()
+                    val communities: List<RealmCommunity> = mRealm.where(RealmCommunity::class.java).sort("weight", Sort.ASCENDING).findAll()
                     val nonEmptyCommunities: MutableList<RealmCommunity> = ArrayList()
                     for (community in communities) {
                         if (community.isValid && !TextUtils.isEmpty(community.name)) {
@@ -1010,6 +992,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     R.id.radio_https -> settings.edit()
                         .putString("serverProtocol", getString(R.string.https_protocol)).apply()
                 }
+            }
+            dialogServerUrlBinding.clearData.setOnClickListener {
+                clearDataDialog(getString(R.string.are_you_sure_you_want_to_clear_data))
             }
             dialog.show()
             sync(dialog)
@@ -1054,7 +1039,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             serverUrl.isEnabled = false
             serverPassword.isEnabled = false
             settings.edit().putString("serverProtocol", getString(R.string.https_protocol)).apply()
-            serverUrlProtocol?.setText(getString(R.string.https_protocol))
         }
         try {
             mRealm = Realm.getDefaultInstance()
@@ -1137,7 +1121,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     R.id.radio_https
                 }
             )
-            serverUrlProtocol?.setText(settings.getString("serverProtocol", ""))
         }
         serverUrl.isEnabled = !checked
         serverPassword.isEnabled = !checked
@@ -1147,13 +1130,11 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     private fun protocol_semantics() {
-        settings.edit().putString("serverProtocol", serverUrlProtocol?.text.toString()).apply()
         protocol_checkin.setOnCheckedChangeListener { _: RadioGroup?, i: Int ->
             when (i) {
-                R.id.radio_http -> serverUrlProtocol?.setText(getString(R.string.http_protocol))
-                R.id.radio_https -> serverUrlProtocol?.setText(getString(R.string.https_protocol))
+                R.id.radio_http -> settings.edit().putString("serverProtocol", getString(R.string.http_protocol)).apply()
+                R.id.radio_https -> settings.edit().putString("serverProtocol", getString(R.string.https_protocol)).apply()
             }
-            settings.edit().putString("serverProtocol", serverUrlProtocol?.text.toString()).apply()
         }
     }
 
@@ -1194,8 +1175,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
         settings.edit().putLong("lastUsageUploaded", Date().time).apply()
         if (::lblLastSyncDate.isInitialized) {
-            lblLastSyncDate.text =
-                "${getString(R.string.last_sync)}${getRelativeTime(Date().time)} >>"
+            lblLastSyncDate.text = "${getString(R.string.last_sync)}${getRelativeTime(Date().time)} >>"
         }
     }
 
@@ -1260,19 +1240,13 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     override fun onSelectedUser(userModel: RealmUserModel) {
         try {
             mRealm = Realm.getDefaultInstance()
-            val layoutChildLoginBinding = LayoutChildLoginBinding.inflate(
-                layoutInflater
-            )
+            val layoutChildLoginBinding = LayoutChildLoginBinding.inflate(layoutInflater)
             AlertDialog.Builder(this).setView(layoutChildLoginBinding.root)
                 .setTitle(R.string.please_enter_your_password)
                 .setPositiveButton(R.string.login) { _: DialogInterface?, _: Int ->
                     val password = layoutChildLoginBinding.etChildPassword.text.toString()
                     if (authenticateUser(settings, userModel.name, password, false)) {
-                        Toast.makeText(
-                            applicationContext,
-                            getString(R.string.thank_you),
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        Toast.makeText(applicationContext, getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
                         onLogin()
                     } else {
                         alertDialogOkay(getString(R.string.err_msg_login))
@@ -1313,13 +1287,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     inner class MyTextWatcher(var view: View?) : TextWatcher {
         override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
         override fun onTextChanged(s: CharSequence, i: Int, i1: Int, i2: Int) {
-            val protocol = serverUrlProtocol?.text?.toString()
-                ?: settings.getString(
-                    "serverProtocol",
-                    "http://"
-                )
             if (view?.id == R.id.input_server_url) {
-                positiveAction.isEnabled = "$s".trim { it <= ' ' }.isNotEmpty() && URLUtil.isValidUrl(protocol + "$s")
+                positiveAction.isEnabled = "$s".trim { it <= ' ' }.isNotEmpty() && URLUtil.isValidUrl("${settings.getString("serverProtocol", "")}$s")
             }
         }
 
