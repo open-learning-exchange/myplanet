@@ -86,6 +86,7 @@
             android:name=".ui.dashboard.DashboardActivity"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:label="@string/title_activity_dashboard"
+            android:windowSoftInputMode="adjustPan"
             android:theme="@style/FullscreenTheme" />
         <activity android:name=".ui.viewer.PDFReaderActivity" />
         <activity android:name=".ui.viewer.WebViewActivity" />
