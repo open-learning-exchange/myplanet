@@ -116,6 +116,7 @@ open class RealmAchievement : RealmObject() {
             return ob
         }
 
+        @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject?) {
             var achievement = mRealm.where(RealmAchievement::class.java)
                 .equalTo("_id", JsonUtils.getString("_id", act)).findFirst()
