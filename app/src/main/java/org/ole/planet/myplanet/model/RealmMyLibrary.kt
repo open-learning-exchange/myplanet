@@ -50,7 +50,7 @@ open class RealmMyLibrary : RealmObject() {
     @JvmField
     var uploadDate: String? = null
     @JvmField
-    var createdDate: String? = null
+    var createdDate: Long = 0
     @JvmField
     var openWith: String? = null
     @JvmField
@@ -399,7 +399,7 @@ open class RealmMyLibrary : RealmObject() {
             resource?.openWith = JsonUtils.getString("openWith", doc)
             resource?.articleDate = JsonUtils.getString("articleDate", doc)
             resource?.kind = JsonUtils.getString("kind", doc)
-            resource?.createdDate = JsonUtils.getLongAsString("createdDate", doc)
+            resource?.createdDate = JsonUtils.getLong("createdDate", doc)
             resource?.language = JsonUtils.getString("language", doc)
             resource?.author = JsonUtils.getString("author", doc)
             resource?.mediaType = JsonUtils.getString("mediaType", doc)
