@@ -83,7 +83,7 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
                     String.format("%.1f", libraryList[position]?.averageRating!!.toDouble())
                 }
             Log.d("AdapterLibrary", "onBindViewHolder: ${libraryList[position]?.createdDate}")
-            holder.rowLibraryBinding.tvDate.text = libraryList[position]?.createdDate?.toLong()?.let { formatDate(it, "MMM dd, yyyy") }
+            holder.rowLibraryBinding.tvDate.text = libraryList[position]?.createdDate?.let { formatDate(it, "MMM dd, yyyy") }
             displayTagCloud(holder.rowLibraryBinding.flexboxDrawable, position)
             holder.itemView.setOnClickListener { openLibrary(libraryList[position]) }
             holder.rowLibraryBinding.ivDownloaded.setImageResource(

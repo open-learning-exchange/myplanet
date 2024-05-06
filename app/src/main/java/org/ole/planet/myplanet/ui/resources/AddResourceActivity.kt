@@ -97,7 +97,7 @@ class AddResourceActivity : AppCompatActivity() {
         resource.subject = subjects
         resource.setUserId(RealmList())
         resource.level = levels
-        resource.createdDate = Calendar.getInstance().timeInMillis.toString()
+        resource.createdDate = Calendar.getInstance().timeInMillis
         resource.resourceFor = resourceFor
         resource.resourceLocalAddress = resourceUrl
         resource.resourceOffline = true
