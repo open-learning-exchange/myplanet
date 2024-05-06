@@ -39,7 +39,7 @@ open class RealmMyCourse : RealmObject() {
     @JvmField
     var subjectLevel: String? = null
     @JvmField
-    var createdDate: String? = null
+    var createdDate: Long = 0
     private var numberOfSteps: Int? = null
     fun setUserId(userId: String?) {
         if (this.userId == null) {
@@ -95,7 +95,7 @@ open class RealmMyCourse : RealmObject() {
             myMyCoursesDB?.method = JsonUtils.getString("method", myCousesDoc)
             myMyCoursesDB?.gradeLevel = JsonUtils.getString("gradeLevel", myCousesDoc)
             myMyCoursesDB?.subjectLevel = JsonUtils.getString("subjectLevel", myCousesDoc)
-            myMyCoursesDB?.createdDate = JsonUtils.getLongAsString("createdDate", myCousesDoc)
+            myMyCoursesDB?.createdDate = JsonUtils.getLong("createdDate", myCousesDoc)
             myMyCoursesDB?.setnumberOfSteps(JsonUtils.getJsonArray("steps", myCousesDoc).size())
             RealmCourseStep.insertCourseSteps(myMyCoursesDB?.courseId,
                 JsonUtils.getJsonArray("steps", myCousesDoc),

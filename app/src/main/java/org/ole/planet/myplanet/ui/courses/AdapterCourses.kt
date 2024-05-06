@@ -136,13 +136,13 @@ class AdapterCourses(private val context: Context, private var courseList: List<
                 holder.rowCourseBinding.courseProgress.max = course.getnumberOfSteps()
                 displayTagCloud(holder.rowCourseBinding.flexboxDrawable, position)
                 try {
-                    holder.rowCourseBinding.tvDate.text = formatDate(course.createdDate!!.trim { it <= ' ' }.toLong(), "MMM dd, yyyy")
+                    holder.rowCourseBinding.tvDate.text = formatDate(course.createdDate, "MMM dd, yyyy")
                 } catch (e: Exception) {
                     throw RuntimeException(e)
                 }
 
                 holder.rowCourseBinding.ratingBar.setOnTouchListener { _: View?, event: MotionEvent ->
-                    if (event.action == MotionEvent.ACTION_UP) homeItemClickListener!!.showRatingDialog("course", course.courseId, course.courseTitle, ratingChangeListener)
+                    if (event.action == MotionEvent.ACTION_UP) homeItemClickListener?.showRatingDialog("course", course.courseId, course.courseTitle, ratingChangeListener)
                     true
                 }
                 holder.rowCourseBinding.checkbox.setOnClickListener { view: View ->
