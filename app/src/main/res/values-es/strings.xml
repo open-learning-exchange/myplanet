@@ -1034,5 +1034,8 @@
     <string name="failed_to_get_configuration_id">No se pudo obtener el ID de configuración. Por favor, contacte al administrador</string>
     <string name="you_want_to_connect_to_a_different_server">¿Deseas conectarte a un servidor diferente? Borra los datos de la aplicación para continuar</string>
     <string name="are_you_sure_you_want_to_clear_data">¿Estás seguro de que deseas borrar todos los datos?</string>
+    <string name="feedback_list">lista de retroalimentación</string>
+    <string name="enterprise_list">lista de empresas</string>
+    <string name="list_of_teams">lista de equipos</string>
 
 </resources>

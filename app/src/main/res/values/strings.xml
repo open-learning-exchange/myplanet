@@ -1034,5 +1034,8 @@
     <string name="failed_to_get_configuration_id">failed to get configuration id. kindly contact admin</string>
     <string name="you_want_to_connect_to_a_different_server">You want to connect to a different server. Clear app data to proceed</string>
     <string name="are_you_sure_you_want_to_clear_data">are you sure you want to clear all data?</string>
+    <string name="feedback_list">list of feedback</string>
+    <string name="enterprise_list">list of enterprises</string>
+    <string name="list_of_teams">list of teams</string>
 
 </resources>
