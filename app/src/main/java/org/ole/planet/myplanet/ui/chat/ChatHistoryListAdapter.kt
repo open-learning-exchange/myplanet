@@ -47,9 +47,11 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
         val viewHolderChat = holder as ViewHolderChat
         if (filteredChatHistory[position].conversations != null && filteredChatHistory[position].conversations?.isNotEmpty() == true) {
             viewHolderChat.rowChatHistoryBinding.chatTitle.text = filteredChatHistory[position].conversations?.get(0)?.query
+            viewHolderChat.rowChatHistoryBinding.chatTitle.contentDescription = filteredChatHistory[position].conversations?.get(0)?.query
             chatTitle = filteredChatHistory[position].conversations?.get(0)?.query
         } else {
             viewHolderChat.rowChatHistoryBinding.chatTitle.text = filteredChatHistory[position].title
+            viewHolderChat.rowChatHistoryBinding.chatTitle.contentDescription = filteredChatHistory[position].title
             chatTitle = filteredChatHistory[position].title
         }
 

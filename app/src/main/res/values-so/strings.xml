@@ -1034,5 +1034,8 @@
     <string name="failed_to_get_configuration_id">Ma jirin ID-ka qaababka. Fadlan la xiriir maamulaha</string>
     <string name="you_want_to_connect_to_a_different_server">Ma rabtaa inaad iska baarisaan adeegga kale ee adeegyada? Tirtir xogta app-ka si aad ugu sii daawato</string>
     <string name="are_you_sure_you_want_to_clear_data">Ma hubtaa inaad diiwaangelisid dhammaan xogta?</string>
+    <string name="feedback_list">liiska raadinta</string>
+    <string name="enterprise_list">liiska ganacsiyada</string>
+    <string name="list_of_teams">liiska kooxaha</string>
 
 </resources>

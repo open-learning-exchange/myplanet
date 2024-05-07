@@ -193,32 +193,40 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
                 val query = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId")
                     .notEqualTo("status", "archived")
                     .contains("name", charSequence.toString(), Case.INSENSITIVE)
+                val (list, conditionApplied) = getList(query)
                 val adapterTeamList = AdapterTeamList(
-                    activity as Context, getList(query), mRealm, childFragmentManager
+                    activity as Context, list, mRealm, childFragmentManager
                 )
                 adapterTeamList.setTeamListener(this@TeamFragment)
                 fragmentTeamBinding.rvTeamList.adapter = adapterTeamList
+                listContentDescription(conditionApplied)
             }
 
             override fun afterTextChanged(editable: Editable) {}
         })
     }
 
-    private fun getList(query: RealmQuery<RealmMyTeam>): List<RealmMyTeam> {
+    private fun getList(query: RealmQuery<RealmMyTeam>): Pair<List<RealmMyTeam>, Boolean> {
         var queried = query
+        val conditionApplied: Boolean
         queried = if (TextUtils.isEmpty(type) || type == "team") {
+            conditionApplied = false
             queried.notEqualTo("type", "enterprise")
         } else {
+            conditionApplied = true
             queried.equalTo("type", "enterprise")
         }
-        return queried.findAll()
+
+        return Pair(queried.findAll(), conditionApplied)
     }
+
 
     private fun setTeamList() {
         val query = mRealm.where(RealmMyTeam::class.java)
             .isEmpty("teamId")
             .notEqualTo("status", "archived")
-        val adapterTeamList = activity?.let { AdapterTeamList(it, getList(query), mRealm, childFragmentManager) }
+        val (list, conditionApplied) = getList(query)
+        val adapterTeamList = activity?.let { AdapterTeamList(it, list, mRealm, childFragmentManager) }
         adapterTeamList?.setType(type)
         adapterTeamList?.setTeamListener(this@TeamFragment)
         requireView().findViewById<View>(R.id.type).visibility =
@@ -228,6 +236,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
                 View.GONE
             }
         fragmentTeamBinding.rvTeamList.adapter = adapterTeamList
+        listContentDescription(conditionApplied)
     }
 
     override fun onEditTeam(team: RealmMyTeam?) {
@@ -237,13 +246,22 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     private fun updatedTeamList() {
         activity?.runOnUiThread {
             val query = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId").notEqualTo("status", "archived")
-            val filteredList = getList(query)
+            val (filteredList, conditionApplied) = getList(query)
             val adapterTeamList = AdapterTeamList(activity as Context, filteredList, mRealm, childFragmentManager).apply {
                 setType(type)
                 setTeamListener(this@TeamFragment)
             }
 
             fragmentTeamBinding.rvTeamList.adapter = adapterTeamList
+            listContentDescription(conditionApplied)
+        }
+    }
+
+    private fun listContentDescription(conditionApplied: Boolean) {
+        if (conditionApplied) {
+            fragmentTeamBinding.rvTeamList.contentDescription = getString(R.string.enterprise_list)
+        } else {
+            fragmentTeamBinding.rvTeamList.contentDescription = getString(R.string.list_of_teams)
         }
     }
 }
