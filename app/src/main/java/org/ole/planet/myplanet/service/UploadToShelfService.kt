@@ -166,7 +166,7 @@ class UploadToShelfService(context: Context) {
                 try {
                     val res = apiInterface?.postDoc(Utilities.header, "application/json", Utilities.getUrl() + "/health", serialize(pojo))?.execute()
                     if (res?.body() != null && res.body()?.has("id") == true) {
-                        pojo.set_rev(res.body()!!["rev"].asString)
+                        pojo._rev = res.body()!!["rev"].asString
                         pojo.isUpdated = false
                     }
                 } catch (e: Exception) {

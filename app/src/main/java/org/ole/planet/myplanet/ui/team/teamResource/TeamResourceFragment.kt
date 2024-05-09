@@ -58,7 +58,7 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener {
                     team.teamId = teamId
                     team.title = libraries[se].title
                     team.status = user!!.parentCode
-                    team.resourceId = libraries[se].get_id()
+                    team.resourceId = libraries[se]._id
                     team.docType = "resourceLink"
                     team.updated = true
                     team.teamType = "local"

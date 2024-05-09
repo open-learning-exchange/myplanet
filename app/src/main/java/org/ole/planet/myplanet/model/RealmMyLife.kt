@@ -7,7 +7,8 @@ import io.realm.annotations.PrimaryKey
 
 open class RealmMyLife : RealmObject {
     @PrimaryKey
-    private var _id: String? = null
+    @JvmField
+    var _id: String? = null
     @JvmField
     var imageId: String? = null
     @JvmField
@@ -28,14 +29,6 @@ open class RealmMyLife : RealmObject {
 
     constructor()
 
-    fun get_id(): String? {
-        return _id
-    }
-
-    fun set_id(_id: String?) {
-        this._id = _id
-    }
-
     companion object {
         fun getMyLifeByUserId(mRealm: Realm, settings: SharedPreferences?): List<RealmMyLife> {
             val userId = settings?.getString("userId", "--")
@@ -50,7 +43,7 @@ open class RealmMyLife : RealmObject {
 
         fun createMyLife(myLife: RealmMyLife, mRealm: Realm, _id: String?) {
             if (!mRealm.isInTransaction) mRealm.beginTransaction()
-            myLife.set_id(_id)
+            myLife._id = _id
             mRealm.commitTransaction()
         }
 
@@ -60,13 +53,13 @@ open class RealmMyLife : RealmObject {
                 var currentWeight = -1
                 val myLifeList = getMyLifeByUserId(mRealm, userId)
                 for (item in myLifeList) {
-                    if (_id?.let { item.get_id()?.contains(it) } == true) {
+                    if (_id?.let { item._id?.contains(it) } == true) {
                         currentWeight = item.weight
                         item.weight = weight
                     }
                 }
                 for (item in myLifeList) {
-                    if (currentWeight != -1 && item.weight == weight && !_id?.let { item.get_id()?.contains(it) }!!) {
+                    if (currentWeight != -1 && item.weight == weight && !_id?.let { item._id?.contains(it) }!!) {
                         item.weight = currentWeight
                     }
                 }
@@ -78,7 +71,7 @@ open class RealmMyLife : RealmObject {
             realm.executeTransaction { mRealm ->
                 val myLifeList = getMyLifeByUserId(mRealm, userId)
                 for (item in myLifeList) {
-                    if (_id?.let { item.get_id()?.contains(it) } == true) {
+                    if (_id?.let { item._id?.contains(it) } == true) {
                         item.isVisible = isVisible
                     }
                 }

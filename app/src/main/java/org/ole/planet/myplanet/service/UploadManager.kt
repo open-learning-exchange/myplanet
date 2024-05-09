@@ -184,7 +184,7 @@ class UploadManager(context: Context) : FileUploadService() {
             val list: List<RealmAchievement> = realm.where(RealmAchievement::class.java).findAll()
             for (sub in list) {
                 try {
-                    if (sub.get_id()?.startsWith("guest") == true) {
+                    if (sub._id?.startsWith("guest") == true) {
                         continue
                     }
 //                    val ob = apiInterface?.putDoc(Utilities.header, "application/json", Utilities.getUrl() + "/achievements/" + sub.get_id(), serialize(sub))?.execute()?.body()
@@ -210,8 +210,8 @@ class UploadManager(context: Context) : FileUploadService() {
                     }
                     val `object` = apiInterface?.postDoc(Utilities.header, "application/json", Utilities.getUrl() + "/courses_progress", serializeProgress(sub))?.execute()?.body()
                     if (`object` != null) {
-                        sub.set_id(getString("id", `object`))
-                        sub.set_rev(getString("rev", `object`))
+                        sub._id = getString("id", `object`)
+                        sub._rev = getString("rev", `object`)
                     }
                 } catch (e: IOException) {
                     e.printStackTrace()
@@ -233,8 +233,8 @@ class UploadManager(context: Context) : FileUploadService() {
                         val revElement = r["rev"]
                         val idElement = r["id"]
                         if (revElement != null && idElement != null) {
-                            feedback.set_rev(revElement.asString)
-                            feedback.set_id(idElement.asString)
+                            feedback._rev = revElement.asString
+                            feedback._id = idElement.asString
                         } else {
                             Utilities.log("Missing 'rev' or 'id' elements in the JSON response")
                         }
@@ -284,8 +284,8 @@ class UploadManager(context: Context) : FileUploadService() {
                     if (`object` != null) {
                         val _rev = getString("rev", `object`)
                         val _id = getString("id", `object`)
-                        sub.set_rev(_rev)
-                        sub.set_id(_id)
+                        sub._rev = _rev
+                        sub._id = _id
                         uploadAttachment(_id, _rev, sub, listener!!)
                         Utilities.log("Submitting resources to Realm")
                     }
@@ -310,8 +310,8 @@ class UploadManager(context: Context) : FileUploadService() {
                         val _rev = getString("rev", `object`)
                         val _id = getString("id", `object`)
                         personal.isUploaded = true
-                        personal.set_rev(_rev)
-                        personal.set_id(_id)
+                        personal._rev = _rev
+                        personal._id = _id
                         mRealm.commitTransaction()
                         uploadAttachment(_id, _rev, personal, listener)
                     }
@@ -487,15 +487,15 @@ class UploadManager(context: Context) : FileUploadService() {
                     act.images = Gson().toJson(image)
                     `object`.add("images", image)
                     val newsUploadResponse: Response<JsonObject>? =
-                        if (TextUtils.isEmpty(act.get_id())) {
+                        if (TextUtils.isEmpty(act._id)) {
                             apiInterface?.postDoc(Utilities.header, "application/json", Utilities.getUrl() + "/news", `object`)?.execute()
                         } else {
-                            apiInterface?.putDoc(Utilities.header, "application/json", Utilities.getUrl() + "/news/" + act.get_id(), `object`)?.execute()
+                            apiInterface?.putDoc(Utilities.header, "application/json", Utilities.getUrl() + "/news/" + act._id, `object`)?.execute()
                         }
                     if (newsUploadResponse?.body() != null) {
                         act.imageUrls?.clear()
-                        act.set_id(getString("id", newsUploadResponse.body()))
-                        act.set_rev(getString("rev", newsUploadResponse.body()))
+                        act._id = getString("id", newsUploadResponse.body())
+                        act._rev = getString("rev", newsUploadResponse.body())
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -514,7 +514,7 @@ class UploadManager(context: Context) : FileUploadService() {
                 try {
                     val o = apiInterface?.postDoc(Utilities.header, "application/json", Utilities.getUrl() + "/apk_logs", serialize(act, context))?.execute()?.body()
                     if (o != null) {
-                        act.set_rev(getString("rev", o))
+                        act._rev = getString("rev", o)
                     }
                 } catch (e: IOException) {
                     e.printStackTrace()
@@ -581,8 +581,8 @@ class UploadManager(context: Context) : FileUploadService() {
                 try {
                     val `object` = apiInterface?.postDoc(Utilities.header, "application/json", Utilities.getUrl() + "/course_activities", serializeSerialize(act))?.execute()?.body()
                     if (`object` != null) {
-                        act.set_rev(getString("rev", `object`))
-                        act.set_id(getString("id", `object`))
+                        act._rev = getString("rev", `object`)
+                        act._id = getString("id", `object`)
                     }
                 } catch (e: IOException) {
                     e.printStackTrace()

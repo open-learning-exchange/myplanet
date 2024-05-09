@@ -25,7 +25,8 @@ open class RealmMyLibrary : RealmObject() {
     @JvmField
     @PrimaryKey
     var id: String? = null
-    private var _id: String? = null
+    @JvmField
+    var _id: String? = null
     var userId: RealmList<String>? = null
         private set
     @JvmField
@@ -36,7 +37,8 @@ open class RealmMyLibrary : RealmObject() {
     var resourceOffline = false
     @JvmField
     var resourceId: String? = null
-    private var _rev: String? = null
+    @JvmField
+    var _rev: String? = null
     @JvmField
     var downloadedRev: String? = null
     @JvmField
@@ -103,13 +105,6 @@ open class RealmMyLibrary : RealmObject() {
     var downloaded: String? = null
     @JvmField
     var isPrivate = false
-    fun get_id(): String? {
-        return _id
-    }
-
-    fun set_id(_id: String?) {
-        this._id = _id
-    }
 
     fun serializeResource(): JsonObject {
         val `object` = JsonObject()
@@ -225,14 +220,6 @@ open class RealmMyLibrary : RealmObject() {
             return str.substring(0, str.length - 1)
         }
 
-    fun get_rev(): String? {
-        return _rev
-    }
-
-    fun set_rev(_rev: String?) {
-        this._rev = _rev
-    }
-
     override fun toString(): String {
         return title ?: ""
     }
@@ -242,7 +229,7 @@ open class RealmMyLibrary : RealmObject() {
     }
 
     fun needToUpdate(): Boolean {
-        return resourceLocalAddress != null && !resourceOffline || !TextUtils.equals(get_rev(), downloadedRev)
+        return resourceLocalAddress != null && !resourceOffline || !TextUtils.equals(_rev, downloadedRev)
     }
 
     companion object {
@@ -365,14 +352,14 @@ open class RealmMyLibrary : RealmObject() {
                 resource = mRealm.createObject(RealmMyLibrary::class.java, resourceId)
             }
             resource?.setUserId(userId)
-            resource?.set_id(resourceId)
+            resource?._id = resourceId
             if (!TextUtils.isEmpty(stepId)) {
                 resource?.stepId = stepId
             }
             if (!TextUtils.isEmpty(courseId)) {
                 resource?.courseId = courseId
             }
-            resource?.set_rev(JsonUtils.getString("_rev", doc))
+            resource?._rev = JsonUtils.getString("_rev", doc)
             resource?.resourceId = resourceId
             resource?.title = JsonUtils.getString("title", doc)
             resource?.description = JsonUtils.getString("description", doc)

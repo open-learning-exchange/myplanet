@@ -82,7 +82,7 @@ class AdapterMyLife(private val context: Context, private val myLifeList: List<R
     fun updateVisibility(holder: RecyclerView.ViewHolder, position: Int, isVisible: Boolean) {
         mRealm.executeTransactionAsync({ realm: Realm? ->
             realm?.let {
-                updateVisibility(!isVisible, myLifeList[position].get_id(),
+                updateVisibility(!isVisible, myLifeList[position]._id,
                     it, myLifeList[position].userId)
             }
         }, {
@@ -111,7 +111,7 @@ class AdapterMyLife(private val context: Context, private val myLifeList: List<R
     }
 
     override fun onItemMove(fromPosition: Int, toPosition: Int): Boolean {
-        updateWeight(toPosition + 1, myLifeList[fromPosition].get_id(), mRealm, myLifeList[fromPosition].userId)
+        updateWeight(toPosition + 1, myLifeList[fromPosition]._id, mRealm, myLifeList[fromPosition].userId)
         notifyItemMoved(fromPosition, toPosition)
         return true
     }

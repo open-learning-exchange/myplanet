@@ -17,8 +17,10 @@ open class RealmNews : RealmObject() {
     @JvmField
     @PrimaryKey
     var id: String? = null
-    private var _id: String? = null
-    private var _rev: String? = null
+    @JvmField
+    var _id: String? = null
+    @JvmField
+    var _rev: String? = null
     @JvmField
     var userId: String? = null
     @JvmField
@@ -82,22 +84,6 @@ open class RealmNews : RealmObject() {
         }
     }
 
-    fun get_id(): String? {
-        return _id
-    }
-
-    fun set_id(_id: String?) {
-        this._id = _id
-    }
-
-    fun get_rev(): String? {
-        return _rev
-    }
-
-    fun set_rev(_rev: String?) {
-        this._rev = _rev
-    }
-
     val messageWithoutMarkdown: String?
         get() {
             var ms = message
@@ -138,8 +124,8 @@ open class RealmNews : RealmObject() {
                 if (news == null) {
                     news = realm.createObject(RealmNews::class.java, JsonUtils.getString("_id", doc))
                 }
-                news?.set_rev(JsonUtils.getString("_rev", doc))
-                news?.set_id(JsonUtils.getString("_id", doc))
+                news?._rev = JsonUtils.getString("_rev", doc)
+                news?._id = JsonUtils.getString("_id", doc)
                 news?.viewableBy = JsonUtils.getString("viewableBy", doc)
                 news?.docType = JsonUtils.getString("docType", doc)
                 news?.avatar = JsonUtils.getString("avatar", doc)
@@ -169,8 +155,8 @@ open class RealmNews : RealmObject() {
         fun serializeNews(news: RealmNews): JsonObject {
             val `object` = JsonObject()
             `object`.addProperty("message", news.message)
-            if (news.get_id() != null) `object`.addProperty("_id", news.get_id())
-            if (news.get_rev() != null) `object`.addProperty("_rev", news.get_rev())
+            if (news._id != null) `object`.addProperty("_id", news._id)
+            if (news._rev != null) `object`.addProperty("_rev", news._rev)
             `object`.addProperty("time", news.time)
             `object`.addProperty("createdOn", news.createdOn)
             `object`.addProperty("docType", news.docType)

@@ -11,8 +11,10 @@ import java.util.Date
 open class RealmMyPersonal : RealmObject() {
     @PrimaryKey
     var id: String? = null
-    private var _id: String? = null
-    private var _rev: String? = null
+    @JvmField
+    var _id: String? = null
+    @JvmField
+    var _rev: String? = null
     var isUploaded = false
     @JvmField
     var title: String? = null
@@ -26,21 +28,6 @@ open class RealmMyPersonal : RealmObject() {
     var userName: String? = null
     @JvmField
     var path: String? = null
-    fun set_rev(_rev: String?) {
-        this._rev = _rev
-    }
-
-    fun get_id(): String? {
-        return _id
-    }
-
-    fun set_id(_id: String?) {
-        this._id = _id
-    }
-
-    fun get_rev(): String? {
-        return _rev
-    }
 
     companion object {
         @JvmStatic
