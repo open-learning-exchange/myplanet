@@ -10,11 +10,14 @@ import java.util.UUID
 
 open class RealmCourseActivity : RealmObject() {
     @PrimaryKey
-    private var id: String? = null
-    private var _id: String? = null
+    @JvmField
+    var id: String? = null
+    @JvmField
+    var _id: String? = null
     @JvmField
     var createdOn: String? = null
-    private var _rev: String? = null
+    @JvmField
+    var _rev: String? = null
     @JvmField
     var time: Long = 0
     @JvmField
@@ -27,21 +30,6 @@ open class RealmCourseActivity : RealmObject() {
     var type: String? = null
     @JvmField
     var user: String? = null
-    fun get_rev(): String? {
-        return _rev
-    }
-
-    fun set_rev(_rev: String?) {
-        this._rev = _rev
-    }
-
-    fun get_id(): String? {
-        return _id
-    }
-
-    fun set_id(_id: String?) {
-        this._id = _id
-    }
 
     companion object {
         @JvmStatic

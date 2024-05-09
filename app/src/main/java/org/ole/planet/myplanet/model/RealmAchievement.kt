@@ -23,27 +23,13 @@ open class RealmAchievement : RealmObject() {
     var achievementsHeader: String? = null
     @JvmField
     var sendToNation: String? = null
-    private var _rev: String? = null
-
+    @JvmField
+    var _rev: String? = null
     @PrimaryKey
-    private var _id: String? = null
+    @JvmField
+    var _id: String? = null
     @JvmField
     var goals: String? = null
-    fun get_rev(): String? {
-        return _rev
-    }
-
-    fun set_rev(_rev: String?) {
-        this._rev = _rev
-    }
-
-    fun get_id(): String? {
-        return _id
-    }
-
-    fun set_id(_id: String?) {
-        this._id = _id
-    }
 
     fun getreferences(): RealmList<String>? {
         return references
@@ -93,8 +79,8 @@ open class RealmAchievement : RealmObject() {
         @JvmStatic
         fun serialize(sub: RealmAchievement): JsonObject {
             val `object` = JsonObject()
-            `object`.addProperty("_id", sub.get_id())
-            if (!TextUtils.isEmpty(sub.get_rev())) `object`.addProperty("_rev", sub.get_rev())
+            `object`.addProperty("_id", sub._id)
+            if (!TextUtils.isEmpty(sub._rev)) `object`.addProperty("_rev", sub._rev)
             `object`.addProperty("goals", sub.goals)
             `object`.addProperty("purpose", sub.purpose)
             `object`.addProperty("achievementsHeader", sub.achievementsHeader)
@@ -120,7 +106,7 @@ open class RealmAchievement : RealmObject() {
             if (achievement == null) achievement = mRealm.createObject(
                 RealmAchievement::class.java, JsonUtils.getString("_id", act)
             )
-            achievement?.set_rev(JsonUtils.getString("_rev", act))
+            achievement?._rev = JsonUtils.getString("_rev", act)
             achievement?.purpose = JsonUtils.getString("purpose", act)
             achievement?.goals = JsonUtils.getString("goals", act)
             achievement?.achievementsHeader = JsonUtils.getString("achievementsHeader", act)

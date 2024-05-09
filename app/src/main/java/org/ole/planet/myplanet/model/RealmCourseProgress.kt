@@ -11,14 +11,16 @@ import org.ole.planet.myplanet.utilities.JsonUtils
 open class RealmCourseProgress : RealmObject() {
     @PrimaryKey
     var id: String? = null
-    private var _id: String? = null
+    @JvmField
+    var _id: String? = null
     @JvmField
     var createdOn: String? = null
     @JvmField
     var createdDate: Long = 0
     @JvmField
     var updatedDate: Long = 0
-    private var _rev: String? = null
+    @JvmField
+    var _rev: String? = null
     @JvmField
     var stepNum = 0
     @JvmField
@@ -29,21 +31,6 @@ open class RealmCourseProgress : RealmObject() {
     var courseId: String? = null
     @JvmField
     var parentCode: String? = null
-    fun get_rev(): String? {
-        return _rev
-    }
-
-    fun set_rev(_rev: String?) {
-        this._rev = _rev
-    }
-
-    fun get_id(): String? {
-        return _id
-    }
-
-    fun set_id(_id: String?) {
-        this._id = _id
-    }
 
     companion object {
         @JvmStatic
@@ -111,8 +98,8 @@ open class RealmCourseProgress : RealmObject() {
             if (courseProgress == null) {
                 courseProgress = mRealm.createObject(RealmCourseProgress::class.java, JsonUtils.getString("_id", act))
             }
-            courseProgress?.set_rev(JsonUtils.getString("_rev", act))
-            courseProgress?.set_id(JsonUtils.getString("_id", act))
+            courseProgress?._rev = JsonUtils.getString("_rev", act)
+            courseProgress?._id = JsonUtils.getString("_id", act)
             courseProgress?.passed = JsonUtils.getBoolean("passed", act)
             courseProgress?.stepNum = JsonUtils.getInt("stepNum", act)
             courseProgress?.userId = JsonUtils.getString("userId", act)

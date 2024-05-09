@@ -12,7 +12,8 @@ open class RealmApkLog : RealmObject() {
     var id: String? = null
     @JvmField
     var type: String? = null
-    private var _rev: String? = null
+    @JvmField
+    var _rev: String? = null
     @JvmField
     var error: String? = null
     @JvmField
@@ -25,13 +26,6 @@ open class RealmApkLog : RealmObject() {
     var createdOn: String? = null
     @JvmField
     var time: String? = null
-    fun get_rev(): String? {
-        return _rev
-    }
-
-    fun set_rev(_rev: String?) {
-        this._rev = _rev
-    }
 
     fun setError(e: Throwable) {
         error += "--------- Stack trace ---------\n\n"

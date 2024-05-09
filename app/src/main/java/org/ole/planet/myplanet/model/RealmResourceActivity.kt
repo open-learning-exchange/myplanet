@@ -11,7 +11,8 @@ import java.util.UUID
 
 open class RealmResourceActivity : RealmObject() {
     @PrimaryKey
-    private var id: String? = null
+    @JvmField
+    var id: String? = null
     @JvmField
     var _id: String? = null
     @JvmField

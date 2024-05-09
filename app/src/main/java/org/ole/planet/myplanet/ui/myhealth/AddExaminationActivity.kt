@@ -227,7 +227,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         examination?.creatorId = health?.userKey
         examination?.gender = user?.gender
         examination?.age = user?.dob?.let { getAge(it) }!!
-        examination?.isSelfExamination = currentUser._id == pojo?.get_id()
+        examination?.isSelfExamination = currentUser._id == pojo?._id
         examination?.date = Date().time
         examination?.planetCode = user?.planetCode
         val sign = RealmExamination()

@@ -16,7 +16,8 @@ open class RealmFeedback : RealmObject() {
     @JvmField
     @PrimaryKey
     var id: String? = null
-    private var _id: String? = null
+    @JvmField
+    var _id: String? = null
     @JvmField
     var title: String? = null
     @JvmField
@@ -35,7 +36,8 @@ open class RealmFeedback : RealmObject() {
     var url: String? = null
     @JvmField
     var isUploaded = false
-    private var _rev: String? = null
+    @JvmField
+    var _rev: String? = null
     var messages: String? = null
         private set
     @JvmField
@@ -46,22 +48,6 @@ open class RealmFeedback : RealmObject() {
     var state: String? = null
     fun setMessages(messages: JsonArray?) {
         this.messages = Gson().toJson(messages)
-    }
-
-    fun get_rev(): String? {
-        return _rev
-    }
-
-    fun set_rev(_rev: String?) {
-        this._rev = _rev
-    }
-
-    fun get_id(): String? {
-        return _id
-    }
-
-    fun set_id(_id: String?) {
-        this._id = _id
     }
 
     val messageList: List<FeedbackReply>?
@@ -124,8 +110,8 @@ open class RealmFeedback : RealmObject() {
             `object`.addProperty("parentCode", feedback.parentCode)
             `object`.addProperty("state", feedback.state)
             `object`.addProperty("item", feedback.item)
-            if (feedback.get_id() != null) `object`.addProperty("_id", feedback.get_id())
-            if (feedback.get_rev() != null) `object`.addProperty("_rev", feedback.get_rev())
+            if (feedback._id != null) `object`.addProperty("_id", feedback._id)
+            if (feedback._rev != null) `object`.addProperty("_rev", feedback._rev)
 
             try {
                 `object`.add("messages", JsonParser.parseString(feedback.messages))
@@ -143,7 +129,7 @@ open class RealmFeedback : RealmObject() {
                 if (feedback == null) {
                     feedback = realm.createObject(RealmFeedback::class.java, JsonUtils.getString("_id", act))
                 }
-                feedback?.set_id(JsonUtils.getString("_id", act))
+                feedback?._id = JsonUtils.getString("_id", act)
                 feedback?.title = JsonUtils.getString("title", act)
                 feedback?.source = JsonUtils.getString("source", act)
                 feedback?.status = JsonUtils.getString("status", act)
@@ -157,7 +143,7 @@ open class RealmFeedback : RealmObject() {
                 feedback?.isUploaded = true
                 feedback?.item = JsonUtils.getString("item", act)
                 feedback?.state = JsonUtils.getString("state", act)
-                feedback?.set_rev(JsonUtils.getString("_rev", act))
+                feedback?._rev = JsonUtils.getString("_rev", act)
             }
         }
     }

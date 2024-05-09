@@ -212,7 +212,7 @@ class MyDownloadService : IntentService("Download Service") {
             if (!matchingItems.isEmpty()) {
                 for (item in matchingItems) {
                     item.resourceOffline = true
-                    item.downloadedRev = item.get_rev()
+                    item.downloadedRev = item._rev
                 }
             }
         }

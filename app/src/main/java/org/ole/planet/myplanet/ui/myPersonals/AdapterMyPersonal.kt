@@ -50,7 +50,7 @@ class AdapterMyPersonal(private val context: Context, private val list: List<Rea
                 .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
                     if (!realm?.isInTransaction!!) realm?.beginTransaction()
                     val personal = realm?.where(RealmMyPersonal::class.java)
-                        ?.equalTo("_id", list[position].get_id())?.findFirst()
+                        ?.equalTo("_id", list[position]._id)?.findFirst()
                     personal?.deleteFromRealm()
                     realm?.commitTransaction()
                     notifyDataSetChanged()

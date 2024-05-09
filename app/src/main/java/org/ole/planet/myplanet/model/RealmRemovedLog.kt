@@ -7,7 +7,8 @@ import java.util.UUID
 
 open class RealmRemovedLog : RealmObject() {
     @PrimaryKey
-    private var id: String? = null
+    @JvmField
+    var id: String? = null
     private var userId: String? = null
     private var type: String? = null
     private var docId: String? = null

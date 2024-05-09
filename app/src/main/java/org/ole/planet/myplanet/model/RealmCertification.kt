@@ -10,25 +10,12 @@ import org.ole.planet.myplanet.utilities.JsonUtils
 
 open class RealmCertification : RealmObject() {
     @PrimaryKey
-    private var _id: String? = null
-    private var _rev: String? = null
+    @JvmField
+    var _id: String? = null
+    @JvmField
+    var _rev: String? = null
     var name: String? = null
     var courseIds: String? = null
-    fun get_id(): String? {
-        return _id
-    }
-
-    fun set_id(_id: String?) {
-        this._id = _id
-    }
-
-    fun get_rev(): String? {
-        return _rev
-    }
-
-    fun set_rev(_rev: String?) {
-        this._rev = _rev
-    }
 
     fun setCourseIds(courseIds: JsonArray?) {
         this.courseIds = Gson().toJson(courseIds)

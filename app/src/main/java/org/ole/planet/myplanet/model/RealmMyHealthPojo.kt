@@ -11,12 +11,14 @@ import org.ole.planet.myplanet.utilities.JsonUtils
 
 open class RealmMyHealthPojo : RealmObject() {
     @PrimaryKey
-    private var _id: String? = null
+    @JvmField
+    var _id: String? = null
     @JvmField
     var userId: String? = null
     @JvmField
     var isUpdated = false
-    private var _rev: String? = null
+    @JvmField
+    var _rev: String? = null
     @JvmField
     var data: String? = null
     var temperature = 0f
@@ -57,22 +59,6 @@ open class RealmMyHealthPojo : RealmObject() {
         ) else JsonObject()
     }
 
-    fun get_id(): String? {
-        return _id
-    }
-
-    fun set_id(_id: String?) {
-        this._id = _id
-    }
-
-    fun get_rev(): String? {
-        return _rev
-    }
-
-    fun set_rev(_rev: String?) {
-        this._rev = _rev
-    }
-
     fun setTemperature(temperature: Int) {
         this.temperature = temperature.toFloat()
     }
@@ -97,7 +83,7 @@ open class RealmMyHealthPojo : RealmObject() {
             }
             myHealth?.data = JsonUtils.getString("data", act)
             myHealth?.userId = JsonUtils.getString("_id", act)
-            myHealth?.set_rev(JsonUtils.getString("_rev", act))
+            myHealth?._rev = JsonUtils.getString("_rev", act)
             myHealth?.setTemperature(JsonUtils.getFloat("temperature", act))
             myHealth?.isUpdated = false
             myHealth?.pulse = JsonUtils.getInt("pulse", act)
@@ -121,7 +107,7 @@ open class RealmMyHealthPojo : RealmObject() {
         fun serialize(health: RealmMyHealthPojo): JsonObject {
             val `object` = JsonObject()
             if (!TextUtils.isEmpty(health.userId)) `object`.addProperty("_id", health.userId)
-            if (!TextUtils.isEmpty(health.get_rev())) `object`.addProperty("_rev", health.get_rev())
+            if (!TextUtils.isEmpty(health._rev)) `object`.addProperty("_rev", health._rev)
             `object`.addProperty("data", health.data)
             JsonUtils.addFloat(`object`, "temperature", health.temperature)
             JsonUtils.addInteger(`object`, "pulse", health.pulse)
