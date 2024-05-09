@@ -96,10 +96,13 @@ open class RealmRating : RealmObject() {
         }
 
         fun insert(mRealm: Realm, act: JsonObject) {
-            var rating = mRealm.where(RealmRating::class.java)
-                .equalTo("_id", JsonUtils.getString("_id", act)).findFirst()
-            if (rating == null) rating =
-                mRealm.createObject(RealmRating::class.java, JsonUtils.getString("_id", act))
+            if (!mRealm.isInTransaction) {
+                mRealm.beginTransaction()
+            }
+            var rating = mRealm.where(RealmRating::class.java).equalTo("_id", JsonUtils.getString("_id", act)).findFirst()
+            if (rating == null) {
+                rating = mRealm.createObject(RealmRating::class.java, JsonUtils.getString("_id", act))
+            }
             if (rating != null) {
                 rating._rev = JsonUtils.getString("_rev", act)
                 rating._id = JsonUtils.getString("_id", act)
@@ -116,6 +119,7 @@ open class RealmRating : RealmObject() {
                 rating.parentCode = JsonUtils.getString("planetCode", act)
                 rating.createdOn = JsonUtils.getString("createdOn", act)
             }
+            mRealm.commitTransaction()
         }
     }
 }

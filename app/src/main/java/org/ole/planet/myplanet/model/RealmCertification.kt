@@ -23,15 +23,17 @@ open class RealmCertification : RealmObject() {
 
     companion object {
         fun insert(mRealm: Realm, `object`: JsonObject?) {
+            if (!mRealm.isInTransaction) {
+                mRealm.beginTransaction()
+            }
             val id = JsonUtils.getString("_id", `object`)
-            var certification = mRealm.where(
-                RealmCertification::class.java
-            ).equalTo("_id", id).findFirst()
+            var certification = mRealm.where(RealmCertification::class.java).equalTo("_id", id).findFirst()
             if (certification == null) {
                 certification = mRealm.createObject(RealmCertification::class.java, id)
             }
             certification?.name = JsonUtils.getString("name", `object`)
             certification?.setCourseIds(JsonUtils.getJsonArray("courseIds", `object`))
+            mRealm.commitTransaction()
         }
 
         @JvmStatic

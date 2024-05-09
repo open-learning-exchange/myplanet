@@ -68,38 +68,41 @@ open class RealmMyCourse : RealmObject() {
         @JvmStatic
         fun insertMyCourses(userId: String?, myCousesDoc: JsonObject?, mRealm: Realm) {
             val id = JsonUtils.getString("_id", myCousesDoc)
-            var myMyCoursesDB =
-                mRealm.where(RealmMyCourse::class.java).equalTo("id", id).findFirst()
-            if (myMyCoursesDB == null) {
-                myMyCoursesDB = mRealm.createObject(RealmMyCourse::class.java, id)
+            mRealm.executeTransaction { realm ->
+                var myMyCoursesDB = realm.where(RealmMyCourse::class.java).equalTo("id", id).findFirst()
+                if (myMyCoursesDB == null) {
+                    myMyCoursesDB = realm.createObject(RealmMyCourse::class.java, id)
+                }
+                myMyCoursesDB?.setUserId(userId)
+                myMyCoursesDB?.courseId = JsonUtils.getString("_id", myCousesDoc)
+                myMyCoursesDB?.course_rev = JsonUtils.getString("_rev", myCousesDoc)
+                myMyCoursesDB?.languageOfInstruction = JsonUtils.getString("languageOfInstruction", myCousesDoc)
+                myMyCoursesDB?.courseTitle = JsonUtils.getString("courseTitle", myCousesDoc)
+                myMyCoursesDB?.memberLimit = JsonUtils.getInt("memberLimit", myCousesDoc)
+                myMyCoursesDB?.description = JsonUtils.getString("description", myCousesDoc)
+                val description = JsonUtils.getString("description", myCousesDoc)
+                val links = RealmCourseStep.extractLinks(description)
+                val concatenatedLinks = ArrayList<String>()
+                val baseUrl = Utilities.getUrl()
+                for (link in links) {
+                    val concatenatedLink = "$baseUrl/$link"
+                    concatenatedLinks.add(concatenatedLink)
+                }
+                Utilities.openDownloadService(MainApplication.context, concatenatedLinks)
+                myMyCoursesDB?.method = JsonUtils.getString("method", myCousesDoc)
+                myMyCoursesDB?.gradeLevel = JsonUtils.getString("gradeLevel", myCousesDoc)
+                myMyCoursesDB?.subjectLevel = JsonUtils.getString("subjectLevel", myCousesDoc)
+                myMyCoursesDB?.createdDate = JsonUtils.getLong("createdDate", myCousesDoc)
+                myMyCoursesDB?.setnumberOfSteps(JsonUtils.getJsonArray("steps", myCousesDoc).size())
+                RealmCourseStep.insertCourseSteps(
+                    myMyCoursesDB?.courseId,
+                    JsonUtils.getJsonArray("steps", myCousesDoc),
+                    JsonUtils.getJsonArray("steps", myCousesDoc).size(),
+                    realm
+                )
             }
-            myMyCoursesDB?.setUserId(userId)
-            myMyCoursesDB?.courseId = JsonUtils.getString("_id", myCousesDoc)
-            myMyCoursesDB?.course_rev = JsonUtils.getString("_rev", myCousesDoc)
-            myMyCoursesDB?.languageOfInstruction = JsonUtils.getString("languageOfInstruction", myCousesDoc)
-            myMyCoursesDB?.courseTitle = JsonUtils.getString("courseTitle", myCousesDoc)
-            myMyCoursesDB?.memberLimit = JsonUtils.getInt("memberLimit", myCousesDoc)
-            myMyCoursesDB?.description = JsonUtils.getString("description", myCousesDoc)
-            val description = JsonUtils.getString("description", myCousesDoc)
-            val links = RealmCourseStep.extractLinks(description)
-            val concatenatedLinks = ArrayList<String>()
-            val baseUrl = Utilities.getUrl()
-            for (link in links) {
-                val concatenatedLink = "$baseUrl/$link"
-                concatenatedLinks.add(concatenatedLink)
-            }
-            Utilities.openDownloadService(MainApplication.context, concatenatedLinks)
-            myMyCoursesDB?.method = JsonUtils.getString("method", myCousesDoc)
-            myMyCoursesDB?.gradeLevel = JsonUtils.getString("gradeLevel", myCousesDoc)
-            myMyCoursesDB?.subjectLevel = JsonUtils.getString("subjectLevel", myCousesDoc)
-            myMyCoursesDB?.createdDate = JsonUtils.getLong("createdDate", myCousesDoc)
-            myMyCoursesDB?.setnumberOfSteps(JsonUtils.getJsonArray("steps", myCousesDoc).size())
-            RealmCourseStep.insertCourseSteps(myMyCoursesDB?.courseId,
-                JsonUtils.getJsonArray("steps", myCousesDoc),
-                JsonUtils.getJsonArray("steps", myCousesDoc).size(),
-                mRealm
-            )
         }
+
 
         @JvmStatic
         fun getMyByUserId(mRealm: Realm, settings: SharedPreferences?): List<RealmObject> {

@@ -77,6 +77,9 @@ open class RealmMyHealthPojo : RealmObject() {
 
     companion object {
         fun insert(mRealm: Realm, act: JsonObject?) {
+            if (!mRealm.isInTransaction) {
+                mRealm.beginTransaction()
+            }
             var myHealth = mRealm.where(RealmMyHealthPojo::class.java).equalTo("_id", JsonUtils.getString("_id", act)).findFirst()
             if (myHealth == null) {
                 myHealth = mRealm.createObject(RealmMyHealthPojo::class.java, JsonUtils.getString("_id", act))
@@ -101,6 +104,7 @@ open class RealmMyHealthPojo : RealmObject() {
             myHealth?.gender = JsonUtils.getString("gender", act)
             myHealth?.planetCode = JsonUtils.getString("planetCode", act)
             myHealth?.conditions = Gson().toJson(JsonUtils.getJsonObject("conditions", act))
+            mRealm.commitTransaction()
         }
 
         @JvmStatic

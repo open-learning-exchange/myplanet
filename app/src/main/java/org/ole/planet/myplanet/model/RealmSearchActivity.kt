@@ -46,9 +46,7 @@ open class RealmSearchActivity(
             ob.addProperty("time", log.time)
             ob.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
             ob.addProperty("deviceName", NetworkUtils.getDeviceName())
-            ob.addProperty(
-                "customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context)
-            )
+            ob.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
             return ob
         }
     }
