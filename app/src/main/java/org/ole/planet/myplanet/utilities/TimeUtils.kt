@@ -16,7 +16,6 @@ object TimeUtils {
             f.timeZone = TimeZone.getTimeZone("UTC")
             return f.format(d)
         } catch (e: Exception) {
-            Utilities.log("Exception : " + e.message)
             e.printStackTrace()
         }
         return "N/A"

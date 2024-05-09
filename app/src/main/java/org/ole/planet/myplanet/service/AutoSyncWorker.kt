@@ -66,13 +66,9 @@ class AutoSyncWorker(private val context: Context, workerParams: WorkerParameter
         }
     }
 
-    override fun onSyncStarted() {
-        Utilities.log("Sync started " + Date())
-    }
+    override fun onSyncStarted() {}
 
-    override fun onSyncComplete() {
-        Utilities.log("Sync completed")
-    }
+    override fun onSyncComplete() {}
 
     override fun onSyncFailed(msg: String?) {
         if (MainApplication.syncFailedCount > 3) {

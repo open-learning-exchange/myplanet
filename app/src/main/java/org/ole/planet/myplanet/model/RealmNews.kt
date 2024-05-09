@@ -9,7 +9,6 @@ import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Date
 import java.util.UUID
 
@@ -72,7 +71,6 @@ open class RealmNews : RealmObject() {
 
     fun addLabel(label: String?) {
         if (label != null && !labels?.contains(label)!!) {
-            Utilities.log("Added")
             labels?.add(label)
         }
     }
@@ -87,9 +85,6 @@ open class RealmNews : RealmObject() {
     val messageWithoutMarkdown: String?
         get() {
             var ms = message
-            if (ms != null) {
-                Utilities.log(ms)
-            }
             for (ob in imagesArray) {
                 ms = ms?.replace(JsonUtils.getString("markdown", ob.asJsonObject), "")
             }
@@ -117,7 +112,6 @@ open class RealmNews : RealmObject() {
         @JvmStatic
         fun insert(mRealm: Realm, doc: JsonObject?) {
             mRealm.executeTransactionAsync { realm ->
-                Utilities.log("sync nnews " + Gson().toJson(doc))
                 var news = realm.where(RealmNews::class.java)
                     .equalTo("_id", JsonUtils.getString("_id", doc))
                     .findFirst()

@@ -255,7 +255,6 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         examination?.isHasInfo = hasInfo
         pojo?.isUpdated = true
         try {
-            Utilities.log(Gson().toJson(sign))
             examination?.data = encrypt(Gson().toJson(sign), user?.key!!, user?.iv!!)
         } catch (e: Exception) {
             e.printStackTrace()

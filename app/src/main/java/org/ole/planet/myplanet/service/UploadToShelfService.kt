@@ -45,7 +45,6 @@ class UploadToShelfService(context: Context) {
         mRealm = dbService.realmInstance
         mRealm.executeTransactionAsync({ realm: Realm ->
             val userModels: List<RealmUserModel> = realm.where(RealmUserModel::class.java).isEmpty("_id").or().equalTo("isUpdated", true).findAll()
-            Utilities.log("USER LIST SIZE + " + userModels.size)
             for (model in userModels) {
                 try {
                     val password = sharedPreferences.getString("loginUserPassword", "")
@@ -69,11 +68,8 @@ class UploadToShelfService(context: Context) {
                                     updateHealthData(realm, model)
                                 }
                             }
-                        } else {
-                            createResponse?.errorBody()?.let { Utilities.log(it.string()) }
                         }
                     } else if (model.isUpdated) {
-                        Utilities.log("UPDATED MODEL " + model.serialize())
                         try {
                             val latestDocResponse = apiInterface.getJsonObject(header, "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}").execute()
                             if (latestDocResponse.isSuccessful) {
@@ -91,11 +87,7 @@ class UploadToShelfService(context: Context) {
                                     val updatedRev = updateResponse.body()?.get("rev")?.asString
                                     model._rev = updatedRev
                                     model.isUpdated = false
-                                } else {
-                                    updateResponse.errorBody()?.let { Utilities.log(it.string()) }
                                 }
-                            } else {
-                                latestDocResponse.errorBody()?.let { Utilities.log(it.string()) }
                             }
                         } catch (e: IOException) {
                             e.printStackTrace()
@@ -188,7 +180,6 @@ class UploadToShelfService(context: Context) {
                     }
                     val jsonDoc = apiInterface?.getJsonObject(Utilities.header, Utilities.getUrl() + "/shelf/" + model._id)?.execute()?.body()
                     val `object` = getShelfData(realm, model.id, jsonDoc)
-                    Utilities.log("JSON " + Gson().toJson(jsonDoc))
                     val d = apiInterface?.getJsonObject(Utilities.header, Utilities.getUrl() + "/shelf/" + model.id)?.execute()?.body()
                     `object`.addProperty("_rev", getString("_rev", d))
                     apiInterface?.putDoc(Utilities.header, "application/json", Utilities.getUrl() + "/shelf/" + sharedPreferences.getString("userId", ""), `object`)?.execute()?.body()
@@ -257,9 +248,6 @@ class UploadToShelfService(context: Context) {
                     members?.add("roles", rolesArray)
                     jsonObject?.add("members", members)
                     response = apiInterface?.putDoc(header, "application/json", Utilities.getUrl() + "/" + table + "/_security", jsonObject)?.execute()
-                    if (response?.body() != null) {
-                        Utilities.log("Update security  " + Gson().toJson(response?.body()))
-                    }
                 }
             } catch (e: IOException) {
                 e.printStackTrace()

@@ -17,10 +17,8 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
-import com.google.gson.Gson
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityExoPlayerVideoBinding
-import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.AuthSessionUpdater
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Utilities
@@ -41,7 +39,6 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
         val extras = intent.extras
         val videoType = extras?.getString("videoType")
         videoURL = extras?.getString("videoURL") ?: ""
-        Utilities.log("Video url $videoURL")
         auth = extras?.getString("Auth") ?: ""
 
         when (videoType) {
@@ -61,7 +58,6 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
     }
 
     override fun setAuthSession(responseHeader: Map<String, List<String>>) {
-        Utilities.log("Error " + Gson().toJson(responseHeader))
         val headerAuth = responseHeader["Set-Cookie"]?.get(0)?.split(";") ?: return
         auth = headerAuth[0]
         runOnUiThread { streamVideoFromUrl(videoURL, auth) }

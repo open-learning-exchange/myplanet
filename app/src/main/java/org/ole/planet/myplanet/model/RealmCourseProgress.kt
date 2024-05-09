@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.model
 
-import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmObject
@@ -8,7 +7,6 @@ import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourseByUserId
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.isMyCourse
 import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.Utilities
 
 open class RealmCourseProgress : RealmObject() {
     @PrimaryKey
@@ -96,7 +94,6 @@ open class RealmCourseProgress : RealmObject() {
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
             }
-            Utilities.log("insert course progresss " + Gson().toJson(act))
             var courseProgress = mRealm.where(RealmCourseProgress::class.java).equalTo("_id", JsonUtils.getString("_id", act)).findFirst()
             if (courseProgress == null) {
                 courseProgress = mRealm.createObject(RealmCourseProgress::class.java, JsonUtils.getString("_id", act))

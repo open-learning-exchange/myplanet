@@ -34,7 +34,6 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.Utilities.log
 import org.ole.planet.myplanet.utilities.Utilities.toast
 import java.util.Locale
 
@@ -240,12 +239,9 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     private fun applyCourseFilter(courses: List<RealmMyCourse>): List<RealmMyCourse> {
-        log("apply course filter")
         if (TextUtils.isEmpty(subjectLevel) && TextUtils.isEmpty(gradeLevel)) return courses
         val newList: MutableList<RealmMyCourse> = ArrayList()
         for (l in courses) {
-            log("grade $gradeLevel")
-            log("subject $subjectLevel")
             if (TextUtils.equals(l.gradeLevel, gradeLevel) || TextUtils.equals(
                     l.subjectLevel, subjectLevel
                 )

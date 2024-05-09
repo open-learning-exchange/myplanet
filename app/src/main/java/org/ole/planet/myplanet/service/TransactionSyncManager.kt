@@ -46,10 +46,8 @@ object TransactionSyncManager {
         val password = settings.getString("loginUserPassword", "")
         val header = "Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)
         mRealm.executeTransactionAsync({ realm: Realm ->
-            Utilities.log("Sync")
             val users = realm.where(RealmUserModel::class.java).isNotEmpty("_id").findAll()
             for (userModel in users) {
-                Utilities.log("Sync " + userModel.name)
                 syncHealthData(userModel, header)
             }
         }, { listener.onSyncComplete() }) { error: Throwable ->

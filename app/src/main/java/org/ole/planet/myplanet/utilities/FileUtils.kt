@@ -11,7 +11,6 @@ import android.os.StatFs
 import android.os.storage.StorageManager
 import android.provider.MediaStore
 import android.text.TextUtils
-import android.util.Log
 import android.webkit.MimeTypeMap
 import androidx.annotation.RequiresApi
 import androidx.core.content.FileProvider
@@ -101,7 +100,6 @@ object FileUtils {
             val sp = url?.substring(url.indexOf("resources/"))?.split("/".toRegex())
                 ?.dropLastWhile { it.isEmpty() }
                 ?.toTypedArray()
-            Utilities.log("Id " + (sp?.get(1) ?: ""))
             return sp?.get(1) ?: ""
         } catch (e: Exception) {
             e.printStackTrace()
@@ -159,7 +157,6 @@ object FileUtils {
             for (s in tiles) {
                 var out: OutputStream
                 val `in`: InputStream = assetManager.open(s)
-                Utilities.log("MAP $s")
                 val outFile = File(Environment.getExternalStorageDirectory().toString() + "/osmdroid", s)
                 out = FileOutputStream(outFile)
                 copyFile(`in`, out)
@@ -168,7 +165,6 @@ object FileUtils {
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            Log.e("ggggggggg", "Failed to copy asset file: $e")
         }
     }
 

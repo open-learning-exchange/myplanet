@@ -89,10 +89,6 @@ object Constants {
     @JvmStatic
     fun showBetaFeature(s: String, context: Context): Boolean {
         val preferences = PreferenceManager.getDefaultSharedPreferences(context)
-        Utilities.log("$s beta")
-        Utilities.log(preferences.getBoolean("beta_function", false).toString() + " beta")
-        Utilities.log(preferences.getBoolean(s, false).toString() + " beta")
-        Utilities.log((preferences.getBoolean("beta_function", false) && preferences.getBoolean(s, false)).toString() + "")
         return preferences.getBoolean("beta_function", false) && preferences.getBoolean(s, s == KEY_NEWSADDIMAGE)
     }
 

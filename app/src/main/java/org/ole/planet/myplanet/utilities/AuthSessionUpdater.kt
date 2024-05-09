@@ -76,7 +76,6 @@ class AuthSessionUpdater(private val callback: AuthCallback, private val setting
             val pref = Utilities.getUrl()
             val urlString = "$pref/_session"
             val serverUrl = URL(urlString)
-            Utilities.log("Url $serverUrl")
             serverUrl
         } catch (e: Exception) {
             e.printStackTrace()

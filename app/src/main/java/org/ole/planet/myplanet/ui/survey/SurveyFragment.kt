@@ -10,7 +10,6 @@ import io.realm.Sort
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.utilities.Utilities
 
 class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>() {
     private lateinit var addNewServey: FloatingActionButton
@@ -33,7 +32,6 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>() {
         showNoData(tvMessage, getAdapter().itemCount, "survey")
         spn.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(adapterView: AdapterView<*>?, view: View?, i: Int, l: Long) {
-                Utilities.log("i $i")
                 if (view != null) {
                     if (i == 0) {
                         recyclerView.adapter = activity?.let { act -> model.id?.let { id -> AdapterSurvey(act, safeCastList(getList(RealmStepExam::class.java, "name", Sort.ASCENDING), RealmStepExam::class.java), mRealm, id) } }

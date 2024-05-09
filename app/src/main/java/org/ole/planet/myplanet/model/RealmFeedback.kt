@@ -10,7 +10,6 @@ import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.Utilities
 import java.io.StringReader
 
 open class RealmFeedback : RealmObject() {
@@ -119,7 +118,6 @@ open class RealmFeedback : RealmObject() {
             } catch (err: Exception) {
                 err.printStackTrace()
             }
-            Utilities.log("OBJECT " + Gson().toJson(`object`))
             return `object`
         }
 

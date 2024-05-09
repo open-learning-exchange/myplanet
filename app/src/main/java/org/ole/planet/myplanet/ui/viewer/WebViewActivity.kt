@@ -11,7 +11,6 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
 import org.ole.planet.myplanet.databinding.ActivityWebViewBinding
-import org.ole.planet.myplanet.utilities.Utilities
 
 class WebViewActivity : AppCompatActivity() {
     private lateinit var activityWebViewBinding: ActivityWebViewBinding
@@ -44,7 +43,6 @@ class WebViewActivity : AppCompatActivity() {
         activityWebViewBinding.contentWebView.wv.webViewClient = object : WebViewClient() {
             override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
                 super.onPageStarted(view, url, favicon)
-                Utilities.log("Url $url")
                 if (url.endsWith("/eng/")) {
                     finish()
                 }
@@ -69,7 +67,6 @@ class WebViewActivity : AppCompatActivity() {
         activityWebViewBinding.contentWebView.wv.webChromeClient = object : WebChromeClient() {
             override fun onProgressChanged(view: WebView, newProgress: Int) {
                 activityWebViewBinding.contentWebView.pBar.progress = newProgress
-                Utilities.log("Url " + view.url)
                 if (view.url?.endsWith("/eng/") == true) {
                     finish()
                 }

@@ -28,7 +28,6 @@ class UserProfileDbHandler(context: Context) {
             fullName = Utilities.getUserName(settings)
             mRealm = realmService.realmInstance
         } catch (e: IllegalArgumentException) {
-            Utilities.log("Error initializing UserProfileDbHandler: ${e.message}")
             throw e
         }
     }
@@ -106,7 +105,6 @@ class UserProfileDbHandler(context: Context) {
         offlineActivities.resourceId = item.resourceId
         offlineActivities.time = Date().time
         mRealm.commitTransaction()
-        Utilities.log("Set resource open")
     }
 
     private fun createResourceUser(model: RealmUserModel?): RealmResourceActivity {
