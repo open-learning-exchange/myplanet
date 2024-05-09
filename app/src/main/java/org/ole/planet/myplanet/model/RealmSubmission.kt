@@ -109,7 +109,6 @@ open class RealmSubmission : RealmObject() {
                     sub.userId = userId
                 }
             }
-            Utilities.log("Insert sub $sub")
         }
 
         fun serializeExamResult(mRealm: Realm, sub: RealmSubmission, context: Context): JsonObject {
@@ -140,23 +139,19 @@ open class RealmSubmission : RealmObject() {
             `object`.addProperty("parentCode", sub.parentCode)
             val parent = Gson().fromJson(sub.parent, JsonObject::class.java)
             `object`.add("parent", parent)
-            Utilities.log("Parent " + sub.parent)
             `object`.add("answers", RealmAnswer.serializeRealmAnswer(sub.answers!!))
-            Utilities.log("Parent Exam " + (exam == null))
             if (exam != null && parent == null) `object`.add("parent", RealmStepExam.serializeExam(mRealm, exam))
             if (TextUtils.isEmpty(sub.user)) {
                 `object`.add("user", user?.serialize())
             } else {
                 `object`.add("user", JsonParser.parseString(sub.user))
             }
-            Utilities.log("SerializeExamResult sub $`object`")
             return `object`
         }
 
         @JvmStatic
         fun isStepCompleted(realm: Realm, id: String?, userId: String?): Boolean {
             val exam = realm.where(RealmStepExam::class.java).equalTo("stepId", id).findFirst() ?: return true
-            Utilities.log("Is step completed " + exam.id + " " + userId)
             return exam.id?.let {
                 realm.where(RealmSubmission::class.java).equalTo("userId", userId)
                     .contains("parentId", it).notEqualTo("status", "pending").findFirst()

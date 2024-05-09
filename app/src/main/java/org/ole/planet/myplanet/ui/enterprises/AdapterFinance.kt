@@ -17,7 +17,6 @@ import org.ole.planet.myplanet.databinding.RowFinanceBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.ui.enterprises.AdapterFinance.ViewHolderFinance
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
-import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Locale
 
 class AdapterFinance(private val context: Context, private val list: RealmResults<RealmMyTeam>) : RecyclerView.Adapter<ViewHolderFinance>() {
@@ -31,7 +30,6 @@ class AdapterFinance(private val context: Context, private val list: RealmResult
         list[position]?.let {
             rowFinanceBinding.date.text = formatDate(it.date, "MMM dd, yyyy")
             rowFinanceBinding.note.text = it.description
-            Utilities.log("Type " + it.date)
             if (TextUtils.equals(it.type?.lowercase(Locale.getDefault()), "debit")) {
                 rowFinanceBinding.debit.text = "${it.amount}"
                 rowFinanceBinding.credit.text = " -"
@@ -49,7 +47,6 @@ class AdapterFinance(private val context: Context, private val list: RealmResult
     private fun getBalance(position: Int): String {
         var i = 0
         var balance = 0
-        Utilities.log(position.toString() + "")
         for (team in list) {
             if ("debit".equals(team.type?.lowercase(Locale.getDefault()), ignoreCase = true)) {
                 balance -= team.amount

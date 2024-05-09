@@ -7,13 +7,12 @@ import android.widget.ArrayAdapter
 import android.widget.ListView
 import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.RecyclerView
+import io.realm.Realm
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemTeamGridBinding
 import org.ole.planet.myplanet.databinding.LayoutUserListBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.utilities.Utilities
-import io.realm.Realm
 
 class AdapterTeam(private val context: Context, private val list: List<RealmMyTeam>, private val mRealm: Realm) : RecyclerView.Adapter<AdapterTeam.ViewHolderTeam>() {
     private var teamSelectedListener: OnTeamSelectedListener? = null
@@ -26,7 +25,6 @@ class AdapterTeam(private val context: Context, private val list: List<RealmMyTe
 
     fun setTeamSelectedListener(teamSelectedListener: OnTeamSelectedListener?) {
         this.teamSelectedListener = teamSelectedListener
-        Utilities.log("Team selected listener ${teamSelectedListener == null}")
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderTeam {

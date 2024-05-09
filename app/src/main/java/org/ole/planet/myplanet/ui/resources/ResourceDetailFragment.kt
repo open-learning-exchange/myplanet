@@ -101,7 +101,6 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             }
             openResource(library)
         }
-        Utilities.log("user id " + profileDbHandler.userModel?.id + " " + library.userId?.contains(profileDbHandler.userModel?.id))
         val isAdd = !library.userId?.contains(profileDbHandler.userModel?.id)!!
         fragmentLibraryDetailBinding.btnRemove.setImageResource(
             if (isAdd) {

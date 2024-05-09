@@ -9,7 +9,6 @@ import android.view.ViewGroup
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentPlanBinding
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
-import org.ole.planet.myplanet.utilities.Utilities
 
 class PlanFragment : BaseTeamFragment() {
     private lateinit var fragmentPlanBinding: FragmentPlanBinding
@@ -23,9 +22,6 @@ class PlanFragment : BaseTeamFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        team.type?.let { Utilities.log(it) }
-        team.services?.let { Utilities.log(it) }
-        team.rules?.let { Utilities.log(it) }
         if (TextUtils.equals(team.type, "enterprise")) {
             missionText = if (team.description?.trim { it <= ' ' }?.isEmpty() == true) {
                 ""

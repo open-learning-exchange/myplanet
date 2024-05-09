@@ -83,7 +83,6 @@ class UserProfileFragment : Fragment() {
                     it.commitTransaction()
                 }
                 fragmentUserProfileBinding.image.setImageURI(url)
-                Utilities.log("Image Url = $imageUrl")
             }
         }
     }

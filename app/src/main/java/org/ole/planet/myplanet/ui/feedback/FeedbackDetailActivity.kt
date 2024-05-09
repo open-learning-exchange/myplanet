@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.text.TextUtils
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
@@ -105,7 +104,6 @@ class FeedbackDetailActivity : AppCompatActivity() {
             if (feedback != null) {
                 val con = Gson()
                 val msgArray = con.fromJson(feedback.messages, JsonArray::class.java)
-                Log.e("Msg", Gson().toJson(msgArray))
                 msgArray.add(obj)
                 feedback.setMessages(msgArray)
             }

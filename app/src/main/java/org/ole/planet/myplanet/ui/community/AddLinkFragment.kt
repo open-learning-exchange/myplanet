@@ -35,7 +35,6 @@ class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedL
             else ""
         ).notEqualTo("status", "archived").findAll()
         fragmentAddLinkBinding.rvList.layoutManager = LinearLayoutManager(requireActivity())
-        Utilities.log("SIZE $query")
         val adapter = AdapterTeam(requireActivity(), query, mRealm)
         adapter.setTeamSelectedListener(object : AdapterTeam.OnTeamSelectedListener {
             override fun onSelectedTeam(team: RealmMyTeam) {

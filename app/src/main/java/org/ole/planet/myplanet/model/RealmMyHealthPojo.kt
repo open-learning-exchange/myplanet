@@ -8,7 +8,6 @@ import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.Utilities
 
 open class RealmMyHealthPojo : RealmObject() {
     @PrimaryKey
@@ -92,7 +91,6 @@ open class RealmMyHealthPojo : RealmObject() {
 
     companion object {
         fun insert(mRealm: Realm, act: JsonObject?) {
-            Utilities.log("Insert health " + Gson().toJson(act))
             var myHealth = mRealm.where(RealmMyHealthPojo::class.java).equalTo("_id", JsonUtils.getString("_id", act)).findFirst()
             if (myHealth == null) {
                 myHealth = mRealm.createObject(RealmMyHealthPojo::class.java, JsonUtils.getString("_id", act))

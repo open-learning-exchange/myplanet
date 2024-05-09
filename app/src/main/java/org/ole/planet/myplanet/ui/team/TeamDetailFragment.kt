@@ -79,7 +79,6 @@ class TeamDetailFragment : Fragment() {
         if (!mRealm.isInTransaction) {
             mRealm.beginTransaction()
         }
-        Utilities.log("Crete team log")
         val log = mRealm.createObject(RealmTeamLog::class.java, UUID.randomUUID().toString())
         log.teamId = teamId
         if (user != null) {

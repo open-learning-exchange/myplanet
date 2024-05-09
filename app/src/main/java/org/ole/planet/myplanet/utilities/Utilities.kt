@@ -91,7 +91,6 @@ object Utilities {
     }
 
     fun loadImage(userImage: String?, imageView: ImageView) {
-        log("User image $userImage")
         if (!TextUtils.isEmpty(userImage)) {
             Glide.with(context)
                 .load(userImage)
@@ -113,7 +112,6 @@ object Utilities {
     val header: String
         get() {
             val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            log("User " + settings.getString("url_user", "") + " " + settings.getString("url_pwd", ""))
             return "Basic " + Base64.encodeToString((settings.getString("url_user", "") + ":" + settings.getString("url_pwd", "")).toByteArray(), Base64.NO_WRAP)
         }
 

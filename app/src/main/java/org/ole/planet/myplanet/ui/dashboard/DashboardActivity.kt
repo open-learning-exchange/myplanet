@@ -278,7 +278,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
     }
 
     private fun menuAction(selectedMenuId: Int) {
-        Utilities.log("Selected")
         when (selectedMenuId) {
             R.string.menu_myplanet -> openCallFragment(BellDashboardFragment())
             R.string.menu_library -> openCallFragment(ResourcesFragment())

@@ -120,7 +120,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     override fun onPageSelected(position: Int) {
         if (position > 0) {
             fragmentTakeCourseBinding.tvStepTitle.text = steps[position - 1]?.stepTitle
-            Utilities.log("Po " + position + " " + steps.size)
             if (position - 1 < steps.size) changeNextButtonState(position)
         } else {
             fragmentTakeCourseBinding.nextStep.isClickable = true
@@ -134,7 +133,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private fun changeNextButtonState(position: Int) {
-        Utilities.log("${isStepCompleted(mRealm, steps[position - 1]?.id, userModel?.id)} is step completed")
         if (isStepCompleted(mRealm, steps[position - 1]?.id, userModel?.id) || !showBetaFeature(Constants.KEY_EXAM, requireContext())) {
             fragmentTakeCourseBinding.nextStep.isClickable = true
             fragmentTakeCourseBinding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
@@ -144,9 +142,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         }
     }
 
-    override fun onPageScrollStateChanged(state: Int) {
-        Utilities.log("State $state")
-    }
+    override fun onPageScrollStateChanged(state: Int) {}
 
     private fun onClickNext() {
         fragmentTakeCourseBinding.tvStep.text = String.format("Step %d/%d", fragmentTakeCourseBinding.viewPager2.currentItem, steps.size)

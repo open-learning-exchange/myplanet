@@ -7,7 +7,6 @@ import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.Utilities
 
 open class RealmCertification : RealmObject() {
     @PrimaryKey
@@ -38,7 +37,6 @@ open class RealmCertification : RealmObject() {
     companion object {
         fun insert(mRealm: Realm, `object`: JsonObject?) {
             val id = JsonUtils.getString("_id", `object`)
-            Utilities.log("certification insert")
             var certification = mRealm.where(
                 RealmCertification::class.java
             ).equalTo("_id", id).findFirst()
@@ -57,7 +55,6 @@ open class RealmCertification : RealmObject() {
             }
             val c =
                 realm.where(RealmCertification::class.java).contains("courseIds", courseId).count()
-            Utilities.log("$c size")
             return c > 0
         }
     }

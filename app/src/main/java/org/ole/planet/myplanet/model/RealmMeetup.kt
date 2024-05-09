@@ -50,7 +50,6 @@ open class RealmMeetup : RealmObject() {
         }
 
         fun insert(userId: String?, meetupDoc: JsonObject, mRealm: Realm) {
-            Utilities.log("INSERT MEETUP $meetupDoc")
             var myMeetupsDB = mRealm.where(RealmMeetup::class.java)
                 .equalTo("id", JsonUtils.getString("_id", meetupDoc)).findFirst()
             if (myMeetupsDB == null) {

@@ -8,7 +8,6 @@ import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
-import org.ole.planet.myplanet.utilities.Utilities
 
 open class RealmRating : RealmObject() {
     @PrimaryKey
@@ -97,7 +96,6 @@ open class RealmRating : RealmObject() {
         }
 
         fun insert(mRealm: Realm, act: JsonObject) {
-            Utilities.log("Insert rating $act")
             var rating = mRealm.where(RealmRating::class.java)
                 .equalTo("_id", JsonUtils.getString("_id", act)).findFirst()
             if (rating == null) rating =

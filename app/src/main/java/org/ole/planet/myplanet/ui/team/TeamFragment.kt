@@ -37,12 +37,10 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         super.onCreate(savedInstanceState)
         if (arguments != null) {
             type = requireArguments().getString("type")
-            Utilities.log("Team fragment")
             if (TextUtils.isEmpty(type)) {
                 type = "team"
             }
         }
-        Utilities.log("Team fragment")
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {

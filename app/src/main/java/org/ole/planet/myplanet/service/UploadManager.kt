@@ -53,7 +53,6 @@ import org.ole.planet.myplanet.model.RealmTeamLog.Companion.serializeTeamActivit
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmTeamTask.Companion.serialize
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.FileUtils.fullyReadFileToBytes
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
@@ -90,7 +89,6 @@ class UploadManager(context: Context) : FileUploadService() {
             for (news in newsLog) {
                 try {
                     val `object` = apiInterface?.postDoc(Utilities.header, "application/json", Utilities.getUrl() + "/myplanet_activities", serialize(news))?.execute()?.body()
-                    Utilities.log("Team upload " + Gson().toJson(`object`))
                     if (`object` != null) {
                         news._id = getString("id", `object`)
                         news._rev = getString("rev", `object`)
@@ -151,7 +149,7 @@ class UploadManager(context: Context) : FileUploadService() {
                             continueResultUpload(sub, apiInterface, realm, context)
                         }
                     } catch (e: Exception) {
-                        Utilities.log("Upload exam result")
+                        e.printStackTrace()
                     }
                 }
             },
@@ -235,11 +233,7 @@ class UploadManager(context: Context) : FileUploadService() {
                         if (revElement != null && idElement != null) {
                             feedback.set_rev(revElement.asString)
                             feedback.set_id(idElement.asString)
-                        } else {
-                            Utilities.log("Missing 'rev' or 'id' elements in the JSON response")
                         }
-                    } else {
-                        Utilities.log("ERRRRRRRR " + res?.errorBody()?.string())
                     }
                 } catch (e: IOException) {
                     e.printStackTrace()
@@ -263,7 +257,6 @@ class UploadManager(context: Context) : FileUploadService() {
                         sub._rev = _rev
                         sub._id = _id
                         uploadAttachment(_id, _rev, sub, listener!!)
-                        Utilities.log("Submitting photos to Realm")
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -287,7 +280,6 @@ class UploadManager(context: Context) : FileUploadService() {
                         sub.set_rev(_rev)
                         sub.set_id(_id)
                         uploadAttachment(_id, _rev, sub, listener!!)
-                        Utilities.log("Submitting resources to Realm")
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -353,11 +345,9 @@ class UploadManager(context: Context) : FileUploadService() {
         mRealm = dbService.realmInstance
         mRealm.executeTransactionAsync { realm: Realm ->
             val teams: List<RealmMyTeam> = realm.where(RealmMyTeam::class.java).equalTo("updated", true).findAll()
-            Utilities.log("Teams size " + teams.size)
             for (team in teams) {
                 try {
                     val `object` = apiInterface?.postDoc(Utilities.header, "application/json", Utilities.getUrl() + "/teams", serialize(team))?.execute()?.body()
-                    Utilities.log("Team upload " + Gson().toJson(`object`))
                     if (`object` != null) {
                         team._rev = getString("rev", `object`)
                         team.updated = false
@@ -408,7 +398,6 @@ class UploadManager(context: Context) : FileUploadService() {
                 e.printStackTrace()
             }
         }
-        Utilities.log("Upload team activities")
     }
 
     fun uploadRating() {
@@ -461,7 +450,6 @@ class UploadManager(context: Context) : FileUploadService() {
                             val _rev = getString("rev", response)
                             val _id = getString("id", response)
                             val f = File(getString("imageUrl", imgObject))
-                            Utilities.log("IMAGE FILE URL  " + getString("imageUrl", imgObject))
                             val name = getFileNameFromUrl(getString("imageUrl", imgObject))
                             val format = "%s/resources/%s/%s"
                             val connection = f.toURL().openConnection()

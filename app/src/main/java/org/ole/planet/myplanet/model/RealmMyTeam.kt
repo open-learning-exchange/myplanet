@@ -10,7 +10,6 @@ import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Date
 
 open class RealmMyTeam : RealmObject() {
@@ -99,7 +98,6 @@ open class RealmMyTeam : RealmObject() {
                 if (myTeams == null) {
                     myTeams = realm.createObject(RealmMyTeam::class.java, teamId)
                 }
-                Utilities.log(teamId)
                 if (myTeams != null) {
                     myTeams.userId = JsonUtils.getString("userId", doc)
                     myTeams.teamId = JsonUtils.getString("teamId", doc)
@@ -154,7 +152,6 @@ open class RealmMyTeam : RealmObject() {
                 if (myTeams == null) {
                     myTeams = realm.createObject(RealmMyTeam::class.java, teamId)
                 }
-                Utilities.log(teamId)
                 if (myTeams != null) {
                     myTeams.teamId = JsonUtils.getString("teamId", doc)
                     myTeams.description = JsonUtils.getString("description", doc)
@@ -412,14 +409,10 @@ open class RealmMyTeam : RealmObject() {
             .equalTo("userId", userId)
             .findAll()
 
-        if (m.size > 0) {
-            Utilities.log("Team ${m[0]?._id}  ${m[0]?.docType}")
-        }
         return m.size > 0
     }
 
     fun isMyTeam(userID: String?, mRealm: Realm): Boolean {
-        Utilities.log("Is my team team id $_id")
         return mRealm.where(RealmMyTeam::class.java)
             .equalTo("userId", userID)
             .equalTo("teamId", _id)

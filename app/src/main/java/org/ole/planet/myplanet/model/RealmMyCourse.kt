@@ -2,13 +2,11 @@ package org.ole.planet.myplanet.model
 
 import android.content.SharedPreferences
 import android.text.TextUtils
-import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
-import io.realm.RealmResults
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utilities.JsonUtils
@@ -69,7 +67,6 @@ open class RealmMyCourse : RealmObject() {
     companion object {
         @JvmStatic
         fun insertMyCourses(userId: String?, myCousesDoc: JsonObject?, mRealm: Realm) {
-            Utilities.log("INSERT COURSE " + Gson().toJson(myCousesDoc))
             val id = JsonUtils.getString("_id", myCousesDoc)
             var myMyCoursesDB =
                 mRealm.where(RealmMyCourse::class.java).equalTo("id", id).findFirst()

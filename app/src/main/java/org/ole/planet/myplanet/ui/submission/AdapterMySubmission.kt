@@ -21,7 +21,6 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.exam.TakeExamFragment
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission.ViewHolderMySurvey
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormatedDate
-import org.ole.planet.myplanet.utilities.Utilities
 
 class AdapterMySubmission(private val context: Context, private val list: List<RealmSubmission>?, private val examHashMap: HashMap<String?, RealmStepExam>?) : RecyclerView.Adapter<ViewHolderMySurvey>() {
     private lateinit var rowMysurveyBinding: RowMysurveyBinding
@@ -100,7 +99,6 @@ class AdapterMySubmission(private val context: Context, private val list: List<R
     companion object {
         @JvmStatic
         fun openSurvey(listener: OnHomeItemClickListener?, id: String?, isMySurvey: Boolean) {
-            Utilities.log("EXAM ID $id")
             if (listener != null) {
                 val b = Bundle()
                 b.putString("type", "survey")

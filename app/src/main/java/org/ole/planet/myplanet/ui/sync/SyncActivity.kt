@@ -12,7 +12,6 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
-import android.util.Log
 import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -270,7 +269,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         customProgressDialog?.setText(getString(R.string.connecting_to_server))
         customProgressDialog?.show()
         val apiInterface = client?.create(ApiInterface::class.java)
-        Utilities.log("$processedUrl/_all_dbs")
         apiInterface?.isPlanetAvailable("$processedUrl/_all_dbs")?.enqueue(
             object : Callback<ResponseBody?> { override fun onResponse(call: Call<ResponseBody?>, response: Response<ResponseBody?>) {
                 try {
@@ -278,7 +276,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     val ss = response.body()?.string()
                     val myList = ss?.split(",".toRegex())?.dropLastWhile { it.isEmpty() }
                         ?.let { listOf(*it.toTypedArray()) }
-                    Utilities.log("List size $ss")
                     if ((myList?.size ?: 0) < 8) {
                         alertDialogOkay(getString(R.string.check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server))
                     } else {
@@ -393,7 +390,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     fun startSync() {
-        Utilities.log("Start sync")
         SyncManager.instance?.start(this@SyncActivity)
     }
 
@@ -603,7 +599,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
                 override fun onSyncComplete() {
                     customProgressDialog?.dismiss()
-                    Utilities.log("on complete")
                     val log = authenticateUser(settings, name, password, true)
                     if (log) {
                         Toast.makeText(applicationContext, getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
@@ -664,7 +659,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         val msDiff = Calendar.getInstance().timeInMillis - cal_last_Sync.timeInMillis
         val daysDiff = TimeUnit.MILLISECONDS.toDays(msDiff)
         return if (daysDiff >= maxDays) {
-            Log.e("Sync Date ", "Expired - ")
             val alertDialogBuilder = AlertDialog.Builder(this)
             alertDialogBuilder.setMessage(
                 getString(R.string.it_has_been_more_than) + (daysDiff - 1) + getString(
@@ -677,7 +671,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             alertDialogBuilder.show()
             true
         } else {
-            Log.e("Sync Date ", "Not up to  - $maxDays")
             false
         }
     }
@@ -1166,7 +1159,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     override fun onSuccess(success: String?) {
-        Utilities.log("Sync completed ")
         if (customProgressDialog?.isShowing() == true && success?.contains("Crash") == true) {
             customProgressDialog?.dismiss()
         }
@@ -1224,7 +1216,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     fun continueSyncProcess() {
-        Utilities.log("Upload : Continue sync process")
         try {
             if (isSync) {
                 isServerReachable(processedUrl)

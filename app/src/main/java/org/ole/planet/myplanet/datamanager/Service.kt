@@ -6,8 +6,6 @@ import android.content.DialogInterface
 import android.content.SharedPreferences
 import android.net.Uri
 import android.text.TextUtils
-import android.util.Base64
-import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.realm.Realm
@@ -20,7 +18,6 @@ import org.ole.planet.myplanet.model.RealmCommunity
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.isUserExists
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.populateUsersTable
 import org.ole.planet.myplanet.service.UploadToShelfService
-import org.ole.planet.myplanet.ui.sync.ProcessUserDataActivity
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateIv
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateKey
 import org.ole.planet.myplanet.utilities.Constants.KEY_UPGRADE_MAX
@@ -131,7 +128,6 @@ class Service(private val context: Context) {
                                     }
                                 }
                             } catch (e: Exception) {
-                                e.localizedMessage?.let { Log.e("Error", it) }
                                 callback.onError("New apk version required  but not found on server - Contact admin", false)
                             }
                         }
@@ -220,17 +216,9 @@ class Service(private val context: Context) {
 
     private fun uploadToShelf(obj: JsonObject) {
         retrofitInterface?.putDoc(null, "application/json", Utilities.getUrl() + "/shelf/org.couchdb.user:" + obj["name"].asString, JsonObject())?.enqueue(object : Callback<JsonObject?> {
-            override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
-                if (response.isSuccessful) {
-                    Utilities.log("Successful uploaded to shelf")
-                } else {
-                    Utilities.log("Failed to upload to shelf")
-                }
-            }
+            override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {}
 
-            override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
-                t.message?.let { Utilities.log(it) }
-            }
+            override fun onFailure(call: Call<JsonObject?>, t: Throwable) {}
         })
     }
 
@@ -332,7 +320,6 @@ class Service(private val context: Context) {
             }
 
             override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
-                t.message?.let { Utilities.log(it) }
                 customProgressDialog.dismiss()
                 showAlertDialog(context.getString(R.string.device_couldn_t_reach_server_check_and_try_again))
             }

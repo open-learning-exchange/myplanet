@@ -131,7 +131,6 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
 
     private fun connectToWifi() {
         val id = settings.getInt("LastWifiID", -1)
-        Utilities.log("LAST SSID $id")
         val wifiManager = applicationContext.getSystemService(WIFI_SERVICE) as WifiManager
         val netId: Int
         for (tmp in wifiManager.configuredNetworks) {
@@ -142,7 +141,6 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
                 LocalBroadcastManager.getInstance(this).sendBroadcast(Intent("ACTION_NETWORK_CHANGED"))
                 break
             }
-            Utilities.log("SSID " + tmp.SSID)
         }
     }
 

@@ -69,7 +69,6 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
     }
 
     private fun showNodata() {
-        Utilities.log("Show nodata")
         if (fragmentMyPersonalsBinding.rvMypersonal.adapter?.itemCount == 0) {
             fragmentMyPersonalsBinding.tvNodata.visibility = View.VISIBLE
             fragmentMyPersonalsBinding.tvNodata.setText(R.string.no_data_available_please_click_button_to_add_new_resource_in_mypersonal)
