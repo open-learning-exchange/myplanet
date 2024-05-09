@@ -345,7 +345,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         alertHealthListBinding.list.adapter = adapter
         alertHealthListBinding.list.onItemClickListener = AdapterView.OnItemClickListener { _, _, i, _ ->
             val selected = alertHealthListBinding.list.adapter.getItem(i) as RealmUserModel
-            Utilities.log("On item selected")
             showDownloadDialog(getLibraryList(mRealm, selected._id))
             dialog?.dismiss()
         }
@@ -363,7 +362,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     override fun syncKeyId() {
         di = DialogUtils.CustomProgressDialog(requireContext())
         di?.setText(getString(R.string.syncing_health_please_wait))
-        Utilities.log(model.getRoleAsString())
         if (model.getRoleAsString().contains("health")) {
             settings?.let { TransactionSyncManager.syncAllHealthData(mRealm, it, this) }
         } else {

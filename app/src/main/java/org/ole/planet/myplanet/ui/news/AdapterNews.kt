@@ -183,7 +183,6 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     private fun loadRemoteImage(holder: RecyclerView.ViewHolder, news: RealmNews?) {
         val viewHolder = holder as ViewHolderNews
         news?.imagesArray?.let { imagesArray ->
-            news.images?.let { Utilities.log(it) }
             if (imagesArray.size() > 0) {
                 val ob = imagesArray[0]?.asJsonObject
                 getString("resourceId", ob).let { resourceId ->
@@ -323,7 +322,6 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
 
 
     override fun getItemCount(): Int {
-        Utilities.log("Parent news  " + (parentNews == null))
         return if (parentNews == null) list.size else list.size + 1
     }
 

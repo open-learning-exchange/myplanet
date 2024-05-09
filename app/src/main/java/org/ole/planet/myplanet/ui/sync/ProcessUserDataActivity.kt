@@ -31,7 +31,6 @@ import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DialogUtils.showAlert
 import org.ole.planet.myplanet.utilities.DialogUtils.showError
 import org.ole.planet.myplanet.utilities.FileUtils.installApk
-import org.ole.planet.myplanet.utilities.Utilities
 import kotlin.math.roundToInt
 
 abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
@@ -153,7 +152,6 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
     fun startUpload() {
         customProgressDialog?.setText(getString(R.string.uploading_data_to_server_please_wait))
         customProgressDialog?.show()
-        Utilities.log("Upload : upload started")
         UploadToShelfService.instance?.uploadUserData { UploadToShelfService.instance?.uploadHealth() }
         UploadManager.instance?.uploadUserActivities(this)
         UploadManager.instance?.uploadExamResult(this)

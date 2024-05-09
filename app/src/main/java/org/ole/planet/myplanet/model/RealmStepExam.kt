@@ -1,14 +1,12 @@
 package org.ole.planet.myplanet.model
 
 import android.text.TextUtils
-import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.RealmResults
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.Utilities
 
 open class RealmStepExam : RealmObject() {
     @JvmField
@@ -118,7 +116,6 @@ open class RealmStepExam : RealmObject() {
                     ids[i] = e.id + "@" + e.courseId
                 }
             }
-            Utilities.log(Gson().toJson(ids))
             return ids
         }
     }

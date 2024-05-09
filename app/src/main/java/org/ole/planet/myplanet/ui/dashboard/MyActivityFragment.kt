@@ -16,7 +16,6 @@ import org.ole.planet.myplanet.databinding.FragmentMyActivityBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.utilities.Utilities
 import java.text.DateFormatSymbols
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -44,14 +43,12 @@ class MyActivityFragment : Fragment() {
         val format = SimpleDateFormat("MMM")
         resourceActivity.forEach {
             val d = format.format(it.loginTime)
-            Utilities.log(d)
             if (countMap.containsKey(d)) {
                 countMap[d] = countMap[d]!!.plus(1)
             } else {
                 countMap[d] = 1
             }
         }
-        Utilities.log("${resourceActivity.size} size map : ${countMap.size} ")
         val entries = ArrayList<BarEntry>()
         var i = 0
         for (entry in countMap.keys) {
@@ -64,8 +61,6 @@ class MyActivityFragment : Fragment() {
             i = i.plus(1)
         }
         val e = Gson().toJson(countMap)
-        Utilities.log(e)
-        Utilities.log("${entries.size} size")
         val dataSet = BarDataSet(entries, "No of login ")
 
         val lineData = BarData(dataSet)
@@ -75,7 +70,6 @@ class MyActivityFragment : Fragment() {
         fragmentMyActivityBinding.chart.description = d
         fragmentMyActivityBinding.chart.xAxis.valueFormatter = object : ValueFormatter() {
             override fun getFormattedValue(value: Float): String {
-                Utilities.log("value ${value.toInt()}")
                 return getMonth(value.toInt())
             }
         }

@@ -120,7 +120,6 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
             itemMyLifeBinding.tvCount.visibility = View.VISIBLE
             val noOfSurvey = RealmSubmission.getNoOfSurveySubmissionByUser(user?.id, mRealm)
             itemMyLifeBinding.tvCount.text = noOfSurvey.toString()
-            Utilities.log("Count $noOfSurvey")
         } else {
             itemMyLifeBinding.tvCount.visibility = View.GONE
         }

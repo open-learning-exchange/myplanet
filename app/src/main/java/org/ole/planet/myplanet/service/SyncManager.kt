@@ -51,8 +51,6 @@ class SyncManager private constructor(private val context: Context) {
         if (!isSyncing) {
             listener?.onSyncStarted()
             authenticateAndSync()
-        } else {
-            Utilities.log("Already Syncing...")
         }
     }
 
@@ -189,7 +187,6 @@ class SyncManager private constructor(private val context: Context) {
         try {
             this.mRealm = mRealm
             val jsonDoc = apiInterface.getJsonObject(Utilities.header, Utilities.getUrl() + "/shelf/" + shelfDoc!!.id).execute().body()
-            Utilities.log(Gson().toJson(jsonDoc))
             for (i in Constants.shelfDataList.indices) {
                 val shelfData = Constants.shelfDataList[i]
                 val array = getJsonArray(shelfData.key, jsonDoc)

@@ -11,7 +11,6 @@ import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.Utilities
 
 open class RealmAchievement : RealmObject() {
     @JvmField
@@ -83,7 +82,6 @@ open class RealmAchievement : RealmObject() {
         references = RealmList()
         if (of == null) return
         for (el in of) {
-            Utilities.log("Set references")
             val e = Gson().toJson(el)
             if (!references?.contains(e)!!) {
                 references?.add(e)
@@ -102,7 +100,6 @@ open class RealmAchievement : RealmObject() {
             `object`.addProperty("achievementsHeader", sub.achievementsHeader)
             `object`.add("references", sub.getreferencesArray())
             `object`.add("achievements", sub.achievementsArray)
-            Utilities.log(Gson().toJson(`object`))
             return `object`
         }
 

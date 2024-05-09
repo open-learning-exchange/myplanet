@@ -63,7 +63,6 @@ class MyHealthFragment : Fragment() {
         userId = if (TextUtils.isEmpty(profileDbHandler?.userModel?._id)) profileDbHandler?.userModel?.id else profileDbHandler?.userModel?._id
         getHealthRecords(userId)
 
-        Utilities.log("ROLE " + profileDbHandler?.userModel?.getRoleAsString()!!)
         if (profileDbHandler?.userModel?.getRoleAsString()?.contains("health", true) == true) {
             fragmentVitalSignBinding.btnnewPatient.visibility = View.VISIBLE
             fragmentVitalSignBinding.btnnewPatient.setOnClickListener { selectPatient() }
@@ -227,15 +226,11 @@ class MyHealthFragment : Fragment() {
 
     private fun getExaminations(mm: RealmMyHealth): List<RealmMyHealthPojo>? {
         var healths = mRealm.where(RealmMyHealthPojo::class.java)?.findAll()
-        healths?.forEach {
-            it.profileId?.let { it1 -> Utilities.log(it1) }
-        }
         healths = mRealm.where(RealmMyHealthPojo::class.java)?.equalTo("profileId", mm.userKey)?.findAll()
         return healths
     }
 
     private fun getHealthProfile(mh: RealmMyHealthPojo): RealmMyHealth? {
-        mh.data?.let { Utilities.log(it) }
         val json = AndroidDecrypter.decrypt(mh.data, userModel?.key, userModel?.iv)
         return if (TextUtils.isEmpty(json)) {
             null

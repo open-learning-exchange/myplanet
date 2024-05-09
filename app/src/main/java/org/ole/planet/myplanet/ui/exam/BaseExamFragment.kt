@@ -191,15 +191,12 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
         submit.uniqueId = unique_id
         submit.photoLocation = photo_path
         submit.uploaded = false
-        submit.photoLocation?.let { Utilities.log(it) }
-        Utilities.log("insert_into_submitPhotos")
         mRealm.commitTransaction()
     }
 
     override fun onImageCapture(fileUri: String?) {
         photo_path = fileUri
         insert_into_submitPhotos(Submit_id)
-        photo_path?.let { Utilities.log(it) }
     }
 
     fun setMarkdownViewAndShowInput(etAnswer: EditText, type: String, oldAnswer: String?) {

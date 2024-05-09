@@ -81,7 +81,6 @@ class FinanceFragment : BaseTeamFragment() {
             val end = Calendar.getInstance()
             start[year, monthOfYear] = dayOfMonth
             end[yearEnd, monthOfYearEnd] = dayOfMonthEnd
-            Utilities.log("" + start.timeInMillis + " " + end.timeInMillis)
             list = fRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId)
                 .equalTo("docType", "transaction")
                 .between("date", start.timeInMillis, end.timeInMillis).sort("date", Sort.DESCENDING)
@@ -128,7 +127,6 @@ class FinanceFragment : BaseTeamFragment() {
         AlertDialog.Builder(requireActivity()).setView(setUpAlertUi()).setTitle(R.string.add_transaction)
             .setPositiveButton("Submit") { _: DialogInterface?, _: Int ->
                 val type = addTransactionBinding.spnType.selectedItem.toString()
-                Utilities.log("$type type")
                 val note = "${addTransactionBinding.tlNote.editText?.text}".trim { it <= ' ' }
                 val amount = "${addTransactionBinding.tlAmount.editText?.text}".trim { it <= ' ' }
                 if (note.isEmpty()) {

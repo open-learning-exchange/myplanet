@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.utilities
 import android.graphics.SurfaceTexture
 import android.hardware.Camera
 import android.hardware.Camera.CameraInfo
-import android.util.Log
 import java.io.File
 import java.io.FileOutputStream
 import java.util.Date
@@ -17,7 +16,7 @@ object CameraUtils {
             Camera.getCameraInfo(frontCamera, cameraInfo)
             Camera.open(frontCamera)
         } catch (e: RuntimeException) {
-            Utilities.log("Front Camera not available")
+            e.printStackTrace()
             return
         }
         try {
@@ -45,10 +44,9 @@ object CameraUtils {
             val fos = FileOutputStream(mainPicture)
             fos.write(data)
             fos.close()
-            Utilities.log("image saved")
             callback.onImageCapture(mainPicture.absolutePath)
         } catch (error: Exception) {
-            Log.d("kkkk", "Image could not be saved")
+            error.printStackTrace()
         }
     }
 

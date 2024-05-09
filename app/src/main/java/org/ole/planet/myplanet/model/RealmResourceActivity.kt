@@ -6,7 +6,6 @@ import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.utilities.NetworkUtils
-import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Date
 import java.util.UUID
 
@@ -54,10 +53,7 @@ open class RealmResourceActivity : RealmObject() {
         fun onSynced(mRealm: Realm, settings: SharedPreferences) {
             if (!mRealm.isInTransaction) mRealm.beginTransaction()
             val user = mRealm.where(RealmUserModel::class.java).equalTo("id", settings.getString("userId", "")).findFirst()
-            if (user == null) {
-                Utilities.log("User is null")
-                return
-            }
+                ?: return
             if (user.id?.startsWith("guest") == true) {
                 return
             }
@@ -69,7 +65,6 @@ open class RealmResourceActivity : RealmObject() {
             activities.createdOn = user.planetCode
             activities.type = "sync"
             activities.time = Date().time
-            Utilities.log("Saved Sync Activity")
             mRealm.commitTransaction()
         }
     }

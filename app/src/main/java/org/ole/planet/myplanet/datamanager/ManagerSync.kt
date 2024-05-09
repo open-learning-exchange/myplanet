@@ -31,7 +31,6 @@ class ManagerSync private constructor(context: Context) {
 
     fun login(userName: String?, password: String?, listener: SyncListener) {
         listener.onSyncStarted()
-        Utilities.log(Utilities.getUrl() + "/org.couchdb.user:" + userName)
         val apiInterface = ApiClient.client?.create(ApiInterface::class.java)
         apiInterface?.getJsonObject("Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP), String.format("%s/_users/%s", Utilities.getUrl(), "org.couchdb.user:$userName"))
             ?.enqueue(object : Callback<JsonObject?> {
@@ -85,7 +84,6 @@ class ManagerSync private constructor(context: Context) {
     }
 
     private fun checkManagerAndInsert(jsonDoc: JsonObject?, realm: Realm, listener: SyncListener) {
-        Utilities.log("Check manager and insert")
         if (isManager(jsonDoc)) {
             populateUsersTable(jsonDoc, realm, settings)
             listener.onSyncComplete()

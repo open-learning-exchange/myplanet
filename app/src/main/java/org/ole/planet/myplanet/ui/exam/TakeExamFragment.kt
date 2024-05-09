@@ -27,7 +27,6 @@ import org.ole.planet.myplanet.utilities.JsonParserUtils.getStringAsJsonArray
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.KeyboardUtils.hideSoftKeyboard
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
-import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Arrays
 import java.util.Date
 import java.util.Locale
@@ -64,7 +63,6 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         isCertified = isCourseCertified(mRealm, courseId)
         if ((questions?.size ?: 0) > 0) {
             createSubmission()
-            Utilities.log("Current index $currentIndex")
             startExam(questions?.get(currentIndex))
         } else {
             container?.visibility = View.GONE
@@ -77,7 +75,6 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     private fun createSubmission() {
         startTransaction()
         sub = createSubmission(sub, mRealm)
-        Utilities.log("Set parent id $id")
         if (TextUtils.isEmpty(id)) {
             sub?.parentId = if (!TextUtils.isEmpty(exam?.courseId)) {
                 exam?.id + "@" + exam?.courseId
@@ -286,7 +283,6 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     private fun isEqual(ar1: Array<String>?, ar2: Array<String>?): Boolean {
         ar1?.let { Arrays.sort(it) }
         ar2?.let { Arrays.sort(it) }
-        Utilities.log(ar1.contentToString() + " " + ar2.contentToString())
         return ar1.contentEquals(ar2)
     }
 

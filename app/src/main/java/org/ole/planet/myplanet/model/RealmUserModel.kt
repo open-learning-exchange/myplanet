@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.model
 
 import android.content.SharedPreferences
 import android.text.TextUtils
-import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
@@ -209,7 +208,6 @@ open class RealmUserModel : RealmObject() {
         }
 
         private fun insertIntoUsers(jsonDoc: JsonObject?, user: RealmUserModel?, settings: SharedPreferences) {
-            Utilities.log("Insert into users " + Gson().toJson(jsonDoc))
             if (user != null) {
                 user._rev = JsonUtils.getString("_rev", jsonDoc)
                 user._id = JsonUtils.getString("_id", jsonDoc)

@@ -10,7 +10,6 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.text.TextUtils
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -214,8 +213,6 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     @RequiresApi(Build.VERSION_CODES.O)
     private fun openFileType(items: RealmMyLibrary, videotype: String) {
         val mimetype = Utilities.getMimeType(items.resourceLocalAddress)
-        Utilities.log("Mime type $mimetype")
-        Utilities.log("Mime type " + items.resourceLocalAddress)
         if (mimetype == null) {
             Utilities.toast(activity, getString(R.string.unable_to_open_resource))
             return
@@ -234,7 +231,6 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         bundle.putString("videoType", videoType)
         if (videoType == "online") {
             bundle.putString("videoURL", "" + Utilities.getUrl(items))
-            Log.e("AUTH", "" + auth)
             bundle.putString("Auth", "" + auth)
         } else if (videoType == "offline") {
             if (items.resourceRemoteAddress == null && items.resourceLocalAddress != null) {

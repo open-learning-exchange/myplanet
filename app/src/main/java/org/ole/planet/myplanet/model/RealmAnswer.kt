@@ -7,7 +7,6 @@ import com.google.gson.JsonObject
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.utilities.Utilities
 
 open class RealmAnswer : RealmObject() {
     @PrimaryKey
@@ -57,7 +56,6 @@ open class RealmAnswer : RealmObject() {
     companion object {
         @JvmStatic
         fun serializeRealmAnswer(answers: RealmList<RealmAnswer>): JsonArray {
-            Utilities.log("Ans size " + answers.size)
             val array = JsonArray()
             for (ans in answers) {
                 array.add(createObject(ans))

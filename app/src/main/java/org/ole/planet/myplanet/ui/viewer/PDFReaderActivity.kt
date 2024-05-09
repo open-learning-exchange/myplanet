@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.viewer
 
 import android.os.Bundle
 import android.text.TextUtils
-import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -65,7 +64,6 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
         val file = File(getExternalFilesDir(null), "ole/$fileName")
         if (file.exists()) {
             try {
-                Utilities.log(file.absolutePath)
                 activityPdfreaderBinding.pdfView.fromFile(file).defaultPage(0)
                     .enableAnnotationRendering(true).onLoad(this).onPageChange(this)
                     .scrollHandle(DefaultScrollHandle(this)).load()
@@ -81,9 +79,7 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
 
     override fun loadComplete(nbPages: Int) {}
     override fun onPageChanged(page: Int, pageCount: Int) {}
-    override fun onPageError(page: Int, t: Throwable) {
-        Log.e(TAG, "Cannot load page $page")
-    }
+    override fun onPageError(page: Int, t: Throwable) {}
 
     override fun onRecordStarted() {
         Utilities.toast(this, getString(R.string.recording_started))

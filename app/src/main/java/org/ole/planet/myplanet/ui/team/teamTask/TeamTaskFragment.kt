@@ -178,7 +178,6 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
     }
 
     override fun onCheckChange(realmTeamTask: RealmTeamTask?, b: Boolean) {
-        Utilities.log("CHECK CHANGED")
         if (!mRealm.isInTransaction) mRealm.beginTransaction()
         realmTeamTask?.completed = b
         realmTeamTask?.isUpdated = true

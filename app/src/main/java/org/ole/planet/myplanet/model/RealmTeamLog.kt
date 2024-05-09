@@ -8,7 +8,6 @@ import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
-import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Calendar
 
 open class RealmTeamLog : RealmObject() {
@@ -71,7 +70,6 @@ open class RealmTeamLog : RealmObject() {
 
         @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject?) {
-            Utilities.log("Insert team visits")
             var tag = mRealm.where(RealmTeamLog::class.java).equalTo("id", JsonUtils.getString("_id", act)).findFirst()
             if (tag == null) tag = mRealm.createObject(RealmTeamLog::class.java, JsonUtils.getString("_id", act))
             if (tag != null) {

@@ -39,7 +39,6 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
-import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.CheckboxListView
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
@@ -61,7 +60,6 @@ abstract class BaseResourceFragment : Fragment() {
 
     private var receiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            Utilities.log("Broad cast received")
             showDownloadDialog(getLibraryList(DatabaseService(context).realmInstance))
         }
     }
@@ -123,7 +121,6 @@ abstract class BaseResourceFragment : Fragment() {
                         return
                     }
                     Utilities.toast(requireContext(), getString(R.string.planet_not_available))
-                    Utilities.log("Planet not available")
                 }
             })
         }

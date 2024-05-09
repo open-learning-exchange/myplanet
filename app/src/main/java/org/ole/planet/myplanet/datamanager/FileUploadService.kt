@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.datamanager
 
-import com.google.gson.Gson
 import com.google.gson.JsonObject
 import okhttp3.MediaType
 import okhttp3.RequestBody
@@ -65,7 +64,6 @@ open class FileUploadService {
     }
 
     private fun onDataReceived(`object`: JsonObject?, listener: SuccessListener) {
-        Utilities.log("On data received " + Gson().toJson(`object`))
         if (`object` != null) {
             if (JsonUtils.getBoolean("ok", `object`)) {
                 listener.onSuccess("Uploaded successfully")

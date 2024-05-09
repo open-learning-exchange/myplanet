@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.resources
 
 import android.content.Context
 import android.text.TextUtils
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -71,7 +70,6 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
         if (holder is ViewHolderLibrary) {
             holder.bind()
             holder.rowLibraryBinding.title.text = libraryList[position]?.title
-            Utilities.log(libraryList[position]?.description!!)
             setMarkdownText(holder.rowLibraryBinding.description, libraryList[position]?.description!!)
             holder.rowLibraryBinding.timesRated.text = "${libraryList[position]?.timesRated}${context.getString(R.string.total)}"
             holder.rowLibraryBinding.checkbox.isChecked = selectedItems.contains(libraryList[position])
@@ -82,7 +80,6 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
                 } else {
                     String.format("%.1f", libraryList[position]?.averageRating!!.toDouble())
                 }
-            Log.d("AdapterLibrary", "onBindViewHolder: ${libraryList[position]?.createdDate}")
             holder.rowLibraryBinding.tvDate.text = libraryList[position]?.createdDate?.let { formatDate(it, "MMM dd, yyyy") }
             displayTagCloud(holder.rowLibraryBinding.flexboxDrawable, position)
             holder.itemView.setOnClickListener { openLibrary(libraryList[position]) }

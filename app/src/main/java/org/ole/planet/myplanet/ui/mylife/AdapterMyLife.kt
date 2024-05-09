@@ -50,7 +50,6 @@ class AdapterMyLife(private val context: Context, private val myLifeList: List<R
     @SuppressLint("ClickableViewAccessibility")
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         if (holder is ViewHolderMyLife) {
-            Utilities.log("On bind $position")
             holder.title.text = myLifeList[position].title
             holder.imageView.setImageResource(context.resources.getIdentifier(myLifeList[position].imageId, "drawable", context.packageName))
             holder.imageView.contentDescription = context.getString(R.string.icon, myLifeList[position].title)
@@ -94,7 +93,7 @@ class AdapterMyLife(private val context: Context, private val myLifeList: List<R
                     changeVisibility(holder, R.drawable.ic_visibility_off, SHOW)
                     Utilities.toast(context, myLifeList[position].title + context.getString(R.string.is_now_shown))
                 }
-            } }) { error: Throwable -> Utilities.log(error.toString()) }
+            } }) { }
     }
 
     private fun changeVisibility(holder: RecyclerView.ViewHolder, imageId: Int, alpha: Float) {
@@ -154,11 +153,7 @@ class AdapterMyLife(private val context: Context, private val myLifeList: List<R
                 "ic_mypersonals" -> return MyPersonalsFragment()
                 "ic_news" -> return NewsFragment()
                 "ic_submissions" -> return MySubmissionFragment()
-                "ic_my_survey" -> {
-                    Utilities.log("My survey")
-                    return newInstance("survey")
-                }
-
+                "ic_my_survey" -> return newInstance("survey")
                 "ic_myhealth" -> return MyHealthFragment()
                 "ic_calendar" -> return CalendarFragment()
                 "ic_help_wanted" -> return HelpWantedFragment()
