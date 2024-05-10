@@ -415,12 +415,13 @@ class ChatDetailFragment : Fragment() {
 
     private fun continueConversationRealm(_id:String, query:String, chatResponse:String) {
         try {
-            mRealm = Realm.getDefaultInstance()
             addConversationToChatHistory(mRealm, _id, query, chatResponse)
             mRealm.commitTransaction()
         } catch (e: Exception) {
             e.printStackTrace()
-            mRealm.cancelTransaction()
+            if (mRealm.isInTransaction) {
+                mRealm.cancelTransaction()
+            }
         } finally {
             mRealm.close()
         }
