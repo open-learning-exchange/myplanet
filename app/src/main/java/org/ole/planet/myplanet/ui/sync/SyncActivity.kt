@@ -632,7 +632,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     fun forceSyncTrigger(): Boolean {
-        if (Objects.equals(getRelativeTime(settings.getLong(getString(R.string.last_syncs), 0)), "Jan 1, 1970")) {
+        if (settings.getLong(getString(R.string.last_syncs), 0) <= 0) {
             lblLastSyncDate.text = getString(R.string.last_synced_never)
         } else {
             lblLastSyncDate.text = "${getString(R.string.last_sync)} ${getRelativeTime(settings.getLong(getString(R.string.last_syncs), 0))}"
