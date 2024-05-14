@@ -22,6 +22,7 @@ open class RealmCertification : RealmObject() {
     }
 
     companion object {
+        @JvmStatic
         fun insert(mRealm: Realm, `object`: JsonObject?) {
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()

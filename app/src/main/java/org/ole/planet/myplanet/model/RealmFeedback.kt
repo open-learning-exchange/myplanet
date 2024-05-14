@@ -131,7 +131,7 @@ open class RealmFeedback : RealmObject() {
             if (feedback == null) {
                 feedback = mRealm.createObject(RealmFeedback::class.java, JsonUtils.getString("_id", act))
             }
-                feedback?._id = JsonUtils.getString("_id", act)
+            feedback?._id = JsonUtils.getString("_id", act)
             feedback?.title = JsonUtils.getString("title", act)
             feedback?.source = JsonUtils.getString("source", act)
             feedback?.status = JsonUtils.getString("status", act)

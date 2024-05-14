@@ -37,12 +37,12 @@ open class RealmCourseStep : RealmObject() {
     companion object {
         @JvmStatic
         fun insertCourseSteps(myCoursesID: String?, steps: JsonArray, numberOfSteps: Int, mRealm: Realm) {
-//            mRealm.executeTransaction { realm ->
+            mRealm.executeTransactionAsync { realm : Realm ->
                 for (step in 0 until numberOfSteps) {
                     val step_id = Base64.encodeToString(steps[step].toString().toByteArray(), Base64.NO_WRAP)
-                    var myCourseStepDB = mRealm.where(RealmCourseStep::class.java).equalTo("id", step_id).findFirst()
+                    var myCourseStepDB = realm.where(RealmCourseStep::class.java).equalTo("id", step_id).findFirst()
                     if (myCourseStepDB == null) {
-                        myCourseStepDB = mRealm.createObject(RealmCourseStep::class.java, step_id)
+                        myCourseStepDB = realm.createObject(RealmCourseStep::class.java, step_id)
                     }
                     myCourseStepDB?.courseId = myCoursesID
                     val stepContainer = steps[step].asJsonObject
@@ -57,20 +57,44 @@ open class RealmCourseStep : RealmObject() {
                         concatenatedLinks.add(concatenatedLink)
                     }
                     Utilities.openDownloadService(MainApplication.context, concatenatedLinks)
-                    myCourseStepDB?.setNoOfResources(
-                        JsonUtils.getJsonArray(
-                            "resources",
-                            stepContainer
-                        ).size()
-                    )
+                    myCourseStepDB?.setNoOfResources(JsonUtils.getJsonArray("resources", stepContainer).size())
                     insertCourseStepsAttachments(
                         myCoursesID, step_id,
-                        JsonUtils.getJsonArray("resources", stepContainer), mRealm
+                        JsonUtils.getJsonArray("resources", stepContainer), realm
                     )
-                    insertExam(stepContainer, mRealm, step_id, step + 1, myCoursesID)
+                    insertExam(stepContainer, realm, step_id, step + 1, myCoursesID)
                 }
-//            }
+            }
         }
+
+//        fun insertCourseSteps(myCoursesID: String?, steps: JsonArray, numberOfSteps: Int, mRealm: Realm) {
+//            for (step in 0 until numberOfSteps) {
+//                val step_id = Base64.encodeToString(steps[step].toString().toByteArray(), Base64.NO_WRAP)
+//                var myCourseStepDB = mRealm.where(RealmCourseStep::class.java).equalTo("id", step_id).findFirst()
+//                if (myCourseStepDB == null) {
+//                    myCourseStepDB = mRealm.createObject(RealmCourseStep::class.java, step_id)
+//                }
+//                myCourseStepDB?.courseId = myCoursesID
+//                val stepContainer = steps[step].asJsonObject
+//                myCourseStepDB?.stepTitle = JsonUtils.getString("stepTitle", stepContainer)
+//                myCourseStepDB?.description = JsonUtils.getString("description", stepContainer)
+//                val description = JsonUtils.getString("description", stepContainer)
+//                val links = extractLinks(description)
+//                val concatenatedLinks = ArrayList<String>()
+//                val baseUrl = Utilities.getUrl()
+//                for (link in links) {
+//                    val concatenatedLink = "$baseUrl/$link"
+//                    concatenatedLinks.add(concatenatedLink)
+//                }
+//                Utilities.openDownloadService(MainApplication.context, concatenatedLinks)
+//                myCourseStepDB?.setNoOfResources(JsonUtils.getJsonArray("resources", stepContainer).size())
+//                insertCourseStepsAttachments(
+//                    myCoursesID, step_id,
+//                    JsonUtils.getJsonArray("resources", stepContainer), mRealm
+//                )
+//                insertExam(stepContainer, mRealm, step_id, step + 1, myCoursesID)
+//            }
+//        }
 
         @JvmStatic
         fun extractLinks(text: String?): ArrayList<String> {

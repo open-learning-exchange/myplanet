@@ -76,6 +76,7 @@ open class RealmMyHealthPojo : RealmObject() {
     }
 
     companion object {
+        @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject?) {
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()

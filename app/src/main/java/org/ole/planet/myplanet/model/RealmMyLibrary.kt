@@ -285,7 +285,10 @@ open class RealmMyLibrary : RealmObject() {
             val ids = getIds(mRealm)
             for (id in ids) {
                 if (!newIds.contains(id)) {
-                    mRealm.where(RealmMyLibrary::class.java).equalTo("resourceId", id).findAll().deleteAllFromRealm()
+                    mRealm.executeTransaction { realm ->
+                        realm.where(RealmMyLibrary::class.java).equalTo("resourceId", id).findAll()
+                            .deleteAllFromRealm()
+                    }
                 }
             }
         }

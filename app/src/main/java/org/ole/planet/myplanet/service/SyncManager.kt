@@ -135,13 +135,11 @@ class SyncManager private constructor(private val context: Context) {
 
     fun resourceTransactionSync() {
         val apiInterface = client?.create(ApiInterface::class.java)
-//        mRealm.executeTransaction {
-            try {
-                syncResource(apiInterface)
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
-//        }
+        try {
+            syncResource(apiInterface)
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
     }
 
     @Throws(IOException::class)
@@ -174,30 +172,30 @@ class SyncManager private constructor(private val context: Context) {
             val res = apiInterface?.getDocuments(Utilities.header, Utilities.getUrl() + "/shelf/_all_docs")?.execute()?.body()
             for (i in res?.rows!!.indices) {
                 shelfDoc = res.rows!![i]
-                populateShelfItems(apiInterface, mRealm)
+                populateShelfItems(apiInterface)
             }
         } catch (e: IOException) {
             e.printStackTrace()
         }
     }
 
-    private fun populateShelfItems(apiInterface: ApiInterface, mRealm: Realm) {
+    private fun populateShelfItems(apiInterface: ApiInterface) {
         try {
             val jsonDoc = apiInterface.getJsonObject(Utilities.header, Utilities.getUrl() + "/shelf/" + shelfDoc?.id).execute().body()
             for (i in Constants.shelfDataList.indices) {
                 val shelfData = Constants.shelfDataList[i]
                 val array = getJsonArray(shelfData.key, jsonDoc)
-                memberShelfData(array, shelfData, mRealm)
+                memberShelfData(array, shelfData)
             }
         } catch (err: Exception) {
             err.printStackTrace()
         }
     }
 
-    private fun memberShelfData(array: JsonArray, shelfData: ShelfData, mRealm: Realm) {
+    private fun memberShelfData(array: JsonArray, shelfData: ShelfData) {
         if (array.size() > 0) {
             triggerInsert(shelfData.categoryKey, shelfData.type)
-            check(array, mRealm)
+            check(array)
         }
     }
 
@@ -207,26 +205,26 @@ class SyncManager private constructor(private val context: Context) {
         stringArray[2] = categoryDBName
     }
 
-    private fun check(array_categoryIds: JsonArray, mRealm: Realm) {
+    private fun check(array_categoryIds: JsonArray) {
         for (x in 0 until array_categoryIds.size()) {
             if (array_categoryIds[x] is JsonNull) {
                 continue
             }
-            validateDocument(array_categoryIds, x, mRealm)
+            validateDocument(array_categoryIds, x)
         }
     }
 
-    private fun validateDocument(array_categoryIds: JsonArray, x: Int, mRealm: Realm) {
+    private fun validateDocument(array_categoryIds: JsonArray, x: Int) {
         val apiInterface = client!!.create(ApiInterface::class.java)
         try {
             val resourceDoc = apiInterface.getJsonObject(Utilities.header, Utilities.getUrl() + "/" + stringArray[2] + "/" + array_categoryIds[x].asString).execute().body()
-            resourceDoc?.let { triggerInsert(stringArray, it, mRealm) }
+            resourceDoc?.let { triggerInsert(stringArray, it) }
         } catch (e: IOException) {
             e.printStackTrace()
         }
     }
 
-    private fun triggerInsert(stringArray: Array<String?>, resourceDoc: JsonObject, mRealm: Realm) {
+    private fun triggerInsert(stringArray: Array<String?>, resourceDoc: JsonObject) {
         when (stringArray[2]) {
             "resources" -> insertMyLibrary(stringArray[0], resourceDoc, mRealm)
             "meetups" -> insert(mRealm, resourceDoc)
