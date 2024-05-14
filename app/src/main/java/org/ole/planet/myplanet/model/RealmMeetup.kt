@@ -49,7 +49,6 @@ open class RealmMeetup : RealmObject() {
             insert("", meetupDoc, mRealm)
         }
 
-        @JvmStatic
         fun insert(userId: String?, meetupDoc: JsonObject, mRealm: Realm) {
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()

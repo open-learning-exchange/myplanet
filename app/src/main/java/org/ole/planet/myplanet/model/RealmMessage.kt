@@ -15,7 +15,6 @@ open class RealmMessage : RealmObject() {
     var user: String? = null
 
     companion object {
-        @JvmStatic
         fun serialize(messages: RealmList<RealmMessage>): JsonElement {
             val array = JsonArray()
             for (ms in messages) {
