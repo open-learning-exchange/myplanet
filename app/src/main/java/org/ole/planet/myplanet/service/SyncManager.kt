@@ -228,7 +228,11 @@ class SyncManager private constructor(private val context: Context) {
         when (stringArray[2]) {
             "resources" -> insertMyLibrary(stringArray[0], resourceDoc, mRealm)
             "meetups" -> insert(mRealm, resourceDoc)
-            "courses" -> insertMyCourses(stringArray[0], resourceDoc, mRealm)
+            "courses" -> {
+                mRealm.executeTransaction { realm ->
+                    insertMyCourses(stringArray[0], resourceDoc, realm)
+                }
+            }
             "teams" -> insertMyTeams(resourceDoc, mRealm)
         }
     }
