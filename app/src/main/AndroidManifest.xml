@@ -78,7 +78,8 @@
         <activity
             android:name=".ui.resources.AddResourceActivity"
             android:theme="@style/AppTheme" />
-        <activity android:name=".ui.viewer.AudioPlayerActivity" />
+        <activity android:name=".ui.viewer.AudioPlayerActivity"
+            android:configChanges="orientation|screenSize" />
         <activity
             android:name=".ui.feedback.FeedbackDetailActivity"
             android:theme="@style/AppTheme" />
@@ -88,13 +89,20 @@
             android:label="@string/title_activity_dashboard"
             android:windowSoftInputMode="adjustPan"
             android:theme="@style/FullscreenTheme" />
-        <activity android:name=".ui.viewer.PDFReaderActivity" />
-        <activity android:name=".ui.viewer.WebViewActivity" />
-        <activity android:name=".ui.viewer.VideoPlayerActivity" />
-        <activity android:name=".ui.viewer.ImageViewerActivity" />
-        <activity android:name=".ui.viewer.TextFileViewerActivity" />
-        <activity android:name=".ui.viewer.MarkdownViewerActivity" />
-        <activity android:name=".ui.viewer.CSVViewerActivity" />
+        <activity android:name=".ui.viewer.PDFReaderActivity"
+            android:configChanges="orientation|screenSize" />
+        <activity android:name=".ui.viewer.WebViewActivity"
+            android:configChanges="orientation|screenSize" />
+        <activity android:name=".ui.viewer.VideoPlayerActivity"
+            android:configChanges="orientation|screenSize" />
+        <activity android:name=".ui.viewer.ImageViewerActivity"
+            android:configChanges="orientation|screenSize" />
+        <activity android:name=".ui.viewer.TextFileViewerActivity"
+            android:configChanges="orientation|screenSize" />
+        <activity android:name=".ui.viewer.MarkdownViewerActivity"
+            android:configChanges="orientation|screenSize" />
+        <activity android:name=".ui.viewer.CSVViewerActivity"
+            android:configChanges="orientation|screenSize" />
         <activity
             android:name=".ui.dictionary.DictionaryActivity"
             android:theme="@style/AppTheme" />
