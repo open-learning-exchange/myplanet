@@ -68,10 +68,10 @@ open class RealmMyCourse : RealmObject() {
         @JvmStatic
         fun insertMyCourses(userId: String?, myCousesDoc: JsonObject?, mRealm: Realm) {
             val id = JsonUtils.getString("_id", myCousesDoc)
-            mRealm.executeTransaction { realm ->
-                var myMyCoursesDB = realm.where(RealmMyCourse::class.java).equalTo("id", id).findFirst()
+//            mRealm.executeTransaction { realm ->
+                var myMyCoursesDB = mRealm.where(RealmMyCourse::class.java).equalTo("id", id).findFirst()
                 if (myMyCoursesDB == null) {
-                    myMyCoursesDB = realm.createObject(RealmMyCourse::class.java, id)
+                    myMyCoursesDB = mRealm.createObject(RealmMyCourse::class.java, id)
                 }
                 myMyCoursesDB?.setUserId(userId)
                 myMyCoursesDB?.courseId = JsonUtils.getString("_id", myCousesDoc)
@@ -98,9 +98,9 @@ open class RealmMyCourse : RealmObject() {
                     myMyCoursesDB?.courseId,
                     JsonUtils.getJsonArray("steps", myCousesDoc),
                     JsonUtils.getJsonArray("steps", myCousesDoc).size(),
-                    realm
+                    mRealm
                 )
-            }
+//            }
         }
 
 

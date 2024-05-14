@@ -121,11 +121,6 @@ object TransactionSyncManager {
     }
 
     private fun insertToChat(arr: JsonArray, mRealm: Realm) {
-//        for (j in arr) {
-//            var jsonDoc = j.asJsonObject
-//            jsonDoc = getJsonObject("doc", jsonDoc)
-//            insert(mRealm, jsonDoc)
-//        }
         val chatHistoryList = mutableListOf<JsonObject>()
         for (j in arr) {
             var jsonDoc = j.asJsonObject
@@ -141,14 +136,6 @@ object TransactionSyncManager {
     }
 
     private fun insertDocs(arr: JsonArray, mRealm: Realm, table: String) {
-//        for (j in arr) {
-//            var jsonDoc = j.asJsonObject
-//            jsonDoc = getJsonObject("doc", jsonDoc)
-//            val id = getString("_id", jsonDoc)
-//            if (!id.startsWith("_design")) {
-//                continueInsert(mRealm, table, jsonDoc)
-//            }
-//        }
         val documentList = mutableListOf<JsonObject>()
 
         for (j in arr) {

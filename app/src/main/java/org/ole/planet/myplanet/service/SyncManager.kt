@@ -169,23 +169,21 @@ class SyncManager private constructor(private val context: Context) {
     }
 
     private fun myLibraryTransactionSync() {
-        val apiInterface = client!!.create(ApiInterface::class.java)
-        mRealm.executeTransaction { realm: Realm ->
-            try {
-                val res = apiInterface.getDocuments(Utilities.header, Utilities.getUrl() + "/shelf/_all_docs").execute().body()
-                for (i in res!!.rows!!.indices) {
-                    shelfDoc = res.rows!![i]
-                    populateShelfItems(apiInterface, realm)
-                }
-            } catch (e: IOException) {
-                e.printStackTrace()
+        val apiInterface = client?.create(ApiInterface::class.java)
+        try {
+            val res = apiInterface?.getDocuments(Utilities.header, Utilities.getUrl() + "/shelf/_all_docs")?.execute()?.body()
+            for (i in res?.rows!!.indices) {
+                shelfDoc = res.rows!![i]
+                populateShelfItems(apiInterface, mRealm)
             }
+        } catch (e: IOException) {
+            e.printStackTrace()
         }
     }
 
     private fun populateShelfItems(apiInterface: ApiInterface, mRealm: Realm) {
         try {
-            val jsonDoc = apiInterface.getJsonObject(Utilities.header, Utilities.getUrl() + "/shelf/" + shelfDoc!!.id).execute().body()
+            val jsonDoc = apiInterface.getJsonObject(Utilities.header, Utilities.getUrl() + "/shelf/" + shelfDoc?.id).execute().body()
             for (i in Constants.shelfDataList.indices) {
                 val shelfData = Constants.shelfDataList[i]
                 val array = getJsonArray(shelfData.key, jsonDoc)
@@ -198,12 +196,13 @@ class SyncManager private constructor(private val context: Context) {
 
     private fun memberShelfData(array: JsonArray, shelfData: ShelfData, mRealm: Realm) {
         if (array.size() > 0) {
+            triggerInsert(shelfData.categoryKey, shelfData.type)
             check(array, mRealm)
         }
     }
 
     private fun triggerInsert(categroryId: String, categoryDBName: String) {
-        stringArray[0] = shelfDoc!!.id
+        stringArray[0] = shelfDoc?.id
         stringArray[1] = categroryId
         stringArray[2] = categoryDBName
     }

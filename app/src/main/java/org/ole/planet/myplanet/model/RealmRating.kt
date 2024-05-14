@@ -95,6 +95,7 @@ open class RealmRating : RealmObject() {
             return ob
         }
 
+        @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject) {
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()

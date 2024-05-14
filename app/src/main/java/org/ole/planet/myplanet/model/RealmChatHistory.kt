@@ -22,7 +22,6 @@ open class RealmChatHistory : RealmObject() {
     companion object {
         @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject?) {
-            Log.d("ollonde", "$act")
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
             }
