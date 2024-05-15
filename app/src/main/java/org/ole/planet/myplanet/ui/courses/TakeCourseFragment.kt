@@ -35,7 +35,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     lateinit var dbService: DatabaseService
     lateinit var mRealm: Realm
     var courseId: String? = null
-//    var courses: RealmMyCourse? = null
     private var currentCourse: RealmMyCourse? = null
     lateinit var steps: List<RealmCourseStep?>
     var userModel: RealmUserModel ?= null

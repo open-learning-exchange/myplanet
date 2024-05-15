@@ -229,11 +229,10 @@ class SyncManager private constructor(private val context: Context) {
             "resources" -> insertMyLibrary(stringArray[0], resourceDoc, mRealm)
             "meetups" -> insert(mRealm, resourceDoc)
             "courses" -> {
-//                mRealm.executeTransaction { realm ->
                 if (!mRealm.isInTransaction){
                     mRealm.beginTransaction()
                 }
-                    insertMyCourses(stringArray[0], resourceDoc, mRealm)
+                insertMyCourses(stringArray[0], resourceDoc, mRealm)
                 if (mRealm.isInTransaction){
                     mRealm.commitTransaction()
                 }
