@@ -12,8 +12,8 @@ import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.FragmentCourseDetailBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.model.RealmCourseStep.Companion.getSteps
 import org.ole.planet.myplanet.model.RealmMyCourse
+import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getCourseSteps
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmRating.Companion.getRatingsById
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.getNoOfExam
@@ -75,7 +75,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     }
 
     private fun setStepsList() {
-        val steps = getSteps(cRealm, courses?.courseId)
+        val steps = getCourseSteps(cRealm, courses?.courseId)
         fragmentCourseDetailBinding.stepsList.layoutManager = LinearLayoutManager(activity)
         fragmentCourseDetailBinding.stepsList.adapter = AdapterSteps(requireActivity(), steps, cRealm)
     }
