@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getCourseByCourseId
+import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getCourseSteps
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.courses.MyProgressFragment
@@ -101,7 +102,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
             val star = LayoutInflater.from(activity).inflate(R.layout.image_start, null) as ImageView
             val courseId = entry.keys.first()
             val count = entry.values.first()
-            val steps = RealmCourseStep.getSteps(mRealm, courseId)
+            val steps = getCourseSteps(mRealm, courseId)
             if (count >= steps.size) {
                 setColor(courseId, star)
                 fragmentHomeBellBinding.cardProfileBell.llBadges.addView(star)

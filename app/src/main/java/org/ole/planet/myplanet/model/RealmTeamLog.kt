@@ -70,8 +70,13 @@ open class RealmTeamLog : RealmObject() {
 
         @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject?) {
+            if (!mRealm.isInTransaction) {
+                mRealm.beginTransaction()
+            }
             var tag = mRealm.where(RealmTeamLog::class.java).equalTo("id", JsonUtils.getString("_id", act)).findFirst()
-            if (tag == null) tag = mRealm.createObject(RealmTeamLog::class.java, JsonUtils.getString("_id", act))
+            if (tag == null) {
+                tag = mRealm.createObject(RealmTeamLog::class.java, JsonUtils.getString("_id", act))
+            }
             if (tag != null) {
                 tag._rev = JsonUtils.getString("_rev", act)
                 tag._id = JsonUtils.getString("_id", act)
@@ -83,6 +88,7 @@ open class RealmTeamLog : RealmObject() {
                 tag.teamId = JsonUtils.getString("teamId", act)
                 tag.teamType = JsonUtils.getString("teamType", act)
             }
+            mRealm.commitTransaction()
         }
     }
 }

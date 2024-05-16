@@ -111,38 +111,40 @@ open class RealmNews : RealmObject() {
     companion object {
         @JvmStatic
         fun insert(mRealm: Realm, doc: JsonObject?) {
-            mRealm.executeTransactionAsync { realm ->
-                var news = realm.where(RealmNews::class.java)
-                    .equalTo("_id", JsonUtils.getString("_id", doc))
-                    .findFirst()
-                if (news == null) {
-                    news = realm.createObject(RealmNews::class.java, JsonUtils.getString("_id", doc))
-                }
-                news?._rev = JsonUtils.getString("_rev", doc)
-                news?._id = JsonUtils.getString("_id", doc)
-                news?.viewableBy = JsonUtils.getString("viewableBy", doc)
-                news?.docType = JsonUtils.getString("docType", doc)
-                news?.avatar = JsonUtils.getString("avatar", doc)
-                news?.updatedDate = JsonUtils.getLong("updatedDate", doc)
-                news?.viewableId = JsonUtils.getString("viewableId", doc)
-                news?.createdOn = JsonUtils.getString("createdOn", doc)
-                news?.messageType = JsonUtils.getString("messageType", doc)
-                news?.messagePlanetCode = JsonUtils.getString("messagePlanetCode", doc)
-                news?.replyTo = JsonUtils.getString("replyTo", doc)
-                news?.parentCode = JsonUtils.getString("parentCode", doc)
-                val user = JsonUtils.getJsonObject("user", doc)
-                news?.user = Gson().toJson(JsonUtils.getJsonObject("user", doc))
-                news?.userId = JsonUtils.getString("_id", user)
-                news?.userName = JsonUtils.getString("name", user)
-                news?.time = JsonUtils.getLong("time", doc)
-                val images = JsonUtils.getJsonArray("images", doc)
-                val message = JsonUtils.getString("message", doc)
-                news?.message = message
-                news?.images = Gson().toJson(images)
-                val labels = JsonUtils.getJsonArray("labels", doc)
-                news?.viewIn = Gson().toJson(JsonUtils.getJsonArray("viewIn", doc))
-                news?.setLabels(labels)
+            if (!mRealm.isInTransaction) {
+                mRealm.beginTransaction()
             }
+            var news = mRealm.where(RealmNews::class.java)
+                .equalTo("_id", JsonUtils.getString("_id", doc))
+                .findFirst()
+            if (news == null) {
+                news = mRealm.createObject(RealmNews::class.java, JsonUtils.getString("_id", doc))
+            }
+            news?._rev = JsonUtils.getString("_rev", doc)
+            news?._id = JsonUtils.getString("_id", doc)
+            news?.viewableBy = JsonUtils.getString("viewableBy", doc)
+            news?.docType = JsonUtils.getString("docType", doc)
+            news?.avatar = JsonUtils.getString("avatar", doc)
+            news?.updatedDate = JsonUtils.getLong("updatedDate", doc)
+            news?.viewableId = JsonUtils.getString("viewableId", doc)
+            news?.createdOn = JsonUtils.getString("createdOn", doc)
+            news?.messageType = JsonUtils.getString("messageType", doc)
+            news?.messagePlanetCode = JsonUtils.getString("messagePlanetCode", doc)
+            news?.replyTo = JsonUtils.getString("replyTo", doc)
+            news?.parentCode = JsonUtils.getString("parentCode", doc)
+            val user = JsonUtils.getJsonObject("user", doc)
+            news?.user = Gson().toJson(JsonUtils.getJsonObject("user", doc))
+            news?.userId = JsonUtils.getString("_id", user)
+            news?.userName = JsonUtils.getString("name", user)
+            news?.time = JsonUtils.getLong("time", doc)
+            val images = JsonUtils.getJsonArray("images", doc)
+            val message = JsonUtils.getString("message", doc)
+            news?.message = message
+            news?.images = Gson().toJson(images)
+            val labels = JsonUtils.getJsonArray("labels", doc)
+            news?.viewIn = Gson().toJson(JsonUtils.getJsonArray("viewIn", doc))
+            news?.setLabels(labels)
+            mRealm.commitTransaction()
         }
 
         @JvmStatic

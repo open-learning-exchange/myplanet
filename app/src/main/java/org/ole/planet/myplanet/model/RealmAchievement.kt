@@ -101,6 +101,9 @@ open class RealmAchievement : RealmObject() {
 
         @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject?) {
+            if (!mRealm.isInTransaction) {
+                mRealm.beginTransaction()
+            }
             var achievement = mRealm.where(RealmAchievement::class.java)
                 .equalTo("_id", JsonUtils.getString("_id", act)).findFirst()
             if (achievement == null) achievement = mRealm.createObject(
@@ -112,6 +115,7 @@ open class RealmAchievement : RealmObject() {
             achievement?.achievementsHeader = JsonUtils.getString("achievementsHeader", act)
             achievement?.setreferences(JsonUtils.getJsonArray("references", act))
             achievement?.setAchievements(JsonUtils.getJsonArray("achievements", act))
+            mRealm.commitTransaction()
         }
     }
 }

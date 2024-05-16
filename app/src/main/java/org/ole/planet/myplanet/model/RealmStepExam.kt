@@ -47,12 +47,18 @@ open class RealmStepExam : RealmObject() {
 
         @JvmStatic
         fun insertCourseStepsExams(myCoursesID: String?, step_id: String?, exam: JsonObject, parentId: String?, mRealm: Realm) {
+            if (!mRealm.isInTransaction) {
+                mRealm.beginTransaction()
+            }
             var myExam = mRealm.where(RealmStepExam::class.java).equalTo("id", JsonUtils.getString("_id", exam)).findFirst()
             if (myExam == null) {
                 val id = JsonUtils.getString("_id", exam)
-                myExam = mRealm.createObject(
-                    RealmStepExam::class.java,
-                    if (TextUtils.isEmpty(id)) parentId else id
+                myExam = mRealm.createObject(RealmStepExam::class.java,
+                    if (TextUtils.isEmpty(id)) {
+                        parentId
+                    } else {
+                        id
+                    }
                 )
             }
             checkIdsAndInsert(myCoursesID, step_id, myExam)
@@ -69,8 +75,12 @@ open class RealmStepExam : RealmObject() {
             myExam?.isFromNation = !TextUtils.isEmpty(parentId)
             val oldQuestions: RealmResults<*>? = mRealm.where(RealmExamQuestion::class.java).equalTo("examId", JsonUtils.getString("_id", exam)).findAll()
             if (oldQuestions == null || oldQuestions.isEmpty()) {
-                RealmExamQuestion.insertExamQuestions(JsonUtils.getJsonArray("questions", exam), JsonUtils.getString("_id", exam), mRealm)
+                RealmExamQuestion.insertExamQuestions(
+                    JsonUtils.getJsonArray("questions", exam),
+                    JsonUtils.getString("_id", exam), mRealm
+                )
             }
+            mRealm.commitTransaction()
         }
 
         private fun checkIdsAndInsert(myCoursesID: String?, step_id: String?, myExam: RealmStepExam?) {
