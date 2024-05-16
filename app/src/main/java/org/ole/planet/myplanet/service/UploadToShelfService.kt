@@ -31,14 +31,9 @@ import java.io.IOException
 import java.util.Date
 
 class UploadToShelfService(context: Context) {
-    private val dbService: DatabaseService
-    private val sharedPreferences: SharedPreferences
+    private val dbService: DatabaseService = DatabaseService(context)
+    private val sharedPreferences: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     lateinit var mRealm: Realm
-
-    init {
-        sharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        dbService = DatabaseService(context)
-    }
 
     fun uploadUserData(listener: SuccessListener) {
         val apiInterface = client?.create(ApiInterface::class.java)
@@ -102,7 +97,7 @@ class UploadToShelfService(context: Context) {
         }, { uploadToshelf(listener) }) { uploadToshelf(listener) }
     }
 
-    fun replacedUrl(model: RealmUserModel): String {
+    private fun replacedUrl(model: RealmUserModel): String {
         val url = Utilities.getUrl()
         val password = sharedPreferences.getString("loginUserPassword", "")
         val replacedUrl = url.replaceFirst("[^:]+:[^@]+@".toRegex(), "${model.name}:${password}@")
@@ -233,7 +228,7 @@ class UploadToShelfService(context: Context) {
             val table = "userdb-" + Utilities.toHex(model.planetCode) + "-" + Utilities.toHex(model.name)
             val header = "Basic " + Base64.encodeToString((obj["name"].asString + ":" + obj["password"].asString).toByteArray(), Base64.NO_WRAP)
             val apiInterface = client?.create(ApiInterface::class.java)
-            var response: Response<JsonObject?>?
+            val response: Response<JsonObject?>?
             try {
                 response = apiInterface?.getJsonObject(header, Utilities.getUrl() + "/" + table + "/_security")?.execute()
                 if (response?.body() != null) {
@@ -247,7 +242,7 @@ class UploadToShelfService(context: Context) {
                     rolesArray.add("health")
                     members?.add("roles", rolesArray)
                     jsonObject?.add("members", members)
-                    response = apiInterface?.putDoc(header, "application/json", Utilities.getUrl() + "/" + table + "/_security", jsonObject)?.execute()
+                    apiInterface?.putDoc(header, "application/json", Utilities.getUrl() + "/" + table + "/_security", jsonObject)?.execute()
                 }
             } catch (e: IOException) {
                 e.printStackTrace()

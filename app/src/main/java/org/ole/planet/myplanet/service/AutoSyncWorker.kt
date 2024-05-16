@@ -1,7 +1,5 @@
 package org.ole.planet.myplanet.service
 
-import android.app.ActivityManager
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -14,14 +12,11 @@ import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.datamanager.Service.CheckVersionCallback
-import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.MyPlanet
-import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils.startDownloadUpdate
-import org.ole.planet.myplanet.utilities.FileUtils.installApk
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Date
 
@@ -43,27 +38,6 @@ class AutoSyncWorker(private val context: Context, workerParams: WorkerParameter
             Service(context).checkVersion(this, preferences)
         }
         return Result.success()
-    }
-
-    private fun isMyServiceRunning(serviceClass: Class<*>): Boolean {
-        val manager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-        for (service in manager.getRunningServices(Int.MAX_VALUE)) {
-            if (serviceClass.name == service.service.className) {
-                return true
-            }
-        }
-        return false
-    }
-
-    var broadcastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            if (intent.action == DashboardActivity.MESSAGE_PROGRESS) {
-                val download = intent.getParcelableExtra<Download>("download")
-                if (!download?.failed!! && download.completeAll) {
-                    installApk(context, download.fileUrl)
-                }
-            }
-        }
     }
 
     override fun onSyncStarted() {}
@@ -113,7 +87,7 @@ class AutoSyncWorker(private val context: Context, workerParams: WorkerParameter
         }
     }
 
-    override fun onSuccess(s: String?) {
+    override fun onSuccess(success: String?) {
         val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         settings.edit().putLong("lastUsageUploaded", Date().time).apply()
     }
