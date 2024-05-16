@@ -21,7 +21,9 @@ open class RealmChatHistory : RealmObject() {
     companion object {
         @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject?) {
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
+            if (!mRealm.isInTransaction) {
+                mRealm.beginTransaction()
+            }
             val chatHistoryId = JsonUtils.getString("_id", act)
             val existingChatHistory = mRealm.where(RealmChatHistory::class.java).equalTo("_id", chatHistoryId).findFirst()
             existingChatHistory?.deleteFromRealm()
@@ -32,6 +34,7 @@ open class RealmChatHistory : RealmObject() {
             chatHistory.updatedTime = JsonUtils.getString("updatedTime", act)
             chatHistory.user = JsonUtils.getString("user", act)
             chatHistory.conversations = parseConversations(mRealm, JsonUtils.getJsonArray("conversations", act))
+            mRealm.commitTransaction()
         }
 
         private fun parseConversations(realm: Realm, jsonArray: JsonArray): RealmList<Conversation> {

@@ -5,7 +5,6 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.SharedPreferences
-import android.content.res.Resources
 import android.graphics.drawable.AnimationDrawable
 import android.os.Build
 import android.os.Bundle
@@ -68,6 +67,7 @@ import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utilities.Constants.SELECTED_LANGUAGE
 import org.ole.planet.myplanet.utilities.Constants.autoSynFeature
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DialogUtils.getUpdateDialog
@@ -90,7 +90,6 @@ import java.text.Normalizer
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
-import java.util.Objects
 import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
 
@@ -547,31 +546,21 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private fun setUpLanguageButton() {
         val languageKey = resources.getStringArray(R.array.language_keys)
         val languages = resources.getStringArray(R.array.language)
-        val pref = PreferenceManager.getDefaultSharedPreferences(this)
-        val systemLanguage = Resources.getSystem().configuration.locale.language
-        val languageKeyList = listOf(*languageKey)
-        val index: Int
-        if (languageKeyList.contains(systemLanguage)) {
-            pref.edit().putString("app_language", systemLanguage).apply()
-            index = languageKeyList.indexOf(systemLanguage)
-        } else {
-            pref.edit().putString("app_language", fallbackLanguage).apply()
-            index = languageKeyList.indexOf(fallbackLanguage)
-        }
+        val selectedLanguageKey = settings.getString(SELECTED_LANGUAGE, fallbackLanguage)
+        val index = languageKey.indexOf(selectedLanguageKey)
         btnLang.text = languages[index]
         btnLang.setOnClickListener {
             AlertDialog.Builder(this)
                 .setTitle(R.string.select_language)
-                .setSingleChoiceItems(languages, index, null)
-                .setPositiveButton(R.string.ok) { dialog: DialogInterface, _: Int ->
-                    dialog.dismiss()
-                    val selectedPosition = (dialog as AlertDialog).listView.checkedItemPosition
-                    val selectedLanguageKey = languageKey[selectedPosition]
-                    if (selectedLanguageKey != pref.getString("app_language", fallbackLanguage)) {
-                        LocaleHelper.setLocale(this, selectedLanguageKey)
-                        pref.edit().putString("app_language", selectedLanguageKey).apply()
+                .setSingleChoiceItems(languages, index) { dialog, which ->
+                    val selectLanguageKey = languageKey[which]
+                    if (selectLanguageKey != settings.getString(SELECTED_LANGUAGE, fallbackLanguage)) {
+                        LocaleHelper.setLocale(this, selectLanguageKey)
+                        settings.edit().putString(SELECTED_LANGUAGE, selectLanguageKey).apply()
+                        btnLang.text = languages[which]
                         recreate()
                     }
+                    dialog.dismiss()
                 }
                 .setNegativeButton(R.string.cancel, null)
                 .show()

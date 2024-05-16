@@ -17,9 +17,9 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmCourseActivity.Companion.createActivity
 import org.ole.planet.myplanet.model.RealmCourseProgress.Companion.getCurrentProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
-import org.ole.planet.myplanet.model.RealmCourseStep.Companion.getStepIds
-import org.ole.planet.myplanet.model.RealmCourseStep.Companion.getSteps
 import org.ole.planet.myplanet.model.RealmMyCourse
+import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getCourseStepIds
+import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getCourseSteps
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onAdd
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onRemove
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.isStepCompleted
@@ -35,7 +35,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     lateinit var dbService: DatabaseService
     lateinit var mRealm: Realm
     var courseId: String? = null
-    private var currentCourse: RealmMyCourse ?= null
+    private var currentCourse: RealmMyCourse? = null
     lateinit var steps: List<RealmCourseStep?>
     var userModel: RealmUserModel ?= null
     var position = 0
@@ -61,12 +61,12 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         fragmentTakeCourseBinding.tvCourseTitle.text = currentCourse?.courseTitle
-        steps = getSteps(mRealm, courseId)
+        steps = getCourseSteps(mRealm, courseId)
         if (steps.isEmpty()) {
             fragmentTakeCourseBinding.nextStep.visibility = View.GONE
             fragmentTakeCourseBinding.previousStep.visibility = View.GONE
         }
-        fragmentTakeCourseBinding.viewPager2.adapter = CoursesPagerAdapter(this, courseId, getStepIds(mRealm, courseId))
+        fragmentTakeCourseBinding.viewPager2.adapter = CoursesPagerAdapter(this, courseId, getCourseStepIds(mRealm, courseId))
         fragmentTakeCourseBinding.viewPager2.isUserInputEnabled = false
         if (fragmentTakeCourseBinding.viewPager2.currentItem == 0) {
             fragmentTakeCourseBinding.previousStep.visibility = View.GONE
@@ -81,8 +81,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         fragmentTakeCourseBinding.previousStep.setOnClickListener(this)
         fragmentTakeCourseBinding.btnRemove.setOnClickListener(this)
         fragmentTakeCourseBinding.finishStep.setOnClickListener(this)
-        fragmentTakeCourseBinding.courseProgress.setOnSeekBarChangeListener(object :
-            OnSeekBarChangeListener {
+        fragmentTakeCourseBinding.courseProgress.setOnSeekBarChangeListener(object : OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar, i: Int, b: Boolean) {
                 val currentProgress = getCurrentProgress(steps, mRealm, userModel?.id, courseId)
                 if (b && i <= currentProgress + 1) {
@@ -105,15 +104,18 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             fragmentTakeCourseBinding.btnRemove.visibility = View.GONE
         }
         createActivity(mRealm, userModel, currentCourse)
-        fragmentTakeCourseBinding.tvStep.text = String.format("Step %d/%d", fragmentTakeCourseBinding.viewPager2.currentItem, steps.size)
+        fragmentTakeCourseBinding.tvStep.text = String.format("Step %d/%d", fragmentTakeCourseBinding.viewPager2.currentItem, currentCourse?.courseSteps?.size)
         fragmentTakeCourseBinding.courseProgress.max = steps.size
         val i = getCurrentProgress(steps, mRealm, userModel?.id, courseId)
         if (i < steps.size) fragmentTakeCourseBinding.courseProgress.secondaryProgress = i + 1
         fragmentTakeCourseBinding.courseProgress.progress = i
         fragmentTakeCourseBinding.courseProgress.visibility =
-            if (currentCourse?.userId?.contains(userModel?.id) == true)
+            if (currentCourse?.userId?.contains(userModel?.id) == true) {
                 View.VISIBLE
-            else View.GONE
+            }
+            else {
+                View.GONE
+            }
     }
 
     override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {}
@@ -145,8 +147,8 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     override fun onPageScrollStateChanged(state: Int) {}
 
     private fun onClickNext() {
-        fragmentTakeCourseBinding.tvStep.text = String.format("Step %d/%d", fragmentTakeCourseBinding.viewPager2.currentItem, steps.size)
-        if (fragmentTakeCourseBinding.viewPager2.currentItem == steps.size) {
+        fragmentTakeCourseBinding.tvStep.text = String.format("Step %d/%d", fragmentTakeCourseBinding.viewPager2.currentItem, currentCourse?.courseSteps?.size)
+        if (fragmentTakeCourseBinding.viewPager2.currentItem == currentCourse?.courseSteps?.size) {
             fragmentTakeCourseBinding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_grey_500))
             fragmentTakeCourseBinding.nextStep.visibility = View.GONE
             fragmentTakeCourseBinding.finishStep.visibility = View.VISIBLE
@@ -155,7 +157,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private fun onClickPrevious() {
-        fragmentTakeCourseBinding.tvStep.text = String.format("Step %d/%d", fragmentTakeCourseBinding.viewPager2.currentItem - 1, steps.size)
+        fragmentTakeCourseBinding.tvStep.text = String.format("Step %d/%d", fragmentTakeCourseBinding.viewPager2.currentItem - 1, currentCourse?.courseSteps?.size)
         if (fragmentTakeCourseBinding.viewPager2.currentItem - 1 == 0) {
             fragmentTakeCourseBinding.previousStep.visibility = View.GONE
             fragmentTakeCourseBinding.nextStep.visibility = View.VISIBLE

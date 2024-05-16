@@ -4,20 +4,10 @@ import android.annotation.TargetApi
 import android.content.Context
 import android.os.Build
 import androidx.preference.PreferenceManager
+import org.ole.planet.myplanet.utilities.Constants.SELECTED_LANGUAGE
 import java.util.Locale
 
-/**
- * This class is used to change your application locale and persist this change for the next time
- * that your app is going to be used.
- *
- *
- * You can also change the locale of your application on the fly by using the setLocale method.
- *
- *
- * Created by gunhansancar on 07/10/15.
- */
 object LocaleHelper {
-    private const val SELECTED_LANGUAGE = "app_language"
     fun onAttach(context: Context): Context? {
         val lang = getPersistedData(context, Locale.getDefault().language)
         return lang?.let { setLocale(context, it) }

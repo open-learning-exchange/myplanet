@@ -50,6 +50,7 @@ object Constants {
     @JvmField
     var LABELS = HashMap<String, String>()
     const val KEY_NOTIFICATION_SHOWN = "notification_shown"
+    const val SELECTED_LANGUAGE = "app_language"
 
     init {
         initClasses()

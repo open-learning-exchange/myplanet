@@ -290,9 +290,7 @@ class Service(private val context: Context) {
         val url_pwd: String
         val couchdbURL: String
         if (url.contains("@")) {
-            val userinfo = getUserInfo(uri)
-            url_user = userinfo[0]
-            url_pwd = userinfo[1]
+            getUserInfo(uri)
             couchdbURL = url
         } else {
             url_user = "satellite"

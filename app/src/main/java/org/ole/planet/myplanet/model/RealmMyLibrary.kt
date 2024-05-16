@@ -285,7 +285,10 @@ open class RealmMyLibrary : RealmObject() {
             val ids = getIds(mRealm)
             for (id in ids) {
                 if (!newIds.contains(id)) {
-                    mRealm.where(RealmMyLibrary::class.java).equalTo("resourceId", id).findAll().deleteAllFromRealm()
+                    mRealm.executeTransaction { realm ->
+                        realm.where(RealmMyLibrary::class.java).equalTo("resourceId", id).findAll()
+                            .deleteAllFromRealm()
+                    }
                 }
             }
         }
@@ -345,6 +348,9 @@ open class RealmMyLibrary : RealmObject() {
 
         @JvmStatic
         fun insertMyLibrary(userId: String?, stepId: String?, courseId: String?, doc: JsonObject, mRealm: Realm) {
+            if (!mRealm.isInTransaction) {
+                mRealm.beginTransaction()
+            }
             val resourceId = JsonUtils.getString("_id", doc)
             val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             var resource = mRealm.where(RealmMyLibrary::class.java).equalTo("id", resourceId).findFirst()
@@ -399,6 +405,7 @@ open class RealmMyLibrary : RealmObject() {
             resource?.setTag(JsonUtils.getJsonArray("tags", doc), resource)
             resource?.isPrivate = JsonUtils.getBoolean("private", doc)
             resource?.setLanguages(JsonUtils.getJsonArray("languages", doc), resource)
+            mRealm.commitTransaction()
         }
 
         @JvmStatic

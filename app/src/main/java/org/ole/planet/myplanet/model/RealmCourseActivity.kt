@@ -34,10 +34,10 @@ open class RealmCourseActivity : RealmObject() {
     companion object {
         @JvmStatic
         fun createActivity(realm: Realm, userModel: RealmUserModel?, course: RealmMyCourse?) {
-            if (!realm.isInTransaction) realm.beginTransaction()
-            val activity = realm.createObject(
-                RealmCourseActivity::class.java, UUID.randomUUID().toString()
-            )
+            if (!realm.isInTransaction) {
+                realm.beginTransaction()
+            }
+            val activity = realm.createObject(RealmCourseActivity::class.java, UUID.randomUUID().toString())
             activity.type = "visit"
             activity.title = course?.courseTitle
             activity.courseId = course?.courseId

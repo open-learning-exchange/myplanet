@@ -10,7 +10,6 @@ import com.github.mikephil.charting.data.BarData
 import com.github.mikephil.charting.data.BarDataSet
 import com.github.mikephil.charting.data.BarEntry
 import com.github.mikephil.charting.formatter.ValueFormatter
-import com.google.gson.Gson
 import io.realm.Realm
 import org.ole.planet.myplanet.databinding.FragmentMyActivityBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -60,7 +59,7 @@ class MyActivityFragment : Fragment() {
             }
             i = i.plus(1)
         }
-        val e = Gson().toJson(countMap)
+
         val dataSet = BarDataSet(entries, "No of login ")
 
         val lineData = BarData(dataSet)
