@@ -154,14 +154,12 @@ open class RealmMyCourse : RealmObject() {
         fun getCourseSteps(mRealm: Realm, courseId: String?): List<RealmCourseStep> {
             val myCourse = mRealm.where<RealmMyCourse>().equalTo("id", courseId).findFirst()
             val courseSteps = myCourse?.courseSteps ?: emptyList()
-            mRealm.close()
             return courseSteps
         }
 
         fun getCourseStepIds(mRealm: Realm, courseId: String?): Array<String?> {
             val course = mRealm.where<RealmMyCourse>().equalTo("courseId", courseId).findFirst()
             val stepIds = course?.courseSteps?.map { it.id }?.toTypedArray() ?: emptyArray()
-            mRealm.close()
             return stepIds
         }
 
