@@ -52,7 +52,9 @@ open class RealmResourceActivity : RealmObject() {
 
         @JvmStatic
         fun onSynced(mRealm: Realm, settings: SharedPreferences) {
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
+            if (!mRealm.isInTransaction) {
+                mRealm.beginTransaction()
+            }
             val user = mRealm.where(RealmUserModel::class.java).equalTo("id", settings.getString("userId", "")).findFirst()
                 ?: return
             if (user.id?.startsWith("guest") == true) {
