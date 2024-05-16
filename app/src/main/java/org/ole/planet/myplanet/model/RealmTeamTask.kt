@@ -48,6 +48,9 @@ open class RealmTeamTask : RealmObject() {
     companion object {
         @JvmStatic
         fun insert(mRealm: Realm, obj: JsonObject?) {
+            if (!mRealm.isInTransaction) {
+                mRealm.beginTransaction()
+            }
             var task = mRealm.where(RealmTeamTask::class.java).equalTo("_id", JsonUtils.getString("_id", obj)).findFirst()
             if (task == null) {
                 task = mRealm.createObject(RealmTeamTask::class.java, JsonUtils.getString("_id", obj))
@@ -67,6 +70,7 @@ open class RealmTeamTask : RealmObject() {
                 if (user.has("_id")) task.assignee = JsonUtils.getString("_id", user)
                 task.completed = JsonUtils.getBoolean("completed", obj)
             }
+            mRealm.commitTransaction()
         }
 
         @JvmStatic

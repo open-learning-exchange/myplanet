@@ -4,6 +4,7 @@ import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
+import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getCourseSteps
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourseByUserId
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.isMyCourse
 import org.ole.planet.myplanet.utilities.JsonUtils
@@ -53,7 +54,7 @@ open class RealmCourseProgress : RealmObject() {
             val map = HashMap<String?, JsonObject>()
             for (course in r) {
                 val `object` = JsonObject()
-                val steps = RealmCourseStep.getSteps(mRealm, course.courseId)
+                val steps = getCourseSteps(mRealm, course.courseId)
                 `object`.addProperty("max", steps.size)
                 `object`.addProperty("current", getCurrentProgress(steps, mRealm, userId, course.courseId))
                 if (isMyCourse(userId, course.courseId, mRealm)) map[course.courseId] = `object`

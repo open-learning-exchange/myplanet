@@ -135,12 +135,10 @@ class SyncManager private constructor(private val context: Context) {
 
     fun resourceTransactionSync() {
         val apiInterface = client?.create(ApiInterface::class.java)
-        mRealm.executeTransaction {
-            try {
-                syncResource(apiInterface)
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
+        try {
+            syncResource(apiInterface)
+        } catch (e: IOException) {
+            e.printStackTrace()
         }
     }
 
@@ -169,24 +167,21 @@ class SyncManager private constructor(private val context: Context) {
     }
 
     private fun myLibraryTransactionSync() {
-        val apiInterface = client!!.create(ApiInterface::class.java)
-        mRealm.executeTransaction { realm: Realm ->
-            try {
-                val res = apiInterface.getDocuments(Utilities.header, Utilities.getUrl() + "/shelf/_all_docs").execute().body()
-                for (i in res!!.rows!!.indices) {
-                    shelfDoc = res.rows!![i]
-                    populateShelfItems(apiInterface, realm)
-                }
-            } catch (e: IOException) {
-                e.printStackTrace()
+        val apiInterface = client?.create(ApiInterface::class.java)
+        try {
+            val res = apiInterface?.getDocuments(Utilities.header, Utilities.getUrl() + "/shelf/_all_docs")?.execute()?.body()
+            for (i in res?.rows!!.indices) {
+                shelfDoc = res.rows!![i]
+                populateShelfItems(apiInterface)
             }
+        } catch (e: IOException) {
+            e.printStackTrace()
         }
     }
 
-    private fun populateShelfItems(apiInterface: ApiInterface, mRealm: Realm) {
+    private fun populateShelfItems(apiInterface: ApiInterface) {
         try {
-            this.mRealm = mRealm
-            val jsonDoc = apiInterface.getJsonObject(Utilities.header, Utilities.getUrl() + "/shelf/" + shelfDoc!!.id).execute().body()
+            val jsonDoc = apiInterface.getJsonObject(Utilities.header, Utilities.getUrl() + "/shelf/" + shelfDoc?.id).execute().body()
             for (i in Constants.shelfDataList.indices) {
                 val shelfData = Constants.shelfDataList[i]
                 val array = getJsonArray(shelfData.key, jsonDoc)
@@ -205,7 +200,7 @@ class SyncManager private constructor(private val context: Context) {
     }
 
     private fun triggerInsert(categroryId: String, categoryDBName: String) {
-        stringArray[0] = shelfDoc!!.id
+        stringArray[0] = shelfDoc?.id
         stringArray[1] = categroryId
         stringArray[2] = categoryDBName
     }
@@ -233,7 +228,15 @@ class SyncManager private constructor(private val context: Context) {
         when (stringArray[2]) {
             "resources" -> insertMyLibrary(stringArray[0], resourceDoc, mRealm)
             "meetups" -> insert(mRealm, resourceDoc)
-            "courses" -> insertMyCourses(stringArray[0], resourceDoc, mRealm)
+            "courses" -> {
+                if (!mRealm.isInTransaction){
+                    mRealm.beginTransaction()
+                }
+                insertMyCourses(stringArray[0], resourceDoc, mRealm)
+                if (mRealm.isInTransaction){
+                    mRealm.commitTransaction()
+                }
+            }
             "teams" -> insertMyTeams(resourceDoc, mRealm)
         }
     }
