@@ -11,7 +11,7 @@ object TimeUtils {
     @JvmStatic
     fun getFormatedDate(date: Long?): String {
         try {
-            val d = date?.let { Date(it) }
+            val d = date?.let { Date(it) } ?: Date()
             val f = SimpleDateFormat("EEEE, MMM dd, yyyy")
             f.timeZone = TimeZone.getTimeZone("UTC")
             return f.format(d)

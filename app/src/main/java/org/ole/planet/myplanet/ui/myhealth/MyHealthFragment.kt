@@ -20,6 +20,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.gson.Gson
 import io.realm.Case
 import io.realm.Realm
+import io.realm.RealmResults
 import io.realm.Sort
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertHealthListBinding
@@ -225,8 +226,7 @@ class MyHealthFragment : Fragment() {
     }
 
     private fun getExaminations(mm: RealmMyHealth): List<RealmMyHealthPojo>? {
-        var healths = mRealm.where(RealmMyHealthPojo::class.java)?.findAll()
-        healths = mRealm.where(RealmMyHealthPojo::class.java)?.equalTo("profileId", mm.userKey)?.findAll()
+        val healths = mRealm.where(RealmMyHealthPojo::class.java)?.equalTo("profileId", mm.userKey)?.findAll()
         return healths
     }
 

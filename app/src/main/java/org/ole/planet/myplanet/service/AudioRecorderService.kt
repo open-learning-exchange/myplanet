@@ -29,7 +29,7 @@ class AudioRecorderService {
 
     fun startRecording() {
         outputFile = createAudioFile()
-        myAudioRecorder = MediaRecorder().apply {
+        myAudioRecorder = MediaRecorder(context).apply {
             setAudioSource(MediaRecorder.AudioSource.MIC)
             setOutputFormat(MediaRecorder.OutputFormat.AAC_ADTS)
             setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
@@ -61,18 +61,6 @@ class AudioRecorderService {
             return null
         }
         return audioFile.absolutePath
-    }
-
-    private fun getFilePathFromUri(uri: Uri): String? {
-        var filePath: String? = null
-        val projection = arrayOf(MediaStore.Audio.Media.DATA)
-        val cursor = context.contentResolver.query(uri, projection, null, null, null)
-        if (cursor != null && cursor.moveToFirst()) {
-            val columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
-            filePath = cursor.getString(columnIndex)
-            cursor.close()
-        }
-        return filePath
     }
 
     fun isRecording(): Boolean {
