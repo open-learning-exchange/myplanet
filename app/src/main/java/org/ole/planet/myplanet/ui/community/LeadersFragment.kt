@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.community
 
 import android.content.*
 import android.os.Bundle
+//import android.util.Log
 import android.view.*
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
@@ -41,9 +42,15 @@ class LeadersFragment : Fragment() {
                 val docObject = docsArray.getJSONObject(i)
                 val user = RealmUserModel()
                 user.name = docObject.getString("name")
-                user.firstName = docObject.getString("firstName")
-                user.lastName = docObject.getString("lastName")
-                user.email = docObject.getString("email")
+                if (!docObject.isNull("firstName")) {
+                    user.firstName = docObject.getString("firstName")
+                }
+                if (!docObject.isNull("lastName")) {
+                    user.lastName = docObject.getString("lastName")
+                }
+                if (!docObject.isNull("email")) {
+                    user.email = docObject.getString("email")
+                }
                 leadersList.add(user)
             }
         } catch (e: JSONException) {

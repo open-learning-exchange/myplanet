@@ -20,7 +20,11 @@ class AdapterLeader(var context: Context, var leaders: List<RealmUserModel>) :
     }
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         if (holder is ViewHolderLeader) {
-            holder.title.text = leaders[position].toString()
+            if (leaders[position].firstName == null) {
+                holder.title.text = leaders[position].name
+            } else {
+                holder.title.text = "${leaders[position]}"
+            }
             holder.tv_description.text = leaders[position].email
         }
     }
