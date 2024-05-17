@@ -15,6 +15,7 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.view.WindowManager
+import androidx.activity.OnBackPressedCallback
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.drawerlayout.widget.DrawerLayout
@@ -30,6 +31,7 @@ import com.mikepenz.materialdrawer.holder.DimenHolder
 import com.mikepenz.materialdrawer.model.PrimaryDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.Nameable
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
@@ -167,6 +169,31 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
         menue = tl?.getTabAt(4)
         menuco = tl?.getTabAt(5)
         hideWifi()
+
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (result != null && result?.isDrawerOpen == true) {
+                    result?.closeDrawer()
+                } else {
+                    if (supportFragmentManager.backStackEntryCount > 1) {
+                        supportFragmentManager.popBackStack()
+                    } else {
+                        if (!doubleBackToExitPressedOnce) {
+                            doubleBackToExitPressedOnce = true
+                            Utilities.toast(MainApplication.context, getString(R.string.press_back_again_to_exit))
+                            Handler(Looper.getMainLooper()).postDelayed({ doubleBackToExitPressedOnce = false }, 2000)
+                        } else {
+                            finish()
+                        }
+                    }
+                }
+
+                val fragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
+                if (fragment is BaseContainerFragment) {
+                    fragment.handleBackPressed()
+                }
+            }
+        })
     }
 
     private fun hideWifi() {
@@ -366,31 +393,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
                 .withSelectedIconColor(ContextCompat.getColor(this, R.color.primary_dark))
                 .withSelectedColor(ContextCompat.getColor(this, R.color.textColorPrimary))
                 .withIconTintingEnabled(true)
-    }
-
-    override fun onBackPressed() {
-        if (result != null && result?.isDrawerOpen == true) {
-            result?.closeDrawer()
-        } else {
-            if (supportFragmentManager.backStackEntryCount > 1) {
-                supportFragmentManager.popBackStack()
-            } else {
-                if (!doubleBackToExitPressedOnce) {
-                    this.doubleBackToExitPressedOnce = true
-                    Utilities.toast(this, getString(R.string.press_back_again_to_exit))
-                    Handler(Looper.getMainLooper()).postDelayed({ doubleBackToExitPressedOnce = false }, 2000)
-                } else {
-                    finish()
-                }
-            }
-        }
-
-        val fragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
-        if (fragment is BaseContainerFragment) {
-            fragment.handleBackPressed()
-        } else {
-            super.onBackPressed()
-        }
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {

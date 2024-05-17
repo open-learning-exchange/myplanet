@@ -300,6 +300,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
 
     open fun handleBackPressed() {
-        requireActivity().onBackPressed()
+        val fragmentManager = parentFragmentManager
+        fragmentManager.popBackStack()
     }
 }
