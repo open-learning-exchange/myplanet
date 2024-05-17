@@ -10,14 +10,12 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import io.realm.Case
 import io.realm.Realm
-import io.realm.RealmResults
 import org.json.JSONException
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentHomeBellBinding
 import org.ole.planet.myplanet.model.RealmCertification
 import org.ole.planet.myplanet.model.RealmCourseProgress
-import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getCourseByCourseId
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getCourseSteps
@@ -103,7 +101,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
             val courseId = entry.keys.first()
             val count = entry.values.first()
             val steps = getCourseSteps(mRealm, courseId)
-            if (count >= steps.size) {
+            if (count.toInt() == steps.size) {
                 setColor(courseId, star)
                 fragmentHomeBellBinding.cardProfileBell.llBadges.addView(star)
                 star.setOnClickListener {
@@ -126,10 +124,9 @@ class BellDashboardFragment : BaseDashboardFragment() {
         }
     }
 
-
     private fun countCourseIds(mRealm: Realm): List<Map<String, Long>> {
         val courseIdCounts: MutableMap<String, Long> = HashMap()
-        val results: RealmResults<RealmCourseProgress> = mRealm.where(RealmCourseProgress::class.java).findAll()
+        val results = mRealm.where(RealmCourseProgress::class.java).findAll()
         for (progress in results) {
             val courseId = progress.courseId
             if (courseId != null) {
