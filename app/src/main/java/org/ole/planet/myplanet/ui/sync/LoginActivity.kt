@@ -4,6 +4,7 @@ import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
+import androidx.activity.OnBackPressedCallback
 import androidx.annotation.RequiresApi
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -94,6 +95,17 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             resetGuestAsMember(username)
         }
         getTeamMembers()
+
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (System.currentTimeMillis() - backPressedTime < BACK_PRESSED_INTERVAL) {
+                    finish()
+                } else {
+                    Utilities.toast(this@LoginActivity, getString(R.string.press_back_again_to_exit))
+                    backPressedTime = System.currentTimeMillis()
+                }
+            }
+        })
     }
 
     fun getTeamMembers() {
@@ -151,15 +163,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             } else {
                 submitForm(user.name, user.password)
             }
-        }
-    }
-
-    override fun onBackPressed() {
-        if (System.currentTimeMillis() - backPressedTime < BACK_PRESSED_INTERVAL) {
-            super.onBackPressed()
-        } else {
-            Utilities.toast(this, getString(R.string.press_back_again_to_exit))
-            backPressedTime = System.currentTimeMillis()
         }
     }
 }
