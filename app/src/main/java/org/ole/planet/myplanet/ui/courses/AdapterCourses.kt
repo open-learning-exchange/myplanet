@@ -252,8 +252,36 @@ class AdapterCourses(private val context: Context, private var courseList: List<
         return courseList.subList(fromIndex, toIndex)
     }
 
+    fun nextPage() {
+        if (currentPage * itemsPerPage < courseList.size) {
+            currentPage++
+            notifyDataSetChanged()
+        }
+    }
+
+    fun previousPage() {
+        if (currentPage > 1) {
+            currentPage--
+            notifyDataSetChanged()
+        }
+    }
+
+    fun getTotalPages(): Int {
+        return if (courseList.isNotEmpty()) {
+            (courseList.size + itemsPerPage - 1) / itemsPerPage
+        } else {
+            1
+        }
+    }
+
+    fun getCurrentPage(): Int {
+        return currentPage
+    }
+
     override fun getItemCount(): Int {
-        return minOf(itemsPerPage, courseList.size - (currentPage - 1) * itemsPerPage)
+        val fromIndex = (currentPage - 1) * itemsPerPage
+        val toIndex = minOf(fromIndex + itemsPerPage, courseList.size)
+        return toIndex - fromIndex
     }
 
     internal inner class ViewHoldercourse(val rowCourseBinding: RowCourseBinding) : RecyclerView.ViewHolder(rowCourseBinding.root) {

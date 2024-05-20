@@ -121,8 +121,18 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         showNoData(tvMessage, adapterCourses.itemCount, "courses")
         setupUI(requireView().findViewById(R.id.my_course_parent_layout), requireActivity())
         changeButtonStatus()
-        if (!isMyCourseLib) tvFragmentInfo.setText(R.string.our_courses)
+        if (!isMyCourseLib) {
+            tvFragmentInfo.setText(R.string.our_courses)
+        }
         additionalSetup()
+
+        btnNext.setOnClickListener {
+            adapterCourses.nextPage()
+        }
+
+        btnPrevious.setOnClickListener {
+            adapterCourses.previousPage()
+        }
     }
 
     private fun additionalSetup() {
@@ -144,7 +154,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 confirmation.show()
                 addToMyList()
                 selectedItems?.clear()
-                tvAddToLib.isEnabled = false // selectedItems will always have a size of 0
+                tvAddToLib.isEnabled = false
                 checkList()
             }
         }
