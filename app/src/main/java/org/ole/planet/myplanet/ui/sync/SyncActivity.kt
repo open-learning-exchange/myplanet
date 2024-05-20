@@ -1023,8 +1023,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             settings.edit().putString("serverProtocol", getString(R.string.https_protocol)).apply()
         }
         try {
-            mRealm = Realm.getDefaultInstance()
-            val teams: List<RealmMyTeam> = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId").findAll()
+            val teams: List<RealmMyTeam> = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId").equalTo("status", "active").findAll()
             if (teams.isNotEmpty() && show && binding.inputServerUrl.text.toString() != "") {
                 binding.team.visibility = View.VISIBLE
                 teamAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, teamList)
