@@ -10,6 +10,7 @@ import android.widget.AdapterView
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
+import android.widget.LinearLayout
 import android.widget.Spinner
 import android.widget.TextView
 import androidx.core.content.ContextCompat
@@ -48,6 +49,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private lateinit var btnPrevious: TextView
     private lateinit var btnNext: TextView
     private lateinit var spnItemsPerPage: Spinner
+    private lateinit var ltPagination: LinearLayout
     override fun getLayout(): Int {
         return R.layout.fragment_my_course
     }
@@ -128,10 +130,33 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
         btnNext.setOnClickListener {
             adapterCourses.nextPage()
+            updateButtonVisibility()
         }
 
         btnPrevious.setOnClickListener {
             adapterCourses.previousPage()
+            updateButtonVisibility()
+        }
+        updateButtonVisibility()
+    }
+
+    private fun updateButtonVisibility() {
+        if (adapterCourses.getCurrentPage() < adapterCourses.getTotalPages()){
+            btnNext.visibility = View.VISIBLE
+        } else {
+            btnNext.visibility = View.GONE
+        }
+
+        if (adapterCourses.getCurrentPage() > 1){
+            btnPrevious.visibility = View.VISIBLE
+        } else {
+            btnPrevious.visibility = View.GONE
+        }
+
+        if (adapterCourses.itemCount == 0){
+            ltPagination.visibility = View.GONE
+            tvDelete?.visibility = View.GONE
+            btnRemove.visibility = View.GONE
         }
     }
 
@@ -169,6 +194,11 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         spnGrade.onItemSelectedListener = itemSelectedListener
         spnSubject.onItemSelectedListener = itemSelectedListener
         selectAll = requireView().findViewById(R.id.selectAll)
+        btnNext = requireView().findViewById(R.id.next)
+        btnPrevious = requireView().findViewById(R.id.previous)
+        spnItemsPerPage = requireView().findViewById(R.id.spn_items_per_page)
+        ltPagination = requireView().findViewById(R.id.ltPagination)
+
         checkList()
         selectAll.setOnClickListener {
             val allSelected = selectedItems?.size == adapterCourses.getCourseList().size
@@ -181,10 +211,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 selectAll.text = getString(R.string.unselect_all)
             }
         }
-
-        btnNext = requireView().findViewById(R.id.next)
-        btnPrevious = requireView().findViewById(R.id.previous)
-        spnItemsPerPage = requireView().findViewById(R.id.spn_items_per_page)
     }
 
     private fun checkList() {
@@ -274,7 +300,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         val li: MutableList<RealmTag> = ArrayList()
         li.add(tag)
         searchTags = li
-        tvSelected.text = R.string.selected.toString() + tag.name
+        tvSelected.text = "${R.string.selected}${tag.name}"
         adapterCourses.setCourseList(filterCourseByTag(etSearch.text.toString(), li))
         showNoData(tvMessage, adapterCourses.itemCount, "courses")
     }
