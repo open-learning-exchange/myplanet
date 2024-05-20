@@ -36,7 +36,7 @@ import java.util.regex.Pattern
 
 class AdapterCourses(private val context: Context, private var courseList: List<RealmMyCourse?>, private val map: HashMap<String?, JsonObject>) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private lateinit var rowCourseBinding: RowCourseBinding
-    private val selectedItems: MutableList<RealmMyCourse?>
+    private val selectedItems: MutableList<RealmMyCourse?> = ArrayList()
     private var listener: OnCourseItemSelected? = null
     private var homeItemClickListener: OnHomeItemClickListener? = null
     private var progressMap: HashMap<String?, JsonObject>? = null
@@ -46,9 +46,10 @@ class AdapterCourses(private val context: Context, private var courseList: List<
     private var isAscending = true
     private var isTitleAscending = true
     private var areAllSelected = true
+    private var itemsPerPage: Int = 10
+    private var currentPage: Int = 1
 
     init {
-        selectedItems = ArrayList()
         if (context is OnHomeItemClickListener) {
             homeItemClickListener = context
         }
@@ -120,9 +121,10 @@ class AdapterCourses(private val context: Context, private var courseList: List<
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        val paginatedCourseList = getPaginatedCourseList()
         if (holder is ViewHoldercourse) {
             holder.bind(position)
-            val course = courseList[position]
+            val course = paginatedCourseList[position]
             if (course != null) {
                 holder.rowCourseBinding.title.text = course.courseTitle
                 holder.rowCourseBinding.description.text = course.description
@@ -239,12 +241,22 @@ class AdapterCourses(private val context: Context, private var courseList: List<
         }
     }
 
-    override fun getItemCount(): Int {
-        return courseList.size
+    fun setItemsPerPage(itemsPerPage: Int) {
+        this.itemsPerPage = itemsPerPage
+        notifyDataSetChanged()
     }
 
-    internal inner class ViewHoldercourse(val rowCourseBinding: RowCourseBinding) :
-        RecyclerView.ViewHolder(rowCourseBinding.root) {
+    private fun getPaginatedCourseList(): List<RealmMyCourse?> {
+        val fromIndex = (currentPage - 1) * itemsPerPage
+        val toIndex = minOf(fromIndex + itemsPerPage, courseList.size)
+        return courseList.subList(fromIndex, toIndex)
+    }
+
+    override fun getItemCount(): Int {
+        return minOf(itemsPerPage, courseList.size - (currentPage - 1) * itemsPerPage)
+    }
+
+    internal inner class ViewHoldercourse(val rowCourseBinding: RowCourseBinding) : RecyclerView.ViewHolder(rowCourseBinding.root) {
         private var adapterPosition = 0
 
         init {

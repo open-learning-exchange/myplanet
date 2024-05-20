@@ -102,6 +102,15 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         drawablePrevious?.setTint(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
         btnPrevious.setCompoundDrawablesWithIntrinsicBounds(drawablePrevious, null, null, null)
 
+        spnItemsPerPage.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
+                val itemsPerPage = parent.getItemAtPosition(position).toString().toInt()
+                adapterCourses.setItemsPerPage(itemsPerPage)
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>) {}
+        }
+
         requireView().findViewById<View>(R.id.btn_collections).setOnClickListener {
             val f = CollectionsFragment.getInstance(searchTags, "courses")
             f.setListener(this)
