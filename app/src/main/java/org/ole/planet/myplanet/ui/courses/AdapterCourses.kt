@@ -239,8 +239,11 @@ class AdapterCourses(private val context: Context, private var courseList: List<
             rowCourseBinding.courseProgress.max = getInt("max", ob)
             rowCourseBinding.courseProgress.progress = getInt("current", ob)
             if (getInt("current", ob) == getInt("max", ob)) {
+                rowCourseBinding.courseProgress.secondaryProgress = getInt("current", ob) + 1
                 rowCourseBinding.courseProgress.visibility = View.VISIBLE
             }
+        } else {
+            rowCourseBinding.courseProgress.visibility = View.GONE
         }
     }
 
