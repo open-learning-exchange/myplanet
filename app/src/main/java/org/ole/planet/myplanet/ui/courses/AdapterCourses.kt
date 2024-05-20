@@ -27,12 +27,12 @@ import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.RowCourseBinding
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmTag
-import org.ole.planet.myplanet.utilities.JsonUtils.getInt
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Collections
 import java.util.regex.Pattern
+import kotlin.math.*
 
 class AdapterCourses(private val context: Context, private var courseList: List<RealmMyCourse?>, private val map: HashMap<String?, JsonObject>) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private lateinit var rowCourseBinding: RowCourseBinding
@@ -46,8 +46,21 @@ class AdapterCourses(private val context: Context, private var courseList: List<
     private var isAscending = true
     private var isTitleAscending = true
     private var areAllSelected = true
-    private var itemsPerPage: Int = 10
-    private var currentPage: Int = 1
+
+    private var _itemsPerPage: Int = 10
+    var itemsPerPage: Int
+        get() = _itemsPerPage
+        set(value) {
+            _itemsPerPage = value
+            notifyDataSetChanged()
+        }
+
+    private var _currentPage: Int = 1
+    var currentPage: Int
+        get() = _currentPage
+        set(value) {
+            _currentPage = value
+        }
 
     init {
         if (context is OnHomeItemClickListener) {
@@ -68,6 +81,10 @@ class AdapterCourses(private val context: Context, private var courseList: List<
         return courseList
     }
 
+    fun getTotalCourseCount(): Int {
+        return courseList.size
+    }
+
     fun setCourseList(courseList: List<RealmMyCourse?>) {
         this.courseList = courseList
         sortCourseList()
@@ -76,11 +93,11 @@ class AdapterCourses(private val context: Context, private var courseList: List<
     }
 
     private fun sortCourseListByTitle() {
-        Collections.sort(courseList) { course1: RealmMyCourse?, course2: RealmMyCourse? ->
+        Collections.sort(courseList) { course1, course2 ->
             if (isTitleAscending) {
-                return@sort course1!!.courseTitle!!.compareTo(course2!!.courseTitle!!, ignoreCase = true)
+                course1!!.courseTitle!!.compareTo(course2!!.courseTitle!!, ignoreCase = true)
             } else {
-                return@sort course2!!.courseTitle!!.compareTo(course1!!.courseTitle!!, ignoreCase = true)
+                course2!!.courseTitle!!.compareTo(course1!!.courseTitle!!, ignoreCase = true)
             }
         }
     }
@@ -166,21 +183,20 @@ class AdapterCourses(private val context: Context, private var courseList: List<
     }
 
     fun areAllSelected(): Boolean {
-        areAllSelected = selectedItems.size == courseList.size
+        val paginatedCourseList = getPaginatedCourseList()
+        areAllSelected = paginatedCourseList.all { selectedItems.contains(it) }
         return areAllSelected
     }
 
     fun selectAllItems(selectAll: Boolean) {
+        val paginatedCourseList = getPaginatedCourseList()
         if (selectAll) {
-            selectedItems.clear()
-            selectedItems.addAll(courseList)
+            selectedItems.addAll(paginatedCourseList)
         } else {
-            selectedItems.clear()
+            selectedItems.removeAll(paginatedCourseList)
         }
         notifyDataSetChanged()
-        if (listener != null) {
-            listener!!.onSelectedListChange(selectedItems)
-        }
+        listener?.onSelectedListChange(selectedItems)
     }
 
     private fun displayTagCloud(flexboxDrawable: FlexboxLayout, position: Int) {
@@ -209,8 +225,8 @@ class AdapterCourses(private val context: Context, private var courseList: List<
     private fun showProgressAndRating(position: Int, holder: RecyclerView.ViewHolder) {
         val viewHolder = holder as ViewHoldercourse
         showProgress(position)
-        if (map.containsKey(courseList[position]!!.courseId)) {
-            val `object` = map[courseList[position]!!.courseId]
+        if (map.containsKey(courseList[position]?.courseId)) {
+            val `object` = map[courseList[position]?.courseId]
             showRating(`object`, viewHolder.rowCourseBinding.average, viewHolder.rowCourseBinding.timesRated, viewHolder.rowCourseBinding.ratingBar)
         } else {
             viewHolder.rowCourseBinding.ratingBar.rating = 0f
@@ -222,11 +238,9 @@ class AdapterCourses(private val context: Context, private var courseList: List<
             val ob = progressMap!![courseList[position]?.courseId]
             rowCourseBinding.courseProgress.max = getInt("max", ob)
             rowCourseBinding.courseProgress.progress = getInt("current", ob)
-            if (getInt("current", ob) < getInt("max", ob))
-                rowCourseBinding.courseProgress.secondaryProgress = getInt("current", ob) + 1
-            rowCourseBinding.courseProgress.visibility = View.VISIBLE
-        } else {
-            rowCourseBinding.courseProgress.visibility = View.GONE
+            if (getInt("current", ob) == getInt("max", ob)) {
+                rowCourseBinding.courseProgress.visibility = View.VISIBLE
+            }
         }
     }
 
@@ -241,50 +255,21 @@ class AdapterCourses(private val context: Context, private var courseList: List<
         }
     }
 
-    fun setItemsPerPage(itemsPerPage: Int) {
-        this.itemsPerPage = itemsPerPage
-        notifyDataSetChanged()
+    private fun getInt(str: String, `object`: JsonObject?): Int {
+        return `object`?.get(str)?.asInt ?: 0
     }
 
     private fun getPaginatedCourseList(): List<RealmMyCourse?> {
-        val fromIndex = (currentPage - 1) * itemsPerPage
-        val toIndex = minOf(fromIndex + itemsPerPage, courseList.size)
-        return courseList.subList(fromIndex, toIndex)
-    }
-
-    fun nextPage() {
-        if (currentPage * itemsPerPage < courseList.size) {
-            currentPage++
-            notifyDataSetChanged()
-        }
-    }
-
-    fun previousPage() {
-        if (currentPage > 1) {
-            currentPage--
-            notifyDataSetChanged()
-        }
-    }
-
-    fun getTotalPages(): Int {
-        return if (courseList.isNotEmpty()) {
-            (courseList.size + itemsPerPage - 1) / itemsPerPage
-        } else {
-            1
-        }
-    }
-
-    fun getCurrentPage(): Int {
-        return currentPage
+        val startIndex = (currentPage - 1) * itemsPerPage
+        val endIndex = min(startIndex + itemsPerPage, courseList.size)
+        return courseList.subList(startIndex, endIndex)
     }
 
     override fun getItemCount(): Int {
-        val fromIndex = (currentPage - 1) * itemsPerPage
-        val toIndex = minOf(fromIndex + itemsPerPage, courseList.size)
-        return toIndex - fromIndex
+        return getPaginatedCourseList().size
     }
 
-    internal inner class ViewHoldercourse(val rowCourseBinding: RowCourseBinding) : RecyclerView.ViewHolder(rowCourseBinding.root) {
+    inner class ViewHoldercourse(var rowCourseBinding: RowCourseBinding) : RecyclerView.ViewHolder(rowCourseBinding.root) {
         private var adapterPosition = 0
 
         init {
@@ -314,9 +299,21 @@ class AdapterCourses(private val context: Context, private var courseList: List<
                 override fun onStopTrackingTouch(seekBar: SeekBar) {}
             })
         }
-
         fun bind(position: Int) {
             adapterPosition = position
+        }
+    }
+
+    fun clearSelection() {
+        selectedItems.clear()
+        notifyDataSetChanged()
+    }
+
+    fun getTotalPages(): Int {
+        return if (courseList.isNotEmpty()) {
+            ceil(courseList.size.toDouble() / itemsPerPage).toInt()
+        } else {
+            1
         }
     }
 
@@ -338,7 +335,7 @@ class AdapterCourses(private val context: Context, private var courseList: List<
         }
 
         fun prependBaseUrlToImages(markdownContent: String?, baseUrl: String): String {
-            val pattern = "!\\[.*?\\]\\((.*?)\\)"
+            val pattern = "!\\[.*?]\\((.*?)\\)"
             val imagePattern = Pattern.compile(pattern)
             val matcher = markdownContent?.let { imagePattern.matcher(it) }
             val result = StringBuffer()

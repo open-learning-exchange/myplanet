@@ -107,7 +107,13 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         spnItemsPerPage.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
                 val itemsPerPage = parent.getItemAtPosition(position).toString().toInt()
-                adapterCourses.setItemsPerPage(itemsPerPage)
+                adapterCourses.itemsPerPage = itemsPerPage
+                adapterCourses.currentPage = 1
+                adapterCourses.clearSelection()
+                adapterCourses.notifyDataSetChanged()
+                updateButtonVisibility()
+                selectAll.isChecked = false
+                selectAll.text = getString(R.string.select_all)
             }
 
             override fun onNothingSelected(parent: AdapterView<*>) {}
@@ -129,31 +135,43 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         additionalSetup()
 
         btnNext.setOnClickListener {
-            adapterCourses.nextPage()
-            updateButtonVisibility()
+            if (adapterCourses.currentPage * adapterCourses.itemsPerPage < adapterCourses.getTotalCourseCount()) {
+                adapterCourses.currentPage++
+                adapterCourses.clearSelection()
+                adapterCourses.notifyDataSetChanged()
+                updateButtonVisibility()
+                selectAll.isChecked = false
+                selectAll.text = getString(R.string.select_all)
+            }
         }
 
         btnPrevious.setOnClickListener {
-            adapterCourses.previousPage()
-            updateButtonVisibility()
+            if (adapterCourses.currentPage > 1) {
+                adapterCourses.currentPage--
+                adapterCourses.clearSelection()
+                adapterCourses.notifyDataSetChanged()
+                updateButtonVisibility()
+                selectAll.isChecked = false
+                selectAll.text = getString(R.string.select_all)
+            }
         }
         updateButtonVisibility()
     }
 
     private fun updateButtonVisibility() {
-        if (adapterCourses.getCurrentPage() < adapterCourses.getTotalPages()){
+        if (adapterCourses.currentPage < adapterCourses.getTotalPages()) {
             btnNext.visibility = View.VISIBLE
         } else {
             btnNext.visibility = View.GONE
         }
 
-        if (adapterCourses.getCurrentPage() > 1){
+        if (adapterCourses.currentPage > 1) {
             btnPrevious.visibility = View.VISIBLE
         } else {
             btnPrevious.visibility = View.GONE
         }
 
-        if (adapterCourses.itemCount == 0){
+        if (adapterCourses.itemCount == 0) {
             ltPagination.visibility = View.GONE
             tvDelete?.visibility = View.GONE
             btnRemove.visibility = View.GONE
@@ -200,15 +218,15 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         ltPagination = requireView().findViewById(R.id.ltPagination)
 
         checkList()
+
         selectAll.setOnClickListener {
-            val allSelected = selectedItems?.size == adapterCourses.getCourseList().size
+            val allSelected = adapterCourses.areAllSelected()
             adapterCourses.selectAllItems(!allSelected)
-            if (allSelected) {
-                selectAll.isChecked = false
-                selectAll.text = getString(R.string.select_all)
+            selectAll.isChecked = !allSelected
+            selectAll.text = if (allSelected) {
+                getString(R.string.select_all)
             } else {
-                selectAll.isChecked = true
-                selectAll.text = getString(R.string.unselect_all)
+                getString(R.string.unselect_all)
             }
         }
     }
