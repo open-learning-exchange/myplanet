@@ -12,6 +12,7 @@ import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.Spinner
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.Gson
@@ -44,6 +45,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     lateinit var spnSubject: Spinner
     lateinit var searchTags: MutableList<RealmTag>
     private lateinit var confirmation: AlertDialog
+    private lateinit var btnPrevious: TextView
+    private lateinit var btnNext: TextView
+    private lateinit var spnItemsPerPage: Spinner
     override fun getLayout(): Int {
         return R.layout.fragment_my_course
     }
@@ -89,6 +93,14 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 }
                 .setNegativeButton(R.string.no, null).show()
         }
+
+        val drawableNext = ContextCompat.getDrawable(requireContext(), R.drawable.ic_right_arrow)
+        drawableNext?.setTint(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
+        btnNext.setCompoundDrawablesWithIntrinsicBounds(null, null, drawableNext, null)
+
+        val drawablePrevious = ContextCompat.getDrawable(requireContext(), R.drawable.ic_left_arrow)
+        drawablePrevious?.setTint(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
+        btnPrevious.setCompoundDrawablesWithIntrinsicBounds(drawablePrevious, null, null, null)
 
         requireView().findViewById<View>(R.id.btn_collections).setOnClickListener {
             val f = CollectionsFragment.getInstance(searchTags, "courses")
@@ -150,6 +162,10 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 selectAll.text = getString(R.string.unselect_all)
             }
         }
+
+        btnNext = requireView().findViewById(R.id.next)
+        btnPrevious = requireView().findViewById(R.id.previous)
+        spnItemsPerPage = requireView().findViewById(R.id.spn_items_per_page)
     }
 
     private fun checkList() {
