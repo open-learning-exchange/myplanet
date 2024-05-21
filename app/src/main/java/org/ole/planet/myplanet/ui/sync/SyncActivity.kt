@@ -730,10 +730,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             val login = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
             val cancel = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
             login.setOnClickListener {
-                if (mRealm.isEmpty) {
-                    alertDialogOkay(getString(R.string.this_device_not_configured_properly_please_check_and_sync))
-                    return@setOnClickListener
-                }
                 val username = alertGuestLoginBinding.etUserName.text.toString().trim { it <= ' ' }
                 val firstChar = if (username.isEmpty()) null else username[0]
                 var hasInvalidCharacters = false
