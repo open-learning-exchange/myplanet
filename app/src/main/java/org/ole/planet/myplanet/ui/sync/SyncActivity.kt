@@ -451,6 +451,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 } else if (TextUtils.isEmpty(inputPassword.text.toString())) {
                     inputPassword.error = getString(R.string.err_msg_password)
                 } else {
+                    if (mRealm.isClosed) {
+                        mRealm = Realm.getDefaultInstance()
+                    }
                     val user = mRealm.where(RealmUserModel::class.java)
                         .equalTo("name", inputName.text.toString()).findFirst()
                     if (user == null || !user.isArchived) {

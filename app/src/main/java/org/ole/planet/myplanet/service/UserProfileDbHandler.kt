@@ -32,10 +32,15 @@ class UserProfileDbHandler(context: Context) {
         }
     }
 
-
     val userModel: RealmUserModel?
-        get() = mRealm.where(RealmUserModel::class.java)
-            .equalTo("id", settings.getString("userId", "")).findFirst()
+        get() {
+            if (mRealm.isClosed){
+                mRealm = realmService.realmInstance
+            }
+            return mRealm.where(RealmUserModel::class.java)
+                .equalTo("id", settings.getString("userId", ""))
+                .findFirst()
+        }
 
     fun onLogin() {
         if (!mRealm.isInTransaction) {
