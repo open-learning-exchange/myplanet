@@ -677,8 +677,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             val alertGuestLoginBinding = AlertGuestLoginBinding.inflate(LayoutInflater.from(this))
             val v: View = alertGuestLoginBinding.root
             alertGuestLoginBinding.etUserName.addTextChangedListener(object : TextWatcher {
-                override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {
-                }
+                override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
 
                 override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
                     val input = s.toString()
@@ -730,6 +729,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             val login = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
             val cancel = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
             login.setOnClickListener {
+                if (mRealm.isClosed) {
+                    mRealm = Realm.getDefaultInstance()
+                }
                 val username = alertGuestLoginBinding.etUserName.text.toString().trim { it <= ' ' }
                 val firstChar = if (username.isEmpty()) null else username[0]
                 var hasInvalidCharacters = false
@@ -755,8 +757,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                         }
                         hasSpecialCharacters = matcher.matches()
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                            hasDiacriticCharacters = !normalizedText.codePoints()
-                                .allMatch { codePoint: Int -> Character.isLetterOrDigit(codePoint) || codePoint == '.'.code || codePoint == '-'.code || codePoint == '_'.code }
+                            hasDiacriticCharacters = !normalizedText.codePoints().allMatch {
+                                codePoint -> Character.isLetterOrDigit(codePoint) || codePoint == '.'.code || codePoint == '-'.code || codePoint == '_'.code
+                            }
                         }
                     }
                     if (hasInvalidCharacters || hasDiacriticCharacters || hasSpecialCharacters) {
@@ -933,6 +936,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     dialogServerUrlBinding.radioHttp.isChecked = true
                     settings.edit().putString("serverProtocol", getString(R.string.http_protocol)).apply()
                     showConfigurationUIElements(dialogServerUrlBinding, true)
+                    if (mRealm.isClosed) {
+                        mRealm = Realm.getDefaultInstance()
+                    }
                     val communities: List<RealmCommunity> = mRealm.where(RealmCommunity::class.java).sort("weight", Sort.ASCENDING).findAll()
                     val nonEmptyCommunities: MutableList<RealmCommunity> = ArrayList()
                     for (community in communities) {
@@ -1024,6 +1030,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             settings.edit().putString("serverProtocol", getString(R.string.https_protocol)).apply()
         }
         try {
+            if (mRealm.isClosed) {
+                mRealm = Realm.getDefaultInstance()
+            }
             val teams: List<RealmMyTeam> = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId").equalTo("status", "active").findAll()
             if (teams.isNotEmpty() && show && binding.inputServerUrl.text.toString() != "") {
                 binding.team.visibility = View.VISIBLE

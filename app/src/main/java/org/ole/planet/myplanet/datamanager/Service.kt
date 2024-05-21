@@ -247,28 +247,32 @@ class Service(private val context: Context) {
             override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
                 if (response.body() != null) {
                     val arr = JsonUtils.getJsonArray("rows", response.body())
-                    realm.executeTransactionAsync({ realm1: Realm ->
-                        realm1.delete(RealmCommunity::class.java)
-                        for (j in arr) {
-                            var jsonDoc = j.asJsonObject
-                            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-                            val id = JsonUtils.getString("_id", jsonDoc)
-                            val community = realm1.createObject(RealmCommunity::class.java, id)
-                            if (JsonUtils.getString("name", jsonDoc) == "learning") {
-                                community.weight = 0
+                    if (!realm.isClosed) {
+                        realm.executeTransactionAsync({ realm1: Realm ->
+                            realm1.delete(RealmCommunity::class.java)
+                            for (j in arr) {
+                                var jsonDoc = j.asJsonObject
+                                jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
+                                val id = JsonUtils.getString("_id", jsonDoc)
+                                val community = realm1.createObject(RealmCommunity::class.java, id)
+                                if (JsonUtils.getString("name", jsonDoc) == "learning") {
+                                    community.weight = 0
+                                }
+                                community.localDomain = JsonUtils.getString("localDomain", jsonDoc)
+                                community.name = JsonUtils.getString("name", jsonDoc)
+                                community.parentDomain =
+                                    JsonUtils.getString("parentDomain", jsonDoc)
+                                community.registrationRequest =
+                                    JsonUtils.getString("registrationRequest", jsonDoc)
                             }
-                            community.localDomain = JsonUtils.getString("localDomain", jsonDoc)
-                            community.name = JsonUtils.getString("name", jsonDoc)
-                            community.parentDomain = JsonUtils.getString("parentDomain", jsonDoc)
-                            community.registrationRequest = JsonUtils.getString("registrationRequest", jsonDoc)
+                        }, {
+                            realm.close()
+                            callback.onSuccess("Server sync successfully")
+                        }) { error: Throwable ->
+                            realm.close()
+                            error.printStackTrace()
+                            callback.onSuccess("Unable to connect to planet earth")
                         }
-                    }, {
-                        realm.close()
-                        callback.onSuccess("Server sync successfully")
-                    }) { error: Throwable ->
-                        realm.close()
-                        error.printStackTrace()
-                        callback.onSuccess("Unable to connect to planet earth")
                     }
                 }
             }
