@@ -485,8 +485,13 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
         if (::btnGuestLogin.isInitialized ) {
             btnGuestLogin.setOnClickListener {
-                inputName.setText("")
-                showGuestLoginDialog()
+                if (Utilities.getUrl().isNotEmpty()) {
+                    inputName.setText("")
+                    showGuestLoginDialog()
+                } else {
+                    Utilities.toast(this, getString(R.string.please_enter_server_url_first))
+                    settingDialog(this)
+                }
             }
         }
     }
