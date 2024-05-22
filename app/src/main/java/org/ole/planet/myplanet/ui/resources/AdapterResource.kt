@@ -35,6 +35,7 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
     private var ratingChangeListener: OnRatingChangeListener? = null
     private var isAscending = true
     private var isTitleAscending = true
+    private var areAllSelected = true
 
     private var _itemsPerPage: Int = 10
     var itemsPerPage: Int
@@ -84,39 +85,41 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        val paginatedResourceList = getPaginatedResourceList()
         if (holder is ViewHolderLibrary) {
             holder.bind()
-            holder.rowLibraryBinding.title.text = libraryList[position]?.title
-            setMarkdownText(holder.rowLibraryBinding.description, libraryList[position]?.description!!)
-            holder.rowLibraryBinding.timesRated.text = "${libraryList[position]?.timesRated}${context.getString(R.string.total)}"
-            holder.rowLibraryBinding.checkbox.isChecked = selectedItems.contains(libraryList[position])
-            holder.rowLibraryBinding.checkbox.contentDescription = "${context.getString(R.string.selected)} ${libraryList[position]?.title}"
-            holder.rowLibraryBinding.rating.text = if (TextUtils.isEmpty(libraryList[position]?.averageRating)) {
+            val resource = paginatedResourceList[position]
+            holder.rowLibraryBinding.title.text = resource?.title
+            setMarkdownText(holder.rowLibraryBinding.description, resource?.description!!)
+            holder.rowLibraryBinding.timesRated.text = "${resource?.timesRated}${context.getString(R.string.total)}"
+            holder.rowLibraryBinding.checkbox.isChecked = selectedItems.contains(resource)
+            holder.rowLibraryBinding.checkbox.contentDescription = "${context.getString(R.string.selected)} ${resource.title}"
+            holder.rowLibraryBinding.rating.text = if (TextUtils.isEmpty(resource.averageRating)) {
                 "0.0"
             } else {
-                String.format("%.1f", libraryList[position]?.averageRating?.toDouble())
+                String.format("%.1f", resource.averageRating?.toDouble())
             }
-            holder.rowLibraryBinding.tvDate.text = libraryList[position]?.createdDate?.let { formatDate(it, "MMM dd, yyyy") }
+            holder.rowLibraryBinding.tvDate.text = formatDate(resource.createdDate, "MMM dd, yyyy")
             displayTagCloud(holder.rowLibraryBinding.flexboxDrawable, position)
-            holder.itemView.setOnClickListener { openLibrary(libraryList[position]) }
-            holder.rowLibraryBinding.ivDownloaded.setImageResource(if (libraryList[position]?.isResourceOffline() == true) {
+            holder.itemView.setOnClickListener { openLibrary(resource) }
+            holder.rowLibraryBinding.ivDownloaded.setImageResource(if (resource.isResourceOffline()) {
                 R.drawable.ic_eye
             } else {
                 R.drawable.ic_download
             })
-            holder.rowLibraryBinding.ivDownloaded.contentDescription = if (libraryList[position]?.isResourceOffline() == true) {
+            holder.rowLibraryBinding.ivDownloaded.contentDescription = if (resource.isResourceOffline()) {
                 context.getString(R.string.view)
             } else {
                 context.getString(R.string.download)
             }
-            if (ratingMap.containsKey(libraryList[position]?.resourceId)) {
-                val `object` = ratingMap[libraryList[position]?.resourceId]
+            if (ratingMap.containsKey(resource.resourceId)) {
+                val `object` = ratingMap[resource.resourceId]
                 AdapterCourses.showRating(`object`, holder.rowLibraryBinding.rating, holder.rowLibraryBinding.timesRated, holder.rowLibraryBinding.ratingBar)
             } else {
                 holder.rowLibraryBinding.ratingBar.rating = 0f
             }
             holder.rowLibraryBinding.checkbox.setOnClickListener { view: View ->
-                holder.rowLibraryBinding.checkbox.contentDescription = context.getString(R.string.select_res_course, libraryList[position]?.title)
+                holder.rowLibraryBinding.checkbox.contentDescription = context.getString(R.string.select_res_course, resource.title)
                 Utilities.handleCheck((view as CheckBox).isChecked, position, selectedItems, libraryList)
                 if (listener != null) listener?.onSelectedListChange(selectedItems)
             }
@@ -124,13 +127,14 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
     }
 
     fun areAllSelected(): Boolean {
-        return selectedItems.size == libraryList.size
+        val paginatedResourceList = getPaginatedResourceList()
+        areAllSelected = paginatedResourceList.all { selectedItems.contains(it) }
+        return areAllSelected
     }
 
     fun selectAllItems(selectAll: Boolean) {
         val paginatedResourceList = getPaginatedResourceList()
         if (selectAll) {
-            selectedItems.clear()
             selectedItems.addAll(paginatedResourceList)
         } else {
             selectedItems.removeAll(paginatedResourceList)
