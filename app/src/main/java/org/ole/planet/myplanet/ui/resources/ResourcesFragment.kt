@@ -10,7 +10,10 @@ import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.ImageButton
+import android.widget.LinearLayout
+import android.widget.Spinner
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.flexbox.FlexboxLayout
@@ -54,6 +57,11 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     var map: HashMap<String?, JsonObject>? = null
     private var confirmation: AlertDialog? = null
     var filter: ImageButton? = null
+    private lateinit var btnPrevious: TextView
+    private lateinit var btnNext: TextView
+    private lateinit var spnItemsPerPage: Spinner
+    private lateinit var ltPagination: LinearLayout
+
     override fun getLayout(): Int {
         return R.layout.fragment_my_library
     }
@@ -80,6 +88,11 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         selectAll = requireView().findViewById(R.id.selectAll)
         tvDelete = requireView().findViewById(R.id.tv_delete)
         filter = requireView().findViewById(R.id.filter)
+        btnNext = requireView().findViewById(R.id.next)
+        btnPrevious = requireView().findViewById(R.id.previous)
+        spnItemsPerPage = requireView().findViewById(R.id.spn_items_per_page)
+        ltPagination = requireView().findViewById(R.id.ltPagination)
+
         initArrays()
         tvAddToLib?.setOnClickListener {
             if ((selectedItems?.size ?: 0) > 0) {
@@ -134,6 +147,14 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                 selectAll?.text = getString(R.string.unselect_all)
             }
         }
+
+        val drawableNext = ContextCompat.getDrawable(requireContext(), R.drawable.ic_right_arrow)
+        drawableNext?.setTint(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
+        btnNext.setCompoundDrawablesWithIntrinsicBounds(null, null, drawableNext, null)
+
+        val drawablePrevious = ContextCompat.getDrawable(requireContext(), R.drawable.ic_left_arrow)
+        drawablePrevious?.setTint(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
+        btnPrevious.setCompoundDrawablesWithIntrinsicBounds(drawablePrevious, null, null, null)
     }
 
     private fun checkList() {
