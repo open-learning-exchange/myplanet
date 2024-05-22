@@ -153,7 +153,7 @@ dependencies {
     implementation "io.noties.markwon:image:$markwon_version"
     implementation "io.noties.markwon:html:$markwon_version"
     implementation "io.noties.markwon:ext-tables:$markwon_version"
-    implementation(platform("org.jetbrains.kotlin:kotlin-bom:1.9.24"))
+    implementation(platform("org.jetbrains.kotlin:kotlin-bom:2.0.0"))
 }
 realm {
     syncEnabled = true
