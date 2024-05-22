@@ -25,19 +25,33 @@ import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Locale
+import kotlin.math.*
 
 class AdapterResource(private val context: Context, private var libraryList: List<RealmMyLibrary?>, private val ratingMap: HashMap<String?, JsonObject>, private val realm: Realm) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-    private val selectedItems: MutableList<RealmMyLibrary?>
+    private val selectedItems: MutableList<RealmMyLibrary?> = ArrayList()
     private var listener: OnLibraryItemSelected? = null
-    private val config: ChipCloudConfig
+    private val config: ChipCloudConfig = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.single)
     private var homeItemClickListener: OnHomeItemClickListener? = null
     private var ratingChangeListener: OnRatingChangeListener? = null
     private var isAscending = true
     private var isTitleAscending = true
 
+    private var _itemsPerPage: Int = 10
+    var itemsPerPage: Int
+        get() = _itemsPerPage
+        set(value) {
+            _itemsPerPage = value
+            notifyDataSetChanged()
+        }
+
+    private var _currentPage: Int = 1
+    var currentPage: Int
+        get() = _currentPage
+        set(value) {
+            _currentPage = value
+        }
+
     init {
-        selectedItems = ArrayList()
-        config = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.single)
         if (context is OnHomeItemClickListener) {
             homeItemClickListener = context
         }
@@ -60,9 +74,12 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
         this.listener = listener
     }
 
+    fun getTotalResourceCount(): Int {
+        return libraryList.size
+    }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
-        val rowLibraryBinding =
-            RowLibraryBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        val rowLibraryBinding = RowLibraryBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ViewHolderLibrary(rowLibraryBinding)
     }
 
@@ -74,27 +91,24 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
             holder.rowLibraryBinding.timesRated.text = "${libraryList[position]?.timesRated}${context.getString(R.string.total)}"
             holder.rowLibraryBinding.checkbox.isChecked = selectedItems.contains(libraryList[position])
             holder.rowLibraryBinding.checkbox.contentDescription = "${context.getString(R.string.selected)} ${libraryList[position]?.title}"
-            holder.rowLibraryBinding.rating.text =
-                if (TextUtils.isEmpty(libraryList[position]?.averageRating)) {
-                    "0.0"
-                } else {
-                    String.format("%.1f", libraryList[position]?.averageRating!!.toDouble())
-                }
+            holder.rowLibraryBinding.rating.text = if (TextUtils.isEmpty(libraryList[position]?.averageRating)) {
+                "0.0"
+            } else {
+                String.format("%.1f", libraryList[position]?.averageRating?.toDouble())
+            }
             holder.rowLibraryBinding.tvDate.text = libraryList[position]?.createdDate?.let { formatDate(it, "MMM dd, yyyy") }
             displayTagCloud(holder.rowLibraryBinding.flexboxDrawable, position)
             holder.itemView.setOnClickListener { openLibrary(libraryList[position]) }
-            holder.rowLibraryBinding.ivDownloaded.setImageResource(
-                if (libraryList[position]?.isResourceOffline() == true) {
-                    R.drawable.ic_eye
-                } else {
-                    R.drawable.ic_download
-                })
-            holder.rowLibraryBinding.ivDownloaded.contentDescription =
-                if (libraryList[position]?.isResourceOffline() == true) {
-                    context.getString(R.string.view)
-                } else {
-                    context.getString(R.string.download)
-                }
+            holder.rowLibraryBinding.ivDownloaded.setImageResource(if (libraryList[position]?.isResourceOffline() == true) {
+                R.drawable.ic_eye
+            } else {
+                R.drawable.ic_download
+            })
+            holder.rowLibraryBinding.ivDownloaded.contentDescription = if (libraryList[position]?.isResourceOffline() == true) {
+                context.getString(R.string.view)
+            } else {
+                context.getString(R.string.download)
+            }
             if (ratingMap.containsKey(libraryList[position]?.resourceId)) {
                 val `object` = ratingMap[libraryList[position]?.resourceId]
                 AdapterCourses.showRating(`object`, holder.rowLibraryBinding.rating, holder.rowLibraryBinding.timesRated, holder.rowLibraryBinding.ratingBar)
@@ -114,11 +128,12 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
     }
 
     fun selectAllItems(selectAll: Boolean) {
+        val paginatedResourceList = getPaginatedResourceList()
         if (selectAll) {
             selectedItems.clear()
-            selectedItems.addAll(libraryList)
+            selectedItems.addAll(paginatedResourceList)
         } else {
-            selectedItems.clear()
+            selectedItems.removeAll(paginatedResourceList)
         }
         notifyDataSetChanged()
         if (listener != null) {
@@ -133,7 +148,7 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
     private fun displayTagCloud(flexboxDrawable: FlexboxLayout, position: Int) {
         flexboxDrawable.removeAllViews()
         val chipCloud = ChipCloud(context, flexboxDrawable, config)
-        val tags: List<RealmTag> = realm.where(RealmTag::class.java).equalTo("db", "resources").equalTo("linkId", libraryList[position]?.id).findAll()
+        val tags = realm.where(RealmTag::class.java).equalTo("db", "resources").equalTo("linkId", libraryList[position]?.id).findAll()
         for (tag in tags) {
             val parent = realm.where(RealmTag::class.java).equalTo("id", tag.tagId).findFirst()
             try {
@@ -179,25 +194,39 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
         }
     }
 
-    override fun getItemCount(): Int {
-        return libraryList.size
+    private fun getPaginatedResourceList(): List<RealmMyLibrary?> {
+        val startIndex = (currentPage - 1) * itemsPerPage
+        val endIndex = min(startIndex + itemsPerPage, libraryList.size)
+        return libraryList.subList(startIndex, endIndex)
     }
 
-    internal inner class ViewHolderLibrary(val rowLibraryBinding: RowLibraryBinding) :
-        RecyclerView.ViewHolder(rowLibraryBinding.root) {
-            init {
-                rowLibraryBinding.ratingBar.setOnTouchListener { _: View?, event: MotionEvent ->
-                    if (event.action == MotionEvent.ACTION_UP) {
-                        homeItemClickListener?.showRatingDialog("resource",
-                            libraryList[bindingAdapterPosition]?.resourceId,
-                            libraryList[bindingAdapterPosition]?.title,
-                            ratingChangeListener
-                        )
-                    }
-                    true
+    override fun getItemCount(): Int {
+        return getPaginatedResourceList().size
+    }
+
+    internal inner class ViewHolderLibrary(val rowLibraryBinding: RowLibraryBinding) : RecyclerView.ViewHolder(rowLibraryBinding.root) {
+        init {
+            rowLibraryBinding.ratingBar.setOnTouchListener { _: View?, event: MotionEvent ->
+                if (event.action == MotionEvent.ACTION_UP) {
+                    homeItemClickListener?.showRatingDialog("resource", libraryList[bindingAdapterPosition]?.resourceId, libraryList[bindingAdapterPosition]?.title, ratingChangeListener)
                 }
+                true
             }
+        }
 
         fun bind() {}
+    }
+
+    fun clearSelection() {
+        selectedItems.clear()
+        notifyDataSetChanged()
+    }
+
+    fun getTotalPages(): Int {
+        return if (libraryList.isNotEmpty()) {
+            ceil(libraryList.size.toDouble() / itemsPerPage).toInt()
+        } else {
+            1
+        }
     }
 }
