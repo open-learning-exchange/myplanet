@@ -43,7 +43,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         becomeMember = activityLoginBinding.becomeMember
         btnGuestLogin = activityLoginBinding.btnGuestLogin
         imgBtnSetting = activityLoginBinding.imgBtnSetting
-        syncIcon = activityLoginBinding.syncIcon
         lblVersion = activityLoginBinding.lblVersion
         btnLang = activityLoginBinding.btnLang
         tvAvailableSpace = activityLoginBinding.tvAvailableSpace
