@@ -84,7 +84,7 @@
     <string name="your_rating">qiimayntaada</string>
     <string name="your_comment">ka tag faallooyinkaaga</string>
     <string name="show_top_nav">Show sare navigation Bar gudaha Dashboard</string>
-    <string name="sync_now">Isku-dar hadda</string>
+    <string name="sync_now">isku-dar hadda</string>
     <string name="logout">ka bax</string>
     <string name="settings">Settings</string>
     <string name="change_password">Beddel erayga sirta ah</string>
@@ -379,8 +379,8 @@
     <string name="clear_data">Tirtir Data</string>
     <string name="reset_app">Isku day App-ka</string>
     <string name="freeup_space">Bac Wadatid xogta diiskaga</string>
-    <string name="action_disclaimer">Soo Celinta</string>
-    <string name="action_about">Ku saabsan</string>
+    <string name="action_disclaimer">soo Celinta</string>
+    <string name="action_about">ku saabsan</string>
     <string name="engilsh_dictionary">Qaamuuska Af Ingiriiska</string>
 
     <string-array name="team_type">
