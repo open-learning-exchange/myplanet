@@ -26,7 +26,11 @@ class MarkdownViewerActivity : AppCompatActivity() {
         val markdownOpenIntent = intent
         fileName = markdownOpenIntent.getStringExtra("TOUCHED_FILE")
         if (!fileName.isNullOrEmpty()) {
-            activityMarkdownViewerBinding.markdownFileName.text = fileName
+            val regex = Regex(".+/(.+\\.md)")
+            val matchResult = regex.find(fileName ?: "")
+            val name = matchResult?.groupValues?.get(1)
+
+            activityMarkdownViewerBinding.markdownFileName.text = name
             activityMarkdownViewerBinding.markdownFileName.visibility = View.VISIBLE
         }
         try {
