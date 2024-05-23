@@ -58,7 +58,11 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
         val pdfOpenIntent = intent
         fileName = pdfOpenIntent.getStringExtra("TOUCHED_FILE")
         if (fileName != null && fileName?.isNotEmpty() == true) {
-            activityPdfreaderBinding.pdfFileName.text = fileName
+            val regex = Regex(".+/(.+\\.pdf)")
+            val matchResult = regex.find(fileName ?: "")
+            val name = matchResult?.groupValues?.get(1)
+
+            activityPdfreaderBinding.pdfFileName.text = name
             activityPdfreaderBinding.pdfFileName.visibility = View.VISIBLE
         }
         val file = File(getExternalFilesDir(null), "ole/$fileName")

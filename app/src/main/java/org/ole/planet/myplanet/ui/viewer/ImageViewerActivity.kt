@@ -25,7 +25,11 @@ class ImageViewerActivity : AppCompatActivity() {
         val imageOpenIntent = intent
         fileName = imageOpenIntent.getStringExtra("TOUCHED_FILE")
         if (fileName != null && fileName?.isNotEmpty() == true) {
-            activityImageViewerBinding.imageFileName.text = fileName
+            val regex = Regex(".+/([^/]+\\.(jpg|jpeg|png|gif|bmp))")
+
+            val matchResult = regex.find(fileName ?: "")
+            val name = matchResult?.groupValues?.get(1)
+            activityImageViewerBinding.imageFileName.text = name
             activityImageViewerBinding.imageFileName.visibility = View.VISIBLE
         }
         if (fileName?.matches(".*[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}.*".toRegex()) == true) {

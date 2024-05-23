@@ -22,7 +22,11 @@ class CSVViewerActivity : AppCompatActivity() {
         val csvFileOpenIntent = intent
         val fileName = csvFileOpenIntent.getStringExtra("TOUCHED_FILE")
         if (!fileName.isNullOrEmpty()) {
-            activityCsvviewerBinding.csvFileName.text = fileName
+            val regex = Regex(".+/(.+\\.csv)")
+            val matchResult = regex.find(fileName)
+            val name = matchResult?.groupValues?.get(1)
+
+            activityCsvviewerBinding.csvFileName.text = name
             activityCsvviewerBinding.csvFileName.visibility = View.VISIBLE
         }
         try {

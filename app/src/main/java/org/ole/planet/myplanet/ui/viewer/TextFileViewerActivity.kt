@@ -22,7 +22,11 @@ class TextFileViewerActivity : AppCompatActivity() {
         val textFileOpenIntent = intent
         fileName = textFileOpenIntent.getStringExtra("TOUCHED_FILE")
         if (fileName != null && fileName?.isNotEmpty() == true) {
-            activityTextfileViewerBinding.textFileName.text = fileName
+            val regex = Regex(".+/(.+\\.txt)")
+            val matchResult = regex.find(fileName ?: "")
+            val name = matchResult?.groupValues?.get(1)
+
+            activityTextfileViewerBinding.textFileName.text = name
             activityTextfileViewerBinding.textFileName.visibility = View.VISIBLE
         }
         renderTextFileThread()
