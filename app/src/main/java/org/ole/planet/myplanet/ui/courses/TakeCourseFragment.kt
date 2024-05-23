@@ -95,7 +95,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private fun setCourseData() {
-        fragmentTakeCourseBinding.tvStepTitle.text = currentCourse?.courseTitle
         if (currentCourse?.userId?.contains(userModel?.id) != true) {
             fragmentTakeCourseBinding.btnRemove.visibility = View.VISIBLE
             fragmentTakeCourseBinding.btnRemove.text = getString(R.string.join)
@@ -121,12 +120,10 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {}
     override fun onPageSelected(position: Int) {
         if (position > 0) {
-            fragmentTakeCourseBinding.tvStepTitle.text = steps[position - 1]?.stepTitle
             if (position - 1 < steps.size) changeNextButtonState(position)
         } else {
             fragmentTakeCourseBinding.nextStep.isClickable = true
             fragmentTakeCourseBinding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
-            fragmentTakeCourseBinding.tvStepTitle.text = currentCourse?.courseTitle
         }
         val i = getCurrentProgress(steps, mRealm, userModel?.id, courseId)
         if (i < steps.size) fragmentTakeCourseBinding.courseProgress.secondaryProgress = i + 1
