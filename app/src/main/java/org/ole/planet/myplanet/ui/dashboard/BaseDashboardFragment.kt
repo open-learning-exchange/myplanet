@@ -313,7 +313,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             showNotificationFragment()
         }
 
-        // Initialize and set up the RealmResults and RealmChangeListener
         myCoursesResults = RealmMyCourse.getMyByUserId(mRealm, settings)
         myCoursesResults.addChangeListener(myCoursesChangeListener)
     }
