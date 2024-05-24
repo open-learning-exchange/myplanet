@@ -24,10 +24,12 @@ class CSVViewerActivity : AppCompatActivity() {
         if (!fileName.isNullOrEmpty()) {
             val regex = Regex(".+/(.+\\.csv)")
             val matchResult = regex.find(fileName)
-            val name = matchResult?.groupValues?.get(1)
-
-            activityCsvviewerBinding.csvFileName.text = name
+            val nameWithExtension = matchResult?.groupValues?.get(1)
+            val nameWithoutExtension = nameWithExtension?.substringBeforeLast(".")
+            activityCsvviewerBinding.csvFileName.text = nameWithoutExtension
             activityCsvviewerBinding.csvFileName.visibility = View.VISIBLE
+
+
         }
         try {
             val csvFile: File = if (fileName!!.startsWith("/")) {
