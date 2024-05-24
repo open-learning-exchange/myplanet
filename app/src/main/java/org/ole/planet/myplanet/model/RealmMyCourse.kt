@@ -8,6 +8,7 @@ import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
+import io.realm.RealmResults
 import io.realm.annotations.PrimaryKey
 import io.realm.kotlin.where
 import org.ole.planet.myplanet.MainApplication
@@ -180,15 +181,11 @@ open class RealmMyCourse : RealmObject() {
         }
 
         @JvmStatic
-        fun getMyByUserId(mRealm: Realm, settings: SharedPreferences?): List<RealmObject> {
-            val libs = mRealm.where(RealmMyCourse::class.java).findAll()
-            val libraries: MutableList<RealmObject> = ArrayList()
-            for (item in libs) {
-                if (item.userId?.contains(settings?.getString("userId", "--")) == true) {
-                    libraries.add(item)
-                }
-            }
-            return libraries
+        fun getMyByUserId(mRealm: Realm, settings: SharedPreferences?): RealmResults<RealmMyCourse> {
+            val userId = settings?.getString("userId", "--")
+            return mRealm.where(RealmMyCourse::class.java)
+                .equalTo("userId", userId)
+                .findAll()
         }
 
         @JvmStatic

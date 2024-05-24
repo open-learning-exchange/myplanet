@@ -17,9 +17,7 @@ import androidx.core.content.ContextCompat
 import com.bumptech.glide.Glide
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayout
-import io.realm.Case
-import io.realm.RealmObject
-import io.realm.Sort
+import io.realm.*
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.NotificationCallback
 import org.ole.planet.myplanet.callback.SyncListener
@@ -56,6 +54,10 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     lateinit var dbService: DatabaseService
     private var params = LinearLayout.LayoutParams(250, 100)
     private var di: DialogUtils.CustomProgressDialog? = null
+    private lateinit var myCoursesResults: RealmResults<RealmMyCourse>
+    private val myCoursesChangeListener = RealmChangeListener<RealmResults<RealmMyCourse>> { results ->
+        updateMyCoursesUI()
+    }
 
     fun onLoaded(v: View) {
         profileDbHandler = UserProfileDbHandler(requireContext())
@@ -63,7 +65,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         fullName = profileDbHandler.userModel?.getFullName()
         if (fullName?.trim().isNullOrBlank()) {
             fullName = profileDbHandler.userModel?.name
-
             v.findViewById<LinearLayout>(R.id.ll_prompt).visibility = View.VISIBLE
             v.findViewById<LinearLayout>(R.id.ll_prompt).setOnClickListener {
                 UserInformationFragment.getInstance("").show(childFragmentManager, "")
@@ -94,20 +95,16 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         mRealm = DatabaseService(requireContext()).realmInstance
         Utilities.toast(activity, getString(R.string.please_select_starting_date))
         val now = Calendar.getInstance()
-        val dpd = DatePickerDialog(
-            requireActivity(), { _: DatePicker?, i: Int, i1: Int, i2: Int ->
-                now[Calendar.YEAR] = i
-                now[Calendar.MONTH] = i1
-                now[Calendar.DAY_OF_MONTH] = i2
-                val imageList: List<RealmMyLibrary> =
-                    mRealm.where(RealmMyLibrary::class.java).equalTo("isPrivate", true)
-                        .greaterThan("createdDate", now.timeInMillis).equalTo("mediaType", "image")
-                        .findAll()
-                val urls = ArrayList<String>()
-                getUrlsAndStartDownload(
-                    imageList, settings, urls
-                )
-            }, now[Calendar.YEAR], now[Calendar.MONTH], now[Calendar.DAY_OF_MONTH]
+        val dpd = DatePickerDialog(requireActivity(), { _: DatePicker?, i: Int, i1: Int, i2: Int ->
+            now[Calendar.YEAR] = i
+            now[Calendar.MONTH] = i1
+            now[Calendar.DAY_OF_MONTH] = i2
+            val imageList = mRealm.where(RealmMyLibrary::class.java).equalTo("isPrivate", true)
+                .greaterThan("createdDate", now.timeInMillis).equalTo("mediaType", "image")
+                .findAll()
+            val urls = ArrayList<String>()
+            getUrlsAndStartDownload(imageList, settings, urls) },
+            now[Calendar.YEAR], now[Calendar.MONTH], now[Calendar.DAY_OF_MONTH]
         )
         dpd.setTitle(getString(R.string.read_offline_news_from))
         dpd.show()
@@ -135,9 +132,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         for ((itemCnt, items) in dbMylibrary.withIndex()) {
             val itemLibraryHomeBinding = ItemLibraryHomeBinding.inflate(LayoutInflater.from(activity))
             val v = itemLibraryHomeBinding.root
-
             setTextColor(itemLibraryHomeBinding.title, itemCnt)
-
             val colorResId = if (itemCnt % 2 == 0) R.color.md_white_1000 else R.color.md_grey_300
             val color = context?.let { ContextCompat.getColor(it, colorResId) }
             if (color != null) {
@@ -146,7 +141,9 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
             itemLibraryHomeBinding.title.text = items.title
             itemLibraryHomeBinding.detail.setOnClickListener {
-                if (homeItemClickListener != null) homeItemClickListener?.openLibraryDetailFragment(items)
+                if (homeItemClickListener != null) {
+                    homeItemClickListener?.openLibraryDetailFragment(items)
+                }
             }
 
             myLibraryItemClickAction(itemLibraryHomeBinding.title, items)
@@ -223,18 +220,14 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         if (notification != null) {
             imgChat.visibility = if (notification.lastCount < chatCount) View.VISIBLE else View.GONE
         }
-        val tasks: List<RealmTeamTask> =
-            mRealm.where(RealmTeamTask::class.java).equalTo("teamId", ob._id)
-                .equalTo("completed", false).equalTo("assignee", userId)
-                .between("deadline", current, tomorrow.timeInMillis).findAll()
+        val tasks = mRealm.where(RealmTeamTask::class.java).equalTo("assignee", userId)
+            .between("deadline", current, tomorrow.timeInMillis).findAll()
         imgTask.visibility = if (tasks.isNotEmpty()) View.VISIBLE else View.GONE
     }
 
     private fun myLifeListInit(flexboxLayout: FlexboxLayout) {
-        val dbMylife: MutableList<RealmMyLife>
-        val rawMylife: List<RealmMyLife> =
-            RealmMyLife.getMyLifeByUserId(mRealm, settings)
-        dbMylife = ArrayList()
+        val dbMylife: MutableList<RealmMyLife> = ArrayList()
+        val rawMylife: List<RealmMyLife> = RealmMyLife.getMyLifeByUserId(mRealm, settings)
         for (item in rawMylife) if (item.isVisible) dbMylife.add(item)
         for ((itemCnt, items) in dbMylife.withIndex()) {
             flexboxLayout.addView(getLayout(itemCnt, items), params)
@@ -245,7 +238,9 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         val realm = DatabaseService(requireContext()).realmInstance
         val realmObjects = RealmMyLife.getMyLifeByUserId(mRealm, settings)
         if (realmObjects.isEmpty()) {
-            if (!realm.isInTransaction) realm.beginTransaction()
+            if (!realm.isInTransaction) {
+                realm.beginTransaction()
+            }
             val myLifeListBase = getMyLifeListBase(userId)
             var ml: RealmMyLife
             var weight = 1
@@ -273,6 +268,8 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     override fun onDestroy() {
         super.onDestroy()
         profileDbHandler.onDestory()
+        myCoursesResults.removeChangeListener(myCoursesChangeListener)
+        mRealm.close()
     }
 
     private fun setCountText(countText: Int, c: Class<*>, v: View) {
@@ -299,10 +296,12 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     fun initView(view: View) {
-        view.findViewById<View>(R.id.imageView)
-            .setOnClickListener { homeItemClickListener?.openCallFragment(UserProfileFragment()) }
-        view.findViewById<View>(R.id.txtFullName)
-            .setOnClickListener { homeItemClickListener?.openCallFragment(UserProfileFragment()) }
+        view.findViewById<View>(R.id.imageView).setOnClickListener {
+            homeItemClickListener?.openCallFragment(UserProfileFragment())
+        }
+        view.findViewById<View>(R.id.txtFullName).setOnClickListener {
+            homeItemClickListener?.openCallFragment(UserProfileFragment())
+        }
         dbService = DatabaseService(requireContext())
         mRealm = dbService.realmInstance
         myLibraryDiv(view)
@@ -313,6 +312,15 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         if(!settings?.getBoolean(Constants.KEY_NOTIFICATION_SHOWN, false)!!) {
             showNotificationFragment()
         }
+
+        myCoursesResults = RealmMyCourse.getMyByUserId(mRealm, settings)
+        myCoursesResults.addChangeListener(myCoursesChangeListener)
+    }
+
+    private fun updateMyCoursesUI() {
+        val flexboxLayout: FlexboxLayout = view?.findViewById(R.id.flexboxLayoutCourse) ?: return
+        flexboxLayout.removeAllViews()
+        setUpMyList(RealmMyCourse::class.java, flexboxLayout, requireView())
     }
 
     fun showNotificationFragment() {
@@ -328,11 +336,8 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     override fun showUserResourceDialog() {
-        val userModelList: List<RealmUserModel>
         var dialog: AlertDialog? = null
-
-        userModelList = mRealm.where(RealmUserModel::class.java).sort("joinDate", Sort.DESCENDING).findAll()
-
+        val userModelList = mRealm.where(RealmUserModel::class.java).sort("joinDate", Sort.DESCENDING).findAll()
         val adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, userModelList)
         val alertHealthListBinding = AlertHealthListBinding.inflate(LayoutInflater.from(activity))
         alertHealthListBinding.etSearch.visibility = View.GONE
@@ -350,11 +355,11 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         }
 
         dialog = AlertDialog.Builder(requireActivity())
-                .setTitle(getString(R.string.select_member))
-                .setView(alertHealthListBinding.root)
-                .setCancelable(false)
-                .setNegativeButton(R.string.dismiss, null)
-                .create()
+            .setTitle(getString(R.string.select_member))
+            .setView(alertHealthListBinding.root)
+            .setCancelable(false)
+            .setNegativeButton(R.string.dismiss, null)
+            .create()
 
         dialog.show()
     }
@@ -384,20 +389,18 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     override fun showTaskListDialog() {
-        val tasks: List<RealmTeamTask> =
-            mRealm.where(RealmTeamTask::class.java).equalTo("assignee", model.id)
-                .equalTo("completed", false)
-                .greaterThan("deadline", Calendar.getInstance().timeInMillis).findAll()
+        val tasks = mRealm.where(RealmTeamTask::class.java).equalTo("assignee", model.id)
+            .equalTo("completed", false)
+            .greaterThan("deadline", Calendar.getInstance().timeInMillis).findAll()
         if (tasks.isEmpty()) {
             Utilities.toast(requireContext(), getString(R.string.no_due_tasks))
             return
         }
-        val adapter = ArrayAdapter(
-            requireContext(), android.R.layout.simple_expandable_list_item_1, tasks
-        )
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_expandable_list_item_1, tasks)
         AlertDialog.Builder(requireContext()).setTitle(getString(R.string.due_tasks))
             .setAdapter(adapter) { _, _ ->
 //                var task = adapter.getItem(p1);
-            }.setNegativeButton(R.string.dismiss, null).show()
+            }
+            .setNegativeButton(R.string.dismiss, null).show()
     }
 }
