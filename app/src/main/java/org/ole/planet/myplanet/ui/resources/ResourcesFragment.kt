@@ -167,6 +167,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                 updateButtonVisibility()
                 selectAll.isChecked = false
                 selectAll.text = getString(R.string.select_all)
+                recyclerView.scrollToPosition(0)
             }
 
             override fun onNothingSelected(parent: AdapterView<*>) {}
@@ -180,6 +181,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                 updateButtonVisibility()
                 selectAll.isChecked = false
                 selectAll.text = getString(R.string.select_all)
+                recyclerView.scrollToPosition(0)
             }
         }
 
@@ -191,6 +193,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                 updateButtonVisibility()
                 selectAll.isChecked = false
                 selectAll.text = getString(R.string.select_all)
+                recyclerView.scrollToPosition(0)
             }
         }
         updateButtonVisibility()
