@@ -233,21 +233,47 @@ open class RealmMyLibrary : RealmObject() {
     }
 
     companion object {
-        fun getMyLibraryByUserId(mRealm: Realm, settings: SharedPreferences?): List<RealmMyLibrary> {
-            val libs = mRealm.where(RealmMyLibrary::class.java).findAll()
-            return getMyLibraryByUserId(settings?.getString("userId", "--"), libs, mRealm)
+//        fun getMyLibraryByUserId(mRealm: Realm, settings: SharedPreferences?): RealmResults<RealmMyLibrary> {
+//            val libs = mRealm.where(RealmMyLibrary::class.java).findAll()
+//            return getMyLibraryByUserId(settings?.getString("userId", "--"), libs, mRealm)
+//        }
+//
+//        fun getMyLibraryByUserId(userId: String?, libs: List<RealmMyLibrary>, mRealm: Realm): RealmResults<RealmMyLibrary> {
+//            val ids = RealmMyTeam.getResourceIdsByUser(userId, mRealm)
+//            val query = mRealm.where(RealmMyLibrary::class.java)
+//                .equalTo("userId", userId)
+//                .or()
+//                .`in`("resourceId", ids.toTypedArray())
+//                .distinct("resourceId")
+//            return query.findAll()
+//        }
+
+        fun getMyLibraryByUserId(mRealm: Realm, settings: SharedPreferences?): RealmResults<RealmMyLibrary> {
+            val userId = settings?.getString("userId", "--") ?: "--"
+            val ids = RealmMyTeam.getResourceIdsByUser(userId, mRealm)
+
+            // Query to find all entries with resourceIds in the ids list
+            val resourceIdQuery = mRealm.where(RealmMyLibrary::class.java)
+                .`in`("resourceId", ids.toTypedArray())
+
+            // Query to find all entries where userId exactly matches
+            val userIdQuery = mRealm.where(RealmMyLibrary::class.java)
+                .equalTo("userId", userId)
+
+            // Combine both queries using Realm's or() method
+            val combinedQuery = mRealm.where(RealmMyLibrary::class.java)
+                .beginGroup()
+                .equalTo("userId", userId)
+                .endGroup()
+                .or()
+                .beginGroup()
+                .`in`("resourceId", ids.toTypedArray())
+                .endGroup()
+
+            // Execute the query
+            return combinedQuery.findAll()
         }
 
-        fun getMyLibraryByUserId(userId: String?, libs: List<RealmMyLibrary>, mRealm: Realm): List<RealmMyLibrary> {
-            val libraries: MutableList<RealmMyLibrary> = ArrayList()
-            val ids = RealmMyTeam.getResourceIdsByUser(userId, mRealm)
-            for (item in libs) {
-                if (item.userId?.contains(userId) == true || ids.contains(item.resourceId)) {
-                    libraries.add(item)
-                }
-            }
-            return libraries
-        }
 
         @JvmStatic
         fun getMyLibraryByUserId(userId: String?, libs: List<RealmMyLibrary>): List<RealmMyLibrary> {

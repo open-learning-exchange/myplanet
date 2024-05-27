@@ -4,6 +4,7 @@ import android.app.DatePickerDialog
 import android.content.Intent
 import android.graphics.Typeface
 import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.AdapterView
@@ -18,7 +19,9 @@ import com.bumptech.glide.Glide
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayout
 import io.realm.Case
+import io.realm.RealmChangeListener
 import io.realm.RealmObject
+import io.realm.RealmResults
 import io.realm.Sort
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.NotificationCallback
@@ -50,12 +53,15 @@ import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Calendar
 import java.util.UUID
 
-open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCallback,
-    SyncListener {
+open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCallback, SyncListener {
     private var fullName: String? = null
     lateinit var dbService: DatabaseService
     private var params = LinearLayout.LayoutParams(250, 100)
     private var di: DialogUtils.CustomProgressDialog? = null
+    private lateinit var myLibraryResults: RealmResults<RealmMyLibrary>
+    private val myLibraryChangeListener = RealmChangeListener<RealmResults<RealmMyLibrary>> { results ->
+        myLibraryDiv(requireView())
+    }
 
     fun onLoaded(v: View) {
         profileDbHandler = UserProfileDbHandler(requireContext())
@@ -125,14 +131,18 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     private fun myLibraryDiv(view: View) {
-        view.findViewById<FlexboxLayout>(R.id.flexboxLayout).flexDirection = FlexDirection.ROW
-        val dbMylibrary = RealmMyLibrary.getMyLibraryByUserId(mRealm, settings)
-        if (dbMylibrary.isEmpty()) {
+        val flexboxLayout = view.findViewById<FlexboxLayout>(R.id.flexboxLayout)
+        flexboxLayout.removeAllViews()
+        flexboxLayout.flexDirection = FlexDirection.ROW
+
+        if (myLibraryResults.isEmpty()) {
             view.findViewById<TextView>(R.id.count_library).visibility = View.GONE
+            Log.d("myLibraryResults", "gone")
         } else {
-            view.findViewById<TextView>(R.id.count_library).text = "${dbMylibrary.size}"
+            view.findViewById<TextView>(R.id.count_library).text = "${myLibraryResults.size}"
+            Log.d("myLibraryResults", "${myLibraryResults.size}")
         }
-        for ((itemCnt, items) in dbMylibrary.withIndex()) {
+        for ((itemCnt, items) in myLibraryResults.withIndex()) {
             val itemLibraryHomeBinding = ItemLibraryHomeBinding.inflate(LayoutInflater.from(activity))
             val v = itemLibraryHomeBinding.root
 
@@ -273,6 +283,8 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     override fun onDestroy() {
         super.onDestroy()
         profileDbHandler.onDestory()
+        myLibraryResults.removeChangeListener(myLibraryChangeListener)
+        mRealm.close()
     }
 
     private fun setCountText(countText: Int, c: Class<*>, v: View) {
@@ -305,7 +317,11 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             .setOnClickListener { homeItemClickListener?.openCallFragment(UserProfileFragment()) }
         dbService = DatabaseService(requireContext())
         mRealm = dbService.realmInstance
+
+        myLibraryResults = RealmMyLibrary.getMyLibraryByUserId(mRealm, settings)
+        myLibraryResults.addChangeListener(myLibraryChangeListener)
         myLibraryDiv(view)
+
         initializeFlexBoxView(view, R.id.flexboxLayoutCourse, RealmMyCourse::class.java)
         initializeFlexBoxView(view, R.id.flexboxLayoutTeams, RealmMyTeam::class.java)
         initializeFlexBoxView(view, R.id.flexboxLayoutMeetups, RealmMeetup::class.java)
