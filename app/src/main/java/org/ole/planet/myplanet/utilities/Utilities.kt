@@ -204,4 +204,16 @@ object Utilities {
         val extension = FileUtils.getFileExtension(url)
         return MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
     }
+
+    fun getItemsPerPageValue(item: String): Int {
+        return when (item) {
+            "10", "۱۰", "१०" -> 10
+            "20", "۲۰", "२०" -> 20
+            "50", "۵۰", "५०" -> 50
+            "100", "۱۰۰", "१००" -> 100
+            "200", "۲۰۰", "२००" -> 200
+            "الكل", "todos", "tous", "dhammaan", "सबै" -> Int.MAX_VALUE
+            else -> 10
+        }
+    }
 }

@@ -38,6 +38,7 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmTag.Companion.getTagsArray
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.Utilities.getItemsPerPageValue
 import java.util.Calendar
 import java.util.UUID
 
@@ -160,7 +161,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         spnItemsPerPage.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
                 val selectedValue = parent.getItemAtPosition(position).toString()
-                val itemsPerPage = if (selectedValue == "all") Int.MAX_VALUE else selectedValue.toInt()
+                val itemsPerPage = getItemsPerPageValue(selectedValue)
                 adapterResource.itemsPerPage = itemsPerPage
                 adapterResource.currentPage = 1
                 adapterResource.clearSelection()
