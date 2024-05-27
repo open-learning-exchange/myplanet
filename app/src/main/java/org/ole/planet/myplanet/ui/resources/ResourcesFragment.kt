@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.resources
 
 import android.app.AlertDialog
 import android.content.DialogInterface
+import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -63,6 +64,8 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     private lateinit var btnNext: TextView
     private lateinit var spnItemsPerPage: Spinner
     private lateinit var ltPagination: LinearLayout
+    private var drawableNext: Drawable? = null
+    private var drawablePrevious: Drawable? = null
 
     override fun getLayout(): Int {
         return R.layout.fragment_my_library
@@ -150,11 +153,11 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             }
         }
 
-        val drawableNext = ContextCompat.getDrawable(requireContext(), R.drawable.ic_right_arrow)
+        drawableNext = ContextCompat.getDrawable(requireContext(), R.drawable.ic_right_arrow)
         drawableNext?.setTint(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
         btnNext.setCompoundDrawablesWithIntrinsicBounds(null, null, drawableNext, null)
 
-        val drawablePrevious = ContextCompat.getDrawable(requireContext(), R.drawable.ic_left_arrow)
+        drawablePrevious = ContextCompat.getDrawable(requireContext(), R.drawable.ic_left_arrow)
         drawablePrevious?.setTint(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
         btnPrevious.setCompoundDrawablesWithIntrinsicBounds(drawablePrevious, null, null, null)
 
@@ -206,8 +209,24 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             btnNext.visibility = View.GONE
             btnPrevious.visibility = View.GONE
         } else {
-            btnNext.visibility = if (adapterResource.currentPage < adapterResource.getTotalPages()) View.VISIBLE else View.GONE
-            btnPrevious.visibility = if (adapterResource.currentPage > 1) View.VISIBLE else View.GONE
+            if (adapterResource.currentPage < adapterResource.getTotalPages()) {
+                btnNext.isEnabled = true
+                btnNext.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
+                drawableNext?.setTint(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
+            } else {
+                btnNext.isEnabled = false
+                btnNext.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_grey_500))
+                drawableNext?.setTint(ContextCompat.getColor(requireContext(), R.color.md_grey_500))
+            }
+            if (adapterResource.currentPage > 1) {
+                btnPrevious.isEnabled = true
+                btnPrevious.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
+                drawablePrevious?.setTint(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
+            } else {
+                btnPrevious.isEnabled = false
+                btnPrevious.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_grey_500))
+                drawablePrevious?.setTint(ContextCompat.getColor(requireContext(), R.color.md_grey_500))
+            }
         }
 
         if (adapterResource.itemCount == 0) {
