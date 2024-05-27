@@ -28,8 +28,9 @@ class ImageViewerActivity : AppCompatActivity() {
             val regex = Regex(".+/([^/]+\\.(jpg|jpeg|png|gif|bmp))")
 
             val matchResult = regex.find(fileName ?: "")
-            val name = matchResult?.groupValues?.get(1)
-            activityImageViewerBinding.imageFileName.text = name
+            val nameWithExtension = matchResult?.groupValues?.get(1)
+            val nameWithoutExtension = nameWithExtension?.substringBefore(".")
+            activityImageViewerBinding.imageFileName.text = nameWithoutExtension
             activityImageViewerBinding.imageFileName.visibility = View.VISIBLE
         }
         if (fileName?.matches(".*[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}.*".toRegex()) == true) {
