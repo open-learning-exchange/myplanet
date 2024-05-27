@@ -263,13 +263,21 @@ class AdapterCourses(private val context: Context, private var courseList: List<
     }
 
     private fun getPaginatedCourseList(): List<RealmMyCourse?> {
-        val startIndex = (currentPage - 1) * itemsPerPage
-        val endIndex = min(startIndex + itemsPerPage, courseList.size)
-        return courseList.subList(startIndex, endIndex)
+        return if (itemsPerPage == Int.MAX_VALUE) {
+            courseList
+        } else {
+            val startIndex = (currentPage - 1) * itemsPerPage
+            val endIndex = min(startIndex + itemsPerPage, courseList.size)
+            courseList.subList(startIndex, endIndex)
+        }
     }
 
     override fun getItemCount(): Int {
-        return getPaginatedCourseList().size
+        return if (itemsPerPage == Int.MAX_VALUE) {
+            courseList.size
+        } else {
+            getPaginatedCourseList().size
+        }
     }
 
     inner class ViewHoldercourse(var rowCourseBinding: RowCourseBinding) : RecyclerView.ViewHolder(rowCourseBinding.root) {
@@ -313,7 +321,7 @@ class AdapterCourses(private val context: Context, private var courseList: List<
     }
 
     fun getTotalPages(): Int {
-        return if (courseList.isNotEmpty()) {
+        return if (courseList.isNotEmpty() && itemsPerPage != Int.MAX_VALUE) {
             ceil(courseList.size.toDouble() / itemsPerPage).toInt()
         } else {
             1

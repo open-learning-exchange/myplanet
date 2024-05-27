@@ -30,6 +30,7 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmTag.Companion.getTagsArray
 import org.ole.planet.myplanet.ui.resources.CollectionsFragment
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
+import org.ole.planet.myplanet.utilities.Utilities.getItemsPerPageValue
 import java.util.Calendar
 import java.util.UUID
 
@@ -106,7 +107,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
         spnItemsPerPage.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
-                val itemsPerPage = parent.getItemAtPosition(position).toString().toInt()
+                val selectedValue = parent.getItemAtPosition(position).toString()
+                val itemsPerPage = getItemsPerPageValue(selectedValue)
                 adapterCourses.itemsPerPage = itemsPerPage
                 adapterCourses.currentPage = 1
                 adapterCourses.clearSelection()
@@ -162,16 +164,12 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     private fun updateButtonVisibility() {
-        if (adapterCourses.currentPage < adapterCourses.getTotalPages()) {
-            btnNext.visibility = View.VISIBLE
-        } else {
+        if (adapterCourses.itemsPerPage == Int.MAX_VALUE) {
             btnNext.visibility = View.GONE
-        }
-
-        if (adapterCourses.currentPage > 1) {
-            btnPrevious.visibility = View.VISIBLE
-        } else {
             btnPrevious.visibility = View.GONE
+        } else {
+            btnNext.visibility = if (adapterCourses.currentPage < adapterCourses.getTotalPages()) View.VISIBLE else View.GONE
+            btnPrevious.visibility = if (adapterCourses.currentPage > 1) View.VISIBLE else View.GONE
         }
 
         if (adapterCourses.itemCount == 0) {

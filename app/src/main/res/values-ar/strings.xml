@@ -272,11 +272,12 @@
     </string-array>
 
     <string-array name="items_per_page">
-        <item>١٠</item>
-        <item>٢٠</item>
-        <item>٥٠</item>
-        <item>١٠٠</item>
-        <item>٢٠٠</item>
+        <item>10</item>
+        <item>20</item>
+        <item>50</item>
+        <item>100</item>
+        <item>200</item>
+        <item>الكل</item>
     </string-array>
 
     <string name="dictionaries">القواميس</string>

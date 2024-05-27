@@ -277,7 +277,9 @@
         <item>50</item>
         <item>100</item>
         <item>200</item>
+        <item>tous</item>
     </string-array>
+
 
     <string name="dictionaries">Dictionnaires</string>
     <string name="bible">Bibles</string>

@@ -277,6 +277,7 @@
         <item>50</item>
         <item>100</item>
         <item>200</item>
+        <item>all</item>
     </string-array>
 
     <string name="dictionaries">Dictionaries</string>
