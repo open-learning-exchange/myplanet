@@ -114,6 +114,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 updateButtonVisibility()
                 selectAll.isChecked = false
                 selectAll.text = getString(R.string.select_all)
+                recyclerView.scrollToPosition(0)
             }
 
             override fun onNothingSelected(parent: AdapterView<*>) {}
@@ -142,6 +143,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 updateButtonVisibility()
                 selectAll.isChecked = false
                 selectAll.text = getString(R.string.select_all)
+                recyclerView.scrollToPosition(0)
             }
         }
 
@@ -153,6 +155,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 updateButtonVisibility()
                 selectAll.isChecked = false
                 selectAll.text = getString(R.string.select_all)
+                recyclerView.scrollToPosition(0)
             }
         }
         updateButtonVisibility()
