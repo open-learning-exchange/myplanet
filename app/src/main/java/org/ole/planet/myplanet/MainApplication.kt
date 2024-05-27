@@ -5,13 +5,17 @@ import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.os.Build
 import android.os.Bundle
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
 import android.provider.Settings
+import androidx.annotation.RequiresApi
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import org.ole.planet.myplanet.callback.TeamPageListener
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmApkLog
@@ -21,10 +25,13 @@ import org.ole.planet.myplanet.service.TaskNotificationWorker
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.LocaleHelper
+import org.ole.planet.myplanet.utilities.NetworkUtils.initialize
+import org.ole.planet.myplanet.utilities.NetworkUtils.startListenNetworkState
 import org.ole.planet.myplanet.utilities.NotificationUtil.cancellAll
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils.getVersionName
-import java.util.*
+import java.util.Date
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
@@ -55,8 +62,12 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                 return "0"
             }
     }
+    @RequiresApi(Build.VERSION_CODES.N)
     override fun onCreate() {
         super.onCreate()
+        initialize(CoroutineScope(Dispatchers.IO))
+
+
         context = this
         preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         val builder = VmPolicy.Builder()
@@ -76,6 +87,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             handleUncaughtException(e)
         }
         registerActivityLifecycleCallbacks(this)
+        startListenNetworkState()
     }
 
     private fun scheduleAutoSyncWork(syncInterval: Int?) {

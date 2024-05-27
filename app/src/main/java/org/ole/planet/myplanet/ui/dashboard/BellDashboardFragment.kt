@@ -10,6 +10,7 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import io.realm.Case
 import io.realm.Realm
+import kotlinx.coroutines.flow.*
 import org.json.JSONException
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
@@ -24,13 +25,15 @@ import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.courses.MyProgressFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
+import org.ole.planet.myplanet.ui.mylife.LifeFragment
 import org.ole.planet.myplanet.ui.resources.AddResourceFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
-import org.ole.planet.myplanet.ui.mylife.LifeFragment
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
 import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.ui.team.TeamFragment
+import org.ole.planet.myplanet.utilities.NetworkUtils.coroutineScope
+import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utilities.TimeUtils
 import java.util.Date
 
@@ -51,6 +54,16 @@ class BellDashboardFragment : BaseDashboardFragment() {
         super.onViewCreated(view, savedInstanceState)
         fragmentHomeBellBinding.cardProfileBell.txtDate.text = TimeUtils.formatDate(Date().time)
         fragmentHomeBellBinding.cardProfileBell.txtCommunityName.text = model.planetCode
+        isNetworkConnectedFlow
+            .onEach { isConnected ->
+                if (isConnected) {
+                    fragmentHomeBellBinding.cardProfileBell.imageView.borderColor = ContextCompat.getColor(requireActivity(), R.color.green)
+                } else {
+                    fragmentHomeBellBinding.cardProfileBell.imageView.borderColor = ContextCompat.getColor(requireActivity(), R.color.md_red_700)
+                }
+            }
+            .launchIn(coroutineScope)
+
         (activity as DashboardActivity?)?.supportActionBar?.hide()
         fragmentHomeBellBinding.addResource.setOnClickListener {
             AddResourceFragment().show(childFragmentManager, getString(R.string.add_res))
