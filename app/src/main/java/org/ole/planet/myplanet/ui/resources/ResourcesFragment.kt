@@ -159,7 +159,8 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
         spnItemsPerPage.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
-                val itemsPerPage = parent.getItemAtPosition(position).toString().toInt()
+                val selectedValue = parent.getItemAtPosition(position).toString()
+                val itemsPerPage = if (selectedValue == "all") Int.MAX_VALUE else selectedValue.toInt()
                 adapterResource.itemsPerPage = itemsPerPage
                 adapterResource.currentPage = 1
                 adapterResource.clearSelection()
@@ -200,16 +201,12 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private fun updateButtonVisibility() {
-        if (adapterResource.currentPage < adapterResource.getTotalPages()) {
-            btnNext.visibility = View.VISIBLE
-        } else {
+        if (adapterResource.itemsPerPage == Int.MAX_VALUE) {
             btnNext.visibility = View.GONE
-        }
-
-        if (adapterResource.currentPage > 1) {
-            btnPrevious.visibility = View.VISIBLE
-        } else {
             btnPrevious.visibility = View.GONE
+        } else {
+            btnNext.visibility = if (adapterResource.currentPage < adapterResource.getTotalPages()) View.VISIBLE else View.GONE
+            btnPrevious.visibility = if (adapterResource.currentPage > 1) View.VISIBLE else View.GONE
         }
 
         if (adapterResource.itemCount == 0) {

@@ -199,13 +199,21 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
     }
 
     private fun getPaginatedResourceList(): List<RealmMyLibrary?> {
-        val startIndex = (currentPage - 1) * itemsPerPage
-        val endIndex = min(startIndex + itemsPerPage, libraryList.size)
-        return libraryList.subList(startIndex, endIndex)
+        return if (itemsPerPage == Int.MAX_VALUE) {
+            libraryList
+        } else {
+            val startIndex = (currentPage - 1) * itemsPerPage
+            val endIndex = min(startIndex + itemsPerPage, libraryList.size)
+            libraryList.subList(startIndex, endIndex)
+        }
     }
 
     override fun getItemCount(): Int {
-        return getPaginatedResourceList().size
+        return if (itemsPerPage == Int.MAX_VALUE) {
+            libraryList.size
+        } else {
+            getPaginatedResourceList().size
+        }
     }
 
     internal inner class ViewHolderLibrary(val rowLibraryBinding: RowLibraryBinding) : RecyclerView.ViewHolder(rowLibraryBinding.root) {
@@ -227,7 +235,7 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
     }
 
     fun getTotalPages(): Int {
-        return if (libraryList.isNotEmpty()) {
+        return if (libraryList.isNotEmpty() && itemsPerPage != Int.MAX_VALUE) {
             ceil(libraryList.size.toDouble() / itemsPerPage).toInt()
         } else {
             1
