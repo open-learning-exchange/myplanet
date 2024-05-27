@@ -58,6 +58,10 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     private val myCoursesChangeListener = RealmChangeListener<RealmResults<RealmMyCourse>> { results ->
         updateMyCoursesUI()
     }
+    private lateinit var myTeamsResults: RealmResults<RealmMyTeam>
+    private val myTeamsChangeListener = RealmChangeListener<RealmResults<RealmMyTeam>> { results ->
+        updateMyTeamsUI()
+    }
 
     fun onLoaded(v: View) {
         profileDbHandler = UserProfileDbHandler(requireContext())
@@ -269,6 +273,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         super.onDestroy()
         profileDbHandler.onDestory()
         myCoursesResults.removeChangeListener(myCoursesChangeListener)
+        myTeamsResults.removeChangeListener(myTeamsChangeListener)
         mRealm.close()
     }
 
@@ -314,13 +319,22 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         }
 
         myCoursesResults = RealmMyCourse.getMyByUserId(mRealm, settings)
+        myTeamsResults = RealmMyTeam.getMyTeamsByUserId(mRealm, settings)
+
         myCoursesResults.addChangeListener(myCoursesChangeListener)
+        myTeamsResults.addChangeListener(myTeamsChangeListener)
     }
 
     private fun updateMyCoursesUI() {
         val flexboxLayout: FlexboxLayout = view?.findViewById(R.id.flexboxLayoutCourse) ?: return
         flexboxLayout.removeAllViews()
         setUpMyList(RealmMyCourse::class.java, flexboxLayout, requireView())
+    }
+
+    private fun updateMyTeamsUI() {
+        val flexboxLayout: FlexboxLayout = view?.findViewById(R.id.flexboxLayoutTeams) ?: return
+        flexboxLayout.removeAllViews()
+        setUpMyList(RealmMyTeam::class.java, flexboxLayout, requireView())
     }
 
     fun showNotificationFragment() {

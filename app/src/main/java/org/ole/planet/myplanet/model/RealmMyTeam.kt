@@ -7,6 +7,7 @@ import com.google.gson.JsonParser
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
+import io.realm.RealmResults
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.JsonUtils
@@ -384,21 +385,17 @@ open class RealmMyTeam : RealmObject() {
             return JsonParser.parseString(gson.toJson(`object`)).asJsonObject
         }
 
-        fun getMyTeamsByUserId(mRealm: Realm, settings: SharedPreferences?): MutableList<RealmObject> {
+        fun getMyTeamsByUserId(mRealm: Realm, settings: SharedPreferences?): RealmResults<RealmMyTeam> {
             val userId = settings?.getString("userId", "--") ?: "--"
             val list = mRealm.where(RealmMyTeam::class.java)
                 .equalTo("userId", userId)
                 .equalTo("docType", "membership")
                 .findAll()
 
-            val teamList = mutableListOf<RealmObject>()
-            for (l in list) {
-                val aa = mRealm.where(RealmMyTeam::class.java)
-                    .equalTo("_id", l.teamId)
-                    .findFirst()
-                aa?.let { teamList.add(it) }
-            }
-            return teamList
+            val teamIds = list.map { it.teamId }.toTypedArray()
+            return mRealm.where(RealmMyTeam::class.java)
+                .`in`("_id", teamIds)
+                .findAll()
         }
     }
 
