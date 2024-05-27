@@ -271,6 +271,15 @@
         <item>Apprenant</item>
     </string-array>
 
+    <string-array name="items_per_page">
+        <item>10</item>
+        <item>20</item>
+        <item>50</item>
+        <item>100</item>
+        <item>200</item>
+        <item>tous</item>
+    </string-array>
+
     <string name="dictionaries">Dictionnaires</string>
     <string name="bible">Bibles</string>
     <string name="feature_not">Fonctionnalité non disponible</string>
