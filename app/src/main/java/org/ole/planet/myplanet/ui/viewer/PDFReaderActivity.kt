@@ -60,9 +60,9 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
         if (fileName != null && fileName?.isNotEmpty() == true) {
             val regex = Regex(".+/(.+\\.pdf)")
             val matchResult = regex.find(fileName ?: "")
-            val name = matchResult?.groupValues?.get(1)
-
-            activityPdfreaderBinding.pdfFileName.text = name
+            val nameWithExtension = matchResult?.groupValues?.get(1)
+            val nameWithoutExtension = nameWithExtension?.substringBeforeLast(".")
+            activityPdfreaderBinding.pdfFileName.text = nameWithoutExtension
             activityPdfreaderBinding.pdfFileName.visibility = View.VISIBLE
         }
         val file = File(getExternalFilesDir(null), "ole/$fileName")
