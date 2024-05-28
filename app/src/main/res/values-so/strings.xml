@@ -271,6 +271,15 @@
         <item>Arday</item>
     </string-array>
 
+    <string-array name="items_per_page">
+        <item>10</item>
+        <item>20</item>
+        <item>50</item>
+        <item>100</item>
+        <item>200</item>
+        <item>dhammaan</item>
+    </string-array>
+
     <string name="dictionaries">Qaamuusyada</string>
     <string name="bible">Quraan</string>
     <string name="feature_not">Heerkaan lama helin</string>
