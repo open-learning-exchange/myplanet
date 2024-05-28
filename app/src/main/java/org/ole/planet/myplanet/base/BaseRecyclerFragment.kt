@@ -81,7 +81,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         profileDbHandler = UserProfileDbHandler(requireActivity())
         model = profileDbHandler.userModel!!
         recyclerView.adapter = getAdapter()
-        if (isMyCourseLib) {
+        if (isMyCourseLib && getAdapter().itemCount != 0) {
             showDownloadDialog(getLibraryList(mRealm))
         }
         return v
