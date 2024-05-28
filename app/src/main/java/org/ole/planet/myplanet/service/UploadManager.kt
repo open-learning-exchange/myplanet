@@ -508,7 +508,7 @@ class UploadManager(context: Context) : FileUploadService() {
                     e.printStackTrace()
                 }
             }
-        }, Realm.Transaction.OnSuccess { listener.onSuccess("Crash log uploaded.") })
+        }, Realm.Transaction.OnSuccess {})
     }
 
     fun uploadSearchActivity() {
