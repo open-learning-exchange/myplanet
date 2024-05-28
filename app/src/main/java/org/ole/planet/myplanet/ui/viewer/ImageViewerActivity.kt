@@ -25,10 +25,15 @@ class ImageViewerActivity : AppCompatActivity() {
         val isFullPath = intent.getBooleanExtra("isFullPath", false)
         val imageOpenIntent = intent
         fileName = imageOpenIntent.getStringExtra("TOUCHED_FILE")
-        val nameWithExtension = FileUtils.extractFileName(fileName)
-        val nameWithoutExtension = nameWithExtension?.substringBefore(".")
-        activityImageViewerBinding.imageFileName.text = nameWithoutExtension
-        activityImageViewerBinding.imageFileName.visibility = View.VISIBLE
+        if (!fileName.isNullOrEmpty()) {
+            val nameWithExtension = FileUtils.extractFileName(fileName)
+            val nameWithoutExtension = nameWithExtension?.substringBeforeLast(".")
+            activityImageViewerBinding.imageFileName.text = nameWithoutExtension
+            activityImageViewerBinding.imageFileName.visibility = View.VISIBLE
+        } else {
+            activityImageViewerBinding.imageFileName.text = "No file selected"
+            activityImageViewerBinding.imageFileName.visibility = View.VISIBLE
+        }
 
         if (fileName?.matches(".*[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}.*".toRegex()) == true) {
             displayCapturedImage()

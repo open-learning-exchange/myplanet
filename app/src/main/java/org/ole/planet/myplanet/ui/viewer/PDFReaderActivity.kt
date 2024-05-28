@@ -58,11 +58,15 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
     private fun renderPdfFile() {
         val pdfOpenIntent = intent
         fileName = pdfOpenIntent.getStringExtra("TOUCHED_FILE")
-        val nameWithExtension = FileUtils.extractFileName(fileName)
-        val nameWithoutExtension = nameWithExtension?.substringBeforeLast(".")
-        activityPdfreaderBinding.pdfFileName.text = nameWithoutExtension
-        activityPdfreaderBinding.pdfFileName.visibility = View.VISIBLE
-
+        if (!fileName.isNullOrEmpty()) {
+            val nameWithExtension = FileUtils.extractFileName(fileName)
+            val nameWithoutExtension = nameWithExtension?.substringBeforeLast(".")
+            activityPdfreaderBinding.pdfFileName.text = nameWithoutExtension
+            activityPdfreaderBinding.pdfFileName.visibility = View.VISIBLE
+        } else {
+            activityPdfreaderBinding.pdfFileName.text = "No file selected"
+            activityPdfreaderBinding.pdfFileName.visibility = View.VISIBLE
+        }
         val file = File(getExternalFilesDir(null), "ole/$fileName")
         if (file.exists()) {
             try {

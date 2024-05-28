@@ -26,11 +26,15 @@ class MarkdownViewerActivity : AppCompatActivity() {
     private fun renderMarkdownFile() {
         val markdownOpenIntent = intent
         fileName = markdownOpenIntent.getStringExtra("TOUCHED_FILE")
-        val nameWithExtension = FileUtils.extractFileName(fileName)
-        val nameWithoutExtension = nameWithExtension?.substringBeforeLast(".")
-        activityMarkdownViewerBinding.markdownFileName.text = nameWithoutExtension
-        activityMarkdownViewerBinding.markdownFileName.visibility = View.VISIBLE
-
+        if (!fileName.isNullOrEmpty()) {
+            val nameWithExtension = FileUtils.extractFileName(fileName)
+            val nameWithoutExtension = nameWithExtension?.substringBeforeLast(".")
+            activityMarkdownViewerBinding.markdownFileName.text = nameWithoutExtension
+            activityMarkdownViewerBinding.markdownFileName.visibility = View.VISIBLE
+        } else {
+            activityMarkdownViewerBinding.markdownFileName.text = "No file selected"
+            activityMarkdownViewerBinding.markdownFileName.visibility = View.VISIBLE
+        }
         try {
             val basePath = getExternalFilesDir(null)
             val markdownFile = File(basePath, "ole/$fileName")

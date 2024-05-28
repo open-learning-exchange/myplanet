@@ -22,10 +22,15 @@ class CSVViewerActivity : AppCompatActivity() {
     private fun renderCSVFile() {
         val csvFileOpenIntent = intent
         val fileName = csvFileOpenIntent.getStringExtra("TOUCHED_FILE")
-        val nameWithExtension = FileUtils.extractFileName(fileName)
-        val nameWithoutExtension = nameWithExtension?.substringBeforeLast(".")
-        activityCsvviewerBinding.csvFileName.text = nameWithoutExtension
-        activityCsvviewerBinding.csvFileName.visibility = View.VISIBLE
+        if (!fileName.isNullOrEmpty()) {
+            val nameWithExtension = FileUtils.extractFileName(fileName)
+            val nameWithoutExtension = nameWithExtension?.substringBeforeLast(".")
+            activityCsvviewerBinding.csvFileName.text = nameWithoutExtension
+            activityCsvviewerBinding.csvFileName.visibility = View.VISIBLE
+        } else {
+            activityCsvviewerBinding.csvFileName.text = "No file selected"
+            activityCsvviewerBinding.csvFileName.visibility = View.VISIBLE
+        }
 
         try {
             val csvFile: File = if (fileName!!.startsWith("/")) {

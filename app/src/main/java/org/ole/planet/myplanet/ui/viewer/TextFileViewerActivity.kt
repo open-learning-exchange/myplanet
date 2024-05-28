@@ -22,13 +22,17 @@ class TextFileViewerActivity : AppCompatActivity() {
     private fun renderTextFile() {
         val textFileOpenIntent = intent
         fileName = textFileOpenIntent.getStringExtra("TOUCHED_FILE")
-        val nameWithExtension = FileUtils.extractFileName(fileName)
-        val nameWithoutExtension = nameWithExtension?.substringBeforeLast(".")
-        activityTextfileViewerBinding.textFileName.text = nameWithoutExtension
-        activityTextfileViewerBinding.textFileName.visibility = View.VISIBLE
+        if (!fileName.isNullOrEmpty()) {
+            val nameWithExtension = FileUtils.extractFileName(fileName)
+                val nameWithoutExtension = nameWithExtension?.substringBeforeLast(".")
+                activityTextfileViewerBinding.textFileName.text = nameWithoutExtension
+                activityTextfileViewerBinding.textFileName.visibility = View.VISIBLE
+        } else {
+            activityTextfileViewerBinding.textFileName.text = "No file selected"
+            activityTextfileViewerBinding.textFileName.visibility = View.VISIBLE
+        }
         renderTextFileThread()
     }
-
     private fun renderTextFileThread() {
         val openTextFileThread: Thread = object : Thread() {
             override fun run() {
