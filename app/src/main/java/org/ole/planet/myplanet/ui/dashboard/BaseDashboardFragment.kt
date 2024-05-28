@@ -30,11 +30,13 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmTeamNotification
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.TransactionSyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_LOGIN
 import org.ole.planet.myplanet.ui.dashboard.notification.NotificationFragment
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
 import org.ole.planet.myplanet.ui.myhealth.UserListArrayAdapter
@@ -62,6 +64,11 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     private val myTeamsChangeListener = RealmChangeListener<RealmResults<RealmMyTeam>> { results ->
         updateMyTeamsUI()
     }
+    private lateinit var offlineActivitiesResults: RealmResults<RealmOfflineActivity>
+    private val offlineActivitiesChangeListener = RealmChangeListener<RealmResults<RealmOfflineActivity>> { results ->
+        updateOfflineVisitsUI()
+    }
+
 
     fun onLoaded(v: View) {
         profileDbHandler = UserProfileDbHandler(requireContext())
@@ -90,9 +97,19 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             imageView.setImageResource(R.drawable.profile)
         }
 
-        v.findViewById<TextView>(R.id.txtVisits).text = "${profileDbHandler.offlineVisits} ${getString(R.string.visits)}"
+        offlineActivitiesResults = mRealm.where(RealmOfflineActivity::class.java)
+            .equalTo("userName", profileDbHandler.userModel?.name)
+            .equalTo("type", KEY_LOGIN)
+            .findAllAsync()
+        offlineActivitiesResults.addChangeListener(offlineActivitiesChangeListener)
+        updateOfflineVisitsUI()
         v.findViewById<TextView>(R.id.txtRole).text = "- ${model.getRoleAsString()}"
         v.findViewById<TextView>(R.id.txtFullName).text = fullName
+    }
+
+    private fun updateOfflineVisitsUI() {
+        val offlineVisits = profileDbHandler.offlineVisits
+        view?.findViewById<TextView>(R.id.txtVisits)?.text = "$offlineVisits ${getString(R.string.visits)}"
     }
 
     override fun forceDownloadNewsImages() {
@@ -274,6 +291,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         profileDbHandler.onDestory()
         myCoursesResults.removeChangeListener(myCoursesChangeListener)
         myTeamsResults.removeChangeListener(myTeamsChangeListener)
+        offlineActivitiesResults.removeChangeListener(offlineActivitiesChangeListener)
         mRealm.close()
     }
 
