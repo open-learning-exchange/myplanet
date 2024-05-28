@@ -414,4 +414,13 @@ object FileUtils {
         val regex = Regex(".+/(.+\\.[a-zA-Z0-9]+)")
         return regex.find(filePath)?.groupValues?.get(1)
     }
+
+    fun nameWithoutExtension(fileName: String?): String?{
+        extractFileName(fileName)
+        val nameWithExtension = FileUtils.extractFileName(fileName)
+        val nameWithoutExtension = nameWithExtension?.substringBeforeLast(".")
+        return nameWithoutExtension
+    }
+
+
 }

@@ -23,10 +23,8 @@ class TextFileViewerActivity : AppCompatActivity() {
         val textFileOpenIntent = intent
         fileName = textFileOpenIntent.getStringExtra("TOUCHED_FILE")
         if (!fileName.isNullOrEmpty()) {
-            val nameWithExtension = FileUtils.extractFileName(fileName)
-                val nameWithoutExtension = nameWithExtension?.substringBeforeLast(".")
-                activityTextfileViewerBinding.textFileName.text = nameWithoutExtension
-                activityTextfileViewerBinding.textFileName.visibility = View.VISIBLE
+            activityTextfileViewerBinding.textFileName.text = FileUtils.nameWithoutExtension(fileName)
+            activityTextfileViewerBinding.textFileName.visibility = View.VISIBLE
         } else {
             activityTextfileViewerBinding.textFileName.text = "No file selected"
             activityTextfileViewerBinding.textFileName.visibility = View.VISIBLE

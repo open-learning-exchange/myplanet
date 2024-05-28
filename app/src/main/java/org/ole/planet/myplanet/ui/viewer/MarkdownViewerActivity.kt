@@ -27,9 +27,8 @@ class MarkdownViewerActivity : AppCompatActivity() {
         val markdownOpenIntent = intent
         fileName = markdownOpenIntent.getStringExtra("TOUCHED_FILE")
         if (!fileName.isNullOrEmpty()) {
-            val nameWithExtension = FileUtils.extractFileName(fileName)
-            val nameWithoutExtension = nameWithExtension?.substringBeforeLast(".")
-            activityMarkdownViewerBinding.markdownFileName.text = nameWithoutExtension
+
+            activityMarkdownViewerBinding.markdownFileName.text = FileUtils.nameWithoutExtension(fileName)
             activityMarkdownViewerBinding.markdownFileName.visibility = View.VISIBLE
         } else {
             activityMarkdownViewerBinding.markdownFileName.text = "No file selected"

@@ -59,9 +59,7 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
         val pdfOpenIntent = intent
         fileName = pdfOpenIntent.getStringExtra("TOUCHED_FILE")
         if (!fileName.isNullOrEmpty()) {
-            val nameWithExtension = FileUtils.extractFileName(fileName)
-            val nameWithoutExtension = nameWithExtension?.substringBeforeLast(".")
-            activityPdfreaderBinding.pdfFileName.text = nameWithoutExtension
+            activityPdfreaderBinding.pdfFileName.text = FileUtils.nameWithoutExtension(fileName)
             activityPdfreaderBinding.pdfFileName.visibility = View.VISIBLE
         } else {
             activityPdfreaderBinding.pdfFileName.text = "No file selected"

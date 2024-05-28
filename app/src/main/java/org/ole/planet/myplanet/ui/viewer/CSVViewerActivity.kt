@@ -23,9 +23,7 @@ class CSVViewerActivity : AppCompatActivity() {
         val csvFileOpenIntent = intent
         val fileName = csvFileOpenIntent.getStringExtra("TOUCHED_FILE")
         if (!fileName.isNullOrEmpty()) {
-            val nameWithExtension = FileUtils.extractFileName(fileName)
-            val nameWithoutExtension = nameWithExtension?.substringBeforeLast(".")
-            activityCsvviewerBinding.csvFileName.text = nameWithoutExtension
+            activityCsvviewerBinding.csvFileName.text = FileUtils.nameWithoutExtension(fileName)
             activityCsvviewerBinding.csvFileName.visibility = View.VISIBLE
         } else {
             activityCsvviewerBinding.csvFileName.text = "No file selected"

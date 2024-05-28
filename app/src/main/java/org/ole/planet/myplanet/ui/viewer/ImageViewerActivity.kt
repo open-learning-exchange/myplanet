@@ -26,9 +26,7 @@ class ImageViewerActivity : AppCompatActivity() {
         val imageOpenIntent = intent
         fileName = imageOpenIntent.getStringExtra("TOUCHED_FILE")
         if (!fileName.isNullOrEmpty()) {
-            val nameWithExtension = FileUtils.extractFileName(fileName)
-            val nameWithoutExtension = nameWithExtension?.substringBeforeLast(".")
-            activityImageViewerBinding.imageFileName.text = nameWithoutExtension
+            activityImageViewerBinding.imageFileName.text = FileUtils.nameWithoutExtension(fileName)
             activityImageViewerBinding.imageFileName.visibility = View.VISIBLE
         } else {
             activityImageViewerBinding.imageFileName.text = "No file selected"
