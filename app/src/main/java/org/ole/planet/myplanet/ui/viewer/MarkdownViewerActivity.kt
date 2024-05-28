@@ -6,6 +6,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityMarkdownViewerBinding
+import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import java.io.BufferedReader
 import java.io.File
@@ -25,15 +26,11 @@ class MarkdownViewerActivity : AppCompatActivity() {
     private fun renderMarkdownFile() {
         val markdownOpenIntent = intent
         fileName = markdownOpenIntent.getStringExtra("TOUCHED_FILE")
-        if (!fileName.isNullOrEmpty()) {
+        val nameWithExtension = FileUtils.extractFileName(fileName)
+        val nameWithoutExtension = nameWithExtension?.substringBeforeLast(".")
+        activityMarkdownViewerBinding.markdownFileName.text = nameWithoutExtension
+        activityMarkdownViewerBinding.markdownFileName.visibility = View.VISIBLE
 
-            val regex = Regex(".+/(.+\\.md)")
-            val matchResult = regex.find(fileName ?: "")
-            val nameWithExtension = matchResult?.groupValues?.get(1)
-            val nameWithoutExtension = nameWithExtension?.substringBeforeLast(".")
-            activityMarkdownViewerBinding.markdownFileName.text = nameWithoutExtension
-            activityMarkdownViewerBinding.markdownFileName.visibility = View.VISIBLE
-        }
         try {
             val basePath = getExternalFilesDir(null)
             val markdownFile = File(basePath, "ole/$fileName")

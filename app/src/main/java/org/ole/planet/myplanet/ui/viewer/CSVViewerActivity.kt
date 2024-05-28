@@ -6,6 +6,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.opencsv.CSVParserBuilder
 import com.opencsv.CSVReaderBuilder
 import org.ole.planet.myplanet.databinding.ActivityCsvviewerBinding
+import org.ole.planet.myplanet.utilities.FileUtils
 import java.io.File
 import java.io.FileReader
 
@@ -21,16 +22,11 @@ class CSVViewerActivity : AppCompatActivity() {
     private fun renderCSVFile() {
         val csvFileOpenIntent = intent
         val fileName = csvFileOpenIntent.getStringExtra("TOUCHED_FILE")
-        if (!fileName.isNullOrEmpty()) {
-            val regex = Regex(".+/(.+\\.csv)")
-            val matchResult = regex.find(fileName)
-            val nameWithExtension = matchResult?.groupValues?.get(1)
-            val nameWithoutExtension = nameWithExtension?.substringBeforeLast(".")
-            activityCsvviewerBinding.csvFileName.text = nameWithoutExtension
-            activityCsvviewerBinding.csvFileName.visibility = View.VISIBLE
+        val nameWithExtension = FileUtils.extractFileName(fileName)
+        val nameWithoutExtension = nameWithExtension?.substringBeforeLast(".")
+        activityCsvviewerBinding.csvFileName.text = nameWithoutExtension
+        activityCsvviewerBinding.csvFileName.visibility = View.VISIBLE
 
-
-        }
         try {
             val csvFile: File = if (fileName!!.startsWith("/")) {
                 File(fileName)

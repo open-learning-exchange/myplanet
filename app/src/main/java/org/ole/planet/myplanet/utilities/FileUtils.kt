@@ -409,4 +409,9 @@ object FileUtils {
             return Pair(totalBytes, availableBytes)
         }
     }
+    fun extractFileName(filePath: String?): String?{
+        if(filePath.isNullOrEmpty()) return null
+        val regex = Regex(".+/(.+\\.[a-zA-Z0-9]+)")
+        return regex.find(filePath)?.groupValues?.get(1)
+    }
 }

@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import org.ole.planet.myplanet.databinding.ActivityTextfileViewerBinding
+import org.ole.planet.myplanet.utilities.FileUtils
 import java.io.BufferedReader
 import java.io.File
 import java.io.FileReader
@@ -21,15 +22,10 @@ class TextFileViewerActivity : AppCompatActivity() {
     private fun renderTextFile() {
         val textFileOpenIntent = intent
         fileName = textFileOpenIntent.getStringExtra("TOUCHED_FILE")
-        if (fileName != null && fileName?.isNotEmpty() == true) {
-
-            val regex = Regex(".+/(.+\\.txt)")
-            val matchResult = regex.find(fileName ?: "")
-            val nameWithExtension = matchResult?.groupValues?.get(1)
-            val nameWithoutExtension = nameWithExtension?.substringBeforeLast(".")
-            activityTextfileViewerBinding.textFileName.text = nameWithoutExtension
-            activityTextfileViewerBinding.textFileName.visibility = View.VISIBLE
-        }
+        val nameWithExtension = FileUtils.extractFileName(fileName)
+        val nameWithoutExtension = nameWithExtension?.substringBeforeLast(".")
+        activityTextfileViewerBinding.textFileName.text = nameWithoutExtension
+        activityTextfileViewerBinding.textFileName.visibility = View.VISIBLE
         renderTextFileThread()
     }
 
