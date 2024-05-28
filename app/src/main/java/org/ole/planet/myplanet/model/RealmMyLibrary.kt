@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.model
 import android.content.Context
 import android.content.SharedPreferences
 import android.text.TextUtils
+import android.util.Log
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
@@ -255,10 +256,12 @@ open class RealmMyLibrary : RealmObject() {
             // Query to find all entries with resourceIds in the ids list
             val resourceIdQuery = mRealm.where(RealmMyLibrary::class.java)
                 .`in`("resourceId", ids.toTypedArray())
+            Log.d("ollonde", "${resourceIdQuery.findAll()}")
 
             // Query to find all entries where userId exactly matches
             val userIdQuery = mRealm.where(RealmMyLibrary::class.java)
                 .equalTo("userId", userId)
+            Log.d("ollonde", "${userIdQuery.findAll()}")
 
             // Combine both queries using Realm's or() method
             val combinedQuery = mRealm.where(RealmMyLibrary::class.java)
@@ -270,7 +273,6 @@ open class RealmMyLibrary : RealmObject() {
                 .`in`("resourceId", ids.toTypedArray())
                 .endGroup()
 
-            // Execute the query
             return combinedQuery.findAll()
         }
 

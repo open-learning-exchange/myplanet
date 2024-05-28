@@ -59,7 +59,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     private var params = LinearLayout.LayoutParams(250, 100)
     private var di: DialogUtils.CustomProgressDialog? = null
     private lateinit var myLibraryResults: RealmResults<RealmMyLibrary>
-    private val myLibraryChangeListener = RealmChangeListener<RealmResults<RealmMyLibrary>> { results ->
+    private val myLibraryChangeListener = RealmChangeListener<RealmResults<RealmMyLibrary>> { _ ->
         myLibraryDiv(requireView())
     }
 
@@ -134,11 +134,12 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         val flexboxLayout = view.findViewById<FlexboxLayout>(R.id.flexboxLayout)
         flexboxLayout.removeAllViews()
         flexboxLayout.flexDirection = FlexDirection.ROW
-
+        myLibraryResults = RealmMyLibrary.getMyLibraryByUserId(mRealm, settings)
         if (myLibraryResults.isEmpty()) {
             view.findViewById<TextView>(R.id.count_library).visibility = View.GONE
             Log.d("myLibraryResults", "gone")
         } else {
+            view.findViewById<TextView>(R.id.count_library).visibility = View.VISIBLE
             view.findViewById<TextView>(R.id.count_library).text = "${myLibraryResults.size}"
             Log.d("myLibraryResults", "${myLibraryResults.size}")
         }
