@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.dashboard
 
+import android.content.ContentValues.TAG
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -8,8 +9,11 @@ import android.widget.ImageView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import io.realm.Case
 import io.realm.Realm
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.*
 import org.json.JSONException
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
@@ -24,14 +28,17 @@ import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.courses.MyProgressFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
+import org.ole.planet.myplanet.ui.mylife.LifeFragment
 import org.ole.planet.myplanet.ui.resources.AddResourceFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
-import org.ole.planet.myplanet.ui.mylife.LifeFragment
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
 import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.ui.team.TeamFragment
+import org.ole.planet.myplanet.utilities.NetworkUtils.coroutineScope
+import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utilities.TimeUtils
+import java.net.*
 import java.util.Date
 
 class BellDashboardFragment : BaseDashboardFragment() {
@@ -51,6 +58,25 @@ class BellDashboardFragment : BaseDashboardFragment() {
         super.onViewCreated(view, savedInstanceState)
         fragmentHomeBellBinding.cardProfileBell.txtDate.text = TimeUtils.formatDate(Date().time)
         fragmentHomeBellBinding.cardProfileBell.txtCommunityName.text = model.planetCode
+        isNetworkConnectedFlow.onEach { isConnected ->
+            if (isConnected) {
+                fragmentHomeBellBinding.cardProfileBell.imageView.borderColor = ContextCompat.getColor(requireActivity(), R.color.md_yellow_600)
+                val serverUrl = settings?.getString("serverURL", "")
+                if (!serverUrl.isNullOrEmpty()) {
+                    lifecycleScope.launch {
+                        val canReachServer = withContext(Dispatchers.IO) {
+                            isServerReachable(serverUrl)
+                        }
+                        if (canReachServer) {
+                            fragmentHomeBellBinding.cardProfileBell.imageView.borderColor = ContextCompat.getColor(requireActivity(), R.color.green)
+                        }
+                    }
+                }
+            } else {
+                fragmentHomeBellBinding.cardProfileBell.imageView.borderColor = ContextCompat.getColor(requireActivity(), R.color.md_red_700)
+            }
+        }.launchIn(coroutineScope)
+
         (activity as DashboardActivity?)?.supportActionBar?.hide()
         fragmentHomeBellBinding.addResource.setOnClickListener {
             AddResourceFragment().show(childFragmentManager, getString(R.string.add_res))
@@ -89,6 +115,27 @@ class BellDashboardFragment : BaseDashboardFragment() {
                 dialog.dismiss()
             }
             alertDialog.show()
+        }
+    }
+
+    private suspend fun isServerReachable(urlString: String): Boolean {
+        return try {
+            val url = URL(urlString)
+            val connection = withContext(Dispatchers.IO) {
+                url.openConnection()
+            } as HttpURLConnection
+            connection.requestMethod = "GET"
+            connection.connectTimeout = 5000
+            connection.readTimeout = 5000
+            withContext(Dispatchers.IO) {
+                connection.connect()
+            }
+            val responseCode = connection.responseCode
+            connection.disconnect()
+            responseCode in 200..299
+
+        } catch (e: Exception) {
+            false
         }
     }
 
