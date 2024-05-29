@@ -92,7 +92,6 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content" />
 
-
             </LinearLayout>
 
             <LinearLayout
@@ -103,7 +102,6 @@
                 android:gravity="center"
                 android:orientation="vertical"
                 android:padding="8dp">
-
 
                 <TextView
                     android:id="@+id/times_rated"
@@ -124,7 +122,6 @@
                     android:isIndicator="true"
                     android:numStars="5"
                     android:stepSize="1" />
-
 
             </LinearLayout>
 
@@ -148,7 +145,6 @@
                     android:textSize="@dimen/text_size_large"
                     android:textStyle="bold" />
 
-
                 <TextView
                     android:id="@+id/average"
                     android:layout_width="match_parent"
@@ -156,7 +152,6 @@
                     android:layout_gravity="center"
                     android:gravity="center"
                     android:text="@string/average" />
-
 
             </LinearLayout>
         </LinearLayout>
@@ -167,6 +162,7 @@
             android:layout_width="match_parent"
             android:layout_height="50dp"
             android:layout_gravity="center" />
+
     </LinearLayout>
 
 </androidx.cardview.widget.CardView>
