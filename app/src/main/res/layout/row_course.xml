@@ -24,20 +24,28 @@
                 android:gravity="center"
                 android:padding="@dimen/padding_large" />
 
+            <TextView
+                android:id="@+id/title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="4dp"
+                android:textColor="@color/md_black_1000"
+                android:textSize="@dimen/text_size_mid"
+                android:textStyle="bold" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:baselineAligned="false">
+
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="2"
                 android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/title"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:padding="4dp"
-                    android:textColor="@color/md_black_1000"
-                    android:textSize="@dimen/text_size_mid"
-                    android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/description"
@@ -86,7 +94,6 @@
 
 
             </LinearLayout>
-
 
             <LinearLayout
                 android:id="@+id/ll_rating"
@@ -152,8 +159,6 @@
 
 
             </LinearLayout>
-
-
         </LinearLayout>
 
         <androidx.appcompat.widget.AppCompatSeekBar
