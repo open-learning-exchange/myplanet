@@ -57,7 +57,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         fragmentHomeBellBinding.cardProfileBell.txtDate.text = TimeUtils.formatDate(Date().time)
-        fragmentHomeBellBinding.cardProfileBell.txtCommunityName.text = model.planetCode
+        fragmentHomeBellBinding.cardProfileBell.txtCommunityName.text = model?.planetCode
         isNetworkConnectedFlow.onEach { isConnected ->
             if (isConnected) {
                 fragmentHomeBellBinding.cardProfileBell.imageView.borderColor = ContextCompat.getColor(requireActivity(), R.color.md_yellow_600)
@@ -83,14 +83,14 @@ class BellDashboardFragment : BaseDashboardFragment() {
         }
         showBadges()
         
-        val noOfSurvey = RealmSubmission.getNoOfSurveySubmissionByUser(model.id, mRealm)
+        val noOfSurvey = RealmSubmission.getNoOfSurveySubmissionByUser(model?.id, mRealm)
         if (noOfSurvey >= 1){
             val title: String = if (noOfSurvey > 1 ) {
                 "surveys"
             } else{
                 "survey"
             }
-            val itemsQuery = mRealm.where(RealmSubmission::class.java).equalTo("userId", model.id)
+            val itemsQuery = mRealm.where(RealmSubmission::class.java).equalTo("userId", model?.id)
                 .equalTo("type", "survey").equalTo("status", "pending", Case.INSENSITIVE)
                 .findAll()
             val courseTitles = itemsQuery.map { it.parent }

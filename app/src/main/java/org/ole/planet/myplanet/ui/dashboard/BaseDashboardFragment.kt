@@ -72,7 +72,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
     fun onLoaded(v: View) {
         profileDbHandler = UserProfileDbHandler(requireContext())
-        model = profileDbHandler.userModel!!
+        model = profileDbHandler.userModel
         fullName = profileDbHandler.userModel?.getFullName()
         if (fullName?.trim().isNullOrBlank()) {
             fullName = profileDbHandler.userModel?.name
@@ -87,9 +87,9 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             v.findViewById<LinearLayout>(R.id.ll_prompt).visibility = View.GONE
         }
         val imageView = v.findViewById<ImageView>(R.id.imageView)
-        if (!TextUtils.isEmpty(model.userImage)) {
+        if (!TextUtils.isEmpty(model?.userImage)) {
             Glide.with(requireActivity())
-                .load(model.userImage)
+                .load(model?.userImage)
                 .placeholder(R.drawable.profile)
                 .error(R.drawable.profile)
                 .into(imageView)
@@ -103,7 +103,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             .findAllAsync()
         offlineActivitiesResults.addChangeListener(offlineActivitiesChangeListener)
         updateOfflineVisitsUI()
-        v.findViewById<TextView>(R.id.txtRole).text = "- ${model.getRoleAsString()}"
+        v.findViewById<TextView>(R.id.txtRole).text = "- ${model?.getRoleAsString()}"
         v.findViewById<TextView>(R.id.txtFullName).text = fullName
     }
 
@@ -399,7 +399,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     override fun syncKeyId() {
         di = DialogUtils.CustomProgressDialog(requireContext())
         di?.setText(getString(R.string.syncing_health_please_wait))
-        if (model.getRoleAsString().contains("health")) {
+        if (model?.getRoleAsString()?.contains("health") == true) {
             settings?.let { TransactionSyncManager.syncAllHealthData(mRealm, it, this) }
         } else {
             settings?.let { TransactionSyncManager.syncKeyIv(mRealm, it, this) }
@@ -421,7 +421,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     override fun showTaskListDialog() {
-        val tasks = mRealm.where(RealmTeamTask::class.java).equalTo("assignee", model.id)
+        val tasks = mRealm.where(RealmTeamTask::class.java).equalTo("assignee", model?.id)
             .equalTo("completed", false)
             .greaterThan("deadline", Calendar.getInstance().timeInMillis).findAll()
         if (tasks.isEmpty()) {

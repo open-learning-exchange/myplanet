@@ -43,7 +43,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     private lateinit var step: RealmCourseStep
     private lateinit var resources: List<RealmMyLibrary>
     private lateinit var stepExams: List<RealmStepExam>
-    private lateinit var user: RealmUserModel
+    var user: RealmUserModel? = null
     private var stepNumber = 0
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,14 +59,14 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         fragmentCourseStepBinding = FragmentCourseStepBinding.inflate(inflater, container, false)
         dbService = DatabaseService(requireActivity())
         cRealm = dbService.realmInstance
-        user = UserProfileDbHandler(requireContext()).userModel!!
+        user = UserProfileDbHandler(requireContext()).userModel
         fragmentCourseStepBinding.btnTakeTest.visibility = if (showBetaFeature(Constants.KEY_EXAM, requireContext())) View.VISIBLE else View.GONE
         return fragmentCourseStepBinding.root
     }
 
     private fun saveCourseProgress() {
         if (!cRealm.isInTransaction) cRealm.beginTransaction()
-        var courseProgress = cRealm.where(RealmCourseProgress::class.java).equalTo("courseId", step.courseId).equalTo("userId", user.id).equalTo("stepNum", stepNumber).findFirst()
+        var courseProgress = cRealm.where(RealmCourseProgress::class.java).equalTo("courseId", step.courseId).equalTo("userId", user?.id).equalTo("stepNum", stepNumber).findFirst()
         if (courseProgress == null) {
             courseProgress = cRealm.createObject(RealmCourseProgress::class.java, UUID.randomUUID().toString())
             courseProgress.createdDate = Date().time
@@ -76,10 +76,10 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         if (stepExams.isEmpty()) {
             courseProgress?.passed = true
         }
-        courseProgress?.createdOn = user.planetCode
+        courseProgress?.createdOn = user?.planetCode
         courseProgress?.updatedDate = Date().time
-        courseProgress?.parentCode = user.parentCode
-        courseProgress?.userId = user.id
+        courseProgress?.parentCode = user?.parentCode
+        courseProgress?.userId = user?.id
         cRealm.commitTransaction()
     }
 
@@ -101,7 +101,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         val markdownContentWithLocalPaths = prependBaseUrlToImages(step.description, "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/")
         setMarkdownText(fragmentCourseStepBinding.description, markdownContentWithLocalPaths)
         fragmentCourseStepBinding.description.movementMethod = LinkMovementMethod.getInstance()
-        if (!isMyCourse(user.id, step.courseId, cRealm)) {
+        if (!isMyCourse(user?.id, step.courseId, cRealm)) {
             fragmentCourseStepBinding.btnTakeTest.visibility = View.GONE
         }
         setListeners()
@@ -145,7 +145,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     override fun setMenuVisibility(visible: Boolean) {
         super.setMenuVisibility(visible)
         try {
-            if (visible && isMyCourse(user.id, step.courseId, cRealm)) {
+            if (visible && isMyCourse(user?.id, step.courseId, cRealm)) {
                 saveCourseProgress()
             }
         } catch (e: Exception) {

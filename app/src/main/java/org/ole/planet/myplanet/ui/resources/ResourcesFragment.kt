@@ -59,7 +59,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
-        map = getRatings(mRealm, "resource", model.id)
+        map = getRatings(mRealm, "resource", model?.id)
         val libraryList: List<RealmMyLibrary?> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary?>()
         adapterLibrary = AdapterResource(requireActivity(), libraryList, map!!, mRealm)
         adapterLibrary?.setRatingChangeListener(this)
@@ -293,10 +293,10 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         if (filterApplied()) {
             if (!mRealm.isInTransaction) mRealm.beginTransaction()
             val activity = mRealm.createObject(RealmSearchActivity::class.java, UUID.randomUUID().toString())
-            activity.user = model.name!!
+            activity.user = model?.name!!
             activity.time = Calendar.getInstance().timeInMillis
-            activity.createdOn = model.planetCode!!
-            activity.parentCode = model.parentCode!!
+            activity.createdOn = model?.planetCode!!
+            activity.parentCode = model?.parentCode!!
             activity.text = etSearch?.text.toString()
             activity.type = "resources"
             val filter = JsonObject()

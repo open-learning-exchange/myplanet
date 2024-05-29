@@ -39,9 +39,9 @@ import java.util.Date
 class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChangeListener {
     private lateinit var activityAddExaminationBinding: ActivityAddExaminationBinding
     lateinit var mRealm: Realm
-    lateinit var userId: String
+    var userId: String? = null
     var user: RealmUserModel? = null
-    private lateinit var currentUser: RealmUserModel
+    var currentUser: RealmUserModel? = null
     private var pojo: RealmMyHealthPojo? = null
     var health: RealmMyHealth? = null
     private var customDiag: MutableSet<String?>? = null
@@ -66,10 +66,10 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         customDiag = HashSet()
         initViews()
-        currentUser = UserProfileDbHandler(this).userModel!!
+        currentUser = UserProfileDbHandler(this).userModel
         mapConditions = HashMap()
         mRealm = DatabaseService(this).realmInstance
-        userId = intent.getStringExtra("userId")!!
+        userId = intent.getStringExtra("userId")
         pojo = mRealm.where(RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
         if (pojo == null) {
             pojo = mRealm.where(RealmMyHealthPojo::class.java).equalTo("userId", userId).findFirst()
@@ -227,12 +227,12 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         examination?.creatorId = health?.userKey
         examination?.gender = user?.gender
         examination?.age = user?.dob?.let { getAge(it) }!!
-        examination?.isSelfExamination = currentUser._id == pojo?._id
+        examination?.isSelfExamination = currentUser?._id == pojo?._id
         examination?.date = Date().time
         examination?.planetCode = user?.planetCode
         val sign = RealmExamination()
         sign.allergies = "${activityAddExaminationBinding.etAllergies.text}".trim { it <= ' ' }
-        sign.createdBy = currentUser._id
+        sign.createdBy = currentUser?._id
         examination?.bp = "${activityAddExaminationBinding.etBloodpressure.text}".trim { it <= ' ' }
         examination?.setTemperature(getFloat("${activityAddExaminationBinding.etTemperature.text}".trim { it <= ' ' }))
         examination?.pulse = getInt("${activityAddExaminationBinding.etPulseRate.text}".trim { it <= ' ' })
