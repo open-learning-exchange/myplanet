@@ -19,7 +19,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>() {
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
-        return model.id?.let {
+        return model?.id?.let {
             AdapterSurvey(requireActivity(), safeCastList(getList(RealmStepExam::class.java, "name", Sort.ASCENDING), RealmStepExam::class.java), mRealm, it)
         }!!
     }
@@ -34,9 +34,9 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>() {
             override fun onItemSelected(adapterView: AdapterView<*>?, view: View?, i: Int, l: Long) {
                 if (view != null) {
                     if (i == 0) {
-                        recyclerView.adapter = activity?.let { act -> model.id?.let { id -> AdapterSurvey(act, safeCastList(getList(RealmStepExam::class.java, "name", Sort.ASCENDING), RealmStepExam::class.java), mRealm, id) } }
+                        recyclerView.adapter = activity?.let { act -> model?.id?.let { id -> AdapterSurvey(act, safeCastList(getList(RealmStepExam::class.java, "name", Sort.ASCENDING), RealmStepExam::class.java), mRealm, id) } }
                     } else {
-                        recyclerView.adapter = activity?.let { act -> model.id?.let { id -> AdapterSurvey(act, safeCastList(getList(RealmStepExam::class.java, "name", Sort.DESCENDING), RealmStepExam::class.java), mRealm, id) } }
+                        recyclerView.adapter = activity?.let { act -> model?.id?.let { id -> AdapterSurvey(act, safeCastList(getList(RealmStepExam::class.java, "name", Sort.DESCENDING), RealmStepExam::class.java), mRealm, id) } }
                     }
                 }
             }

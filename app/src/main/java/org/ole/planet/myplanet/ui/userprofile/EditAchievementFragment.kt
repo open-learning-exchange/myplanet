@@ -53,7 +53,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     private lateinit var alertAddAttachmentBinding: AlertAddAttachmentBinding
     private lateinit var myLibraryAlertdialogBinding: MyLibraryAlertdialogBinding
     private lateinit var aRealm: Realm
-    lateinit var user: RealmUserModel
+    var user: RealmUserModel? = null
     private var achievement: RealmAchievement? = null
     private var referenceArray: JsonArray? = null
     private var achievementArray: JsonArray? = null
@@ -62,9 +62,9 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentEditAchievementBinding = FragmentEditAchievementBinding.inflate(inflater, container, false)
         aRealm = DatabaseService(requireActivity()).realmInstance
-        user = UserProfileDbHandler(requireContext()).userModel!!
+        user = UserProfileDbHandler(requireContext()).userModel
         achievementArray = JsonArray()
-        achievement = aRealm.where(RealmAchievement::class.java).equalTo("_id", user.id + "@" + user.planetCode).findFirst()
+        achievement = aRealm.where(RealmAchievement::class.java).equalTo("_id", user?.id + "@" + user?.planetCode).findFirst()
         initializeData()
         setListeners()
         if (achievementArray != null) showAchievementAndInfo()
@@ -112,7 +112,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
                 chipCloud.addChip(element.asJsonObject["title"].asString)
             }
             editAttachementBinding.ivDelete.setOnClickListener {
-                achievementArray!!.remove(e)
+                achievementArray?.remove(e)
                 showAchievementAndInfo()
             }
             editAttachementBinding.edit.setOnClickListener { showAddachievementAlert(e.asJsonObject) }
@@ -127,7 +127,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             editOtherInfoBinding = EditOtherInfoBinding.inflate(LayoutInflater.from(activity))
             editOtherInfoBinding.tvTitle.text = e.asJsonObject["name"].asString
             editOtherInfoBinding.ivDelete.setOnClickListener {
-                referenceArray!!.remove(e)
+                referenceArray?.remove(e)
                 showreference()
             }
             editOtherInfoBinding.edit.setOnClickListener { showreferenceDialog(e.asJsonObject) }
@@ -153,9 +153,9 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
                 alertReferenceBinding.tlName.error = getString(R.string.name_is_required)
                 return@setOnClickListener
             }
-            if (`object` != null) referenceArray!!.remove(`object`)
+            if (`object` != null) referenceArray?.remove(`object`)
             if (referenceArray == null) referenceArray = JsonArray()
-            referenceArray!!.add(createReference(name, alertReferenceBinding.etRelationship, alertReferenceBinding.etPhone, alertReferenceBinding.etEmail))
+            referenceArray?.add(createReference(name, alertReferenceBinding.etRelationship, alertReferenceBinding.etPhone, alertReferenceBinding.etEmail))
             showreference()
             d.dismiss()
         }
@@ -202,7 +202,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
                     Toast.makeText(activity, getString(R.string.title_is_required), Toast.LENGTH_SHORT).show()
                     return@setPositiveButton
                 }
-                if (`object` != null) achievementArray!!.remove(`object`)
+                if (`object` != null) achievementArray?.remove(`object`)
                 saveAchievement(desc, title)
             }.setNegativeButton(getString(R.string.cancel), null).show()
     }
@@ -229,7 +229,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         `object`.addProperty("title", title)
         `object`.addProperty("date", date)
         `object`.add("resources", resourceArray)
-        achievementArray!!.add(`object`)
+        achievementArray?.add(`object`)
         showAchievementAndInfo()
     }
 
@@ -245,7 +245,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             val items = lv.selectedItemsList
             resourceArray = JsonArray()
             for (ii in items) {
-                resourceArray!!.add(list[ii].serializeResource())
+                resourceArray?.add(list[ii].serializeResource())
             }
         }.setNegativeButton("Cancel", null).show()
     }
@@ -258,22 +258,22 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     private fun initializeData() {
         if (achievement == null) {
             if (!aRealm.isInTransaction) aRealm.beginTransaction()
-            achievement = aRealm.createObject(RealmAchievement::class.java, user.id + "@" + user.planetCode)
+            achievement = aRealm.createObject(RealmAchievement::class.java, user?.id + "@" + user?.planetCode)
             return
         } else {
-            achievementArray = achievement!!.achievementsArray
-            referenceArray = achievement!!.getreferencesArray()
-            fragmentEditAchievementBinding.etAchievement.setText(achievement!!.achievementsHeader)
-            fragmentEditAchievementBinding.etPurpose.setText(achievement!!.purpose)
-            fragmentEditAchievementBinding.etGoals.setText(achievement!!.goals)
-            fragmentEditAchievementBinding.cbSendToNation.isChecked = achievement!!.sendToNation.toBoolean()
+            achievementArray = achievement?.achievementsArray
+            referenceArray = achievement?.getreferencesArray()
+            fragmentEditAchievementBinding.etAchievement.setText(achievement?.achievementsHeader)
+            fragmentEditAchievementBinding.etPurpose.setText(achievement?.purpose)
+            fragmentEditAchievementBinding.etGoals.setText(achievement?.goals)
+            fragmentEditAchievementBinding.cbSendToNation.isChecked = achievement?.sendToNation.toBoolean()
         }
-        fragmentEditAchievementBinding.txtDob.text = if (TextUtils.isEmpty(user.dob)) getString(R.string.birth_date) else getFormatedDate(user.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+        fragmentEditAchievementBinding.txtDob.text = if (TextUtils.isEmpty(user?.dob)) getString(R.string.birth_date) else getFormatedDate(user?.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
         resourceArray = JsonArray()
-        fragmentEditAchievementBinding.etFname.setText(user.firstName)
-        fragmentEditAchievementBinding.etMname.setText(user.middleName)
-        fragmentEditAchievementBinding.etLname.setText(user.lastName)
-        fragmentEditAchievementBinding.etBirthplace.setText(user.birthPlace)
+        fragmentEditAchievementBinding.etFname.setText(user?.firstName)
+        fragmentEditAchievementBinding.etMname.setText(user?.middleName)
+        fragmentEditAchievementBinding.etLname.setText(user?.lastName)
+        fragmentEditAchievementBinding.etBirthplace.setText(user?.birthPlace)
     }
 
     private fun createResourceList(myLibraryAlertdialogBinding: MyLibraryAlertdialogBinding, list: List<RealmMyLibrary>, prevList: List<String?>): CheckboxListView {
@@ -301,11 +301,11 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
 
     private fun setUserInfo() {}
     private fun setAchievementInfo() {
-        achievement!!.achievementsHeader = fragmentEditAchievementBinding.etAchievement.text.toString().trim { it <= ' ' }
-        achievement!!.goals = fragmentEditAchievementBinding.etGoals.text.toString().trim { it <= ' ' }
-        achievement!!.purpose = fragmentEditAchievementBinding.etPurpose.text.toString().trim { it <= ' ' }
-        achievement!!.setAchievements(achievementArray!!)
-        achievement!!.setreferences(referenceArray)
-        achievement!!.sendToNation = fragmentEditAchievementBinding.cbSendToNation.isChecked.toString() + ""
+        achievement?.achievementsHeader = fragmentEditAchievementBinding.etAchievement.text.toString().trim { it <= ' ' }
+        achievement?.goals = fragmentEditAchievementBinding.etGoals.text.toString().trim { it <= ' ' }
+        achievement?.purpose = fragmentEditAchievementBinding.etPurpose.text.toString().trim { it <= ' ' }
+        achievement?.setAchievements(achievementArray!!)
+        achievement?.setreferences(referenceArray)
+        achievement?.sendToNation = fragmentEditAchievementBinding.cbSendToNation.isChecked.toString() + ""
     }
 }

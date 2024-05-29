@@ -21,7 +21,7 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
-        val myLifeList = getMyLifeByUserId(mRealm, model.id)
+        val myLifeList = getMyLifeByUserId(mRealm, model?.id)
         adapterMyLife = AdapterMyLife(requireContext(), myLifeList, mRealm, this)
         return adapterMyLife
     }

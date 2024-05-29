@@ -259,16 +259,16 @@ open class RealmMyTeam : RealmObject() {
         }
 
         @JvmStatic
-        fun requestToJoin(teamId: String?, userModel: RealmUserModel, mRealm: Realm) {
+        fun requestToJoin(teamId: String?, userModel: RealmUserModel?, mRealm: Realm) {
             if (!mRealm.isInTransaction) mRealm.beginTransaction()
             val team = mRealm.createObject(RealmMyTeam::class.java, AndroidDecrypter.generateIv())
             team.docType = "request"
             team.createdDate = Date().time
             team.teamType = "sync"
-            team.userId = userModel.id
+            team.userId = userModel?.id
             team.teamId = teamId
             team.updated = true
-            team.teamPlanetCode = userModel.planetCode
+            team.teamPlanetCode = userModel?.planetCode
             mRealm.commitTransaction()
         }
 
@@ -417,9 +417,9 @@ open class RealmMyTeam : RealmObject() {
             .count() > 0
     }
 
-    fun leave(user: RealmUserModel, mRealm: Realm) {
+    fun leave(user: RealmUserModel?, mRealm: Realm) {
         val teams = mRealm.where(RealmMyTeam::class.java)
-            .equalTo("userId", user.id)
+            .equalTo("userId", user?.id)
             .equalTo("teamId", this._id)
             .equalTo("docType", "membership")
             .findAll()

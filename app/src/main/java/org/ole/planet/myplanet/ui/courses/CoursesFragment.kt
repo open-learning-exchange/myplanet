@@ -49,8 +49,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
-        val map = getRatings(mRealm, "course", model.id)
-        val progressMap = getCourseProgress(mRealm, model.id)
+        val map = getRatings(mRealm, "course", model?.id)
+        val progressMap = getCourseProgress(mRealm, model?.id)
         val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>()
         adapterCourses = AdapterCourses(requireActivity(), courseList, map)
         adapterCourses.setProgressMap(progressMap)
@@ -264,10 +264,10 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         if (filterApplied()) {
             if (!mRealm.isInTransaction) mRealm.beginTransaction()
             val activity = mRealm.createObject(RealmSearchActivity::class.java, UUID.randomUUID().toString())
-            activity.user = "${model.name}"
+            activity.user = "${model?.name}"
             activity.time = Calendar.getInstance().timeInMillis
-            activity.createdOn = "${model.planetCode}"
-            activity.parentCode = "${model.parentCode}"
+            activity.createdOn = "${model?.planetCode}"
+            activity.parentCode = "${model?.parentCode}"
             activity.text = etSearch.text.toString()
             activity.type = "courses"
             val filter = JsonObject()

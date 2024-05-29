@@ -38,9 +38,9 @@ import java.io.File
 open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     private lateinit var activityReplyBinding: ActivityReplyBinding
     lateinit var mRealm: Realm
-    lateinit var id: String
+    var id: String? = null
     private lateinit var newsAdapter: AdapterNews
-    lateinit var user: RealmUserModel
+    var user: RealmUserModel? = null
     private lateinit var imageList: RealmList<String>
     private var llImage: LinearLayout? = null
     private lateinit var openFolderLauncher: ActivityResultLauncher<Intent>
@@ -53,8 +53,8 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         mRealm = DatabaseService(this).realmInstance
         title = "Reply"
         imageList = RealmList()
-        id = intent.getStringExtra("id")!!
-        user = UserProfileDbHandler(this).userModel!!
+        id = intent.getStringExtra("id")
+        user = UserProfileDbHandler(this).userModel
         activityReplyBinding.rvReply.layoutManager = LinearLayoutManager(this)
         activityReplyBinding.rvReply.isNestedScrollingEnabled = false
         showData(id)

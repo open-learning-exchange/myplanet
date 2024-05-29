@@ -25,7 +25,7 @@ import java.util.UUID
 class AddResourceActivity : AppCompatActivity() {
     private lateinit var activityAddResourceBinding: ActivityAddResourceBinding
     private lateinit var mRealm: Realm
-    private lateinit var userModel: RealmUserModel
+    var userModel: RealmUserModel? = null
     var subjects: RealmList<String>? = null
     var levels: RealmList<String>? = null
     private var resourceFor: RealmList<String>? = null
@@ -36,7 +36,7 @@ class AddResourceActivity : AppCompatActivity() {
         setContentView(activityAddResourceBinding.root)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
-        userModel = UserProfileDbHandler(this).userModel!!
+        userModel = UserProfileDbHandler(this).userModel
         resourceUrl = intent.getStringExtra("resource_local_url")
         levels = RealmList()
         subjects = RealmList()
@@ -54,7 +54,7 @@ class AddResourceActivity : AppCompatActivity() {
 
     private fun initializeViews() {
         activityAddResourceBinding.fileUrl.text = "${getString(R.string.file)} $resourceUrl"
-        activityAddResourceBinding.tvAddedBy.text = userModel.name
+        activityAddResourceBinding.tvAddedBy.text = userModel?.name
         activityAddResourceBinding.tvLevels.setOnClickListener { view: View ->
             showMultiSelectList(resources.getStringArray(R.array.array_levels), levels, view)
         }

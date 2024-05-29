@@ -29,7 +29,7 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
     var type: String? = ""
     var exams: HashMap<String?, RealmStepExam>? = null
     private var submissions: List<RealmSubmission>? = null
-    lateinit var user: RealmUserModel
+    var user: RealmUserModel? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) type = requireArguments().getString("type")
@@ -38,7 +38,7 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentMySubmissionBinding = FragmentMySubmissionBinding.inflate(inflater, container, false)
         exams = HashMap()
-        user = UserProfileDbHandler(requireContext()).userModel!!
+        user = UserProfileDbHandler(requireContext()).userModel
         return fragmentMySubmissionBinding.root
     }
 
@@ -87,15 +87,15 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
     private fun setData(s: String) {
         val q: RealmQuery<*>? = when (type) {
             "survey" -> {
-                mRealm.where(RealmSubmission::class.java).equalTo("userId", user.id)
+                mRealm.where(RealmSubmission::class.java).equalTo("userId", user?.id)
                     .equalTo("type", "survey")
             }
             "survey_submission" -> {
-                mRealm.where(RealmSubmission::class.java).equalTo("userId", user.id)
+                mRealm.where(RealmSubmission::class.java).equalTo("userId", user?.id)
                     .notEqualTo("status", "pending").equalTo("type", "survey")
             }
             else -> {
-                mRealm.where(RealmSubmission::class.java).equalTo("userId", user.id)
+                mRealm.where(RealmSubmission::class.java).equalTo("userId", user?.id)
                     .notEqualTo("type", "survey")
             }
         }

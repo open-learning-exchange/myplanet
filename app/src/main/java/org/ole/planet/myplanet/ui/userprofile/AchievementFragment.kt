@@ -31,7 +31,7 @@ class AchievementFragment : BaseContainerFragment() {
     private lateinit var rowAchievementBinding: RowAchievementBinding
     private lateinit var layoutButtonPrimaryBinding: LayoutButtonPrimaryBinding
     private lateinit var aRealm: Realm
-    lateinit var user: RealmUserModel
+    var user: RealmUserModel? = null
     var listener: OnHomeItemClickListener? = null
     private var achievement: RealmAchievement? = null
     override fun onAttach(context: Context) {
@@ -42,24 +42,24 @@ class AchievementFragment : BaseContainerFragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentAchievementBinding = FragmentAchievementBinding.inflate(inflater, container, false)
         aRealm = DatabaseService(MainApplication.context).realmInstance
-        user = UserProfileDbHandler(MainApplication.context).userModel!!
+        user = UserProfileDbHandler(MainApplication.context).userModel
         fragmentAchievementBinding.btnEdit.setOnClickListener {
-            if (listener != null) listener!!.openCallFragment(EditAchievementFragment())
+            if (listener != null) listener?.openCallFragment(EditAchievementFragment())
         }
         return fragmentAchievementBinding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        achievement = aRealm.where(RealmAchievement::class.java).equalTo("_id", user.id + "@" + user.planetCode).findFirst()
-        fragmentAchievementBinding.tvFirstName.text = user.firstName
-        fragmentAchievementBinding.tvName.text = String.format("%s %s %s", user.firstName, user.middleName, user.lastName)
+        achievement = aRealm.where(RealmAchievement::class.java).equalTo("_id", user?.id + "@" + user?.planetCode).findFirst()
+        fragmentAchievementBinding.tvFirstName.text = user?.firstName
+        fragmentAchievementBinding.tvName.text = String.format("%s %s %s", user?.firstName, user?.middleName, user?.lastName)
         if (achievement != null) {
-            fragmentAchievementBinding.tvGoals.text = achievement!!.goals
-            fragmentAchievementBinding.tvPurpose.text = achievement!!.purpose
-            fragmentAchievementBinding.tvAchievementHeader.text = achievement!!.achievementsHeader
+            fragmentAchievementBinding.tvGoals.text = achievement?.goals
+            fragmentAchievementBinding.tvPurpose.text = achievement?.purpose
+            fragmentAchievementBinding.tvAchievementHeader.text = achievement?.achievementsHeader
             fragmentAchievementBinding.llAchievement.removeAllViews()
-            for (s in achievement!!.achievements!!) {
+            for (s in achievement?.achievements!!) {
                 rowAchievementBinding = RowAchievementBinding.inflate(LayoutInflater.from(MainApplication.context))
                 val ob = Gson().fromJson(s, JsonElement::class.java)
                 if (ob is JsonObject) {
@@ -99,7 +99,7 @@ class AchievementFragment : BaseContainerFragment() {
                         rowAchievementBinding.tvTitle.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0)
                         createAchievementList()
                         fragmentAchievementBinding.rvOtherInfo.layoutManager = LinearLayoutManager(MainApplication.context)
-                        fragmentAchievementBinding.rvOtherInfo.adapter = AdapterOtherInfo(MainApplication.context, achievement!!.getreferences()!!)
+                        fragmentAchievementBinding.rvOtherInfo.adapter = AdapterOtherInfo(MainApplication.context, achievement?.getreferences()!!)
                     }
                     aRealm.addChangeListener {
                         fragmentAchievementBinding.llAchievement.removeAllViews()
@@ -114,12 +114,12 @@ class AchievementFragment : BaseContainerFragment() {
                 fragmentAchievementBinding.llAchievement.addView(rowAchievementBinding.root)
             }
             fragmentAchievementBinding.rvOtherInfo.layoutManager = LinearLayoutManager(MainApplication.context)
-            fragmentAchievementBinding.rvOtherInfo.adapter = AdapterOtherInfo(MainApplication.context, achievement!!.getreferences()!!)
+            fragmentAchievementBinding.rvOtherInfo.adapter = AdapterOtherInfo(MainApplication.context, achievement?.getreferences()!!)
         }
     }
 
     private fun createAchievementList() {
-        for (s in achievement!!.achievements!!) {
+        for (s in achievement?.achievements!!) {
             rowAchievementBinding = RowAchievementBinding.inflate(LayoutInflater.from(MainApplication.context))
             val ob = Gson().fromJson(s, JsonElement::class.java)
             if (ob is JsonObject) {

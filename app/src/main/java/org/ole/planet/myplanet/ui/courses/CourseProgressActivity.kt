@@ -23,7 +23,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 class CourseProgressActivity : BaseActivity() {
     private lateinit var activityCourseProgressBinding: ActivityCourseProgressBinding
     lateinit var realm: Realm
-    lateinit var user: RealmUserModel
+    var user: RealmUserModel? = null
     lateinit var courseId: String
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -32,8 +32,8 @@ class CourseProgressActivity : BaseActivity() {
         initActionBar()
         courseId = intent.getStringExtra("courseId").toString()
         realm = DatabaseService(this).realmInstance
-        user = UserProfileDbHandler(this).userModel!!
-        val courseProgress = RealmCourseProgress.getCourseProgress(realm, user.id)
+        user = UserProfileDbHandler(this).userModel
+        val courseProgress = RealmCourseProgress.getCourseProgress(realm, user?.id)
         val progress = courseProgress[courseId]
         val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
         if (progress != null) {
@@ -67,7 +67,7 @@ class CourseProgressActivity : BaseActivity() {
     private fun getExamObject(exams: RealmResults<RealmStepExam>, ob: JsonObject) {
         exams.forEach { it ->
             it.id?.let { it1 ->
-                realm.where(RealmSubmission::class.java).equalTo("userId", user.id)
+                realm.where(RealmSubmission::class.java).equalTo("userId", user?.id)
                     .contains("parentId", it1).equalTo("type", "exam").findAll()
             }?.map {
                 val answers = realm.where(RealmAnswer::class.java).equalTo("submissionId", it.id).findAll()
