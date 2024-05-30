@@ -45,7 +45,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_gravity="top"
-                    android:layout_weight="2"
+                    android:layout_weight="1"
                     android:gravity="center"
                     android:orientation="vertical"
                     android:padding="@dimen/padding_normal">
@@ -54,8 +54,7 @@
                         android:id="@+id/ll_rating"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        >
+                        android:layout_gravity="center">
 
                         <LinearLayout
                             android:layout_width="wrap_content"
@@ -67,7 +66,7 @@
 
                             <TextView
                                 android:id="@+id/times_rated"
-                                android:layout_width="match_parent"
+                                android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_gravity="center"
                                 android:gravity="center"
@@ -105,7 +104,7 @@
 
                             <TextView
                                 android:id="@+id/average"
-                                android:layout_width="match_parent"
+                                android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="@string/average" />
                         </LinearLayout>
@@ -124,7 +123,7 @@
 
                         <TextView
                             android:id="@+id/subject_level"
-                            android:layout_width="match_parent"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:padding="@dimen/padding_normal" />
 
@@ -143,7 +142,7 @@
 
                         <TextView
                             android:id="@+id/grade_level"
-                            android:layout_width="match_parent"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:padding="@dimen/padding_normal" />
 
@@ -162,7 +161,7 @@
 
                         <TextView
                             android:id="@+id/language"
-                            android:layout_width="match_parent"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:padding="@dimen/padding_normal" />
 
@@ -181,7 +180,7 @@
 
                         <TextView
                             android:id="@+id/method"
-                            android:layout_width="match_parent"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:padding="@dimen/padding_normal" />
 
@@ -199,7 +198,7 @@
 
                         <TextView
                             android:id="@+id/no_of_exams"
-                            android:layout_width="match_parent"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:padding="@dimen/padding_normal" />
 
@@ -209,20 +208,20 @@
                         android:id="@+id/ltDescription"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal">
+                        android:orientation="vertical">
 
                         <TextView
                             style="@style/HeaderText"
                             android:layout_width="wrap_content"
-                            android:layout_height="match_parent"
+                            android:layout_height="wrap_content"
                             android:text="@string/description_colon" />
 
                         <TextView
                             android:id="@+id/description"
                             android:layout_width="wrap_content"
-                            android:paddingBottom="@dimen/_10dp"
                             android:layout_height="wrap_content"
-                            />
+                            android:layout_marginStart="6dp"
+                            android:paddingBottom="@dimen/_10dp" />
                     </LinearLayout>
 
                 </LinearLayout>
