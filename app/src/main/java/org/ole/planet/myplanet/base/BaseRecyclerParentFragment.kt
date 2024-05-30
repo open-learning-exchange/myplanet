@@ -19,11 +19,11 @@ abstract class BaseRecyclerParentFragment<LI> : BaseResourceFragment() {
                 getMyLibItems(c as Class<out RealmModel>)
             }
             c == RealmMyLibrary::class.java -> {
-                RealmMyLibrary.getOurLibrary(model.id, mRealm.where(c).equalTo("isPrivate", false).findAll().toList()) as List<LI>
+                RealmMyLibrary.getOurLibrary(model?.id, mRealm.where(c).equalTo("isPrivate", false).findAll().toList()) as List<LI>
             }
             else -> {
                 val results: List<RealmMyCourse> = mRealm.where(RealmMyCourse::class.java).isNotEmpty("courseTitle").findAll().toList()
-                val filteredResults = RealmMyCourse.getOurCourse(model.id, results)
+                val filteredResults = RealmMyCourse.getOurCourse(model?.id, results)
                 filteredResults as List<LI>
             }
         }
@@ -40,11 +40,11 @@ abstract class BaseRecyclerParentFragment<LI> : BaseResourceFragment() {
                 getMyLibItems(c as Class<out RealmModel>, orderBy)
             }
             c == RealmMyLibrary::class.java -> {
-                RealmMyLibrary.getOurLibrary(model.id, mRealm.where(c).equalTo("isPrivate", false).sort(orderBy ?: "", sort).findAll().toList()) as List<LI>
+                RealmMyLibrary.getOurLibrary(model?.id, mRealm.where(c).equalTo("isPrivate", false).sort(orderBy ?: "", sort).findAll().toList()) as List<LI>
             }
             else -> {
                 val results = mRealm.where(RealmMyCourse::class.java).sort(orderBy ?: "", sort).findAll().toList() as List<RealmMyCourse>
-                RealmMyCourse.getOurCourse(model.id, results) as List<LI>
+                RealmMyCourse.getOurCourse(model?.id, results) as List<LI>
             }
         }
     }
@@ -59,10 +59,10 @@ abstract class BaseRecyclerParentFragment<LI> : BaseResourceFragment() {
         val results: List<T> = realmResults.toList()
         return when (c) {
             RealmMyLibrary::class.java -> {
-                RealmMyLibrary.getMyLibraryByUserId(model.id, results as? List<RealmMyLibrary> ?: emptyList()) as List<LI>
+                RealmMyLibrary.getMyLibraryByUserId(model?.id, results as? List<RealmMyLibrary> ?: emptyList()) as List<LI>
             }
             RealmMyCourse::class.java -> {
-                RealmMyCourse.getMyCourseByUserId(model.id, results as? List<RealmMyCourse> ?: emptyList()) as List<LI>
+                RealmMyCourse.getMyCourseByUserId(model?.id, results as? List<RealmMyCourse> ?: emptyList()) as List<LI>
             }
             else -> throw IllegalArgumentException("Unsupported class: ${c.simpleName}")
         }

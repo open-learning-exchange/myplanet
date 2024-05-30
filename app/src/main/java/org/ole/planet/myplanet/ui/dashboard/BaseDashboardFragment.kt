@@ -30,11 +30,13 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmTeamNotification
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.TransactionSyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_LOGIN
 import org.ole.planet.myplanet.ui.dashboard.notification.NotificationFragment
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
 import org.ole.planet.myplanet.ui.myhealth.UserListArrayAdapter
@@ -62,10 +64,15 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     private val myTeamsChangeListener = RealmChangeListener<RealmResults<RealmMyTeam>> { results ->
         updateMyTeamsUI()
     }
+    private lateinit var offlineActivitiesResults: RealmResults<RealmOfflineActivity>
+    private val offlineActivitiesChangeListener = RealmChangeListener<RealmResults<RealmOfflineActivity>> { results ->
+        updateOfflineVisitsUI()
+    }
+
 
     fun onLoaded(v: View) {
         profileDbHandler = UserProfileDbHandler(requireContext())
-        model = profileDbHandler.userModel!!
+        model = profileDbHandler.userModel
         fullName = profileDbHandler.userModel?.getFullName()
         if (fullName?.trim().isNullOrBlank()) {
             fullName = profileDbHandler.userModel?.name
@@ -80,9 +87,9 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             v.findViewById<LinearLayout>(R.id.ll_prompt).visibility = View.GONE
         }
         val imageView = v.findViewById<ImageView>(R.id.imageView)
-        if (!TextUtils.isEmpty(model.userImage)) {
+        if (!TextUtils.isEmpty(model?.userImage)) {
             Glide.with(requireActivity())
-                .load(model.userImage)
+                .load(model?.userImage)
                 .placeholder(R.drawable.profile)
                 .error(R.drawable.profile)
                 .into(imageView)
@@ -90,9 +97,19 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             imageView.setImageResource(R.drawable.profile)
         }
 
-        v.findViewById<TextView>(R.id.txtVisits).text = "${profileDbHandler.offlineVisits} ${getString(R.string.visits)}"
-        v.findViewById<TextView>(R.id.txtRole).text = "- ${model.getRoleAsString()}"
+        offlineActivitiesResults = mRealm.where(RealmOfflineActivity::class.java)
+            .equalTo("userName", profileDbHandler.userModel?.name)
+            .equalTo("type", KEY_LOGIN)
+            .findAllAsync()
+        offlineActivitiesResults.addChangeListener(offlineActivitiesChangeListener)
+        updateOfflineVisitsUI()
+        v.findViewById<TextView>(R.id.txtRole).text = "- ${model?.getRoleAsString()}"
         v.findViewById<TextView>(R.id.txtFullName).text = fullName
+    }
+
+    private fun updateOfflineVisitsUI() {
+        val offlineVisits = profileDbHandler.offlineVisits
+        view?.findViewById<TextView>(R.id.txtVisits)?.text = "$offlineVisits ${getString(R.string.visits)}"
     }
 
     override fun forceDownloadNewsImages() {
@@ -274,6 +291,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         profileDbHandler.onDestory()
         myCoursesResults.removeChangeListener(myCoursesChangeListener)
         myTeamsResults.removeChangeListener(myTeamsChangeListener)
+        offlineActivitiesResults.removeChangeListener(offlineActivitiesChangeListener)
         mRealm.close()
     }
 
@@ -381,7 +399,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     override fun syncKeyId() {
         di = DialogUtils.CustomProgressDialog(requireContext())
         di?.setText(getString(R.string.syncing_health_please_wait))
-        if (model.getRoleAsString().contains("health")) {
+        if (model?.getRoleAsString()?.contains("health") == true) {
             settings?.let { TransactionSyncManager.syncAllHealthData(mRealm, it, this) }
         } else {
             settings?.let { TransactionSyncManager.syncKeyIv(mRealm, it, this) }
@@ -403,7 +421,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     override fun showTaskListDialog() {
-        val tasks = mRealm.where(RealmTeamTask::class.java).equalTo("assignee", model.id)
+        val tasks = mRealm.where(RealmTeamTask::class.java).equalTo("assignee", model?.id)
             .equalTo("completed", false)
             .greaterThan("deadline", Calendar.getInstance().timeInMillis).findAll()
         if (tasks.isEmpty()) {

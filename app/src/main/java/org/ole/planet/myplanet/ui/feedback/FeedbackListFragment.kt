@@ -18,13 +18,13 @@ import org.ole.planet.myplanet.ui.feedback.FeedbackFragment.OnFeedbackSubmittedL
 class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     private lateinit var fragmentFeedbackListBinding: FragmentFeedbackListBinding
     private lateinit var mRealm: Realm
-    private lateinit var userModel: RealmUserModel
+    var userModel: RealmUserModel? = null
     private var feedbackList: RealmResults<RealmFeedback>? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentFeedbackListBinding = FragmentFeedbackListBinding.inflate(inflater, container, false)
         mRealm = DatabaseService(requireActivity()).realmInstance
-        userModel = UserProfileDbHandler(requireContext()).userModel!!
+        userModel = UserProfileDbHandler(requireContext()).userModel
         fragmentFeedbackListBinding.fab.setOnClickListener {
             val feedbackFragment = FeedbackFragment()
             feedbackFragment.setOnFeedbackSubmittedListener(this)
@@ -35,7 +35,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
             Realm.Transaction { },
             Realm.Transaction.OnSuccess {
                 feedbackList = mRealm.where(RealmFeedback::class.java)
-                    .equalTo("owner", userModel.name).findAllAsync()
+                    .equalTo("owner", userModel?.name).findAllAsync()
                 feedbackList?.addChangeListener { results ->
                     updatedFeedbackList(results)
                 }
@@ -47,8 +47,8 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
         super.onViewCreated(view, savedInstanceState)
         fragmentFeedbackListBinding.rvFeedback.layoutManager = LinearLayoutManager(activity)
         var list: List<RealmFeedback>? = mRealm.where(RealmFeedback::class.java)
-            .equalTo("owner", userModel.name).findAll()
-        if (userModel.isManager()) list = mRealm.where(RealmFeedback::class.java).findAll()
+            .equalTo("owner", userModel?.name).findAll()
+        if (userModel?.isManager() == true) list = mRealm.where(RealmFeedback::class.java).findAll()
         val adapterFeedback = AdapterFeedback(requireActivity(), list)
         fragmentFeedbackListBinding.rvFeedback.adapter = adapterFeedback
     }
@@ -65,8 +65,8 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
             Realm.Transaction { },
             Realm.Transaction.OnSuccess {
                 var updatedList = mRealm.where(RealmFeedback::class.java)
-                    .equalTo("owner", userModel.name).findAll()
-                if (userModel.isManager()) {
+                    .equalTo("owner", userModel?.name).findAll()
+                if (userModel?.isManager() == true) {
                     updatedList = mRealm.where(RealmFeedback::class.java).findAll()
                 }
                 updatedFeedbackList(updatedList)

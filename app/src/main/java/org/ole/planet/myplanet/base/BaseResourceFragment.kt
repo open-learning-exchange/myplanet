@@ -50,7 +50,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 abstract class BaseResourceFragment : Fragment() {
     var homeItemClickListener: OnHomeItemClickListener? = null
-    lateinit var model: RealmUserModel
+    var model: RealmUserModel? = null
     lateinit var mRealm: Realm
     lateinit var profileDbHandler: UserProfileDbHandler
     var editor: SharedPreferences.Editor? = null
@@ -127,9 +127,9 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     fun showPendingSurveyDialog() {
-        model = UserProfileDbHandler(requireContext()).userModel!!
+        model = UserProfileDbHandler(requireContext()).userModel
         val list: List<RealmSubmission> = mRealm.where(RealmSubmission::class.java)
-            .equalTo("userId", model.id)
+            .equalTo("userId", model?.id)
             .equalTo("status", "pending").equalTo("type", "survey")
             .findAll()
         if (list.isEmpty()) {
@@ -239,15 +239,15 @@ abstract class BaseResourceFragment : Fragment() {
     fun removeFromShelf(`object`: RealmObject) {
         if (`object` is RealmMyLibrary) {
             val myObject = mRealm.where(RealmMyLibrary::class.java).equalTo("resourceId", `object`.resourceId).findFirst()
-            myObject?.removeUserId(model.id)
-            model.id?.let { `object`.resourceId?.let { it1 ->
+            myObject?.removeUserId(model?.id)
+            model?.id?.let { `object`.resourceId?.let { it1 ->
                 onRemove(mRealm, "resources", it, it1)
             } }
             Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
         } else {
             val myObject = getMyCourse(mRealm, (`object` as RealmMyCourse).courseId)
-            myObject?.removeUserId(model.id)
-            model.id?.let { `object`.courseId?.let { it1 -> onRemove(mRealm, "courses", it, it1) } }
+            myObject?.removeUserId(model?.id)
+            model?.id?.let { `object`.courseId?.let { it1 -> onRemove(mRealm, "courses", it, it1) } }
             Utilities.toast(activity, getString(R.string.removed_from_mycourse))
         }
     }

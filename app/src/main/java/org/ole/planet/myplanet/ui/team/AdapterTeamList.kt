@@ -23,7 +23,7 @@ import org.ole.planet.myplanet.utilities.TimeUtils
 
 class AdapterTeamList(private val context: Context, private val list: List<RealmMyTeam>, private val mRealm: Realm, fragmentManager: FragmentManager) : RecyclerView.Adapter<AdapterTeamList.ViewHolderTeam>() {
     private lateinit var itemTeamListBinding: ItemTeamListBinding
-    private val user: RealmUserModel = UserProfileDbHandler(context).userModel!!
+    private val user: RealmUserModel? = UserProfileDbHandler(context).userModel
     private var type: String? = ""
     private val fragmentManager: FragmentManager
     private var teamListener: OnClickTeamItem? = null
@@ -54,14 +54,14 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
                 View.GONE
             }
         itemTeamListBinding.editTeam.visibility =
-            if (RealmMyTeam.getTeamLeader(filteredList[position]._id, mRealm) == user.id) {
+            if (RealmMyTeam.getTeamLeader(filteredList[position]._id, mRealm) == user?.id) {
                 View.VISIBLE
             } else {
                 View.GONE
             }
         itemTeamListBinding.name.text = filteredList[position].name
         itemTeamListBinding.noOfVisits.text = "${RealmTeamLog.getVisitByTeam(mRealm, filteredList[position]._id)}"
-        val isMyTeam = filteredList[position].isMyTeam(user.id, mRealm)
+        val isMyTeam = filteredList[position].isMyTeam(user?.id, mRealm)
         showActionButton(isMyTeam, position)
         holder.itemView.setOnClickListener {
             if (context is OnHomeItemClickListener) {
@@ -82,7 +82,7 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
         itemTeamListBinding.editTeam.setOnClickListener { teamListener?.onEditTeam(list[position]) }
         itemTeamListBinding.joinLeave.setOnClickListener {
             if (isMyTeam) {
-                if (RealmMyTeam.isTeamLeader(list[position].teamId, user.id, mRealm)) {
+                if (RealmMyTeam.isTeamLeader(list[position].teamId, user?.id, mRealm)) {
                     AlertDialog.Builder(context).setMessage(R.string.confirm_exit)
                         .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
                             list[position].leave(user, mRealm)
@@ -109,14 +109,14 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
 
     private fun showActionButton(isMyTeam: Boolean, position: Int) {
         if (isMyTeam) {
-            if (RealmMyTeam.isTeamLeader(filteredList[position].teamId, user.id, mRealm)) {
+            if (RealmMyTeam.isTeamLeader(filteredList[position].teamId, user?.id, mRealm)) {
                 itemTeamListBinding.joinLeave.text = context.getString(R.string.leave)
                 itemTeamListBinding.joinLeave.contentDescription = "${context.getString(R.string.leave)} ${filteredList[position].name}"
             } else {
                 itemTeamListBinding.joinLeave.visibility = View.GONE
                 return
             }
-        } else if (filteredList[position].requested(user.id, mRealm)) {
+        } else if (filteredList[position].requested(user?.id, mRealm)) {
             itemTeamListBinding.joinLeave.text = context.getString(R.string.requested)
             itemTeamListBinding.joinLeave.isEnabled = false
             itemTeamListBinding.joinLeave.contentDescription = "${context.getString(R.string.requested)} ${filteredList[position].name}"

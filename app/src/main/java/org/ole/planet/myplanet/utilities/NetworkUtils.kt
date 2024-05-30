@@ -3,29 +3,126 @@ package org.ole.planet.myplanet.utilities
 import android.bluetooth.BluetoothAdapter
 import android.content.Context
 import android.net.ConnectivityManager
+import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.wifi.WifiInfo
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.provider.Settings
 import android.text.TextUtils
+import androidx.annotation.RequiresApi
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.*
 import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.ui.dashboard.DashboardFragment
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import java.net.NetworkInterface
 import java.util.Collections
 import java.util.Locale
 
 object NetworkUtils {
-    private val connectivityManager by lazy {
+    lateinit var coroutineScope: CoroutineScope
+
+    fun initialize(coroutineScope: CoroutineScope) {
+        this.coroutineScope = coroutineScope
+    }
+
+    private val connectivityManager: ConnectivityManager by lazy {
         context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     }
+
+    private val _currentNetwork = MutableStateFlow(provideDefaultCurrentNetwork())
+
+    val isNetworkConnectedFlow: StateFlow<Boolean> by lazy {
+        _currentNetwork
+            .map { it.isConnected() }
+            .stateIn(scope = coroutineScope, started = SharingStarted.WhileSubscribed(), initialValue = _currentNetwork.value.isConnected())
+    }
+
+    val isNetworkConnected: Boolean
+        get() = isNetworkConnectedFlow.value
+
+    private val networkCallback = NetworkCallback()
+
+    @RequiresApi(Build.VERSION_CODES.N)
+    fun startListenNetworkState() {
+        if (_currentNetwork.value.isListening) {
+            return
+        }
+
+        _currentNetwork.update {
+            provideDefaultCurrentNetwork().copy(isListening = true)
+        }
+
+        connectivityManager.registerDefaultNetworkCallback(networkCallback)
+    }
+
+    fun stopListenNetworkState() {
+        if (!_currentNetwork.value.isListening) {
+            return
+        }
+
+        _currentNetwork.update {
+            it.copy(isListening = false)
+        }
+
+        connectivityManager.unregisterNetworkCallback(networkCallback)
+    }
+
+    private class NetworkCallback : ConnectivityManager.NetworkCallback() {
+        override fun onAvailable(network: Network) {
+            _currentNetwork.update {
+                it.copy(isAvailable = true)
+            }
+        }
+
+        override fun onLost(network: Network) {
+            _currentNetwork.update {
+                it.copy(isAvailable = false, networkCapabilities = null)
+            }
+        }
+
+        override fun onUnavailable() {
+            _currentNetwork.update {
+                it.copy(isAvailable = false, networkCapabilities = null)
+            }
+        }
+
+        override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
+            _currentNetwork.update {
+                it.copy(networkCapabilities = networkCapabilities)
+            }
+        }
+
+        override fun onBlockedStatusChanged(network: Network, blocked: Boolean) {
+            _currentNetwork.update {
+                it.copy(isBlocked = blocked)
+            }
+        }
+    }
+
+    private fun provideDefaultCurrentNetwork(): CurrentNetwork {
+        return CurrentNetwork(isListening = false, networkCapabilities = null, isAvailable = false, isBlocked = false)
+    }
+
+    private data class CurrentNetwork(val isListening: Boolean, val networkCapabilities: NetworkCapabilities?, val isAvailable: Boolean, val isBlocked: Boolean)
+
+    private fun CurrentNetwork.isConnected(): Boolean {
+        return isListening && isAvailable && !isBlocked && networkCapabilities.isNetworkCapabilitiesValid()
+    }
+
+    private fun NetworkCapabilities?.isNetworkCapabilitiesValid(): Boolean = when {
+        this == null -> false
+        hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) && hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) && (hasTransport(NetworkCapabilities.TRANSPORT_WIFI) || hasTransport(NetworkCapabilities.TRANSPORT_VPN) || hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) || hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)) -> true
+        else -> false
+    }
+
     @JvmStatic
     fun isWifiEnabled(): Boolean {
         val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
         return wifiManager.isWifiEnabled
     }
 
+    @RequiresApi(Build.VERSION_CODES.M)
     @JvmStatic
     fun isWifiConnected(): Boolean {
         val network = connectivityManager.activeNetwork
@@ -44,6 +141,7 @@ object NetworkUtils {
         return mBluetoothAdapter != null && mBluetoothAdapter.isEnabled
     }
 
+    @RequiresApi(Build.VERSION_CODES.M)
     @JvmStatic
     fun getCurrentNetworkId(context: Context): Int {
         var ssid = -1
@@ -59,14 +157,6 @@ object NetworkUtils {
         }
         return ssid
     }
-
-    @JvmStatic
-    fun isNetworkConnected(): Boolean {
-        val connManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        val network = connManager.activeNetwork
-        return network != null
-    }
-
 
     @JvmStatic
     fun getUniqueIdentifier(): String {

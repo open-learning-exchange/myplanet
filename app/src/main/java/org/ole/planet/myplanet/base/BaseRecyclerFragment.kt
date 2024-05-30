@@ -81,7 +81,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         profileDbHandler = UserProfileDbHandler(requireActivity())
         model = profileDbHandler.userModel!!
         recyclerView.adapter = getAdapter()
-        if (isMyCourseLib) {
+        if (isMyCourseLib && getAdapter().itemCount != 0) {
             showDownloadDialog(getLibraryList(mRealm))
         }
         return v
@@ -104,12 +104,12 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             if (`object` is RealmMyLibrary) {
                 val myObject = mRealm.where(RealmMyLibrary::class.java)
                     .equalTo("resourceId", `object`.resourceId).findFirst()
-                createFromResource(myObject, mRealm, model.id)
+                createFromResource(myObject, mRealm, model?.id)
                 onAdd(mRealm, "resources", profileDbHandler.userModel?.id, myObject?.resourceId)
                 toast(activity, getString(R.string.added_to_my_library))
             } else {
                 val myObject = getMyCourse(mRealm, (`object` as RealmMyCourse).courseId)
-                createMyCourse(myObject, mRealm, model.id)
+                createMyCourse(myObject, mRealm, model?.id)
                 onAdd(mRealm, "courses", profileDbHandler.userModel?.id, myObject?.courseId)
                 toast(activity, getString(R.string.added_to_my_courses))
             }
@@ -182,9 +182,9 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     fun filterLibraryByTag(s: String, tags: List<RealmTag>): List<RealmMyLibrary> {
         var list = getData(s, RealmMyLibrary::class.java)
         list = if (isMyCourseLib) {
-            getMyLibraryByUserId(model.id, list)
+            getMyLibraryByUserId(model?.id, list)
         } else {
-            getOurLibrary(model.id, list)
+            getOurLibrary(model?.id, list)
         }
         if (tags.isEmpty()) {
             return list
@@ -202,9 +202,9 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
         var list = getData(s, RealmMyCourse::class.java)
         list = if (isMyCourseLib) {
-            getMyCourseByUserId(model.id, list)
+            getMyCourseByUserId(model?.id, list)
         } else {
-            getOurCourse(model.id, list)
+            getOurCourse(model?.id, list)
         }
         if (tags.isEmpty()) {
             return list

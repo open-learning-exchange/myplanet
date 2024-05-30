@@ -526,7 +526,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 inputName.setText(settings.getString(getString(R.string.login_user), ""))
                 inputPassword.setText(settings.getString(getString(R.string.login_password), ""))
             }
-            if (isNetworkConnected()) {
+            if (isNetworkConnected) {
                 service.syncPlanetServers(mRealm) { success: String? ->
                     Utilities.toast(this, success)
                 }
