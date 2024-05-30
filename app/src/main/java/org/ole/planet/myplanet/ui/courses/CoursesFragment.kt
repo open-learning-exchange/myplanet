@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.courses
 
 import android.app.AlertDialog
 import android.content.DialogInterface
+import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -10,8 +11,10 @@ import android.widget.AdapterView
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
+import android.widget.LinearLayout
 import android.widget.Spinner
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.Gson
@@ -28,6 +31,7 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmTag.Companion.getTagsArray
 import org.ole.planet.myplanet.ui.resources.CollectionsFragment
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
+import org.ole.planet.myplanet.utilities.Utilities.getItemsPerPageValue
 import java.util.Calendar
 import java.util.UUID
 
@@ -44,6 +48,12 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     lateinit var spnSubject: Spinner
     lateinit var searchTags: MutableList<RealmTag>
     private lateinit var confirmation: AlertDialog
+    private lateinit var btnPrevious: TextView
+    private lateinit var btnNext: TextView
+    private lateinit var spnItemsPerPage: Spinner
+    private lateinit var ltPagination: LinearLayout
+    private var drawableNext: Drawable? = null
+    private var drawablePrevious: Drawable? = null
     override fun getLayout(): Int {
         return R.layout.fragment_my_course
     }
@@ -90,6 +100,31 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 .setNegativeButton(R.string.no, null).show()
         }
 
+        drawableNext = ContextCompat.getDrawable(requireContext(), R.drawable.ic_right_arrow)
+        drawableNext?.setTint(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
+        btnNext.setCompoundDrawablesWithIntrinsicBounds(null, null, drawableNext, null)
+
+        drawablePrevious = ContextCompat.getDrawable(requireContext(), R.drawable.ic_left_arrow)
+        drawablePrevious?.setTint(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
+        btnPrevious.setCompoundDrawablesWithIntrinsicBounds(drawablePrevious, null, null, null)
+
+        spnItemsPerPage.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
+                val selectedValue = parent.getItemAtPosition(position).toString()
+                val itemsPerPage = getItemsPerPageValue(selectedValue)
+                adapterCourses.itemsPerPage = itemsPerPage
+                adapterCourses.currentPage = 1
+                adapterCourses.clearSelection()
+                adapterCourses.notifyDataSetChanged()
+                updateButtonVisibility()
+                selectAll.isChecked = false
+                selectAll.text = getString(R.string.select_all)
+                recyclerView.scrollToPosition(0)
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>) {}
+        }
+
         requireView().findViewById<View>(R.id.btn_collections).setOnClickListener {
             val f = CollectionsFragment.getInstance(searchTags, "courses")
             f.setListener(this)
@@ -100,8 +135,67 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         showNoData(tvMessage, adapterCourses.itemCount, "courses")
         setupUI(requireView().findViewById(R.id.my_course_parent_layout), requireActivity())
         changeButtonStatus()
-        if (!isMyCourseLib) tvFragmentInfo.setText(R.string.our_courses)
+        if (!isMyCourseLib) {
+            tvFragmentInfo.setText(R.string.our_courses)
+        }
         additionalSetup()
+
+        btnNext.setOnClickListener {
+            if (adapterCourses.currentPage * adapterCourses.itemsPerPage < adapterCourses.getTotalCourseCount()) {
+                adapterCourses.currentPage++
+                adapterCourses.clearSelection()
+                adapterCourses.notifyDataSetChanged()
+                updateButtonVisibility()
+                selectAll.isChecked = false
+                selectAll.text = getString(R.string.select_all)
+                recyclerView.scrollToPosition(0)
+            }
+        }
+
+        btnPrevious.setOnClickListener {
+            if (adapterCourses.currentPage > 1) {
+                adapterCourses.currentPage--
+                adapterCourses.clearSelection()
+                adapterCourses.notifyDataSetChanged()
+                updateButtonVisibility()
+                selectAll.isChecked = false
+                selectAll.text = getString(R.string.select_all)
+                recyclerView.scrollToPosition(0)
+            }
+        }
+        updateButtonVisibility()
+    }
+
+    private fun updateButtonVisibility() {
+        if (adapterCourses.itemsPerPage == Int.MAX_VALUE) {
+            btnNext.visibility = View.GONE
+            btnPrevious.visibility = View.GONE
+        } else {
+            if (adapterCourses.currentPage < adapterCourses.getTotalPages()) {
+                btnNext.isEnabled = true
+                btnNext.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
+                drawableNext?.setTint(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
+            } else {
+                btnNext.isEnabled = false
+                btnNext.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_grey_500))
+                drawableNext?.setTint(ContextCompat.getColor(requireContext(), R.color.md_grey_500))
+            }
+            if (adapterCourses.currentPage > 1) {
+                btnPrevious.isEnabled = true
+                btnPrevious.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
+                drawablePrevious?.setTint(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
+            } else {
+                btnPrevious.isEnabled = false
+                btnPrevious.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_grey_500))
+                drawablePrevious?.setTint(ContextCompat.getColor(requireContext(), R.color.md_grey_500))
+            }
+        }
+
+        if (adapterCourses.itemCount == 0) {
+            ltPagination.visibility = View.GONE
+            tvDelete?.visibility = View.GONE
+            btnRemove.visibility = View.GONE
+        }
     }
 
     private fun additionalSetup() {
@@ -123,7 +217,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 confirmation.show()
                 addToMyList()
                 selectedItems?.clear()
-                tvAddToLib.isEnabled = false // selectedItems will always have a size of 0
+                tvAddToLib.isEnabled = false
                 checkList()
             }
         }
@@ -138,16 +232,21 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         spnGrade.onItemSelectedListener = itemSelectedListener
         spnSubject.onItemSelectedListener = itemSelectedListener
         selectAll = requireView().findViewById(R.id.selectAll)
+        btnNext = requireView().findViewById(R.id.next)
+        btnPrevious = requireView().findViewById(R.id.previous)
+        spnItemsPerPage = requireView().findViewById(R.id.spn_items_per_page)
+        ltPagination = requireView().findViewById(R.id.ltPagination)
+
         checkList()
+
         selectAll.setOnClickListener {
-            val allSelected = selectedItems?.size == adapterCourses.getCourseList().size
+            val allSelected = adapterCourses.areAllSelected()
             adapterCourses.selectAllItems(!allSelected)
-            if (allSelected) {
-                selectAll.isChecked = false
-                selectAll.text = getString(R.string.select_all)
+            selectAll.isChecked = !allSelected
+            selectAll.text = if (allSelected) {
+                getString(R.string.select_all)
             } else {
-                selectAll.isChecked = true
-                selectAll.text = getString(R.string.unselect_all)
+                getString(R.string.unselect_all)
             }
         }
     }
@@ -239,7 +338,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         val li: MutableList<RealmTag> = ArrayList()
         li.add(tag)
         searchTags = li
-        tvSelected.text = R.string.selected.toString() + tag.name
+        tvSelected.text = "${R.string.selected}${tag.name}"
         adapterCourses.setCourseList(filterCourseByTag(etSearch.text.toString(), li))
         showNoData(tvMessage, adapterCourses.itemCount, "courses")
     }
