@@ -7,6 +7,7 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.request.RequestOptions
 import org.ole.planet.myplanet.databinding.ActivityImageViewerBinding
+import org.ole.planet.myplanet.utilities.FileUtils
 import java.io.File
 import java.util.regex.Pattern
 
@@ -24,15 +25,14 @@ class ImageViewerActivity : AppCompatActivity() {
         val isFullPath = intent.getBooleanExtra("isFullPath", false)
         val imageOpenIntent = intent
         fileName = imageOpenIntent.getStringExtra("TOUCHED_FILE")
-        if (fileName != null && fileName?.isNotEmpty() == true) {
-            val regex = Regex(".+/([^/]+\\.(jpg|jpeg|png|gif|bmp))")
-
-            val matchResult = regex.find(fileName ?: "")
-            val nameWithExtension = matchResult?.groupValues?.get(1)
-            val nameWithoutExtension = nameWithExtension?.substringBefore(".")
-            activityImageViewerBinding.imageFileName.text = nameWithoutExtension
+        if (!fileName.isNullOrEmpty()) {
+            activityImageViewerBinding.imageFileName.text = FileUtils.nameWithoutExtension(fileName)
+            activityImageViewerBinding.imageFileName.visibility = View.VISIBLE
+        } else {
+            activityImageViewerBinding.imageFileName.text = "No file selected"
             activityImageViewerBinding.imageFileName.visibility = View.VISIBLE
         }
+
         if (fileName?.matches(".*[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}.*".toRegex()) == true) {
             displayCapturedImage()
         } else {
