@@ -9,6 +9,7 @@ import android.graphics.Color
 import android.graphics.PorterDuff
 import android.net.Uri
 import android.text.TextUtils
+import android.util.Log
 import android.view.View
 import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
@@ -42,7 +43,11 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action == DashboardActivity.MESSAGE_PROGRESS) {
                 val download = intent.getParcelableExtra<Download>("download")
-                checkDownloadResult(download)
+                val fromSync = intent.getBooleanExtra("fromSync", false)
+                Log.d("Download", "onReceive: $fromSync")
+                if (!fromSync) {
+                    checkDownloadResult(download)
+                }
             }
         }
     }

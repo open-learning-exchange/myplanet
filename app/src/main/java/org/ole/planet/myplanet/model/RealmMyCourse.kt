@@ -1,8 +1,10 @@
 package org.ole.planet.myplanet.model
 
+import android.content.Context.MODE_PRIVATE
 import android.content.SharedPreferences
 import android.text.TextUtils
 import android.util.Base64
+import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Realm
@@ -11,9 +13,10 @@ import io.realm.RealmObject
 import io.realm.RealmResults
 import io.realm.annotations.PrimaryKey
 import io.realm.kotlin.where
-import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.createStepResource
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
+import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.regex.Pattern
@@ -74,6 +77,7 @@ open class RealmMyCourse : RealmObject() {
     companion object {
         @JvmStatic
         fun insertMyCourses(userId: String?, myCousesDoc: JsonObject?, mRealm: Realm) {
+            val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
             }
@@ -97,7 +101,6 @@ open class RealmMyCourse : RealmObject() {
                 val concatenatedLink = "$baseUrl/$link"
                 concatenatedLinks.add(concatenatedLink)
             }
-            Utilities.openDownloadService(MainApplication.context, concatenatedLinks)
             myMyCoursesDB?.method = JsonUtils.getString("method", myCousesDoc)
             myMyCoursesDB?.gradeLevel = JsonUtils.getString("gradeLevel", myCousesDoc)
             myMyCoursesDB?.subjectLevel = JsonUtils.getString("subjectLevel", myCousesDoc)
@@ -117,11 +120,13 @@ open class RealmMyCourse : RealmObject() {
                 step.description = JsonUtils.getString("description", stepJson)
                 val stepDescription = JsonUtils.getString("description", stepJson)
                 val stepLinks = extractLinks(stepDescription)
-                val stepConcatenatedLinks = ArrayList<String>()
                 for (stepLink in stepLinks) {
                     val concatenatedLink = "$baseUrl/$stepLink"
-                    stepConcatenatedLinks.add(concatenatedLink)
+                    concatenatedLinks.add(concatenatedLink)
                 }
+                val jsonConcatenatedLinks = Gson().toJson(concatenatedLinks)
+                settings.edit().putString("concatenated_links", jsonConcatenatedLinks).apply()
+//                Utilities.openDownloadService(context, concatenatedLinks)
                 insertCourseStepsAttachments(myMyCoursesDB?.courseId, step_id, JsonUtils.getJsonArray("resources", stepJson), mRealm)
                 insertExam(stepJson, mRealm, step_id, i + 1, myMyCoursesDB?.courseId)
                 step.noOfResources = JsonUtils.getJsonArray("resources", stepJson).size()
