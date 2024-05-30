@@ -289,9 +289,15 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     override fun onDestroy() {
         super.onDestroy()
         profileDbHandler.onDestory()
-        myCoursesResults.removeChangeListener(myCoursesChangeListener)
-        myTeamsResults.removeChangeListener(myTeamsChangeListener)
-        offlineActivitiesResults.removeChangeListener(offlineActivitiesChangeListener)
+        if (::myCoursesResults.isInitialized) {
+            myCoursesResults.removeChangeListener(myCoursesChangeListener)
+        }
+        if (::myTeamsResults.isInitialized) {
+            myTeamsResults.removeChangeListener(myTeamsChangeListener)
+        }
+        if (::offlineActivitiesResults.isInitialized) {
+            offlineActivitiesResults.removeChangeListener(offlineActivitiesChangeListener)
+        }
         mRealm.close()
     }
 
