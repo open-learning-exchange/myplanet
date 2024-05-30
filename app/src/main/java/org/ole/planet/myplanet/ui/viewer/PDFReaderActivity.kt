@@ -17,6 +17,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.service.AudioRecorderService
 import org.ole.planet.myplanet.service.AudioRecorderService.AudioRecordListener
 import org.ole.planet.myplanet.ui.resources.AddResourceFragment
+import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.IntentUtils.openAudioFile
 import org.ole.planet.myplanet.utilities.NotificationUtil.cancellAll
 import org.ole.planet.myplanet.utilities.NotificationUtil.create
@@ -57,12 +58,11 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
     private fun renderPdfFile() {
         val pdfOpenIntent = intent
         fileName = pdfOpenIntent.getStringExtra("TOUCHED_FILE")
-        if (fileName != null && fileName?.isNotEmpty() == true) {
-            val regex = Regex(".+/(.+\\.pdf)")
-            val matchResult = regex.find(fileName ?: "")
-            val nameWithExtension = matchResult?.groupValues?.get(1)
-            val nameWithoutExtension = nameWithExtension?.substringBeforeLast(".")
-            activityPdfreaderBinding.pdfFileName.text = nameWithoutExtension
+        if (!fileName.isNullOrEmpty()) {
+            activityPdfreaderBinding.pdfFileName.text = FileUtils.nameWithoutExtension(fileName)
+            activityPdfreaderBinding.pdfFileName.visibility = View.VISIBLE
+        } else {
+            activityPdfreaderBinding.pdfFileName.text = "No file selected"
             activityPdfreaderBinding.pdfFileName.visibility = View.VISIBLE
         }
         val file = File(getExternalFilesDir(null), "ole/$fileName")
