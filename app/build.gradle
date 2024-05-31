@@ -125,7 +125,7 @@ dependencies {
 
     implementation 'com.mikepenz:google-material-typeface:3.0.1.1.original@aar'
     implementation 'com.mikepenz:fontawesome-typeface:5.3.1.1@aar'
-    implementation 'com.mikepenz:octicons-typeface:3.2.0.5@aar'
+    implementation 'com.mikepenz:octicons-typeface:11.1.0.9-kotlin@aar'
     implementation 'com.mikepenz:itemanimators:1.1.0@aar'
     implementation 'com.mikepenz:crossfader:1.6.0@aar'
     implementation 'com.mikepenz:crossfadedrawerlayout:1.1.0@aar'
