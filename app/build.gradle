@@ -124,7 +124,7 @@ dependencies {
     implementation 'pl.droidsonroids.gif:android-gif-drawable:1.2.28'
 
     implementation 'com.mikepenz:google-material-typeface:3.0.1.1.original@aar'
-    implementation 'com.mikepenz:fontawesome-typeface:5.3.1.1@aar'
+    implementation 'com.mikepenz:fontawesome-typeface:5.13.3.1-kotlin@aar'
     implementation 'com.mikepenz:octicons-typeface:3.2.0.5@aar'
     implementation 'com.mikepenz:itemanimators:1.1.0@aar'
     implementation 'com.mikepenz:crossfader:1.6.0@aar'
