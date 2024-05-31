@@ -54,7 +54,6 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         userVisibleHint = false
     }
 
-    override fun playVideo(videoType: String, items: RealmMyLibrary) {}
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentCourseStepBinding = FragmentCourseStepBinding.inflate(inflater, container, false)
         dbService = DatabaseService(requireActivity())
