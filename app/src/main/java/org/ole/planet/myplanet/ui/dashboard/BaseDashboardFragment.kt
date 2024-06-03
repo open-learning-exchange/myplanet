@@ -97,6 +97,10 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             imageView.setImageResource(R.drawable.profile)
         }
 
+        if (mRealm.isInTransaction) {
+            mRealm.commitTransaction()
+        }
+
         offlineActivitiesResults = mRealm.where(RealmOfflineActivity::class.java)
             .equalTo("userName", profileDbHandler.userModel?.name)
             .equalTo("type", KEY_LOGIN)
@@ -342,6 +346,9 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             showNotificationFragment()
         }
 
+        if (mRealm.isInTransaction) {
+            mRealm.commitTransaction()
+        }
         myCoursesResults = RealmMyCourse.getMyByUserId(mRealm, settings)
         myTeamsResults = RealmMyTeam.getMyTeamsByUserId(mRealm, settings)
 
