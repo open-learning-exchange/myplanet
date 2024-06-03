@@ -25,7 +25,6 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="center_vertical"
                     android:background="@color/colorPrimary"
                     android:minHeight="?attr/actionBarSize"
                     android:padding="8dp">
@@ -51,7 +50,6 @@
                         android:layout_weight="3"
                         android:textAllCaps="true"
                         android:textColor="@color/md_white_1000"
-                        android:textSize="@dimen/text_size_mid"
                         android:textStyle="bold" />
 
                     <ImageButton
@@ -61,8 +59,8 @@
                         android:layout_height="@dimen/_50dp"
                         android:layout_marginEnd="8dp"
                         android:background="@drawable/buttonyellow"
-                        android:padding="8dp"
                         android:text="@string/download"
+                        android:layout_gravity="center_vertical"
                         app:srcCompat="@drawable/ic_download"
                         app:tint="@color/md_black_1000"
                         android:contentDescription="@string/download" />
@@ -74,7 +72,6 @@
                         android:layout_height="@dimen/_50dp"
                         android:layout_gravity="center_vertical"
                         android:background="@drawable/buttonyellow"
-                        android:padding="8dp"
                         android:src="@drawable/close_x"
                         android:text="@string/btn_remove_lib"
                         app:tint="@color/md_black_1000"
@@ -84,29 +81,27 @@
 
                 <androidx.core.widget.NestedScrollView
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="center">
 
                     <LinearLayout
                         android:layout_width="match_parent"
-                        android:layout_height="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:gravity="center"
                         android:orientation="vertical">
 
 
                         <LinearLayout
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_gravity="center"
-                            android:gravity="center"
                             android:orientation="vertical"
                             android:padding="@dimen/padding_normal">
 
                             <LinearLayout
                                 android:id="@+id/ll_rating"
                                 android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_gravity="center"
-                                android:gravity="center">
+                                android:layout_height="wrap_content">
 
                                 <LinearLayout
                                     android:layout_width="wrap_content"
@@ -168,6 +163,7 @@
                             </LinearLayout>
 
                             <LinearLayout
+                                android:id="@+id/llAuthor"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content">
 
@@ -186,6 +182,7 @@
                             </LinearLayout>
 
                             <LinearLayout
+                                android:id="@+id/llPublisher"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content">
 
@@ -204,6 +201,7 @@
                             </LinearLayout>
 
                             <LinearLayout
+                                android:id="@+id/llMedia"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content">
 
@@ -222,6 +220,7 @@
                             </LinearLayout>
 
                             <LinearLayout
+                                android:id="@+id/llLanguage"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content">
 
@@ -240,6 +239,7 @@
                             </LinearLayout>
 
                             <LinearLayout
+                                android:id="@+id/llSubject"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content">
 
@@ -258,6 +258,7 @@
                             </LinearLayout>
 
                             <LinearLayout
+                                android:id="@+id/llLicense"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content">
 
@@ -276,6 +277,7 @@
                             </LinearLayout>
 
                             <LinearLayout
+                                android:id="@+id/llResource"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content">
 
@@ -294,6 +296,7 @@
                             </LinearLayout>
 
                             <LinearLayout
+                                android:id="@+id/llType"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content">
 
