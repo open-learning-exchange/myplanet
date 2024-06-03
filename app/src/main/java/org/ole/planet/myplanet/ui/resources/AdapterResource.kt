@@ -71,14 +71,14 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
             holder.bind()
             holder.rowLibraryBinding.title.text = libraryList[position]?.title
             setMarkdownText(holder.rowLibraryBinding.description, libraryList[position]?.description!!)
-            holder.rowLibraryBinding.timesRated.text = "${libraryList[position]?.timesRated}${context.getString(R.string.total)}"
+            holder.rowLibraryBinding.timesRated.text = "${libraryList[position]?.timesRated} ${context.getString(R.string.total)}"
             holder.rowLibraryBinding.checkbox.isChecked = selectedItems.contains(libraryList[position])
             holder.rowLibraryBinding.checkbox.contentDescription = "${context.getString(R.string.selected)} ${libraryList[position]?.title}"
             holder.rowLibraryBinding.rating.text =
                 if (TextUtils.isEmpty(libraryList[position]?.averageRating)) {
                     "0.0"
                 } else {
-                    String.format("%.1f", libraryList[position]?.averageRating!!.toDouble())
+                    String.format("%.1f", libraryList[position]?.averageRating?.toDouble())
                 }
             holder.rowLibraryBinding.tvDate.text = libraryList[position]?.createdDate?.let { formatDate(it, "MMM dd, yyyy") }
             displayTagCloud(holder.rowLibraryBinding.flexboxDrawable, position)
