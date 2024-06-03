@@ -137,7 +137,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                 library.removeUserId(profileDbHandler.userModel?.id)
                 onRemove(lRealm, "resources", profileDbHandler.userModel?.id, libraryId)
             }
-            Utilities.toast(activity, getString(R.string.resources) + if (isAdd) getString(R.string.added_to) else getString(R.string.removed_from) + getString(R.string.my_library))
+            Utilities.toast(activity, getString(R.string.resources) +" " + if (isAdd) getString(R.string.added_to) + getString(R.string.my_library) else getString(R.string.removed_from) + getString(R.string.my_library))
             setLibraryData()
         }
         fragmentLibraryDetailBinding.btnBack.setOnClickListener {
