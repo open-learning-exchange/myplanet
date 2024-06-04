@@ -9,6 +9,7 @@ import com.example.jean.jcplayer.general.JcStatus
 import com.example.jean.jcplayer.model.JcAudio
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityAudioPlayerBinding
+import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import java.io.File
 import java.util.regex.Pattern
@@ -33,6 +34,7 @@ class AudioPlayerActivity : AppCompatActivity(), JcPlayerManagerListener {
     }
 
     private fun playDownloadedAudio() {
+        val extractedFileName: String = FileUtils.nameWithoutExtension(filePath).toString()
         val fullPath: String? = if (isFullPath) {
             filePath
         } else {
@@ -40,12 +42,13 @@ class AudioPlayerActivity : AppCompatActivity(), JcPlayerManagerListener {
             File(basePath, "ole/$filePath").absolutePath
         }
         fullPath?.let {
-            JcAudio.createFromFilePath(it)
+            JcAudio.createFromFilePath(extractedFileName,it)
         }?.let { jcAudios.add(it) }
         initializeJCPlayer()
     }
 
     private fun playRecordedAudio() {
+        val extractedFileName: String = FileUtils.nameWithoutExtension(filePath).toString()
         val uuidPattern = Pattern.compile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/")
         val matcher = filePath?.let { uuidPattern.matcher(it) }
         if (matcher != null) {
@@ -54,7 +57,7 @@ class AudioPlayerActivity : AppCompatActivity(), JcPlayerManagerListener {
             }
         }
         filePath?.let {
-            JcAudio.createFromFilePath(it)
+            JcAudio.createFromFilePath(extractedFileName,it)
         }?.let { jcAudios.add(it) }
         initializeJCPlayer()
     }
