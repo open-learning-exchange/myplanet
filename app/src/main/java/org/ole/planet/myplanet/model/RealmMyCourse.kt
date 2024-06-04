@@ -4,6 +4,7 @@ import android.content.Context.MODE_PRIVATE
 import android.content.SharedPreferences
 import android.text.TextUtils
 import android.util.Base64
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -109,10 +110,7 @@ open class RealmMyCourse : RealmObject() {
             val courseStepsJsonArray = JsonUtils.getJsonArray("steps", myCousesDoc)
             val courseStepsList = mutableListOf<RealmCourseStep>()
             for (i in 0 until courseStepsJsonArray.size()) {
-                val step_id = Base64.encodeToString(
-                    courseStepsJsonArray[i].toString().toByteArray(),
-                    Base64.NO_WRAP
-                )
+                val step_id = Base64.encodeToString(courseStepsJsonArray[i].toString().toByteArray(), Base64.NO_WRAP)
                 val stepJson = courseStepsJsonArray[i].asJsonObject
                 val step = RealmCourseStep()
                 step.id = step_id
@@ -124,8 +122,8 @@ open class RealmMyCourse : RealmObject() {
                     val concatenatedLink = "$baseUrl/$stepLink"
                     concatenatedLinks.add(concatenatedLink)
                 }
-                val jsonConcatenatedLinks = Gson().toJson(concatenatedLinks)
-                settings.edit().putString("concatenated_links", jsonConcatenatedLinks).apply()
+//                val jsonConcatenatedLinks = Gson().toJson(concatenatedLinks)
+//                settings.edit().putString("concatenated_links", jsonConcatenatedLinks).apply()
 //                Utilities.openDownloadService(context, concatenatedLinks)
                 insertCourseStepsAttachments(myMyCoursesDB?.courseId, step_id, JsonUtils.getJsonArray("resources", stepJson), mRealm)
                 insertExam(stepJson, mRealm, step_id, i + 1, myMyCoursesDB?.courseId)
@@ -136,6 +134,10 @@ open class RealmMyCourse : RealmObject() {
                     mRealm.commitTransaction()
                 }
             }
+//            logLargeString("ollonde all", "$concatenatedLinks")
+            val jsonConcatenatedLinks = Gson().toJson(concatenatedLinks)
+            settings.edit().putString("concatenated_links", jsonConcatenatedLinks).apply()
+//            Log.d("ollonde concatesize", "${concatenatedLinks.size}")
 
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
@@ -143,6 +145,15 @@ open class RealmMyCourse : RealmObject() {
             myMyCoursesDB?.courseSteps = RealmList()
             myMyCoursesDB?.courseSteps?.addAll(courseStepsList)
             mRealm.commitTransaction()
+        }
+
+        fun logLargeString(tag: String, content: String) {
+            if (content.length > 3000) {
+                Log.d(tag, content.substring(0, 3000))
+                logLargeString(tag, content.substring(3000))
+            } else {
+                Log.d(tag, content)
+            }
         }
 
         private fun extractLinks(text: String?): ArrayList<String> {
