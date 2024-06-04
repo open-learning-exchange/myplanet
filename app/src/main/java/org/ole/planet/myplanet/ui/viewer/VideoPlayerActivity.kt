@@ -25,7 +25,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback {
     private lateinit var binding: ActivityExoPlayerVideoBinding
-    private lateinit var exoPlayer: ExoPlayer
+    private var exoPlayer: ExoPlayer? = null
     private var auth: String = ""
     private var videoURL: String = ""
     private lateinit var settings: SharedPreferences
@@ -48,9 +48,7 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
 
         val callback = object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if (this@VideoPlayerActivity::exoPlayer.isInitialized) {
-                    exoPlayer.stop()
-                }
+                releasePlayer()
                 finish()
             }
         }
@@ -83,9 +81,9 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
             .createMediaSource(MediaItem.fromUri(videoUri))
 
         binding.exoPlayerSimple.player = exoPlayer
-        exoPlayer.setMediaSource(mediaSource)
-        exoPlayer.prepare()
-        exoPlayer.playWhenReady = true
+        exoPlayer?.setMediaSource(mediaSource)
+        exoPlayer?.prepare()
+        exoPlayer?.playWhenReady = true
     }
 
     @OptIn(UnstableApi::class)
@@ -110,9 +108,24 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
             audioSource = ProgressiveMediaSource.Factory(factory)
                 .createMediaSource(MediaItem.fromUri(fileDataSource.uri!!))
             binding.exoPlayerSimple.player = exoPlayer
-            exoPlayer.setMediaSource(audioSource)
-            exoPlayer.prepare()
-            exoPlayer.playWhenReady = true
+            exoPlayer?.setMediaSource(audioSource)
+            exoPlayer?.prepare()
+            exoPlayer?.playWhenReady = true
         }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        releasePlayer()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        releasePlayer()
+    }
+
+    private fun releasePlayer() {
+        exoPlayer?.release()
+        exoPlayer = null
     }
 }

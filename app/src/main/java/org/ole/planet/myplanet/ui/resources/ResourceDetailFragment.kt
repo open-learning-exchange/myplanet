@@ -5,6 +5,7 @@ import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
 import android.widget.Toast
 import io.realm.Realm
 import org.ole.planet.myplanet.R
@@ -60,14 +61,18 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     }
 
     private fun setLibraryData() {
-        fragmentLibraryDetailBinding.tvTitle.text = String.format("%s%s", if (openFrom?.isEmpty() == true) "" else "$openFrom-", library.title)
-        fragmentLibraryDetailBinding.tvAuthor.text = library.author
-        fragmentLibraryDetailBinding.tvPublished.text = library.publisher
-        fragmentLibraryDetailBinding.tvMedia.text = library.mediaType
-        fragmentLibraryDetailBinding.tvSubject.text = library.subjectsAsString
-        fragmentLibraryDetailBinding.tvLanguage.text = library.language
-        fragmentLibraryDetailBinding.tvLicense.text = library.linkToLicense
-        fragmentLibraryDetailBinding.tvResource.text = listToString(library.resourceFor)
+        with(fragmentLibraryDetailBinding) {
+            tvTitle.text = if (openFrom.isNullOrEmpty()) library.title else "$openFrom-${library.title}"
+            timesRated.text = "${library.timesRated} ${requireContext().getString(R.string.total)}"
+            setTextViewVisibility(tvAuthor, llAuthor, library.author)
+            setTextViewVisibility(tvPublished, llPublisher, library.publisher)
+            setTextViewVisibility(tvMedia, llMedia, library.mediaType)
+            setTextViewVisibility(tvSubject, llSubject, library.subjectsAsString)
+            setTextViewVisibility(tvLanguage, llLanguage, library.language)
+            setTextViewVisibility(tvLicense, llLicense, library.linkToLicense)
+            setTextViewVisibility(tvResource, llResource, listToString(library.resourceFor))
+            setTextViewVisibility(tvType, llType, library.resourceType)
+        }
         profileDbHandler.setResourceOpenCount(library)
         try {
             onRatingChanged()
@@ -91,6 +96,15 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             fragmentLibraryDetailBinding.btnDownload.setImageResource(R.drawable.ic_play)
         }
         setClickListeners()
+    }
+
+    private fun setTextViewVisibility(textView: TextView, layout: View, text: String?) {
+        if (!text.isNullOrEmpty()) {
+            textView.text = text
+            layout.visibility = View.VISIBLE
+        } else {
+            layout.visibility = View.GONE
+        }
     }
 
     private fun setClickListeners() {
@@ -123,7 +137,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                 library.removeUserId(profileDbHandler.userModel?.id)
                 onRemove(lRealm, "resources", profileDbHandler.userModel?.id, libraryId)
             }
-            Utilities.toast(activity, getString(R.string.resources) + if (isAdd) getString(R.string.added_to) else getString(R.string.removed_from) + getString(R.string.my_library))
+            Utilities.toast(activity, getString(R.string.resources) +" " + if (isAdd) getString(R.string.added_to) + getString(R.string.my_library) else getString(R.string.removed_from) + getString(R.string.my_library))
             setLibraryData()
         }
         fragmentLibraryDetailBinding.btnBack.setOnClickListener {
