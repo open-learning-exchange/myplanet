@@ -19,6 +19,7 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.ManagerSync
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.insert
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.insertMyCourses
+import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.insertMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.removeDeletedResource
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.save
@@ -239,6 +240,7 @@ class SyncManager private constructor(private val context: Context) {
             }
             "teams" -> insertMyTeams(resourceDoc, mRealm)
         }
+        saveConcatenatedLinksToPrefs()
     }
 
     companion object {

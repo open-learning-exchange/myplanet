@@ -10,7 +10,6 @@ import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
@@ -24,8 +23,6 @@ import androidx.fragment.app.Fragment
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayout.OnTabSelectedListener
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import com.mikepenz.materialdrawer.AccountHeader
 import com.mikepenz.materialdrawer.AccountHeaderBuilder
 import com.mikepenz.materialdrawer.Drawer
@@ -204,13 +201,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
                 }
             }
         })
-        val storedJsonConcatenatedLinks = settings.getString("concatenated_links", null)
-        if (storedJsonConcatenatedLinks != null) {
-            val storedConcatenatedLinks: ArrayList<String> = Gson().fromJson(
-                storedJsonConcatenatedLinks, object : TypeToken<ArrayList<String>>() {}.type
-            )
-            Log.d("ollonde all", "$storedConcatenatedLinks")
-        }
     }
 
     private fun hideWifi() {
