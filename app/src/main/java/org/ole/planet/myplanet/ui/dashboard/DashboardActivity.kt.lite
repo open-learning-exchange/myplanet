@@ -57,6 +57,7 @@ import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.Utilities.toast
 
 class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, BottomNavigationView.OnNavigationItemSelectedListener {
     private lateinit var activityDashboardBinding: ActivityDashboardBinding
