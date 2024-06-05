@@ -108,13 +108,14 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         val i = getCurrentProgress(steps, mRealm, userModel?.id, courseId)
         if (i < steps.size) fragmentTakeCourseBinding.courseProgress.secondaryProgress = i + 1
         fragmentTakeCourseBinding.courseProgress.progress = i
-        fragmentTakeCourseBinding.courseProgress.visibility =
-            if (currentCourse?.userId?.contains(userModel?.id) == true) {
-                View.VISIBLE
-            }
-            else {
-                View.GONE
-            }
+        if (currentCourse?.userId?.contains(userModel?.id) == true) {
+            fragmentTakeCourseBinding.nextStep.visibility = View.VISIBLE
+            fragmentTakeCourseBinding.courseProgress.visibility = View.VISIBLE
+        } else {
+            fragmentTakeCourseBinding.nextStep.visibility = View.GONE
+            fragmentTakeCourseBinding.previousStep.visibility = View.GONE
+            fragmentTakeCourseBinding.courseProgress.visibility = View.GONE
+        }
     }
 
     override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {}
