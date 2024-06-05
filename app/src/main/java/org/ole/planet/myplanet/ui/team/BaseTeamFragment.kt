@@ -17,11 +17,13 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
     lateinit var team: RealmMyTeam
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        teamId = parentFragment?.arguments?.getString("id", "") ?: arguments?.getString("id", "") ?: ""
+        settings = requireActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val sParentcode = settings?.getString("parentCode", "")
+        val communityName = settings?.getString("communityName", "")
+        teamId = parentFragment?.arguments?.getString("id", "") ?: "$communityName@$sParentcode"
         dbService = DatabaseService(requireActivity())
         mRealm = dbService.realmInstance
         user = profileDbHandler.userModel?.let { mRealm.copyFromRealm(it) }
-
         team = try {
             mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst() ?: throw IllegalArgumentException("Team not found for ID: $teamId")
         } catch (e: IllegalArgumentException) {
@@ -31,8 +33,6 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
                 throw e
             }
         }
-
-        settings = requireActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     }
 
     override fun setData(list: List<RealmNews?>?) {}

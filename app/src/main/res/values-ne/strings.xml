@@ -1037,5 +1037,6 @@
     <string name="feedback_list">प्रतिक्रिया सूची</string>
     <string name="enterprise_list">उद्यम सूची</string>
     <string name="list_of_teams">टोलीहरूको सूची</string>
+    <string name="sign_up_to_chat">कृपया एआई च्याटमा पहुँच गर्न साइन अप गर्नुहोस्।</string>
 
 </resources>

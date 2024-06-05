@@ -1037,5 +1037,6 @@
     <string name="feedback_list">liste des retours</string>
     <string name="enterprise_list">liste des entreprises</string>
     <string name="list_of_teams">liste des équipes</string>
+    <string name="sign_up_to_chat">Veuillez vous inscrire pour accéder au chat IA</string>
 
 </resources>
