@@ -59,6 +59,7 @@ import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.Utilities.toast
 
 class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, BottomNavigationView.OnNavigationItemSelectedListener {
     private lateinit var activityDashboardBinding: ActivityDashboardBinding
@@ -147,7 +148,13 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
         activityDashboardBinding.appBarBell.imgLogo.setOnClickListener { result?.openDrawer() }
         activityDashboardBinding.appBarBell.bellToolbar.setOnMenuItemClickListener { item ->
             when (item.itemId) {
-                R.id.action_chat -> openCallFragment(ChatHistoryListFragment())
+                R.id.action_chat -> {
+                    if (user?.id?.startsWith("guest") == false) {
+                        openCallFragment(ChatHistoryListFragment())
+                    } else {
+                        toast(this, getString(R.string.sign_up_to_chat))
+                    }
+                }
                 R.id.menu_goOnline -> wifiStatusSwitch()
                 R.id.action_sync -> {
                     isServerReachable(Utilities.getUrl())

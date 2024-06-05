@@ -1037,5 +1037,6 @@
     <string name="feedback_list">قائمة التغذية الراجعة</string>
     <string name="enterprise_list">قائمة الشركات</string>
     <string name="list_of_teams">قائمة الفرق</string>
+    <string name="sign_up_to_chat">يرجى التسجيل للوصول إلى الدردشة الذكية</string>
 
 </resources>
