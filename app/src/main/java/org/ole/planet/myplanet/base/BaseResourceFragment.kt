@@ -163,7 +163,7 @@ abstract class BaseResourceFragment : Fragment() {
                 override fun isAvailable() {
                     if (urls.isNotEmpty()) {
                         prgDialog.show()
-                        Utilities.openDownloadService(activity, urls)
+                        Utilities.openDownloadService(activity, urls, false)
                     }
                 }
 
