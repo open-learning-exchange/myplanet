@@ -10,7 +10,6 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.text.TextUtils
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -104,20 +103,13 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     private fun openIntent(items: RealmMyLibrary, typeClass: Class<*>?) {
         val fileOpenIntent = Intent(activity, typeClass)
         if (items.resourceLocalAddress?.contains("ole/audio") == true || items.resourceLocalAddress?.contains("ole/video") == true) {
-            Log.d("openIntent", "Touched File Before Passing: ${items.resourceLocalAddress}")
-            Log.d("openIntent", "Resource Title Before Passing: ${items.title}")
             fileOpenIntent.putExtra("TOUCHED_FILE", items.resourceLocalAddress)
             fileOpenIntent.putExtra("RESOURCE_TITLE", items.title)
 
         } else {
             fileOpenIntent.putExtra("TOUCHED_FILE", items.id + "/" + items.resourceLocalAddress)
             fileOpenIntent.putExtra("RESOURCE_TITLE", items.title)
-            Log.d("openIntent", "Touched File After Passing: ${items.resourceLocalAddress}")
-            Log.d("openIntent", "Resource Title After Passing: ${items.title}")
         }
-
-        Log.d("openIntent", "Touched File After Passing: ${items.resourceLocalAddress}")
-        Log.d("openIntent", "Resource Title After Passing: ${items.title}")
         startActivity(fileOpenIntent)
     }
     private fun openPdf(item: RealmMyLibrary) {
