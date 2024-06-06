@@ -50,6 +50,7 @@ class SyncManager private constructor(private val context: Context) {
     fun start(listener: SyncListener?) {
         this.listener = listener
         if (!isSyncing) {
+            settings.edit().remove("concatenated_links").apply()
             listener?.onSyncStarted()
             authenticateAndSync()
         }

@@ -145,7 +145,7 @@ open class RealmMyCourse : RealmObject() {
 
         private fun extractLinks(text: String?): ArrayList<String> {
             val links = ArrayList<String>()
-            val pattern = Pattern.compile("!\\[.*?\\]\\((.*?)\\)")
+            val pattern = Pattern.compile("!\\[.*?]\\((.*?)\\)")
             val matcher = text?.let { pattern.matcher(it) }
             if (matcher != null) {
                 while (matcher.find()) {
