@@ -22,6 +22,7 @@ import org.ole.planet.myplanet.callback.OnCourseItemSelected
 import org.ole.planet.myplanet.callback.TagClickListener
 import org.ole.planet.myplanet.model.RealmCourseProgress.Companion.getCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
+import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmRating.Companion.getRatings
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTag
@@ -57,6 +58,16 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         adapterCourses.setmRealm(mRealm)
         adapterCourses.setListener(this)
         adapterCourses.setRatingChangeListener(this)
+
+        if (isMyCourseLib) {
+            val courseIds = courseList.mapNotNull { it?.id }
+            resources = mRealm.where(RealmMyLibrary::class.java)
+                .`in`("courseId", courseIds.toTypedArray())
+                .equalTo("resourceOffline", false)
+                .isNotNull("resourceLocalAddress")
+                .findAll()
+            courseLib = "courses"
+        }
         return adapterCourses
     }
 
@@ -289,6 +300,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         if (isMyCourseLib) {
             val args = Bundle()
             args.putBoolean("isMyCourseLib", true)
+            args.putString("courseLib", courseLib)
+            args.putSerializable("resources", resources?.let { ArrayList(it) })
             fragment.arguments = args
             val transaction = parentFragmentManager.beginTransaction()
             transaction.replace(R.id.fragment_container, fragment)
