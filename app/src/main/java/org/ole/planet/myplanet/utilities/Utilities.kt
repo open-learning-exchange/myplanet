@@ -54,9 +54,10 @@ object Utilities {
         return "${getUrl()}/_users/$userId/$imageName"
     }
 
-    fun openDownloadService(context: Context?, urls: ArrayList<String>) {
+    fun openDownloadService(context: Context?, urls: ArrayList<String>, fromSync: Boolean) {
         val intent = Intent(context, MyDownloadService::class.java)
         intent.putStringArrayListExtra("urls", urls)
+        intent.putExtra("fromSync", fromSync)
         context?.startService(intent)
     }
 
