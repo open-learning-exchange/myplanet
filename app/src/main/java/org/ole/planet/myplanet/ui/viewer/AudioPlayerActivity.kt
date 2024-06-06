@@ -33,7 +33,6 @@ class AudioPlayerActivity : AppCompatActivity(), JcPlayerManagerListener {
     }
 
     private fun playDownloadedAudio() {
-
         val resourceTitle: String = intent.getStringExtra("RESOURCE_TITLE").toString()
         val fullPath: String? = if (isFullPath) {
             filePath
