@@ -3,21 +3,26 @@ package org.ole.planet.myplanet.ui.viewer
 import android.os.Bundle
 import android.view.MenuItem
 import android.view.View
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.example.jean.jcplayer.JcPlayerManagerListener
 import com.example.jean.jcplayer.general.JcStatus
 import com.example.jean.jcplayer.model.JcAudio
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityAudioPlayerBinding
+import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import java.io.File
 import java.util.regex.Pattern
+
 
 class AudioPlayerActivity : AppCompatActivity(), JcPlayerManagerListener {
     private lateinit var activityAudioPlayerBinding: ActivityAudioPlayerBinding
     private lateinit var jcAudios: ArrayList<JcAudio>
     private var isFullPath = false
     private var filePath: String? = null
+    private lateinit var extractedFileName: String
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         activityAudioPlayerBinding = ActivityAudioPlayerBinding.inflate(layoutInflater)
@@ -30,6 +35,10 @@ class AudioPlayerActivity : AppCompatActivity(), JcPlayerManagerListener {
         } else {
             playDownloadedAudio()
         }
+
+        extractedFileName = FileUtils.nameWithoutExtension(filePath).toString()
+        val textView: TextView = findViewById(R.id.textView)
+        textView.text = extractedFileName
     }
 
     private fun playDownloadedAudio() {
