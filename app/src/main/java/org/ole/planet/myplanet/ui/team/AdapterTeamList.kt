@@ -80,6 +80,7 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
             feedbackFragment.arguments = getBundle(list[position])
         }
         itemTeamListBinding.editTeam.setOnClickListener { teamListener?.onEditTeam(list[position]) }
+
         itemTeamListBinding.joinLeave.setOnClickListener {
             if (isMyTeam) {
                 if (RealmMyTeam.isTeamLeader(list[position].teamId, user?.id, mRealm)) {
@@ -108,24 +109,30 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
     }
 
     private fun showActionButton(isMyTeam: Boolean, position: Int) {
+        if (user?.isGuest() == true) {
+            itemTeamListBinding.joinLeave.visibility = View.GONE
+            return
+        }
         if (isMyTeam) {
             if (RealmMyTeam.isTeamLeader(filteredList[position].teamId, user?.id, mRealm)) {
                 itemTeamListBinding.joinLeave.text = context.getString(R.string.leave)
                 itemTeamListBinding.joinLeave.contentDescription = "${context.getString(R.string.leave)} ${filteredList[position].name}"
+                itemTeamListBinding.joinLeave.visibility = View.VISIBLE
             } else {
                 itemTeamListBinding.joinLeave.visibility = View.GONE
-                return
             }
         } else if (filteredList[position].requested(user?.id, mRealm)) {
             itemTeamListBinding.joinLeave.text = context.getString(R.string.requested)
             itemTeamListBinding.joinLeave.isEnabled = false
             itemTeamListBinding.joinLeave.contentDescription = "${context.getString(R.string.requested)} ${filteredList[position].name}"
+            itemTeamListBinding.joinLeave.visibility = View.VISIBLE
         } else {
             itemTeamListBinding.joinLeave.text = context.getString(R.string.request_to_join)
             itemTeamListBinding.joinLeave.contentDescription = "${context.getString(R.string.request_to_join)} ${filteredList[position].name}"
+            itemTeamListBinding.joinLeave.visibility = View.VISIBLE
         }
-        itemTeamListBinding.joinLeave.visibility = View.VISIBLE
     }
+
 
     override fun getItemCount(): Int {
         return filteredList.size
