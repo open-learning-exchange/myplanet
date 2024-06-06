@@ -167,6 +167,10 @@ open class RealmUserModel : RealmObject() {
         return roles.toString().lowercase(Locale.ROOT).contains("leader")
     }
 
+    fun isGuest(): Boolean {
+        return _id?.startsWith("guest_") == true
+    }
+
     override fun toString(): String {
         return "$firstName $lastName"
     }

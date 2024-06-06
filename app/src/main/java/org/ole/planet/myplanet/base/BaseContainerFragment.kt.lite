@@ -104,8 +104,10 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         val fileOpenIntent = Intent(activity, typeClass)
         if (items.resourceLocalAddress?.contains("ole/audio") == true || items.resourceLocalAddress?.contains("ole/video") == true) {
             fileOpenIntent.putExtra("TOUCHED_FILE", items.resourceLocalAddress)
+            fileOpenIntent.putExtra("RESOURCE_TITLE", items.title)
         } else {
             fileOpenIntent.putExtra("TOUCHED_FILE", items.id + "/" + items.resourceLocalAddress)
+            fileOpenIntent.putExtra("RESOURCE_TITLE", items.title)
         }
         startActivity(fileOpenIntent)
     }

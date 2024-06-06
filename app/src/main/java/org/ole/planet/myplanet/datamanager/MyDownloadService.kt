@@ -39,6 +39,7 @@ class MyDownloadService : IntentService("Download Service") {
     private var currentIndex = 0
     private var request: Call<ResponseBody>? = null
     private var completeAll = false
+    private var fromSync = false
     private val databaseService: DatabaseService by lazy {
         DatabaseService(applicationContext)
     }
@@ -60,14 +61,15 @@ class MyDownloadService : IntentService("Download Service") {
             ?.setAutoCancel(true)?.build()
         notificationManager?.notify(0, noti)
         urls = intent?.getStringArrayListExtra("urls")
+        fromSync = intent?.getBooleanExtra("fromSync", false) == true
         for (i in urls?.indices ?: emptyList()) {
             url = urls?.get(i)
             currentIndex = i
-            initDownload()
+            initDownload(fromSync)
         }
     }
 
-    private fun initDownload() {
+    private fun initDownload(fromSync: Boolean) {
         val retrofitInterface = ApiClient.client?.create(ApiInterface::class.java)
         if (retrofitInterface != null) {
             request = retrofitInterface.downloadFile(Utilities.header, url)
@@ -80,25 +82,25 @@ class MyDownloadService : IntentService("Download Service") {
                             responseBody?.let { downloadFile(it) }
                         }
                     } else {
-                        downloadFiled(if (r.code() == 404) "File Not found " else "Connection failed")
+                        downloadFiled(if (r.code() == 404) "File Not found " else "Connection failed", fromSync)
                     }
                 }
             } catch (e: IOException) {
                 e.printStackTrace()
-                e.localizedMessage?.let { downloadFiled(it) }
+                e.localizedMessage?.let { downloadFiled(it, fromSync) }
                 e.printStackTrace()
             }
         }
     }
 
-    private fun downloadFiled(message: String) {
+    private fun downloadFiled(message: String, fromSync: Boolean) {
         notificationBuilder?.setContentText(message)
         notificationManager?.notify(0, notificationBuilder?.build())
         val d = Download()
         completeAll = false
         d.failed = true
         d.message = message
-        sendIntent(d)
+        sendIntent(d, fromSync)
         stopSelf()
     }
 
@@ -138,10 +140,10 @@ class MyDownloadService : IntentService("Download Service") {
 
     private fun checkStorage(fileSize: Long): Boolean {
         if (!FileUtils.externalMemoryAvailable()) {
-            downloadFiled("Download Failed : SD card Not available")
+            downloadFiled("Download Failed : SD card Not available", fromSync)
             return true
         } else if (fileSize > FileUtils.availableExternalMemorySize) {
-            downloadFiled("Download Failed : Not enough storage in SD card")
+            downloadFiled("Download Failed : Not enough storage in SD card", fromSync)
             return true
         }
         return false
@@ -157,15 +159,16 @@ class MyDownloadService : IntentService("Download Service") {
 
     private fun sendNotification(download: Download) {
         download.fileName = "Downloading : " + FileUtils.getFileNameFromUrl(url)
-        sendIntent(download)
+        sendIntent(download, fromSync)
         notificationBuilder?.setProgress(100, download.progress, false)
         notificationBuilder?.setContentText("Downloading file " + download.currentFileSize + "/" + totalFileSize + " KB")
         notificationManager?.notify(0, notificationBuilder?.build())
     }
 
-    private fun sendIntent(download: Download) {
+    private fun sendIntent(download: Download, fromSync: Boolean) {
         val intent = Intent(DashboardActivity.MESSAGE_PROGRESS)
         intent.putExtra("download", download)
+        intent.putExtra("fromSync", fromSync)
         LocalBroadcastManager.getInstance(this@MyDownloadService).sendBroadcast(intent)
     }
 
@@ -181,7 +184,7 @@ class MyDownloadService : IntentService("Download Service") {
             completeAll = true
             download.completeAll = true
         }
-        sendIntent(download)
+        sendIntent(download, fromSync)
         notificationManager?.cancel(0)
         notificationBuilder?.setProgress(0, 0, false)
         notificationBuilder?.setContentText("File Downloaded")

@@ -47,6 +47,13 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         fragmentTeamBinding = FragmentTeamBinding.inflate(inflater, container, false)
         mRealm = DatabaseService(requireContext()).realmInstance
         user = UserProfileDbHandler(requireActivity()).userModel
+
+        if (user?.isGuest() == true) {
+            fragmentTeamBinding.addTeam.visibility = View.GONE
+        } else {
+            fragmentTeamBinding.addTeam.visibility = View.VISIBLE
+        }
+
         fragmentTeamBinding.addTeam.setOnClickListener { createTeamAlert(null) }
 
         teamList = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId")
