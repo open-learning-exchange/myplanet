@@ -11,7 +11,6 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
-import android.util.Log
 import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -449,7 +448,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         val storedJsonConcatenatedLinks = settings.getString("concatenated_links", null)
         if (storedJsonConcatenatedLinks != null) {
             val storedConcatenatedLinks: ArrayList<String> = Gson().fromJson(storedJsonConcatenatedLinks, object : TypeToken<ArrayList<String>>() {}.type)
-            Log.d("ollonde all", "${storedConcatenatedLinks.size}")
             openDownloadService(context, storedConcatenatedLinks, true)
         }
     }
