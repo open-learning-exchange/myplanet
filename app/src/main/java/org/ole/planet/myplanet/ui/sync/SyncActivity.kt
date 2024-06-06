@@ -36,10 +36,13 @@ import androidx.preference.PreferenceManager
 import com.afollestad.materialdialogs.DialogAction
 import com.afollestad.materialdialogs.MaterialDialog
 import com.google.android.material.textfield.TextInputLayout
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import io.realm.Realm
 import io.realm.Sort
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.databinding.AlertGuestLoginBinding
@@ -82,6 +85,7 @@ import org.ole.planet.myplanet.utilities.NotificationUtil.cancellAll
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.Utilities.getRelativeTime
+import org.ole.planet.myplanet.utilities.Utilities.openDownloadService
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -434,8 +438,17 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 syncIconDrawable.selectDrawable(0)
                 syncIcon.invalidateDrawable(syncIconDrawable)
                 showSnack(findViewById(android.R.id.content), getString(R.string.sync_completed))
+                downloadAdditionalResources()
                 cancellAll(this)
             }
+        }
+    }
+
+    private fun downloadAdditionalResources() {
+        val storedJsonConcatenatedLinks = settings.getString("concatenated_links", null)
+        if (storedJsonConcatenatedLinks != null) {
+            val storedConcatenatedLinks: ArrayList<String> = Gson().fromJson(storedJsonConcatenatedLinks, object : TypeToken<ArrayList<String>>() {}.type)
+            openDownloadService(context, storedConcatenatedLinks, true)
         }
     }
 

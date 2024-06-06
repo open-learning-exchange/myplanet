@@ -42,7 +42,10 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action == DashboardActivity.MESSAGE_PROGRESS) {
                 val download = intent.getParcelableExtra<Download>("download")
-                checkDownloadResult(download)
+                val fromSync = intent.getBooleanExtra("fromSync", false)
+                if (!fromSync) {
+                    checkDownloadResult(download)
+                }
             }
         }
     }

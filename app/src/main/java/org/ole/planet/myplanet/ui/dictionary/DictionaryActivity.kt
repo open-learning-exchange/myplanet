@@ -37,7 +37,7 @@ class DictionaryActivity : BaseActivity() {
             val list = ArrayList<String>()
             list.add(Constants.DICTIONARY_URL)
             Utilities.toast(this, getString(R.string.downloading_started_please_check_notificati))
-            Utilities.openDownloadService(this, list)
+            Utilities.openDownloadService(this, list, false)
         }
     }
 
