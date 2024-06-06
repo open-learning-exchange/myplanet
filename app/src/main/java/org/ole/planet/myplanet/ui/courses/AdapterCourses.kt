@@ -36,7 +36,7 @@ import java.util.regex.Pattern
 
 class AdapterCourses(private val context: Context, private var courseList: List<RealmMyCourse?>, private val map: HashMap<String?, JsonObject>) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private lateinit var rowCourseBinding: RowCourseBinding
-    private val selectedItems: MutableList<RealmMyCourse?>
+    private val selectedItems: MutableList<RealmMyCourse?> = ArrayList()
     private var listener: OnCourseItemSelected? = null
     private var homeItemClickListener: OnHomeItemClickListener? = null
     private var progressMap: HashMap<String?, JsonObject>? = null
@@ -48,7 +48,6 @@ class AdapterCourses(private val context: Context, private var courseList: List<
     private var areAllSelected = true
 
     init {
-        selectedItems = ArrayList()
         if (context is OnHomeItemClickListener) {
             homeItemClickListener = context
         }
@@ -130,16 +129,31 @@ class AdapterCourses(private val context: Context, private var courseList: List<
                     course.description, "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/"
                 )
                 setMarkdownText(holder.rowCourseBinding.description, markdownContentWithLocalPaths)
+                if (course.gradeLevel.isNullOrEmpty() && course.subjectLevel.isNullOrEmpty()) {
+                    holder.rowCourseBinding.holder.visibility = View.VISIBLE
+                    holder.rowCourseBinding.tvDate2.visibility = View.VISIBLE
+                    holder.rowCourseBinding.tvDate.visibility = View.GONE
+                    try {
+                        holder.rowCourseBinding.tvDate2.text = formatDate(course.createdDate, "MMM dd, yyyy")
+                    } catch (e: Exception) {
+                        throw RuntimeException(e)
+                    }
+                } else {
+                    holder.rowCourseBinding.tvDate.visibility = View.VISIBLE
+                    holder.rowCourseBinding.tvDate2.visibility = View.GONE
+                    holder.rowCourseBinding.holder.visibility = View.GONE
+                    try {
+                        holder.rowCourseBinding.tvDate.text = formatDate(course.createdDate, "MMM dd, yyyy")
+                    } catch (e: Exception) {
+                        throw RuntimeException(e)
+                    }
+                }
                 setTextViewContent(holder.rowCourseBinding.gradLevel, course.gradeLevel, holder.rowCourseBinding.gradLevel, context.getString(R.string.grade_level_colon))
                 setTextViewContent(holder.rowCourseBinding.subjectLevel, course.subjectLevel, holder.rowCourseBinding.subjectLevel, context.getString(R.string.subject_level_colon))
                 holder.rowCourseBinding.checkbox.isChecked = selectedItems.contains(course)
                 holder.rowCourseBinding.courseProgress.max = course.getnumberOfSteps()
                 displayTagCloud(holder.rowCourseBinding.flexboxDrawable, position)
-                try {
-                    holder.rowCourseBinding.tvDate.text = formatDate(course.createdDate, "MMM dd, yyyy")
-                } catch (e: Exception) {
-                    throw RuntimeException(e)
-                }
+
 
                 holder.rowCourseBinding.ratingBar.setOnTouchListener { _: View?, event: MotionEvent ->
                     if (event.action == MotionEvent.ACTION_UP) homeItemClickListener?.showRatingDialog("course", course.courseId, course.courseTitle, ratingChangeListener)
@@ -159,6 +173,7 @@ class AdapterCourses(private val context: Context, private var courseList: List<
         if (content.isNullOrEmpty()) {
             layout?.visibility = View.GONE
         } else {
+            layout?.visibility = View.VISIBLE
             textView?.text = "$prefix$content"
         }
     }
@@ -298,7 +313,7 @@ class AdapterCourses(private val context: Context, private var courseList: List<
         }
 
         fun prependBaseUrlToImages(markdownContent: String?, baseUrl: String): String {
-            val pattern = "!\\[.*?\\]\\((.*?)\\)"
+            val pattern = "!\\[.*?]\\((.*?)\\)"
             val imagePattern = Pattern.compile(pattern)
             val matcher = markdownContent?.let { imagePattern.matcher(it) }
             val result = StringBuffer()

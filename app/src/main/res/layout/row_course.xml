@@ -38,6 +38,29 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/description"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="4"
+                android:padding="4dp" />
+
+            <com.google.android.flexbox.FlexboxLayout
+                android:id="@+id/flexbox_drawable"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:alignContent="space_around"
+                app:alignItems="flex_start"
+                app:flexWrap="wrap"
+                app:showDivider="middle" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:layout_marginStart="4dp"
             android:baselineAligned="false">
 
@@ -45,52 +68,32 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="2"
-                android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/description"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:ellipsize="end"
-                    android:maxLines="4"
-                    android:padding="4dp" />
-
-                <com.google.android.flexbox.FlexboxLayout
-                    android:id="@+id/flexbox_drawable"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    app:alignContent="space_around"
-                    app:alignItems="flex_start"
-                    app:flexWrap="wrap"
-                    app:showDivider="middle" />
-
-                <TextView
-                    android:id="@+id/tv_date"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:padding="@dimen/padding_normal"
-                    android:textColor="@color/colorPrimary" />
-
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_vertical"
-                android:layout_weight="1"
-                android:gravity="center"
                 android:orientation="vertical"
                 android:padding="4dp">
 
                 <TextView
                     android:id="@+id/grad_level"
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content" />
 
                 <TextView
                     android:id="@+id/subject_level"
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content" />
+
+                <TextView
+                    android:id="@+id/holder"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/tvDate2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="@dimen/padding_normal"
+                    android:textColor="@color/colorPrimary"
+                    android:visibility="gone" />
 
             </LinearLayout>
 
@@ -105,7 +108,7 @@
 
                 <TextView
                     android:id="@+id/times_rated"
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
@@ -135,7 +138,7 @@
 
                 <TextView
                     android:id="@+id/rating"
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
@@ -147,7 +150,7 @@
 
                 <TextView
                     android:id="@+id/average"
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
@@ -155,6 +158,14 @@
 
             </LinearLayout>
         </LinearLayout>
+
+        <TextView
+            android:id="@+id/tv_date"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="@dimen/padding_normal"
+            android:textColor="@color/colorPrimary"
+            android:visibility="gone" />
 
         <androidx.appcompat.widget.AppCompatSeekBar
             android:id="@+id/course_progress"
