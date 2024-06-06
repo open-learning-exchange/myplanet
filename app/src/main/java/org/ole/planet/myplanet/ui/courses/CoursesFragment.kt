@@ -30,6 +30,8 @@ import org.ole.planet.myplanet.ui.resources.CollectionsFragment
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import java.util.Calendar
 import java.util.UUID
+import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.service.UserProfileDbHandler
 
 class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelected, TagClickListener {
     private lateinit var tvAddToLib: TextView
@@ -40,6 +42,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private lateinit var orderByDate: Button
     private lateinit var orderByTitle: Button
     private lateinit var selectAll: CheckBox
+    var userModel: RealmUserModel ?= null
     lateinit var spnGrade: Spinner
     lateinit var spnSubject: Spinner
     lateinit var searchTags: MutableList<RealmTag>
@@ -62,6 +65,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        userModel = UserProfileDbHandler(requireContext()).userModel
         searchTags = ArrayList()
         initializeView()
         if (isMyCourseLib) {
@@ -138,6 +142,11 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         spnGrade.onItemSelectedListener = itemSelectedListener
         spnSubject.onItemSelectedListener = itemSelectedListener
         selectAll = requireView().findViewById(R.id.selectAll)
+        if(userModel?.isGuest() == true){
+            tvAddToLib.visibility = View.GONE
+            btnRemove.visibility = View.GONE
+            selectAll.visibility = View.GONE
+        }
         checkList()
         selectAll.setOnClickListener {
             val allSelected = selectedItems?.size == adapterCourses.getCourseList().size

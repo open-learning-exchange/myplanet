@@ -95,7 +95,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private fun setCourseData() {
-        if (currentCourse?.userId?.contains(userModel?.id) != true) {
+        if (userModel?.isGuest() != true && currentCourse?.userId?.contains(userModel?.id) != true) {
             fragmentTakeCourseBinding.btnRemove.visibility = View.VISIBLE
             fragmentTakeCourseBinding.btnRemove.text = getString(R.string.join)
             getAlertDialog(requireActivity(), getString(R.string.do_you_want_to_join_this_course), getString(R.string.join_this_course)) { _: DialogInterface?, _: Int -> addRemoveCourse() }
