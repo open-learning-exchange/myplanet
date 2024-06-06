@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.viewer
 import android.os.Bundle
 import android.view.MenuItem
 import android.view.View
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.example.jean.jcplayer.JcPlayerManagerListener
 import com.example.jean.jcplayer.general.JcStatus
@@ -19,6 +20,8 @@ class AudioPlayerActivity : AppCompatActivity(), JcPlayerManagerListener {
     private lateinit var jcAudios: ArrayList<JcAudio>
     private var isFullPath = false
     private var filePath: String? = null
+    private lateinit var extractedFileName: String
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         activityAudioPlayerBinding = ActivityAudioPlayerBinding.inflate(layoutInflater)
@@ -31,10 +34,14 @@ class AudioPlayerActivity : AppCompatActivity(), JcPlayerManagerListener {
         } else {
             playDownloadedAudio()
         }
+
+        extractedFileName = FileUtils.nameWithoutExtension(filePath).toString()
+        val textView: TextView = findViewById(R.id.textView)
+        textView.text = extractedFileName
     }
 
     private fun playDownloadedAudio() {
-        val extractedFileName: String = FileUtils.nameWithoutExtension(filePath).toString()
+        val resourceTitle: String = intent.getStringExtra("RESOURCE_TITLE").toString()
         val fullPath: String? = if (isFullPath) {
             filePath
         } else {
@@ -42,13 +49,13 @@ class AudioPlayerActivity : AppCompatActivity(), JcPlayerManagerListener {
             File(basePath, "ole/$filePath").absolutePath
         }
         fullPath?.let {
-            JcAudio.createFromFilePath(extractedFileName,it)
+            JcAudio.createFromFilePath(resourceTitle,it)
         }?.let { jcAudios.add(it) }
         initializeJCPlayer()
     }
 
     private fun playRecordedAudio() {
-        val extractedFileName: String = FileUtils.nameWithoutExtension(filePath).toString()
+        val resourceTitle: String = intent.getStringExtra("RESOURCE_TITLE").toString()
         val uuidPattern = Pattern.compile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/")
         val matcher = filePath?.let { uuidPattern.matcher(it) }
         if (matcher != null) {
@@ -57,7 +64,7 @@ class AudioPlayerActivity : AppCompatActivity(), JcPlayerManagerListener {
             }
         }
         filePath?.let {
-            JcAudio.createFromFilePath(extractedFileName,it)
+            JcAudio.createFromFilePath(resourceTitle,it)
         }?.let { jcAudios.add(it) }
         initializeJCPlayer()
     }
