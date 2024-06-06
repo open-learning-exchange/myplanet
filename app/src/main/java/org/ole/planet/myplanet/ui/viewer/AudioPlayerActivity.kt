@@ -15,7 +15,6 @@ import org.ole.planet.myplanet.utilities.Utilities
 import java.io.File
 import java.util.regex.Pattern
 
-
 class AudioPlayerActivity : AppCompatActivity(), JcPlayerManagerListener {
     private lateinit var activityAudioPlayerBinding: ActivityAudioPlayerBinding
     private lateinit var jcAudios: ArrayList<JcAudio>
