@@ -67,6 +67,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         if (isMyCourseLib) {
             tvDelete?.setText(R.string.archive)
             btnRemove.visibility = View.VISIBLE
+            checkList()
         }
 
         etSearch.addTextChangedListener(object : TextWatcher {
@@ -74,6 +75,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
                 adapterCourses.setCourseList(filterCourseByTag(etSearch.text.toString(), searchTags))
                 showNoData(tvMessage, adapterCourses.itemCount, "courses")
+                checkList()
             }
 
             override fun afterTextChanged(s: Editable) {}
@@ -86,6 +88,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     deleteSelected(true)
                     val newFragment = CoursesFragment()
                     recreateFragment(newFragment)
+                    checkList()
                 }
                 .setNegativeButton(R.string.no, null).show()
         }
@@ -150,6 +153,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 selectAll.text = getString(R.string.unselect_all)
             }
         }
+        checkList()
     }
 
     private fun checkList() {
@@ -160,8 +164,10 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             requireView().findViewById<View>(R.id.filter).visibility = View.GONE
             btnRemove.visibility = View.GONE
             tvSelected.visibility = View.GONE
+            tvDelete?.visibility = View.GONE
         }
     }
+
 
     private val itemSelectedListener: AdapterView.OnItemSelectedListener = object : AdapterView.OnItemSelectedListener {
         override fun onItemSelected(adapterView: AdapterView<*>?, view: View, i: Int, l: Long) {
