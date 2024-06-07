@@ -131,3 +131,11 @@ jobs:
           tag: v${{ env.ANDROID_VERSION_NAME }}
           overwrite: 'true'
           file_glob: 'true'
+
+      - name: send success message to discord
+        if: (github.ref == 'refs/heads/master') && (matrix.build != 'lite')
+        run: |
+          sudo npm install -g @treehouses/cli
+          export discord_channel="${{ secrets.CHANNEL }}" #remote
+          echo "https://github.com/open-learning-exchange/myplanet/releases/tag/v${{ env.ANDROID_VERSION_NAME }}"
+          treehouses feedback "new remote app: https://github.com/open-learning-exchange/myplanet/releases/tag/v${{ env.ANDROID_VERSION_NAME }}"
