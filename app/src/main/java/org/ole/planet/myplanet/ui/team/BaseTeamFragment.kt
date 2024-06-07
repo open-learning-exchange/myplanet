@@ -20,7 +20,7 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
         settings = requireActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val sParentcode = settings?.getString("parentCode", "")
         val communityName = settings?.getString("communityName", "")
-        teamId = parentFragment?.arguments?.getString("id", "") ?: "$communityName@$sParentcode"
+        teamId = requireArguments().getString("id", "") ?: "$communityName@$sParentcode"
         dbService = DatabaseService(requireActivity())
         mRealm = dbService.realmInstance
         user = profileDbHandler.userModel?.let { mRealm.copyFromRealm(it) }
