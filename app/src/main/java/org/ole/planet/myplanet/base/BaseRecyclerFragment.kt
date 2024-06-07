@@ -51,6 +51,8 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     lateinit var tvFragmentInfo: TextView
     var tvDelete: TextView? = null
     var list: MutableList<LI>? = null
+    var resources: List<RealmMyLibrary>? = null
+    var courseLib: String? = null
 
     abstract fun getLayout(): Int
 
@@ -60,6 +62,8 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         super.onCreate(savedInstanceState)
         arguments?.let {
             isMyCourseLib = it.getBoolean("isMyCourseLib")
+            courseLib = it.getString("courseLib")
+            resources = it.getSerializable("resources") as? List<RealmMyLibrary>
         }
     }
 
@@ -81,7 +85,9 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         profileDbHandler = UserProfileDbHandler(requireActivity())
         model = profileDbHandler.userModel!!
         recyclerView.adapter = getAdapter()
-        if (isMyCourseLib && getAdapter().itemCount != 0) {
+        if (isMyCourseLib && getAdapter().itemCount != 0 && courseLib == "courses") {
+            resources?.let { showDownloadDialog(it) }
+        } else if (isMyCourseLib && courseLib == null) {
             showDownloadDialog(getLibraryList(mRealm))
         }
         return v
@@ -127,6 +133,10 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             recyclerView.adapter = getAdapter()
             showNoData(tvMessage, getAdapter().itemCount, "")
         }
+    }
+
+    fun countSelected(): Int {
+        return selectedItems?.size ?: 0
     }
 
     private fun deleteCourseProgress(deleteProgress: Boolean, `object`: RealmObject) {
