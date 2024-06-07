@@ -7,25 +7,22 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import androidx.fragment.app.Fragment
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import io.realm.Realm
+import io.realm.RealmResults
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentServicesBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
+import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 
-class ServicesFragment : Fragment() {
+class ServicesFragment : BaseTeamFragment() {
     private lateinit var fragmentServicesBinding: FragmentServicesBinding
-    var mRealm: Realm? = null
-    var user: RealmUserModel? = null
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
-    ): View {
+
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentServicesBinding = FragmentServicesBinding.inflate(inflater, container, false)
         return fragmentServicesBinding.root
     }
@@ -34,16 +31,26 @@ class ServicesFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         mRealm = DatabaseService(requireActivity()).realmInstance
         user = UserProfileDbHandler(requireActivity()).userModel
+
+        val links = mRealm.where(RealmMyTeam::class.java)?.equalTo("docType", "link")?.findAll()
+
         fragmentServicesBinding.fab.setOnClickListener {
             val bottomSheetDialog: BottomSheetDialogFragment = AddLinkFragment()
             bottomSheetDialog.show(childFragmentManager, "")
             Handler(Looper.getMainLooper()).postDelayed({
                 bottomSheetDialog.dialog?.setOnDismissListener {
-                    setRecyclerView()
+                    setRecyclerView(links)
                 }
             }, 1000)
         }
-        setRecyclerView()
+        val description = team.description
+        if (links?.size == 0) {
+            fragmentServicesBinding.llServices.visibility = View.GONE
+            fragmentServicesBinding.tvDescription.visibility = View.VISIBLE
+            setMarkdownText(fragmentServicesBinding.tvDescription, "$description")
+        } else {
+            setRecyclerView(links)
+        }
 
         if (user?.isManager() == true || user?.isLeader() == true) {
             fragmentServicesBinding.fab.show()
@@ -52,10 +59,9 @@ class ServicesFragment : Fragment() {
         }
     }
 
-    private fun setRecyclerView() {
-        val links = mRealm!!.where(RealmMyTeam::class.java).equalTo("docType", "link").findAll()
+    private fun setRecyclerView(links: RealmResults<RealmMyTeam>?) {
         fragmentServicesBinding.llServices.removeAllViews()
-        links.forEach { team ->
+        links?.forEach { team ->
             val b: TextView = LayoutInflater.from(activity).inflate(R.layout.button_single, null) as TextView
             b.setPadding(8, 8, 8, 8)
             b.text = team.title
@@ -65,9 +71,9 @@ class ServicesFragment : Fragment() {
                     if (route.size >= 3) {
                         val f = TeamDetailFragment()
                         val c = Bundle()
-                        val teamObject = mRealm!!.where(RealmMyTeam::class.java).equalTo("_id", route[3]).findFirst()
+                        val teamObject = mRealm.where(RealmMyTeam::class.java)?.equalTo("_id", route[3])?.findFirst()
                         c.putString("id", route[3])
-                        c.putBoolean("isMyTeam", teamObject!!.isMyTeam(user?.id, mRealm!!))
+                        teamObject?.isMyTeam(user?.id, mRealm)?.let { it1 -> c.putBoolean("isMyTeam", it1) }
                         f.arguments = c
                         (context as OnHomeItemClickListener).openCallFragment(f)
                     }
