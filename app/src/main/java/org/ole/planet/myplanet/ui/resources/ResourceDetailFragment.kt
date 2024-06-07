@@ -2,14 +2,17 @@ package org.ole.planet.myplanet.ui.resources
 
 import android.os.Bundle
 import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
 import io.realm.Realm
+import io.realm.RealmObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
+import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.FragmentLibraryDetailBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -42,6 +45,13 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
 
     override fun onDownloadComplete() {
         fragmentLibraryDetailBinding.btnDownload.setImageResource(R.drawable.ic_play)
+        if (!library.userId?.contains(profileDbHandler.userModel?.id)!!) {
+            val myObject = mRealm.where(RealmMyLibrary::class.java)
+                .equalTo("resourceId", libraryId).findFirst()
+            RealmMyLibrary.createFromResource(myObject, mRealm, model?.id)
+            onAdd(mRealm, "resources", profileDbHandler.userModel?.id, myObject?.resourceId)
+            Utilities.toast(activity, getString(R.string.added_to_my_library))
+        }
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
