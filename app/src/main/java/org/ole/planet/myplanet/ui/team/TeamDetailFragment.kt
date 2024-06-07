@@ -6,9 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
-import androidx.fragment.app.Fragment
 import com.google.android.material.tabs.TabLayoutMediator
-import io.realm.Realm
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
@@ -21,18 +19,14 @@ import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Date
 import java.util.UUID
 
-class TeamDetailFragment : Fragment() {
+class TeamDetailFragment : BaseTeamFragment() {
     private lateinit var fragmentTeamDetailBinding: FragmentTeamDetailBinding
-    private lateinit var mRealm: Realm
-    var team: RealmMyTeam? = null
-    var teamId: String? = null
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentTeamDetailBinding = FragmentTeamDetailBinding.inflate(inflater, container, false)
         val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
-        teamId = requireArguments().getString("id")
-        val user = UserProfileDbHandler(requireContext()).userModel!!
+        val user = UserProfileDbHandler(requireContext()).userModel
         mRealm = DatabaseService(requireActivity()).realmInstance
-        team = mRealm.where(RealmMyTeam::class.java).equalTo("_id", requireArguments().getString("id")).findFirst()
+        team = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst() ?: throw IllegalArgumentException("Team not found for ID: $teamId")
         fragmentTeamDetailBinding.viewPager2.adapter = TeamPagerAdapter(requireActivity(), team, isMyTeam)
         TabLayoutMediator(fragmentTeamDetailBinding.tabLayout, fragmentTeamDetailBinding.viewPager2) { tab, position ->
             tab.text = (fragmentTeamDetailBinding.viewPager2.adapter as TeamPagerAdapter).getPageTitle(position)
@@ -44,7 +38,7 @@ class TeamDetailFragment : Fragment() {
             fragmentTeamDetailBinding.btnLeave.setOnClickListener {
                 AlertDialog.Builder(requireContext()).setMessage(R.string.confirm_exit)
                     .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                        team?.leave(user, mRealm)
+                        team.leave(user, mRealm)
                         Utilities.toast(activity, getString(R.string.left_team))
                         fragmentTeamDetailBinding.viewPager2.adapter = TeamPagerAdapter(requireActivity(), team, false)
                         TabLayoutMediator(fragmentTeamDetailBinding.tabLayout, fragmentTeamDetailBinding.viewPager2) { tab, position ->
@@ -62,7 +56,7 @@ class TeamDetailFragment : Fragment() {
                 }
             }
         }
-        if (isTeamLeader(teamId, user.id, mRealm)) {
+        if (isTeamLeader(teamId, user?.id, mRealm)) {
             fragmentTeamDetailBinding.btnLeave.visibility = View.GONE
         }
         return fragmentTeamDetailBinding.root
@@ -75,7 +69,6 @@ class TeamDetailFragment : Fragment() {
 
     private fun createTeamLog() {
         val user = UserProfileDbHandler(requireContext()).userModel
-        if (team == null) return
         if (!mRealm.isInTransaction) {
             mRealm.beginTransaction()
         }
@@ -85,7 +78,7 @@ class TeamDetailFragment : Fragment() {
             log.user = user.name
             log.createdOn = user.planetCode
             log.type = "teamVisit"
-            log.teamType = team?.teamType
+            log.teamType = team.teamType
             log.parentCode = user.parentCode
             log.time = Date().time
         }
