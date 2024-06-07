@@ -139,7 +139,7 @@ object DialogUtils {
                     progressDialog.setCancelable(false)
                     progressDialog.show()
                 }
-                Utilities.openDownloadService(context, url)
+                Utilities.openDownloadService(context, url, false)
             }
         }, path)
     }

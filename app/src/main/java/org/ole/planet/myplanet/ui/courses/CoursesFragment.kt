@@ -22,6 +22,7 @@ import org.ole.planet.myplanet.callback.OnCourseItemSelected
 import org.ole.planet.myplanet.callback.TagClickListener
 import org.ole.planet.myplanet.model.RealmCourseProgress.Companion.getCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
+import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmRating.Companion.getRatings
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTag
@@ -57,6 +58,16 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         adapterCourses.setmRealm(mRealm)
         adapterCourses.setListener(this)
         adapterCourses.setRatingChangeListener(this)
+
+        if (isMyCourseLib) {
+            val courseIds = courseList.mapNotNull { it?.id }
+            resources = mRealm.where(RealmMyLibrary::class.java)
+                .`in`("courseId", courseIds.toTypedArray())
+                .equalTo("resourceOffline", false)
+                .isNotNull("resourceLocalAddress")
+                .findAll()
+            courseLib = "courses"
+        }
         return adapterCourses
     }
 
@@ -67,6 +78,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         if (isMyCourseLib) {
             tvDelete?.setText(R.string.archive)
             btnRemove.visibility = View.VISIBLE
+            checkList()
         }
 
         etSearch.addTextChangedListener(object : TextWatcher {
@@ -74,6 +86,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
                 adapterCourses.setCourseList(filterCourseByTag(etSearch.text.toString(), searchTags))
                 showNoData(tvMessage, adapterCourses.itemCount, "courses")
+                checkList()
             }
 
             override fun afterTextChanged(s: Editable) {}
@@ -91,6 +104,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     deleteSelected(true)
                     val newFragment = CoursesFragment()
                     recreateFragment(newFragment)
+                    checkList()
                 }
                 .setNegativeButton(R.string.no, null).show()
         }
@@ -155,6 +169,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 selectAll.text = getString(R.string.unselect_all)
             }
         }
+        checkList()
     }
 
     private fun checkList() {
@@ -165,8 +180,10 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             requireView().findViewById<View>(R.id.filter).visibility = View.GONE
             btnRemove.visibility = View.GONE
             tvSelected.visibility = View.GONE
+            tvDelete?.visibility = View.GONE
         }
     }
+
 
     private val itemSelectedListener: AdapterView.OnItemSelectedListener = object : AdapterView.OnItemSelectedListener {
         override fun onItemSelected(adapterView: AdapterView<*>?, view: View, i: Int, l: Long) {
@@ -294,6 +311,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         if (isMyCourseLib) {
             val args = Bundle()
             args.putBoolean("isMyCourseLib", true)
+            args.putString("courseLib", courseLib)
+            args.putSerializable("resources", resources?.let { ArrayList(it) })
             fragment.arguments = args
             val transaction = parentFragmentManager.beginTransaction()
             transaction.replace(R.id.fragment_container, fragment)
