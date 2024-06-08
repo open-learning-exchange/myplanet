@@ -91,15 +91,18 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                 checkList()
             }
         }
+
         tvDelete?.setOnClickListener {
-            AlertDialog.Builder(this.context)
-                .setMessage(R.string.confirm_removal)
-                .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                    deleteSelected(true)
-                    val newFragment = ResourcesFragment()
-                    recreateFragment(newFragment)
-                }
-                .setNegativeButton(R.string.no, null).show()
+            if (selectedItems?.size!! > 0) {
+                AlertDialog.Builder(this.context)
+                    .setMessage(R.string.confirm_removal)
+                    .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
+                        deleteSelected(true)
+                        val newFragment = ResourcesFragment()
+                        recreateFragment(newFragment)
+                    }
+                    .setNegativeButton(R.string.no, null).show()
+            }
         }
         etSearch?.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
