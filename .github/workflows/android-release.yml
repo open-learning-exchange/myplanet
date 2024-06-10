@@ -146,6 +146,26 @@ jobs:
           overwrite: 'true'
           file_glob: 'true'
 
+      - name: install Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: upload APK to Firebase Test Lab
+        env:
+          FIREBASE_TOKEN: ${{ secrets.ROBOT_KEY }}
+        run: |
+          if [ -f output/myPlanet.apk ]; then
+            firebase test android run \
+              --type robo \
+              --app output/myPlanet.apk \
+              --project myplanet-2eee1 \
+              --results-bucket myPlanet \
+              --results-dir test-results/myPlanet/$(date +%Y%m%d_%H%M%S) \
+              --timeout 900s
+          else
+            echo "APK file not found!"
+            exit 1
+          fi
+
       - name: send success message to discord
         if: github.event_name != 'workflow_dispatch' && matrix.build != 'lite'
         run: |
