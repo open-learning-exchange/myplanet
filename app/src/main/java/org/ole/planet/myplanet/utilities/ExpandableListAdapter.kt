@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.utilities
 
 import android.content.Context
 import android.content.Context.LAYOUT_INFLATER_SERVICE
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -13,11 +14,7 @@ import android.widget.ListView
 import android.widget.TextView
 import org.ole.planet.myplanet.R
 
-class ExpandableListAdapter(
-private val context: Context,
-private val expandableListTitle: List<String>,
-private val expandableListDetail: Map<String, List<String>>
-) : BaseExpandableListAdapter() {
+class ExpandableListAdapter(private val context: Context, private val expandableListTitle: List<String>, private val expandableListDetail: Map<String, List<String>>) : BaseExpandableListAdapter() {
     override fun getGroupCount(): Int {
         return expandableListTitle.size
     }
@@ -30,8 +27,8 @@ private val expandableListDetail: Map<String, List<String>>
         return expandableListTitle[listPosition]
     }
 
-    override fun getChild(listPosition: Int, expandedListPosition: Int): String? {
-        return expandableListDetail[expandableListTitle[listPosition]]?.get(expandedListPosition)
+    override fun getChild(listPosition: Int, expandedListPosition: Int): String {
+        return expandableListDetail[expandableListTitle[listPosition]]?.get(expandedListPosition) ?: ""
     }
 
     override fun getGroupId(listPosition: Int): Long {
@@ -57,9 +54,18 @@ private val expandableListDetail: Map<String, List<String>>
         listTitleTextView.text = listTitle
         return groupView
     }
-    override fun getChildView(listPosition: Int, expandedListPosition: Int, isLastChild: Boolean, convertView: View?, parent: ViewGroup): View? {
+    override fun getChildView(
+        listPosition: Int,
+        expandedListPosition: Int,
+        isLastChild: Boolean,
+        convertView: View?,
+        parent: ViewGroup
+    ): View? {
         var childView = convertView
         val expandedListText = getChild(listPosition, expandedListPosition) as String
+        Log.d("ollonde", "expandedListText: $expandedListText")
+        Log.d("ollonde", "expandableListDetail: $expandableListDetail")
+
         if (childView == null) {
             val layoutInflater = context.getSystemService(LAYOUT_INFLATER_SERVICE) as LayoutInflater
             childView = layoutInflater.inflate(R.layout.child_item, null)
@@ -79,17 +85,26 @@ private val expandableListDetail: Map<String, List<String>>
             teamMessageLayout?.visibility = View.GONE
 
             val teamListView = childView?.findViewById<ListView>(R.id.teamListView)
-            val teamList = expandableListDetail[expandedListText]!!
-            val adapter = ArrayAdapter(context, android.R.layout.simple_list_item_1, teamList)
-            teamListView?.adapter = adapter
+            val teamList = expandableListDetail["Share with Team/Enterprises"] ?: listOf()
+            Log.d("ollonde", "teamList: $teamList")
 
-            teamListView?.onItemClickListener = AdapterView.OnItemClickListener { _, _, _, _ ->
-                teamMessageLayout?.visibility = View.VISIBLE
+            if (teamListView != null) {
+                val adapter = ArrayAdapter(context, android.R.layout.simple_list_item_1, teamList)
+                teamListView.adapter = adapter
+
+                teamListView.onItemClickListener = AdapterView.OnItemClickListener { _, _, position, _ ->
+                    val selectedTeam = teamList[position]
+                    if (selectedTeam == expandedListText) {
+                        teamMessageLayout?.visibility = View.VISIBLE
+                    }
+                }
             }
         }
 
         return childView
     }
+
+
     override fun isChildSelectable(listPosition: Int, expandedListPosition: Int): Boolean {
         return true
     }

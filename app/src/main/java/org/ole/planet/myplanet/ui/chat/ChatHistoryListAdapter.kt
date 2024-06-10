@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.chat
 
 import android.app.AlertDialog
 import android.content.Context
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.ExpandableListView
@@ -97,15 +98,15 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
         community.add("Community")
 
         val teams: MutableList<String> = ArrayList()
-        teams.add("Team A")
-        teams.add("Team B")
-        teams.add("Team C")
+        teams.add("Teams")
+        teams.add("Enterprises")
 
         expandableListDetail["Share with Community"] = community
         expandableListDetail["Share with Team/Enterprises"] = teams
 
         return expandableListDetail
     }
+
 
     class ViewHolderChat(val rowChatHistoryBinding: RowChatHistoryBinding) : RecyclerView.ViewHolder(rowChatHistoryBinding.root)
 }
