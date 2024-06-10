@@ -147,7 +147,7 @@ jobs:
           file_glob: 'true'
 
       - name: upload APK to Firebase Test Lab
-        if: github.ref != 'refs/heads/master'
+        if: github.ref != 'refs/heads/master' && (matrix.build == 'lite')
         env:
           FIREBASE_TOKEN: ${{ secrets.ROBOT_KEY }}
         run: |
