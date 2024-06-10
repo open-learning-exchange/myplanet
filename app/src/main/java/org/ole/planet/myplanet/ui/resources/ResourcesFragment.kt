@@ -81,6 +81,8 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         tvDelete = requireView().findViewById(R.id.tv_delete)
         filter = requireView().findViewById(R.id.filter)
         initArrays()
+        updateTvDelete()
+
         tvAddToLib?.setOnClickListener {
             if ((selectedItems?.size ?: 0) > 0) {
                 confirmation = createAlertDialog()
@@ -93,16 +95,14 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
 
         tvDelete?.setOnClickListener {
-            if (selectedItems?.size!! > 0) {
-                AlertDialog.Builder(this.context)
-                    .setMessage(R.string.confirm_removal)
-                    .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                        deleteSelected(true)
-                        val newFragment = ResourcesFragment()
-                        recreateFragment(newFragment)
-                    }
-                    .setNegativeButton(R.string.no, null).show()
-            }
+            AlertDialog.Builder(this.context)
+                .setMessage(R.string.confirm_removal)
+                .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
+                    deleteSelected(true)
+                    val newFragment = ResourcesFragment()
+                    recreateFragment(newFragment)
+                }
+                .setNegativeButton(R.string.no, null).show()
         }
         etSearch?.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
@@ -127,6 +127,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         if (isMyCourseLib) tvFragmentInfo.setText(R.string.txt_myLibrary)
         checkList()
         selectAll?.setOnClickListener {
+            updateTvDelete()
             val allSelected = selectedItems?.size == adapterLibrary?.getLibraryList()?.size
             adapterLibrary?.selectAllItems(!allSelected)
             if (allSelected) {
@@ -136,6 +137,14 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                 selectAll?.isChecked = true
                 selectAll?.text = getString(R.string.unselect_all)
             }
+        }
+    }
+
+    private fun updateTvDelete(){
+        if (selectedItems?.size!! == 0) {
+            tvDelete?.isEnabled = false
+        } else{
+            tvDelete?.isEnabled = true
         }
     }
 
@@ -201,6 +210,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     override fun onSelectedListChange(list: MutableList<RealmMyLibrary?>) {
         selectedItems = list
         changeButtonStatus()
+        updateTvDelete()
     }
 
     override fun onTagClicked(realmTag: RealmTag) {
