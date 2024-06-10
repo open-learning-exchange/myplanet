@@ -155,7 +155,7 @@ jobs:
           if [ -f output/myPlanet.apk ]; then
             firebase test android run \
               --type robo \
-              --app output/myPlanet.apk \
+              --app output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}.apk \
               --project myplanet-2eee1 \
               --results-bucket myPlanet \
               --results-dir test-results/myPlanet/$(date +%Y%m%d_%H%M%S) \
