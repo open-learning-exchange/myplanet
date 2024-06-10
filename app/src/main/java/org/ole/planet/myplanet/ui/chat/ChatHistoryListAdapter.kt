@@ -1,20 +1,29 @@
 package org.ole.planet.myplanet.ui.chat
 
+import android.app.AlertDialog
 import android.content.Context
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import android.widget.ExpandableListView
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.RealmList
+import org.ole.planet.myplanet.databinding.ChatShareDialogBinding
+import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.databinding.RowChatHistoryBinding
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.RealmChatHistory
+import org.ole.planet.myplanet.utilities.ExpandableListAdapter
 
 class ChatHistoryListAdapter(var context: Context, private var chatHistory: List<RealmChatHistory>) :
     RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private lateinit var rowChatHistoryBinding: RowChatHistoryBinding
     private var chatHistoryItemClickListener: ChatHistoryItemClickListener? = null
     private var filteredChatHistory: List<RealmChatHistory> = chatHistory
-    var chatTitle: String? = ""
+    private var chatTitle: String? = ""
+    private lateinit var expandableListAdapter: ExpandableListAdapter
+    private lateinit var expandableListTitle: List<String>
+    private lateinit var expandableListDetail: Map<String, List<String>>
+
     interface ChatHistoryItemClickListener {
         fun onChatHistoryItemClicked(conversations: RealmList<Conversation>?, _id: String, _rev: String?)
     }
@@ -65,8 +74,37 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
         }
 
         viewHolderChat.rowChatHistoryBinding.shareChat.setOnClickListener {
+            expandableListDetail = getData()
+            expandableListTitle = expandableListDetail.keys.toList()
+            expandableListAdapter = ExpandableListAdapter(context, expandableListTitle, expandableListDetail)
 
+            val chatShareDialogBinding = ChatShareDialogBinding.inflate(LayoutInflater.from(context))
+            chatShareDialogBinding.listView.setAdapter(expandableListAdapter)
+            val dialogBuilder = AlertDialog.Builder(context)
+                .setView(chatShareDialogBinding.root)
+                .setPositiveButton("close") { dialog, _ ->
+                    dialog.dismiss()
+                }
+
+            val dialog = dialogBuilder.create()
+            dialog.show()
         }
+    }
+    private fun getData(): Map<String, List<String>> {
+        val expandableListDetail: MutableMap<String, List<String>> = HashMap()
+
+        val community: MutableList<String> = ArrayList()
+        community.add("Community")
+
+        val teams: MutableList<String> = ArrayList()
+        teams.add("Team A")
+        teams.add("Team B")
+        teams.add("Team C")
+
+        expandableListDetail["Share with Community"] = community
+        expandableListDetail["Share with Team/Enterprises"] = teams
+
+        return expandableListDetail
     }
 
     class ViewHolderChat(val rowChatHistoryBinding: RowChatHistoryBinding) : RecyclerView.ViewHolder(rowChatHistoryBinding.root)
