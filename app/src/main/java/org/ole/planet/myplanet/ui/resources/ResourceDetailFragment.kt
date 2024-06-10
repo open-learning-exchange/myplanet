@@ -46,19 +46,11 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     override fun onDownloadComplete() {
         fragmentLibraryDetailBinding.btnDownload.setImageResource(R.drawable.ic_play)
         if (!library.userId?.contains(profileDbHandler.userModel?.id)!!) {
-<<<<<<< HEAD
             if (!lRealm.isInTransaction) lRealm.beginTransaction()
             library.setUserId(profileDbHandler.userModel?.id)
             onAdd(lRealm, "resources", profileDbHandler.userModel?.id, libraryId)
             Utilities.toast(activity, getString(R.string.added_to_my_library))
             fragmentLibraryDetailBinding.btnRemove.setImageResource(R.drawable.close_x)
-=======
-            val myObject = mRealm.where(RealmMyLibrary::class.java)
-                .equalTo("resourceId", libraryId).findFirst()
-            RealmMyLibrary.createFromResource(myObject, mRealm, model?.id)
-            onAdd(mRealm, "resources", profileDbHandler.userModel?.id, myObject?.resourceId)
-            Utilities.toast(activity, getString(R.string.added_to_my_library))
->>>>>>> a697985d (progress toward downloads being in myLibrary (review needed by Gideon))
         }
     }
 
