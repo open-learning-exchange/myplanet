@@ -120,7 +120,7 @@ jobs:
           npm install -g firebase-tools
           if [ -f output/myPlanet.apk ]; then
             firebase test android run \
-              --type robo \
+              --robo-script \
               --app output/myPlanet.apk \
               --project myplanet-2eee1 \
               --results-bucket myPlanet \
