@@ -118,10 +118,12 @@ jobs:
         run: |
           ls -al output/
           npm install -g firebase-tools
+          firebase --version
           if [ -f output/myPlanet.apk ]; then
             firebase test android run \
               --app output/myPlanet.apk \
               --project myplanet-2eee1 \
+              --type instrumentation \
               --results-bucket myPlanet \
               --results-dir test-results/myPlanet/$(date +%Y%m%d_%H%M%S) \
               --timeout 900s
