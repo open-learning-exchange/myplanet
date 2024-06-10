@@ -111,6 +111,26 @@ jobs:
           status: completed
           changesNotSentForReview: true
 
+      - name: upload APK to Firebase Test Lab
+        if: github.ref != 'refs/heads/master' && (matrix.build == 'lite')
+        env:
+          FIREBASE_TOKEN: ${{ secrets.ROBOT_KEY }}
+        run: |
+          ls -al output/
+          npm install -g firebase-tools
+          if [ -f output/myPlanet.apk ]; then
+            firebase test android run \
+              --type robo \
+              --app output/myPlanet.apk \
+              --project myplanet-2eee1 \
+              --results-bucket myPlanet \
+              --results-dir test-results/myPlanet/$(date +%Y%m%d_%H%M%S) \
+              --timeout 900s
+          else
+            echo "APK file not found!"
+            exit 1
+          fi
+
       - name: rename APK and AAB with version and branch for artifact
         if: github.event_name == 'workflow_dispatch'
         run: |
@@ -146,24 +166,6 @@ jobs:
           overwrite: 'true'
           file_glob: 'true'
 
-      - name: upload APK to Firebase Test Lab
-        if: github.ref != 'refs/heads/master' && (matrix.build == 'lite')
-        env:
-          FIREBASE_TOKEN: ${{ secrets.ROBOT_KEY }}
-        run: |
-          npm install -g firebase-tools
-          if [ -f output/myPlanet.apk ]; then
-            firebase test android run \
-              --type robo \
-              --app output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}.apk \
-              --project myplanet-2eee1 \
-              --results-bucket myPlanet \
-              --results-dir test-results/myPlanet/$(date +%Y%m%d_%H%M%S) \
-              --timeout 900s
-          else
-            echo "APK file not found!"
-            exit 1
-          fi
 
       - name: send success message to discord
         if: github.event_name != 'workflow_dispatch' && matrix.build != 'lite'
