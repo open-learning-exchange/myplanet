@@ -215,4 +215,10 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             return takeCourseFragment
         }
     }
+
+    fun joinCourse() {
+        fragmentTakeCourseBinding.nextStep.visibility = View.VISIBLE
+        fragmentTakeCourseBinding.courseProgress.visibility = View.VISIBLE
+        fragmentTakeCourseBinding.btnRemove.visibility = View.GONE
+    }
 }
