@@ -63,6 +63,10 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
                 filteredChatHistory[position]._rev
             )
         }
+
+        viewHolderChat.rowChatHistoryBinding.shareChat.setOnClickListener {
+
+        }
     }
 
     class ViewHolderChat(val rowChatHistoryBinding: RowChatHistoryBinding) : RecyclerView.ViewHolder(rowChatHistoryBinding.root)
