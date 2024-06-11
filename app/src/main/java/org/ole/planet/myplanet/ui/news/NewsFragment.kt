@@ -5,7 +5,6 @@ import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -25,7 +24,6 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
@@ -163,7 +161,6 @@ class NewsFragment : BaseNewsFragment() {
                     }
                 }
             }
-            Log.d("ollonde", "$list")
             val urls = ArrayList<String>()
             val settings = requireActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             val stringArray: Array<String?> = resourceIds.toTypedArray()
