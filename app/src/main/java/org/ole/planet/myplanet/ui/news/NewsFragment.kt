@@ -5,6 +5,7 @@ import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -162,6 +163,7 @@ class NewsFragment : BaseNewsFragment() {
                     }
                 }
             }
+            Log.d("ollonde", "$list")
             val urls = ArrayList<String>()
             val settings = requireActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             val stringArray: Array<String?> = resourceIds.toTypedArray()
