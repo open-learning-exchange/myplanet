@@ -17,6 +17,7 @@ import io.realm.Realm
 import org.ole.planet.myplanet.utilities.Utilities
 
 class AdapterJoinedMember(private val context: Context, private val list: List<RealmUserModel>, private val mRealm: Realm, private val teamId: String) : RecyclerView.Adapter<AdapterJoinedMember.ViewHolderUser>() {
+    private lateinit var rowJoinedUserBinding: RowJoinedUserBinding
     private val currentUser: RealmUserModel = UserProfileDbHandler(context).userModel!!
     private val teamLeaderId: String? = mRealm.where(RealmMyTeam::class.java)
         .equalTo("teamId", teamId)
@@ -24,37 +25,36 @@ class AdapterJoinedMember(private val context: Context, private val list: List<R
         .findFirst()?.userId
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderUser {
-        val rowJoinedUserBinding = RowJoinedUserBinding.inflate(LayoutInflater.from(context), parent, false)
+        rowJoinedUserBinding = RowJoinedUserBinding.inflate(LayoutInflater.from(context), parent, false)
         return ViewHolderUser(rowJoinedUserBinding)
     }
 
     override fun onBindViewHolder(holder: ViewHolderUser, position: Int) {
-        val member = list[position]
-        holder.binding.tvTitle.text = if (member.toString() == " ") member.name else member.toString()
-        holder.binding.tvDescription.text = "${member.getRoleAsString()} (${RealmTeamLog.getVisitCount(mRealm, member.name, teamId)} ${context.getString(R.string.visits)})"
+        rowJoinedUserBinding.tvTitle.text = if (list[position].toString() == " ") list[position].name else list[position].toString()
+        rowJoinedUserBinding.tvDescription.text = "${list[position].getRoleAsString()} (${RealmTeamLog.getVisitCount(mRealm, list[position].name, teamId)} ${context.getString(R.string.visits)})"
 
         Glide.with(context)
-            .load(member.userImage)
+            .load(list[position].userImage)
             .placeholder(R.drawable.profile)
             .error(R.drawable.profile)
-            .into(holder.binding.memberImage)
+            .into(rowJoinedUserBinding.memberImage)
 
         val isLoggedInUserTeamLeader = teamLeaderId != null && teamLeaderId == currentUser.id
 
-        if (teamLeaderId == member.id) {
-            holder.binding.tvIsLeader.visibility = View.VISIBLE
-            holder.binding.tvIsLeader.text = context.getString(R.string.team_leader)
+        if (teamLeaderId == list[position].id) {
+            rowJoinedUserBinding.tvIsLeader.visibility = View.VISIBLE
+            rowJoinedUserBinding.tvIsLeader.text = context.getString(R.string.team_leader)
         } else {
-            holder.binding.tvIsLeader.visibility = View.GONE
+            rowJoinedUserBinding.tvIsLeader.visibility = View.GONE
             val overflowMenuOptions = arrayOf(context.getString(R.string.remove), context.getString(R.string.make_leader))
-            checkUserAndShowOverflowMenu(holder, position, overflowMenuOptions, isLoggedInUserTeamLeader)
+            checkUserAndShowOverflowMenu(position, overflowMenuOptions, isLoggedInUserTeamLeader)
         }
     }
 
-    private fun checkUserAndShowOverflowMenu(holder: ViewHolderUser, position: Int, overflowMenuOptions: Array<String>, isLoggedInUserTeamLeader: Boolean) {
+    private fun checkUserAndShowOverflowMenu(position: Int, overflowMenuOptions: Array<String>, isLoggedInUserTeamLeader: Boolean) {
         if (isLoggedInUserTeamLeader) {
-            holder.binding.icMore.visibility = View.VISIBLE
-            holder.binding.icMore.setOnClickListener {
+            rowJoinedUserBinding.icMore.visibility = View.VISIBLE
+            rowJoinedUserBinding.icMore.setOnClickListener {
                 AlertDialog.Builder(context).setItems(overflowMenuOptions) { _, i ->
                     if (i == 0) {
                         reject(list[position], position)
@@ -64,7 +64,7 @@ class AdapterJoinedMember(private val context: Context, private val list: List<R
                 }.setNegativeButton(R.string.dismiss, null).show()
             }
         } else {
-            holder.binding.icMore.visibility = View.GONE
+            rowJoinedUserBinding.icMore.visibility = View.GONE
         }
     }
 
@@ -100,5 +100,5 @@ class AdapterJoinedMember(private val context: Context, private val list: List<R
 
     override fun getItemCount(): Int = list.size
 
-    class ViewHolderUser(val binding: RowJoinedUserBinding) : RecyclerView.ViewHolder(binding.root)
+    class ViewHolderUser(rowJoinedUserBinding: RowJoinedUserBinding) : RecyclerView.ViewHolder(rowJoinedUserBinding.root)
 }
