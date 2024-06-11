@@ -16,13 +16,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import io.realm.Realm
 import org.ole.planet.myplanet.utilities.Utilities
 
-class AdapterJoinedMember(
-    private val context: Context,
-    private val list: List<RealmUserModel>,
-    private val mRealm: Realm,
-    private val teamId: String
-) : RecyclerView.Adapter<AdapterJoinedMember.ViewHolderUser>() {
-
+class AdapterJoinedMember(private val context: Context, private val list: List<RealmUserModel>, private val mRealm: Realm, private val teamId: String) : RecyclerView.Adapter<AdapterJoinedMember.ViewHolderUser>() {
     private val currentUser: RealmUserModel = UserProfileDbHandler(context).userModel!!
     private val teamLeaderId: String? = mRealm.where(RealmMyTeam::class.java)
         .equalTo("teamId", teamId)
