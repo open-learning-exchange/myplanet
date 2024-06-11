@@ -1,101 +1,52 @@
 package org.ole.planet.myplanet.ui.sync
 
 import android.Manifest
-import android.content.DialogInterface
-import android.content.Intent
-import android.content.IntentFilter
-import android.content.SharedPreferences
+import android.content.*
 import android.graphics.drawable.AnimationDrawable
-import android.os.Build
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextUtils
-import android.text.TextWatcher
-import android.view.KeyEvent
-import android.view.LayoutInflater
-import android.view.MotionEvent
-import android.view.View
-import android.view.inputmethod.EditorInfo
+import android.text.*
+import android.view.*
 import android.webkit.URLUtil
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
-import android.widget.Button
-import android.widget.CompoundButton
-import android.widget.EditText
-import android.widget.ImageButton
-import android.widget.ImageView
-import android.widget.RadioGroup
-import android.widget.Spinner
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SwitchCompat
-import androidx.core.content.ContextCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.preference.PreferenceManager
-import com.afollestad.materialdialogs.DialogAction
-import com.afollestad.materialdialogs.MaterialDialog
+import com.afollestad.materialdialogs.*
 import com.google.android.material.textfield.TextInputLayout
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import io.realm.Realm
-import io.realm.Sort
+import io.realm.*
 import okhttp3.ResponseBody
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SyncListener
-import org.ole.planet.myplanet.databinding.AlertGuestLoginBinding
-import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
-import org.ole.planet.myplanet.databinding.LayoutChildLoginBinding
+import org.ole.planet.myplanet.databinding.*
 import org.ole.planet.myplanet.datamanager.ApiClient.client
-import org.ole.planet.myplanet.datamanager.ApiInterface
-import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.datamanager.ManagerSync.Companion.instance
-import org.ole.planet.myplanet.datamanager.Service
-import org.ole.planet.myplanet.datamanager.Service.CheckVersionCallback
-import org.ole.planet.myplanet.datamanager.Service.ConfigurationIdListener
-import org.ole.planet.myplanet.datamanager.Service.PlanetAvailableListener
-import org.ole.planet.myplanet.model.MyPlanet
-import org.ole.planet.myplanet.model.RealmCommunity
-import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.model.RealmUserModel.Companion.createGuestUser
-import org.ole.planet.myplanet.model.User
-import org.ole.planet.myplanet.service.SyncManager
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.datamanager.*
+import org.ole.planet.myplanet.datamanager.Service.*
+import org.ole.planet.myplanet.model.*
+import org.ole.planet.myplanet.service.*
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.team.AdapterTeam.OnUserSelectedListener
-import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.AndroidDecrypter
-import org.ole.planet.myplanet.utilities.Constants
+import org.ole.planet.myplanet.utilities.*
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.Constants.SELECTED_LANGUAGE
 import org.ole.planet.myplanet.utilities.Constants.autoSynFeature
-import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DialogUtils.getUpdateDialog
 import org.ole.planet.myplanet.utilities.DialogUtils.showAlert
 import org.ole.planet.myplanet.utilities.DialogUtils.showSnack
 import org.ole.planet.myplanet.utilities.DialogUtils.showWifiSettingDialog
-import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.NetworkUtils.getCustomDeviceName
-import org.ole.planet.myplanet.utilities.NetworkUtils.getDeviceName
-import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnected
 import org.ole.planet.myplanet.utilities.NotificationUtil.cancellAll
-import org.ole.planet.myplanet.utilities.SharedPrefManager
-import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.Utilities.getRelativeTime
 import org.ole.planet.myplanet.utilities.Utilities.openDownloadService
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import java.io.File
-import java.text.Normalizer
-import java.util.Calendar
-import java.util.Date
-import java.util.Locale
+import java.util.*
 import java.util.concurrent.TimeUnit
-import java.util.regex.Pattern
 
 abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVersionCallback,
     OnUserSelectedListener, ConfigurationIdListener {
@@ -112,16 +63,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private var syncTimeInteval = intArrayOf(60 * 60, 3 * 60 * 60)
     lateinit var syncIcon: ImageView
     lateinit var syncIconDrawable: AnimationDrawable
-    lateinit var inputName: EditText
-    lateinit var inputPassword: EditText
-    private lateinit var serverUrl: EditText
-    private lateinit var serverPassword: EditText
     lateinit var inputLayoutName: TextInputLayout
     lateinit var inputLayoutPassword: TextInputLayout
     lateinit var prefData: SharedPrefManager
     lateinit var profileDbHandler: UserProfileDbHandler
     private lateinit var spnCloud: Spinner
     private lateinit var protocol_checkin: RadioGroup
+    private lateinit var serverUrl: EditText
+    private lateinit var serverPassword: EditText
     private var teamList = ArrayList<String?>()
     private var teamAdapter: ArrayAdapter<String?>? = null
     var selectedTeamId: String? = null
@@ -130,18 +79,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     var isSync = false
     var forceSync = false
     lateinit var btnSignIn: Button
-    lateinit var becomeMember: Button
-    lateinit var btnGuestLogin: Button
-    lateinit var btnLang: Button
-    lateinit var openCommunity: Button
-    lateinit var btnFeedback: Button
-    lateinit var customDeviceName: TextView
-    lateinit var lblVersion: TextView
-    lateinit var tvAvailableSpace: TextView
-    private lateinit var defaultPref: SharedPreferences
-    lateinit var imgBtnSetting: ImageButton
+    lateinit var defaultPref: SharedPreferences
     lateinit var service: Service
-    private var fallbackLanguage: String = "en"
     private var currentDialog: MaterialDialog? = null
     private var serverConfigAction = ""
 
@@ -162,8 +101,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         val savedId = settings.getString("configurationId", null)
         if (serverConfigAction == "sync") {
             if (savedId == null) {
-                settings.edit().putString("configurationId", id).apply()
-                settings.edit().putString("communityName", code).apply()
+                editor.putString("configurationId", id).apply()
+                editor.putString("communityName", code).apply()
                 currentDialog?.let { continueSync(it) }
             } else if (id == savedId) {
                 currentDialog?.let { continueSync(it) }
@@ -210,8 +149,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         for (key in keysToKeep) {
             tempStorage[key] = settings.getBoolean(key, false)
         }
-        settings.edit().clear().commit()
-        val editor = settings.edit()
+        editor.clear().commit()
+        val editor = editor
         for ((key, value) in tempStorage) {
             editor.putBoolean(key, value)
         }
@@ -243,7 +182,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 }
             }
         }
-        settings.edit().putBoolean("firstRun", false).apply()
+        editor.putBoolean("firstRun", false).apply()
     }
 
     fun sync(dialog: MaterialDialog) {
@@ -277,8 +216,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 try {
                     customProgressDialog?.dismiss()
                     val ss = response.body()?.string()
-                    val myList = ss?.split(",".toRegex())?.dropLastWhile { it.isEmpty() }
-                        ?.let { listOf(*it.toTypedArray()) }
+                    val myList = ss?.split(",".toRegex())?.dropLastWhile { it.isEmpty() }?.let { listOf(*it.toTypedArray()) }
                     if ((myList?.size ?: 0) < 8) {
                         alertDialogOkay(getString(R.string.check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server))
                     } else {
@@ -301,13 +239,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         return connectionResult
     }
 
-    private fun declareHideKeyboardElements() {
-        findViewById<View>(R.id.constraintLayout).setOnTouchListener { view: View?, _: MotionEvent? ->
-            hideKeyboard(view)
-            false
-        }
-    }
-
     private fun dateCheck(dialog: MaterialDialog) {
         // Check if the user never synced
         syncDate = dialog.findViewById(R.id.lastDateSynced) as TextView
@@ -317,17 +248,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     // Converts OS date to human date
     private fun convertDate(): String {
-        // Context goes here
         val lastSynced = settings.getLong("LastSync", 0)
         return if (lastSynced == 0L) {
             " Never Synced"
         } else {
             getRelativeTime(lastSynced)
         }
-        // <=== modify this when implementing this method
     }
 
-    // Create items in the spinner
     private fun syncDropdownAdd() {
         val list: MutableList<String> = ArrayList()
         list.add("1 hour")
@@ -366,7 +294,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private fun checkName(username: String?, password: String?, isManagerMode: Boolean): Boolean {
         try {
             mRealm = Realm.getDefaultInstance()
-//            val decrypt = AndroidDecrypter()
             val db_users = mRealm.where(RealmUserModel::class.java).equalTo("name", username).findAll()
             for (user in db_users) {
                 if (user._id?.isEmpty() == true) {
@@ -401,9 +328,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         saveSyncInfoToPreference()
         var processedUrl = ""
         val protocol = settings.getString("serverProtocol", "")
-        var url = (dialog.customView?.findViewById<View>(R.id.input_server_url) as EditText).text.toString()
-        val pin = (dialog.customView?.findViewById<View>(R.id.input_server_Password) as EditText).text.toString()
-        settings.edit().putString("customDeviceName", (dialog.customView?.findViewById<View>(R.id.deviceName) as EditText).text.toString()).apply()
+        var url = "${(dialog.customView?.findViewById<View>(R.id.input_server_url) as EditText).text}"
+        val pin = "${(dialog.customView?.findViewById<View>(R.id.input_server_Password) as EditText).text}"
+        editor.putString("customDeviceName", "${(dialog.customView?.findViewById<View>(R.id.deviceName) as EditText).text}").apply()
         url = protocol + url
         if (isUrlValid(url)) processedUrl = setUrlParts(url, pin)
         return processedUrl
@@ -412,7 +339,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     override fun onSyncStarted() {
         customProgressDialog?.setText(getString(R.string.syncing_data_please_wait))
         customProgressDialog?.show()
-
     }
 
     override fun onSyncFailed(msg: String?) {
@@ -449,195 +375,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         if (storedJsonConcatenatedLinks != null) {
             val storedConcatenatedLinks: ArrayList<String> = Gson().fromJson(storedJsonConcatenatedLinks, object : TypeToken<ArrayList<String>>() {}.type)
             openDownloadService(context, storedConcatenatedLinks, true)
-        }
-    }
-
-    fun declareElements() {
-        if (!defaultPref.contains("beta_addImageToMessage")) {
-            defaultPref.edit().putBoolean("beta_addImageToMessage", true).apply()
-        }
-        customDeviceName.text = getCustomDeviceName()
-        if (::btnSignIn.isInitialized) {
-            btnSignIn.setOnClickListener {
-                if (TextUtils.isEmpty(inputName.text.toString())) {
-                    inputName.error = getString(R.string.err_msg_name)
-                } else if (TextUtils.isEmpty(inputPassword.text.toString())) {
-                    inputPassword.error = getString(R.string.err_msg_password)
-                } else {
-                    if (mRealm.isClosed) {
-                        mRealm = Realm.getDefaultInstance()
-                    }
-                    val user = mRealm.where(RealmUserModel::class.java)
-                        .equalTo("name", inputName.text.toString()).findFirst()
-                    if (user == null || !user.isArchived) {
-                        submitForm(inputName.text.toString(), inputPassword.text.toString())
-                    } else {
-                        val builder = AlertDialog.Builder(this)
-                        builder.setMessage("member " + inputName.text.toString() + " is archived")
-                        builder.setCancelable(false)
-                        builder.setPositiveButton("Ok") { dialog: DialogInterface, _: Int ->
-                            dialog.dismiss()
-                            inputName.setText("")
-                            inputPassword.setText("")
-                        }
-                        val dialog = builder.create()
-                        dialog.show()
-                    }
-                }
-            }
-        }
-        if (!settings.contains("serverProtocol")) settings.edit().putString("serverProtocol", "http://").apply()
-        if (::becomeMember.isInitialized) {
-            becomeMember.setOnClickListener {
-                inputName.setText("")
-                becomeAMember()
-            }
-        }
-        if (::imgBtnSetting.isInitialized) {
-            imgBtnSetting.setOnClickListener {
-                inputName.setText("")
-                settingDialog(this)
-            }
-        }
-        if (::btnGuestLogin.isInitialized ) {
-            btnGuestLogin.setOnClickListener {
-                if (Utilities.getUrl().isNotEmpty()) {
-                    inputName.setText("")
-                    showGuestLoginDialog()
-                } else {
-                    Utilities.toast(this, getString(R.string.please_enter_server_url_first))
-                    settingDialog(this)
-                }
-            }
-        }
-    }
-
-    fun declareMoreElements() {
-        try {
-            mRealm = Realm.getDefaultInstance()
-            syncIcon.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.login_file_upload_animation))
-            syncIcon.scaleType
-            syncIconDrawable = syncIcon.drawable as AnimationDrawable
-            syncIcon.setOnClickListener {
-                syncIconDrawable.start()
-                isSync = false
-                forceSync = true
-                service.checkVersion(this, settings) }
-            declareHideKeyboardElements()
-            lblVersion.text = "${resources.getText(R.string.version)} ${resources.getText(R.string.app_version)}"
-            inputName.addTextChangedListener(MyTextWatcher(inputName))
-            inputPassword.addTextChangedListener(MyTextWatcher(inputPassword))
-            inputPassword.setOnEditorActionListener { _: TextView?, actionId: Int, event: KeyEvent? ->
-                if (actionId == EditorInfo.IME_ACTION_DONE || event != null && event.action == KeyEvent.ACTION_DOWN && event.keyCode == KeyEvent.KEYCODE_ENTER) {
-                    btnSignIn.performClick()
-                    return@setOnEditorActionListener true
-                }
-                false
-            }
-            setUpLanguageButton()
-            if (defaultPref.getBoolean("saveUsernameAndPassword", false)) {
-                inputName.setText(settings.getString(getString(R.string.login_user), ""))
-                inputPassword.setText(settings.getString(getString(R.string.login_password), ""))
-            }
-            if (isNetworkConnected) {
-                service.syncPlanetServers(mRealm) { success: String? ->
-                    Utilities.toast(this, success)
-                }
-            }
-            inputName.addTextChangedListener(object : TextWatcher {
-                override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
-
-                override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-                    val lowercaseText = s.toString().lowercase()
-                    if (s.toString() != lowercaseText) {
-                        inputName.setText(lowercaseText)
-                        inputName.setSelection(lowercaseText.length)
-                    }
-                }
-
-                override fun afterTextChanged(s: Editable) {}
-            })
-        } finally {
-            if (this::mRealm.isInitialized && !mRealm.isClosed) {
-                mRealm.close()
-            }
-        }
-    }
-
-    private fun setUpLanguageButton() {
-        val languageKey = resources.getStringArray(R.array.language_keys)
-        val languages = resources.getStringArray(R.array.language)
-        val selectedLanguageKey = settings.getString(SELECTED_LANGUAGE, fallbackLanguage)
-        val index = languageKey.indexOf(selectedLanguageKey)
-        btnLang.text = languages[index]
-        btnLang.setOnClickListener {
-            AlertDialog.Builder(this)
-                .setTitle(R.string.select_language)
-                .setSingleChoiceItems(languages, index) { dialog, which ->
-                    val selectLanguageKey = languageKey[which]
-                    if (selectLanguageKey != settings.getString(SELECTED_LANGUAGE, fallbackLanguage)) {
-                        LocaleHelper.setLocale(this, selectLanguageKey)
-                        settings.edit().putString(SELECTED_LANGUAGE, selectLanguageKey).apply()
-                        btnLang.text = languages[which]
-                        recreate()
-                    }
-                    dialog.dismiss()
-                }
-                .setNegativeButton(R.string.cancel, null)
-                .show()
-        }
-    }
-
-    fun submitForm(name: String?, password: String?) {
-        if (forceSyncTrigger()) {
-            return
-        }
-        val editor = settings.edit()
-        editor.putString("loginUserName", name)
-        editor.putString("loginUserPassword", password)
-        val isLoggedIn = authenticateUser(settings, name, password, false)
-        if (isLoggedIn) {
-            Toast.makeText(applicationContext, getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
-            onLogin()
-            saveUsers(inputName.text.toString(), inputPassword.text.toString(), "member")
-        } else {
-            instance?.login(name, password, object : SyncListener {
-                override fun onSyncStarted() {
-                    customProgressDialog?.setText(getString(R.string.please_wait))
-                    customProgressDialog?.show()
-                }
-
-                override fun onSyncComplete() {
-                    customProgressDialog?.dismiss()
-                    val log = authenticateUser(settings, name, password, true)
-                    if (log) {
-                        Toast.makeText(applicationContext, getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
-                        onLogin()
-                        saveUsers(inputName.text.toString(), inputPassword.text.toString(), "member")
-                    } else {
-                        alertDialogOkay(getString(R.string.err_msg_login))
-                    }
-                    syncIconDrawable.stop()
-                    syncIconDrawable.selectDrawable(0)
-                }
-
-                override fun onSyncFailed(msg: String?) {
-                    Utilities.toast(MainApplication.context, msg)
-                    customProgressDialog?.dismiss()
-                    syncIconDrawable.stop()
-                    syncIconDrawable.selectDrawable(0)
-                }
-            })
-        }
-        editor.apply()
-    }
-
-    private fun becomeAMember() {
-        if (Utilities.getUrl().isNotEmpty()) {
-            startActivity(Intent(this, BecomeMemberActivity::class.java))
-        } else {
-            Utilities.toast(this, getString(R.string.please_enter_server_url_first))
-            settingDialog(this)
         }
     }
 
@@ -685,211 +422,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
     }
 
-    private fun showGuestLoginDialog() {
-        try {
-            mRealm = Realm.getDefaultInstance()
-            mRealm.refresh()
-            editor = settings.edit()
-            val alertGuestLoginBinding = AlertGuestLoginBinding.inflate(LayoutInflater.from(this))
-            val v: View = alertGuestLoginBinding.root
-            alertGuestLoginBinding.etUserName.addTextChangedListener(object : TextWatcher {
-                override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
-
-                override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-                    val input = s.toString()
-                    val firstChar = if (input.isNotEmpty()) {
-                        input[0]
-                    } else {
-                        '\u0000'
-                    }
-                    var hasInvalidCharacters = false
-                    val hasSpecialCharacters: Boolean
-                    var hasDiacriticCharacters = false
-                    val normalizedText = Normalizer.normalize(s, Normalizer.Form.NFD)
-                    for (element in input) {
-                        if (element != '_' && element != '.' && element != '-' && !Character.isDigit(element) && !Character.isLetter(element)) {
-                            hasInvalidCharacters = true
-                            break
-                        }
-                    }
-                    val regex = ".*[ßäöüéèêæÆœøØ¿àìòùÀÈÌÒÙáíóúýÁÉÍÓÚÝâîôûÂÊÎÔÛãñõÃÑÕëïÿÄËÏÖÜŸåÅŒçÇðÐ].*"
-                    val pattern = Pattern.compile(regex)
-                    val matcher = pattern.matcher(input)
-                    hasSpecialCharacters = matcher.matches()
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                        hasDiacriticCharacters = !normalizedText.codePoints().allMatch { codePoint: Int -> Character.isLetterOrDigit(codePoint) || codePoint == '.'.code || codePoint == '-'.code || codePoint == '_'.code }
-                    }
-                    if (!Character.isDigit(firstChar) && !Character.isLetter(firstChar)) {
-                        alertGuestLoginBinding.etUserName.error = getString(R.string.must_start_with_letter_or_number)
-                    } else if (hasInvalidCharacters || hasDiacriticCharacters || hasSpecialCharacters) {
-                        alertGuestLoginBinding.etUserName.error = getString(R.string.only_letters_numbers_and_are_allowed)
-                    } else {
-                        val lowercaseText = input.lowercase()
-                        if (input != lowercaseText) {
-                            alertGuestLoginBinding.etUserName.setText(lowercaseText)
-                            alertGuestLoginBinding.etUserName.setSelection(lowercaseText.length)
-                        }
-                        alertGuestLoginBinding.etUserName.error = null
-                    }
-                }
-
-                override fun afterTextChanged(s: Editable) {}
-            })
-            val builder = AlertDialog.Builder(this)
-            builder.setTitle("Login As Guest")
-                .setView(v)
-                .setPositiveButton("Login", null)
-                .setNegativeButton("Cancel", null)
-            val dialog = builder.create()
-            dialog.show()
-            val login = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-            val cancel = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
-            login.setOnClickListener {
-                if (mRealm.isClosed) {
-                    mRealm = Realm.getDefaultInstance()
-                }
-                val username = alertGuestLoginBinding.etUserName.text.toString().trim { it <= ' ' }
-                val firstChar = if (username.isEmpty()) null else username[0]
-                var hasInvalidCharacters = false
-                var hasDiacriticCharacters = false
-                var hasSpecialCharacters = false
-                var isValid = true
-                val normalizedText = Normalizer.normalize(username, Normalizer.Form.NFD)
-                val regex = ".*[ßäöüéèêæÆœøØ¿àìòùÀÈÌÒÙáíóúýÁÉÍÓÚÝâîôûÂÊÎÔÛãñõÃÑÕëïÿÄËÏÖÜŸåÅŒçÇðÐ].*"
-                val pattern = Pattern.compile(regex)
-                val matcher = pattern.matcher(username)
-                if (TextUtils.isEmpty(username)) {
-                    alertGuestLoginBinding.etUserName.error = getString(R.string.username_cannot_be_empty)
-                    isValid = false
-                }
-                if (firstChar != null && !Character.isDigit(firstChar) && !Character.isLetter(firstChar)) {
-                    alertGuestLoginBinding.etUserName.error = getString(R.string.must_start_with_letter_or_number)
-                    isValid = false
-                } else {
-                    for (c in username.toCharArray()) {
-                        if (c != '_' && c != '.' && c != '-' && !Character.isDigit(c) && !Character.isLetter(c)) {
-                            hasInvalidCharacters = true
-                            break
-                        }
-                        hasSpecialCharacters = matcher.matches()
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                            hasDiacriticCharacters = !normalizedText.codePoints().allMatch {
-                                codePoint -> Character.isLetterOrDigit(codePoint) || codePoint == '.'.code || codePoint == '-'.code || codePoint == '_'.code
-                            }
-                        }
-                    }
-                    if (hasInvalidCharacters || hasDiacriticCharacters || hasSpecialCharacters) {
-                        alertGuestLoginBinding.etUserName.error = getString(R.string.only_letters_numbers_and_are_allowed)
-                        isValid = false
-                    }
-                }
-                if (isValid) {
-                    val existingUser = mRealm.where(RealmUserModel::class.java).equalTo("name", username).findFirst()
-                    dialog.dismiss()
-                    if (existingUser != null) {
-                        if (existingUser._id?.contains("guest") == true) {
-                            showGuestDialog(username)
-                        } else if (existingUser._id?.contains("org.couchdb.user:") == true) {
-                            showUserAlreadyMemberDialog(username)
-                        }
-                    } else {
-                        val model = createGuestUser(username, mRealm, settings)?.let { it1 ->
-                            mRealm.copyFromRealm(it1)
-                        }
-                        if (model == null) {
-                            Utilities.toast(this, getString(R.string.unable_to_login))
-                        } else {
-                            saveUsers(username, "", "guest")
-                            saveUserInfoPref(settings, "", model)
-                            onLogin()
-                        }
-                    }
-                }
-            }
-            cancel.setOnClickListener { dialog.dismiss() }
-        } finally {
-            if (this::mRealm.isInitialized && !mRealm.isClosed) {
-                mRealm.close()
-            }
-        }
-    }
-
-    private fun showGuestDialog(username: String) {
-        val builder = AlertDialog.Builder(this)
-        builder.setTitle("$username is already a guest")
-        builder.setMessage("Continue only if this is you")
-        builder.setCancelable(false)
-        builder.setNegativeButton("cancel") { dialog: DialogInterface, _: Int -> dialog.dismiss() }
-        builder.setPositiveButton("continue") { dialog: DialogInterface, _: Int ->
-            dialog.dismiss()
-            val model = createGuestUser(username, mRealm, settings)?.let { mRealm.copyFromRealm(it) }
-            if (model == null) {
-                Utilities.toast(this, getString(R.string.unable_to_login))
-            } else {
-                saveUserInfoPref(settings, "", model)
-                onLogin()
-            }
-        }
-        val dialog = builder.create()
-        dialog.show()
-    }
-
-    private fun showUserAlreadyMemberDialog(username: String) {
-        val builder = AlertDialog.Builder(this)
-        builder.setTitle("$username is already a member")
-        builder.setMessage("Continue to login if this is you")
-        builder.setCancelable(false)
-        builder.setNegativeButton("Cancel") { dialog: DialogInterface, _: Int -> dialog.dismiss() }
-        builder.setPositiveButton("login") { dialog: DialogInterface, _: Int ->
-            dialog.dismiss()
-            inputName.setText(username)
-        }
-        val dialog = builder.create()
-        dialog.show()
-    }
-
-    fun saveUsers(name: String?, password: String?, source: String) {
-        if (source === "guest") {
-            val newUser = User("", name, password, "", "guest")
-            val existingUsers: MutableList<User> = ArrayList(
-                prefData.getSAVEDUSERS()
-            )
-            var newUserExists = false
-            for ((_, name1) in existingUsers) {
-                if (name1 == newUser.name?.trim { it <= ' ' }) {
-                    newUserExists = true
-                    break
-                }
-            }
-            if (!newUserExists) {
-                existingUsers.add(newUser)
-                prefData.setSAVEDUSERS(existingUsers)
-            }
-        } else if (source === "member") {
-            var userProfile = profileDbHandler.userModel?.userImage
-            var fullName: String? = profileDbHandler.userModel?.getFullName()
-            if (userProfile == null) {
-                userProfile = ""
-            }
-            if (fullName?.trim { it <= ' ' }?.isEmpty() == true) {
-                fullName = profileDbHandler.userModel?.name
-            }
-            val newUser = User(fullName, name, password, userProfile, "member")
-            val existingUsers: MutableList<User> = ArrayList(prefData.getSAVEDUSERS())
-            var newUserExists = false
-            for ((fullName1) in existingUsers) {
-                if (fullName1 == newUser.fullName?.trim { it <= ' ' }) {
-                    newUserExists = true
-                    break
-                }
-            }
-            if (!newUserExists) {
-                existingUsers.add(newUser)
-                prefData.setSAVEDUSERS(existingUsers)
-            }
-        }
-    }
-
     fun onLogin() {
         val handler = UserProfileDbHandler(this)
         handler.onLogin()
@@ -898,7 +430,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         openDashboard()
     }
 
-    private fun settingDialog(activity: SyncActivity) {
+    fun settingDialog() {
         try {
             mRealm = Realm.getDefaultInstance()
             val dialogServerUrlBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this))
@@ -906,7 +438,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             protocol_checkin = dialogServerUrlBinding.radioProtocol
             serverUrl = dialogServerUrlBinding.inputServerUrl
             serverPassword = dialogServerUrlBinding.inputServerPassword
-            dialogServerUrlBinding.deviceName.setText(getDeviceName())
+            dialogServerUrlBinding.deviceName.setText(NetworkUtils.getDeviceName())
             val builder = MaterialDialog.Builder(this)
             builder.customView(dialogServerUrlBinding.root, true)
                 .positiveText(R.string.btn_sync)
@@ -937,8 +469,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             if (!prefData.getMANUALCONFIG()) {
                 dialogServerUrlBinding.manualConfiguration.isChecked = false
                 showConfigurationUIElements(dialogServerUrlBinding, false)
-            }
-            else {
+            } else {
                 dialogServerUrlBinding.manualConfiguration.isChecked = true
                 showConfigurationUIElements(dialogServerUrlBinding, true)
             }
@@ -947,10 +478,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             dialogServerUrlBinding.manualConfiguration.setOnCheckedChangeListener { _: CompoundButton?, isChecked: Boolean ->
                 if (isChecked) {
                     prefData.setMANUALCONFIG(true)
-                    settings.edit().putString("serverURL", "").apply()
-                    settings.edit().putString("serverPin", "").apply()
+                    editor.putString("serverURL", "").apply()
+                    editor.putString("serverPin", "").apply()
                     dialogServerUrlBinding.radioHttp.isChecked = true
-                    settings.edit().putString("serverProtocol", getString(R.string.http_protocol)).apply()
+                    editor.putString("serverProtocol", getString(R.string.http_protocol)).apply()
                     showConfigurationUIElements(dialogServerUrlBinding, true)
                     if (mRealm.isClosed) {
                         mRealm = Realm.getDefaultInstance()
@@ -971,7 +502,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                         override fun onNothingSelected(adapterView: AdapterView<*>?) {}
                     }
                     dialogServerUrlBinding.switchServerUrl.setOnCheckedChangeListener { _: CompoundButton?, b: Boolean ->
-                        settings.edit().putBoolean("switchCloudUrl", b).apply()
+                        editor.putBoolean("switchCloudUrl", b).apply()
                         dialogServerUrlBinding.spnCloud.visibility = if (b) {
                             View.VISIBLE
                         } else {
@@ -986,16 +517,13 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 } else {
                     prefData.setMANUALCONFIG(false)
                     showConfigurationUIElements(dialogServerUrlBinding, false)
-                    settings.edit().putBoolean("switchCloudUrl", false).apply()
+                    editor.putBoolean("switchCloudUrl", false).apply()
                 }
             }
             dialogServerUrlBinding.radioProtocol.setOnCheckedChangeListener { _: RadioGroup?, checkedId: Int ->
                 when (checkedId) {
-                    R.id.radio_http -> settings.edit()
-                        .putString("serverProtocol", getString(R.string.http_protocol)).apply()
-
-                    R.id.radio_https -> settings.edit()
-                        .putString("serverProtocol", getString(R.string.https_protocol)).apply()
+                    R.id.radio_http -> editor.putString("serverProtocol", getString(R.string.http_protocol)).apply()
+                    R.id.radio_https -> editor.putString("serverProtocol", getString(R.string.https_protocol)).apply()
                 }
             }
             dialogServerUrlBinding.clearData.setOnClickListener {
@@ -1019,12 +547,12 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         binding.ltDeviceName.visibility = if (show) View.VISIBLE else View.GONE
         if (show) {
             if (settings.getString("serverURL", "") == "https://planet.learning.ole.org") {
-                settings.edit().putString("serverURL", "").apply()
-                settings.edit().putString("serverPin", "").apply()
+                editor.putString("serverURL", "").apply()
+                editor.putString("serverPin", "").apply()
             }
             if (settings.getString("serverProtocol", "") == getString(R.string.http_protocol)) {
                 binding.radioHttp.isChecked = true
-                settings.edit().putString("serverProtocol", getString(R.string.http_protocol))
+                editor.putString("serverProtocol", getString(R.string.http_protocol))
                     .apply()
             }
             if (settings.getString("serverProtocol", "") == getString(R.string.https_protocol)
@@ -1032,7 +560,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 && settings.getString("serverURL", "") != "https://planet.learning.ole.org"
             ) {
                 binding.radioHttps.isChecked = true
-                settings.edit().putString("serverProtocol", getString(R.string.https_protocol)).apply()
+                editor.putString("serverProtocol", getString(R.string.https_protocol)).apply()
             }
             serverUrl.setText(settings.getString("serverURL", "")?.let { removeProtocol(it) })
             serverPassword.setText(settings.getString("serverPin", ""))
@@ -1043,14 +571,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             serverPassword.setText("1983")
             serverUrl.isEnabled = false
             serverPassword.isEnabled = false
-            settings.edit().putString("serverProtocol", getString(R.string.https_protocol)).apply()
+            editor.putString("serverProtocol", getString(R.string.https_protocol)).apply()
         }
         try {
             if (mRealm.isClosed) {
                 mRealm = Realm.getDefaultInstance()
             }
             val teams: List<RealmMyTeam> = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId").equalTo("status", "active").findAll()
-            if (teams.isNotEmpty() && show && binding.inputServerUrl.text.toString() != "") {
+            if (teams.isNotEmpty() && show && "${binding.inputServerUrl.text}" != "") {
                 binding.team.visibility = View.VISIBLE
                 teamAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, teamList)
                 teamAdapter?.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
@@ -1085,7 +613,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                         // Do nothing when nothing is selected
                     }
                 }
-            } else if (teams.isNotEmpty() && show && binding.inputServerUrl.text.toString() == "") {
+            } else if (teams.isNotEmpty() && show && "${binding.inputServerUrl.text}" == "") {
                 binding.team.visibility = View.GONE
             } else {
                 binding.team.visibility = View.GONE
@@ -1097,7 +625,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
     }
 
-    fun onChangeServerUrl() {
+    private fun onChangeServerUrl() {
         try {
             mRealm = Realm.getDefaultInstance()
             val selected = spnCloud.selectedItem
@@ -1109,7 +637,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 serverPassword.isEnabled = selected.weight != 0
             }
         } finally {
-            if (this::mRealm.isInitialized && !mRealm.isClosed) {
+            if (!mRealm.isClosed) {
                 mRealm.close()
             }
         }
@@ -1139,8 +667,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private fun protocol_semantics() {
         protocol_checkin.setOnCheckedChangeListener { _: RadioGroup?, i: Int ->
             when (i) {
-                R.id.radio_http -> settings.edit().putString("serverProtocol", getString(R.string.http_protocol)).apply()
-                R.id.radio_https -> settings.edit().putString("serverProtocol", getString(R.string.https_protocol)).apply()
+                R.id.radio_http -> editor.putString("serverProtocol", getString(R.string.http_protocol)).apply()
+                R.id.radio_https -> editor.putString("serverProtocol", getString(R.string.https_protocol)).apply()
             }
         }
     }
@@ -1161,12 +689,12 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
         Service(this).isPlanetAvailable(object : PlanetAvailableListener {
             override fun isAvailable() {
-                Service(MainApplication.context).checkVersion(this@SyncActivity, settings)
+                Service(context).checkVersion(this@SyncActivity, settings)
             }
 
             override fun notAvailable() {
                 if (!isFinishing) {
-                    showAlert(MainApplication.context, "Error", getString(R.string.planet_server_not_reachable))
+                    showAlert(context, "Error", getString(R.string.planet_server_not_reachable))
                 }
             }
         })
@@ -1179,7 +707,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         if (::btnSignIn.isInitialized) {
             showSnack(btnSignIn, success)
         }
-        settings.edit().putLong("lastUsageUploaded", Date().time).apply()
+        editor.putLong("lastUsageUploaded", Date().time).apply()
         if (::lblLastSyncDate.isInitialized) {
             lblLastSyncDate.text = "${getString(R.string.last_sync)}${getRelativeTime(Date().time)} >>"
         }
@@ -1220,7 +748,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     override fun onError(msg: String, blockSync: Boolean) {
         Utilities.toast(this, msg)
         if (msg.startsWith("Config")) {
-            settingDialog(this)
+            settingDialog()
         }
         customProgressDialog?.dismiss()
         if (!blockSync) continueSyncProcess() else {
@@ -1229,7 +757,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
     }
 
-    fun continueSyncProcess() {
+    private fun continueSyncProcess() {
         try {
             if (isSync) {
                 isServerReachable(processedUrl)
@@ -1249,7 +777,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             AlertDialog.Builder(this).setView(layoutChildLoginBinding.root)
                 .setTitle(R.string.please_enter_your_password)
                 .setPositiveButton(R.string.login) { _: DialogInterface?, _: Int ->
-                    val password = layoutChildLoginBinding.etChildPassword.text.toString()
+                    val password = "${layoutChildLoginBinding.etChildPassword.text}"
                     if (authenticateUser(settings, userModel.name, password, false)) {
                         Toast.makeText(applicationContext, getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
                         onLogin()
@@ -1258,34 +786,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     }
                 }.setNegativeButton(R.string.cancel, null).show()
         } finally {
-            if (this::mRealm.isInitialized && !mRealm.isClosed) {
+            if (!mRealm.isClosed) {
                 mRealm.close()
             }
-        }
-    }
-
-    fun getCustomDeviceName(): String? {
-        return settings.getString("customDeviceName", getDeviceName())
-    }
-
-    fun resetGuestAsMember(username: String?) {
-        val existingUsers = prefData.getSAVEDUSERS().toMutableList()
-        var newUserExists = false
-        for ((_, name) in existingUsers) {
-            if (name == username) {
-                newUserExists = true
-                break
-            }
-        }
-        if (newUserExists) {
-            val iterator = existingUsers.iterator()
-            while (iterator.hasNext()) {
-                val (_, name) = iterator.next()
-                if (name == username) {
-                    iterator.remove()
-                }
-            }
-            prefData.setSAVEDUSERS(existingUsers)
         }
     }
 
