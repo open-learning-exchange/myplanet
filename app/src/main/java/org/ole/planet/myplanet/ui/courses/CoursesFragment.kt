@@ -79,7 +79,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         userModel = UserProfileDbHandler(requireContext()).userModel
         searchTags = ArrayList()
         initializeView()
-        if (isMyCourseLib) {
+        if (isMyCourseLib && !(selectedItems.isNullOrEmpty())) {
             tvDelete?.setText(R.string.archive)
             btnRemove.visibility = View.VISIBLE
             checkList()
