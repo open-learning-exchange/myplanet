@@ -58,6 +58,16 @@ open class RealmNews : RealmObject() {
     var labels: RealmList<String>? = null
     @JvmField
     var viewIn: String? = null
+    var newsId: String? = null
+    var newsRev: String? = null
+    var newsUser: String? = null
+    var aiProvider: String? = null
+    var newsTitle: String? = null
+    var conversations: String? = null
+    var newsCreatedDate: Long = 0
+    var newsUpdatedDate: Long = 0
+    var chat: Boolean = false
+
     val imagesArray: JsonArray
         get() = if (images == null) JsonArray() else Gson().fromJson(images, JsonArray::class.java)
     val labelsArray: JsonArray
@@ -144,12 +154,24 @@ open class RealmNews : RealmObject() {
             val labels = JsonUtils.getJsonArray("labels", doc)
             news?.viewIn = Gson().toJson(JsonUtils.getJsonArray("viewIn", doc))
             news?.setLabels(labels)
+            news?.chat = JsonUtils.getBoolean("chat", doc)
+
+            val newsObj = JsonUtils.getJsonObject("news", doc)
+            news?.newsId = JsonUtils.getString("_id", newsObj)
+            news?.newsRev = JsonUtils.getString("_rev", newsObj)
+            news?.newsUser = JsonUtils.getString("user", newsObj)
+            news?.aiProvider = JsonUtils.getString("aiProvider", newsObj)
+            news?.newsTitle = JsonUtils.getString("title", newsObj)
+            news?.conversations = Gson().toJson(JsonUtils.getJsonArray("conversations", newsObj))
+            news?.newsCreatedDate = JsonUtils.getLong("createdDate", newsObj)
+            news?.newsUpdatedDate = JsonUtils.getLong("updatedDate", newsObj)
             mRealm.commitTransaction()
         }
 
         @JvmStatic
         fun serializeNews(news: RealmNews): JsonObject {
             val `object` = JsonObject()
+            `object`.addProperty("chat", news.chat)
             `object`.addProperty("message", news.message)
             if (news._id != null) `object`.addProperty("_id", news._id)
             if (news._rev != null) `object`.addProperty("_rev", news._rev)
@@ -166,6 +188,16 @@ open class RealmNews : RealmObject() {
             `object`.add("images", news.imagesArray)
             `object`.add("labels", news.labelsArray)
             `object`.add("user", Gson().fromJson(news.user, JsonObject::class.java))
+            val newsObject = JsonObject()
+            newsObject.addProperty("_id", news.newsId)
+            newsObject.addProperty("_rev", news.newsRev)
+            newsObject.addProperty("user", news.newsUser)
+            newsObject.addProperty("aiProvider", news.aiProvider)
+            newsObject.addProperty("title", news.newsTitle)
+            newsObject.add("conversations", Gson().fromJson(news.conversations, JsonArray::class.java))
+            newsObject.addProperty("createdDate", news.newsCreatedDate)
+            newsObject.addProperty("updatedDate", news.newsUpdatedDate)
+            `object`.add("news", newsObject)
             return `object`
         }
 
