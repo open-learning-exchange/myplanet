@@ -5,6 +5,7 @@ import android.content.DialogInterface
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.Log
 import android.view.View
 import android.widget.AdapterView
 import android.widget.Button
@@ -169,6 +170,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         checkList()
         selectAll.setOnClickListener {
             val allSelected = selectedItems?.size == adapterCourses.getCourseList().size
+            Log.d("ollonde", "selectedItems: ${selectedItems?.size} : LibraryList: ${adapterCourses.getCourseList().size}")
             adapterCourses.selectAllItems(!allSelected)
             if (allSelected) {
                 selectAll.isChecked = false

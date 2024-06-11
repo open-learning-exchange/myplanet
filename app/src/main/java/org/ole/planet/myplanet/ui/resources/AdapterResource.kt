@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.resources
 
 import android.content.Context
 import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -117,13 +118,14 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
         if (selectAll) {
             selectedItems.clear()
             selectedItems.addAll(libraryList)
+            Log.d("AdapterResource", "selectAllItems: $selectedItems")
         } else {
             selectedItems.clear()
         }
         notifyDataSetChanged()
-        if (listener != null) {
+//        if (listener != null) {
             listener?.onSelectedListChange(selectedItems)
-        }
+//        }
     }
 
     private fun openLibrary(library: RealmMyLibrary?) {

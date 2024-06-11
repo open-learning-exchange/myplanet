@@ -5,6 +5,7 @@ import android.content.DialogInterface
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.CheckBox
@@ -129,7 +130,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         selectAll?.setOnClickListener {
             updateTvDelete()
             val allSelected = selectedItems?.size == adapterLibrary?.getLibraryList()?.size
+            Log.d("ollonde", "selectedItems: ${selectedItems?.size} : LibraryList: ${adapterLibrary?.getLibraryList()?.size}")
             adapterLibrary?.selectAllItems(!allSelected)
+            Log.d("ollonde", "onViewCreated: $allSelected")
             if (allSelected) {
                 selectAll?.isChecked = false
                 selectAll?.text = getString(R.string.select_all)
@@ -141,11 +144,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private fun updateTvDelete(){
-        if (selectedItems?.size!! == 0) {
-            tvDelete?.isEnabled = false
-        } else{
-            tvDelete?.isEnabled = true
-        }
+        tvDelete?.isEnabled = selectedItems?.size != 0
     }
 
     private fun checkList() {
@@ -306,10 +305,10 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         if (filterApplied()) {
             if (!mRealm.isInTransaction) mRealm.beginTransaction()
             val activity = mRealm.createObject(RealmSearchActivity::class.java, UUID.randomUUID().toString())
-            activity.user = model?.name!!
+            activity.user = model?.name ?: ""
             activity.time = Calendar.getInstance().timeInMillis
-            activity.createdOn = model?.planetCode!!
-            activity.parentCode = model?.parentCode!!
+            activity.createdOn = model?.planetCode ?: ""
+            activity.parentCode = model?.parentCode ?: ""
             activity.text = etSearch?.text.toString()
             activity.type = "resources"
             val filter = JsonObject()
