@@ -34,7 +34,6 @@
                 android:orientation="vertical"
                 android:padding="8dp">
 
-
                 <TextView
                     android:id="@+id/tv_name"
                     android:layout_width="match_parent"
@@ -60,30 +59,58 @@
             android:id="@+id/linearLayout5"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:orientation="vertical"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/linearLayout4">
 
-            <ImageView
-                android:id="@+id/img_news"
-                android:layout_width="120dp"
-                android:layout_height="120dp"
-                android:layout_gravity="center"
-                android:padding="@dimen/padding_small" />
-
-
             <TextView
-                android:id="@+id/tv_message"
-                android:layout_width="0dp"
+                android:id="@+id/sharedChat"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:layout_weight="3"
-                android:ellipsize="end"
-                android:maxLines="6"
-                android:padding="@dimen/padding_normal"
-                android:textColor="@color/md_black_1000"
-                android:textSize="14sp"
-                android:visibility="visible" />
+                android:background="@color/colorPrimary"
+                android:padding="4dp"
+                android:text="@string/shared_chat"
+                android:textColor="@color/md_white_1000" />
 
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recycler_gchat"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="16dp"
+                android:contentDescription="@string/recycler_chat_label"
+                app:layout_constrainedHeight="true"
+                app:layout_constraintBottom_toTopOf="@+id/text_gchat_indicator"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/aiTbLayout" />
+
+            <LinearLayout
+                android:id="@+id/linearLayout51"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <ImageView
+                    android:id="@+id/img_news"
+                    android:layout_width="120dp"
+                    android:layout_height="120dp"
+                    android:layout_gravity="center"
+                    android:padding="@dimen/padding_small" />
+
+                <TextView
+                    android:id="@+id/tv_message"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_weight="3"
+                    android:ellipsize="end"
+                    android:maxLines="6"
+                    android:padding="@dimen/padding_normal"
+                    android:textColor="@color/md_black_1000"
+                    android:textSize="14sp"
+                    android:visibility="visible" />
+
+            </LinearLayout>
         </LinearLayout>
 
         <com.google.android.flexbox.FlexboxLayout

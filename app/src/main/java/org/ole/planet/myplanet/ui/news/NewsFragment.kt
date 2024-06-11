@@ -24,7 +24,6 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature

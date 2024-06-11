@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.news
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
@@ -13,6 +14,7 @@ import android.widget.PopupMenu
 import androidx.appcompat.app.AlertDialog
 import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.google.gson.Gson
@@ -26,10 +28,12 @@ import io.realm.RealmList
 import io.realm.Sort
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNewsBinding
+import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.ui.chat.ChatAdapter
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
@@ -80,6 +84,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         if (holder is ViewHolderNews) {
             holder.bind(position)
             val news = getNews(holder, position)
+
             if (news?.isValid == true) {
                 val userModel = mRealm.where(RealmUserModel::class.java).equalTo("id", news.userId).findFirst()
                 if (userModel != null && currentUser != null) {
@@ -91,7 +96,11 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                     holder.rowNewsBinding.llEditDelete.visibility = View.GONE
                 }
                 showShareButton(holder, news)
-                holder.rowNewsBinding.tvMessage.text = news.messageWithoutMarkdown
+                if ("${news.messageWithoutMarkdown}" != "</br>") {
+                    holder.rowNewsBinding.tvMessage.text = news.messageWithoutMarkdown
+                } else {
+                    holder.rowNewsBinding.linearLayout51.visibility = View.GONE
+                }
                 holder.rowNewsBinding.tvDate.text = formatDate(news.time)
                 if (news.userId == currentUser?._id) {
                     holder.rowNewsBinding.imgDelete.setOnClickListener {
@@ -121,6 +130,28 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                 }
                 addLabels(holder, news)
                 showChips(holder, news)
+
+                if (news.newsId?.isNotEmpty() == true) {
+                    val conversations = Gson().fromJson(news.conversations, Array<Conversation>::class.java).toList()
+                    val chatAdapter = ChatAdapter(ArrayList(), context, holder.rowNewsBinding.recyclerGchat)
+                    for (conversation in conversations) {
+                        val query = conversation.query
+                        val response = conversation.response
+                        if (query != null) {
+                            chatAdapter.addQuery(query)
+                        }
+                        chatAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_SHARED_VIEW_MODEL
+                        if (response != null) {
+                            chatAdapter.addResponse(response)
+                        }
+                    }
+
+                    holder.rowNewsBinding.recyclerGchat.adapter = chatAdapter
+                    holder.rowNewsBinding.recyclerGchat.layoutManager = LinearLayoutManager(context)
+                } else {
+                    holder.rowNewsBinding.recyclerGchat.visibility = View.GONE
+                    holder.rowNewsBinding.sharedChat.visibility = View.GONE
+                }
             }
         }
     }
@@ -260,7 +291,6 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         notifyDataSetChanged()
     }
 
-
     private fun editPost(s: String, news: RealmNews?) {
         if (s.isEmpty()) {
             Utilities.toast(context, R.string.please_enter_message.toString())
@@ -319,7 +349,6 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         mRealm.commitTransaction()
         notifyDataSetChanged()
     }
-
 
     override fun getItemCount(): Int {
         return if (parentNews == null) list.size else list.size + 1
