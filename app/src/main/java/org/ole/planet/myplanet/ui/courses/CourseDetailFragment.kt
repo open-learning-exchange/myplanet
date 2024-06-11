@@ -92,11 +92,5 @@ class CourseDetailFragment() : BaseContainerFragment(), OnRatingChangeListener {
     override fun onDownloadComplete() {
         super.onDownloadComplete()
         setCourseData()
-        if (!courses?.userId?.contains(profileDbHandler.userModel?.id)!!) {
-            if (!cRealm.isInTransaction) cRealm.beginTransaction()
-            courses?.setUserId(profileDbHandler.userModel?.id)
-            RealmRemovedLog.onAdd(cRealm, "resources", profileDbHandler.userModel?.id, id)
-            Utilities.toast(activity, getString(R.string.added_to_my_courses))
-        }
     }
 }
