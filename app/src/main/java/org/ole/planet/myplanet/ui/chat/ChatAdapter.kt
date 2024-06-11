@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.chat
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -62,12 +63,14 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context,
     }
 
     fun addQuery(query: String) {
+        Log.d("ChatAdapter", "addQuery: $query")
         chatList.add(query)
         notifyItemInserted(chatList.size - 1)
         scrollToLastItem()
     }
 
     fun addResponse(response: String) {
+        Log.d("ChatAdapter", "addResponse: $response")
         chatList.add(response)
         notifyItemInserted(chatList.size - 1)
         scrollToLastItem()
@@ -106,6 +109,7 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context,
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val chatItem = chatList[position]
+        Log.d("ChatAdapter", "chatList: $chatList")
         when (holder.itemViewType) {
             VIEW_TYPE_QUERY -> {
                 val queryViewHolder = holder as QueryViewHolder
