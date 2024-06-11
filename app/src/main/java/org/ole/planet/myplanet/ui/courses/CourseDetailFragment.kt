@@ -25,7 +25,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.Utilities
 
-class CourseDetailFragment(val fm: TakeCourseFragment) : BaseContainerFragment(), OnRatingChangeListener {
+class CourseDetailFragment() : BaseContainerFragment(), OnRatingChangeListener {
     private lateinit var fragmentCourseDetailBinding: FragmentCourseDetailBinding
     lateinit var dbService: DatabaseService
     private lateinit var cRealm: Realm
@@ -92,12 +92,5 @@ class CourseDetailFragment(val fm: TakeCourseFragment) : BaseContainerFragment()
     override fun onDownloadComplete() {
         super.onDownloadComplete()
         setCourseData()
-        if (!courses?.userId?.contains(profileDbHandler.userModel?.id)!!) {
-            if (!cRealm.isInTransaction) cRealm.beginTransaction()
-            courses?.setUserId(profileDbHandler.userModel?.id)
-            RealmRemovedLog.onAdd(cRealm, "resources", profileDbHandler.userModel?.id, id)
-            Utilities.toast(activity, getString(R.string.added_to_my_courses))
-            fm.joinCourse()
-        }
     }
 }
