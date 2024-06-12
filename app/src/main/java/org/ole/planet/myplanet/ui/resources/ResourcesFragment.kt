@@ -5,7 +5,6 @@ import android.content.DialogInterface
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
-import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.CheckBox
@@ -140,7 +139,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                 selectAll?.text = getString(R.string.unselect_all)
             }
         }
-        Log.d("MyActivity", "RecyclerView adapter instance: ${recyclerView.adapter.hashCode()}")
     }
 
     private fun updateTvDelete(){
@@ -297,7 +295,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     override fun onPause() {
         super.onPause()
         saveSearchActivity()
-        Log.d("ResourcesFragment", "Fragment paused")
     }
 
     private fun filterApplied(): Boolean {
