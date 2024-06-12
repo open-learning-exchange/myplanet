@@ -5,6 +5,7 @@ import android.content.DialogInterface
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.CheckBox
@@ -54,6 +55,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     var map: HashMap<String?, JsonObject>? = null
     private var confirmation: AlertDialog? = null
     var filter: ImageButton? = null
+
     override fun getLayout(): Int {
         return R.layout.fragment_my_library
     }
@@ -138,6 +140,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                 selectAll?.text = getString(R.string.unselect_all)
             }
         }
+        Log.d("MyActivity", "RecyclerView adapter instance: ${recyclerView.adapter.hashCode()}")
     }
 
     private fun updateTvDelete(){
@@ -294,6 +297,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     override fun onPause() {
         super.onPause()
         saveSearchActivity()
+        Log.d("ResourcesFragment", "Fragment paused")
     }
 
     private fun filterApplied(): Boolean {
@@ -343,6 +347,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     private fun additionalSetup() {
         val bottomSheet = requireView().findViewById<View>(R.id.card_filter)
         requireView().findViewById<View>(R.id.filter).setOnClickListener {
+            println("click filter")
             bottomSheet.visibility = if (bottomSheet.visibility == View.VISIBLE) View.GONE else View.VISIBLE
         }
         orderByDate = requireView().findViewById(R.id.order_by_date_button)
@@ -353,7 +358,11 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             f.show(childFragmentManager, "")
             bottomSheet.visibility = View.GONE
         }
-        orderByDate?.setOnClickListener { adapterLibrary?.toggleSortOrder() }
-        orderByTitle?.setOnClickListener { adapterLibrary?.toggleTitleSortOrder() }
+        orderByDate?.setOnClickListener {
+            println("click date")
+            adapterLibrary?.toggleSortOrder() }
+        orderByTitle?.setOnClickListener {
+            println("click title")
+            adapterLibrary?.toggleTitleSortOrder() }
     }
 }

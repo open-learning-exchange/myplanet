@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.resources
 
 import android.content.Context
 import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -41,6 +42,7 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
         if (context is OnHomeItemClickListener) {
             homeItemClickListener = context
         }
+        Log.d("MyAdapter", "Adapter instance created: ${this.hashCode()}")
     }
 
     fun setRatingChangeListener(ratingChangeListener: OnRatingChangeListener?) {
@@ -107,7 +109,9 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
                 if (listener != null) listener?.onSelectedListChange(selectedItems)
             }
         }
+        Log.d("Adapter", "Binding item at position: $position")
     }
+
 
     fun areAllSelected(): Boolean {
         return selectedItems.size == libraryList.size
@@ -121,9 +125,8 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
             selectedItems.clear()
         }
         notifyDataSetChanged()
-        if (listener != null) {
-            listener?.onSelectedListChange(selectedItems)
-        }
+        Log.d("Adapter", "selectAllItems called. selectedItems size: ${selectedItems.size}")
+        listener?.onSelectedListChange(selectedItems)
     }
 
     private fun openLibrary(library: RealmMyLibrary?) {
@@ -155,12 +158,14 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
         isTitleAscending = !isTitleAscending
         sortLibraryListByTitle()
         notifyDataSetChanged()
+        Log.d("Adapter", "toggleTitleSortOrder called. isTitleAscending: $isTitleAscending")
     }
 
     fun toggleSortOrder() {
         isAscending = !isAscending
         sortLibraryList()
         notifyDataSetChanged()
+        Log.d("Adapter", "toggleSortOrder called. isAscending: $isAscending")
     }
 
     private fun sortLibraryListByTitle() {
