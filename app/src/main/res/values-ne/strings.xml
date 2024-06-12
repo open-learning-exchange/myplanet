@@ -1040,5 +1040,6 @@
     <string name="sign_up_to_chat">कृपया एआई च्याटमा पहुँच गर्न साइन अप गर्नुहोस्।</string>
     <string name="are_you_sure_you_want_to_delete_this_course">के तपाई यो कोर्स मेटाउन चाहनुहुन्छ भनेर पक्का हुनुहुन्छ?</string>
     <string name="shared_chat">shared chat</string>
+    <string name="dark_mode">अँध्यारो मोड</string>
 
 </resources>
