@@ -54,7 +54,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     var map: HashMap<String?, JsonObject>? = null
     private var confirmation: AlertDialog? = null
     var filter: ImageButton? = null
-
     override fun getLayout(): Int {
         return R.layout.fragment_my_library
     }
@@ -344,7 +343,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     private fun additionalSetup() {
         val bottomSheet = requireView().findViewById<View>(R.id.card_filter)
         requireView().findViewById<View>(R.id.filter).setOnClickListener {
-            println("click filter")
             bottomSheet.visibility = if (bottomSheet.visibility == View.VISIBLE) View.GONE else View.VISIBLE
         }
         orderByDate = requireView().findViewById(R.id.order_by_date_button)
@@ -355,11 +353,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             f.show(childFragmentManager, "")
             bottomSheet.visibility = View.GONE
         }
-        orderByDate?.setOnClickListener {
-            println("click date")
-            adapterLibrary?.toggleSortOrder() }
-        orderByTitle?.setOnClickListener {
-            println("click title")
-            adapterLibrary?.toggleTitleSortOrder() }
+        orderByDate?.setOnClickListener { adapterLibrary?.toggleSortOrder() }
+        orderByTitle?.setOnClickListener { adapterLibrary?.toggleTitleSortOrder() }
     }
 }

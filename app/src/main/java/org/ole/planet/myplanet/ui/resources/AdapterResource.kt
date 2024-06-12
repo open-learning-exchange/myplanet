@@ -109,7 +109,6 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
         }
     }
 
-
     fun areAllSelected(): Boolean {
         return selectedItems.size == libraryList.size
     }
@@ -122,7 +121,9 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
             selectedItems.clear()
         }
         notifyDataSetChanged()
-        listener?.onSelectedListChange(selectedItems)
+        if (listener != null) {
+            listener?.onSelectedListChange(selectedItems)
+        }
     }
 
     private fun openLibrary(library: RealmMyLibrary?) {
