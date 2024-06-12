@@ -1040,5 +1040,6 @@
     <string name="sign_up_to_chat">Veuillez vous inscrire pour accéder au chat IA</string>
     <string name="are_you_sure_you_want_to_delete_this_course">Êtes-vous sûr de vouloir supprimer ce cours ?</string>
     <string name="share_chat">partager le chat</string>
+    <string name="shared_chat">chat partagé</string>
 
 </resources>

@@ -1040,5 +1040,6 @@
     <string name="sign_up_to_chat">يرجى التسجيل للوصول إلى الدردشة الذكية</string>
     <string name="are_you_sure_you_want_to_delete_this_course">هل أنت متأكد أنك تريد حذف هذه الدورة؟</string>
     <string name="share_chat">شارك الدردشة</string>
+    <string name="shared_chat">دردشة مشتركة</string>
 
 </resources>
