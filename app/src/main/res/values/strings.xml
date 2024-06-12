@@ -1077,5 +1077,11 @@
     <string name="two_strings">%s %s</string>
     <string name="three_strings">%s %s %s</string>
     <string name="member_description">%1$s (%2$d visits)</string>
+    <string name="dark_mode">Dark Mode</string>
+    <string-array name="dark_mode_options">
+        <item>OFF</item>
+        <item>ON</item>
+        <item>Follow System</item>
+    </string-array>
 
 </resources>

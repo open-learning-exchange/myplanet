@@ -1077,5 +1077,11 @@
     <string name="two_strings">%s %s</string>
     <string name="three_strings">%s %s %s</string>
     <string name="member_description">%1$s (%2$d visitas)</string>
+    <string name="dark_mode">Modo Oscuro</string>
+    <string-array name="dark_mode_options">
+        <item>Apagado</item>
+        <item>Encendido</item>
+        <item>Seguir el sistema</item>
+    </string-array>
 
 </resources>
