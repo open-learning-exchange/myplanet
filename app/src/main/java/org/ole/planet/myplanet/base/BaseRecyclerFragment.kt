@@ -84,8 +84,9 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         mRealm = realmService.realmInstance
         profileDbHandler = UserProfileDbHandler(requireActivity())
         model = profileDbHandler.userModel!!
-        recyclerView.adapter = getAdapter()
-        if (isMyCourseLib && getAdapter().itemCount != 0 && courseLib == "courses") {
+        val adapter = getAdapter()
+        recyclerView.adapter = adapter
+        if (isMyCourseLib && adapter.itemCount != 0 && courseLib == "courses") {
             resources?.let { showDownloadDialog(it) }
         } else if (isMyCourseLib && courseLib == null) {
             showDownloadDialog(getLibraryList(mRealm))
