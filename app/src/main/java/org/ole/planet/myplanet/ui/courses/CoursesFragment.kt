@@ -257,6 +257,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
     private fun changeButtonStatus() {
         tvAddToLib.isEnabled = (selectedItems?.size ?: 0) > 0
+        btnRemove.isEnabled = (selectedItems?.size ?: 0) > 0
         if (adapterCourses.areAllSelected()) {
             selectAll.isChecked = true
             selectAll.text = getString(R.string.unselect_all)
