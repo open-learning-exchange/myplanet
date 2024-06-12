@@ -87,6 +87,17 @@ class SettingActivity : AppCompatActivity() {
                 }
             }
 
+            val darkMode = findPreference<Preference>("dark_mode")
+            if (darkMode != null) {
+                darkMode.onPreferenceChangeListener = OnPreferenceChangeListener { preference: Preference?, newValue: Any? ->
+                    if (preference?.key == "dark_mode") {
+                        darkMode(newValue.toString())
+                        return@OnPreferenceChangeListener true
+                    }
+                    false
+                }
+            }
+
             // Show Available space under the "Freeup Space" preference.
             val spacePreference = findPreference<Preference>("freeup_space")
             if (spacePreference != null) {
@@ -191,6 +202,14 @@ class SettingActivity : AppCompatActivity() {
             super.onDestroy()
             if (this::profileDbHandler.isInitialized) {
                 profileDbHandler.onDestory()
+            }
+        }
+
+        private fun darkMode(key: String) {
+            when (key) {
+                "ON" ->  AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+                "OFF" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+                "Follow System" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
             }
         }
     }
