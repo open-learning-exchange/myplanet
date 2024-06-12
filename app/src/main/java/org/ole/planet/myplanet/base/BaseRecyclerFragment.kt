@@ -93,7 +93,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         return v
     }
 
-
     private fun initDeleteButton() {
         tvDelete?.let {
             it.visibility = View.VISIBLE
