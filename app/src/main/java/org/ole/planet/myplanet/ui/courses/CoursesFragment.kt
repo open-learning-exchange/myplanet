@@ -79,7 +79,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         userModel = UserProfileDbHandler(requireContext()).userModel
         searchTags = ArrayList()
         initializeView()
-        if (isMyCourseLib && !(selectedItems.isNullOrEmpty())) {
+        if (isMyCourseLib) {
             tvDelete?.setText(R.string.archive)
             btnRemove.visibility = View.VISIBLE
             checkList()
@@ -257,6 +257,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
     private fun changeButtonStatus() {
         tvAddToLib.isEnabled = (selectedItems?.size ?: 0) > 0
+        btnRemove.isEnabled = (selectedItems?.size ?: 0) > 0
         if (adapterCourses.areAllSelected()) {
             selectAll.isChecked = true
             selectAll.text = getString(R.string.unselect_all)
