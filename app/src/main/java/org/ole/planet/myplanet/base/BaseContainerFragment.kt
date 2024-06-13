@@ -214,10 +214,6 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         installApkLauncher.launch(intent)
     }
 
-    companion object {
-        private const val REQUEST_CODE_UNKNOWN_APP = 1234
-    }
-
     @RequiresApi(Build.VERSION_CODES.O)
     private fun openFileType(items: RealmMyLibrary, videotype: String) {
         val mimetype = Utilities.getMimeType(items.resourceLocalAddress)
