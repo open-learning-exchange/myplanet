@@ -7,7 +7,6 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.net.wifi.WifiManager
-import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
 import android.view.LayoutInflater
@@ -16,7 +15,6 @@ import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.ListView
 import android.widget.TextView
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
@@ -78,14 +76,13 @@ abstract class BaseResourceFragment : Fragment() {
         }
     }
     private val broadcastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
-        @RequiresApi(Build.VERSION_CODES.TIRAMISU)
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action == DashboardActivity.MESSAGE_PROGRESS) {
-                val download = intent.getParcelableExtra("download", Download::class.java)
-                if (download != null && !download.failed) {
+                val download = intent.getParcelableExtra<Download>("download")
+                if (!download?.failed!!) {
                     setProgress(download)
                 } else {
-                    download?.message?.let { showError(prgDialog, it) }
+                    download.message?.let { showError(prgDialog, it) }
                 }
             }
         }
