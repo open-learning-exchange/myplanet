@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.dashboard
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -36,6 +37,8 @@ import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
 import org.ole.planet.myplanet.ui.team.TeamFragment
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utilities.TimeUtils
+import java.net.HttpURLConnection
+import java.net.URL
 import java.util.Date
 
 class BellDashboardFragment : BaseDashboardFragment() {
@@ -58,7 +61,9 @@ class BellDashboardFragment : BaseDashboardFragment() {
         super.onViewCreated(view, savedInstanceState)
         fragmentHomeBellBinding.cardProfileBell.txtDate.text = TimeUtils.formatDate(Date().time, "")
         fragmentHomeBellBinding.cardProfileBell.txtCommunityName.text = model?.planetCode
+
         setupNetworkStatusMonitoring()
+
         (activity as DashboardActivity?)?.supportActionBar?.hide()
         showBadges()
         checkPendingSurveys()
@@ -75,39 +80,49 @@ class BellDashboardFragment : BaseDashboardFragment() {
         }
     }
 
-    private suspend fun updateNetworkIndicator(status: NetworkStatus) {
-        if (!isAdded) return
-        val context = context ?: return
+    private suspend fun updateNetworkIndicator(status: NetworkStatus) = coroutineScope {
+        val serverUrl = settings?.getString("serverURL", "")
+        val lastReachableServer = settings?.getString("last_reachable_server", "")
+        val defaultServerUrls = listOf(
+            "https://example.com/server1",
+            "https://example.com/server2",
+            "https://example.com/server3",
+            "https://example.com/server4",
+            "https://example.com/server5",
+            "https://example.com/server6",
+            "https://example.com/server7",
+            serverUrl,
+            "https://example.com/server8",
+            "https://example.com/server9"
+        ).filterNotNull() // Filter out null values if serverUrl is null
 
-        when (status) {
-            is NetworkStatus.Disconnected -> {
-                fragmentHomeBellBinding.cardProfileBell.imageView.borderColor =
-                    ContextCompat.getColor(context, R.color.md_red_700)
-            }
-            is NetworkStatus.Connecting -> {
-                fragmentHomeBellBinding.cardProfileBell.imageView.borderColor =
-                    ContextCompat.getColor(context, R.color.md_yellow_600)
+        val serverUrls = listOfNotNull(lastReachableServer) + defaultServerUrls.filter { it != lastReachableServer }
 
-                val serverUrl = settings?.getString("serverURL", "")
-                if (!serverUrl.isNullOrEmpty()) {
-                    try {
-                        val canReachServer = viewModel.checkServerConnection(serverUrl)
-                        if (isAdded && view?.isAttachedToWindow == true) {
-                            fragmentHomeBellBinding.cardProfileBell.imageView.borderColor =
-                                ContextCompat.getColor(context, if (canReachServer) R.color.green else R.color.md_yellow_600)
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        if (isAdded && view?.isAttachedToWindow == true) {
-                            fragmentHomeBellBinding.cardProfileBell.imageView.borderColor =
-                                ContextCompat.getColor(context, R.color.md_yellow_600)
-                        }
+        if (!isAdded) return@coroutineScope
+        val context = context ?: return@coroutineScope
+
+        // Set initial color to yellow as we're checking servers
+        fragmentHomeBellBinding.cardProfileBell.imageView.borderColor =
+            ContextCompat.getColor(context, R.color.md_yellow_600)
+
+        val reachableServerFound = serverUrls.map { url ->
+            async {
+                viewModel.checkServerConnection(url).also { canReachServer ->
+                    if (canReachServer) {
+                        editor?.putString("last_reachable_server", url)?.apply()
                     }
                 }
             }
-            is NetworkStatus.Connected -> {
-                fragmentHomeBellBinding.cardProfileBell.imageView.borderColor = ContextCompat.getColor(context, R.color.green)
+        }.awaitAll().any { it }
+
+        if (isAdded && view?.isAttachedToWindow == true) {
+            val colorRes = when {
+                reachableServerFound -> R.color.green
+                status is NetworkStatus.Disconnected -> R.color.md_red_700
+                else -> R.color.md_yellow_600
             }
+            fragmentHomeBellBinding.cardProfileBell.imageView.borderColor =
+                ContextCompat.getColor(context, colorRes)
         }
     }
 

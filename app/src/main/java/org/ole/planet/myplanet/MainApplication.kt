@@ -118,7 +118,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             applyThemeMode(themeMode)
         }
 
-        suspend fun isServerReachable(urlString: String): Boolean {
+        suspend fun isServerReachable(urlString: String?): Boolean {
             return try {
                 val url = URL(urlString)
                 val connection = withContext(Dispatchers.IO) {

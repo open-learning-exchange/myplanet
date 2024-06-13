@@ -32,7 +32,7 @@ class BellDashboardViewModel : ViewModel() {
         }
     }
 
-    suspend fun checkServerConnection(serverUrl: String): Boolean {
+    suspend fun checkServerConnection(serverUrl: String?): Boolean {
         return withContext(Dispatchers.IO) {
             isServerReachable(serverUrl)
         }
