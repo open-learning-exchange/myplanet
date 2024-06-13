@@ -191,8 +191,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         }
 
         val intent = Intent(Intent.ACTION_VIEW).apply {
-            data = uri
-            type = "application/vnd.android.package-archive"
+            setDataAndType(uri, "application/vnd.android.package-archive")
             flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK
         }
 
