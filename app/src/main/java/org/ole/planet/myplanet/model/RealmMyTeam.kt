@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.model;
 
+import android.content.Context
 import android.content.SharedPreferences
 import com.google.gson.Gson
 import com.google.gson.JsonObject
@@ -9,8 +10,13 @@ import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.RealmResults
 import io.realm.annotations.PrimaryKey
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
+import org.ole.planet.myplanet.utilities.Constants
+import org.ole.planet.myplanet.utilities.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utilities.JsonUtils
+import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.Utilities.getUrl
 import java.util.Date
 
 open class RealmMyTeam : RealmObject() {
@@ -91,6 +97,8 @@ open class RealmMyTeam : RealmObject() {
     var updatedDate: Long = 0
 
     companion object {
+        private val gson = Gson()
+        private val concatenatedLinks = ArrayList<String>()
         @JvmStatic
         fun insertMyTeams(doc: JsonObject, mRealm: Realm) {
             val teamId = JsonUtils.getString("_id", doc)
@@ -106,6 +114,12 @@ open class RealmMyTeam : RealmObject() {
                 myTeams.sourcePlanet = JsonUtils.getString("sourcePlanet", doc)
                 myTeams.title = JsonUtils.getString("title", doc)
                 myTeams.description = JsonUtils.getString("description", doc)
+                val links = extractLinks(JsonUtils.getString("description", doc))
+                val baseUrl = getUrl()
+                for (link in links) {
+                    val concatenatedLink = "$baseUrl/$link"
+                    concatenatedLinks.add(concatenatedLink)
+                }
                 myTeams.limit = JsonUtils.getInt("limit", doc)
                 myTeams.status = JsonUtils.getString("status", doc)
                 myTeams.teamPlanetCode = JsonUtils.getString("teamPlanetCode", doc)

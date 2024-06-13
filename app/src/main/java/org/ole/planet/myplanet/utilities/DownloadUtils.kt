@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.utilities
 
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import java.util.regex.Pattern
 
 object DownloadUtils {
     @JvmStatic
@@ -19,5 +20,23 @@ object DownloadUtils {
             urls.add(Utilities.getUrl(db_myLibrary[selectedItems[i]]))
         }
         return urls
+    }
+
+    @JvmStatic
+    fun extractLinks(text: String?): ArrayList<String> {
+        val links = ArrayList<String>()
+        val pattern = Pattern.compile("!\\[.*?]\\((.*?)\\)")
+        val matcher = text?.let { pattern.matcher(it) }
+        if (matcher != null) {
+            while (matcher.find()) {
+                val link = matcher.group(1)
+                if (link != null) {
+                    if (link.isNotEmpty()) {
+                        links.add(link)
+                    }
+                }
+            }
+        }
+        return links
     }
 }

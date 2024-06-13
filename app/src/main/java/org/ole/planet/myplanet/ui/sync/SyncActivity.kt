@@ -5,6 +5,7 @@ import android.content.*
 import android.graphics.drawable.AnimationDrawable
 import android.os.Bundle
 import android.text.*
+import android.util.Log
 import android.view.*
 import android.webkit.URLUtil
 import android.widget.*
@@ -374,6 +375,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         val storedJsonConcatenatedLinks = settings.getString("concatenated_links", null)
         if (storedJsonConcatenatedLinks != null) {
             val storedConcatenatedLinks: ArrayList<String> = Gson().fromJson(storedJsonConcatenatedLinks, object : TypeToken<ArrayList<String>>() {}.type)
+            Log.d("ollonde", "$storedConcatenatedLinks")
             openDownloadService(context, storedConcatenatedLinks, true)
         }
     }

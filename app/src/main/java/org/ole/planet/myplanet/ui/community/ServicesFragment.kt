@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.community
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -48,6 +49,7 @@ class ServicesFragment : BaseTeamFragment() {
             fragmentServicesBinding.llServices.visibility = View.GONE
             fragmentServicesBinding.tvDescription.visibility = View.VISIBLE
             setMarkdownText(fragmentServicesBinding.tvDescription, "$description")
+            Log.d("ServicesFragment", "onViewCreated: $description")
         } else {
             setRecyclerView(links)
         }
