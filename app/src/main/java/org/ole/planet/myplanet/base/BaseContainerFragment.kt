@@ -190,9 +190,11 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             FileProvider.getUriForFile(MainApplication.context, "${MainApplication.context.packageName}.fileprovider", it)
         }
 
-        val intent = Intent(Intent.ACTION_INSTALL_PACKAGE)
-        intent.data = uri
-        intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            data = uri
+            type = "application/vnd.android.package-archive"
+            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK
+        }
 
         if (intent.resolveActivity(requireActivity().packageManager) != null) {
             if (hasInstallPermission(MainApplication.context)) {
@@ -210,6 +212,10 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES)
         intent.data = Uri.parse("package:" + MainApplication.context.packageName)
         installApkLauncher.launch(intent)
+    }
+
+    companion object {
+        private const val REQUEST_CODE_UNKNOWN_APP = 1234
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
