@@ -287,7 +287,7 @@ class Service(private val context: Context) {
 
     fun getMinApk(listener: ConfigurationIdListener?, url: String, pin: String) {
         val customProgressDialog = CustomProgressDialog(context).apply {
-            setText("Checking Apk version")
+            setText(context.getString(R.string.check_apk_version))
             show()
         }
 
@@ -298,7 +298,7 @@ class Service(private val context: Context) {
                         val currentVersion = "${context.resources.getText(R.string.app_version)}"
                         val minApkVersion = jsonObject.get("minapk").asString
                         if (isVersionAllowed(currentVersion, minApkVersion)) {
-                            customProgressDialog.setText("Checking Server")
+                            customProgressDialog.setText(context.getString(R.string.checking_server))
                             val uri = Uri.parse(url)
                             val couchdbURL: String
                             if (url.contains("@")) {
@@ -336,7 +336,7 @@ class Service(private val context: Context) {
                             })
                         } else {
                             customProgressDialog.dismiss()
-                            showAlertDialog("apk is below allowed version. Please update the app to the latest version.")
+                            showAlertDialog(context.getString(R.string.below_min_apk))
                         }
                     }
                 } else {
