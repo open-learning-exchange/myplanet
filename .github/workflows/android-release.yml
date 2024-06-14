@@ -105,13 +105,13 @@ jobs:
           releaseName: "${{ env.ANDROID_VERSION_CODE }} (${{ env.ANDROID_VERSION_NAME }})"
           status: completed
 
-      - name: Authenticate to Google Cloud
+      - name: authenticate to Google Cloud
         if: github.ref != 'refs/heads/master' && (matrix.build == 'lite')
         uses: google-github-actions/auth@v2
         with:
           credentials_json: '${{ secrets.GCLOUD_AUTH }}'
 
-      - name: Set up Google Cloud SDK
+      - name: setup Google Cloud SDK
         if: github.ref != 'refs/heads/master' && (matrix.build == 'lite')
         uses: google-github-actions/setup-gcloud@v2
         with:
@@ -134,7 +134,8 @@ jobs:
             --results-bucket myplanet-results \
             --results-dir test-results/myPlanet/$(date +%Y%m%d_%H%M%S) \
             --timeout 900s \
-            --device model=shiba,version=34,locale=es,orientation=portrait
+            --device model=MediumPhone.arm,version=34,locale=es,orientation=portrait
+          #  --device model=shiba,version=34,locale=es,orientation=portrait
 
       - name: rename APK and AAB with version and branch for artifact
         if: github.ref != 'refs/heads/master'
