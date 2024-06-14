@@ -127,13 +127,14 @@ jobs:
           firebase --version
           #firebase projects:list
           gcloud config set project ${{ secrets.FIREBASE_PROJECT_ID }}
+          gcloud firebase test android models list
           gcloud firebase test android run \
             --type robo \
             --app output/myPlanet.apk \
             --results-bucket myplanet-results \
             --results-dir test-results/myPlanet/$(date +%Y%m%d_%H%M%S) \
             --timeout 900s \
-            --device model=Pixel5,version=30,locale=es,orientation=portrait
+            --device model=Pixel2,version=24,locale=es,orientation=portrait
 
       - name: rename APK and AAB with version and branch for artifact
         if: github.ref != 'refs/heads/master'
