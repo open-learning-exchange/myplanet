@@ -119,21 +119,18 @@ jobs:
 
       - name: upload APK to Firebase Test Lab
         if: github.ref != 'refs/heads/master' && (matrix.build == 'lite')
-        env:
-          FIREBASE_TOKEN: ${{ secrets.ROBOT_KEY }}
         run: |
           ls -al output/
           npm install -g firebase-tools
           firebase --version
-          firebase test android run --help
-          firebase projects:list
           gcloud config set project ${{ secrets.FIREBASE_PROJECT_ID }}
+          gcloud firebase projects:list
           gcloud firebase test android run \
             --type robo \
             --app output/myPlanet.apk \
-            --results-bucket myPlanet \
+            --results-bucket myplanet-results \
             --results-dir test-results/myPlanet/$(date +%Y%m%d_%H%M%S) \
-            --timeout 900s
+            --timeout 900s \
             --device model=Pixel5,version=34,locale=en,orientation=portrait
 
       - name: rename APK and AAB with version and branch for artifact
