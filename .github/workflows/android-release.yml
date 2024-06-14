@@ -127,7 +127,7 @@ jobs:
           firebase --version
           #firebase projects:list
           gcloud config set project ${{ secrets.FIREBASE_PROJECT_ID }}
-          gcloud firebase test android models list
+          #gcloud firebase test android models list
           gcloud firebase test android run \
             --type robo \
             --app output/myPlanet.apk \
