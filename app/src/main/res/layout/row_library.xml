@@ -3,6 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:backgroundTint="@color/card_bg"
     app:cardElevation="2dp"
     app:cardUseCompatPadding="true"
     app:contentPadding="8dp">
@@ -30,7 +31,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="4dp"
-        android:textColor="@color/md_black_1000"
+        android:textColor="@color/textColorPrimary"
         android:textSize="@dimen/text_size_mid"
         android:textStyle="bold" />
 
@@ -52,7 +53,8 @@
                 android:layout_height="wrap_content"
                 android:ellipsize="end"
                 android:maxLines="2"
-                android:padding="4dp" />
+                android:padding="4dp"
+                android:textColor="@color/textColorPrimary" />
 
 
             <com.google.android.flexbox.FlexboxLayout
@@ -69,7 +71,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:padding="@dimen/padding_normal"
-                android:textColor="@color/colorPrimary" />
+                android:textColor="@color/textColorPrimary" />
 
 
         </LinearLayout>
@@ -100,7 +102,7 @@
                 android:gravity="center"
                 android:padding="4dp"
                 android:text="@string/zero_total"
-                android:textColor="@color/md_black_1000" />
+                android:textColor="@color/textColorPrimary" />
 
             <androidx.appcompat.widget.AppCompatRatingBar
                 android:id="@+id/rating_bar"
@@ -131,7 +133,7 @@
                 android:gravity="center"
                 android:padding="4dp"
                 android:text="@string/zero_point_zero"
-                android:textColor="@color/md_black_1000"
+                android:textColor="@color/textColorPrimary"
                 android:textSize="@dimen/text_size_large"
                 android:textStyle="bold" />
 
@@ -141,7 +143,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:text="@string/average" />
+                android:text="@string/average"
+                android:textColor="@color/textColorPrimary" />
 
 
         </LinearLayout>
