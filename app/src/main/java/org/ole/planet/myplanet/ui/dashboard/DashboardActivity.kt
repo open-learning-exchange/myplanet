@@ -31,7 +31,7 @@ import com.mikepenz.materialdrawer.holder.DimenHolder
 import com.mikepenz.materialdrawer.model.PrimaryDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.Nameable
-import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
@@ -187,7 +187,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
                     } else {
                         if (!doubleBackToExitPressedOnce) {
                             doubleBackToExitPressedOnce = true
-                            Utilities.toast(MainApplication.context, getString(R.string.press_back_again_to_exit))
+                            toast(context, getString(R.string.press_back_again_to_exit))
                             Handler(Looper.getMainLooper()).postDelayed({ doubleBackToExitPressedOnce = false }, 2000)
                         } else {
                             finish()
@@ -212,7 +212,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
     private fun checkUser() {
         user = UserProfileDbHandler(this).userModel
         if (user == null) {
-            Utilities.toast(this, getString(R.string.session_expired))
+            toast(this, getString(R.string.session_expired))
             logout()
             return
         }
