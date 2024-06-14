@@ -28,8 +28,7 @@
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:layout_alignParentEnd="true"
-            android:src="@drawable/profile"
-            app:tint="@android:color/white" />
+            android:src="@drawable/profile" />
     </RelativeLayout>
 
     <TableLayout

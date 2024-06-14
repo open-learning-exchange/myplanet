@@ -5,6 +5,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import com.bumptech.glide.Glide
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentMemberDetailBinding
 
 class MemberDetailFragment : Fragment() {
@@ -22,6 +24,12 @@ class MemberDetailFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         arguments?.let { args ->
+            val imageUrl = args.getString("profile_photo_url")
+            Glide.with(requireContext())
+                .load(imageUrl)
+                .placeholder(R.drawable.profile)
+                .error(R.drawable.profile)
+                .into(binding.memberImage)
             binding.tvProfileName.text = args.getString("member_name")
             binding.tvFullName.text = args.getString("member_name")
             binding.tvProfileEmail.text = args.getString("profile_email")
@@ -37,7 +45,6 @@ class MemberDetailFragment : Fragment() {
             activity?.supportFragmentManager?.popBackStack()
         }
     }
-
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
@@ -54,7 +61,8 @@ class MemberDetailFragment : Fragment() {
             visits: String,
             lastLogin: String,
             username: String,
-            memberLevel: String
+            memberLevel: String,
+            imageUrl: String?
         ) = MemberDetailFragment().apply {
             arguments = Bundle().apply {
                 putString("member_name", name)
@@ -66,6 +74,7 @@ class MemberDetailFragment : Fragment() {
                 putString("last_login", lastLogin)
                 putString("username", username)
                 putString("user_level", memberLevel)
+                putString("profile_photo_url", imageUrl)
             }
         }
     }

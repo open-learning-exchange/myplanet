@@ -31,28 +31,25 @@ class AdapterJoinedMember(private val context: Context, private val list: List<R
     }
 
     override fun onBindViewHolder(holder: ViewHolderUser, position: Int) {
-        val user = list[position]
-        rowJoinedUserBinding.tvTitle.text = user.name ?: user.toString()
-        rowJoinedUserBinding.tvDescription.text = "${user.getRoleAsString()} (${RealmTeamLog.getVisitCount(mRealm, user.name, teamId)} ${context.getString(R.string.visits)})"
-
-        Glide.with(context).load(user.userImage)
+        val member = list[position]
+        rowJoinedUserBinding.tvTitle.text = if (member.toString() == " ") member.name else member.toString()
+        rowJoinedUserBinding.tvDescription.text = "${member.getRoleAsString()} (${RealmTeamLog.getVisitCount(mRealm, member.name, teamId)} ${context.getString(R.string.visits)})"
+        Glide.with(context)
+            .load(list[position].userImage)
             .placeholder(R.drawable.profile)
             .error(R.drawable.profile)
             .into(rowJoinedUserBinding.memberImage)
-
-        if (teamLeaderId == user.id) {
+        if (teamLeaderId == currentUser.id) {
             rowJoinedUserBinding.tvIsLeader.visibility = View.VISIBLE
             rowJoinedUserBinding.tvIsLeader.text = context.getString(R.string.team_leader)
         } else {
             rowJoinedUserBinding.tvIsLeader.visibility = View.GONE
             val isLoggedInUserTeamLeader = teamLeaderId != null && teamLeaderId == currentUser.id
-            val overflowMenuOptions =
-                arrayOf(context.getString(R.string.remove), context.getString(R.string.make_leader))
+            val overflowMenuOptions = arrayOf(context.getString(R.string.remove), context.getString(R.string.make_leader))
             checkUserAndShowOverflowMenu(position, overflowMenuOptions, isLoggedInUserTeamLeader)
         }
         holder.itemView.setOnClickListener {
             val activity = it.context as AppCompatActivity
-            val member = list[position]
             val fragment = MemberDetailFragment.newInstance(
                 member.firstName.toString() + " " + member.lastName.toString(),
                 member.email.toString(),
@@ -61,7 +58,9 @@ class AdapterJoinedMember(private val context: Context, private val list: List<R
                 member.phoneNumber.toString(),
                 profileDbHandler.getOfflineVisits(member).toString(),
                 profileDbHandler.getLastVisit(member),
-                member.firstName + " " + member.lastName, member.level.toString()
+                member.firstName + " " + member.lastName,
+                member.level.toString(),
+                member.userImage
             )
             activity.supportFragmentManager.beginTransaction()
                 .replace(R.id.fragment_container, fragment)
