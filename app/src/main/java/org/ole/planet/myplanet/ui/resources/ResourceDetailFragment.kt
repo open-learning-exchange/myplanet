@@ -8,8 +8,10 @@ import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
 import io.realm.Realm
+import io.realm.RealmObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
+import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.FragmentLibraryDetailBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -42,6 +44,13 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
 
     override fun onDownloadComplete() {
         fragmentLibraryDetailBinding.btnDownload.setImageResource(R.drawable.ic_play)
+        if (!library.userId?.contains(profileDbHandler.userModel?.id)!!) {
+            if (!lRealm.isInTransaction) lRealm.beginTransaction()
+            library.setUserId(profileDbHandler.userModel?.id)
+            onAdd(lRealm, "resources", profileDbHandler.userModel?.id, libraryId)
+            Utilities.toast(activity, getString(R.string.added_to_my_library))
+            fragmentLibraryDetailBinding.btnRemove.setImageResource(R.drawable.close_x)
+        }
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
