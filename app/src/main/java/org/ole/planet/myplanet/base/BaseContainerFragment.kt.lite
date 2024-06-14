@@ -190,10 +190,10 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 //            FileProvider.getUriForFile(MainApplication.context, "${MainApplication.context.packageName}.fileprovider", it)
 //        }
 //
-//        val intent = Intent(Intent.ACTION_INSTALL_PACKAGE)
-//        intent.data = uri
-//        intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK
-//
+//        val intent = Intent(Intent.ACTION_VIEW).apply {
+//            setDataAndType(uri, "application/vnd.android.package-archive")
+//            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK
+//        }
 //        if (intent.resolveActivity(requireActivity().packageManager) != null) {
 //            if (hasInstallPermission(MainApplication.context)) {
 //                startActivity(intent)
