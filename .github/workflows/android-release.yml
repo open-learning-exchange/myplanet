@@ -133,7 +133,7 @@ jobs:
             --results-bucket myplanet-results \
             --results-dir test-results/myPlanet/$(date +%Y%m%d_%H%M%S) \
             --timeout 900s \
-            --device model=Pixel5,version=34,locale=en,orientation=portrait
+            --device model=Pixel5,version=30,locale=es,orientation=portrait
 
       - name: rename APK and AAB with version and branch for artifact
         if: github.ref != 'refs/heads/master'
