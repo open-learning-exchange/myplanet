@@ -105,6 +105,13 @@ jobs:
           releaseName: "${{ env.ANDROID_VERSION_CODE }} (${{ env.ANDROID_VERSION_NAME }})"
           status: completed
 
+      - name: Set up Google Cloud SDK
+        if: github.ref != 'refs/heads/master' && (matrix.build == 'lite')
+        uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
+        with:
+          version: 'latest'
+          service_account_key: ${{ secrets.GCLOUD_AUTH }}
+
       - name: upload APK to Firebase Test Lab
         if: github.ref != 'refs/heads/master' && (matrix.build == 'lite')
         env:
@@ -115,18 +122,14 @@ jobs:
           firebase --version
           firebase test android run --help
           firebase projects:list
-          if [ -f output/myPlanet.apk ]; then
-            firebase test android run \
-              --app output/myPlanet.apk \
-              --project myplanet-2eee1 \
-              --type robo \
-              --results-bucket myPlanet \
-              --results-dir test-results/myPlanet/$(date +%Y%m%d_%H%M%S) \
-              --timeout 900s
-          else
-            echo "APK file not found!"
-            exit 1
-          fi
+          gcloud config set project ${{ secrets.FIREBASE_PROJECT_ID }}
+          gcloud firebase test android run \
+            --type robo \
+            --app output/myPlanet.apk \
+            --results-bucket myPlanet \
+            --results-dir test-results/myPlanet/$(date +%Y%m%d_%H%M%S) \
+            --timeout 900s
+            --device model=Pixel2,version=28,locale=en,orientation=portrait
 
       - name: rename APK and AAB with version and branch for artifact
         if: github.ref != 'refs/heads/master'
