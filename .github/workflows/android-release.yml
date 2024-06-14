@@ -105,12 +105,17 @@ jobs:
           releaseName: "${{ env.ANDROID_VERSION_CODE }} (${{ env.ANDROID_VERSION_NAME }})"
           status: completed
 
+      - name: Authenticate to Google Cloud
+        if: github.ref != 'refs/heads/master' && (matrix.build == 'lite')
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCLOUD_AUTH }}'
+
       - name: Set up Google Cloud SDK
         if: github.ref != 'refs/heads/master' && (matrix.build == 'lite')
-        uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
+        uses: google-github-actions/setup-gcloud@v2
         with:
           version: 'latest'
-          service_account_key: ${{ secrets.GCLOUD_AUTH }}
 
       - name: upload APK to Firebase Test Lab
         if: github.ref != 'refs/heads/master' && (matrix.build == 'lite')
@@ -129,7 +134,7 @@ jobs:
             --results-bucket myPlanet \
             --results-dir test-results/myPlanet/$(date +%Y%m%d_%H%M%S) \
             --timeout 900s
-            --device model=Pixel2,version=28,locale=en,orientation=portrait
+            --device model=Pixel5,version=34,locale=en,orientation=portrait
 
       - name: rename APK and AAB with version and branch for artifact
         if: github.ref != 'refs/heads/master'
