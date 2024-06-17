@@ -163,7 +163,12 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                 b.putInt("stepNum", stepNumber)
                 takeExam.arguments = b
                 homeItemClickListener?.openCallFragment(takeExam)
-                CapturePhoto(this)
+                context?.let { it1 ->
+                    CapturePhoto(it1, object : ImageCaptureCallback {
+                        override fun onImageCapture(fileUri: String?) {
+                        }
+                    })
+                }
             }
         }
         val downloadedResources: List<RealmMyLibrary> = cRealm.where(RealmMyLibrary::class.java).equalTo("stepId", stepId).equalTo("resourceOffline", true).isNotNull("resourceLocalAddress").findAll()
