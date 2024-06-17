@@ -24,7 +24,8 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:gravity="center"
-        android:padding="@dimen/padding_large" />
+        android:padding="@dimen/padding_large"
+        android:buttonTint="@color/card_text" />
 
     <TextView
         android:id="@+id/title"
