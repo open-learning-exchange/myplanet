@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import org.ole.planet.myplanet.R
@@ -19,39 +20,60 @@ import org.ole.planet.myplanet.utilities.Utilities
 class AdapterJoinedMember(private val context: Context, private val list: List<RealmUserModel>, private val mRealm: Realm, private val teamId: String) : RecyclerView.Adapter<AdapterJoinedMember.ViewHolderUser>() {
     private lateinit var rowJoinedUserBinding: RowJoinedUserBinding
     private val currentUser: RealmUserModel = UserProfileDbHandler(context).userModel!!
+    private val profileDbHandler = UserProfileDbHandler(context)
     private val teamLeaderId: String? = mRealm.where(RealmMyTeam::class.java)
         .equalTo("teamId", teamId)
         .equalTo("isLeader", true)
         .findFirst()?.userId
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderUser {
-        rowJoinedUserBinding = RowJoinedUserBinding.inflate(LayoutInflater.from(context), parent, false)
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderUser { rowJoinedUserBinding = RowJoinedUserBinding.inflate(LayoutInflater.from(context), parent, false)
         return ViewHolderUser(rowJoinedUserBinding)
     }
 
     override fun onBindViewHolder(holder: ViewHolderUser, position: Int) {
-        rowJoinedUserBinding.tvTitle.text = if (list[position].toString() == " ") list[position].name else list[position].toString()
-        rowJoinedUserBinding.tvDescription.text = "${list[position].getRoleAsString()} (${RealmTeamLog.getVisitCount(mRealm, list[position].name, teamId)} ${context.getString(R.string.visits)})"
-
+        val member = list[position]
+        rowJoinedUserBinding.tvTitle.text = if (member.toString() == " ") member.name else member.toString()
+        rowJoinedUserBinding.tvDescription.text = "${member.getRoleAsString()} (${RealmTeamLog.getVisitCount(mRealm, member.name, teamId)} ${context.getString(R.string.visits)})"
         Glide.with(context)
             .load(list[position].userImage)
             .placeholder(R.drawable.profile)
             .error(R.drawable.profile)
             .into(rowJoinedUserBinding.memberImage)
-
-        val isLoggedInUserTeamLeader = teamLeaderId != null && teamLeaderId == currentUser.id
-
-        if (teamLeaderId == list[position].id) {
+        if (teamLeaderId == currentUser.id) {
             rowJoinedUserBinding.tvIsLeader.visibility = View.VISIBLE
             rowJoinedUserBinding.tvIsLeader.text = context.getString(R.string.team_leader)
         } else {
             rowJoinedUserBinding.tvIsLeader.visibility = View.GONE
+            val isLoggedInUserTeamLeader = teamLeaderId != null && teamLeaderId == currentUser.id
             val overflowMenuOptions = arrayOf(context.getString(R.string.remove), context.getString(R.string.make_leader))
             checkUserAndShowOverflowMenu(position, overflowMenuOptions, isLoggedInUserTeamLeader)
         }
+        holder.itemView.setOnClickListener {
+            val activity = it.context as AppCompatActivity
+            val fragment = MemberDetailFragment.newInstance(
+                member.firstName.toString() + " " + member.lastName.toString(),
+                member.email.toString(),
+                member.dob.toString().substringBefore("T"),
+                member.language.toString(),
+                member.phoneNumber.toString(),
+                profileDbHandler.getOfflineVisits(member).toString(),
+                profileDbHandler.getLastVisit(member),
+                member.firstName + " " + member.lastName,
+                member.level.toString(),
+                member.userImage
+            )
+            activity.supportFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, fragment)
+                .addToBackStack(null)
+                .commit()
+        }
     }
 
-    private fun checkUserAndShowOverflowMenu(position: Int, overflowMenuOptions: Array<String>, isLoggedInUserTeamLeader: Boolean) {
+    private fun checkUserAndShowOverflowMenu(
+        position: Int,
+        overflowMenuOptions: Array<String>,
+        isLoggedInUserTeamLeader: Boolean
+    ) {
         if (isLoggedInUserTeamLeader) {
             rowJoinedUserBinding.icMore.visibility = View.VISIBLE
             rowJoinedUserBinding.icMore.setOnClickListener {
@@ -93,12 +115,13 @@ class AdapterJoinedMember(private val context: Context, private val list: List<R
                 .findFirst()
             team?.deleteFromRealm()
         }
-        list.toMutableList().removeAt(position)
+        (list as MutableList).removeAt(position)
         notifyDataSetChanged()
         Utilities.toast(context, context.getString(R.string.user_removed_from_team))
     }
 
     override fun getItemCount(): Int = list.size
 
-    class ViewHolderUser(rowJoinedUserBinding: RowJoinedUserBinding) : RecyclerView.ViewHolder(rowJoinedUserBinding.root)
+    class ViewHolderUser(rowJoinedUserBinding: RowJoinedUserBinding) :
+        RecyclerView.ViewHolder(rowJoinedUserBinding.root)
 }
