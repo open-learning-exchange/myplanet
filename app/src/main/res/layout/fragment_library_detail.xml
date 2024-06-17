@@ -8,7 +8,8 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:background="@color/secondary_bg">
 
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
@@ -20,7 +21,8 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                android:background="@color/card_bg">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -36,10 +38,10 @@
                         android:layout_height="@dimen/_50dp"
                         android:layout_gravity="center_vertical"
                         android:background="@drawable/buttonyellow"
+                        android:contentDescription="@string/btn_back"
                         android:padding="8dp"
                         android:src="@drawable/ic_left_arrow"
                         android:text="@string/btn_back"
-                        android:contentDescription="@string/btn_back"
                         app:tint="@color/md_black_1000" />
 
                     <TextView
@@ -57,13 +59,13 @@
                         style="@style/YellowButtons"
                         android:layout_width="@dimen/_50dp"
                         android:layout_height="@dimen/_50dp"
+                        android:layout_gravity="center_vertical"
                         android:layout_marginEnd="8dp"
                         android:background="@drawable/buttonyellow"
+                        android:contentDescription="@string/download"
                         android:text="@string/download"
-                        android:layout_gravity="center_vertical"
                         app:srcCompat="@drawable/ic_download"
-                        app:tint="@color/md_black_1000"
-                        android:contentDescription="@string/download" />
+                        app:tint="@color/md_black_1000" />
 
                     <ImageButton
                         android:id="@+id/btn_remove"
@@ -72,10 +74,10 @@
                         android:layout_height="@dimen/_50dp"
                         android:layout_gravity="center_vertical"
                         android:background="@drawable/buttonyellow"
+                        android:contentDescription="@string/btn_remove_lib"
                         android:src="@drawable/close_x"
                         android:text="@string/btn_remove_lib"
-                        app:tint="@color/md_black_1000"
-                        android:contentDescription="@string/btn_remove_lib" />
+                        app:tint="@color/md_black_1000" />
 
                 </LinearLayout>
 
@@ -171,13 +173,15 @@
                                     style="@style/HeaderText"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="@string/author" />
+                                    android:text="@string/author"
+                                    android:textColor="@color/card_text" />
 
                                 <TextView
                                     android:id="@+id/tv_author"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:padding="@dimen/padding_normal" />
+                                    android:padding="@dimen/padding_normal"
+                                    android:textColor="@color/hint_color" />
 
                             </LinearLayout>
 
@@ -190,13 +194,15 @@
                                     style="@style/HeaderText"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="@string/published_by" />
+                                    android:text="@string/published_by"
+                                    android:textColor="@color/card_text" />
 
                                 <TextView
                                     android:id="@+id/tv_published"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:padding="@dimen/padding_normal" />
+                                    android:padding="@dimen/padding_normal"
+                                    android:textColor="@color/hint_color" />
 
                             </LinearLayout>
 
@@ -209,13 +215,15 @@
                                     style="@style/HeaderText"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="@string/media" />
+                                    android:text="@string/media"
+                                    android:textColor="@color/card_text" />
 
                                 <TextView
                                     android:id="@+id/tv_media"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:padding="@dimen/padding_normal" />
+                                    android:padding="@dimen/padding_normal"
+                                    android:textColor="@color/hint_color" />
 
                             </LinearLayout>
 
@@ -228,13 +236,15 @@
                                     style="@style/HeaderText"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="@string/language_with_colon" />
+                                    android:text="@string/language_with_colon"
+                                    android:textColor="@color/card_text" />
 
                                 <TextView
                                     android:id="@+id/tv_language"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:padding="@dimen/padding_normal" />
+                                    android:padding="@dimen/padding_normal"
+                                    android:textColor="@color/hint_color" />
 
                             </LinearLayout>
 
@@ -247,13 +257,15 @@
                                     style="@style/HeaderText"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="@string/subject" />
+                                    android:text="@string/subject"
+                                    android:textColor="@color/card_text"/>
 
                                 <TextView
                                     android:id="@+id/tv_subject"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:padding="@dimen/padding_normal" />
+                                    android:padding="@dimen/padding_normal"
+                                    android:textColor="@color/hint_color" />
 
                             </LinearLayout>
 
@@ -266,13 +278,15 @@
                                     style="@style/HeaderText"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="@string/license" />
+                                    android:text="@string/license"
+                                    android:textColor="@color/card_text"/>
 
                                 <TextView
                                     android:id="@+id/tv_license"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:padding="@dimen/padding_normal" />
+                                    android:padding="@dimen/padding_normal"
+                                    android:textColor="@color/hint_color" />
 
                             </LinearLayout>
 
@@ -285,13 +299,15 @@
                                     style="@style/HeaderText"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="@string/resource_colon" />
+                                    android:text="@string/resource_colon"
+                                    android:textColor="@color/card_text" />
 
                                 <TextView
                                     android:id="@+id/tv_resource"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:padding="@dimen/padding_normal" />
+                                    android:padding="@dimen/padding_normal"
+                                    android:textColor="@color/hint_color" />
 
                             </LinearLayout>
 
@@ -304,13 +320,15 @@
                                     style="@style/HeaderText"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="@string/type" />
+                                    android:text="@string/type"
+                                    android:textColor="@color/card_text" />
 
                                 <TextView
                                     android:id="@+id/tv_type"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:padding="@dimen/padding_normal" />
+                                    android:padding="@dimen/padding_normal"
+                                    android:textColor="@color/hint_color" />
 
                             </LinearLayout>
 
