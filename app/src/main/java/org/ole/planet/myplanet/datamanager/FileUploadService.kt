@@ -44,7 +44,7 @@ open class FileUploadService {
     private fun upload_doc(id: String, rev: String, format: String, f: File, name: String, listener: SuccessListener) {
         val apiInterface = ApiClient.client?.create(ApiInterface::class.java)
         try {
-            val connection = f.toURL().openConnection()
+            val connection = f.toURI().toURL().openConnection()
             val mimeType = connection.contentType
             val body = RequestBody.create(MediaType.parse("application/octet"), FileUtils.fullyReadFileToBytes(f))
             val url = String.format(format, Utilities.getUrl(), id, name)
