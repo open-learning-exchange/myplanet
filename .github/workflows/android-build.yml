@@ -22,7 +22,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: ensure lite files also updated
         run: |
-          git fetch origin master > /dev/null
+          git fetch origin master > /dev/null 2>&1
           files=(
             "app/src/main/java/org/ole/planet/myplanet/base/BaseContainerFragment.kt"
             "app/src/main/java/org/ole/planet/myplanet/base/BaseContainerFragment.kt.lite"
