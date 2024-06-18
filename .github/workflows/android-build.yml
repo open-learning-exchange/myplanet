@@ -24,12 +24,6 @@ jobs:
           fetch-depth: 0
       - name: ensure lite files also updated
         run: |
-          GITHUB_BASE_REF=${{ github.event.pull_request.base.ref }}
-          GITHUB_HEAD_REF=${{ github.event.pull_request.head.ref }}
-
-          echo "$GITHUB_BASE_REF"
-          echo "$GITHUB_HEAD_REF"
-
           files=("app/src/main/java/org/ole/planet/myplanet/base/BaseContainerFragment.kt"
                  "app/src/main/java/org/ole/planet/myplanet/base/BaseContainerFragment.kt.lite"
                  "app/src/main/java/org/ole/planet/myplanet/base/PermissionActivity.kt"
@@ -42,11 +36,11 @@ jobs:
               local file2=$2
 
               # Check if either file has been modified in the commit range
-              if git diff --name-only "$GITHUB_BASE_REF".."$GITHUB_HEAD_REF" | grep -E "^($file1|$file2)$" > /dev/null; then
+              if git diff --name-only HEAD.."$refs/heads/master" | grep -E "^($file1|$file2)$" > /dev/null; then
                   # Check if both files are modified in the commit range
-                  git diff --name-only "$GITHUB_BASE_REF".."$GITHUB_HEAD_REF" | grep -E "^($file1)$" > /dev/null
+                  git diff --name-only HEAD.."$refs/heads/master" | grep -E "^($file1)$" > /dev/null
                   file1_changed=$?
-                  git diff --name-only "$GITHUB_BASE_REF".."$GITHUB_HEAD_REF" | grep -E "^($file2)$" > /dev/null
+                  git diff --name-only HEAD.."$refs/heads/master" | grep -E "^($file2)$" > /dev/null
                   file2_changed=$?
 
                   if [ $file1_changed -ne 0 ] || [ $file2_changed -ne 0 ]; then
