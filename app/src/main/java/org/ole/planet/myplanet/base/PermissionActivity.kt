@@ -1,5 +1,4 @@
 package org.ole.planet.myplanet.base
-//dogi
 
 import android.Manifest
 import android.app.AppOpsManager
