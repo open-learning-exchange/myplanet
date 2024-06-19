@@ -375,8 +375,17 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         val storedJsonConcatenatedLinks = settings.getString("concatenated_links", null)
         if (storedJsonConcatenatedLinks != null) {
             val storedConcatenatedLinks: ArrayList<String> = Gson().fromJson(storedJsonConcatenatedLinks, object : TypeToken<ArrayList<String>>() {}.type)
-            Log.d("ollonde", "$storedConcatenatedLinks")
+            logLargeString("ollonde", "$storedConcatenatedLinks")
             openDownloadService(context, storedConcatenatedLinks, true)
+        }
+    }
+
+    fun logLargeString(tag: String, content: String) {
+        if (content.length > 3000) {
+            Log.d(tag, content.substring(0, 3000))
+            logLargeString(tag, content.substring(3000))
+        } else {
+            Log.d(tag, content)
         }
     }
 

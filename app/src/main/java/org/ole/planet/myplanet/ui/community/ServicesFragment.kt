@@ -21,6 +21,7 @@ import org.ole.planet.myplanet.ui.courses.CourseStepFragment
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
+import java.util.regex.Pattern
 
 class ServicesFragment : BaseTeamFragment() {
     private lateinit var fragmentServicesBinding: FragmentServicesBinding
@@ -49,7 +50,7 @@ class ServicesFragment : BaseTeamFragment() {
         if (links?.size == 0) {
             fragmentServicesBinding.llServices.visibility = View.GONE
             fragmentServicesBinding.tvDescription.visibility = View.VISIBLE
-            val markdownContentWithLocalPaths = CourseStepFragment.prependBaseUrlToImages(team.description, "file://${context?.getExternalFilesDir(null)}/ole/")
+            val markdownContentWithLocalPaths = prependBaseUrlToHtmlImages(team.description, "file://${context?.getExternalFilesDir(null)}/ole/")
             setMarkdownText(fragmentServicesBinding.tvDescription, markdownContentWithLocalPaths)
             Log.d("ServicesFragment", "onViewCreated: $markdownContentWithLocalPaths")
         } else {
@@ -85,5 +86,27 @@ class ServicesFragment : BaseTeamFragment() {
             }
             fragmentServicesBinding.llServices.addView(b)
         }
+    }
+
+    private fun prependBaseUrlToHtmlImages(content: String?, baseUrl: String): String {
+        if (content == null) return ""
+
+        // Pattern for HTML img tags
+        val htmlPattern = "<img\\s+src=\"(.*?)\""
+        val htmlImagePattern = Pattern.compile(htmlPattern)
+        val htmlMatcher = htmlImagePattern.matcher(content)
+
+        val result = StringBuffer()
+
+        // Replace HTML image URLs
+        while (htmlMatcher.find()) {
+            val relativePath = htmlMatcher.group(1)
+            val modifiedPath = relativePath?.replaceFirst("resources/".toRegex(), "")
+            val fullUrl = baseUrl + modifiedPath
+            htmlMatcher.appendReplacement(result, "<img src=\"$fullUrl\" width=600 height=350/>")
+        }
+        htmlMatcher.appendTail(result)
+
+        return result.toString()
     }
 }

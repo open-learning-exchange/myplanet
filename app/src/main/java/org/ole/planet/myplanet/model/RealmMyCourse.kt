@@ -4,6 +4,7 @@ import android.content.Context.MODE_PRIVATE
 import android.content.SharedPreferences
 import android.text.TextUtils
 import android.util.Base64
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -20,7 +21,6 @@ import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.Utilities
-import java.util.regex.Pattern
 
 open class RealmMyCourse : RealmObject() {
     @JvmField
@@ -161,6 +161,7 @@ open class RealmMyCourse : RealmObject() {
             }
 
             val jsonConcatenatedLinks = gson.toJson(existingConcatenatedLinks)
+            Log.d("ollonde", jsonConcatenatedLinks)
             settings.edit().putString("concatenated_links", jsonConcatenatedLinks).apply()
         }
 

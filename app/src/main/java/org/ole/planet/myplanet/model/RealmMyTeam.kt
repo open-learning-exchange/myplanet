@@ -1,7 +1,7 @@
 package org.ole.planet.myplanet.model;
 
-import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
@@ -10,14 +10,11 @@ import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.RealmResults
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
-import org.ole.planet.myplanet.utilities.Constants
-import org.ole.planet.myplanet.utilities.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.Utilities.getUrl
 import java.util.Date
+import java.util.regex.Pattern
 
 open class RealmMyTeam : RealmObject() {
     @JvmField
@@ -114,10 +111,12 @@ open class RealmMyTeam : RealmObject() {
                 myTeams.sourcePlanet = JsonUtils.getString("sourcePlanet", doc)
                 myTeams.title = JsonUtils.getString("title", doc)
                 myTeams.description = JsonUtils.getString("description", doc)
-                val links = extractLinks(JsonUtils.getString("description", doc))
+                val links = extract(JsonUtils.getString("description", doc))
+                Log.d("RealmMyTeam", "links: $links")
                 val baseUrl = getUrl()
                 for (link in links) {
                     val concatenatedLink = "$baseUrl/$link"
+                    Log.d("RealmMyTeam", "concatenatedLink: $baseUrl/$link")
                     concatenatedLinks.add(concatenatedLink)
                 }
                 myTeams.limit = JsonUtils.getInt("limit", doc)
@@ -155,6 +154,23 @@ open class RealmMyTeam : RealmObject() {
                     }
                 }
             }
+        }
+
+        fun extract(text: String?) : ArrayList<String>{
+            val links = ArrayList<String>()
+            val htmlMatcher = Pattern.compile("<img\\s+src=\"(.*?)\"")
+            val matcher = text?.let { htmlMatcher.matcher(it) }
+            if (matcher != null) {
+                while (matcher.find()) {
+                    val link = matcher.group(1)
+                    if (link != null) {
+                        if (link.isNotEmpty()) {
+                            links.add(link)
+                        }
+                    }
+                }
+            }
+            return links
         }
 
         @JvmStatic
