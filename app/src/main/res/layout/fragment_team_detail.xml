@@ -84,7 +84,9 @@
             <com.google.android.material.tabs.TabLayout
                 android:id="@+id/tab_layout"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_height="37dp"
+                android:background="@color/secondary_bg"
+                app:tabTextColor="@color/card_text"
                 app:tabMode="scrollable" />
 
             <androidx.viewpager2.widget.ViewPager2

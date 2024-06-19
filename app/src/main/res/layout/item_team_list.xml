@@ -19,7 +19,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:padding="@dimen/padding_small"
-            android:textColor="@color/md_black_1000"
+            android:textColor="@color/card_text"
             android:textStyle="bold" />
 
         <TextView
@@ -28,7 +28,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:padding="@dimen/padding_small"
-            android:textColor="@color/md_black_1000" />
+            android:textColor="@color/card_text" />
 
         <TextView
             android:id="@+id/type"
@@ -36,7 +36,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:padding="@dimen/padding_small"
-            android:textColor="@color/md_black_1000" />
+            android:textColor="@color/card_text" />
 
         <TextView
             android:id="@+id/no_of_visits"
@@ -44,7 +44,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:padding="@dimen/padding_small"
-            android:textColor="@color/md_black_1000" />
+            android:textColor="@color/card_text" />
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/ltButtons"

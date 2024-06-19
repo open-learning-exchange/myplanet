@@ -11,6 +11,7 @@ import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
 import android.provider.Settings
 import androidx.annotation.RequiresApi
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
@@ -90,6 +91,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     override fun onCreate() {
         super.onCreate()
         initialize(CoroutineScope(Dispatchers.IO))
+        // REMOVE AFTER DARK MODE DEVELOPMENT
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
 
         context = this
         preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
