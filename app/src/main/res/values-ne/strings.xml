@@ -1040,8 +1040,8 @@
     <string name="sign_up_to_chat">कृपया एआई च्याटमा पहुँच गर्न साइन अप गर्नुहोस्।</string>
     <string name="are_you_sure_you_want_to_delete_this_course">के तपाई यो कोर्स मेटाउन चाहनुहुन्छ भनेर पक्का हुनुहुन्छ?</string>
     <string name="shared_chat">साझा च्याट</string>
-    <string name="check_apk_version">apk संस्करण जाँच गर्दै</string>
+    <string name="check_apk_version">एप संस्करण जाँच गर्दै</string>
     <string name="checking_server">सर्भर जाँच गर्दै</string>
-    <string name="below_min_apk">Apk संस्करण अनुमत संस्करणभन्दा कम छ। कृपया अनुप्रयोगलाई नवीनतम संस्करणमा अद्यावधिक गर्नुहोस्।</string>
+    <string name="below_min_apk">एप संस्करण अनुमत संस्करणभन्दा कम छ। कृपया अनुप्रयोगलाई नवीनतम संस्करणमा अद्यावधिक गर्नुहोस्।</string>
 
 </resources>
