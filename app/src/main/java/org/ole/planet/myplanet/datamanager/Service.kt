@@ -357,7 +357,7 @@ class Service(private val context: Context) {
     }
 
     private fun compareVersions(version1: String, version2: String): Int {
-        val parts1 = version1.removePrefix("v").replace("-lite", "").split(".").map { it.toInt() }
+        val parts1 = version1.removeSuffix("-lite").removePrefix("v").split(".").map { it.toInt() }
         val parts2 = version2.removePrefix("v").split(".").map { it.toInt() }
 
         for (i in 0 until min(parts1.size, parts2.size)) {
