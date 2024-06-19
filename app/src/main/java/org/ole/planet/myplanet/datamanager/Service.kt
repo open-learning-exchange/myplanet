@@ -295,10 +295,9 @@ class Service(private val context: Context) {
             override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
                 if (response.isSuccessful) {
                     response.body()?.let { jsonObject ->
-                        val rawCurrentVersion = "${context.resources.getText(R.string.app_version)}"
-                        val cleanCurrentVersion = rawCurrentVersion.replace("-lite", "")
+                        val currentVersion = "${context.resources.getText(R.string.app_version)}"
                         val minApkVersion = jsonObject.get("minapk").asString
-                        if (isVersionAllowed(cleanCurrentVersion, minApkVersion)) {
+                        if (isVersionAllowed(currentVersion, minApkVersion)) {
                             customProgressDialog.setText(context.getString(R.string.checking_server))
                             val uri = Uri.parse(url)
                             val couchdbURL: String
@@ -358,7 +357,7 @@ class Service(private val context: Context) {
     }
 
     private fun compareVersions(version1: String, version2: String): Int {
-        val parts1 = version1.removePrefix("v").split(".").map { it.toInt() }
+        val parts1 = version1.removePrefix("v").replace("-lite", "").split(".").map { it.toInt() }
         val parts2 = version2.removePrefix("v").split(".").map { it.toInt() }
 
         for (i in 0 until min(parts1.size, parts2.size)) {
