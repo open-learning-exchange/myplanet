@@ -121,7 +121,7 @@
                                         android:layout_gravity="center"
                                         android:gravity="center"
                                         android:padding="4dp"
-                                        android:textColor="@color/md_black_1000" />
+                                        android:textColor="@color/card_text" />
 
                                     <androidx.appcompat.widget.AppCompatRatingBar
                                         android:id="@+id/rating_bar"
@@ -150,7 +150,7 @@
                                         android:gravity="center"
                                         android:padding="4dp"
                                         android:text="@string/zero_point_zero"
-                                        android:textColor="@color/md_black_1000"
+                                        android:textColor="@color/card_text"
                                         android:textSize="@dimen/text_size_large"
                                         android:textStyle="bold" />
 
@@ -159,7 +159,8 @@
                                         android:id="@+id/average"
                                         android:layout_width="match_parent"
                                         android:layout_height="wrap_content"
-                                        android:text="@string/average" />
+                                        android:text="@string/average"
+                                        android:textColor="@color/hint_color" />
 
                                 </LinearLayout>
                             </LinearLayout>
