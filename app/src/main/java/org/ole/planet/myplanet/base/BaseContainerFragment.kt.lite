@@ -4,7 +4,6 @@ package org.ole.planet.myplanet.base
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
-import android.content.SharedPreferences
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -51,6 +50,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 //    private lateinit var installApkLauncher: ActivityResultLauncher<Intent>
     lateinit var prefData: SharedPrefManager
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         profileDbHandler = UserProfileDbHandler(requireActivity())
@@ -73,27 +73,32 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         }
     }
     fun getUrlsAndStartDownload(
-        lib: List<RealmMyLibrary?>, settings: SharedPreferences?, urls: ArrayList<String>
-    ) {
-        for (library in lib) {
-            val url = Utilities.getUrl(library)
-            if (!FileUtils.checkFileExist(url) && !TextUtils.isEmpty(url)) urls.add(url)
-        }
-        if (urls.isNotEmpty()) startDownload(urls) else Utilities.toast(
-            activity, getString(R.string.no_images_to_download)
-        )
-    }
-    fun initRatingView(type: String?, id: String?, title: String?, listener: OnRatingChangeListener?) {
-        timesRated = requireView().findViewById(R.id.times_rated)
-        rating = requireView().findViewById(R.id.tv_rating)
-        ratingBar = requireView().findViewById(R.id.rating_bar)
-        ratingBar?.setOnTouchListener { _: View?, e: MotionEvent ->
-            if (e.action == MotionEvent.ACTION_UP) homeItemClickListener?.showRatingDialog(
-                type, id, title, listener
+            lib: List<RealmMyLibrary?>, urls: ArrayList<String>
+        ) {
+            for (library in lib) {
+                val url = Utilities.getUrl(library)
+                if (!FileUtils.checkFileExist(url) && !TextUtils.isEmpty(url)) urls.add(url)
+            }
+            if (urls.isNotEmpty()) startDownload(urls) else Utilities.toast(
+                activity, getString(R.string.no_images_to_download)
             )
-            true
         }
-    }
+    fun initRatingView(type: String?, id: String?, title: String?, listener: OnRatingChangeListener?) {
+            timesRated = requireView().findViewById(R.id.times_rated)
+            rating = requireView().findViewById(R.id.tv_rating)
+            ratingBar = requireView().findViewById(R.id.rating_bar)
+            ratingBar?.apply {
+                setOnTouchListener { view, e: MotionEvent ->
+                    if (e.action == MotionEvent.ACTION_UP) {
+                        view.performClick()
+                    }
+                    true
+                }
+                setOnClickListener {
+                    homeItemClickListener?.showRatingDialog(type, id, title, listener)
+                }
+            }
+        }
     override fun onAttach(context: Context) {
         super.onAttach(context)
         if (context is OnHomeItemClickListener) {
@@ -117,6 +122,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         fileOpenIntent.putExtra("resourceId", item.id)
         startActivity(fileOpenIntent)
     }
+    @RequiresApi(Build.VERSION_CODES.O)
     fun openResource(items: RealmMyLibrary) {
         val matchingItems = mRealm.where(RealmMyLibrary::class.java)
             .equalTo("resourceLocalAddress", items.resourceLocalAddress)
@@ -245,34 +251,36 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         intent.putExtras(bundle)
         startActivity(intent)
     }
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun showResourceList(downloadedResources: List<RealmMyLibrary>?) {
-        val builderSingle = AlertDialog.Builder(requireActivity())
-        builderSingle.setTitle(getString(R.string.select_resource_to_open))
-        val arrayAdapter: ArrayAdapter<RealmMyLibrary?> = object : ArrayAdapter<RealmMyLibrary?>(
-            requireActivity(), android.R.layout.select_dialog_item, downloadedResources!!
-        ) {
-            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-                var convertView = convertView
-                if (convertView == null) convertView = LayoutInflater.from(activity)
-                    .inflate(android.R.layout.select_dialog_item, parent, false)
-                val tv = convertView as TextView
-                val library = getItem(position)
-                tv.setCompoundDrawablesWithIntrinsicBounds(0, 0,
-                    if (library?.isResourceOffline() == true) {
-                        R.drawable.ic_eye
-                    } else {
-                        R.drawable.ic_download
-                    }, 0)
-                tv.text = library?.title
-                return tv
+            val builderSingle = AlertDialog.Builder(requireActivity())
+            builderSingle.setTitle(getString(R.string.select_resource_to_open))
+            val arrayAdapter: ArrayAdapter<RealmMyLibrary?> = object : ArrayAdapter<RealmMyLibrary?>(
+                requireActivity(), android.R.layout.select_dialog_item, downloadedResources!!
+            ) {
+                override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                    var view = convertView
+                    if (view == null) view = LayoutInflater.from(activity)
+                        .inflate(android.R.layout.select_dialog_item, parent, false)
+                    val tv = view as TextView
+                    val library = getItem(position)
+                    tv.setCompoundDrawablesWithIntrinsicBounds(0, 0,
+                        if (library?.isResourceOffline() == true) {
+                            R.drawable.ic_eye
+                        } else {
+                            R.drawable.ic_download
+                        }, 0)
+                    tv.text = library?.title
+                    return tv
+                }
             }
-        }
-        builderSingle.setAdapter(arrayAdapter) { _: DialogInterface?, i: Int ->
-            val library = arrayAdapter.getItem(i)
-            library?.let { openResource(it) }
-        }
-        builderSingle.setNegativeButton(R.string.dismiss, null).show()
+            builderSingle.setAdapter(arrayAdapter) { _: DialogInterface?, i: Int ->
+                val library = arrayAdapter.getItem(i)
+                library?.let { openResource(it) }
+            }
+            builderSingle.setNegativeButton(R.string.dismiss, null).show()
     }
+    @RequiresApi(Build.VERSION_CODES.O)
     fun setOpenResourceButton(downloadedResources: List<RealmMyLibrary>?, btnOpen: Button) {
         if (downloadedResources.isNullOrEmpty()) {
             btnOpen.visibility = View.GONE
