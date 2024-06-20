@@ -21,8 +21,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: ensure lite files also updated
+        if: matrix.build == 'lite'
         run: |
           git fetch origin master > /dev/null 2>&1
+          git branch
           files=(
             "app/src/main/java/org/ole/planet/myplanet/base/BaseContainerFragment.kt"
             "app/src/main/java/org/ole/planet/myplanet/base/BaseContainerFragment.kt.lite"
@@ -61,6 +63,7 @@ jobs:
           if [ "$any_changes" = true ]; then
             echo "All file pairs have changes."
           fi
+
       - name: diff the code to get lite
         run: |
           if [[ "${{ matrix.build }}" == "lite" ]]; then
