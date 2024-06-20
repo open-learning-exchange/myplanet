@@ -3,11 +3,13 @@ package org.ole.planet.myplanet.ui.sync
 import android.Manifest
 import android.content.*
 import android.graphics.drawable.AnimationDrawable
+import android.os.Build
 import android.os.Bundle
 import android.text.*
 import android.view.*
 import android.webkit.URLUtil
 import android.widget.*
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SwitchCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
@@ -84,6 +86,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private var currentDialog: MaterialDialog? = null
     private var serverConfigAction = ""
 
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
@@ -111,9 +114,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             }
         } else if (serverConfigAction == "save") {
             if (savedId == null || id == savedId) {
-                if (selectedTeamId == null) {
-                    currentDialog?.let { saveConfigAndContinue(it) }
-                } else {
+                if (selectedTeamId != null) {
                     val url = "${settings.getString("serverProtocol", "")}${serverUrl.text}"
                     if (isUrlValid(url)) {
                         prefData.setSELECTEDTEAMID(selectedTeamId)
@@ -124,6 +125,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     } else {
                         currentDialog?.let { saveConfigAndContinue(it) }
                     }
+                } else {
+                    currentDialog?.let { saveConfigAndContinue(it) }
                 }
             } else {
                 clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server))
@@ -597,6 +600,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                         if (team._id != null && team._id == lastSelection && team.isValid) {
                             val lastSelectedPosition = i + 1
                             binding.team.setSelection(lastSelectedPosition)
+                            selectedTeamId = lastSelection
                             break
                         }
                     }
