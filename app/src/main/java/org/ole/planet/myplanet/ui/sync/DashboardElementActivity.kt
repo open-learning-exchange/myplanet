@@ -66,11 +66,10 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
     }
 
     fun openCallFragment(newfragment: Fragment, tag: String?) {
-        val fragmentTransaction = supportFragmentManager.beginTransaction()
-        fragmentTransaction.replace(R.id.fragment_container, newfragment, tag)
-        supportFragmentManager.addOnBackStackChangedListener(this)
-        fragmentTransaction.addToBackStack("")
-        fragmentTransaction.commit()
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.fragment_container, newfragment, tag)
+            .addToBackStack(null)
+            .commitAllowingStateLoss()
     }
 
     override fun onPrepareOptionsMenu(menu: Menu): Boolean {
