@@ -67,4 +67,10 @@
             app:layout_constraintTop_toBottomOf="@+id/tv_description" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
+    <FrameLayout
+        android:id="@+id/fragment_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/memberImage" />
+
 </androidx.cardview.widget.CardView>
