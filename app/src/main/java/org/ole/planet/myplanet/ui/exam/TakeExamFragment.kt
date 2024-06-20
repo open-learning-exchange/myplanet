@@ -209,7 +209,12 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     private fun capturePhoto() {
         try {
             if (isCertified && !isMySurvey) {
-                CapturePhoto(this)
+                context?.let { it1 ->
+                    CapturePhoto(it1, object : ImageCaptureCallback {
+                        override fun onImageCapture(fileUri: String?) {
+                        }
+                    })
+                }
             }
         } catch (e: Exception) {
             e.printStackTrace()
