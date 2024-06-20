@@ -159,20 +159,20 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
             val inputText = "${addNoteDialogBinding.editText.text}"
 
 //            fragmentNewsBinding.etMessage.setText("")
-            val map = HashMap<String?, String>()
-            map["message"] = inputText
-            map["viewInId"] = "${user?.planetCode ?: ""}@${user?.parentCode ?: ""}"
-            map["viewInSection"] = "community"
-            map["messageType"] = "sync"
-            map["messagePlanetCode"] = user?.planetCode ?: ""
-
-            val map = HashMap<String?, String>()
-            map["viewableBy"] = "teams"
-            map["viewableId"] = teamId!!
-            map["message"] = msg
-            map["messageType"] = team?.teamType!!
-            map["messagePlanetCode"] = team?.teamPlanetCode!!
-            createNews(map, mRealm, user, imageList)
+//            val map = HashMap<String?, String>()
+//            map["message"] = inputText
+//            map["viewInId"] = "${user?.planetCode ?: ""}@${user?.parentCode ?: ""}"
+//            map["viewInSection"] = "community"
+//            map["messageType"] = "sync"
+//            map["messagePlanetCode"] = user?.planetCode ?: ""
+//
+//            val map = HashMap<String?, String>()
+//            map["viewableBy"] = "teams"
+//            map["viewableId"] = teamId!!
+//            map["message"] = msg
+//            map["messageType"] = team?.teamType!!
+//            map["messagePlanetCode"] = team?.teamPlanetCode!!
+//            createNews(map, mRealm, user, imageList)
             dialog.dismiss()
         }
         builder.setNegativeButton("Cancel") { dialog, _ ->
