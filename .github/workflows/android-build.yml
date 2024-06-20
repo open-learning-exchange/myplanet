@@ -19,8 +19,10 @@ jobs:
       BUILD_TOOLS_VERSION: "34.0.0"
 
     steps:
-      - uses: actions/checkout@v4
-      - name: ensure *.lite are also chandeg
+      - name: checkout repository code
+        uses: actions/checkout@v4
+
+      - name: ensure *.lite also change
         if: matrix.build == 'lite'
         run: |
           git fetch origin master > /dev/null 2>&1
