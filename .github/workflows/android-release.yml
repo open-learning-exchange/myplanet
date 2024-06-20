@@ -21,22 +21,22 @@ jobs:
     steps:
       - name: checkout repository code
         uses: actions/checkout@v4
+
       - name: diff the code to get lite
+        if: matrix.build != 'lite'
         run: |
-          if [[ "${{ matrix.build }}" == "lite" ]]; then
-            echo "lite"
-            ls -al \
-              app/build.gradle \
-              app/src/main/AndroidManifest.xml \
-              app/src/main/java/org/ole/planet/myplanet/base/BaseContainerFragment.kt \
-              app/src/main/java/org/ole/planet/myplanet/base/PermissionActivity.kt \
-              app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardActivity.kt
-            sed -i 's/\(versionName "[0-9.]\+\)"/\1-lite"/' app/build.gradle
-            cp app/src/main/AndroidManifest.xml.lite app/src/main/AndroidManifest.xml
-            cp app/src/main/java/org/ole/planet/myplanet/base/BaseContainerFragment.kt.lite app/src/main/java/org/ole/planet/myplanet/base/BaseContainerFragment.kt
-            cp app/src/main/java/org/ole/planet/myplanet/base/PermissionActivity.kt.lite app/src/main/java/org/ole/planet/myplanet/base/PermissionActivity.kt
-            cp app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardActivity.kt.lite app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardActivity.kt
-          fi
+          echo "lite"
+          ls -al \
+            app/build.gradle \
+            app/src/main/AndroidManifest.xml \
+            app/src/main/java/org/ole/planet/myplanet/base/BaseContainerFragment.kt \
+            app/src/main/java/org/ole/planet/myplanet/base/PermissionActivity.kt \
+            app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardActivity.kt
+          sed -i 's/\(versionName "[0-9.]\+\)"/\1-lite"/' app/build.gradle
+          cp app/src/main/AndroidManifest.xml.lite app/src/main/AndroidManifest.xml
+          cp app/src/main/java/org/ole/planet/myplanet/base/BaseContainerFragment.kt.lite app/src/main/java/org/ole/planet/myplanet/base/BaseContainerFragment.kt
+          cp app/src/main/java/org/ole/planet/myplanet/base/PermissionActivity.kt.lite app/src/main/java/org/ole/planet/myplanet/base/PermissionActivity.kt
+          cp app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardActivity.kt.lite app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardActivity.kt
 
       - name: set more env
         run: echo "BRANCHNAME="${GITHUB_REF##*/} >> $GITHUB_ENV
