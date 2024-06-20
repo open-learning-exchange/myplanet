@@ -22,6 +22,31 @@ jobs:
       - name: checkout repository code
         uses: actions/checkout@v4
 
+      - name: ensure *.lite also change
+        if: matrix.build == 'lite'
+        run: |
+          git fetch origin master > /dev/null 2>&1
+          files=(
+            "app/src/main/AndroidManifest.xml"
+            "app/src/main/AndroidManifest.xml.lite"
+            "app/src/main/java/org/ole/planet/myplanet/base/BaseContainerFragment.kt"
+            "app/src/main/java/org/ole/planet/myplanet/base/BaseContainerFragment.kt.lite"
+            "app/src/main/java/org/ole/planet/myplanet/base/PermissionActivity.kt"
+            "app/src/main/java/org/ole/planet/myplanet/base/PermissionActivity.kt.lite"
+            "app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardActivity.kt"
+            "app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardActivity.kt.lite"
+          )
+          errors=()
+          for ((i=0; i<${#files[@]}; i+=2)); do
+            file1=${files[i]}
+            file2=${files[i+1]}
+            changes=$(git diff --name-only HEAD origin/master | grep -E "^($file1|$file2)$")
+            if [ -n "$changes" ] && (! echo "$changes" | grep -qE "^($file1)$" || ! echo "$changes" | grep -qE "^($file2)$"); then
+              errors+=("Error: Both $file1 and $file2 must be changed together.")
+            fi
+          done
+          [ ${#errors[@]} -gt 0 ] && { printf "%s\n" "${errors[@]}"; exit 1; }
+
       - name: diff the code to get lite
         if: matrix.build == 'lite'
         run: |
