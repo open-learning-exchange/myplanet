@@ -1120,5 +1120,6 @@
     <string name="server_address_content_description">عنوان الخادم: %1$s</string>
     <string name="member_only_allowed">انضم كعضو للوصول إلى هذه الميزة</string>
     <string name="select_theme_mode">اختر وضع السمة</string>
+    <string name="bell">إشعارات</string>
 
 </resources>

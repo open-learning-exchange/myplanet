@@ -53,4 +53,10 @@
         android:contentDescription="@string/logout"
         android:title="@string/logout"
         app:showAsAction="never" />
+    <item
+        android:id="@+id/action_bell"
+        android:icon="@drawable/ic_bell"
+        android:title="@string/bell"
+        android:contentDescription="@string/bell"
+        app:showAsAction="always" />
 </menu>
