@@ -452,7 +452,7 @@ class UploadManager(context: Context) : FileUploadService() {
                             val f = File(getString("imageUrl", imgObject))
                             val name = getFileNameFromUrl(getString("imageUrl", imgObject))
                             val format = "%s/resources/%s/%s"
-                            val connection = f.toURL().openConnection()
+                            val connection = f.toURI().toURL().openConnection()
                             val mimeType = connection.contentType
                             val body = RequestBody.create(MediaType.parse("application/octet"), fullyReadFileToBytes(f))
                             val url = String.format(format, Utilities.getUrl(), _id, name)
