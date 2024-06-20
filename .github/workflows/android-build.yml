@@ -23,7 +23,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: diff the code to get lite
-        if: matrix.build != 'lite'
+        if: matrix.build == 'lite'
         run: |
           echo "lite"
           ls -al \
