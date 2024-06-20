@@ -87,7 +87,8 @@ class FinanceFragment : BaseTeamFragment() {
                 .findAll()
             updatedFinanceList(list as RealmResults<RealmMyTeam>)
         }, now[Calendar.YEAR], now[Calendar.MONTH], now[Calendar.DAY_OF_MONTH]).show(
-            requireActivity().fragmentManager, "")
+            requireActivity().fragmentManager, ""
+        )
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
