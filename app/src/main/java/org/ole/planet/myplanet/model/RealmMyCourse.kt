@@ -161,7 +161,7 @@ open class RealmMyCourse : RealmObject() {
             }
 
             val jsonConcatenatedLinks = gson.toJson(existingConcatenatedLinks)
-            Log.d("ollonde", jsonConcatenatedLinks)
+            Log.d("ollonde", "${concatenatedLinks.size}")
             settings.edit().putString("concatenated_links", jsonConcatenatedLinks).apply()
         }
 

@@ -15,6 +15,7 @@ import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.model.DocumentResponse
 import org.ole.planet.myplanet.model.RealmChatHistory.Companion.insert
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
+import org.ole.planet.myplanet.model.RealmMyTeam.Companion.saveConcatenatedLinks
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.populateUsersTable
@@ -168,6 +169,7 @@ object TransactionSyncManager {
             }
         }
         saveConcatenatedLinksToPrefs()
+        saveConcatenatedLinks()
     }
 
     private fun callMethod(mRealm: Realm, jsonDoc: JsonObject, type: String) {

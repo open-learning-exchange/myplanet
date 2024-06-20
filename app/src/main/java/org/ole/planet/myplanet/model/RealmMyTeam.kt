@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.model;
 
+import android.content.Context.MODE_PRIVATE
 import android.content.SharedPreferences
 import android.util.Log
 import com.google.gson.Gson
@@ -10,7 +11,10 @@ import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.RealmResults
 import io.realm.annotations.PrimaryKey
+import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.model.RealmMyCourse.Companion
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
+import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.Utilities.getUrl
 import java.util.Date
@@ -171,6 +175,27 @@ open class RealmMyTeam : RealmObject() {
                 }
             }
             return links
+        }
+
+        fun saveConcatenatedLinks() {
+            Log.d("okuro", "$concatenatedLinks")
+            val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            val existingJsonLinks = settings.getString("concatenated_links", null)
+            val existingConcatenatedLinks = if (existingJsonLinks != null) {
+               gson.fromJson(existingJsonLinks, Array<String>::class.java).toMutableList()
+            } else {
+                mutableListOf()
+            }
+
+            for (link in concatenatedLinks) {
+                if (!existingConcatenatedLinks.contains(link)) {
+                    existingConcatenatedLinks.add(link)
+                }
+            }
+
+            val jsonConcatenatedLinks = gson.toJson(existingConcatenatedLinks)
+            Log.d("okuro", "${concatenatedLinks.size}")
+            settings.edit().putString("concatenated_links", jsonConcatenatedLinks).apply()
         }
 
         @JvmStatic

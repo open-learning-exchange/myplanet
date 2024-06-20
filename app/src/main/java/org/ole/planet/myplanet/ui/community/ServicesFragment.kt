@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.courses.CourseStepFragment
+import org.ole.planet.myplanet.ui.courses.CourseStepFragment.Companion.prependBaseUrlToImages
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
@@ -50,7 +51,7 @@ class ServicesFragment : BaseTeamFragment() {
         if (links?.size == 0) {
             fragmentServicesBinding.llServices.visibility = View.GONE
             fragmentServicesBinding.tvDescription.visibility = View.VISIBLE
-            val markdownContentWithLocalPaths = prependBaseUrlToHtmlImages(team.description, "file://${context?.getExternalFilesDir(null)}/ole/")
+            val markdownContentWithLocalPaths = prependBaseUrlToImages(team.description, "file://${context?.getExternalFilesDir(null)}/ole/")
             setMarkdownText(fragmentServicesBinding.tvDescription, markdownContentWithLocalPaths)
             Log.d("ServicesFragment", "onViewCreated: $markdownContentWithLocalPaths")
         } else {
