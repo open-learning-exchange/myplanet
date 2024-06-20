@@ -55,7 +55,7 @@
         app:showAsAction="never" />
     <item
         android:id="@+id/action_bell"
-        android:icon="@drawable/ic_bell"
+        android:icon="@drawable/notifications"
         android:title="@string/bell"
         android:contentDescription="@string/bell"
         app:showAsAction="always" />
