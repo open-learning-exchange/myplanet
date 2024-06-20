@@ -10,9 +10,7 @@ import android.widget.DatePicker
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.google.android.material.datepicker.CalendarConstraints
-import com.google.android.material.datepicker.DateValidatorPointForward
-import com.google.android.material.datepicker.MaterialDatePicker
+import com.borax12.materialdaterangepicker.date.DatePickerDialog
 import io.realm.Realm
 import io.realm.RealmResults
 import io.realm.Sort
@@ -79,37 +77,27 @@ class FinanceFragment : BaseTeamFragment() {
     }
 
     private fun showDatePickerDialog() {
-        val constraintsBuilder = CalendarConstraints.Builder()
-            .setValidator(DateValidatorPointForward.now())
+        val now = Calendar.getInstance()
 
-        val builder = MaterialDatePicker.Builder.dateRangePicker()
-            .setTitleText("Select dates")
-            .setCalendarConstraints(constraintsBuilder.build())
-
-        val datePicker = builder.build()
-
-        datePicker.addOnPositiveButtonClickListener { selection ->
-            val startDate = selection.first
-            val endDate = selection.second
-
-            val startCalendar = Calendar.getInstance()
-            startCalendar.timeInMillis = startDate
-
-            val endCalendar = Calendar.getInstance()
-            endCalendar.timeInMillis = endDate
-
-            val list = fRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId)
-                .equalTo("docType", "transaction")
-                .between("date", startCalendar.timeInMillis, endCalendar.timeInMillis)
-                .sort("date", Sort.DESCENDING)
-                .findAll()
-
-            updatedFinanceList(list as RealmResults<RealmMyTeam>)
-        }
-
-        val fragmentManager = requireActivity().supportFragmentManager
-        val fragmentTransaction = fragmentManager.beginTransaction()
-        datePicker.show(fragmentTransaction, "DATE_PICKER")
+        val dpd = DatePickerDialog.newInstance(
+            { _: DatePickerDialog?, year: Int, monthOfYear: Int, dayOfMonth: Int, yearEnd: Int, monthOfYearEnd: Int, dayOfMonthEnd: Int ->
+                val start = Calendar.getInstance()
+                val end = Calendar.getInstance()
+                start[year, monthOfYear] = dayOfMonth
+                end[yearEnd, monthOfYearEnd] = dayOfMonthEnd
+                val list = fRealm.where(RealmMyTeam::class.java)
+                    .equalTo("teamId", teamId)
+                    .equalTo("docType", "transaction")
+                    .between("date", start.timeInMillis, end.timeInMillis)
+                    .sort("date", Sort.DESCENDING)
+                    .findAll()
+                updatedFinanceList(list)
+            },
+            now[Calendar.YEAR],
+            now[Calendar.MONTH],
+            now[Calendar.DAY_OF_MONTH]
+        )
+        dpd.show(requireActivity().fragmentManager, "DATE_PICKER")
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
