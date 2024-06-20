@@ -1110,5 +1110,6 @@
     <string name="surveys_to_complete">Vous avez %d %s à compléter</string>
     <string name="show_less">montrer moins</string>
     <string name="show_more">montrer plus</string>
+    <string name="bell" >Notifications</string>
 
 </resources>
