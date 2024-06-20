@@ -1041,5 +1041,8 @@
     <string name="are_you_sure_you_want_to_delete_this_course">هل أنت متأكد أنك تريد حذف هذه الدورة؟</string>
     <string name="share_chat">شارك الدردشة</string>
     <string name="shared_chat">دردشة مشتركة</string>
+    <string name="check_apk_version">جارٍ فحص إصدار apk</string>
+    <string name="checking_server">جارٍ فحص الخادم</string>
+    <string name="below_min_apk">إصدار Apk أقل من المسموح. يرجى تحديث التطبيق إلى أحدث إصدار.</string>
 
 </resources>

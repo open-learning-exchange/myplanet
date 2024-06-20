@@ -1040,6 +1040,9 @@
     <string name="sign_up_to_chat">Por favor regístrate para acceder al chat de IA</string>
     <string name="are_you_sure_you_want_to_delete_this_course">¿Estás seguro de que quieres eliminar este curso?</string>
     <string name="share_chat">compartir chat</string>
-    <string name="shared_chat">compartido chat</string>
+    <string name="shared_chat">chat compartido</string>
+    <string name="check_apk_version">verificando versión de la aplicación</string>
+    <string name="checking_server">verificando el servidor</string>
+    <string name="below_min_apk">la versión de la aplicación está por debajo de la permitida. Actualice la aplicación a la última versión.</string>
 
 </resources>
