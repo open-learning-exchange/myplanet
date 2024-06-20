@@ -27,6 +27,8 @@ jobs:
         run: |
           git fetch origin master > /dev/null 2>&1
           files=(
+            "app/src/main/AndroidManifest.xml"
+            "app/src/main/AndroidManifest.xml.lite"
             "app/src/main/java/org/ole/planet/myplanet/base/BaseContainerFragment.kt"
             "app/src/main/java/org/ole/planet/myplanet/base/BaseContainerFragment.kt.lite"
             "app/src/main/java/org/ole/planet/myplanet/base/PermissionActivity.kt"
