@@ -16,6 +16,7 @@ import android.view.MenuItem
 import android.view.View
 import android.view.WindowManager
 import androidx.activity.OnBackPressedCallback
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.drawerlayout.widget.DrawerLayout
@@ -292,7 +293,12 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
                 .build()
             val headerBackground = header.headerBackgroundView
             headerBackground.setPadding(30, 60, 30, 60)
-            headerBackground.setColorFilter(ContextCompat.getColor(this, R.color.md_white_1000), PorterDuff.Mode.SRC_IN)
+            if (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_NO) {
+                headerBackground.setColorFilter(
+                    ContextCompat.getColor(this, R.color.md_white_1000),
+                    PorterDuff.Mode.SRC_IN
+                )
+            }
             return header
         }
 

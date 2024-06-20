@@ -4,6 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:foreground="?attr/selectableItemBackground"
+    android:backgroundTint="@color/card_bg"
     app:cardUseCompatPadding="true"
     app:contentPadding="@dimen/padding_normal">
 
@@ -23,7 +24,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:padding="@dimen/padding_small"
-                android:textColor="@color/md_black_1000"
+                android:textColor="@color/card_text"
                 android:textSize="@dimen/text_size_large"
                 android:textStyle="bold" />
 
@@ -57,7 +58,7 @@
                 android:layout_gravity="center"
                 android:layout_weight="1"
                 android:padding="@dimen/padding_small"
-                android:textColor="@color/colorPrimary"
+                android:textColor="@color/mainColor"
                 android:textSize="@dimen/text_size_mid"
                 android:textStyle="bold" />
 

@@ -34,7 +34,7 @@
                 android:layout_weight="5"
                 android:gravity="center"
                 android:orientation="horizontal"
-                android:background="@color/login_info_bg">
+                android:background="@color/light_dark">
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="0dp"

@@ -3,6 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="@dimen/padding_normal"
+    android:background="@color/secondary_bg"
     tools:context=".ui.survey.SurveyFragment">
 
     <LinearLayout
@@ -15,7 +16,10 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:entries="@array/sort_by_date"
-            android:padding="@dimen/padding_normal" />
+            android:padding="@dimen/padding_normal"
+            android:popupBackground="@color/secondary_bg"
+            android:backgroundTint="@color/card_text"
+            android:theme="@style/SpinnerItemStyle" />
 
         <FrameLayout
             android:layout_width="match_parent"
