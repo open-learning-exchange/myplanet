@@ -61,7 +61,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             isSync = false
         }
         if (intent.hasExtra("versionInfo")) {
-            onUpdateAvailable((intent.getSerializableExtra("versionInfo") as MyPlanet?),
+            onUpdateAvailable(intent.getSerializableExtra("versionInfo", MyPlanet::class.java),
                 intent.getBooleanExtra("cancelable", false)
             )
         } else {
