@@ -52,7 +52,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:padding="@dimen/padding_normal"
-                android:textColor="@color/md_black_1000"
+                android:textColor="@color/card_text"
                 android:textSize="@dimen/text_size_large"
                 android:textStyle="bold" />
 
@@ -61,7 +61,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="@dimen/_10dp"
-                android:layout_marginEnd="@dimen/_10dp" />
+                android:layout_marginEnd="@dimen/_10dp"
+                android:textColor="@color/hint_color" />
         </LinearLayout>
     </LinearLayout>
 

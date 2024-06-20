@@ -55,7 +55,7 @@
                 android:background="@drawable/oval_white"
                 android:gravity="center"
                 android:padding="@dimen/padding_small"
-                android:textColor="@color/md_black_1000"
+                android:textColor="@color/card_text"
                 android:textSize="18sp"
                 android:textStyle="bold" />
 

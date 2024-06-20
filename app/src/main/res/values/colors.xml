@@ -12,7 +12,7 @@
     <color name="card_text">@color/md_black_1000</color>
     <color name="hint_color">#808080</color>
     <color name="text_highlight_color">@color/colorPrimary</color>
-    <color name="login_info_bg">#FFFFFF</color>
+    <color name="light_dark">#FFFFFF</color>
     <color name="mainColor">@color/colorPrimary</color>
 
 

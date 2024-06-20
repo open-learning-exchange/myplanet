@@ -15,16 +15,16 @@
             android:id="@+id/calendarView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:abbreviationsBarColor="@color/bg_white"
+            app:abbreviationsBarColor="@color/secondary_bg"
             app:abbreviationsLabelsColor="@color/disable_color"
             app:anotherMonthsDaysLabelsColor="@color/disable_color"
-            app:daysLabelsColor="@color/md_black_1000"
+            app:daysLabelsColor="@color/card_text"
             app:eventsEnabled="false"
             app:headerColor="@color/colorPrimary"
-            app:pagesColor="@color/md_white_1000"
+            app:pagesColor="@color/card_bg"
             app:selectionColor="@color/colorAccent"
             app:selectionLabelColor="@color/md_white_1000"
-            app:todayLabelColor="@color/colorPrimary"
+            app:todayLabelColor="@color/mainColor"
             app:type="many_days_picker" />
 
         <TextView

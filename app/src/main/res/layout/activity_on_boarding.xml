@@ -13,7 +13,7 @@
         android:layout_height="wrap_content"
         android:background="?attr/selectableItemBackground"
         android:text="Skip"
-        android:textColor="@color/colorPrimary" />
+        android:textColor="@color/text_highlight_color" />
 
     <androidx.viewpager.widget.ViewPager
         android:id="@+id/pagerIntroduction"

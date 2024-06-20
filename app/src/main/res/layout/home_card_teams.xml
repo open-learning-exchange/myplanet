@@ -48,14 +48,14 @@
             <TextView
                 android:id="@+id/count_team"
                 android:layout_width="35dp"
-                android:layout_height="35dp"
+                android:layout_height="34dp"
                 android:layout_gravity="end"
                 android:layout_margin="@dimen/padding_small"
                 android:background="@drawable/oval_white"
                 android:gravity="center"
                 android:padding="@dimen/padding_small"
                 android:text="12"
-                android:textColor="@color/md_black_1000"
+                android:textColor="@color/card_text"
                 android:textSize="18sp"
                 android:textStyle="bold" />
 
