@@ -1,14 +1,18 @@
 package org.ole.planet.myplanet.ui.enterprises
 
 import android.content.DialogInterface
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.DatePicker
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.borax12.materialdaterangepicker.date.DatePickerDialog
+import com.google.android.material.datepicker.CalendarConstraints
+import com.google.android.material.datepicker.DateValidatorPointForward
+import com.google.android.material.datepicker.MaterialDatePicker
 import io.realm.Realm
 import io.realm.RealmResults
 import io.realm.Sort
@@ -75,22 +79,40 @@ class FinanceFragment : BaseTeamFragment() {
     }
 
     private fun showDatePickerDialog() {
-        val now = Calendar.getInstance()
-        DatePickerDialog.newInstance({ _: DatePickerDialog?, year: Int, monthOfYear: Int, dayOfMonth: Int, yearEnd: Int, monthOfYearEnd: Int, dayOfMonthEnd: Int ->
-            val start = Calendar.getInstance()
-            val end = Calendar.getInstance()
-            start[year, monthOfYear] = dayOfMonth
-            end[yearEnd, monthOfYearEnd] = dayOfMonthEnd
-            list = fRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId)
+        val constraintsBuilder = CalendarConstraints.Builder()
+            .setValidator(DateValidatorPointForward.now())
+
+        val builder = MaterialDatePicker.Builder.dateRangePicker()
+            .setTitleText("Select dates")
+            .setCalendarConstraints(constraintsBuilder.build())
+
+        val datePicker = builder.build()
+
+        datePicker.addOnPositiveButtonClickListener { selection ->
+            val startDate = selection.first
+            val endDate = selection.second
+
+            val startCalendar = Calendar.getInstance()
+            startCalendar.timeInMillis = startDate
+
+            val endCalendar = Calendar.getInstance()
+            endCalendar.timeInMillis = endDate
+
+            val list = fRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId)
                 .equalTo("docType", "transaction")
-                .between("date", start.timeInMillis, end.timeInMillis).sort("date", Sort.DESCENDING)
+                .between("date", startCalendar.timeInMillis, endCalendar.timeInMillis)
+                .sort("date", Sort.DESCENDING)
                 .findAll()
+
             updatedFinanceList(list as RealmResults<RealmMyTeam>)
-        }, now[Calendar.YEAR], now[Calendar.MONTH], now[Calendar.DAY_OF_MONTH]).show(
-            requireActivity().fragmentManager, ""
-        )
+        }
+
+        val fragmentManager = requireActivity().supportFragmentManager
+        val fragmentTransaction = fragmentManager.beginTransaction()
+        datePicker.show(fragmentTransaction, "DATE_PICKER")
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         if (user?.isManager() == true || user?.isLeader() == true) {
@@ -123,6 +145,7 @@ class FinanceFragment : BaseTeamFragment() {
         if (total >= 0) fragmentFinanceBinding.balanceCaution.visibility = View.GONE
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun addTransaction() {
         AlertDialog.Builder(requireActivity()).setView(setUpAlertUi()).setTitle(R.string.add_transaction)
             .setPositiveButton("Submit") { _: DialogInterface?, _: Int ->
