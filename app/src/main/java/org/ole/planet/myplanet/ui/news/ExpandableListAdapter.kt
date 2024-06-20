@@ -36,7 +36,7 @@ class ExpandableListAdapter(
             val layoutInflater = context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
             convertView = layoutInflater.inflate(R.layout.expandable_list_item, null)
         }
-        val expandedListTextView = convertView!!.findViewById<View>(R.id.expandedListItem) as TextView
+        val expandedListTextView = convertView?.findViewById<View>(R.id.expandedListItem) as TextView
         expandedListTextView.text = expandedListText
         return convertView
     }
@@ -69,7 +69,7 @@ class ExpandableListAdapter(
             val layoutInflater = context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
             convertView = layoutInflater.inflate(R.layout.expandable_list_group, null)
         }
-        val listTitleTextView = convertView!!.findViewById<View>(R.id.listTitle) as TextView
+        val listTitleTextView = convertView?.findViewById<View>(R.id.listTitle) as TextView
         listTitleTextView.setTypeface(null, Typeface.BOLD)
         listTitleTextView.text = listTitle
         return convertView

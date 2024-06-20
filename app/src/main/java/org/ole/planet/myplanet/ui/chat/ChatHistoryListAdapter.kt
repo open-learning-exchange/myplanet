@@ -1,23 +1,28 @@
 package org.ole.planet.myplanet.ui.chat
 
 import android.app.AlertDialog
-import android.content.ContentValues.TAG
 import android.content.Context
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import io.realm.Realm
 import io.realm.RealmList
 import org.ole.planet.myplanet.databinding.AddNoteDialogBinding
 import org.ole.planet.myplanet.databinding.ChatShareDialogBinding
 import org.ole.planet.myplanet.databinding.GrandChildRecyclerviewDialogBinding
 import org.ole.planet.myplanet.databinding.RowChatHistoryBinding
+import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.RealmChatHistory
+import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
+import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.news.ExpandableListAdapter
 import org.ole.planet.myplanet.ui.news.GrandChildAdapter
-
 
 class ChatHistoryListAdapter(var context: Context, private var chatHistory: List<RealmChatHistory>) :
     RecyclerView.Adapter<RecyclerView.ViewHolder>() {
@@ -28,6 +33,8 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
     lateinit var expandableListAdapter: ExpandableListAdapter
     lateinit var expandableTitleList: List<String>
     lateinit var expandableDetailList: HashMap<String, List<String>>
+    private lateinit var mRealm: Realm
+    var user: RealmUserModel? = null
 
     interface ChatHistoryItemClickListener {
         fun onChatHistoryItemClicked(conversations: RealmList<Conversation>?, _id: String, _rev: String?)
@@ -50,6 +57,8 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         rowChatHistoryBinding = RowChatHistoryBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        mRealm = DatabaseService(context).realmInstance
+        user = UserProfileDbHandler(context).userModel
         return ViewHolderChat(rowChatHistoryBinding)
     }
 
@@ -94,16 +103,21 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
             }
 
             chatShareDialogBinding.listView.setOnChildClickListener { parent, v, groupPosition, childPosition, id ->
-                if (expandableTitleList[groupPosition] == "share with team/Enterprises") {
-                    val grandChildList = if (expandableDetailList[expandableTitleList[groupPosition]]?.get(childPosition) == "Teams") {
-                        listOf("Team A", "Team B", "Team C") // Replace with your actual data
+                if (expandableTitleList[groupPosition] == "Share with Team/Enterprises") {
+                    val teamList = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId").notEqualTo("status", "archived").equalTo("type", "team").findAll()
+                    val teamNames = teamList.map { it.name }
+
+                    val enterpriseList = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId").notEqualTo("status", "archived").equalTo("type", "enterprise").findAll()
+                    val enterpriseNames = enterpriseList.map { it.name }
+                    if (expandableDetailList[expandableTitleList[groupPosition]]?.get(childPosition) == "Teams") {
+                        showGrandChildRecyclerView(teamNames, "team")
+
                     } else {
-                        listOf("Enterprise A", "Enterprise B", "Enterprise C") // Replace with your actual data
+                        showGrandChildRecyclerView(enterpriseNames, "enterprise")
                     }
-                    Log.d(TAG, "grandChildList: $grandChildList")
-                    showGrandChildRecyclerView(grandChildList)
+//                    val grandChildList =
                 } else {
-                    showEditTextAndShareButton()
+                    showEditTextAndShareButton("community")
                 }
                 false
             }
@@ -118,11 +132,13 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
         }
     }
 
-    private fun showGrandChildRecyclerView(items: List<String>) {
+    private fun showGrandChildRecyclerView(items: List<String?>, section: String) {
         val grandChildDialogBinding = GrandChildRecyclerviewDialogBinding.inflate(LayoutInflater.from(context))
         val grandChildAdapter = GrandChildAdapter(items) { selectedItem ->
             showEditTextAndShareButton(selectedItem)
+            Log.d("selectedItem", selectedItem)
         }
+        grandChildDialogBinding.recyclerView.layoutManager = LinearLayoutManager(context)
         grandChildDialogBinding.recyclerView.adapter = grandChildAdapter
 
         val builder = AlertDialog.Builder(context)
@@ -140,8 +156,23 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
         val builder = AlertDialog.Builder(context)
         builder.setView(addNoteDialogBinding.root)
         builder.setPositiveButton("Share") { dialog, _ ->
-            val inputText = addNoteDialogBinding.editText.text.toString()
-            // Handle the share action here with inputText and selectedItem
+            val inputText = "${addNoteDialogBinding.editText.text}"
+
+//            fragmentNewsBinding.etMessage.setText("")
+            val map = HashMap<String?, String>()
+            map["message"] = inputText
+            map["viewInId"] = "${user?.planetCode ?: ""}@${user?.parentCode ?: ""}"
+            map["viewInSection"] = "community"
+            map["messageType"] = "sync"
+            map["messagePlanetCode"] = user?.planetCode ?: ""
+
+            val map = HashMap<String?, String>()
+            map["viewableBy"] = "teams"
+            map["viewableId"] = teamId!!
+            map["message"] = msg
+            map["messageType"] = team?.teamType!!
+            map["messagePlanetCode"] = team?.teamPlanetCode!!
+            createNews(map, mRealm, user, imageList)
             dialog.dismiss()
         }
         builder.setNegativeButton("Cancel") { dialog, _ ->

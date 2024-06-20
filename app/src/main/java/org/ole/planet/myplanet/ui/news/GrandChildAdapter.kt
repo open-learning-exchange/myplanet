@@ -7,7 +7,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 
-class GrandChildAdapter(private val items: List<String>, private val onItemClicked: (String) -> Unit) : RecyclerView.Adapter<GrandChildAdapter.GrandChildViewHolder>() {
+class GrandChildAdapter(private val items: List<String?>, private val onItemClicked: (String) -> Unit) : RecyclerView.Adapter<GrandChildAdapter.GrandChildViewHolder>() {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): GrandChildViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.expandable_list_grand_child_item, parent, false)
         return GrandChildViewHolder(view)
@@ -18,7 +18,7 @@ class GrandChildAdapter(private val items: List<String>, private val onItemClick
     }
 
     override fun onBindViewHolder(holder: GrandChildViewHolder, position: Int) {
-        holder.bind(items[position])
+        items[position]?.let { holder.bind(it) }
     }
 
     inner class GrandChildViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
