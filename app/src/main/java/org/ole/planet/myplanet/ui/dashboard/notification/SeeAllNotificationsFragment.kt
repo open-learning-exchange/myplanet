@@ -16,6 +16,7 @@ class SeeAllNotificationsFragment : Fragment() {
 
     private lateinit var notificationsAdapter: AdapterNotification
     private lateinit var notifications: MutableList<Notifications>
+    private lateinit var btnMarkAllAsRead: Button
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -36,18 +37,41 @@ class SeeAllNotificationsFragment : Fragment() {
         val recyclerView: RecyclerView = view.findViewById(R.id.recycler_view_notifications)
         recyclerView.layoutManager = LinearLayoutManager(context)
         notificationsAdapter = AdapterNotification(requireContext(), notifications, object : NotificationCallback {
-            override fun showResourceDownloadDialog() {}
-            override fun showUserResourceDialog() {}
-            override fun showPendingSurveyDialog() {}
-            override fun forceDownloadNewsImages() {}
-            override fun downloadDictionary() {}
-            override fun showTaskListDialog() {}
-            override fun syncKeyId() {}
+            override fun showResourceDownloadDialog() {
+            }
+
+            override fun showUserResourceDialog() {
+            }
+
+            override fun showPendingSurveyDialog() {
+            }
+
+            override fun forceDownloadNewsImages() {
+            }
+
+            override fun downloadDictionary() {
+            }
+
+            override fun showTaskListDialog() {
+            }
+
+            override fun syncKeyId() {
+            }
         })
         recyclerView.adapter = notificationsAdapter
 
-        view.findViewById<Button>(R.id.btn_mark_all_as_read).setOnClickListener {
+        btnMarkAllAsRead = view.findViewById(R.id.btn_mark_all_as_read)
+        updateMarkAllButtonState()
+
+        btnMarkAllAsRead.setOnClickListener {
             notificationsAdapter.markAllAsRead()
+            updateMarkAllButtonState()
         }
+    }
+
+    private fun updateMarkAllButtonState() {
+        val allRead = notifications.all { it.isRead }
+        btnMarkAllAsRead.isEnabled = !allRead
+        btnMarkAllAsRead.alpha = if (allRead) 0.5f else 1.0f // Reduce opacity if all are read
     }
 }
