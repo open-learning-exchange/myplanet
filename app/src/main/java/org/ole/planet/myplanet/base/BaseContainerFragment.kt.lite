@@ -65,7 +65,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 //            }
 //        }
         prefData = SharedPrefManager(requireContext())
-   }
+    }
 
     fun setRatings(`object`: JsonObject?) {
         if (`object` != null) {
@@ -302,6 +302,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
 
 //    open fun handleBackPressed() {
-//        requireActivity().onBackPressed()
+//        val fragmentManager = parentFragmentManager
+//        fragmentManager.popBackStack()
 //    }
 }
