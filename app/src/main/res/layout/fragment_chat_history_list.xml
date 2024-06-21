@@ -5,6 +5,7 @@
     android:id="@+id/sliding_pane_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/secondary_bg"
     tools:context=".ui.chat.ChatHistoryListFragment">
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -35,6 +36,8 @@
             android:layout_marginTop="10dp"
             android:layout_marginEnd="10dp"
             android:hint="Search..."
+            android:textColorHint="@color/hint_color"
+            android:backgroundTint="@color/hint_color"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/newChat" />

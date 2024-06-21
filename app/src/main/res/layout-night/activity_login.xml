@@ -34,7 +34,7 @@
                 android:layout_weight="5"
                 android:gravity="center"
                 android:orientation="horizontal"
-                android:background="@color/light_dark">
+                android:background="@color/primary">
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="0dp"
@@ -254,7 +254,7 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="4"
-            android:background="@color/mainColor"
+            android:background="@color/secondary_bg"
             android:orientation="vertical"
             android:weightSum="5">
 
@@ -344,7 +344,8 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="6dp"
                         android:paddingHorizontal="@dimen/padding_small"
-                        app:srcCompat="@drawable/baseline_storage_24" />
+                        app:srcCompat="@drawable/baseline_storage_24"
+                        app:tint="@color/card_text" />
 
                     <TextView
                         android:id="@+id/tv_available_space"
