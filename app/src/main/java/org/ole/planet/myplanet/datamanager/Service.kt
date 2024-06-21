@@ -321,33 +321,33 @@ class Service(private val context: Context) {
                                             val code = doc.getAsJsonPrimitive("code").asString
                                             listener?.onConfigurationIdReceived(id, code)
                                         } else {
-                                            showAlertDialog(context.getString(R.string.failed_to_get_configuration_id))
+                                            showAlertDialog(context.getString(R.string.failed_to_get_configuration_id), false)
                                         }
                                     } else {
-                                        showAlertDialog(context.getString(R.string.failed_to_get_configuration_id))
+                                        showAlertDialog(context.getString(R.string.failed_to_get_configuration_id), false)
                                     }
                                     customProgressDialog.dismiss()
                                 }
 
                                 override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
                                     customProgressDialog.dismiss()
-                                    showAlertDialog(context.getString(R.string.device_couldn_t_reach_server_check_and_try_again))
+                                    showAlertDialog(context.getString(R.string.device_couldn_t_reach_server_check_and_try_again), false)
                                 }
                             })
                         } else {
                             customProgressDialog.dismiss()
-                            showAlertDialog(context.getString(R.string.below_min_apk))
+                            showAlertDialog(context.getString(R.string.below_min_apk), true)
                         }
                     }
                 } else {
                     customProgressDialog.dismiss()
-                    showAlertDialog(context.getString(R.string.device_couldn_t_reach_server_check_and_try_again))
+                    showAlertDialog(context.getString(R.string.device_couldn_t_reach_server_check_and_try_again), false)
                 }
             }
 
             override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
                 customProgressDialog.dismiss()
-                showAlertDialog(context.getString(R.string.device_couldn_t_reach_server_check_and_try_again))
+                showAlertDialog(context.getString(R.string.device_couldn_t_reach_server_check_and_try_again), false)
             }
         })
     }
@@ -357,7 +357,7 @@ class Service(private val context: Context) {
     }
 
     private fun compareVersions(version1: String, version2: String): Int {
-        val parts1 = version1.removePrefix("v").split(".").map { it.toInt() }
+        val parts1 = version1.removeSuffix("-lite").removePrefix("v").split(".").map { it.toInt() }
         val parts2 = version2.removePrefix("v").split(".").map { it.toInt() }
 
         for (i in 0 until min(parts1.size, parts2.size)) {
@@ -368,11 +368,17 @@ class Service(private val context: Context) {
         return parts1.size.compareTo(parts2.size)
     }
 
-    fun showAlertDialog(message: String?) {
+    fun showAlertDialog(message: String?, playStoreRedirect: Boolean) {
         val builder = AlertDialog.Builder(context)
         builder.setMessage(message)
         builder.setCancelable(true)
-        builder.setNegativeButton(R.string.okay) { dialog: DialogInterface, _: Int -> dialog.cancel() }
+        builder.setNegativeButton(R.string.okay) {
+            dialog: DialogInterface, _: Int ->
+            if (playStoreRedirect) {
+                Utilities.openPlayStore()
+            }
+            dialog.cancel()
+        }
         val alert = builder.create()
         alert.show()
     }

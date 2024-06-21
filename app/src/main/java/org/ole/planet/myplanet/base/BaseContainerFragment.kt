@@ -200,7 +200,6 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             setDataAndType(uri, "application/vnd.android.package-archive")
             flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK
         }
-
         if (intent.resolveActivity(requireActivity().packageManager) != null) {
             if (hasInstallPermission(MainApplication.context)) {
                 startActivity(intent)
