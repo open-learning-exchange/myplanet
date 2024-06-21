@@ -74,7 +74,7 @@
                                 android:gravity="center"
                                 android:padding="4dp"
                                 android:text="@string/zero_total"
-                                android:textColor="@color/card_text" />
+                                android:textColor="@color/daynight_textColor" />
 
                             <androidx.appcompat.widget.AppCompatRatingBar
                                 android:id="@+id/rating_bar"
@@ -100,7 +100,7 @@
                                 android:gravity="center"
                                 android:padding="4dp"
                                 android:text="@string/zero_point_zero"
-                                android:textColor="@color/card_text"
+                                android:textColor="@color/daynight_textColor"
                                 android:textSize="@dimen/text_size_large"
                                 android:textStyle="bold" />
 
@@ -123,7 +123,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/subject_level_colon"
-                            android:textColor="@color/card_text" />
+                            android:textColor="@color/daynight_textColor" />
 
                         <TextView
                             android:id="@+id/subject_level"
@@ -144,7 +144,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/grade_level_colon"
-                            android:textColor="@color/card_text" />
+                            android:textColor="@color/daynight_textColor" />
 
                         <TextView
                             android:id="@+id/grade_level"
@@ -165,7 +165,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/language_colon"
-                            android:textColor="@color/card_text" />
+                            android:textColor="@color/daynight_textColor" />
 
                         <TextView
                             android:id="@+id/language"
@@ -186,7 +186,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/method"
-                            android:textColor="@color/card_text" />
+                            android:textColor="@color/daynight_textColor" />
 
                         <TextView
                             android:id="@+id/method"
@@ -206,7 +206,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/number_of_exams"
-                            android:textColor="@color/card_text" />
+                            android:textColor="@color/daynight_textColor" />
 
                         <TextView
                             android:id="@+id/no_of_exams"
@@ -228,7 +228,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/description_colon"
-                            android:textColor="@color/card_text" />
+                            android:textColor="@color/daynight_textColor" />
 
                         <TextView
                             android:id="@+id/description"
@@ -256,7 +256,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Course Steps"
-                        android:textColor="@color/card_text" />
+                        android:textColor="@color/daynight_textColor" />
 
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/steps_list"

@@ -30,7 +30,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="2"
                     android:text="@string/title_not_compulsary"
-                    android:textColor="@color/card_text"
+                    android:textColor="@color/daynight_textColor"
                     android:textSize="@dimen/text_size_mid" />
 
                 <TextView
@@ -39,7 +39,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="@string/type"
-                    android:textColor="@color/card_text"
+                    android:textColor="@color/daynight_textColor"
                     android:textSize="@dimen/text_size_mid" />
 
                 <LinearLayout
@@ -55,7 +55,7 @@
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
                         android:text="@string/priority"
-                        android:textColor="@color/card_text"
+                        android:textColor="@color/daynight_textColor"
                         android:textSize="@dimen/text_size_mid" />
                 </LinearLayout>
 
@@ -72,7 +72,7 @@
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
                         android:text="@string/status"
-                        android:textColor="@color/card_text"
+                        android:textColor="@color/daynight_textColor"
                         android:textSize="@dimen/text_size_mid" />
                 </LinearLayout>
 
@@ -82,7 +82,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="@string/open_date"
-                    android:textColor="@color/card_text"
+                    android:textColor="@color/daynight_textColor"
                     android:textSize="@dimen/text_size_mid" />
 
             </LinearLayout>

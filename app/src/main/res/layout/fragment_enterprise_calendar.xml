@@ -18,7 +18,7 @@
             app:abbreviationsBarColor="@color/secondary_bg"
             app:abbreviationsLabelsColor="@color/disable_color"
             app:anotherMonthsDaysLabelsColor="@color/disable_color"
-            app:daysLabelsColor="@color/card_text"
+            app:daysLabelsColor="@color/daynight_textColor"
             app:eventsEnabled="false"
             app:headerColor="@color/colorPrimary"
             app:pagesColor="@color/card_bg"

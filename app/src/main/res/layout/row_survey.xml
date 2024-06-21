@@ -24,7 +24,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:padding="@dimen/padding_small"
-                android:textColor="@color/card_text"
+                android:textColor="@color/daynight_textColor"
                 android:textSize="@dimen/text_size_large"
                 android:textStyle="bold" />
 

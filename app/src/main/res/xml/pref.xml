@@ -18,7 +18,7 @@
         android:entryValues="@array/dark_mode_options"
         android:key="dark_mode"
         android:title="@string/dark_mode"
-        android:summary="Set the App Theme to Dark Mode or Back to Normal"/>
+        android:summary="Set the App Theme to Dark Mode or Back to Normal" />
 
 
     <Preference
