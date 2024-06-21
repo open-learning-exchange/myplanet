@@ -3,19 +3,16 @@ package org.ole.planet.myplanet.ui.dashboard.notification
 import android.app.Dialog
 import android.os.Build
 import android.os.Bundle
-import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.annotation.RequiresApi
-import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import io.realm.Realm
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getLibraryList
 import org.ole.planet.myplanet.callback.NotificationCallback
 import org.ole.planet.myplanet.databinding.FragmentNotificationBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -30,7 +27,9 @@ class NotificationFragment : BottomSheetDialogFragment() {
     private lateinit var fragmentNotificationBinding: FragmentNotificationBinding
     lateinit var callback: NotificationCallback
     lateinit var resourceList: List<RealmMyLibrary>
-    lateinit var mRealm: Realm
+    private lateinit var mRealm: Realm
+    private lateinit var notificationList: MutableList<Notifications>
+    private lateinit var notificationsAdapter: AdapterNotification
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         callback = object : NotificationCallback {
@@ -71,11 +70,11 @@ class NotificationFragment : BottomSheetDialogFragment() {
 
         val tasks = mRealm.where(RealmTeamTask::class.java).notEqualTo("status", "archived").equalTo("completed", false).equalTo("assignee", model.id).findAll()
 
-        val notificationList: MutableList<Notifications> = ArrayList()
-
-        val resourceCount = getLibraryList(mRealm, model.id).size
-        notificationList.add(Notifications(R.drawable.mylibrary, "$resourceCount ${getString(R.string.resource_not_downloaded)}. ${getString(R.string.bulk_resource_download)}"))
-        notificationList.add(Notifications(R.drawable.survey, "${surveyList.size} ${getString(R.string.pending_survey)} / ${tasks.size} ${getString(R.string.tasks_due)}"))
+//        val notificationList: MutableList<Notifications> = ArrayList()
+//
+//        val resourceCount = getLibraryList(mRealm, model.id).size
+//        notificationList.add(Notifications(R.drawable.mylibrary, "$resourceCount ${getString(R.string.resource_not_downloaded)}. ${getString(R.string.bulk_resource_download)}"))
+//        notificationList.add(Notifications(R.drawable.survey, "${surveyList.size} ${getString(R.string.pending_survey)} / ${tasks.size} ${getString(R.string.tasks_due)}"))
 
         val storageRatio = FileUtils.totalAvailableMemoryRatio
         val storageNotiText: String = if (storageRatio <= 10) {
@@ -85,14 +84,14 @@ class NotificationFragment : BottomSheetDialogFragment() {
         } else {
             "${getString(R.string.storage_available)} $storageRatio%."
         }
-        notificationList.add(Notifications(R.drawable.baseline_storage_24, storageNotiText))
-
-        if (!TextUtils.isEmpty(model.key) && model.getRoleAsString().contains("health") && !model.id?.startsWith("guest")!!) {
-            notificationList.add(Notifications(R.drawable.ic_myhealth, getString(R.string.health_record_not_available_click_to_sync)))
-        }
-
-        fragmentNotificationBinding.rvNotifications.layoutManager = LinearLayoutManager(requireActivity())
-        fragmentNotificationBinding.rvNotifications.adapter = AdapterNotification(requireActivity(), notificationList, callback)
+//        notificationList.add(Notifications(R.drawable.baseline_storage_24, storageNotiText))
+//
+//        if (!TextUtils.isEmpty(model.key) && model.getRoleAsString().contains("health") && !model.id?.startsWith("guest")!!) {
+//            notificationList.add(Notifications(R.drawable.ic_myhealth, getString(R.string.health_record_not_available_click_to_sync)))
+//        }
+//
+//        fragmentNotificationBinding.rvNotifications.layoutManager = LinearLayoutManager(requireActivity())
+//        fragmentNotificationBinding.rvNotifications.adapter = AdapterNotification(requireActivity(), notificationList, callback)
         fragmentNotificationBinding.icBack.setOnClickListener {
             dismiss()
         }

@@ -1,19 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="horizontal"
-    android:padding="@dimen/padding_small"
-    android:background="@color/light_dark">
+xmlns:app="http://schemas.android.com/apk/res-auto"
+android:layout_width="match_parent"
+android:layout_height="wrap_content"
+android:orientation="horizontal"
+android:padding="@dimen/padding_small">
 
-    <ImageView
-        android:id="@+id/icon"
-        android:layout_width="@dimen/_40dp"
-        android:layout_height="@dimen/_40dp"
-        android:layout_gravity="center_vertical"
-        android:padding="@dimen/padding_normal"
-        app:tint="@color/daynight_textColor" />
+<ImageView
+    android:id="@+id/icon"
+    android:layout_width="@dimen/_40dp"
+    android:layout_height="@dimen/_40dp"
+    android:layout_gravity="center_vertical"
+    android:padding="@dimen/padding_normal"
+    app:tint="@color/daynight_textColor" />
+
+<LinearLayout
+    android:layout_width="0dp"
+    android:layout_height="wrap_content"
+    android:layout_weight="1"
+    android:orientation="vertical">
 
     <TextView
         android:id="@+id/title"
@@ -24,4 +29,22 @@
         android:textColor="@color/daynight_textColor"
         android:textSize="@dimen/text_size_mid" />
 
+    <TextView
+        android:id="@+id/timestamp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:paddingStart="@dimen/padding_normal"
+        android:paddingEnd="@dimen/padding_normal"
+        android:textColor="@color/daynight_textColor"
+        android:textSize="@dimen/text_size_small" />
+</LinearLayout>
+
+<Button
+    android:id="@+id/btn_mark_as_read"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center_vertical"
+    android:text="Mark as Read"
+    android:padding="@dimen/padding_normal" />
 </LinearLayout>
