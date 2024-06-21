@@ -4,22 +4,50 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.callback.NotificationCallback
+import org.ole.planet.myplanet.model.Notifications
 
 class SeeAllNotificationsFragment : Fragment() {
+
+    private lateinit var notificationsAdapter: AdapterNotification
+    private lateinit var notifications: MutableList<Notifications>
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_see_all_notifications, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        // Initialize views and set up any additional logic here
+
+        notifications = mutableListOf(
+            Notifications(R.drawable.notifications, "Admin okuro has posted a message on \"Gideon Team\" team.", "Jun 10, 2024", false),
+            Notifications(R.drawable.notifications, "You were assigned a new role", "Apr 24, 2024", true)
+        )
+
+        val recyclerView: RecyclerView = view.findViewById(R.id.recycler_view_notifications)
+        recyclerView.layoutManager = LinearLayoutManager(context)
+        notificationsAdapter = AdapterNotification(requireContext(), notifications, object : NotificationCallback {
+            override fun showResourceDownloadDialog() {}
+            override fun showUserResourceDialog() {}
+            override fun showPendingSurveyDialog() {}
+            override fun forceDownloadNewsImages() {}
+            override fun downloadDictionary() {}
+            override fun showTaskListDialog() {}
+            override fun syncKeyId() {}
+        })
+        recyclerView.adapter = notificationsAdapter
+
+        view.findViewById<Button>(R.id.btn_mark_all_as_read).setOnClickListener {
+            notificationsAdapter.markAllAsRead()
+        }
     }
 }

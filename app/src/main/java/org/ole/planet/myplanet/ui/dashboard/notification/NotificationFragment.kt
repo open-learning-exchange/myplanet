@@ -31,7 +31,9 @@ class NotificationFragment : BottomSheetDialogFragment() {
     private lateinit var fragmentNotificationBinding: FragmentNotificationBinding
     lateinit var callback: NotificationCallback
     lateinit var resourceList: List<RealmMyLibrary>
-    lateinit var mRealm: Realm
+    private lateinit var mRealm: Realm
+    private lateinit var notificationList: MutableList<Notifications>
+    private lateinit var notificationsAdapter: AdapterNotification
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         callback = object : NotificationCallback {
@@ -76,13 +78,13 @@ class NotificationFragment : BottomSheetDialogFragment() {
         val tasks = mRealm.where(RealmTeamTask::class.java).notEqualTo("status", "archived")
             .equalTo("completed", false)
             .equalTo("assignee", model.id).findAll()
-        val notificationList: MutableList<Notifications> = ArrayList()
-        notificationList.add(Notifications(R.drawable.mylibrary, "${getLibraryList(mRealm, model.id).size} ${getString(R.string.resource_not_downloaded)}"))
-        notificationList.add(Notifications(R.drawable.mylibrary, getString(R.string.bulk_resource_download)))
-        notificationList.add(Notifications(R.drawable.survey, "${surveyList.size} ${getString(R.string.pending_survey)}"))
-        notificationList.add(Notifications(R.drawable.ic_news, getString(R.string.download_news_images)))
-        notificationList.add(Notifications(R.drawable.ic_dictionary, getString(R.string.download_dictionary)))
-        notificationList.add(Notifications(R.drawable.task_pending, "${tasks.size} ${getString(R.string.tasks_due)}"))
+        notificationList = mutableListOf()
+        notificationList.add(Notifications(R.drawable.mylibrary, "${getLibraryList(mRealm, model.id).size} ${getString(R.string.resource_not_downloaded)}", "Apr 16, 2024", false))
+        notificationList.add(Notifications(R.drawable.mylibrary, getString(R.string.bulk_resource_download), "Mar 27, 2024", false))
+        notificationList.add(Notifications(R.drawable.survey, "${surveyList.size} ${getString(R.string.pending_survey)}", "Mar 4, 2024", false))
+        notificationList.add(Notifications(R.drawable.ic_news, getString(R.string.download_news_images), "Dec 7, 2023", true))
+        notificationList.add(Notifications(R.drawable.ic_dictionary, getString(R.string.download_dictionary), "Nov 21, 2023", true))
+        notificationList.add(Notifications(R.drawable.task_pending, "${tasks.size} ${getString(R.string.tasks_due)}", "Nov 13, 2023", true))
 
         val storageRatio = FileUtils.totalAvailableMemoryRatio
         val storageNotiText: String = if (storageRatio <= 10) {
@@ -92,15 +94,20 @@ class NotificationFragment : BottomSheetDialogFragment() {
         } else {
             "${getString(R.string.storage_available)} $storageRatio%."
         }
-        notificationList.add(Notifications(R.drawable.baseline_storage_24, storageNotiText))
+        notificationList.add(Notifications(R.drawable.baseline_storage_24, storageNotiText, "Nov 13, 2023", true))
 
         if (TextUtils.isEmpty(model.key) || model.getRoleAsString().contains("health")) {
             if (model.id?.startsWith("guest") != true) {
-                notificationList.add(Notifications(R.drawable.ic_myhealth, getString(R.string.health_record_not_available_click_to_sync)))
+                notificationList.add(Notifications(R.drawable.ic_myhealth, getString(R.string.health_record_not_available_click_to_sync), "Nov 13, 2023", true))
             }
         }
 
         fragmentNotificationBinding.rvNotifications.layoutManager = LinearLayoutManager(requireActivity())
-        fragmentNotificationBinding.rvNotifications.adapter = AdapterNotification(requireActivity(), notificationList, callback)
+        notificationsAdapter = AdapterNotification(requireActivity(), notificationList, callback)
+        fragmentNotificationBinding.rvNotifications.adapter = notificationsAdapter
+
+        fragmentNotificationBinding.btnMarkAllAsRead.setOnClickListener {
+            notificationsAdapter.markAllAsRead()
+        }
     }
 }

@@ -470,7 +470,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
     private fun navigateToSeeAllPage() {
         val fragment = SeeAllNotificationsFragment()
         supportFragmentManager.beginTransaction()
-            .replace(R.id.fragment_container, fragment) // R.id.fragment_container is your container view ID
+            .replace(R.id.fragment_container, fragment)
             .addToBackStack(null)
             .commit()
     }
