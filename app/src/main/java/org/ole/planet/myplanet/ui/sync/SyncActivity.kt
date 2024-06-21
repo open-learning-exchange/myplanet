@@ -604,6 +604,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                         if (team._id != null && team._id == lastSelection && team.isValid) {
                             val lastSelectedPosition = i + 1
                             binding.team.setSelection(lastSelectedPosition)
+                            selectedTeamId = lastSelection
                             break
                         }
                     }
@@ -613,6 +614,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                         if (position > 0) {
                             val selectedTeam = teams[position - 1]
                             selectedTeamId = selectedTeam._id
+                            prefData.setSELECTEDTEAMID(selectedTeam._id)
                             configurationDialog?.let { saveConfiguration(it) }
                         }
                     }
@@ -633,15 +635,21 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
     }
 
-    private fun saveConfiguration(dialog: MaterialDialog) {
-        val protocol = "${settings.getString("serverProtocol", "")}"
-        var url = "${serverUrl.text}"
-        val pin = "${serverPassword.text}"
+    private fun saveConfiguration(dialog: MaterialDialog): String {
+        //dialog.dismiss()
+        saveSyncInfoToPreference()
+        var processedUrl = ""
+        val protocol = settings.getString("serverProtocol", "")
+        var url = "${(dialog.customView?.findViewById<View>(R.id.input_server_url) as EditText).text}"
+        val pin = "${(dialog.customView?.findViewById<View>(R.id.input_server_Password) as EditText).text}"
+        editor.putString("customDeviceName", "${(dialog.customView?.findViewById<View>(R.id.deviceName) as EditText).text}").apply()
         url = protocol + url
         if (isUrlValid(url)) {
             currentDialog = dialog
             service.getMinApk(this, url, pin)
+            processedUrl = setUrlParts(url, pin)
         }
+        return processedUrl
     }
 
     private fun onChangeServerUrl() {
