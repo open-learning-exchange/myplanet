@@ -84,6 +84,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     lateinit var defaultPref: SharedPreferences
     lateinit var service: Service
     private var currentDialog: MaterialDialog? = null
+    private var configurationDialog: MaterialDialog? = null
     private var serverConfigAction = ""
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
@@ -114,7 +115,11 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             }
         } else if (serverConfigAction == "save") {
             if (savedId == null || id == savedId) {
-                if (selectedTeamId != null) {
+                if (selectedTeamId == null) {
+                    currentDialog?.let {
+                        saveConfigAndContinue(it)
+                    }
+                } else {
                     val url = "${settings.getString("serverProtocol", "")}${serverUrl.text}"
                     if (isUrlValid(url)) {
                         prefData.setSELECTEDTEAMID(selectedTeamId)
@@ -125,8 +130,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     } else {
                         currentDialog?.let { saveConfigAndContinue(it) }
                     }
-                } else {
-                    currentDialog?.let { saveConfigAndContinue(it) }
                 }
             } else {
                 clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server))
@@ -477,6 +480,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 showConfigurationUIElements(dialogServerUrlBinding, true)
             }
             val dialog = builder.build()
+            configurationDialog = dialog
             positiveAction = dialog.getActionButton(DialogAction.POSITIVE)
             dialogServerUrlBinding.manualConfiguration.setOnCheckedChangeListener { _: CompoundButton?, isChecked: Boolean ->
                 if (isChecked) {
@@ -600,7 +604,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                         if (team._id != null && team._id == lastSelection && team.isValid) {
                             val lastSelectedPosition = i + 1
                             binding.team.setSelection(lastSelectedPosition)
-                            selectedTeamId = lastSelection
                             break
                         }
                     }
@@ -610,6 +613,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                         if (position > 0) {
                             val selectedTeam = teams[position - 1]
                             selectedTeamId = selectedTeam._id
+                            configurationDialog?.let { saveConfiguration(it) }
                         }
                     }
 
@@ -626,6 +630,17 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             if (this::mRealm.isInitialized && !mRealm.isClosed) {
                 mRealm.close()
             }
+        }
+    }
+
+    private fun saveConfiguration(dialog: MaterialDialog) {
+        val protocol = "${settings.getString("serverProtocol", "")}"
+        var url = "${serverUrl.text}"
+        val pin = "${serverPassword.text}"
+        url = protocol + url
+        if (isUrlValid(url)) {
+            currentDialog = dialog
+            service.getMinApk(this, url, pin)
         }
     }
 
