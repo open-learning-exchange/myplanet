@@ -37,8 +37,9 @@ class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
             tab.text = (fragmentTeamDetailBinding.viewPager2.adapter as CommunityPagerAdapter).getPageTitle(position)
         }.attach()
         fragmentTeamDetailBinding.title.text = communityName
-        fragmentTeamDetailBinding.title.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
-        fragmentTeamDetailBinding.subtitle.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
+        fragmentTeamDetailBinding.title.setTextColor(ContextCompat.getColor(requireContext(), R.color.card_text))
+        fragmentTeamDetailBinding.subtitle.setTextColor(ContextCompat.getColor(requireContext(), R.color.card_text))
         fragmentTeamDetailBinding.subtitle.text = TimeUtils.getFormatedDateWithTime(Date().time)
+        fragmentTeamDetailBinding.appBar.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.secondary_bg))
     }
 }

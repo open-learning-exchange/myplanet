@@ -17,6 +17,7 @@ import android.widget.EditText
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import com.google.android.material.textfield.TextInputLayout
 import org.ole.planet.myplanet.R
@@ -109,7 +110,9 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         val green = Color.green(newColor)
         val blue = Color.blue(newColor)
         val alphaWhite = Color.argb(alpha, red, green, blue)
-        logo.setColorFilter(alphaWhite, PorterDuff.Mode.SRC_ATOP)
+        if (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_NO) {
+            logo.setColorFilter(alphaWhite, PorterDuff.Mode.SRC_ATOP)
+        }
     }
 
     fun setUrlParts(url: String, password: String): String {
