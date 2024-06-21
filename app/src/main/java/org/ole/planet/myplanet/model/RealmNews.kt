@@ -1,9 +1,12 @@
 package org.ole.planet.myplanet.model
 
 import android.text.TextUtils
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import com.google.gson.JsonSyntaxException
+import com.google.gson.reflect.TypeToken
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
@@ -58,6 +61,7 @@ open class RealmNews : RealmObject() {
     var labels: RealmList<String>? = null
     @JvmField
     var viewIn: String? = null
+    var news: String? = null
     var newsId: String? = null
     var newsRev: String? = null
     var newsUser: String? = null
@@ -68,16 +72,19 @@ open class RealmNews : RealmObject() {
     var newsUpdatedDate: Long = 0
     var chat: Boolean = false
 
-    val imagesArray: JsonArray
-        get() = if (images == null) JsonArray() else Gson().fromJson(images, JsonArray::class.java)
-    val labelsArray: JsonArray
-        get() {
-            val array = JsonArray()
-            labels?.forEach{ s ->
-                array.add(s)
-            }
-            return array
+    val imagesArray: JsonArray get() = if (images == null) {
+        JsonArray()
+    } else {
+        Gson().fromJson(images, JsonArray::class.java)
+    }
+
+    val labelsArray: JsonArray get() {
+        val array = JsonArray()
+        labels?.forEach{ s ->
+            array.add(s)
         }
+        return array
+    }
 
     fun addLabel(label: String?) {
         if (label != null && !labels?.contains(label)!!) {
@@ -92,31 +99,26 @@ open class RealmNews : RealmObject() {
         }
     }
 
-    val messageWithoutMarkdown: String?
-        get() {
-            var ms = message
-            for (ob in imagesArray) {
-                ms = ms?.replace(JsonUtils.getString("markdown", ob.asJsonObject), "")
-            }
-            return ms
+    val messageWithoutMarkdown: String? get() {
+        var ms = message
+        for (ob in imagesArray) {
+            ms = ms?.replace(JsonUtils.getString("markdown", ob.asJsonObject), "")
         }
-    val isCommunityNews: Boolean
-        get() {
-            val array = Gson().fromJson(viewIn, JsonArray::class.java)
-            var isCommunity = false
-            for (e in array) {
-                val `object` = e.asJsonObject
-                if (`object`.has("section") && `object`["section"].asString.equals(
-                        "community",
-                        ignoreCase = true
-                    )
-                ) {
-                    isCommunity = true
-                    break
-                }
+        return ms
+    }
+
+    val isCommunityNews: Boolean get() {
+        val array = Gson().fromJson(viewIn, JsonArray::class.java)
+        var isCommunity = false
+        for (e in array) {
+            val `object` = e.asJsonObject
+            if (`object`.has("section") && `object`["section"].asString.equals("community", ignoreCase = true)) {
+                isCommunity = true
+                break
             }
-            return isCommunity
         }
+        return isCommunity
+    }
 
     companion object {
         @JvmStatic
@@ -214,8 +216,11 @@ open class RealmNews : RealmObject() {
 
         @JvmStatic
         fun createNews(map: HashMap<String?, String>, mRealm: Realm, user: RealmUserModel?, imageUrls: RealmList<String>?): RealmNews {
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
-            val news = mRealm.createObject(RealmNews::class.java, UUID.randomUUID().toString())
+            if (!mRealm.isInTransaction) {
+                mRealm.beginTransaction()
+            }
+
+            val news = mRealm.createObject(RealmNews::class.java, "${UUID.randomUUID()}")
             news.message = map["message"]
             news.time = Date().time
             news.createdOn = user?.planetCode
@@ -226,19 +231,32 @@ open class RealmNews : RealmObject() {
             news.messagePlanetCode = map["messagePlanetCode"]
             news.messageType = map["messageType"]
             news.viewIn = getViewInJson(map)
+            news.chat = map["chat"]?.toBoolean() ?: false
+
             try {
-                news.updatedDate = map["updatedDate"]?.toLong()!!
+                news.updatedDate = map["updatedDate"]?.toLong() ?: 0
             } catch (e: Exception) {
                 e.printStackTrace()
             }
+
             news.userId = user?.id
-            news.replyTo = if (map.containsKey("replyTo")) {
-                map["replyTo"]
-            } else {
-                ""
-            }
+            news.replyTo = map["replyTo"] ?: ""
             news.user = Gson().toJson(user?.serialize())
             news.imageUrls = imageUrls
+
+            if (map.containsKey("news")) {
+                val newsObj = map["news"]
+                val newsJson = Gson().fromJson(newsObj, JsonObject::class.java)
+                news.newsId = JsonUtils.getString("_id", newsJson)
+                news.newsRev = JsonUtils.getString("_rev", newsJson)
+                news.newsUser = JsonUtils.getString("user", newsJson)
+                news.aiProvider = JsonUtils.getString("aiProvider", newsJson)
+                news.newsTitle = JsonUtils.getString("title", newsJson)
+                news.conversations = Gson().toJson(JsonUtils.getJsonArray("conversations", newsJson))
+//                news.newsCreatedDate = JsonUtils.getLong("createdDate", newsJson)
+//                news.newsUpdatedDate = JsonUtils.getLong("updatedDate", newsJson)
+            }
+
             mRealm.commitTransaction()
             return news
         }

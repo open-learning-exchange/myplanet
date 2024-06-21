@@ -24,15 +24,14 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.news.ExpandableListAdapter
 import org.ole.planet.myplanet.ui.news.GrandChildAdapter
 
-class ChatHistoryListAdapter(var context: Context, private var chatHistory: List<RealmChatHistory>) :
-    RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+class ChatHistoryListAdapter(var context: Context, private var chatHistory: List<RealmChatHistory>) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private lateinit var rowChatHistoryBinding: RowChatHistoryBinding
     private var chatHistoryItemClickListener: ChatHistoryItemClickListener? = null
     private var filteredChatHistory: List<RealmChatHistory> = chatHistory
     private var chatTitle: String? = ""
-    lateinit var expandableListAdapter: ExpandableListAdapter
-    lateinit var expandableTitleList: List<String>
-    lateinit var expandableDetailList: HashMap<String, List<String>>
+    private lateinit var expandableListAdapter: ExpandableListAdapter
+    private lateinit var expandableTitleList: List<String>
+    private lateinit var expandableDetailList: HashMap<String, List<String>>
     private lateinit var mRealm: Realm
     var user: RealmUserModel? = null
 
@@ -47,7 +46,7 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
     fun filter(query: String) {
         filteredChatHistory = chatHistory.filter { chat ->
             if (chat.conversations != null && chat.conversations?.isNotEmpty() == true) {
-                chat.conversations!![0]?.query?.contains(query, ignoreCase = true) == true
+                chat.conversations?.get(0)?.query?.contains(query, ignoreCase = true) == true
             } else {
                 chat.title?.contains(query, ignoreCase = true) ==true
             }
@@ -104,20 +103,21 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
 
             chatShareDialogBinding.listView.setOnChildClickListener { parent, v, groupPosition, childPosition, id ->
                 if (expandableTitleList[groupPosition] == "Share with Team/Enterprises") {
-                    val teamList = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId").notEqualTo("status", "archived").equalTo("type", "team").findAll()
-                    val teamNames = teamList.map { it.name }
+                    val teamList = mRealm.where(RealmMyTeam::class.java)
+                        .isEmpty("teamId").notEqualTo("status", "archived")
+                        .equalTo("type", "team").findAll()
 
-                    val enterpriseList = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId").notEqualTo("status", "archived").equalTo("type", "enterprise").findAll()
-                    val enterpriseNames = enterpriseList.map { it.name }
+                    val enterpriseList = mRealm.where(RealmMyTeam::class.java)
+                        .isEmpty("teamId").notEqualTo("status", "archived")
+                        .equalTo("type", "enterprise").findAll()
+
                     if (expandableDetailList[expandableTitleList[groupPosition]]?.get(childPosition) == "Teams") {
-                        showGrandChildRecyclerView(teamNames, "team")
-
+                        showGrandChildRecyclerView(teamList, "team", filteredChatHistory[position])
                     } else {
-                        showGrandChildRecyclerView(enterpriseNames, "enterprise")
+                        showGrandChildRecyclerView(enterpriseList, "enterprise", filteredChatHistory[position])
                     }
-//                    val grandChildList =
                 } else {
-                    showEditTextAndShareButton("community")
+                    showEditTextAndShareButton(null ,filteredChatHistory[position])
                 }
                 false
             }
@@ -132,11 +132,10 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
         }
     }
 
-    private fun showGrandChildRecyclerView(items: List<String?>, section: String) {
+    private fun showGrandChildRecyclerView(items: List<RealmMyTeam>, section: String, realmChatHistory: RealmChatHistory) {
         val grandChildDialogBinding = GrandChildRecyclerviewDialogBinding.inflate(LayoutInflater.from(context))
         val grandChildAdapter = GrandChildAdapter(items) { selectedItem ->
-            showEditTextAndShareButton(selectedItem)
-            Log.d("selectedItem", selectedItem)
+            showEditTextAndShareButton(selectedItem, realmChatHistory)
         }
         grandChildDialogBinding.recyclerView.layoutManager = LinearLayoutManager(context)
         grandChildDialogBinding.recyclerView.adapter = grandChildAdapter
@@ -150,29 +149,33 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
         dialog.show()
     }
 
-    private fun showEditTextAndShareButton(selectedItem: String? = null) {
+    private fun showEditTextAndShareButton(team: RealmMyTeam? = null, chatHistory: RealmChatHistory) {
         val addNoteDialogBinding = AddNoteDialogBinding.inflate(LayoutInflater.from(context))
 
         val builder = AlertDialog.Builder(context)
         builder.setView(addNoteDialogBinding.root)
         builder.setPositiveButton("Share") { dialog, _ ->
-            val inputText = "${addNoteDialogBinding.editText.text}"
+            val serializedConversations = chatHistory.conversations?.map { serializeConversation(it) }
+            val serializedMap = HashMap<String?, String>()
+            serializedMap["_id"] = chatHistory._id ?: ""
+            serializedMap["_rev"] = chatHistory._rev ?: ""
+            serializedMap["title"] = chatHistory.title ?: ""
+            serializedMap["user"] = chatHistory.user ?: ""
+            serializedMap["aiProvider"] = chatHistory.aiProvider ?: ""
+//            serializedMap["createdDate"] = chatHistory.createdDate ?: ""
+//            serializedMap["conversations"] = "$serializedConversations"
 
-//            fragmentNewsBinding.etMessage.setText("")
-//            val map = HashMap<String?, String>()
-//            map["message"] = inputText
-//            map["viewInId"] = "${user?.planetCode ?: ""}@${user?.parentCode ?: ""}"
-//            map["viewInSection"] = "community"
-//            map["messageType"] = "sync"
-//            map["messagePlanetCode"] = user?.planetCode ?: ""
-//
-//            val map = HashMap<String?, String>()
-//            map["viewableBy"] = "teams"
-//            map["viewableId"] = teamId!!
-//            map["message"] = msg
-//            map["messageType"] = team?.teamType!!
-//            map["messagePlanetCode"] = team?.teamPlanetCode!!
-//            createNews(map, mRealm, user, imageList)
+            val map = HashMap<String?, String>()
+            map["message"] = "${addNoteDialogBinding.editText.text}"
+            map["viewInId"] = team?._id ?: ""
+            map["viewInSection"] = "teams"
+            map["messageType"] = team?.teamType ?: ""
+            map["messagePlanetCode"] = team?.teamPlanetCode ?: ""
+            map["chat"] = "true"
+            map["news"] = "$serializedMap"
+            Log.d("okuroChatHistory", "serializedMap: ${createNews(map, mRealm, user, null)}")
+            createNews(map, mRealm, user, null)
+
             dialog.dismiss()
         }
         builder.setNegativeButton("Cancel") { dialog, _ ->
@@ -182,9 +185,15 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
         dialog.show()
     }
 
+    private fun serializeConversation(conversation: Conversation): Map<String, String?> {
+        return mapOf(
+            "query" to conversation.query,
+            "response" to conversation.response
+        )
+    }
+
     private fun getData(): Map<String, List<String>> {
         val expandableListDetail: MutableMap<String, List<String>> = HashMap()
-
         val community: MutableList<String> = ArrayList()
         community.add("Community")
 
@@ -197,7 +206,6 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
 
         return expandableListDetail
     }
-
 
     class ViewHolderChat(val rowChatHistoryBinding: RowChatHistoryBinding) : RecyclerView.ViewHolder(rowChatHistoryBinding.root)
 }
