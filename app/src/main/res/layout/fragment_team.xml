@@ -48,7 +48,7 @@
                     android:layout_weight="1"
                     android:padding="@dimen/padding_small"
                     android:text="@string/name_normal"
-                    android:textColor="@color/card_text"
+                    android:textColor="@color/daynight_textColor"
                     android:textStyle="bold" />
 
                 <TextView
@@ -58,7 +58,7 @@
                     android:layout_weight="1"
                     android:padding="@dimen/padding_small"
                     android:text="@string/created_on"
-                    android:textColor="@color/card_text"
+                    android:textColor="@color/daynight_textColor"
                     android:textStyle="bold" />
 
                 <TextView
@@ -68,7 +68,7 @@
                     android:layout_weight="1"
                     android:padding="@dimen/padding_small"
                     android:text="@string/type"
-                    android:textColor="@color/card_text"
+                    android:textColor="@color/daynight_textColor"
                     android:textStyle="bold" />
 
                 <TextView
@@ -79,7 +79,7 @@
                     android:alpha="0.8"
                     android:padding="@dimen/padding_small"
                     android:text="@string/total_visits"
-                    android:textColor="@color/card_text"
+                    android:textColor="@color/daynight_textColor"
                     android:textStyle="bold" />
 
                 <TextView
@@ -88,7 +88,7 @@
                     android:layout_weight="1"
                     android:padding="@dimen/padding_small"
                     android:text="@string/action"
-                    android:textColor="@color/card_text"
+                    android:textColor="@color/daynight_textColor"
                     android:textStyle="bold" />
             </TableRow>
         </TableLayout>

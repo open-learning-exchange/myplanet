@@ -26,6 +26,6 @@
             android:layout_weight="1"
             android:gravity="center"
             android:textAlignment="textStart"
-            android:textColor="@color/card_text" />
+            android:textColor="@color/daynight_textColor" />
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

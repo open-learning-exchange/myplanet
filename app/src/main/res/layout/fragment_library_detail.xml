@@ -121,7 +121,7 @@
                                         android:layout_gravity="center"
                                         android:gravity="center"
                                         android:padding="4dp"
-                                        android:textColor="@color/card_text" />
+                                        android:textColor="@color/daynight_textColor" />
 
                                     <androidx.appcompat.widget.AppCompatRatingBar
                                         android:id="@+id/rating_bar"
@@ -150,7 +150,7 @@
                                         android:gravity="center"
                                         android:padding="4dp"
                                         android:text="@string/zero_point_zero"
-                                        android:textColor="@color/card_text"
+                                        android:textColor="@color/daynight_textColor"
                                         android:textSize="@dimen/text_size_large"
                                         android:textStyle="bold" />
 
@@ -175,7 +175,7 @@
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:text="@string/author"
-                                    android:textColor="@color/card_text" />
+                                    android:textColor="@color/daynight_textColor" />
 
                                 <TextView
                                     android:id="@+id/tv_author"
@@ -196,7 +196,7 @@
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:text="@string/published_by"
-                                    android:textColor="@color/card_text" />
+                                    android:textColor="@color/daynight_textColor" />
 
                                 <TextView
                                     android:id="@+id/tv_published"
@@ -217,7 +217,7 @@
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:text="@string/media"
-                                    android:textColor="@color/card_text" />
+                                    android:textColor="@color/daynight_textColor" />
 
                                 <TextView
                                     android:id="@+id/tv_media"
@@ -238,7 +238,7 @@
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:text="@string/language_with_colon"
-                                    android:textColor="@color/card_text" />
+                                    android:textColor="@color/daynight_textColor" />
 
                                 <TextView
                                     android:id="@+id/tv_language"
@@ -259,7 +259,7 @@
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:text="@string/subject"
-                                    android:textColor="@color/card_text"/>
+                                    android:textColor="@color/daynight_textColor"/>
 
                                 <TextView
                                     android:id="@+id/tv_subject"
@@ -280,7 +280,7 @@
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:text="@string/license"
-                                    android:textColor="@color/card_text"/>
+                                    android:textColor="@color/daynight_textColor"/>
 
                                 <TextView
                                     android:id="@+id/tv_license"
@@ -301,7 +301,7 @@
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:text="@string/resource_colon"
-                                    android:textColor="@color/card_text" />
+                                    android:textColor="@color/daynight_textColor" />
 
                                 <TextView
                                     android:id="@+id/tv_resource"
@@ -322,7 +322,7 @@
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:text="@string/type"
-                                    android:textColor="@color/card_text" />
+                                    android:textColor="@color/daynight_textColor" />
 
                                 <TextView
                                     android:id="@+id/tv_type"

@@ -24,14 +24,14 @@
                 android:layout_gravity="center"
                 android:gravity="center"
                 android:padding="@dimen/padding_large"
-                android:buttonTint="@color/card_text" />
+                android:buttonTint="@color/daynight_textColor" />
 
             <TextView
                 android:id="@+id/title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:padding="4dp"
-                android:textColor="@color/card_text"
+                android:textColor="@color/daynight_textColor"
                 android:textSize="@dimen/text_size_mid"
                 android:textStyle="bold" />
 
@@ -119,7 +119,7 @@
                     android:gravity="center"
                     android:padding="4dp"
                     android:text="@string/zero_total"
-                    android:textColor="@color/card_text" />
+                    android:textColor="@color/daynight_textColor" />
 
                 <androidx.appcompat.widget.AppCompatRatingBar
                     android:id="@+id/rating_bar"
@@ -149,7 +149,7 @@
                     android:gravity="center"
                     android:padding="4dp"
                     android:text="@string/zero_point_zero"
-                    android:textColor="@color/card_text"
+                    android:textColor="@color/daynight_textColor"
                     android:textSize="@dimen/text_size_large"
                     android:textStyle="bold" />
 

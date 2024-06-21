@@ -15,7 +15,7 @@
         android:padding="@dimen/padding_small"
         android:text="@string/date"
         android:textSize="@dimen/text_size_mid"
-        android:textColor="@color/card_text" />
+        android:textColor="@color/daynight_textColor" />
 
     <TextView
         android:id="@+id/note"
@@ -25,7 +25,7 @@
         android:padding="@dimen/padding_small"
         android:text="@string/note"
         android:textSize="@dimen/text_size_mid"
-        android:textColor="@color/card_text" />
+        android:textColor="@color/daynight_textColor" />
 
 
     <TextView
@@ -60,6 +60,6 @@
         android:text="@string/balance"
         android:textSize="@dimen/text_size_mid"
         android:visibility="visible"
-        android:textColor="@color/card_text" />
+        android:textColor="@color/daynight_textColor" />
 
 </LinearLayout>

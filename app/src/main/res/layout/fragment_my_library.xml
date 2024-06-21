@@ -110,9 +110,9 @@
                 android:layout_weight="1"
                 android:padding="8dp"
                 android:text="@string/select_all"
-                android:textColor="@color/card_text"
+                android:textColor="@color/daynight_textColor"
                 android:textSize="@dimen/text_size_mid"
-                android:buttonTint="@color/card_text" />
+                android:buttonTint="@color/daynight_textColor" />
 
             <include
                 layout="@layout/layout_search"

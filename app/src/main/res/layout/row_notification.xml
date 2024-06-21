@@ -14,7 +14,7 @@
         android:layout_height="@dimen/_40dp"
         android:layout_gravity="center_vertical"
         android:padding="@dimen/padding_normal"
-        app:tint="@color/card_text" />
+        app:tint="@color/daynight_textColor" />
 
     <TextView
         android:id="@+id/title"
@@ -22,7 +22,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center_vertical"
         android:padding="@dimen/padding_normal"
-        android:textColor="@color/card_text"
+        android:textColor="@color/daynight_textColor"
         android:textSize="@dimen/text_size_mid" />
 
 </LinearLayout>

@@ -138,7 +138,7 @@
             android:background="@android:color/transparent"
             android:hint="Enter Message"
             android:textColorHint="@color/hint_color"
-            android:textColor="@color/card_text"
+            android:textColor="@color/daynight_textColor"
             android:inputType="textMultiLine"
             android:maxLines="6"
             tools:ignore="Autofill" />

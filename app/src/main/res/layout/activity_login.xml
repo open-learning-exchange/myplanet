@@ -73,7 +73,7 @@
                             android:padding="@dimen/padding_normal"
                             android:text="@string/dash_4"
                             android:textAlignment="center"
-                            android:textColor="@color/card_text" />
+                            android:textColor="@color/daynight_textColor" />
 
                         <ImageButton
                             android:id="@+id/imgBtnSetting"
@@ -113,7 +113,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="10dp"
                             android:hint="@string/hint_name"
-                            android:textColorHint="@color/card_text"
+                            android:textColorHint="@color/daynight_textColor"
                             android:labelFor="@+id/inputName"
                             app:boxBackgroundColor="@color/md_white_1000"
                             app:boxStrokeColor="@color/md_white_1000"
@@ -135,8 +135,8 @@
                                 android:inputType="text"
                                 android:paddingStart="10dp"
                                 android:paddingEnd="8dp"
-                                android:textColor="@color/card_text"
-                                android:backgroundTint="@color/card_text" />
+                                android:textColor="@color/daynight_textColor"
+                                android:backgroundTint="@color/daynight_textColor" />
                         </com.google.android.material.textfield.TextInputLayout>
 
                         <com.google.android.material.textfield.TextInputLayout
@@ -145,7 +145,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="10dp"
                             android:hint="@string/password"
-                            android:textColorHint="@color/card_text"
+                            android:textColorHint="@color/daynight_textColor"
                             android:labelFor="@+id/input_password"
                             app:boxBackgroundColor="@color/md_white_1000"
                             app:boxStrokeColor="@color/md_white_1000"
@@ -167,8 +167,8 @@
                                 android:inputType="textPassword"
                                 android:paddingStart="10dp"
                                 android:paddingEnd="8dp"
-                                android:textColor="@color/card_text"
-                                android:backgroundTint="@color/card_text" />
+                                android:textColor="@color/daynight_textColor"
+                                android:backgroundTint="@color/daynight_textColor" />
                         </com.google.android.material.textfield.TextInputLayout>
 
                         <Button
@@ -206,7 +206,7 @@
                                 android:text="@string/btn_guest_login"
                                 android:textSize="14sp"
                                 android:theme="@style/PrimaryFlatButton"
-                                android:textColor="@color/card_text" />
+                                android:textColor="@color/daynight_textColor" />
 
                             <Button
                                 android:id="@+id/become_member"
@@ -217,7 +217,7 @@
                                 android:contentDescription="@string/become_a_member"
                                 android:text="@string/become_a_member"
                                 android:theme="@style/PrimaryFlatButton"
-                                android:textColor="@color/card_text" />
+                                android:textColor="@color/daynight_textColor" />
 
                             <Button
                                 android:id="@+id/btn_feedback"
@@ -228,7 +228,7 @@
                                 android:contentDescription="@string/feedback"
                                 android:text="@string/feedback"
                                 android:theme="@style/PrimaryFlatButton"
-                                android:textColor="@color/card_text" />
+                                android:textColor="@color/daynight_textColor" />
 
                             <Button
                                 android:id="@+id/open_community"
@@ -240,7 +240,7 @@
                                 android:text="@string/open_community"
                                 android:textSize="14sp"
                                 android:theme="@style/PrimaryFlatButton"
-                                android:textColor="@color/card_text" />
+                                android:textColor="@color/daynight_textColor" />
                         </LinearLayout>
                     </androidx.constraintlayout.widget.ConstraintLayout>
 
