@@ -39,8 +39,12 @@ jobs:
           for file1 in "${defaults[@]}"; do
             file2="${file1}.lite"  # Corresponding .lite file
             changes=$(git diff --name-only HEAD origin/master | grep -E "^($file1|$file2)$")
-            if [ -n "$changes" ] && { ! echo "$changes" | grep -q "^$file1$"; } || { ! echo "$changes" | grep -q "^$file2$"; }; then
-              errors+=("Error: Both $file1 and $file2 must be changed together.")
+            if [ -n "$changes" ]; then
+              if ! echo "$changes" | grep -q "^$file1$"; then
+                errors+=("Error: $file1 has changed, but $file2 has not.")
+              elif ! echo "$changes" | grep -q "^$file2$"; then
+                errors+=("Error: $file2 has changed, but $file1 has not.")
+              fi
             fi
           done
           echo 3
