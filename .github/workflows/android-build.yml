@@ -27,8 +27,8 @@ jobs:
         run: |
           files=(
             "app/src/main/AndroidManifest.xml"
-            "app/src/main/java/org/ole/planet/myplanet/base/BaseContainerFragment.kt"
             "app/src/main/java/org/ole/planet/myplanet/base/PermissionActivity.kt"
+            "app/src/main/java/org/ole/planet/myplanet/base/BaseContainerFragment.kt"
             "app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardActivity.kt"
           )
           for file in "${files[@]}"; do
