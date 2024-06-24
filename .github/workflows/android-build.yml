@@ -36,6 +36,7 @@ jobs:
             ls -al "$file"
             ls -al "$file.lite"
             diff "$file" "$file.lite"
+            echo "next"
           done
 
       - name: diff the code to get lite
