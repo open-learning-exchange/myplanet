@@ -167,7 +167,7 @@ class NewsFragment : BaseNewsFragment() {
             val lib: List<RealmMyLibrary?> = mRealm.where(RealmMyLibrary::class.java)
                 .`in`("_id", stringArray)
                 .findAll()
-            getUrlsAndStartDownload(lib, settings, urls)
+            getUrlsAndStartDownload(lib, urls)
             adapterNews = activity?.let {
                 AdapterNews(
                     it,

@@ -22,6 +22,23 @@ jobs:
       - name: checkout repository code
         uses: actions/checkout@v4
 
+      - name: check for .lite diffs
+        if: matrix.build == 'lite'
+        run: |
+          files=(
+            "app/src/main/AndroidManifest.xml"
+            "app/src/main/java/org/ole/planet/myplanet/base/PermissionActivity.kt"
+            "app/src/main/java/org/ole/planet/myplanet/base/BaseContainerFragment.kt"
+            "app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardActivity.kt"
+          )
+          for file in "${files[@]}"; do
+            echo "$file .lite"
+            ls -al "$file"
+            ls -al "$file.lite"
+            diff "$file" "$file.lite" || true
+            echo "next"
+          done
+
       - name: diff the code to get lite
         if: matrix.build == 'lite'
         run: |
