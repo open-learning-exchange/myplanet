@@ -35,25 +35,8 @@ jobs:
             "app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardActivity.kt"
           )
           echo "Files to check: ${files[@]}"
-          current_branch=$(git rev-parse --abbrev-ref HEAD)
-          echo "Current branch: $current_branch"
-          if git show-ref --verify --quiet refs/remotes/origin/master; then
-            echo "origin/master exists"
-          else
-            echo "Error: origin/master does not exist"
-            exit 1
-          fi
-          echo "Running git status"
-          git status
-          if ! git status > /dev/null 2>&1; then
-            echo "Error: Unable to retrieve git status. Please check the repository."
-            exit 1
-          fi
+          git merge-base HEAD origin/master
           commonancestor=$(git merge-base HEAD origin/master)
-          if [ $? -ne 0 ]; then
-            echo "Error: git merge-base command failed"
-            exit 1
-          fi
           echo "Common ancestor: $commonancestor"
           checkchanges() {
             echo "Checking changes for $1 and $2"
