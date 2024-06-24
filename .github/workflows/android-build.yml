@@ -26,6 +26,7 @@ jobs:
         if: matrix.build == 'lite'
         run: |
           echo "checking for .lite changes..."
+          git fetch origin master > /dev/null 2>&1
           files=(
             "app/src/main/AndroidManifest.xml"
             "app/src/main/java/org/ole/planet/myplanet/base/BaseContainerFragment.kt"
