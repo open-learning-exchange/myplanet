@@ -181,6 +181,7 @@
     </style>
 
     <style name="ListPreferenceStyle">
-        <item name="android:textColorAlertDialogListItem">@color/daynight_textColor</item>
+        <item name="textColorAlertDialogListItem">@color/daynight_textColor</item>
+        <item name="android:textColor">@color/daynight_textColor</item>
     </style>
 </resources>

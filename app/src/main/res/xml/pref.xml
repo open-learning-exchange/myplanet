@@ -5,7 +5,8 @@
         android:entries="@array/language"
         android:entryValues="@array/language_keys"
         android:key="app_language"
-        android:title="@string/language" />
+        android:title="@string/language"
+        android:theme="@style/ListPreferenceStyle" />
 
     <SwitchPreference
         android:defaultValue="false"
@@ -18,7 +19,8 @@
         android:entryValues="@array/dark_mode_options"
         android:key="dark_mode"
         android:title="@string/dark_mode"
-        android:summary="Set the App Theme to Dark Mode or Back to Normal" />
+        android:summary="Set the App Theme to Dark Mode or Back to Normal"
+        android:theme="@style/ListPreferenceStyle" />
 
 
     <Preference
