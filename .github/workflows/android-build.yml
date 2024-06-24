@@ -35,6 +35,12 @@ jobs:
             "app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardActivity.kt"
           )
           echo "Files to check: ${files[@]}"
+          echo "Running git status"
+          git status
+          if ! git status > /dev/null 2>&1; then
+            echo "Error: Unable to retrieve git status. Please check the repository."
+            exit 1
+          fi
           commonancestor=$(git merge-base HEAD origin/master)
           echo "Common ancestor: $commonancestor"
           checkchanges() {
