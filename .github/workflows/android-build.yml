@@ -35,7 +35,7 @@ jobs:
             echo "$file .lite"
             ls -al "$file"
             ls -al "$file.lite"
-            diff "$file" "$file.lite"
+            diff "$file" "$file.lite" || true
             echo "next"
           done
 
