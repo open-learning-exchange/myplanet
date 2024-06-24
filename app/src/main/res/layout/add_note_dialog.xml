@@ -9,11 +9,7 @@
         android:id="@+id/editText"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Enter your message" />
+        android:inputType="textMultiLine"
+        android:hint="@string/add_note" />
 
-    <Button
-        android:id="@+id/shareButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Share" />
 </LinearLayout>

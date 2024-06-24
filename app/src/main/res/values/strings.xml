@@ -514,7 +514,7 @@
     <string name="tests">tests</string>
     <string name="referral">referrals</string>
     <string name="other_diagnosis">Other Diagnosis</string>
-    <string name="close">Close</string>
+    <string name="close">close</string>
     <string name="negative_balance">The current balance is negative!</string>
     <string name="entMission">What is your enterprise\'s Mission?</string>
     <string name="entServices">What are the Services your enterprise provides?</string>
@@ -1044,5 +1044,6 @@
     <string name="check_apk_version">checking app version</string>
     <string name="checking_server">checking server</string>
     <string name="below_min_apk">app is below allowed version. please update the app to the latest version.</string>
+    <string name="add_note">add a note (optional)</string>
 
 </resources>

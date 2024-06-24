@@ -6,10 +6,12 @@
 
     <TextView
         android:id="@+id/textView"
-        android:layout_width="fill_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:paddingStart="?android:attr/expandableListPreferredChildPaddingLeft"
         android:paddingTop="10dp"
-        android:paddingBottom="10dp" />
+        android:layout_marginStart="10dp"
+        android:textSize="16sp"
+        android:paddingBottom="10dp"
+        android:textColor="@color/md_black_1000" />
 
 </LinearLayout>

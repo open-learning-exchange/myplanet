@@ -19,6 +19,7 @@ class GrandChildAdapter(private val items: List<RealmMyTeam>, private val onClic
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): GrandChildViewHolder {
+
         val view = LayoutInflater.from(parent.context).inflate(R.layout.expandable_list_grand_child_item, parent, false)
         return GrandChildViewHolder(view)
     }

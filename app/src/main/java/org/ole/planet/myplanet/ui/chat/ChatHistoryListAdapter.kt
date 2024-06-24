@@ -4,12 +4,12 @@ import android.app.AlertDialog
 import android.content.Context
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.Gson
 import io.realm.Realm
 import io.realm.RealmList
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AddNoteDialogBinding
 import org.ole.planet.myplanet.databinding.ChatShareDialogBinding
 import org.ole.planet.myplanet.databinding.GrandChildRecyclerviewDialogBinding
@@ -91,21 +91,15 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
 
         viewHolderChat.rowChatHistoryBinding.shareChat.setOnClickListener {
             val chatShareDialogBinding = ChatShareDialogBinding.inflate(LayoutInflater.from(context))
+            var dialog: AlertDialog? = null
+
             expandableDetailList = getData() as HashMap<String, List<String>>
             expandableTitleList = ArrayList<String>(expandableDetailList.keys)
             expandableListAdapter = ExpandableListAdapter(context, expandableTitleList, expandableDetailList)
             chatShareDialogBinding.listView.setAdapter(expandableListAdapter)
 
-            chatShareDialogBinding.listView.setOnGroupExpandListener { groupPosition ->
-                Toast.makeText(context, expandableTitleList[groupPosition] + " List Expanded.", Toast.LENGTH_SHORT).show()
-            }
-
-            chatShareDialogBinding.listView.setOnGroupCollapseListener { groupPosition ->
-                Toast.makeText(context, expandableTitleList[groupPosition] + " List Collapsed.", Toast.LENGTH_SHORT).show()
-            }
-
-            chatShareDialogBinding.listView.setOnChildClickListener { parent, v, groupPosition, childPosition, id ->
-                if (expandableTitleList[groupPosition] == "Share with Team/Enterprises") {
+            chatShareDialogBinding.listView.setOnChildClickListener { _, _, groupPosition, childPosition, id ->
+                if (expandableTitleList[groupPosition] == "share with team/enterprise") {
                     val teamList = mRealm.where(RealmMyTeam::class.java)
                         .isEmpty("teamId").notEqualTo("status", "archived")
                         .equalTo("type", "team").findAll()
@@ -114,10 +108,10 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
                         .isEmpty("teamId").notEqualTo("status", "archived")
                         .equalTo("type", "enterprise").findAll()
 
-                    if (expandableDetailList[expandableTitleList[groupPosition]]?.get(childPosition) == "Teams") {
-                        showGrandChildRecyclerView(teamList, filteredChatHistory[position])
+                    if (expandableDetailList[expandableTitleList[groupPosition]]?.get(childPosition) == "teams") {
+                        showGrandChildRecyclerView(teamList, "teams", filteredChatHistory[position])
                     } else {
-                        showGrandChildRecyclerView(enterpriseList, filteredChatHistory[position])
+                        showGrandChildRecyclerView(enterpriseList, "enterprises", filteredChatHistory[position])
                     }
                 } else {
                     settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -125,44 +119,52 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
                     val communityName = settings?.getString("communityName", "")
                     val teamId = "$communityName@$sParentcode"
                     val community = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
-                    showEditTextAndShareButton(community ,filteredChatHistory[position])
+                    showEditTextAndShareButton(community, "community", filteredChatHistory[position])
                 }
+                dialog?.dismiss()
                 false
             }
 
             val builder = AlertDialog.Builder(context)
             builder.setView(chatShareDialogBinding.root)
-            builder.setPositiveButton("close") { dialog, _ ->
-                dialog.dismiss()
+            builder.setPositiveButton(context.getString(R.string.close)) { _, _ ->
+                dialog?.dismiss()
             }
-            val dialog = builder.create()
+            dialog = builder.create()
             dialog.show()
         }
     }
 
-    private fun showGrandChildRecyclerView(items: List<RealmMyTeam>, realmChatHistory: RealmChatHistory) {
+    private fun showGrandChildRecyclerView(items: List<RealmMyTeam>, section: String, realmChatHistory: RealmChatHistory) {
         val grandChildDialogBinding = GrandChildRecyclerviewDialogBinding.inflate(LayoutInflater.from(context))
+        var dialog: AlertDialog? = null
+
+        if (section == "teams") {
+            grandChildDialogBinding.title.text = context.getString(R.string.team)
+        } else {
+            grandChildDialogBinding.title.text = context.getString(R.string.enterprises)
+        }
         val grandChildAdapter = GrandChildAdapter(items) { selectedItem ->
-            showEditTextAndShareButton(selectedItem, realmChatHistory)
+            showEditTextAndShareButton(selectedItem, "teams", realmChatHistory)
+            dialog?.dismiss()
         }
         grandChildDialogBinding.recyclerView.layoutManager = LinearLayoutManager(context)
         grandChildDialogBinding.recyclerView.adapter = grandChildAdapter
 
         val builder = AlertDialog.Builder(context)
         builder.setView(grandChildDialogBinding.root)
-        builder.setPositiveButton("close") { dialog, _ ->
-            dialog.dismiss()
+        builder.setPositiveButton("close") { _, _ ->
+            dialog?.dismiss()
         }
-        val dialog = builder.create()
+        dialog = builder.create()
         dialog.show()
     }
 
-    private fun showEditTextAndShareButton(team: RealmMyTeam? = null, chatHistory: RealmChatHistory) {
+    private fun showEditTextAndShareButton(team: RealmMyTeam? = null, section: String, chatHistory: RealmChatHistory) {
         val addNoteDialogBinding = AddNoteDialogBinding.inflate(LayoutInflater.from(context))
-
         val builder = AlertDialog.Builder(context)
         builder.setView(addNoteDialogBinding.root)
-        builder.setPositiveButton("Share") { dialog, _ ->
+        builder.setPositiveButton(context.getString(R.string.share_chat)) { dialog, _ ->
             val serializedConversations = chatHistory.conversations?.map { serializeConversation(it) }
             val serializedMap = HashMap<String?, String>()
             serializedMap["_id"] = chatHistory._id ?: ""
@@ -177,7 +179,7 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
             val map = HashMap<String?, String>()
             map["message"] = "${addNoteDialogBinding.editText.text}"
             map["viewInId"] = team?._id ?: ""
-            map["viewInSection"] = "teams"
+            map["viewInSection"] = section
             map["messageType"] = team?.teamType ?: ""
             map["messagePlanetCode"] = team?.teamPlanetCode ?: ""
             map["chat"] = "true"
@@ -186,7 +188,7 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
             createNews(map, mRealm, user, null)
             dialog.dismiss()
         }
-        builder.setNegativeButton("Cancel") { dialog, _ ->
+        builder.setNegativeButton(context.getString(R.string.cancel)) { dialog, _ ->
             dialog.dismiss()
         }
         val dialog = builder.create()
@@ -203,14 +205,14 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
     private fun getData(): Map<String, List<String>> {
         val expandableListDetail: MutableMap<String, List<String>> = HashMap()
         val community: MutableList<String> = ArrayList()
-        community.add("Community")
+        community.add("community")
 
         val teams: MutableList<String> = ArrayList()
-        teams.add("Teams")
-        teams.add("Enterprises")
+        teams.add("teams")
+        teams.add("enterprises")
 
-        expandableListDetail["Share with Community"] = community
-        expandableListDetail["Share with Team/Enterprises"] = teams
+        expandableListDetail["share with community"] = community
+        expandableListDetail["share with team/enterprise"] = teams
 
         return expandableListDetail
     }
