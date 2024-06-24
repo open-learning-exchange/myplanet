@@ -1044,6 +1044,6 @@
     <string name="check_apk_version">hubinta nooca app</string>
     <string name="checking_server">hubinta server-ka</string>
     <string name="below_min_apk">nooca app-ga waa ka hooseeyaa kan la oggol yahay. fadlan cusbooneysii app-ka nooca ugu dambeeya.</string>
-    <string name="add_note">add a note (optional)</string>
+    <string name="add_note">Ku dar falanqeey (ixtiyaacsi ah)</string>
 
 </resources>
