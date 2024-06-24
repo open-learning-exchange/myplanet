@@ -33,6 +33,8 @@ jobs:
           )
           for file in "${files[@]}"; do
             echo "$file .lite"
+            ls -al "$file"
+            ls -al "$file.lite"
             diff "$file" "$file.lite"
           done
 
