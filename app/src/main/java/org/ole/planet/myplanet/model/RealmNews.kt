@@ -4,6 +4,7 @@ import android.text.TextUtils
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import com.google.gson.JsonSyntaxException
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
@@ -70,6 +71,7 @@ open class RealmNews : RealmObject() {
 
     val imagesArray: JsonArray
         get() = if (images == null) JsonArray() else Gson().fromJson(images, JsonArray::class.java)
+
     val labelsArray: JsonArray
         get() {
             val array = JsonArray()
@@ -100,17 +102,14 @@ open class RealmNews : RealmObject() {
             }
             return ms
         }
+
     val isCommunityNews: Boolean
         get() {
             val array = Gson().fromJson(viewIn, JsonArray::class.java)
             var isCommunity = false
             for (e in array) {
                 val `object` = e.asJsonObject
-                if (`object`.has("section") && `object`["section"].asString.equals(
-                        "community",
-                        ignoreCase = true
-                    )
-                ) {
+                if (`object`.has("section") && `object`["section"].asString.equals("community", ignoreCase = true)) {
                     isCommunity = true
                     break
                 }
@@ -121,9 +120,7 @@ open class RealmNews : RealmObject() {
     companion object {
         @JvmStatic
         fun insert(mRealm: Realm, doc: JsonObject?) {
-            if (!mRealm.isInTransaction) {
-                mRealm.beginTransaction()
-            }
+            if (!mRealm.isInTransaction) mRealm.beginTransaction()
             var news = mRealm.where(RealmNews::class.java)
                 .equalTo("_id", JsonUtils.getString("_id", doc))
                 .findFirst()
@@ -214,8 +211,11 @@ open class RealmNews : RealmObject() {
 
         @JvmStatic
         fun createNews(map: HashMap<String?, String>, mRealm: Realm, user: RealmUserModel?, imageUrls: RealmList<String>?): RealmNews {
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
-            val news = mRealm.createObject(RealmNews::class.java, UUID.randomUUID().toString())
+            if (!mRealm.isInTransaction) {
+                mRealm.beginTransaction()
+            }
+
+            val news = mRealm.createObject(RealmNews::class.java, "${UUID.randomUUID()}")
             news.message = map["message"]
             news.time = Date().time
             news.createdOn = user?.planetCode
@@ -226,19 +226,59 @@ open class RealmNews : RealmObject() {
             news.messagePlanetCode = map["messagePlanetCode"]
             news.messageType = map["messageType"]
             news.viewIn = getViewInJson(map)
+            news.chat = map["chat"]?.toBoolean() ?: false
+
             try {
-                news.updatedDate = map["updatedDate"]?.toLong()!!
+                news.updatedDate = map["updatedDate"]?.toLong() ?: 0
             } catch (e: Exception) {
                 e.printStackTrace()
             }
+
             news.userId = user?.id
-            news.replyTo = if (map.containsKey("replyTo")) {
-                map["replyTo"]
-            } else {
-                ""
-            }
+            news.replyTo = map["replyTo"] ?: ""
             news.user = Gson().toJson(user?.serialize())
             news.imageUrls = imageUrls
+
+            if (map.containsKey("news")) {
+                val newsObj = map["news"]
+                val gson = Gson()
+                try {
+                    val newsJsonString = newsObj?.replace("=", ":")
+                    val newsJson = gson.fromJson(newsJsonString, JsonObject::class.java)
+                    news.newsId = JsonUtils.getString("_id", newsJson)
+                    news.newsRev = JsonUtils.getString("_rev", newsJson)
+                    news.newsUser = JsonUtils.getString("user", newsJson)
+                    news.aiProvider = JsonUtils.getString("aiProvider", newsJson)
+                    news.newsTitle = JsonUtils.getString("title", newsJson)
+                    if (newsJson.has("conversations")) {
+                        val conversationsElement = newsJson.get("conversations")
+                        if (conversationsElement.isJsonPrimitive && conversationsElement.asJsonPrimitive.isString) {
+                            val conversationsString = conversationsElement.asString
+                            try {
+                                val conversationsArray = gson.fromJson(conversationsString, JsonArray::class.java)
+                                if (conversationsArray.size() > 0) {
+                                    val conversationsList = ArrayList<HashMap<String, String>>()
+                                    conversationsArray.forEach { conversationElement ->
+                                        val conversationObj = conversationElement.asJsonObject
+                                        val conversationMap = HashMap<String, String>()
+                                        conversationMap["query"] = conversationObj.get("query").asString
+                                        conversationMap["response"] = conversationObj.get("response").asString
+                                        conversationsList.add(conversationMap)
+                                    }
+                                    news.conversations = Gson().toJson(conversationsList)
+                                }
+                            } catch (e: JsonSyntaxException) {
+                                e.printStackTrace()
+                            }
+                        }
+                    }
+                    news.newsCreatedDate = JsonUtils.getLong("createdDate", newsJson)
+                    news.newsUpdatedDate = JsonUtils.getLong("updatedDate", newsJson)
+                } catch (e: JsonSyntaxException) {
+                    e.printStackTrace()
+                }
+            }
+
             mRealm.commitTransaction()
             return news
         }
