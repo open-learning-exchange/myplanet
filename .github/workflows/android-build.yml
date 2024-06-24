@@ -42,6 +42,10 @@ jobs:
             exit 1
           fi
           commonancestor=$(git merge-base HEAD origin/master)
+          if [ $? -ne 0 ]; then
+            echo "Error: git merge-base command failed"
+            exit 1
+          fi
           echo "Common ancestor: $commonancestor"
           checkchanges() {
             echo "Checking changes for $1 and $2"
