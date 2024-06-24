@@ -61,12 +61,21 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         if (forceSync) {
             isSync = false
         }
-        if (intent.hasExtra("versionInfo") && Build.VERSION.SDK_INT >= TIRAMISU) {
-            onUpdateAvailable(intent.getSerializableExtra("versionInfo", MyPlanet::class.java),
-                intent.getBooleanExtra("cancelable", false)
-            )
+        if (Build.VERSION.SDK_INT >= TIRAMISU) {
+            val versionInfo = intent.getSerializableExtra("versionInfo", MyPlanet::class.java)
+            if (versionInfo != null) {
+                onUpdateAvailable(versionInfo, intent.getBooleanExtra("cancelable", false))
+            } else {
+                service.checkVersion(this, settings)
+            }
         } else {
-            service.checkVersion(this, settings)
+            @Suppress("DEPRECATION")
+            val versionInfo = intent.getSerializableExtra("versionInfo") as? MyPlanet
+            if (versionInfo != null) {
+                onUpdateAvailable(versionInfo, intent.getBooleanExtra("cancelable", false))
+            } else {
+                service.checkVersion(this, settings)
+            }
         }
         checkUsagesPermission()
         forceSyncTrigger()
