@@ -27,79 +27,80 @@ import org.ole.planet.myplanet.ui.team.BaseTeamFragment.Companion.settings
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import java.util.Date
 
-class ChatHistoryListAdapter(var context: Context, private var chatHistory: List<RealmChatHistory>) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-    private lateinit var rowChatHistoryBinding: RowChatHistoryBinding
-    private var chatHistoryItemClickListener: ChatHistoryItemClickListener? = null
-    private var filteredChatHistory: List<RealmChatHistory> = chatHistory
-    private var chatTitle: String? = ""
-    private lateinit var expandableListAdapter: ExpandableListAdapter
-    private lateinit var expandableTitleList: List<String>
-    private lateinit var expandableDetailList: HashMap<String, List<String>>
-    private lateinit var mRealm: Realm
-    var user: RealmUserModel? = null
+class ChatHistoryListAdapter(var context: Context, private var chatHistory: List<RealmChatHistory>) :
+    RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+        private lateinit var rowChatHistoryBinding: RowChatHistoryBinding
+        private var chatHistoryItemClickListener: ChatHistoryItemClickListener? = null
+        private var filteredChatHistory: List<RealmChatHistory> = chatHistory
+        private var chatTitle: String? = ""
+        private lateinit var expandableListAdapter: ExpandableListAdapter
+        private lateinit var expandableTitleList: List<String>
+        private lateinit var expandableDetailList: HashMap<String, List<String>>
+        private lateinit var mRealm: Realm
+        var user: RealmUserModel? = null
 
-    interface ChatHistoryItemClickListener {
-        fun onChatHistoryItemClicked(conversations: RealmList<Conversation>?, _id: String, _rev: String?)
-    }
-
-    fun setChatHistoryItemClickListener(listener: ChatHistoryItemClickListener) {
-        chatHistoryItemClickListener = listener
-    }
-
-    fun filter(query: String) {
-        filteredChatHistory = chatHistory.filter { chat ->
-            if (chat.conversations != null && chat.conversations?.isNotEmpty() == true) {
-                chat.conversations?.get(0)?.query?.contains(query, ignoreCase = true) == true
-            } else {
-                chat.title?.contains(query, ignoreCase = true) ==true
-            }
+        interface ChatHistoryItemClickListener {
+            fun onChatHistoryItemClicked(conversations: RealmList<Conversation>?, _id: String, _rev: String?)
         }
-        notifyDataSetChanged()
-    }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+        fun setChatHistoryItemClickListener(listener: ChatHistoryItemClickListener) {
+            chatHistoryItemClickListener = listener
+        }
+
+        fun filter(query: String) {
+            filteredChatHistory = chatHistory.filter { chat ->
+                if (chat.conversations != null && chat.conversations?.isNotEmpty() == true) {
+                    chat.conversations?.get(0)?.query?.contains(query, ignoreCase = true) == true
+                } else {
+                    chat.title?.contains(query, ignoreCase = true) ==true
+                }
+            }
+            notifyDataSetChanged()
+        }
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         rowChatHistoryBinding = RowChatHistoryBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         mRealm = DatabaseService(context).realmInstance
         user = UserProfileDbHandler(context).userModel
         return ViewHolderChat(rowChatHistoryBinding)
     }
 
-    override fun getItemCount(): Int {
-        return filteredChatHistory.size
-    }
-
-    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        val viewHolderChat = holder as ViewHolderChat
-        if (filteredChatHistory[position].conversations != null && filteredChatHistory[position].conversations?.isNotEmpty() == true) {
-            viewHolderChat.rowChatHistoryBinding.chatTitle.text = filteredChatHistory[position].conversations?.get(0)?.query
-            viewHolderChat.rowChatHistoryBinding.chatTitle.contentDescription = filteredChatHistory[position].conversations?.get(0)?.query
-            chatTitle = filteredChatHistory[position].conversations?.get(0)?.query
-        } else {
-            viewHolderChat.rowChatHistoryBinding.chatTitle.text = filteredChatHistory[position].title
-            viewHolderChat.rowChatHistoryBinding.chatTitle.contentDescription = filteredChatHistory[position].title
-            chatTitle = filteredChatHistory[position].title
+        override fun getItemCount(): Int {
+            return filteredChatHistory.size
         }
 
-        viewHolderChat.rowChatHistoryBinding.root.setOnClickListener {
-            viewHolderChat.rowChatHistoryBinding.chatCardView.contentDescription = chatTitle
-            chatHistoryItemClickListener?.onChatHistoryItemClicked(
-                filteredChatHistory[position].conversations,
-                "${filteredChatHistory[position]._id}",
-                filteredChatHistory[position]._rev
-            )
-        }
+        override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+            val viewHolderChat = holder as ViewHolderChat
+            if (filteredChatHistory[position].conversations != null && filteredChatHistory[position].conversations?.isNotEmpty() == true) {
+                viewHolderChat.rowChatHistoryBinding.chatTitle.text = filteredChatHistory[position].conversations?.get(0)?.query
+                viewHolderChat.rowChatHistoryBinding.chatTitle.contentDescription = filteredChatHistory[position].conversations?.get(0)?.query
+                chatTitle = filteredChatHistory[position].conversations?.get(0)?.query
+            } else {
+                viewHolderChat.rowChatHistoryBinding.chatTitle.text = filteredChatHistory[position].title
+                viewHolderChat.rowChatHistoryBinding.chatTitle.contentDescription = filteredChatHistory[position].title
+                chatTitle = filteredChatHistory[position].title
+            }
 
-        viewHolderChat.rowChatHistoryBinding.shareChat.setOnClickListener {
-            val chatShareDialogBinding = ChatShareDialogBinding.inflate(LayoutInflater.from(context))
-            var dialog: AlertDialog? = null
+            viewHolderChat.rowChatHistoryBinding.root.setOnClickListener {
+                viewHolderChat.rowChatHistoryBinding.chatCardView.contentDescription = chatTitle
+                chatHistoryItemClickListener?.onChatHistoryItemClicked(
+                    filteredChatHistory[position].conversations,
+                    "${filteredChatHistory[position]._id}",
+                    filteredChatHistory[position]._rev
+                )
+            }
 
-            expandableDetailList = getData() as HashMap<String, List<String>>
-            expandableTitleList = ArrayList<String>(expandableDetailList.keys)
-            expandableListAdapter = ExpandableListAdapter(context, expandableTitleList, expandableDetailList)
-            chatShareDialogBinding.listView.setAdapter(expandableListAdapter)
+            viewHolderChat.rowChatHistoryBinding.shareChat.setOnClickListener {
+                val chatShareDialogBinding = ChatShareDialogBinding.inflate(LayoutInflater.from(context))
+                var dialog: AlertDialog? = null
 
-            chatShareDialogBinding.listView.setOnChildClickListener { _, _, groupPosition, childPosition, id ->
-                if (expandableTitleList[groupPosition] == "share with team/enterprise") {
+                expandableDetailList = getData() as HashMap<String, List<String>>
+                expandableTitleList = ArrayList<String>(expandableDetailList.keys)
+                expandableListAdapter = ExpandableListAdapter(context, expandableTitleList, expandableDetailList)
+                chatShareDialogBinding.listView.setAdapter(expandableListAdapter)
+
+                chatShareDialogBinding.listView.setOnChildClickListener { _, _, groupPosition, childPosition, id ->
+                    if (expandableTitleList[groupPosition] == "share with team/enterprise") {
                     val teamList = mRealm.where(RealmMyTeam::class.java)
                         .isEmpty("teamId").notEqualTo("status", "archived")
                         .equalTo("type", "team").findAll()
@@ -114,53 +115,53 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
                         showGrandChildRecyclerView(enterpriseList, "enterprises", filteredChatHistory[position])
                     }
                 } else {
-                    settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                    val sParentcode = settings?.getString("parentCode", "")
-                    val communityName = settings?.getString("communityName", "")
-                    val teamId = "$communityName@$sParentcode"
-                    val community = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
-                    showEditTextAndShareButton(community, "community", filteredChatHistory[position])
+                        settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                        val sParentcode = settings?.getString("parentCode", "")
+                        val communityName = settings?.getString("communityName", "")
+                        val teamId = "$communityName@$sParentcode"
+                        val community = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
+                        showEditTextAndShareButton(community, "community", filteredChatHistory[position])
+                    }
+                    dialog?.dismiss()
+                    false
                 }
-                dialog?.dismiss()
-                false
+
+                val builder = AlertDialog.Builder(context)
+                builder.setView(chatShareDialogBinding.root)
+                builder.setPositiveButton(context.getString(R.string.close)) { _, _ ->
+                    dialog?.dismiss()
+                }
+                dialog = builder.create()
+                dialog.show()
             }
+        }
 
-            val builder = AlertDialog.Builder(context)
-            builder.setView(chatShareDialogBinding.root)
-            builder.setPositiveButton(context.getString(R.string.close)) { _, _ ->
-                dialog?.dismiss()
+        private fun showGrandChildRecyclerView(items: List<RealmMyTeam>, section: String, realmChatHistory: RealmChatHistory) {
+            val grandChildDialogBinding = GrandChildRecyclerviewDialogBinding.inflate(LayoutInflater.from(context))
+            var dialog: AlertDialog? = null
+
+            if (section == "teams") {
+                grandChildDialogBinding.title.text = context.getString(R.string.team)
+            } else {
+                grandChildDialogBinding.title.text = context.getString(R.string.enterprises)
             }
-            dialog = builder.create()
-            dialog.show()
-        }
-    }
-
-    private fun showGrandChildRecyclerView(items: List<RealmMyTeam>, section: String, realmChatHistory: RealmChatHistory) {
-        val grandChildDialogBinding = GrandChildRecyclerviewDialogBinding.inflate(LayoutInflater.from(context))
-        var dialog: AlertDialog? = null
-
-        if (section == "teams") {
-            grandChildDialogBinding.title.text = context.getString(R.string.team)
-        } else {
-            grandChildDialogBinding.title.text = context.getString(R.string.enterprises)
-        }
-        val grandChildAdapter = GrandChildAdapter(items) { selectedItem ->
+            val grandChildAdapter = GrandChildAdapter(items) { selectedItem ->
             showEditTextAndShareButton(selectedItem, "teams", realmChatHistory)
             dialog?.dismiss()
         }
-        grandChildDialogBinding.recyclerView.layoutManager = LinearLayoutManager(context)
-        grandChildDialogBinding.recyclerView.adapter = grandChildAdapter
+            grandChildDialogBinding.recyclerView.layoutManager = LinearLayoutManager(context)
+            grandChildDialogBinding.recyclerView.adapter = grandChildAdapter
 
-        val builder = AlertDialog.Builder(context)
-        builder.setView(grandChildDialogBinding.root)
-        builder.setPositiveButton("close") { _, _ ->
+            val builder = AlertDialog.Builder(context)
+            builder.setView(grandChildDialogBinding.root)
+            builder.setPositiveButton("close") { _, _ ->
             dialog?.dismiss()
         }
-        dialog = builder.create()
-        dialog.show()
-    }
+            dialog = builder.create()
+            dialog.show()
+        }
 
-    private fun showEditTextAndShareButton(team: RealmMyTeam? = null, section: String, chatHistory: RealmChatHistory) {
+        private fun showEditTextAndShareButton(team: RealmMyTeam? = null, section: String, chatHistory: RealmChatHistory) {
         val addNoteDialogBinding = AddNoteDialogBinding.inflate(LayoutInflater.from(context))
         val builder = AlertDialog.Builder(context)
         builder.setView(addNoteDialogBinding.root)
@@ -195,14 +196,14 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
         dialog.show()
     }
 
-    private fun serializeConversation(conversation: Conversation): HashMap<String?, String> {
+        private fun serializeConversation(conversation: Conversation): HashMap<String?, String> {
         val conversationMap = HashMap<String?, String>()
         conversationMap["query"] = conversation.query ?: ""
         conversationMap["response"] = conversation.response ?: ""
         return conversationMap
     }
 
-    private fun getData(): Map<String, List<String>> {
+        private fun getData(): Map<String, List<String>> {
         val expandableListDetail: MutableMap<String, List<String>> = HashMap()
         val community: MutableList<String> = ArrayList()
         community.add("community")
@@ -217,5 +218,5 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
         return expandableListDetail
     }
 
-    class ViewHolderChat(val rowChatHistoryBinding: RowChatHistoryBinding) : RecyclerView.ViewHolder(rowChatHistoryBinding.root)
+        class ViewHolderChat(val rowChatHistoryBinding: RowChatHistoryBinding) : RecyclerView.ViewHolder(rowChatHistoryBinding.root)
 }

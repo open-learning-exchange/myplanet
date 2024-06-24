@@ -13,7 +13,6 @@ import org.ole.planet.myplanet.utilities.JsonUtils
 import java.util.Date
 import java.util.UUID
 
-
 open class RealmNews : RealmObject() {
     @JvmField
     @PrimaryKey
@@ -60,7 +59,6 @@ open class RealmNews : RealmObject() {
     var labels: RealmList<String>? = null
     @JvmField
     var viewIn: String? = null
-    var news: String? = null
     var newsId: String? = null
     var newsRev: String? = null
     var newsUser: String? = null
@@ -71,19 +69,17 @@ open class RealmNews : RealmObject() {
     var newsUpdatedDate: Long = 0
     var chat: Boolean = false
 
-    val imagesArray: JsonArray get() = if (images == null) {
-        JsonArray()
-    } else {
-        Gson().fromJson(images, JsonArray::class.java)
-    }
+    val imagesArray: JsonArray
+        get() = if (images == null) JsonArray() else Gson().fromJson(images, JsonArray::class.java)
 
-    val labelsArray: JsonArray get() {
-        val array = JsonArray()
-        labels?.forEach{ s ->
-            array.add(s)
+    val labelsArray: JsonArray
+        get() {
+            val array = JsonArray()
+            labels?.forEach{ s ->
+                array.add(s)
+            }
+            return array
         }
-        return array
-    }
 
     fun addLabel(label: String?) {
         if (label != null && !labels?.contains(label)!!) {
@@ -98,33 +94,33 @@ open class RealmNews : RealmObject() {
         }
     }
 
-    val messageWithoutMarkdown: String? get() {
-        var ms = message
-        for (ob in imagesArray) {
-            ms = ms?.replace(JsonUtils.getString("markdown", ob.asJsonObject), "")
-        }
-        return ms
-    }
-
-    val isCommunityNews: Boolean get() {
-        val array = Gson().fromJson(viewIn, JsonArray::class.java)
-        var isCommunity = false
-        for (e in array) {
-            val `object` = e.asJsonObject
-            if (`object`.has("section") && `object`["section"].asString.equals("community", ignoreCase = true)) {
-                isCommunity = true
-                break
+    val messageWithoutMarkdown: String?
+        get() {
+            var ms = message
+            for (ob in imagesArray) {
+                ms = ms?.replace(JsonUtils.getString("markdown", ob.asJsonObject), "")
             }
+            return ms
         }
-        return isCommunity
-    }
+
+    val isCommunityNews: Boolean
+        get() {
+            val array = Gson().fromJson(viewIn, JsonArray::class.java)
+            var isCommunity = false
+            for (e in array) {
+                val `object` = e.asJsonObject
+                if (`object`.has("section") && `object`["section"].asString.equals("community", ignoreCase = true)) {
+                    isCommunity = true
+                    break
+                }
+            }
+            return isCommunity
+        }
 
     companion object {
         @JvmStatic
         fun insert(mRealm: Realm, doc: JsonObject?) {
-            if (!mRealm.isInTransaction) {
-                mRealm.beginTransaction()
-            }
+            if (!mRealm.isInTransaction) mRealm.beginTransaction()
             var news = mRealm.where(RealmNews::class.java)
                 .equalTo("_id", JsonUtils.getString("_id", doc))
                 .findFirst()
