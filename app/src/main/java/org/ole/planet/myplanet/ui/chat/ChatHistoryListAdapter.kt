@@ -219,4 +219,4 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
     }
 
         class ViewHolderChat(val rowChatHistoryBinding: RowChatHistoryBinding) : RecyclerView.ViewHolder(rowChatHistoryBinding.root)
-}
+    }
