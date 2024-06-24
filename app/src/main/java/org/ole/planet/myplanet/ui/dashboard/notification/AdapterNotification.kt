@@ -14,7 +14,8 @@ import org.ole.planet.myplanet.model.Notifications
 class AdapterNotification(
     private val context: Context,
     private val notificationList: MutableList<Notifications>,
-    private val callback: NotificationCallback
+    private val callback: NotificationCallback,
+    private val showMarkAsReadButton: Boolean = false
 ) : RecyclerView.Adapter<AdapterNotification.ViewHolderNotification>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderNotification {
@@ -37,7 +38,8 @@ class AdapterNotification(
             binding.timestamp.text = notification.timestamp
             binding.icon.setImageResource(notification.icon)
             binding.title.setTextColor(if (notification.isRead) ContextCompat.getColor(context, R.color.md_black_1000) else ContextCompat.getColor(context, R.color.md_blue_500))
-            binding.btnMarkAsRead.visibility = if (notification.isRead) View.GONE else View.VISIBLE
+
+            binding.btnMarkAsRead.visibility = if (showMarkAsReadButton && !notification.isRead) View.VISIBLE else View.GONE
 
             binding.btnMarkAsRead.setOnClickListener {
                 markAsRead(bindingAdapterPosition)
@@ -60,6 +62,7 @@ class AdapterNotification(
         notificationList[position].isRead = true
         notifyItemChanged(position)
     }
+
     fun markAllAsRead() {
         notificationList.forEach { it.isRead = true }
         notifyDataSetChanged()

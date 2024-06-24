@@ -30,34 +30,24 @@ class SeeAllNotificationsFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         notifications = mutableListOf(
-            Notifications(R.drawable.notifications, "Admin okuro has posted a message on \"Gideon Team\" team.", "Jun 10, 2024", false),
-            Notifications(R.drawable.notifications, "You were assigned a new role", "Apr 24, 2024", false)
+            Notifications(R.drawable.notifications, "Admin okuro has posted a message on \"Gideon Team\" team."),
+            Notifications(R.drawable.notifications, "You were assigned a new role")
         )
 
         val recyclerView: RecyclerView = view.findViewById(R.id.recycler_view_notifications)
         recyclerView.layoutManager = LinearLayoutManager(context)
+
+        // Instantiate AdapterNotification with showMarkAsReadButton = true
         notificationsAdapter = AdapterNotification(requireContext(), notifications, object : NotificationCallback {
-            override fun showResourceDownloadDialog() {
-            }
+            override fun showResourceDownloadDialog() {}
+            override fun showUserResourceDialog() {}
+            override fun showPendingSurveyDialog() {}
+            override fun forceDownloadNewsImages() {}
+            override fun downloadDictionary() {}
+            override fun showTaskListDialog() {}
+            override fun syncKeyId() {}
+        }, showMarkAsReadButton = true)
 
-            override fun showUserResourceDialog() {
-            }
-
-            override fun showPendingSurveyDialog() {
-            }
-
-            override fun forceDownloadNewsImages() {
-            }
-
-            override fun downloadDictionary() {
-            }
-
-            override fun showTaskListDialog() {
-            }
-
-            override fun syncKeyId() {
-            }
-        })
         recyclerView.adapter = notificationsAdapter
 
         btnMarkAllAsRead = view.findViewById(R.id.btn_mark_all_as_read)
