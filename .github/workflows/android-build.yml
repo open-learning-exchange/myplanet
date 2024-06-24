@@ -34,8 +34,8 @@ jobs:
             "app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardActivity.kt"
           )
           checkchanges() {
-            if git merge-base HEAD origin/master HEAD | grep -q "$1"; then
-              if ! git merge-base HEAD origin/master HEAD | grep -q "$2"; then
+            if git diff --name-only "$(git merge-base HEAD origin/master)" HEAD | grep -q "$1"; then
+              if ! git diff --name-only "$(git merge-base HEAD origin/master)" HEAD | grep -q "$2"; then
                 echo "error: changes made to $1 but not to $2"
                 exit 1
               fi
