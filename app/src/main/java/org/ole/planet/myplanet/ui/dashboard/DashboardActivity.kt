@@ -397,14 +397,14 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
 
     private fun changeUX(iconText: Int, drawable: Drawable?): PrimaryDrawerItem {
-            return PrimaryDrawerItem().withName(iconText)
-                .withIcon(drawable)
-                .withTextColor(ContextCompat.getColor(this, R.color.textColorPrimary))
-                .withSelectedTextColor(ContextCompat.getColor(this, R.color.primary_dark))
-                .withIconColor(ContextCompat.getColor(this, R.color.textColorPrimary))
-                .withSelectedIconColor(ContextCompat.getColor(this, R.color.primary_dark))
-                .withSelectedColor(ContextCompat.getColor(this, R.color.textColorPrimary))
-                .withIconTintingEnabled(true)
+        return PrimaryDrawerItem().withName(iconText)
+            .withIcon(drawable)
+            .withTextColor(ContextCompat.getColor(this, R.color.textColorPrimary))
+            .withSelectedTextColor(ContextCompat.getColor(this, R.color.primary_dark))
+            .withIconColor(ContextCompat.getColor(this, R.color.textColorPrimary))
+            .withSelectedIconColor(ContextCompat.getColor(this, R.color.primary_dark))
+            .withSelectedColor(ContextCompat.getColor(this, R.color.textColorPrimary))
+            .withIconTintingEnabled(true)
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
