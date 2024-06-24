@@ -37,14 +37,6 @@
                 android:textStyle="bold" />
         </LinearLayout>
 
-        <Button
-            android:id="@+id/btnMarkAllAsRead"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Mark all as read"
-            android:layout_gravity="center_horizontal"
-            android:padding="@dimen/padding_normal"
-            android:layout_marginBottom="@dimen/padding_small" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_notifications"
