@@ -3,8 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:backgroundTint="#666060"
-    android:backgroundTintMode="multiply"
+    android:background="@color/secondary_bg"
     tools:context=".ui.onBoarding.OnBoardingActivity">
 
     <Button
@@ -13,7 +12,7 @@
         android:layout_height="wrap_content"
         android:background="?attr/selectableItemBackground"
         android:text="Skip"
-        android:textColor="@color/text_highlight_color" />
+        android:textColor="@color/mainColor" />
 
     <androidx.viewpager.widget.ViewPager
         android:id="@+id/pagerIntroduction"
@@ -36,7 +35,7 @@
             style="?android:attr/borderlessButtonStyle"
             android:layout_width="match_parent"
             android:layout_height="50dp"
-            android:background="@color/colorPrimary"
+            android:background="@color/mainColor"
             android:text="@string/next"
             android:textAllCaps="false"
             android:textColor="@color/md_white_1000"

@@ -13,6 +13,9 @@
     <color name="text_highlight_color">@color/colorPrimary</color>
     <color name="light_dark">#FFFFFF</color>
     <color name="mainColor">@color/colorPrimary</color>
+    <color name="mainColorLight">@color/colorPrimaryLight</color>
+    <color name="dashboard_item">@color/md_white_1000</color>
+    <color name="dashboard_item_alternative">@color/md_grey_300</color>
 
 
     <color name="black_overlay">#66000000</color>

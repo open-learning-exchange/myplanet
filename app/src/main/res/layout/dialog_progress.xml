@@ -47,6 +47,7 @@
             android:id="@+id/buttonNegative"
             android:layout_width="wrap_content"
             android:visibility="gone"
+            android:textColor="@color/daynight_textColor"
             style="?android:attr/borderlessButtonStyle"
             android:layout_height="wrap_content" />
 
@@ -54,6 +55,7 @@
             android:id="@+id/buttonPositive"
             android:layout_width="wrap_content"
             android:visibility="gone"
+            android:textColor="@color/daynight_textColor"
             style="?android:attr/borderlessButtonStyle"
             android:layout_height="wrap_content" />
     </LinearLayout>
