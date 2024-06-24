@@ -84,21 +84,21 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         )
     }
     fun initRatingView(type: String?, id: String?, title: String?, listener: OnRatingChangeListener?) {
-            timesRated = requireView().findViewById(R.id.times_rated)
-            rating = requireView().findViewById(R.id.tv_rating)
-            ratingBar = requireView().findViewById(R.id.rating_bar)
-            ratingBar?.apply {
-                setOnTouchListener { view, e: MotionEvent ->
-                    if (e.action == MotionEvent.ACTION_UP) {
-                        view.performClick()
-                    }
-                    true
+        timesRated = requireView().findViewById(R.id.times_rated)
+        rating = requireView().findViewById(R.id.tv_rating)
+        ratingBar = requireView().findViewById(R.id.rating_bar)
+        ratingBar?.apply {
+            setOnTouchListener { view, e: MotionEvent ->
+                if (e.action == MotionEvent.ACTION_UP) {
+                    view.performClick()
                 }
-                setOnClickListener {
-                    homeItemClickListener?.showRatingDialog(type, id, title, listener)
-                }
+                true
+            }
+            setOnClickListener {
+                homeItemClickListener?.showRatingDialog(type, id, title, listener)
             }
         }
+    }
     override fun onAttach(context: Context) {
         super.onAttach(context)
         if (context is OnHomeItemClickListener) {
