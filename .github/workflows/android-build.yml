@@ -35,16 +35,23 @@ jobs:
           )
           commonancestor=$(git merge-base HEAD origin/master)
           checkchanges() {
+            echo a
             if git diff --name-only "$commonancestor" HEAD | grep -q "$1"; then
+              echo b
               if ! git diff --name-only "$commonancestor" HEAD | grep -q "$2"; then
                 echo "error: changes made to $1 but not to $2"
                 exit 1
               fi
+              echo c
             fi
+            echo d
           }
           for file in "${files[@]}"; do
+            echo 0
             checkchanges "$file" "$file.lite"
+            echo 1
             checkchanges "$file.lite" "$file"
+            echo 2
           done
 
       - name: diff the code to get lite
