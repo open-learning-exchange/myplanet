@@ -31,7 +31,7 @@ class SeeAllNotificationsFragment : Fragment() {
 
         notifications = mutableListOf(
             Notifications(R.drawable.notifications, "Admin okuro has posted a message on \"Gideon Team\" team.", "Jun 10, 2024", false),
-            Notifications(R.drawable.notifications, "You were assigned a new role", "Apr 24, 2024", true)
+            Notifications(R.drawable.notifications, "You were assigned a new role", "Apr 24, 2024", false)
         )
 
         val recyclerView: RecyclerView = view.findViewById(R.id.recycler_view_notifications)
@@ -72,6 +72,6 @@ class SeeAllNotificationsFragment : Fragment() {
     private fun updateMarkAllButtonState() {
         val allRead = notifications.all { it.isRead }
         btnMarkAllAsRead.isEnabled = !allRead
-        btnMarkAllAsRead.alpha = if (allRead) 0.5f else 1.0f // Reduce opacity if all are read
+        btnMarkAllAsRead.alpha = if (allRead) 0.5f else 1.0f
     }
 }
