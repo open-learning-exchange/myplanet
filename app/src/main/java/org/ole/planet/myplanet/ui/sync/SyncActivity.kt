@@ -3,11 +3,13 @@ package org.ole.planet.myplanet.ui.sync
 import android.Manifest
 import android.content.*
 import android.graphics.drawable.AnimationDrawable
+import android.os.Build
 import android.os.Bundle
 import android.text.*
 import android.view.*
 import android.webkit.URLUtil
 import android.widget.*
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SwitchCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
@@ -430,6 +432,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         openDashboard()
     }
 
+    @RequiresApi(Build.VERSION_CODES.M)
     fun settingDialog() {
         try {
             mRealm = Realm.getDefaultInstance()
@@ -529,6 +532,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             dialogServerUrlBinding.clearData.setOnClickListener {
                 clearDataDialog(getString(R.string.are_you_sure_you_want_to_clear_data))
             }
+            dialog.window?.setBackgroundDrawableResource(R.drawable.dialog_window_background)
             dialog.show()
             sync(dialog)
         } finally {

@@ -179,9 +179,4 @@
         <item name="android:textColor">@color/daynight_textColor</item>
         <item name="android:textColorSecondary">@color/hint_color</item>
     </style>
-
-    <style name="ListPreferenceStyle">
-        <item name="textColorAlertDialogListItem">@color/daynight_textColor</item>
-        <item name="android:textColor">@color/daynight_textColor</item>
-    </style>
 </resources>
