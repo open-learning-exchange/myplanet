@@ -40,7 +40,7 @@ class AdapterNotification(
             binding.btnMarkAsRead.visibility = if (notification.isRead) View.GONE else View.VISIBLE
 
             binding.btnMarkAsRead.setOnClickListener {
-                markAsRead(adapterPosition)
+                markAsRead(bindingAdapterPosition)
             }
 
             itemView.setOnClickListener {
@@ -60,7 +60,6 @@ class AdapterNotification(
         notificationList[position].isRead = true
         notifyItemChanged(position)
     }
-
     fun markAllAsRead() {
         notificationList.forEach { it.isRead = true }
         notifyDataSetChanged()

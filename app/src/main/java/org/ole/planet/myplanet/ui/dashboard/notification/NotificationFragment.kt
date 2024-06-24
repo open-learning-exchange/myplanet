@@ -82,9 +82,9 @@ class NotificationFragment : BottomSheetDialogFragment() {
         notificationList.add(Notifications(R.drawable.mylibrary, "${getLibraryList(mRealm, model.id).size} ${getString(R.string.resource_not_downloaded)}", "Apr 16, 2024", false))
         notificationList.add(Notifications(R.drawable.mylibrary, getString(R.string.bulk_resource_download), "Mar 27, 2024", false))
         notificationList.add(Notifications(R.drawable.survey, "${surveyList.size} ${getString(R.string.pending_survey)}", "Mar 4, 2024", false))
-        notificationList.add(Notifications(R.drawable.ic_news, getString(R.string.download_news_images), "Dec 7, 2023", true))
-        notificationList.add(Notifications(R.drawable.ic_dictionary, getString(R.string.download_dictionary), "Nov 21, 2023", true))
-        notificationList.add(Notifications(R.drawable.task_pending, "${tasks.size} ${getString(R.string.tasks_due)}", "Nov 13, 2023", true))
+        notificationList.add(Notifications(R.drawable.ic_news, getString(R.string.download_news_images), "Dec 7, 2023", false))
+        notificationList.add(Notifications(R.drawable.ic_dictionary, getString(R.string.download_dictionary), "Nov 21, 2023", false))
+        notificationList.add(Notifications(R.drawable.task_pending, "${tasks.size} ${getString(R.string.tasks_due)}", "Nov 13, 2023", false))
 
         val storageRatio = FileUtils.totalAvailableMemoryRatio
         val storageNotiText: String = if (storageRatio <= 10) {
