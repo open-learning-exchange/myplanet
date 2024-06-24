@@ -480,7 +480,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 showConfigurationUIElements(dialogServerUrlBinding, true)
             }
             val dialog = builder.build()
-            configurationDialog = dialog
             positiveAction = dialog.getActionButton(DialogAction.POSITIVE)
             dialogServerUrlBinding.manualConfiguration.setOnCheckedChangeListener { _: CompoundButton?, isChecked: Boolean ->
                 if (isChecked) {
@@ -614,8 +613,16 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                         if (position > 0) {
                             val selectedTeam = teams[position - 1]
                             selectedTeamId = selectedTeam._id
-                            prefData.setSELECTEDTEAMID(selectedTeam._id)
-                            configurationDialog?.let { saveConfiguration(it) }
+                            prefData.setSELECTEDTEAMID(selectedTeamId)
+                            val url = "${settings.getString("serverProtocol", "")}${serverUrl.text}"
+                            if (isUrlValid(url)) {
+                                if (this@SyncActivity is LoginActivity) {
+                                    this@SyncActivity.getTeamMembers()
+                                }
+                                currentDialog?.let { saveConfigAndContinue(it) }
+                            } else {
+                                currentDialog?.let { saveConfigAndContinue(it) }
+                            }
                         }
                     }
 
@@ -633,23 +640,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 mRealm.close()
             }
         }
-    }
-
-    private fun saveConfiguration(dialog: MaterialDialog): String {
-        //dialog.dismiss()
-        saveSyncInfoToPreference()
-        var processedUrl = ""
-        val protocol = settings.getString("serverProtocol", "")
-        var url = "${(dialog.customView?.findViewById<View>(R.id.input_server_url) as EditText).text}"
-        val pin = "${(dialog.customView?.findViewById<View>(R.id.input_server_Password) as EditText).text}"
-        editor.putString("customDeviceName", "${(dialog.customView?.findViewById<View>(R.id.deviceName) as EditText).text}").apply()
-        url = protocol + url
-        if (isUrlValid(url)) {
-            currentDialog = dialog
-            service.getMinApk(this, url, pin)
-            processedUrl = setUrlParts(url, pin)
-        }
-        return processedUrl
     }
 
     private fun onChangeServerUrl() {
