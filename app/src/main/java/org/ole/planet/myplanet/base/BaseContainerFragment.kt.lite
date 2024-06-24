@@ -253,32 +253,32 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
     @RequiresApi(Build.VERSION_CODES.O)
     private fun showResourceList(downloadedResources: List<RealmMyLibrary>?) {
-            val builderSingle = AlertDialog.Builder(requireActivity())
-            builderSingle.setTitle(getString(R.string.select_resource_to_open))
-            val arrayAdapter: ArrayAdapter<RealmMyLibrary?> = object : ArrayAdapter<RealmMyLibrary?>(
-                requireActivity(), android.R.layout.select_dialog_item, downloadedResources!!
-            ) {
-                override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-                    var view = convertView
-                    if (view == null) view = LayoutInflater.from(activity)
-                        .inflate(android.R.layout.select_dialog_item, parent, false)
-                    val tv = view as TextView
-                    val library = getItem(position)
-                    tv.setCompoundDrawablesWithIntrinsicBounds(0, 0,
-                        if (library?.isResourceOffline() == true) {
-                            R.drawable.ic_eye
-                        } else {
-                            R.drawable.ic_download
-                        }, 0)
-                    tv.text = library?.title
-                    return tv
-                }
+        val builderSingle = AlertDialog.Builder(requireActivity())
+        builderSingle.setTitle(getString(R.string.select_resource_to_open))
+        val arrayAdapter: ArrayAdapter<RealmMyLibrary?> = object : ArrayAdapter<RealmMyLibrary?>(
+            requireActivity(), android.R.layout.select_dialog_item, downloadedResources!!
+        ) {
+            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                var view = convertView
+                if (view == null) view = LayoutInflater.from(activity)
+                    .inflate(android.R.layout.select_dialog_item, parent, false)
+                val tv = view as TextView
+                val library = getItem(position)
+                tv.setCompoundDrawablesWithIntrinsicBounds(0, 0,
+                    if (library?.isResourceOffline() == true) {
+                        R.drawable.ic_eye
+                    } else {
+                        R.drawable.ic_download
+                    }, 0)
+                tv.text = library?.title
+                return tv
             }
-            builderSingle.setAdapter(arrayAdapter) { _: DialogInterface?, i: Int ->
-                val library = arrayAdapter.getItem(i)
-                library?.let { openResource(it) }
-            }
-            builderSingle.setNegativeButton(R.string.dismiss, null).show()
+        }
+        builderSingle.setAdapter(arrayAdapter) { _: DialogInterface?, i: Int ->
+            val library = arrayAdapter.getItem(i)
+            library?.let { openResource(it) }
+        }
+        builderSingle.setNegativeButton(R.string.dismiss, null).show()
     }
     @RequiresApi(Build.VERSION_CODES.O)
     fun setOpenResourceButton(downloadedResources: List<RealmMyLibrary>?, btnOpen: Button) {
