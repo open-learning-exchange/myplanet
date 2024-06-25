@@ -31,7 +31,8 @@ jobs:
       - name: check for .lite diffs
         if: matrix.build == 'lite'
         run: |
-          for file in ${{ env.FILES }}; do
+          files=(${{ env.FILES }})
+          for file in "${files[@]}"; do
             echo "$file .lite"
             ls -al "$file"
             ls -al "$file.lite"
@@ -45,7 +46,8 @@ jobs:
           echo "lite"
           ls -al app/build.gradle ${{ env.FILES }}
           sed -i 's/\(versionName "[0-9.]\+\)"/\1-lite"/' app/build.gradle
-          for file in ${{ env.FILES }}; do
+          files=(${{ env.FILES }})
+          for file in "${files[@]}"; do
             cp "${file}.lite" "$file"
           done
 
