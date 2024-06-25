@@ -36,13 +36,11 @@ class AdapterNotification(
     }
 
     inner class ViewHolderNotification(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        private val icon: ImageView = itemView.findViewById(R.id.icon)
         private val title: TextView = itemView.findViewById(R.id.title)
         private val timestamp: TextView = itemView.findViewById(R.id.timestamp)
         private val btnMarkAsRead: Button = itemView.findViewById(R.id.btn_mark_as_read)
 
         fun bind(notification: Notifications) {
-            icon.setImageResource(notification.icon)
             title.text = notification.text
             timestamp.visibility = View.GONE // You can set the timestamp if available
             btnMarkAsRead.visibility = if (showMarkAsReadButton) View.VISIBLE else View.GONE
@@ -52,7 +50,6 @@ class AdapterNotification(
             }
 
             itemView.setOnClickListener {
-                markAsRead(bindingAdapterPosition)
                 when (absoluteAdapterPosition) {
                     0 -> callback.showResourceDownloadDialog()
                     1 -> callback.showUserResourceDialog()
@@ -66,26 +63,12 @@ class AdapterNotification(
     }
 
     private fun markAsRead(position: Int) {
-        val notification = notificationList[position]
-        if (!notification.isRead) {
-            notification.isRead = true
-            saveReadStatus(position, true) // Save the read status using position
-            notifyItemChanged(position)
-        }
+        notificationList.removeAt(position)
+        notifyItemRemoved(position)
     }
 
     fun markAllAsRead() {
-        notificationList.forEach { it.isRead = true }
+        notificationList.clear()
         notifyDataSetChanged()
-    }
-
-    private fun saveReadStatus(position: Int, isRead: Boolean) {
-        val sharedPreferences = context.getSharedPreferences("notifications_prefs", Context.MODE_PRIVATE)
-        sharedPreferences.edit().putBoolean("notification_$position", isRead).apply()
-    }
-
-    fun getReadStatus(position: Int): Boolean {
-        val sharedPreferences = context.getSharedPreferences("notifications_prefs", Context.MODE_PRIVATE)
-        return sharedPreferences.getBoolean("notification_$position", false)
     }
 }
