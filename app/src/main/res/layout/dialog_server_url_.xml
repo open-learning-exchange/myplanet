@@ -53,6 +53,7 @@
             android:padding="@dimen/padding_normal"
             android:text="@string/cloud_url"
             android:textSize="16sp"
+            android:textColor="@color/daynight_textColor"
             android:visibility="gone" />
     </LinearLayout>
 
@@ -81,14 +82,18 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="@string/radio_http"
-                android:textSize="16sp" />
+                android:textSize="16sp"
+                android:textColor="@color/daynight_textColor"
+                android:buttonTint="@color/daynight_textColor" />
 
             <RadioButton
                 android:id="@+id/radio_https"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/radio_https"
-                android:textSize="16sp" />
+                android:textSize="16sp"
+                android:textColor="@color/daynight_textColor"
+                android:buttonTint="@color/daynight_textColor" />
 
         </RadioGroup>
     </LinearLayout>
@@ -101,6 +106,7 @@
         android:layout_marginEnd="10dp"
         android:textSize="16sp"
         android:visibility="gone"
+        android:backgroundTint="@color/daynight_textColor"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/ltProtocol" />
@@ -164,6 +170,7 @@
         android:textOff="@string/autosync_off"
         android:textOn="@string/autosync_on"
         android:textSize="16sp"
+        android:textColor="@color/daynight_textColor"
         android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -187,7 +194,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="@string/interval"
-            android:textColor="@color/dialog_sync_labels"
+            android:textColor="@color/daynight_textColor"
             android:textSize="16sp" />
 
         <Spinner
@@ -196,7 +203,8 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:drawSelectorOnTop="true"
-            android:textSize="16sp" />
+            android:textSize="16sp"
+            android:backgroundTint="@color/daynight_textColor" />
     </LinearLayout>
 
     <LinearLayout
@@ -216,6 +224,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:textColorHint="@color/daynight_textColor"
             app:errorTextAppearance="@style/MyAppTheme.TextInputLayout">
 
             <EditText
@@ -226,8 +235,8 @@
                 android:inputType="text"
                 android:maxLines="1"
                 android:minWidth="140dp"
-                android:textColor="@android:color/background_dark"
-                android:textColorHint="@android:color/darker_gray"
+                android:textColor="@color/daynight_textColor"
+                android:textColorHint="@color/hint_color"
                 android:textSize="11sp" />
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -237,6 +246,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text=""
+            android:textColor="@color/daynight_textColor"
             android:textSize="12sp"
             android:textStyle="italic" />
     </LinearLayout>

@@ -86,6 +86,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private var currentDialog: MaterialDialog? = null
     private var serverConfigAction = ""
 
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
@@ -496,7 +497,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                             nonEmptyCommunities.add(community)
                         }
                     }
-                    dialogServerUrlBinding.spnCloud.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, nonEmptyCommunities)
+                    dialogServerUrlBinding.spnCloud.adapter = ArrayAdapter(this, R.layout.custom_simple_list_item_1, nonEmptyCommunities)
                     dialogServerUrlBinding.spnCloud.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
                         override fun onItemSelected(adapterView: AdapterView<*>?, view: View, i: Int, l: Long) {
                             onChangeServerUrl()
@@ -647,6 +648,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.M)
     private fun setUrlAndPin(checked: Boolean) {
         if (checked) {
             onChangeServerUrl()
