@@ -92,12 +92,12 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     override fun onCreate() {
         super.onCreate()
         initialize(CoroutineScope(Dispatchers.IO))
-        // UNCOMMENT BELOW TO FORCE DARK MODE FOR DARK MODE DEVELOPMENT
-        // AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
 
         context = this
         preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         nightMode()
+        // UNCOMMENT BELOW TO FORCE DARK MODE FOR DARK MODE DEVELOPMENT
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
         val builder = VmPolicy.Builder()
         StrictMode.setVmPolicy(builder.build())
         builder.detectFileUriExposure()
