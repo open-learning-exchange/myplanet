@@ -4,6 +4,9 @@ import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
+import android.widget.ImageView
+import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
@@ -15,12 +18,13 @@ class AdapterNotification(
     private val context: Context,
     private val notificationList: MutableList<Notifications>,
     private val callback: NotificationCallback,
-    private val showMarkAsReadButton: Boolean = false
+    private val showMarkAsReadButton: Boolean
 ) : RecyclerView.Adapter<AdapterNotification.ViewHolderNotification>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderNotification {
-        val binding = RowNotificationBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return ViewHolderNotification(binding)
+        val inflater = LayoutInflater.from(parent.context)
+        val view = inflater.inflate(R.layout.row_notification, parent, false)
+        return ViewHolderNotification(view)
     }
 
     override fun onBindViewHolder(holder: ViewHolderNotification, position: Int) {
@@ -31,17 +35,19 @@ class AdapterNotification(
         return notificationList.size
     }
 
-    inner class ViewHolderNotification(private val binding: RowNotificationBinding) : RecyclerView.ViewHolder(binding.root) {
+    inner class ViewHolderNotification(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        private val icon: ImageView = itemView.findViewById(R.id.icon)
+        private val title: TextView = itemView.findViewById(R.id.title)
+        private val timestamp: TextView = itemView.findViewById(R.id.timestamp)
+        private val btnMarkAsRead: Button = itemView.findViewById(R.id.btn_mark_as_read)
 
         fun bind(notification: Notifications) {
-            binding.title.text = notification.text
-            binding.timestamp.text = notification.timestamp
-            binding.icon.setImageResource(notification.icon)
-            binding.title.setTextColor(if (notification.isRead) ContextCompat.getColor(context, R.color.md_black_1000) else ContextCompat.getColor(context, R.color.md_blue_500))
+            icon.setImageResource(notification.icon)
+            title.text = notification.text
+            timestamp.visibility = View.GONE // You can set the timestamp if available
+            btnMarkAsRead.visibility = if (showMarkAsReadButton) View.VISIBLE else View.GONE
 
-            binding.btnMarkAsRead.visibility = if (showMarkAsReadButton && !notification.isRead) View.VISIBLE else View.GONE
-
-            binding.btnMarkAsRead.setOnClickListener {
+            btnMarkAsRead.setOnClickListener {
                 markAsRead(bindingAdapterPosition)
             }
 
