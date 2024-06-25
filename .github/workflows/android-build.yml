@@ -96,4 +96,4 @@ jobs:
           ls -al ${ANDROID_SDK_ROOT}/ndk
 
       - name: build debug as test
-        run: ./gradlew assembleDebug
+        run: ./gradlew assembleDebug --no-daemon
