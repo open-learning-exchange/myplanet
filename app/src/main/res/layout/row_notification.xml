@@ -36,13 +36,12 @@
                 android:textColor="@color/md_grey_600"
                 android:textSize="@dimen/text_size_small" />
         </LinearLayout>
-
         <Button
             android:id="@+id/btn_mark_as_read"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
             android:text="Mark as Read"
-            android:padding="@dimen/padding_small" />
+            android:padding="@dimen/padding_normal" />
     </LinearLayout>
 </LinearLayout>
