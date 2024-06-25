@@ -77,8 +77,11 @@ jobs:
       - name: setup gradle
         uses: gradle/actions/setup-gradle@v3
         with:
-          cache-gradle-home: true
-          cache-wrapper: true
+          gradle-version: 8.6
+          cache-disabled: false
+          cache-read-only: false
+          cache-write-only: false
+          #cache-overwrite-existing: false
 
       - name: cache NDK
         id: cache-ndk
@@ -102,4 +105,5 @@ jobs:
           ls -al ${ANDROID_SDK_ROOT}/ndk
 
       - name: build debug as test
-        run: ./gradlew assembleDebug --configuration-cache --no-daemon
+        run: ./gradlew assembleDebug --no-daemon
+        #--configuration-cache
