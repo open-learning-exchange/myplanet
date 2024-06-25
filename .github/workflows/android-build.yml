@@ -32,7 +32,7 @@ jobs:
         if: matrix.build == 'lite'
         run: |
           echo "${{ env.FILES }}" | xargs -n 1 | while read file; do
-            ls -al "$file*"
+            ls -al $file*
             diff "$file" "$file.lite" || true
           done
 
@@ -42,7 +42,7 @@ jobs:
           ls -al app/build.gradle
           sed -i 's/\(versionName "[0-9.]\+\)"/\1-lite"/' app/build.gradle
           echo "${{ env.FILES }}" | xargs -n 1 | while read file; do
-            ls -al "$file*"
+            ls -al $file*
             cp "${file}.lite" "$file"
           done
 
