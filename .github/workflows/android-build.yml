@@ -86,7 +86,7 @@ jobs:
             ${{ runner.os }}-ndk-
 
       - name: install NDK
-        #if: steps.cache-ndk.outputs.cache-hit != 'true'
+        if: steps.cache-ndk.outputs.cache-hit != 'true'
         run: |
           set -x
           echo "y" | sudo ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --install "ndk;${ANDROID_NDK_VERSION}" --sdk_root=${ANDROID_SDK_ROOT} 2>&1
@@ -96,9 +96,6 @@ jobs:
           fi
           set +x
           ls -al ${ANDROID_SDK_ROOT}/ndk
-          ls -al ./gradlew
-          chmod +x ./gradlew
-          ls -al ./gradlew
 
       - name: build debug as test
         run: ./gradlew assembleDebug
