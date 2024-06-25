@@ -84,6 +84,7 @@ jobs:
             ${{ runner.os }}-ndk-
 
       - name: install NDK
+        if: steps.cache.outputs.cache-hit != 'true'
         run: |
           set -x
           echo "ANDROID_HOME is set to: ${ANDROID_HOME}"
