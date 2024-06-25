@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.dashboard.notification
 
+import android.content.Context
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -67,6 +68,11 @@ class SeeAllNotificationsFragment : Fragment() {
             override fun showTaskListDialog() {}
             override fun syncKeyId() {}
         }, showMarkAsReadButton = true)
+
+        for (position in notifications.indices) {
+            val isRead = notificationsAdapter.getReadStatus(position)
+            notifications[position].isRead = isRead
+        }
 
         recyclerView.adapter = notificationsAdapter
 

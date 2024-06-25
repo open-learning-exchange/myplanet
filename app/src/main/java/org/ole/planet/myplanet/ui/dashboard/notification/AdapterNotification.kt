@@ -52,6 +52,7 @@ class AdapterNotification(
             }
 
             itemView.setOnClickListener {
+                markAsRead(bindingAdapterPosition)
                 when (absoluteAdapterPosition) {
                     0 -> callback.showResourceDownloadDialog()
                     1 -> callback.showUserResourceDialog()
@@ -65,12 +66,26 @@ class AdapterNotification(
     }
 
     private fun markAsRead(position: Int) {
-        notificationList[position].isRead = true
-        notifyItemChanged(position)
+        val notification = notificationList[position]
+        if (!notification.isRead) {
+            notification.isRead = true
+            saveReadStatus(position, true) // Save the read status using position
+            notifyItemChanged(position)
+        }
     }
 
     fun markAllAsRead() {
         notificationList.forEach { it.isRead = true }
         notifyDataSetChanged()
+    }
+
+    private fun saveReadStatus(position: Int, isRead: Boolean) {
+        val sharedPreferences = context.getSharedPreferences("notifications_prefs", Context.MODE_PRIVATE)
+        sharedPreferences.edit().putBoolean("notification_$position", isRead).apply()
+    }
+
+    fun getReadStatus(position: Int): Boolean {
+        val sharedPreferences = context.getSharedPreferences("notifications_prefs", Context.MODE_PRIVATE)
+        return sharedPreferences.getBoolean("notification_$position", false)
     }
 }
