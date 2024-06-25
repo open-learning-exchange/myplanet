@@ -45,7 +45,6 @@ class PlanFragment : BaseTeamFragment() {
             if (fragmentPlanBinding.tvDescription.text.toString().isEmpty()) {
                 fragmentPlanBinding.tvDescription.text = Html.fromHtml("<br/>" + getString(R.string.entEmptyDescription) + "<br/>", Html.FROM_HTML_MODE_LEGACY)
             }
-
         } else {
             fragmentPlanBinding.tvDescription.text = team.description
         }
