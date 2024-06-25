@@ -195,10 +195,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
                     }
                 }
 
-//              val fragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
-//              if (fragment is BaseContainerFragment) {
-//                  fragment.handleBackPressed()
-//              }
+//                val fragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
+//                if (fragment is BaseContainerFragment) {
+//                    fragment.handleBackPressed()
+//                }
             }
         })
     }
