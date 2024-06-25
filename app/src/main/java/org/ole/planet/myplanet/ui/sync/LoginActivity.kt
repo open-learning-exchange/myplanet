@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.sync
 import android.content.*
 import android.graphics.drawable.AnimationDrawable
 import android.os.*
+import android.os.Build.VERSION_CODES.TIRAMISU
 import android.text.*
 import android.view.*
 import android.view.inputmethod.EditorInfo
@@ -60,10 +61,15 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         if (forceSync) {
             isSync = false
         }
-        if (intent.hasExtra("versionInfo")) {
-            onUpdateAvailable((intent.getSerializableExtra("versionInfo") as MyPlanet?),
-                intent.getBooleanExtra("cancelable", false)
-            )
+        val versionInfo = if (Build.VERSION.SDK_INT >= TIRAMISU) {
+            intent.getSerializableExtra("versionInfo", MyPlanet::class.java)
+        } else {
+            @Suppress("DEPRECATION")
+            intent.getSerializableExtra("versionInfo") as? MyPlanet
+        }
+
+        if (versionInfo != null) {
+            onUpdateAvailable(versionInfo, intent.getBooleanExtra("cancelable", false))
         } else {
             service.checkVersion(this, settings)
         }
