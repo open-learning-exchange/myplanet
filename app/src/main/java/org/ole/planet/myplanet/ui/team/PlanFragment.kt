@@ -1,11 +1,13 @@
 package org.ole.planet.myplanet.ui.team
 
+import android.os.Build
 import android.os.Bundle
 import android.text.Html
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.annotation.RequiresApi
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentPlanBinding
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
@@ -20,6 +22,7 @@ class PlanFragment : BaseTeamFragment() {
         return fragmentPlanBinding.root
     }
 
+    @RequiresApi(Build.VERSION_CODES.N)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         if (TextUtils.equals(team.type, "enterprise")) {
@@ -38,10 +41,11 @@ class PlanFragment : BaseTeamFragment() {
             } else {
                 "<b>" + getString(R.string.entRules) + "</b><br/>" + team.rules
             }
-            fragmentPlanBinding.tvDescription.text = Html.fromHtml(missionText + servicesText + rulesText)
+            fragmentPlanBinding.tvDescription.text = Html.fromHtml(missionText + servicesText + rulesText, Html.FROM_HTML_MODE_LEGACY)
             if (fragmentPlanBinding.tvDescription.text.toString().isEmpty()) {
-                fragmentPlanBinding.tvDescription.text = Html.fromHtml("<br/>" + getString(R.string.entEmptyDescription) + "<br/>")
+                fragmentPlanBinding.tvDescription.text = Html.fromHtml("<br/>" + getString(R.string.entEmptyDescription) + "<br/>", Html.FROM_HTML_MODE_LEGACY)
             }
+
         } else {
             fragmentPlanBinding.tvDescription.text = team.description
         }
