@@ -31,7 +31,7 @@ jobs:
       - name: check for .lite diffs
         if: matrix.build == 'lite'
         run: |
-          for file in "${(${{ env.FILES }})[@]}"; do
+          for file in "${${{ env.FILES }}[@]}"; do
             echo "$file .lite"
             ls -al "$file"
             ls -al "$file.lite"
