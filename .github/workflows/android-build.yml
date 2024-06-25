@@ -76,6 +76,7 @@ jobs:
             ${{ runner.os }}-gradle-
 
       - name: cache NDK
+        id: cache-ndk
         uses: actions/cache@v2
         with:
           path: ${{ runner.tool_cache }}/android-sdk/ndk/${{ env.ANDROID_NDK_VERSION }}
@@ -84,7 +85,7 @@ jobs:
             ${{ runner.os }}-ndk-
 
       - name: install NDK
-        if: steps.cache.outputs.cache-hit != 'true'
+        if: steps.cache-ndk.outputs.cache-hit != 'true'
         run: |
           set -x
           echo "ANDROID_HOME is set to: ${ANDROID_HOME}"
