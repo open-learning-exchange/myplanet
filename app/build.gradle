@@ -8,9 +8,9 @@ android {
     defaultConfig {
         applicationId "org.ole.planet.myplanet"
         minSdkVersion 21
-      	targetSdkVersion 34
-        versionCode 1616
-        versionName "0.16.16"
+        targetSdkVersion 34
+        versionCode 1619
+        versionName "0.16.19"
         ndkVersion '21.3.6528147'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -78,6 +78,10 @@ task generateVersionsXml {
     }
 }
 preBuild.dependsOn generateVersionsXml
+
+tasks.named('generateVersionsXml').configure {
+    notCompatibleWithConfigurationCache("not supported due to internal project references")
+}
 
 repositories {
     mavenCentral()

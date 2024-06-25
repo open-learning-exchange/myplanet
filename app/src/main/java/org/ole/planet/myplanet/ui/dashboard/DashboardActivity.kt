@@ -303,17 +303,19 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun createDrawer() {
         val dimenHolder = DimenHolder.fromDp(160)
-        result = DrawerBuilder().withActivity(this).withFullscreen(true)
-            .withSliderBackgroundColor(ContextCompat.getColor(this, R.color.colorPrimary))
-            .withToolbar(activityDashboardBinding.myToolbar)
-            .withAccountHeader((headerResult!!)).withHeaderHeight(dimenHolder)
-            .addDrawerItems(*drawerItems).addStickyDrawerItems(*drawerItemsFooter)
-            .withOnDrawerItemClickListener { _: View?, _: Int, drawerItem: IDrawerItem<*, *>? ->
-                if (drawerItem != null) {
-                    menuAction((drawerItem as Nameable<*>).name.textRes)
-                }
-                false
-            }.withDrawerWidthDp(200).build()
+        result = headerResult?.let {
+            DrawerBuilder().withActivity(this).withFullscreen(true)
+                .withSliderBackgroundColor(ContextCompat.getColor(this, R.color.colorPrimary))
+                .withToolbar(activityDashboardBinding.myToolbar)
+                .withAccountHeader(it).withHeaderHeight(dimenHolder)
+                .addDrawerItems(*drawerItems).addStickyDrawerItems(*drawerItemsFooter)
+                .withOnDrawerItemClickListener { _: View?, _: Int, drawerItem: IDrawerItem<*, *>? ->
+                    if (drawerItem != null) {
+                        menuAction((drawerItem as Nameable<*>).name.textRes)
+                    }
+                    false
+                }.withDrawerWidthDp(200).build()
+        }
     }
 
     private fun menuAction(selectedMenuId: Int) {
