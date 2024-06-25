@@ -110,7 +110,7 @@ class NotificationFragment : BottomSheetDialogFragment() {
         }
 
         fragmentNotificationBinding.rvNotifications.layoutManager = LinearLayoutManager(requireActivity())
-        notificationsAdapter = AdapterNotification(requireActivity(), notificationList, callback)
+        notificationsAdapter = AdapterNotification(requireActivity(), notificationList, callback, true)
         fragmentNotificationBinding.rvNotifications.adapter = notificationsAdapter
 
     }
