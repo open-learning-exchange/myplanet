@@ -455,7 +455,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     url = protocol + url
                     if (isUrlValid(url)) {
                         currentDialog = dialog
-                        service.getConfig(this, url, pin)
+                        service.getMinApk(this, url, pin)
                     }
                 }
                 .onNeutral { dialog: MaterialDialog, _: DialogAction? ->
@@ -466,7 +466,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     url = protocol + url
                     if (isUrlValid(url)) {
                         currentDialog = dialog
-                        service.getConfig(this, url, pin)
+                        service.getMinApk(this, url, pin)
                     }
                 }
             if (!prefData.getMANUALCONFIG()) {

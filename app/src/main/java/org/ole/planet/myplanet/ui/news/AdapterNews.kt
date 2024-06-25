@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.news
 
+import android.app.Activity
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
@@ -82,6 +83,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         return ViewHolderNews(rowNewsBinding)
     }
 
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         if (holder is ViewHolderNews) {
             holder.bind(position)
@@ -333,6 +335,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     private fun deletePost(news: RealmNews?, context: Context) {
         if (!mRealm.isInTransaction) mRealm.beginTransaction()
         val position = list.indexOf(news)
@@ -345,9 +348,9 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
             if (context is ReplyActivity) {
                 val restartIntent = context.intent
                 context.finish()
-                context.overridePendingTransition(0, 0)
+                context.overrideActivityTransition(Activity.OVERRIDE_TRANSITION_OPEN, 0, 0, 0)
                 context.startActivity(restartIntent)
-                context.overridePendingTransition(0, 0)
+                context.overrideActivityTransition(Activity.OVERRIDE_TRANSITION_OPEN, 0, 0, 0)
             }
         }
         mRealm.commitTransaction()

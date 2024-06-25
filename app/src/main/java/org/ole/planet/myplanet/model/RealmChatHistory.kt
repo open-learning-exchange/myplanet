@@ -15,8 +15,9 @@ open class RealmChatHistory : RealmObject() {
     var _id: String? = null
     var _rev: String? = null
     var user: String? = null
+    var aiProvider: String? = null
     var title: String? = null
-    var updatedTime: String? = null
+    var createdDate: String? = null
     var conversations: RealmList<Conversation>? = null
     companion object {
         @JvmStatic
@@ -31,8 +32,9 @@ open class RealmChatHistory : RealmObject() {
             chatHistory._rev = JsonUtils.getString("_rev", act)
             chatHistory._id = JsonUtils.getString("_id", act)
             chatHistory.title = JsonUtils.getString("title", act)
-            chatHistory.updatedTime = JsonUtils.getString("updatedTime", act)
+            chatHistory.createdDate = JsonUtils.getString("createdDate", act)
             chatHistory.user = JsonUtils.getString("user", act)
+            chatHistory.aiProvider = JsonUtils.getString("aiProvider", act)
             chatHistory.conversations = parseConversations(mRealm, JsonUtils.getJsonArray("conversations", act))
             mRealm.commitTransaction()
         }

@@ -28,7 +28,9 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
         fragmentFeedbackListBinding.fab.setOnClickListener {
             val feedbackFragment = FeedbackFragment()
             feedbackFragment.setOnFeedbackSubmittedListener(this)
-            feedbackFragment.show(childFragmentManager, "")
+            if (!childFragmentManager.isStateSaved) {
+                feedbackFragment.show(childFragmentManager, "")
+            }
         }
 
         mRealm.executeTransactionAsync(

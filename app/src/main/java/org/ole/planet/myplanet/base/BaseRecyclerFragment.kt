@@ -2,12 +2,14 @@ package org.ole.planet.myplanet.base
 
 import android.content.Context.MODE_PRIVATE
 import android.content.SharedPreferences
+import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.annotation.RequiresApi
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Case
@@ -58,12 +60,13 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
     abstract fun getAdapter(): RecyclerView.Adapter<*>
 
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arguments?.let {
             isMyCourseLib = it.getBoolean("isMyCourseLib")
             courseLib = it.getString("courseLib")
-            resources = it.getSerializable("resources") as? List<RealmMyLibrary>
+            resources = it.getSerializable("resources", ArrayList::class.java) as? List<RealmMyLibrary>
         }
     }
 
