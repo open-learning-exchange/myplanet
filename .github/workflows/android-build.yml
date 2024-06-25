@@ -5,7 +5,6 @@ on:
     branches:
       - '*'
       - '!master'
-#  workflow_dispatch:
 
 jobs:
   build:
@@ -16,11 +15,13 @@ jobs:
         build: [default, lite]
     env:
       ANDROID_NDK_VERSION: "21.3.6528147"
-      BUILD_TOOLS_VERSION: "34.0.0"
+      ANDROID_SDK_ROOT: "/usr/local/lib/android/sdk"
 
     steps:
       - name: checkout repository code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: check for .lite diffs
         if: matrix.build == 'lite'
@@ -60,21 +61,35 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: '17'
-          cache: 'gradle'
+
+      - name: cache NDK
+        id: cache-ndk
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.ANDROID_SDK_ROOT }}/ndk/${{ env.ANDROID_NDK_VERSION }}
+          key: ${{ runner.os }}-ndk-${{ env.ANDROID_NDK_VERSION }}
+          restore-keys: |
+            ${{ runner.os }}-ndk-
 
       - name: install NDK
+        if: steps.cache-ndk.outputs.cache-hit != 'true'
         run: |
           set -x
-          echo "ANDROID_HOME is set to: ${ANDROID_HOME}"
-          echo "ANDROID_SDK_ROOT is set to: ${ANDROID_SDK_ROOT}"
-          echo "ANDROID_NDK_VERSION is set to: ${ANDROID_NDK_VERSION}"
           echo "y" | sudo ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --install "ndk;${ANDROID_NDK_VERSION}" --sdk_root=${ANDROID_SDK_ROOT} 2>&1
           if [ $? -ne 0 ]; then
               echo "SDK Manager command failed"
               exit 1
           fi
           set +x
-          chmod +x ./gradlew
+          ls -al ${ANDROID_SDK_ROOT}/ndk
+
+      - name: setup gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: 8.7
+          cache-disabled: false
+          cache-read-only: false
+          cache-write-only: false
 
       - name: build debug as test
-        run: ./gradlew assembleDebug
+        run: ./gradlew assembleDebug --configuration-cache --no-daemon
