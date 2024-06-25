@@ -6,6 +6,7 @@ import android.graphics.drawable.AnimationDrawable
 import android.os.Build
 import android.os.Bundle
 import android.text.*
+import android.util.Log
 import android.view.*
 import android.webkit.URLUtil
 import android.widget.*
@@ -84,7 +85,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     lateinit var defaultPref: SharedPreferences
     lateinit var service: Service
     private var currentDialog: MaterialDialog? = null
-    private var configurationDialog: MaterialDialog? = null
     private var serverConfigAction = ""
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
@@ -93,6 +93,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         editor = settings.edit()
         mRealm = DatabaseService(this).realmInstance
+        mRealm = Realm.getDefaultInstance()
         requestAllPermissions()
         customProgressDialog = DialogUtils.getCustomProgressDialog(this)
         prefData = SharedPrefManager(this)
@@ -115,22 +116,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             }
         } else if (serverConfigAction == "save") {
             if (savedId == null || id == savedId) {
-                if (selectedTeamId == null) {
-                    currentDialog?.let {
-                        saveConfigAndContinue(it)
-                    }
-                } else {
-                    val url = "${settings.getString("serverProtocol", "")}${serverUrl.text}"
-                    if (isUrlValid(url)) {
-                        prefData.setSELECTEDTEAMID(selectedTeamId)
-                        if (this is LoginActivity) {
-                            this.getTeamMembers()
-                        }
-                        currentDialog?.let { saveConfigAndContinue(it) }
-                    } else {
-                        currentDialog?.let { saveConfigAndContinue(it) }
-                    }
-                }
+                currentDialog?.let { saveConfigAndContinue(it) }
             } else {
                 clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server))
             }
@@ -236,9 +222,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
                 override fun onFailure(call: Call<ResponseBody?>, t: Throwable) {
                     alertDialogOkay(getString(R.string.device_couldn_t_reach_server_check_and_try_again))
-                    if (!mRealm.isClosed) {
-                        mRealm.close()
-                    }
                     customProgressDialog?.dismiss()
                 }
             })
@@ -280,7 +263,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     fun authenticateUser(settings: SharedPreferences?, username: String?, password: String?, isManagerMode: Boolean): Boolean {
         return try {
-            mRealm = Realm.getDefaultInstance()
             if (settings != null) {
                 this.settings = settings
             }
@@ -290,16 +272,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             } else {
                 checkName(username, password, isManagerMode)
             }
-        } finally {
-            if (this::mRealm.isInitialized && !mRealm.isClosed) {
-                mRealm.close()
-            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
         }
     }
 
     private fun checkName(username: String?, password: String?, isManagerMode: Boolean): Boolean {
         try {
-            mRealm = Realm.getDefaultInstance()
             val db_users = mRealm.where(RealmUserModel::class.java).equalTo("name", username).findAll()
             for (user in db_users) {
                 if (user._id?.isEmpty() == true) {
@@ -317,9 +297,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             }
         } catch (err: Exception) {
             err.printStackTrace()
-            if (this::mRealm.isInitialized && !mRealm.isClosed) {
-                mRealm.close()
-            }
             return false
         }
         return false
@@ -362,7 +339,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     override fun onSyncComplete() {
         customProgressDialog?.dismiss()
-
         if (::syncIconDrawable.isInitialized) {
             runOnUiThread {
                 syncIconDrawable = syncIcon.drawable as AnimationDrawable
@@ -437,111 +413,152 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     fun settingDialog() {
-        try {
-            mRealm = Realm.getDefaultInstance()
-            val dialogServerUrlBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this))
-            spnCloud = dialogServerUrlBinding.spnCloud
-            protocol_checkin = dialogServerUrlBinding.radioProtocol
-            serverUrl = dialogServerUrlBinding.inputServerUrl
-            serverPassword = dialogServerUrlBinding.inputServerPassword
-            dialogServerUrlBinding.deviceName.setText(NetworkUtils.getDeviceName())
-            val builder = MaterialDialog.Builder(this)
-            builder.customView(dialogServerUrlBinding.root, true)
-                .positiveText(R.string.btn_sync)
-                .negativeText(R.string.btn_sync_cancel)
-                .neutralText(R.string.btn_sync_save)
-                .onPositive { dialog: MaterialDialog, _: DialogAction? ->
-                    serverConfigAction = "sync"
-                    val protocol = "${settings.getString("serverProtocol", "")}"
-                    var url = "${serverUrl.text}"
-                    val pin = "${serverPassword.text}"
-                    url = protocol + url
-                    if (isUrlValid(url)) {
-                        currentDialog = dialog
-                        service.getMinApk(this, url, pin)
-                    }
+        val dialogServerUrlBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this))
+        spnCloud = dialogServerUrlBinding.spnCloud
+        protocol_checkin = dialogServerUrlBinding.radioProtocol
+        serverUrl = dialogServerUrlBinding.inputServerUrl
+        serverPassword = dialogServerUrlBinding.inputServerPassword
+        dialogServerUrlBinding.deviceName.setText(NetworkUtils.getDeviceName())
+        val builder = MaterialDialog.Builder(this)
+        builder.customView(dialogServerUrlBinding.root, true)
+            .positiveText(R.string.btn_sync)
+            .negativeText(R.string.btn_sync_cancel)
+            .neutralText(R.string.btn_sync_save)
+            .onPositive { dialog: MaterialDialog, _: DialogAction? ->
+                serverConfigAction = "sync"
+                val protocol = "${settings.getString("serverProtocol", "")}"
+                var url = "${serverUrl.text}"
+                val pin = "${serverPassword.text}"
+                url = protocol + url
+                if (isUrlValid(url)) {
+                    currentDialog = dialog
+                    service.getMinApk(this, url, pin)
                 }
-                .onNeutral { dialog: MaterialDialog, _: DialogAction? ->
-                    serverConfigAction = "save"
-                    val protocol = "${settings.getString("serverProtocol", "")}"
-                    var url = "${serverUrl.text}"
-                    val pin = "${serverPassword.text}"
-                    url = protocol + url
-                    if (isUrlValid(url)) {
-                        currentDialog = dialog
-                        service.getMinApk(this, url, pin)
-                    }
+            }
+            .onNeutral { dialog: MaterialDialog, _: DialogAction? ->
+                serverConfigAction = "save"
+                val protocol = "${settings.getString("serverProtocol", "")}"
+                var url = "${serverUrl.text}"
+                val pin = "${serverPassword.text}"
+                url = protocol + url
+                if (isUrlValid(url)) {
+                    currentDialog = dialog
+                    service.getMinApk(this, url, pin)
                 }
-            if (!prefData.getMANUALCONFIG()) {
-                dialogServerUrlBinding.manualConfiguration.isChecked = false
-                showConfigurationUIElements(dialogServerUrlBinding, false)
-            } else {
-                dialogServerUrlBinding.manualConfiguration.isChecked = true
+            }
+        if (!prefData.getMANUALCONFIG()) {
+            dialogServerUrlBinding.manualConfiguration.isChecked = false
+            showConfigurationUIElements(dialogServerUrlBinding, false)
+        } else {
+            dialogServerUrlBinding.manualConfiguration.isChecked = true
+            showConfigurationUIElements(dialogServerUrlBinding, true)
+        }
+        val dialog = builder.build()
+        positiveAction = dialog.getActionButton(DialogAction.POSITIVE)
+        dialogServerUrlBinding.manualConfiguration.setOnCheckedChangeListener { _: CompoundButton?, isChecked: Boolean ->
+            if (isChecked) {
+                prefData.setMANUALCONFIG(true)
+                editor.putString("serverURL", "").apply()
+                editor.putString("serverPin", "").apply()
+                dialogServerUrlBinding.radioHttp.isChecked = true
+                editor.putString("serverProtocol", getString(R.string.http_protocol)).apply()
                 showConfigurationUIElements(dialogServerUrlBinding, true)
-            }
-            val dialog = builder.build()
-            positiveAction = dialog.getActionButton(DialogAction.POSITIVE)
-            dialogServerUrlBinding.manualConfiguration.setOnCheckedChangeListener { _: CompoundButton?, isChecked: Boolean ->
-                if (isChecked) {
-                    prefData.setMANUALCONFIG(true)
-                    editor.putString("serverURL", "").apply()
-                    editor.putString("serverPin", "").apply()
-                    dialogServerUrlBinding.radioHttp.isChecked = true
-                    editor.putString("serverProtocol", getString(R.string.http_protocol)).apply()
-                    showConfigurationUIElements(dialogServerUrlBinding, true)
-                    if (mRealm.isClosed) {
-                        mRealm = Realm.getDefaultInstance()
+                val communities: List<RealmCommunity> = mRealm.where(RealmCommunity::class.java).sort("weight", Sort.ASCENDING).findAll()
+                val nonEmptyCommunities: MutableList<RealmCommunity> = ArrayList()
+                for (community in communities) {
+                    if (community.isValid && !TextUtils.isEmpty(community.name)) {
+                        nonEmptyCommunities.add(community)
                     }
-                    val communities: List<RealmCommunity> = mRealm.where(RealmCommunity::class.java).sort("weight", Sort.ASCENDING).findAll()
-                    val nonEmptyCommunities: MutableList<RealmCommunity> = ArrayList()
-                    for (community in communities) {
-                        if (community.isValid && !TextUtils.isEmpty(community.name)) {
-                            nonEmptyCommunities.add(community)
-                        }
+                }
+                dialogServerUrlBinding.spnCloud.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, nonEmptyCommunities)
+                dialogServerUrlBinding.spnCloud.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                    override fun onItemSelected(adapterView: AdapterView<*>?, view: View, i: Int, l: Long) {
+                        onChangeServerUrl()
                     }
-                    dialogServerUrlBinding.spnCloud.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, nonEmptyCommunities)
-                    dialogServerUrlBinding.spnCloud.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-                        override fun onItemSelected(adapterView: AdapterView<*>?, view: View, i: Int, l: Long) {
-                            onChangeServerUrl()
-                        }
 
-                        override fun onNothingSelected(adapterView: AdapterView<*>?) {}
-                    }
-                    dialogServerUrlBinding.switchServerUrl.setOnCheckedChangeListener { _: CompoundButton?, b: Boolean ->
-                        editor.putBoolean("switchCloudUrl", b).apply()
-                        dialogServerUrlBinding.spnCloud.visibility = if (b) {
-                            View.VISIBLE
-                        } else {
-                            View.GONE
-                        }
-                        setUrlAndPin(dialogServerUrlBinding.switchServerUrl.isChecked)
-                    }
-                    serverUrl.addTextChangedListener(MyTextWatcher(serverUrl))
-                    dialogServerUrlBinding.switchServerUrl.isChecked = settings.getBoolean("switchCloudUrl", false)
-                    setUrlAndPin(settings.getBoolean("switchCloudUrl", false))
-                    protocol_semantics()
-                } else {
-                    prefData.setMANUALCONFIG(false)
-                    showConfigurationUIElements(dialogServerUrlBinding, false)
-                    editor.putBoolean("switchCloudUrl", false).apply()
+                    override fun onNothingSelected(adapterView: AdapterView<*>?) {}
                 }
-            }
-            dialogServerUrlBinding.radioProtocol.setOnCheckedChangeListener { _: RadioGroup?, checkedId: Int ->
-                when (checkedId) {
-                    R.id.radio_http -> editor.putString("serverProtocol", getString(R.string.http_protocol)).apply()
-                    R.id.radio_https -> editor.putString("serverProtocol", getString(R.string.https_protocol)).apply()
+                dialogServerUrlBinding.switchServerUrl.setOnCheckedChangeListener { _: CompoundButton?, b: Boolean ->
+                    editor.putBoolean("switchCloudUrl", b).apply()
+                    dialogServerUrlBinding.spnCloud.visibility = if (b) {
+                        View.VISIBLE
+                    } else {
+                        View.GONE
+                    }
+                    setUrlAndPin(dialogServerUrlBinding.switchServerUrl.isChecked)
                 }
-            }
-            dialogServerUrlBinding.clearData.setOnClickListener {
-                clearDataDialog(getString(R.string.are_you_sure_you_want_to_clear_data))
-            }
-            dialog.show()
-            sync(dialog)
-        } finally {
-            if (this::mRealm.isInitialized && !mRealm.isClosed) {
-                mRealm.close()
+                serverUrl.addTextChangedListener(MyTextWatcher(serverUrl))
+                dialogServerUrlBinding.switchServerUrl.isChecked = settings.getBoolean("switchCloudUrl", false)
+                setUrlAndPin(settings.getBoolean("switchCloudUrl", false))
+                protocol_semantics()
+            } else {
+                prefData.setMANUALCONFIG(false)
+                showConfigurationUIElements(dialogServerUrlBinding, false)
+                editor.putBoolean("switchCloudUrl", false).apply()
             }
         }
+        dialogServerUrlBinding.radioProtocol.setOnCheckedChangeListener { _: RadioGroup?, checkedId: Int ->
+            when (checkedId) {
+                R.id.radio_http -> editor.putString("serverProtocol", getString(R.string.http_protocol)).apply()
+                R.id.radio_https -> editor.putString("serverProtocol", getString(R.string.https_protocol)).apply()
+            }
+        }
+        dialogServerUrlBinding.clearData.setOnClickListener {
+            clearDataDialog(getString(R.string.are_you_sure_you_want_to_clear_data))
+        }
+        if (prefData.getMANUALCONFIG()) {
+            val teams: List<RealmMyTeam> = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId").equalTo("status", "active").findAll()
+            if (teams.isNotEmpty() && "${dialogServerUrlBinding.inputServerUrl.text}" != "") {
+                dialogServerUrlBinding.team.visibility = View.VISIBLE
+                teamAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, teamList)
+                teamAdapter?.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+                teamList.clear()
+                teamList.add("select team")
+                for (team in teams) {
+                    if (team.isValid) {
+                        teamList.add(team.name)
+                    }
+                }
+                dialogServerUrlBinding.team.adapter = teamAdapter
+                val lastSelection = prefData.getSELECTEDTEAMID()
+                if (!lastSelection.isNullOrEmpty()) {
+                    for (i in teams.indices) {
+                        val team = teams[i]
+                        if (team._id != null && team._id == lastSelection && team.isValid) {
+                            val lastSelectedPosition = i + 1
+                            dialogServerUrlBinding.team.setSelection(lastSelectedPosition)
+                            break
+                        }
+                    }
+                }
+                dialogServerUrlBinding.team.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                    override fun onItemSelected(parentView: AdapterView<*>?, selectedItemView: View, position: Int, id: Long) {
+                        if (position > 0) {
+                            val selectedTeam = teams[position - 1]
+                            val currentTeamId = prefData.getSELECTEDTEAMID()
+                            if (currentTeamId != selectedTeam._id) {
+                                prefData.setSELECTEDTEAMID(selectedTeam._id)
+                                Log.d("selectedTeamId", "${selectedTeam._id}")
+                                if (this@SyncActivity is LoginActivity) {
+                                    this@SyncActivity.getTeamMembers()
+                                }
+                                dialog.dismiss()
+                            }
+                        }
+                    }
+
+                    override fun onNothingSelected(parentView: AdapterView<*>?) {
+                        // Do nothing when nothing is selected
+                    }
+                }
+            } else if (teams.isNotEmpty() && "${dialogServerUrlBinding.inputServerUrl.text}" == "") {
+                dialogServerUrlBinding.team.visibility = View.GONE
+            } else {
+                dialogServerUrlBinding.team.visibility = View.GONE
+            }
+        }
+        dialog.show()
+        sync(dialog)
     }
 
     private fun showConfigurationUIElements(binding: DialogServerUrlBinding, show: Boolean) {
@@ -579,84 +596,16 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             serverPassword.isEnabled = false
             editor.putString("serverProtocol", getString(R.string.https_protocol)).apply()
         }
-        try {
-            if (mRealm.isClosed) {
-                mRealm = Realm.getDefaultInstance()
-            }
-            val teams: List<RealmMyTeam> = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId").equalTo("status", "active").findAll()
-            if (teams.isNotEmpty() && show && "${binding.inputServerUrl.text}" != "") {
-                binding.team.visibility = View.VISIBLE
-                teamAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, teamList)
-                teamAdapter?.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-                teamList.clear()
-                teamList.add("select team")
-                for (team in teams) {
-                    if (team.isValid) {
-                        teamList.add(team.name)
-                    }
-                }
-                binding.team.adapter = teamAdapter
-                val lastSelection = prefData.getSELECTEDTEAMID()
-                if (!lastSelection.isNullOrEmpty()) {
-                    for (i in teams.indices) {
-                        val team = teams[i]
-                        if (team._id != null && team._id == lastSelection && team.isValid) {
-                            val lastSelectedPosition = i + 1
-                            binding.team.setSelection(lastSelectedPosition)
-                            selectedTeamId = lastSelection
-                            break
-                        }
-                    }
-                }
-                binding.team.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-                    override fun onItemSelected(parentView: AdapterView<*>?, selectedItemView: View, position: Int, id: Long) {
-                        if (position > 0) {
-                            val selectedTeam = teams[position - 1]
-                            selectedTeamId = selectedTeam._id
-                            prefData.setSELECTEDTEAMID(selectedTeamId)
-                            val url = "${settings.getString("serverProtocol", "")}${serverUrl.text}"
-                            if (isUrlValid(url)) {
-                                if (this@SyncActivity is LoginActivity) {
-                                    this@SyncActivity.getTeamMembers()
-                                }
-                                currentDialog?.let { saveConfigAndContinue(it) }
-                            } else {
-                                currentDialog?.let { saveConfigAndContinue(it) }
-                            }
-                        }
-                    }
-
-                    override fun onNothingSelected(parentView: AdapterView<*>?) {
-                        // Do nothing when nothing is selected
-                    }
-                }
-            } else if (teams.isNotEmpty() && show && "${binding.inputServerUrl.text}" == "") {
-                binding.team.visibility = View.GONE
-            } else {
-                binding.team.visibility = View.GONE
-            }
-        } finally {
-            if (this::mRealm.isInitialized && !mRealm.isClosed) {
-                mRealm.close()
-            }
-        }
     }
 
     private fun onChangeServerUrl() {
-        try {
-            mRealm = Realm.getDefaultInstance()
-            val selected = spnCloud.selectedItem
-            if (selected is RealmCommunity && selected.isValid) {
-                serverUrl.setText(selected.localDomain)
-                protocol_checkin.check(R.id.radio_https)
-                settings.getString("serverProtocol", getString(R.string.https_protocol))
-                serverPassword.setText(if (selected.weight == 0) "1983" else "")
-                serverPassword.isEnabled = selected.weight != 0
-            }
-        } finally {
-            if (!mRealm.isClosed) {
-                mRealm.close()
-            }
+        val selected = spnCloud.selectedItem
+        if (selected is RealmCommunity && selected.isValid) {
+            serverUrl.setText(selected.localDomain)
+            protocol_checkin.check(R.id.radio_https)
+            settings.getString("serverProtocol", getString(R.string.https_protocol))
+            serverPassword.setText(if (selected.weight == 0) "1983" else "")
+            serverPassword.isEnabled = selected.weight != 0
         }
     }
 
@@ -708,7 +657,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             override fun isAvailable() {
                 Service(context).checkVersion(this@SyncActivity, settings)
             }
-
             override fun notAvailable() {
                 if (!isFinishing) {
                     showAlert(context, "Error", getString(R.string.planet_server_not_reachable))
@@ -731,23 +679,17 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     override fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean) {
-        try {
-            mRealm = Realm.getDefaultInstance()
-            val builder = getUpdateDialog(this, info, customProgressDialog)
-            if (cancelable || getCustomDeviceName(this).endsWith("###")) {
-                builder.setNegativeButton(R.string.update_later) { _: DialogInterface?, _: Int ->
-                    continueSyncProcess()
-                }
-            } else {
-                mRealm.executeTransactionAsync { realm: Realm -> realm.deleteAll() }
+        mRealm = Realm.getDefaultInstance()
+        val builder = getUpdateDialog(this, info, customProgressDialog)
+        if (cancelable || getCustomDeviceName(this).endsWith("###")) {
+            builder.setNegativeButton(R.string.update_later) { _: DialogInterface?, _: Int ->
+                continueSyncProcess()
             }
-            builder.setCancelable(cancelable)
-            builder.show()
-        } finally {
-            if (this::mRealm.isInitialized && !mRealm.isClosed) {
-                mRealm.close()
-            }
+        } else {
+            mRealm.executeTransactionAsync { realm: Realm -> realm.deleteAll() }
         }
+        builder.setCancelable(cancelable)
+        builder.show()
     }
 
     override fun onCheckingVersion() {
@@ -788,25 +730,19 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     override fun onSelectedUser(userModel: RealmUserModel) {
-        try {
-            mRealm = Realm.getDefaultInstance()
-            val layoutChildLoginBinding = LayoutChildLoginBinding.inflate(layoutInflater)
-            AlertDialog.Builder(this).setView(layoutChildLoginBinding.root)
-                .setTitle(R.string.please_enter_your_password)
-                .setPositiveButton(R.string.login) { _: DialogInterface?, _: Int ->
-                    val password = "${layoutChildLoginBinding.etChildPassword.text}"
-                    if (authenticateUser(settings, userModel.name, password, false)) {
-                        Toast.makeText(applicationContext, getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
-                        onLogin()
-                    } else {
-                        alertDialogOkay(getString(R.string.err_msg_login))
-                    }
-                }.setNegativeButton(R.string.cancel, null).show()
-        } finally {
-            if (!mRealm.isClosed) {
-                mRealm.close()
-            }
-        }
+        mRealm = Realm.getDefaultInstance()
+        val layoutChildLoginBinding = LayoutChildLoginBinding.inflate(layoutInflater)
+        AlertDialog.Builder(this).setView(layoutChildLoginBinding.root)
+            .setTitle(R.string.please_enter_your_password)
+            .setPositiveButton(R.string.login) { _: DialogInterface?, _: Int ->
+                val password = "${layoutChildLoginBinding.etChildPassword.text}"
+                if (authenticateUser(settings, userModel.name, password, false)) {
+                    Toast.makeText(applicationContext, getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
+                    onLogin()
+                } else {
+                    alertDialogOkay(getString(R.string.err_msg_login))
+                }
+            }.setNegativeButton(R.string.cancel, null).show()
     }
 
     inner class MyTextWatcher(var view: View?) : TextWatcher {
@@ -816,7 +752,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 positiveAction.isEnabled = "$s".trim { it <= ' ' }.isNotEmpty() && URLUtil.isValidUrl("${settings.getString("serverProtocol", "")}$s")
             }
         }
-
         override fun afterTextChanged(editable: Editable) {}
     }
 
