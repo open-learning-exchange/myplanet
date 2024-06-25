@@ -1041,5 +1041,10 @@
     <string name="are_you_sure_you_want_to_delete_this_course">هل أنت متأكد أنك تريد حذف هذه الدورة؟</string>
     <string name="shared_chat">shared chat</string>
     <string name="dark_mode">الوضع الداكن</string>
+    <string-array name="dark_mode_options">
+        <item>إيقاف</item>
+        <item>تشغيل</item>
+        <item>اتباع النظام</item>
+    </string-array>
 
 </resources>

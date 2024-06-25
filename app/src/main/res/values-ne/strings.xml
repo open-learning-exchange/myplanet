@@ -1041,5 +1041,10 @@
     <string name="are_you_sure_you_want_to_delete_this_course">के तपाई यो कोर्स मेटाउन चाहनुहुन्छ भनेर पक्का हुनुहुन्छ?</string>
     <string name="shared_chat">shared chat</string>
     <string name="dark_mode">अँध्यारो मोड</string>
+    <string-array name="dark_mode_options">
+        <item>बन्द</item>
+        <item>खुला</item>
+        <item>प्रणाली अनुसरण गर्नुहोस्</item>
+    </string-array>
 
 </resources>

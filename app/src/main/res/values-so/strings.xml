@@ -1041,5 +1041,10 @@
     <string name="are_you_sure_you_want_to_delete_this_course">Ma hubtaa inaad rabto inaad tirtirto koorsadan?</string>
     <string name="shared_chat">shared chat</string>
     <string name="dark_mode">Habka Hodan</string>
+    <string-array name="dark_mode_options">
+        <item>Joojin</item>
+        <item>Fur</item>
+        <item>Soo bandhiga Nidaamka</item>
+    </string-array>
 
 </resources>

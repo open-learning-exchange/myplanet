@@ -1041,5 +1041,10 @@
     <string name="are_you_sure_you_want_to_delete_this_course">¿Estás seguro de que quieres eliminar este curso?</string>
     <string name="shared_chat">shared chat</string>
     <string name="dark_mode">Modo Oscuro</string>
+    <string-array name="dark_mode_options">
+        <item>APAGADO</item>
+        <item>ENCENDIDO</item>
+        <item>Seguir el sistema</item>
+    </string-array>
 
 </resources>

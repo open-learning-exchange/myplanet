@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.news
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
+import android.os.Build
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.MenuItem
@@ -11,6 +12,7 @@ import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.PopupMenu
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
@@ -235,6 +237,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         viewHolder.rowNewsBinding.imgNews.visibility = View.GONE
     }
 
+    @RequiresApi(Build.VERSION_CODES.M)
     private fun showReplyButton(holder: RecyclerView.ViewHolder, finalNews: RealmNews?, position: Int) {
         val viewHolder = holder as ViewHolderNews
         if (listener == null || fromLogin) {
@@ -243,6 +246,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         viewHolder.rowNewsBinding.btnReply.setOnClickListener { showEditAlert(finalNews?.id, false) }
         val replies: List<RealmNews> = mRealm.where(RealmNews::class.java).sort("time", Sort.DESCENDING).equalTo("replyTo", finalNews?.id, Case.INSENSITIVE).findAll()
         viewHolder.rowNewsBinding.btnShowReply.text = String.format(context.getString(R.string.show_replies) + " (%d)", replies.size)
+        viewHolder.rowNewsBinding.btnShowReply.setTextColor(context.getColor(R.color.daynight_textColor))
         viewHolder.rowNewsBinding.btnShowReply.visibility = if (replies.isNotEmpty()) {
             View.VISIBLE
         } else {
