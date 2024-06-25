@@ -7,7 +7,6 @@
     android:layout_gravity="top"
     android:backgroundTint="@color/card_bg"
     app:cardCornerRadius="@dimen/_10dp"
-    app:cardElevation="4dp"
     app:cardUseCompatPadding="true"
     app:contentPadding="@dimen/padding_normal">
 

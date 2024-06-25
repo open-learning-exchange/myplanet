@@ -301,7 +301,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 .build()
             val headerBackground = header.headerBackgroundView
             headerBackground.setPadding(30, 60, 30, 60)
-            if (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_NO) {
+            val currentNightMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+            if (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_NO ||
+                (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM && currentNightMode == Configuration.UI_MODE_NIGHT_NO)) {
                 headerBackground.setColorFilter(
                     ContextCompat.getColor(this, R.color.md_white_1000),
                     PorterDuff.Mode.SRC_IN
