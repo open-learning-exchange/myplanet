@@ -52,10 +52,15 @@ class MyActivityFragment : Fragment() {
         var i = 0
         for (entry in countMap.keys) {
             val key = format.parse(entry)
-            val en = key?.month?.let { countMap[entry]?.toFloat()
-                ?.let { it1 -> BarEntry(it.toFloat(), it1) } }
-            if (en != null) {
-                entries.add(en)
+            val calendar = Calendar.getInstance()
+            key?.let {
+                calendar.time = it
+                val month = calendar.get(Calendar.MONTH)
+                val en = countMap[entry]?.toFloat()
+                    ?.let { it1 -> BarEntry(month.toFloat(), it1) }
+                if (en != null) {
+                    entries.add(en)
+                }
             }
             i = i.plus(1)
         }
