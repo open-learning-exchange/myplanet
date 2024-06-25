@@ -99,9 +99,12 @@ jobs:
           set +x
           chmod +x ./gradlew
 
-      - name: verify NDK
+      - name: Verify NDK installation
         run: |
-          ls -al ${{ runner.tool_cache }}/android/ndk/${{ env.ANDROID_NDK_VERSION }}
+          echo "Listing directories in ANDROID_SDK_ROOT:"
+          ls -al ${ANDROID_SDK_ROOT}
+          echo "Listing directories in ANDROID_SDK_ROOT/ndk:"
+          ls -al ${ANDROID_SDK_ROOT}/ndk
 
       - name: build debug as test
         run: |
