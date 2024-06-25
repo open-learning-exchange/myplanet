@@ -14,7 +14,6 @@ import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import android.view.WindowManager
 import androidx.activity.OnBackPressedCallback
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
@@ -23,7 +22,6 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
-import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.navigation.NavigationBarView
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayout.OnTabSelectedListener
@@ -303,17 +301,19 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun createDrawer() {
         val dimenHolder = DimenHolder.fromDp(160)
-        result = DrawerBuilder().withActivity(this).withFullscreen(true)
-            .withSliderBackgroundColor(ContextCompat.getColor(this, R.color.colorPrimary))
-            .withToolbar(activityDashboardBinding.myToolbar)
-            .withAccountHeader((headerResult!!)).withHeaderHeight(dimenHolder)
-            .addDrawerItems(*drawerItems).addStickyDrawerItems(*drawerItemsFooter)
-            .withOnDrawerItemClickListener { _: View?, _: Int, drawerItem: IDrawerItem<*, *>? ->
-                if (drawerItem != null) {
-                    menuAction((drawerItem as Nameable<*>).name.textRes)
-                }
-                false
-            }.withDrawerWidthDp(200).build()
+        result = headerResult?.let {
+            DrawerBuilder().withActivity(this).withFullscreen(true)
+                .withSliderBackgroundColor(ContextCompat.getColor(this, R.color.colorPrimary))
+                .withToolbar(activityDashboardBinding.myToolbar)
+                .withAccountHeader(it).withHeaderHeight(dimenHolder)
+                .addDrawerItems(*drawerItems).addStickyDrawerItems(*drawerItemsFooter)
+                .withOnDrawerItemClickListener { _: View?, _: Int, drawerItem: IDrawerItem<*, *>? ->
+                    if (drawerItem != null) {
+                        menuAction((drawerItem as Nameable<*>).name.textRes)
+                    }
+                    false
+                }.withDrawerWidthDp(200).build()
+        }
     }
 
     private fun menuAction(selectedMenuId: Int) {
