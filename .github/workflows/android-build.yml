@@ -61,8 +61,6 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: '17'
-#          cache: 'gradle'
-#          check-latest: true
 
       - name: cache NDK
         id: cache-ndk
@@ -85,16 +83,6 @@ jobs:
           set +x
           ls -al ${ANDROID_SDK_ROOT}/ndk
 
-#      - name: cache gradle
-#        uses: actions/cache@v4
-#        with:
-#          path: |
-#            ~/.gradle/caches
-#            ~/.gradle/wrapper
-#          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-#          restore-keys: |
-#            ${{ runner.os }}-gradle-
-
       - name: setup gradle
         uses: gradle/actions/setup-gradle@v3
         with:
@@ -102,7 +90,6 @@ jobs:
           cache-disabled: false
           cache-read-only: false
           cache-write-only: false
-          #cache-overwrite-existing: false
 
       - name: build debug as test
         run: ./gradlew assembleDebug --configuration-cache --no-daemon
