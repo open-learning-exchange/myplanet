@@ -43,7 +43,7 @@ class SeeAllNotificationsFragment : Fragment() {
 
         val notifications = tasks.map {
             Notifications(
-                icon = R.drawable.task_pending, // You can remove this parameter if not needed
+                icon = R.drawable.task_pending,
                 text = "${it.title} - ${it.description}"
             )
         }.toMutableList()
