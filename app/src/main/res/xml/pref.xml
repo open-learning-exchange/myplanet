@@ -2,7 +2,6 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
     <ListPreference
-        android:theme="@style/PreferencesDialogTheme"
         android:entries="@array/language"
         android:entryValues="@array/language_keys"
         android:key="app_language"
@@ -14,7 +13,6 @@
         android:title="@string/save_username_and_password" />
 
     <org.ole.planet.myplanet.views.RoundedListPreference
-        android:theme="@style/PreferencesDialogTheme"
         android:defaultValue="Follow System"
         android:entries="@array/dark_mode_options"
         android:entryValues="@array/dark_mode_options"

@@ -12,6 +12,7 @@ import android.os.StrictMode.VmPolicy
 import android.provider.Settings
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.preference.PreferenceManager
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
@@ -91,11 +92,12 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     override fun onCreate() {
         super.onCreate()
         initialize(CoroutineScope(Dispatchers.IO))
-        // REMOVE AFTER DARK MODE DEVELOPMENT
-        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+        // UNCOMMENT BELOW TO FORCE DARK MODE FOR DARK MODE DEVELOPMENT
+        // AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
 
         context = this
         preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        nightMode()
         val builder = VmPolicy.Builder()
         StrictMode.setVmPolicy(builder.build())
         builder.detectFileUriExposure()
@@ -115,6 +117,16 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         registerActivityLifecycleCallbacks(this)
         startListenNetworkState()
         onAppStarted()
+    }
+
+    private fun nightMode() {
+        val preference = PreferenceManager.getDefaultSharedPreferences(this).getString("dark_mode", "Follow System")
+        val options = listOf(*resources.getStringArray(R.array.dark_mode_options))
+        when (options.indexOf(preference)) {
+            0 -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+            1 -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+            2 -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+        }
     }
 
     private fun scheduleAutoSyncWork(syncInterval: Int?) {
