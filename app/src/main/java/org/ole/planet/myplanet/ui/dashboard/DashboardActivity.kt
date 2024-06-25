@@ -18,9 +18,13 @@ import android.view.WindowManager
 import androidx.activity.OnBackPressedCallback
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.android.material.navigation.NavigationBarView
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayout.OnTabSelectedListener
 import com.mikepenz.materialdrawer.AccountHeader
@@ -31,7 +35,7 @@ import com.mikepenz.materialdrawer.holder.DimenHolder
 import com.mikepenz.materialdrawer.model.PrimaryDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.Nameable
-import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
@@ -61,7 +65,7 @@ import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
-class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, BottomNavigationView.OnNavigationItemSelectedListener {
+class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, NavigationBarView.OnItemSelectedListener {
     private lateinit var activityDashboardBinding: ActivityDashboardBinding
     private var headerResult: AccountHeader? = null
     var user: RealmUserModel? = null
@@ -115,7 +119,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
             openCallFragment(InactiveDashboardFragment(), "Dashboard")
             return
         }
-        navigationView.setOnNavigationItemSelectedListener(this)
+        navigationView.setOnItemSelectedListener(this)
         navigationView.visibility = if (UserProfileDbHandler(this).userModel?.isShowTopbar == true) {
             View.VISIBLE
         } else {
@@ -129,7 +133,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
         result?.stickyFooter?.setPadding(0, 0, 0, 0) // moves logout button to the very bottom of the drawer. Without it, the "logout" button suspends a little.
         result?.actionBarDrawerToggle?.isDrawerIndicatorEnabled = true
         dl = result?.drawerLayout
-        window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        WindowInsetsControllerCompat(window, window.decorView).hide(WindowInsetsCompat.Type.statusBars())
         result?.drawerLayout?.fitsSystemWindows = false
         topbarSetting()
         if (intent != null && intent.hasExtra("fragmentToOpen")) {
@@ -187,7 +192,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
                     } else {
                         if (!doubleBackToExitPressedOnce) {
                             doubleBackToExitPressedOnce = true
-                            Utilities.toast(MainApplication.context, getString(R.string.press_back_again_to_exit))
+                            toast(context, getString(R.string.press_back_again_to_exit))
                             Handler(Looper.getMainLooper()).postDelayed({ doubleBackToExitPressedOnce = false }, 2000)
                         } else {
                             finish()
@@ -212,7 +217,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
     private fun checkUser() {
         user = UserProfileDbHandler(this).userModel
         if (user == null) {
-            Utilities.toast(this, getString(R.string.session_expired))
+            toast(this, getString(R.string.session_expired))
             logout()
             return
         }
@@ -392,14 +397,14 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
         }
 
     private fun changeUX(iconText: Int, drawable: Drawable?): PrimaryDrawerItem {
-            return PrimaryDrawerItem().withName(iconText)
-                .withIcon(drawable)
-                .withTextColor(ContextCompat.getColor(this, R.color.textColorPrimary))
-                .withSelectedTextColor(ContextCompat.getColor(this, R.color.primary_dark))
-                .withIconColor(ContextCompat.getColor(this, R.color.textColorPrimary))
-                .withSelectedIconColor(ContextCompat.getColor(this, R.color.primary_dark))
-                .withSelectedColor(ContextCompat.getColor(this, R.color.textColorPrimary))
-                .withIconTintingEnabled(true)
+        return PrimaryDrawerItem().withName(iconText)
+            .withIcon(drawable)
+            .withTextColor(ContextCompat.getColor(this, R.color.textColorPrimary))
+            .withSelectedTextColor(ContextCompat.getColor(this, R.color.primary_dark))
+            .withIconColor(ContextCompat.getColor(this, R.color.textColorPrimary))
+            .withSelectedIconColor(ContextCompat.getColor(this, R.color.primary_dark))
+            .withSelectedColor(ContextCompat.getColor(this, R.color.textColorPrimary))
+            .withIconTintingEnabled(true)
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
