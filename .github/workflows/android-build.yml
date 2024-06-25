@@ -21,6 +21,8 @@ jobs:
     steps:
       - name: checkout repository code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: check for .lite diffs
         if: matrix.build == 'lite'
@@ -62,7 +64,7 @@ jobs:
           java-version: '17'
           cache: 'gradle'
 
-      - name: cache gradle packages
+      - name: cache gradle
         uses: actions/cache@v2
         with:
           path: |
@@ -71,6 +73,14 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
+
+      - name: cache NDK
+        uses: actions/cache@v2
+        with:
+          path: ${{ runner.tool_cache }}/android-sdk/ndk/${{ env.ANDROID_NDK_VERSION }}
+          key: ${{ runner.os }}-ndk-${{ env.ANDROID_NDK_VERSION }}
+          restore-keys: |
+            ${{ runner.os }}-ndk-
 
       - name: install NDK
         run: |
