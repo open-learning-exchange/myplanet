@@ -100,6 +100,8 @@ jobs:
           chmod +x ./gradlew
 
       - name: build debug as test
-        run: ./gradlew assembleDebug --profile
         env:
           GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.parallel=true"
+        run: |
+          ./gradlew assembleDebug --profile
+          cat build/reports/profile/*.html
