@@ -11,14 +11,6 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal">
 
-        <ImageView
-            android:id="@+id/icon"
-            android:layout_width="@dimen/_40dp"
-            android:layout_height="@dimen/_40dp"
-            android:layout_gravity="center_vertical"
-            android:padding="@dimen/padding_normal"
-            app:tint="@color/md_black_1000" />
-
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -43,7 +35,6 @@
                 android:paddingEnd="@dimen/padding_normal"
                 android:textColor="@color/md_grey_600"
                 android:textSize="@dimen/text_size_small" />
-
         </LinearLayout>
 
         <Button
@@ -54,5 +45,4 @@
             android:text="Mark as Read"
             android:padding="@dimen/padding_small" />
     </LinearLayout>
-
 </LinearLayout>

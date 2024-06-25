@@ -19,10 +19,8 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 
 class SeeAllNotificationsFragment : Fragment() {
 
-    private lateinit var notificationsAdapter: AdapterNotification
-    private lateinit var notifications: MutableList<Notifications>
-    private lateinit var btnMarkAllAsRead: Button
     private lateinit var mRealm: Realm
+    private lateinit var notificationsAdapter: AdapterNotification
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -35,30 +33,23 @@ class SeeAllNotificationsFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         mRealm = Realm.getDefaultInstance()
-        notifications = mutableListOf()
-
-        // Query the tasks from Realm
         val model = UserProfileDbHandler(requireContext()).userModel!!
+
         val tasks = mRealm.where(RealmTeamTask::class.java)
             .notEqualTo("status", "archived")
             .equalTo("completed", false)
             .equalTo("assignee", model.id)
             .findAll()
 
-        // Log the tasks to ensure they are being fetched
-        tasks.forEach {
-            Log.d("SeeAll", "Task: ${it.title} - ${it.description}")
-        }
-
-        // Add tasks to notifications list
-        tasks.forEach {
-            notifications.add(Notifications(R.drawable.task_pending, "${it.title} - ${it.description}"))
-        }
+        val notifications = tasks.map {
+            Notifications(
+                icon = R.drawable.task_pending, // You can remove this parameter if not needed
+                text = "${it.title} - ${it.description}"
+            )
+        }.toMutableList()
 
         val recyclerView: RecyclerView = view.findViewById(R.id.recycler_view_notifications)
         recyclerView.layoutManager = LinearLayoutManager(context)
-
-        // Instantiate AdapterNotification with showMarkAsReadButton = true
         notificationsAdapter = AdapterNotification(requireContext(), notifications, object : NotificationCallback {
             override fun showResourceDownloadDialog() {}
             override fun showUserResourceDialog() {}
@@ -69,26 +60,12 @@ class SeeAllNotificationsFragment : Fragment() {
             override fun syncKeyId() {}
         }, showMarkAsReadButton = true)
 
-        for (position in notifications.indices) {
-            val isRead = notificationsAdapter.getReadStatus(position)
-            notifications[position].isRead = isRead
-        }
-
         recyclerView.adapter = notificationsAdapter
 
-        btnMarkAllAsRead = view.findViewById(R.id.btn_mark_all_as_read)
-        updateMarkAllButtonState()
-
+        val btnMarkAllAsRead: Button = view.findViewById(R.id.btn_mark_all_as_read)
         btnMarkAllAsRead.setOnClickListener {
             notificationsAdapter.markAllAsRead()
-            updateMarkAllButtonState()
         }
-    }
-
-    private fun updateMarkAllButtonState() {
-        val allRead = notifications.all { it.isRead }
-        btnMarkAllAsRead.isEnabled = !allRead
-        btnMarkAllAsRead.alpha = if (allRead) 0.5f else 1.0f
     }
 
     override fun onDestroy() {
