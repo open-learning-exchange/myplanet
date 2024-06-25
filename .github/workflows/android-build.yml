@@ -5,7 +5,6 @@ on:
     branches:
       - '*'
       - '!master'
-#  workflow_dispatch:
 
 jobs:
   build:
@@ -16,7 +15,6 @@ jobs:
         build: [default, lite]
     env:
       ANDROID_NDK_VERSION: "21.3.6528147"
-      BUILD_TOOLS_VERSION: "34.0.0"
       ANDROID_SDK_ROOT: "/usr/local/lib/android/sdk"
 
     steps:
