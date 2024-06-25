@@ -537,7 +537,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                             val currentTeamId = prefData.getSELECTEDTEAMID()
                             if (currentTeamId != selectedTeam._id) {
                                 prefData.setSELECTEDTEAMID(selectedTeam._id)
-                                Log.d("selectedTeamId", "${selectedTeam._id}")
                                 if (this@SyncActivity is LoginActivity) {
                                     this@SyncActivity.getTeamMembers()
                                 }
