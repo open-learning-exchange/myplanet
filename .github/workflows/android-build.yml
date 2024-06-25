@@ -17,6 +17,7 @@ jobs:
     env:
       ANDROID_NDK_VERSION: "21.3.6528147"
       BUILD_TOOLS_VERSION: "34.0.0"
+      ANDROID_SDK_ROOT: "/usr/local/lib/android/sdk"
 
     steps:
       - name: checkout repository code
@@ -81,15 +82,12 @@ jobs:
           ls -al ${ANDROID_SDK_ROOT}
           echo "Listing directories in ANDROID_SDK_ROOT/ndk:"
           ls -al ${ANDROID_SDK_ROOT}/ndk
-          cd ${ANDROID_SDK_ROOT}
-          pwd
-          cd -
 
       - name: cache NDK
         id: cache-ndk
         uses: actions/cache@v4
         with:
-          path: ${ANDROID_SDK_ROOT}/ndk/${{ env.ANDROID_NDK_VERSION }}
+          path: ${{ env.ANDROID_SDK_ROOT }}/ndk/${{ env.ANDROID_NDK_VERSION }}
           key: ${{ runner.os }}-ndk-${{ env.ANDROID_NDK_VERSION }}
           restore-keys: |
             ${{ runner.os }}-ndk-
