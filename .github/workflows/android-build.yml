@@ -77,7 +77,7 @@ jobs:
       - name: setup gradle
         uses: gradle/actions/setup-gradle@v3
         with:
-          gradle-version: 8.6
+          gradle-version: 8.7
           cache-disabled: false
           cache-read-only: false
           cache-write-only: false
