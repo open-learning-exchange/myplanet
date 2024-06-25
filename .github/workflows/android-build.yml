@@ -86,7 +86,7 @@ jobs:
         id: cache-ndk
         uses: actions/cache@v4
         with:
-          path: ${{ runner.tool_cache }}/android-sdk/ndk/${{ env.ANDROID_NDK_VERSION }}
+          path: ${{ ANDROID_SDK_ROOT }}/ndk/${{ env.ANDROID_NDK_VERSION }}
           key: ${{ runner.os }}-ndk-${{ env.ANDROID_NDK_VERSION }}
           restore-keys: |
             ${{ runner.os }}-ndk-
