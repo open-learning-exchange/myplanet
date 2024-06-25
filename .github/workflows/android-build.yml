@@ -99,6 +99,10 @@ jobs:
           set +x
           chmod +x ./gradlew
 
+      - name: verify NDK
+        run: |
+          ls -al ${{ runner.tool_cache }}/android/ndk/${{ env.ANDROID_NDK_VERSION }}
+
       - name: build debug as test
         run: |
           ./gradlew assembleDebug
