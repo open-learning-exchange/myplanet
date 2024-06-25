@@ -64,16 +64,6 @@ jobs:
 #          cache: 'gradle'
 #          check-latest: true
 
-#      - name: cache gradle
-#        uses: actions/cache@v4
-#        with:
-#          path: |
-#            ~/.gradle/caches
-#            ~/.gradle/wrapper
-#          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-#          restore-keys: |
-#            ${{ runner.os }}-gradle-
-
       - name: cache NDK
         id: cache-ndk
         uses: actions/cache@v4
@@ -95,6 +85,16 @@ jobs:
           set +x
           ls -al ${ANDROID_SDK_ROOT}/ndk
 
+#      - name: cache gradle
+#        uses: actions/cache@v4
+#        with:
+#          path: |
+#            ~/.gradle/caches
+#            ~/.gradle/wrapper
+#          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+#          restore-keys: |
+#            ${{ runner.os }}-gradle-
+
       - name: setup gradle
         uses: gradle/actions/setup-gradle@v3
         with:
@@ -103,5 +103,6 @@ jobs:
           cache-read-only: false
           cache-write-only: false
           #cache-overwrite-existing: false
-      #- name: build debug as test
+
+      - name: build debug as test
         run: ./gradlew assembleDebug --configuration-cache --no-daemon
