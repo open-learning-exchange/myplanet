@@ -301,7 +301,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
         result = DrawerBuilder().withActivity(this).withFullscreen(true)
             .withSliderBackgroundColor(ContextCompat.getColor(this, R.color.colorPrimary))
             .withToolbar(activityDashboardBinding.myToolbar)
-            .withAccountHeader((headerResult)!!).withHeaderHeight(dimenHolder)
+            .withAccountHeader((headerResult!!)).withHeaderHeight(dimenHolder)
             .addDrawerItems(*drawerItems).addStickyDrawerItems(*drawerItemsFooter)
             .withOnDrawerItemClickListener { _: View?, _: Int, drawerItem: IDrawerItem<*, *>? ->
                 if (drawerItem != null) {
