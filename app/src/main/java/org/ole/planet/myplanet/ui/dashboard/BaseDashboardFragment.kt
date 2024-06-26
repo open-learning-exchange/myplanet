@@ -69,7 +69,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         updateOfflineVisitsUI()
     }
 
-
     fun onLoaded(v: View) {
         profileDbHandler = UserProfileDbHandler(requireContext())
         model = profileDbHandler.userModel
@@ -78,7 +77,9 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             fullName = profileDbHandler.userModel?.name
             v.findViewById<LinearLayout>(R.id.ll_prompt).visibility = View.VISIBLE
             v.findViewById<LinearLayout>(R.id.ll_prompt).setOnClickListener {
-                UserInformationFragment.getInstance("").show(childFragmentManager, "")
+                if (!childFragmentManager.isStateSaved) {
+                    UserInformationFragment.getInstance("").show(childFragmentManager, "")
+                }
             }
         } else {
             v.findViewById<LinearLayout>(R.id.ll_prompt).visibility = View.GONE
