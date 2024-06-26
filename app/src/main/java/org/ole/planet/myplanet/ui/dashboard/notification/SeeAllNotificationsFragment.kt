@@ -1,8 +1,6 @@
 package org.ole.planet.myplanet.ui.dashboard.notification
 
-import android.content.Context
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -44,7 +42,7 @@ class SeeAllNotificationsFragment : Fragment() {
         val notifications = tasks.map {
             Notifications(
                 icon = R.drawable.task_pending,
-                text = "${it.title} - ${it.description}"
+                text = "You were assigned a new task: " + "${it.title}"
             )
         }.toMutableList()
 
