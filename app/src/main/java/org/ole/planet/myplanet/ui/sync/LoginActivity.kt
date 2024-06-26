@@ -5,6 +5,7 @@ import android.graphics.drawable.AnimationDrawable
 import android.os.*
 import android.os.Build.VERSION_CODES.TIRAMISU
 import android.text.*
+import android.util.Log
 import android.view.*
 import android.view.inputmethod.EditorInfo
 import android.widget.*
@@ -47,7 +48,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         lblLastSyncDate = activityLoginBinding.lblLastSyncDate
         btnSignIn = activityLoginBinding.btnSignin
         syncIcon = activityLoginBinding.syncIcon
-
         service = Service(this)
 
         activityLoginBinding.tvAvailableSpace.text = availableOverTotalMemoryFormattedString
@@ -226,10 +226,14 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                 .setSingleChoiceItems(languages, index) { dialog, which ->
                     val selectLanguageKey = languageKey[which]
                     if (selectLanguageKey != settings.getString(Constants.SELECTED_LANGUAGE, fallbackLanguage)) {
-                        LocaleHelper.setLocale(this, selectLanguageKey)
-                        settings.edit().putString(Constants.SELECTED_LANGUAGE, selectLanguageKey).apply()
-                        activityLoginBinding.btnLang.text = languages[which]
-                        recreate()
+                        try {
+                            LocaleHelper.setLocale(this, selectLanguageKey)
+                            settings.edit().putString(Constants.SELECTED_LANGUAGE, selectLanguageKey).apply()
+                            activityLoginBinding.btnLang.text = languages[which]
+                            recreate() // Restart the activity to apply the new language
+                        } catch (e: Exception) {
+                            Log.e("LanguageChange", "Error changing language", e)
+                        }
                     }
                     dialog.dismiss()
                 }
@@ -588,6 +592,8 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
 
     override fun onDestroy() {
         super.onDestroy()
-        finish()
+        if (!mRealm.isClosed) {
+            mRealm.close()
+        }
     }
 }
