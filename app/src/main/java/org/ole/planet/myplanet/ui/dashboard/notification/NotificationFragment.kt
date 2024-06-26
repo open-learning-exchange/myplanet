@@ -25,15 +25,13 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.FileUtils
+import java.util.Calendar
 
 class NotificationFragment : BottomSheetDialogFragment() {
-
     private lateinit var fragmentNotificationBinding: FragmentNotificationBinding
     lateinit var callback: NotificationCallback
     lateinit var resourceList: List<RealmMyLibrary>
-    private lateinit var mRealm: Realm
-    private lateinit var notificationList: MutableList<Notifications>
-    private lateinit var notificationsAdapter: AdapterNotification
+    lateinit var mRealm: Realm
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         callback = object : NotificationCallback {
@@ -46,8 +44,7 @@ class NotificationFragment : BottomSheetDialogFragment() {
             override fun downloadDictionary() {}
         }
         mRealm = DatabaseService(requireActivity()).realmInstance
-        notificationList = mutableListOf()
-
+        resourceList = emptyList()
         fragmentNotificationBinding = FragmentNotificationBinding.inflate(inflater, container, false)
         return fragmentNotificationBinding.root
     }
@@ -70,24 +67,16 @@ class NotificationFragment : BottomSheetDialogFragment() {
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
         val model = UserProfileDbHandler(requireContext()).userModel!!
-        val surveyList = mRealm.where(RealmSubmission::class.java)
-            .equalTo("userId", model.id)
-            .equalTo("status", "pending")
-            .equalTo("type", "survey")
-            .findAll()
-
+        val surveyList = mRealm.where(RealmSubmission::class.java).equalTo("userId", model.id)
+            .equalTo("status", "pending").equalTo("type", "survey").findAll()
         fragmentNotificationBinding.icBack.setOnClickListener {
             dismiss()
         }
-
-        val tasks = mRealm.where(RealmTeamTask::class.java)
-            .notEqualTo("status", "archived")
+        val tasks = mRealm.where(RealmTeamTask::class.java).notEqualTo("status", "archived")
             .equalTo("completed", false)
-            .equalTo("assignee", model.id)
-            .findAll()
-
+            .equalTo("assignee", model.id).findAll()
+        val notificationList: MutableList<Notifications> = ArrayList()
         notificationList.add(Notifications(R.drawable.mylibrary, "${getLibraryList(mRealm, model.id).size} ${getString(R.string.resource_not_downloaded)}"))
         notificationList.add(Notifications(R.drawable.mylibrary, getString(R.string.bulk_resource_download)))
         notificationList.add(Notifications(R.drawable.survey, "${surveyList.size} ${getString(R.string.pending_survey)}"))
@@ -96,22 +85,23 @@ class NotificationFragment : BottomSheetDialogFragment() {
         notificationList.add(Notifications(R.drawable.task_pending, "${tasks.size} ${getString(R.string.tasks_due)}"))
 
         val storageRatio = FileUtils.totalAvailableMemoryRatio
-        val storageNotiText = when {
-            storageRatio <= 10 -> "${getString(R.string.storage_critically_low)} $storageRatio% ${getString(R.string.available_please_free_up_space)}"
-            storageRatio <= 40 -> "${getString(R.string.storage_running_low)} $storageRatio% ${getString(R.string.available)}"
-            else -> "${getString(R.string.storage_available)} $storageRatio%."
+        val storageNotiText: String = if (storageRatio <= 10) {
+            "${getString(R.string.storage_critically_low)} $storageRatio% ${getString(R.string.available_please_free_up_space)}"
+        } else if (storageRatio <= 40) {
+            "${getString(R.string.storage_running_low)} $storageRatio% ${getString(R.string.available)}"
+        } else {
+            "${getString(R.string.storage_available)} $storageRatio%."
         }
         notificationList.add(Notifications(R.drawable.baseline_storage_24, storageNotiText))
 
         if (TextUtils.isEmpty(model.key) || model.getRoleAsString().contains("health")) {
-            if (!model.id?.startsWith("guest")!!) {
+            if (model.id?.startsWith("guest") != true) {
                 notificationList.add(Notifications(R.drawable.ic_myhealth, getString(R.string.health_record_not_available_click_to_sync)))
             }
         }
 
         fragmentNotificationBinding.rvNotifications.layoutManager = LinearLayoutManager(requireActivity())
-        notificationsAdapter = AdapterNotification(requireActivity(), notificationList, callback, true)
-        fragmentNotificationBinding.rvNotifications.adapter = notificationsAdapter
-
+        fragmentNotificationBinding.rvNotifications.adapter = AdapterNotification(requireActivity(), notificationList, callback, false)
+        fragmentNotificationBinding.rvNotifications.layoutManager = LinearLayoutManager(requireActivity())
     }
 }
