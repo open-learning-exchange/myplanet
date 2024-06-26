@@ -8,7 +8,7 @@ android {
     defaultConfig {
         applicationId "org.ole.planet.myplanet"
         minSdkVersion 21
-	targetSdkVersion 34
+        targetSdkVersion 34
         versionCode 1622
         versionName "0.16.22"
         ndkVersion '21.3.6528147'
@@ -78,6 +78,10 @@ task generateVersionsXml {
     }
 }
 preBuild.dependsOn generateVersionsXml
+
+tasks.named('generateVersionsXml').configure {
+    notCompatibleWithConfigurationCache("not supported due to internal project references")
+}
 
 repositories {
     mavenCentral()
