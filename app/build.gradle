@@ -59,6 +59,12 @@ android {
         viewBinding = true
         buildConfig true
     }
+
+    bundle {
+        language {
+            enableSplit = false
+        }
+    }
 }
 
 task generateVersionsXml {
@@ -72,6 +78,10 @@ task generateVersionsXml {
     }
 }
 preBuild.dependsOn generateVersionsXml
+
+tasks.named('generateVersionsXml').configure {
+    notCompatibleWithConfigurationCache("not supported due to internal project references")
+}
 
 repositories {
     mavenCentral()
