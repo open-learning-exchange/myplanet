@@ -183,7 +183,6 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 //                throw RuntimeException("Failed to create directory: " + directory.absolutePath)
 //            }
 //        }
-//
 //        val apkFile = items.resourceLocalAddress?.let { File(directory, it) }
 //        if (apkFile != null) {
 //            if (!apkFile.exists()) {
@@ -191,11 +190,9 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 //                return
 //            }
 //        }
-//
 //        val uri = apkFile?.let {
 //            FileProvider.getUriForFile(MainApplication.context, "${MainApplication.context.packageName}.fileprovider", it)
 //        }
-//
 //        val intent = Intent(Intent.ACTION_VIEW).apply {
 //            setDataAndType(uri, "application/vnd.android.package-archive")
 //            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK
