@@ -69,7 +69,7 @@ jobs:
           cp app/build/outputs/apk/release/app-release-unsigned.apk sign/.
 
       - name: sign release APK and AAB
-        uses: dogi/sign-android-release@v5
+        uses: dogi/sign-android-release@v5.1
         with:
           releaseDirectory: sign
           signingKeyBase64: ${{ secrets.SIGNING_KEY }}
@@ -90,7 +90,7 @@ jobs:
         id: playstore
         if: github.ref == 'refs/heads/master' && matrix.build == 'lite'
         continue-on-error: true
-        uses: dogi/upload-google-play@v1.1.3
+        uses: dogi/upload-google-play@v1.1.4
         with:
           serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
           packageName: org.ole.planet.myplanet
@@ -101,7 +101,7 @@ jobs:
 
       - name: publish AAB to playstore fallback
         if: github.ref == 'refs/heads/master' && matrix.build == 'lite' && steps.playstore.outcome == 'failure'
-        uses: dogi/upload-google-play@v1.1.3
+        uses: dogi/upload-google-play@v1.1.4
         with:
           serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
           packageName: org.ole.planet.myplanet
@@ -130,7 +130,7 @@ jobs:
 
       - name: release APK and AAB on GitHub
         if: github.ref == 'refs/heads/master'
-        uses: dogi/upload-release-action@v2.7.1
+        uses: dogi/upload-release-action@v2.9.0
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: output/*
