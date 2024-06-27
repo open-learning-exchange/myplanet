@@ -92,7 +92,7 @@ jobs:
           cp app/build/outputs/apk/release/app-release-unsigned.apk sign/.
 
       - name: sign release APK and AAB
-        uses: dogi/sign-android-release@v5
+        uses: dogi/sign-android-release@v5.1
         with:
           releaseDirectory: sign
           signingKeyBase64: ${{ secrets.SIGNING_KEY }}
