@@ -32,12 +32,6 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: expose version from build.gradle
-        uses: dogi/expose-android-build.gradle-version-code-and-name@v1.0.2
-        with:
-          expose-version-name: 'true'
-          expose-version-code: 'true'
-
       - name: diff the code to get lite
         if: matrix.build == 'lite'
         run: |
@@ -47,6 +41,12 @@ jobs:
             ls -al $file*
             cp "${file}.lite" "$file"
           done
+
+      - name: expose version from build.gradle
+        uses: dogi/expose-android-build.gradle-version-code-and-name@v1.0.2
+        with:
+          expose-version-name: 'true'
+          expose-version-code: 'true'
 
       - name: setup JDK 17
         uses: actions/setup-java@v4
