@@ -116,6 +116,7 @@ jobs:
           mv output/myPlanet.aab output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}.aab
           mv output/myPlanet.aab.sha256 output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}.aab.sha256
           ls -alR output
+          echo "BRANCHNAME=${GITHUB_REF##*/}" >> $GITHUB_ENV
 
       - name: upload APK and AAB as build artifact
         if: github.event_name == 'workflow_dispatch'
