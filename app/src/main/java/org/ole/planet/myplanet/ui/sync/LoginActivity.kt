@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryForma
 import org.ole.planet.myplanet.utilities.Utilities.getUrl
 import org.ole.planet.myplanet.utilities.Utilities.toast
 import java.text.Normalizer
+import java.util.Locale
 import java.util.regex.Pattern
 
 class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
@@ -47,7 +48,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         lblLastSyncDate = activityLoginBinding.lblLastSyncDate
         btnSignIn = activityLoginBinding.btnSignin
         syncIcon = activityLoginBinding.syncIcon
-
         service = Service(this)
 
         activityLoginBinding.tvAvailableSpace.text = availableOverTotalMemoryFormattedString
@@ -217,25 +217,34 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     private fun setUpLanguageButton() {
         val languageKey = resources.getStringArray(R.array.language_keys)
         val languages = resources.getStringArray(R.array.language)
-        val selectedLanguageKey = settings.getString(Constants.SELECTED_LANGUAGE, fallbackLanguage)
-        val index = languageKey.indexOf(selectedLanguageKey)
+        val currentLanguageKey = settings.getString(Constants.SELECTED_LANGUAGE, fallbackLanguage)
+        val index = languageKey.indexOf(currentLanguageKey)
         activityLoginBinding.btnLang.text = languages[index]
         activityLoginBinding.btnLang.setOnClickListener {
             AlertDialog.Builder(this)
                 .setTitle(R.string.select_language)
                 .setSingleChoiceItems(languages, index) { dialog, which ->
-                    val selectLanguageKey = languageKey[which]
-                    if (selectLanguageKey != settings.getString(Constants.SELECTED_LANGUAGE, fallbackLanguage)) {
-                        LocaleHelper.setLocale(this, selectLanguageKey)
-                        settings.edit().putString(Constants.SELECTED_LANGUAGE, selectLanguageKey).apply()
-                        activityLoginBinding.btnLang.text = languages[which]
-                        recreate()
+                    val selectedLanguageKey = languageKey[which]
+                    if (selectedLanguageKey != LocaleHelper.getLanguage(this)) {
+                        LocaleHelper.setLocale(this, selectedLanguageKey)
+                        settings.edit().putString(Constants.SELECTED_LANGUAGE, selectedLanguageKey).apply()
+                        updateLanguage(selectedLanguageKey)
                     }
                     dialog.dismiss()
                 }
                 .setNegativeButton(R.string.cancel, null)
                 .show()
         }
+    }
+
+    @Suppress("DEPRECATION")
+    private fun updateLanguage(language: String) {
+        val locale = Locale(language)
+        Locale.setDefault(locale)
+        val config = resources.configuration
+        config.setLocale(locale)
+        resources.updateConfiguration(config, resources.displayMetrics)
+        recreate()
     }
 
     private fun declareHideKeyboardElements() {
@@ -588,6 +597,8 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
 
     override fun onDestroy() {
         super.onDestroy()
-        finish()
+        if (!mRealm.isClosed) {
+            mRealm.close()
+        }
     }
 }
