@@ -110,7 +110,20 @@ jobs:
           ls -alR output
 
       - name: publish AAB to playstore
-        if: (github.ref == 'refs/heads/master') && (matrix.build == 'lite')
+        id: playstore
+        if: github.ref == 'refs/heads/master' && matrix.build == 'lite'
+        continue-on-error: true
+        uses: dogi/upload-google-play@v1.1.3
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
+          packageName: org.ole.planet.myplanet
+          releaseFiles: output/myPlanet.aab
+          track: internal
+          releaseName: "${{ env.ANDROID_VERSION_CODE }} (${{ env.ANDROID_VERSION_NAME }})"
+          status: completed
+
+      - name: publish AAB to playstore fallback
+        if: github.ref == 'refs/heads/master' && matrix.build == 'lite' && steps.playstore.outcome == 'failure'
         uses: dogi/upload-google-play@v1.1.3
         with:
           serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
