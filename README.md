@@ -20,7 +20,7 @@
 </p>
 
 <p align="center">
-  Image
+  <img src="app/src/main/res/drawable/myplanet_readme_image.png">
 </p>
 
 ## Key Features
