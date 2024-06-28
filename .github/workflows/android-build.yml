@@ -15,8 +15,6 @@ jobs:
       matrix:
         build: [default, lite]
     env:
-      ANDROID_NDK_VERSION: "21.3.6528147"
-      ANDROID_SDK_ROOT: "/usr/local/lib/android/sdk"
       FILES: |
         app/src/main/AndroidManifest.xml
         app/src/main/java/org/ole/planet/myplanet/base/PermissionActivity.kt
@@ -52,27 +50,6 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: '17'
-
-      - name: cache NDK
-        id: cache-ndk
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.ANDROID_SDK_ROOT }}/ndk/${{ env.ANDROID_NDK_VERSION }}
-          key: ${{ runner.os }}-ndk-${{ env.ANDROID_NDK_VERSION }}
-          restore-keys: |
-            ${{ runner.os }}-ndk-
-
-      - name: install NDK
-        if: steps.cache-ndk.outputs.cache-hit != 'true'
-        run: |
-          set -x
-          echo "y" | sudo ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --install "ndk;${ANDROID_NDK_VERSION}" --sdk_root=${ANDROID_SDK_ROOT} 2>&1
-          if [ $? -ne 0 ]; then
-              echo "SDK Manager command failed"
-              exit 1
-          fi
-          set +x
-          ls -al ${ANDROID_SDK_ROOT}/ndk
 
       - name: setup gradle
         uses: gradle/actions/setup-gradle@v3
