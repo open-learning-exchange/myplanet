@@ -8,9 +8,9 @@
 
 <h4 align="center">An Android port of the <a href="https://github.com/open-learning-exchange/planet" target="_blank">Planet web application</a>, designed to facilitate access to educational resources in underserved communities.</h4>
 
-<h1 align="center">
+<p align="center">
  <a href="https://play.google.com/store/apps/details?id=org.ole.planet.myplanet&hl=en"><img src="https://play.google.com/intl/en_us/badges/images/generic/en-play-badge.png" height="50"></a>
-</h1>
+</p>
 
 <p align="center">
   <a href="#key-features">Key Features</a> •
@@ -19,11 +19,16 @@
   <a href="#contact">Contact</a>
 </p>
 
+<p align="center">
+  Image
+</p>
+
 ## Key Features
 
 - **Offline Access** - Download educational materials and access them without an internet connection.
 - **Content Synchronization** - Sync with the Planet server to get the latest educational content.
 - **Data Collection** - Collects usage data to help assess educational impact and user engagement.
+- **AI Chatbot**: Provides an AI-powered chatbot to assist users with navigating the app, finding resources, and answering questions.
 - **Collaboration and Sharing** - Supports collaborative learning and knowledge sharing.
 
 ## How To Use
