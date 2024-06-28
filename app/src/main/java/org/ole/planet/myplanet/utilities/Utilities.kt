@@ -73,7 +73,6 @@ object Utilities {
         }
     }
 
-
     @JvmStatic
     fun toast(context: Context?, s: String?) {
         context ?: return
