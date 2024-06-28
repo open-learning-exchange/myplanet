@@ -56,7 +56,7 @@ class SeeAllNotificationsFragment : Fragment() {
             override fun downloadDictionary() {}
             override fun showTaskListDialog() {}
             override fun syncKeyId() {}
-        }, showMarkAsReadButton = true)
+        }, showMarkAsReadButton = true, false)
 
         recyclerView.adapter = notificationsAdapter
 
