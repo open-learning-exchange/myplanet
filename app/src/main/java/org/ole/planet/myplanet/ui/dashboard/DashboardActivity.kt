@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.dashboard
 
-import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
@@ -81,7 +80,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         super.attachBaseContext(LocaleHelper.onAttach(base))
     }
 
-    @SuppressLint("SetTextI18n")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         checkUser()
@@ -104,7 +102,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 if (name?.trim { it <= ' ' }?.isEmpty() == true) {
                     name = profileDbHandler.userModel?.name
                 }
-                activityDashboardBinding.appBarBell.appTitleName.text = "$name's Planet"
+                activityDashboardBinding.appBarBell.appTitleName.text = name + getString(R.string.planet)
             } else {
                 activityDashboardBinding.appBarBell.appTitleName.text = getString(R.string.app_project_name)
             }
