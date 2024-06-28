@@ -7,18 +7,17 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
-import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.NotificationCallback
-import org.ole.planet.myplanet.databinding.RowNotificationBinding
 import org.ole.planet.myplanet.model.Notifications
 
 class AdapterNotification(
     private val context: Context,
     private val notificationList: MutableList<Notifications>,
     private val callback: NotificationCallback,
-    private val showMarkAsReadButton: Boolean
+    private val showMarkAsReadButton: Boolean,
+    private val showImages: Boolean // Add this flag
 ) : RecyclerView.Adapter<AdapterNotification.ViewHolderNotification>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderNotification {
@@ -28,7 +27,7 @@ class AdapterNotification(
     }
 
     override fun onBindViewHolder(holder: ViewHolderNotification, position: Int) {
-        holder.bind(notificationList[position])
+        holder.bind(notificationList[position], showImages)
     }
 
     override fun getItemCount(): Int {
@@ -39,11 +38,20 @@ class AdapterNotification(
         private val title: TextView = itemView.findViewById(R.id.title)
         private val timestamp: TextView = itemView.findViewById(R.id.timestamp)
         private val btnMarkAsRead: Button = itemView.findViewById(R.id.btn_mark_as_read)
+        private val icon: ImageView = itemView.findViewById(R.id.icon)  // Reference to ImageView
 
-        fun bind(notification: Notifications) {
+        fun bind(notification: Notifications, showImages: Boolean) {
             title.text = notification.text
             timestamp.visibility = View.GONE // You can set the timestamp if available
             btnMarkAsRead.visibility = if (showMarkAsReadButton) View.VISIBLE else View.GONE
+
+            // Conditionally show or hide the icon
+            if (showImages) {
+                icon.visibility = View.VISIBLE
+                icon.setImageResource(notification.icon)
+            } else {
+                icon.visibility = View.GONE
+            }
 
             btnMarkAsRead.setOnClickListener {
                 markAsRead(bindingAdapterPosition)
