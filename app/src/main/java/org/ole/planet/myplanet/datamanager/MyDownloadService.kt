@@ -211,8 +211,4 @@ class MyDownloadService(context: Context, params: WorkerParameters) : Worker(con
             }
         }
     }
-
-//    override fun onTaskRemoved(rootIntent: Intent) {
-//        notificationManager?.cancel(0)
-//    }
 }
