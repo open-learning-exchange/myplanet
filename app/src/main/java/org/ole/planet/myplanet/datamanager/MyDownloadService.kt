@@ -197,21 +197,6 @@ class MyDownloadService(context: Context, params: WorkerParameters) : Worker(con
         notificationManager?.notify(0, notificationBuilder?.build())
     }
 
-//    override fun onDestroy() {
-//        super.onDestroy()
-//        if (!completeAll) {
-//            stopDownload()
-//        }
-//    }
-//
-//    private fun stopDownload() {
-//        if (request != null && outputFile != null) {
-//            request?.cancel()
-//            outputFile?.delete()
-//            notificationManager?.cancelAll()
-//        }
-//    }
-
     private fun changeOfflineStatus() {
         val currentFileName = FileUtils.getFileNameFromUrl(url)
         mRealm.executeTransaction { realm: Realm ->
