@@ -126,6 +126,16 @@ jobs:
           path: output/*
           retention-days: 9
 
+      - name: pre-process files and tag for lite version
+        if: github.event_name != 'workflow_dispatch' && matrix.build == 'lite'
+        run: |
+          mv output/myPlanet.apk output/myPlanet-lite.apk
+          mv output/myPlanet.apk.sha256 output/myPlanet-lite.apk.sha256
+          mv output/myPlanet.aab output/myPlanet-lite.aab
+          mv output/myPlanet.aab.sha256 output/myPlanet-lite.aab.sha256
+          export ANDROID_VERSION_NAME="${{ env.ANDROID_VERSION_NAME%-lite }}"
+          echo "ANDROID_VERSION_NAME=${ANDROID_VERSION_NAME}" >> $GITHUB_ENV
+
       - name: release APK and AAB on GitHub
         if: github.event_name != 'workflow_dispatch'
         uses: dogi/upload-release-action@v2.9.0
