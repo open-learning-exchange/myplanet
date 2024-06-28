@@ -98,8 +98,6 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
         }
         v.findViewById<View>(R.id.add_message).setOnClickListener { showAddMessage() }
     }
-
-    @SuppressLint("NotifyDataSetChanged")
     private fun showAddMessage() {
         val alertInputBinding = AlertInputBinding.inflate(layoutInflater)
         alertInputBinding.tlInput.hint = getString(R.string.enter_message)
@@ -120,7 +118,7 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     createNews(map, mRealm, user, imageList)
                 }
-                rvDiscussion.adapter?.notifyDataSetChanged()
+                rvDiscussion.adapter?.notifyItemInserted(0)
             }.setNegativeButton(R.string.cancel, null).show()
     }
 
