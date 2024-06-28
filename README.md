@@ -9,7 +9,7 @@
 <h4 align="center">An Android port of the <a href="https://github.com/open-learning-exchange/planet" target="_blank">Planet web application</a>, designed to facilitate access to educational resources in underserved communities.</h4>
 
 <p align="center">
- <a href="https://play.google.com/store/apps/details?id=org.ole.planet.myplanet&hl=en"><img src="https://play.google.com/intl/en_us/badges/images/generic/en-play-badge.png" height="50"></a>
+ <a href="https://play.google.com/store/apps/details?id=org.ole.planet.myplanet&hl=en"><img src="https://play.google.com/intl/en_us/badges/images/generic/en-play-badge.png" alt="Google Play Store" height="50"></a>
 </p>
 
 <p align="center">
@@ -20,7 +20,7 @@
 </p>
 
 <p align="center">
-  <img src="app/src/main/res/drawable/myplanet_readme_image.png">
+  <img src="app/src/main/res/drawable/myplanet_readme_image.png" alt="myPlanet App">
 </p>
 
 ## Key Features
