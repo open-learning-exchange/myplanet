@@ -1045,5 +1045,6 @@
     <string name="checking_server">جارٍ فحص الخادم</string>
     <string name="below_min_apk">إصدار Apk أقل من المسموح. يرجى تحديث التطبيق إلى أحدث إصدار.</string>
     <string name="add_note">إضافة ملاحظة (اختياري)</string>
+    <string name="no_submissions">التقديمات غير متاحة</string>
 
 </resources>
