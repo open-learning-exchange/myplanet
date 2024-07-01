@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmQuery
+import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.databinding.FragmentMySubmissionBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmStepExam
@@ -58,7 +59,6 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
                 val cleanString = charSequence.toString()
                 setData(cleanString)
             }
-
             override fun afterTextChanged(editable: Editable) {}
         })
         showHideRadioButton()
@@ -86,18 +86,12 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
 
     private fun setData(s: String) {
         val q: RealmQuery<*>? = when (type) {
-            "survey" -> {
-                mRealm.where(RealmSubmission::class.java).equalTo("userId", user?.id)
-                    .equalTo("type", "survey")
-            }
-            "survey_submission" -> {
-                mRealm.where(RealmSubmission::class.java).equalTo("userId", user?.id)
-                    .notEqualTo("status", "pending").equalTo("type", "survey")
-            }
-            else -> {
-                mRealm.where(RealmSubmission::class.java).equalTo("userId", user?.id)
-                    .notEqualTo("type", "survey")
-            }
+            "survey" -> mRealm.where(RealmSubmission::class.java).equalTo("userId", user?.id)
+                .equalTo("type", "survey")
+            "survey_submission" -> mRealm.where(RealmSubmission::class.java).equalTo("userId", user?.id)
+                .notEqualTo("status", "pending").equalTo("type", "survey")
+            else -> mRealm.where(RealmSubmission::class.java).equalTo("userId", user?.id)
+                .notEqualTo("type", "survey")
         }
         if (!TextUtils.isEmpty(s)) {
             val ex: List<RealmStepExam> = mRealm.where(RealmStepExam::class.java)
@@ -109,6 +103,13 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
         }
 
         val adapter = AdapterMySubmission(requireActivity(), submissions, exams)
+        val itemCount = adapter.itemCount
+        showNoData(fragmentMySubmissionBinding.tvMessage, itemCount, "submission")
+
+        if (itemCount == 0) {
+            fragmentMySubmissionBinding.llSearch.visibility = View.GONE
+            fragmentMySubmissionBinding.title.visibility = View.GONE
+        }
         adapter.setmRealm(mRealm)
         adapter.setType(type)
         fragmentMySubmissionBinding.rvMysurvey.adapter = adapter
