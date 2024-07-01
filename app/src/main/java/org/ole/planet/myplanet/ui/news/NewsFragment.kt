@@ -103,7 +103,7 @@ class NewsFragment : BaseNewsFragment() {
                 return@setOnClickListener
             }
             fragmentNewsBinding.etMessage.setText("")
-            val map = HashMap<String?, String>() // Changed to String, String
+            val map = HashMap<String?, String>()
             map["message"] = message
             map["viewInId"] = "${user?.planetCode ?: ""}@${user?.parentCode ?: ""}"
             map["viewInSection"] = "community"
