@@ -97,6 +97,7 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
         }
         v.findViewById<View>(R.id.add_message).setOnClickListener { showAddMessage() }
     }
+
     private fun showAddMessage() {
         val alertInputBinding = AlertInputBinding.inflate(layoutInflater)
         alertInputBinding.tlInput.hint = getString(R.string.enter_message)
