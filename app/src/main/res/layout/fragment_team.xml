@@ -97,7 +97,13 @@
             android:layout_weight="1" />
 
     </LinearLayout>
-
+    <TextView
+        android:visibility="gone"
+        android:id="@+id/tvMessage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:text="@string/no_teams"/>
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/add_team"
         android:layout_width="wrap_content"

@@ -242,6 +242,15 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
             }
         fragmentTeamBinding.rvTeamList.adapter = adapterTeamList
         listContentDescription(conditionApplied)
+        if (list.isEmpty()) {
+            fragmentTeamBinding.etSearch.visibility = View.GONE
+            fragmentTeamBinding.tableTitle.visibility = View.GONE
+            fragmentTeamBinding.tvMessage.visibility = View.VISIBLE
+        } else {
+            fragmentTeamBinding.etSearch.visibility = View.VISIBLE
+            fragmentTeamBinding.tableTitle.visibility = View.VISIBLE
+            fragmentTeamBinding.tvMessage.visibility = View.GONE
+        }
     }
 
     override fun onEditTeam(team: RealmMyTeam?) {
