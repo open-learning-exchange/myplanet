@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.dashboard.notification
 
 import android.content.Context
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -17,8 +18,10 @@ class AdapterNotification(
     private val notificationList: MutableList<Notifications>,
     private val callback: NotificationCallback,
     private val showMarkAsReadButton: Boolean,
-    private val showImages: Boolean // Add this flag
+    private val showImages: Boolean
 ) : RecyclerView.Adapter<AdapterNotification.ViewHolderNotification>() {
+
+    private val sharedPrefs = context.getSharedPreferences("notifications_prefs", Context.MODE_PRIVATE)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderNotification {
         val inflater = LayoutInflater.from(parent.context)
@@ -38,14 +41,13 @@ class AdapterNotification(
         private val title: TextView = itemView.findViewById(R.id.title)
         private val timestamp: TextView = itemView.findViewById(R.id.timestamp)
         private val btnMarkAsRead: Button = itemView.findViewById(R.id.btn_mark_as_read)
-        private val icon: ImageView = itemView.findViewById(R.id.icon)  // Reference to ImageView
+        private val icon: ImageView = itemView.findViewById(R.id.icon)
 
         fun bind(notification: Notifications, showImages: Boolean) {
             title.text = notification.text
-            timestamp.visibility = View.GONE // You can set the timestamp if available
+            timestamp.visibility = View.GONE
             btnMarkAsRead.visibility = if (showMarkAsReadButton) View.VISIBLE else View.GONE
 
-            // Conditionally show or hide the icon
             if (showImages) {
                 icon.visibility = View.VISIBLE
                 icon.setImageResource(notification.icon)
@@ -54,7 +56,7 @@ class AdapterNotification(
             }
 
             btnMarkAsRead.setOnClickListener {
-                markAsRead(bindingAdapterPosition)
+                markAsRead(notification.id)
             }
 
             itemView.setOnClickListener {
@@ -70,12 +72,16 @@ class AdapterNotification(
         }
     }
 
-    private fun markAsRead(position: Int) {
-        notificationList.removeAt(position)
-        notifyItemRemoved(position)
+    private fun markAsRead(notificationId: Int) {
+        sharedPrefs.edit().putBoolean("notification_$notificationId", true).apply()
+        notificationList.removeAll { it.id == notificationId }
+        notifyDataSetChanged()
     }
 
     fun markAllAsRead() {
+        notificationList.forEach {
+            sharedPrefs.edit().putBoolean("notification_${it.id}", true).apply()
+        }
         notificationList.clear()
         notifyDataSetChanged()
     }

@@ -1,6 +1,8 @@
 package org.ole.planet.myplanet.ui.dashboard.notification
 
+import android.content.Context
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -39,12 +41,19 @@ class SeeAllNotificationsFragment : Fragment() {
             .equalTo("assignee", model.id)
             .findAll()
 
+        val sharedPrefs = requireContext().getSharedPreferences("notifications_prefs", Context.MODE_PRIVATE)
+
         val notifications = tasks.map {
             Notifications(
+                id = it.id,
                 icon = R.drawable.task_pending,
                 text = "You were assigned a new task: " + "${it.title}"
             )
+        }.filterNot {
+            sharedPrefs.getBoolean("notification_${it.id}", false)
         }.toMutableList()
+
+        Log.d("Notifications", "Loaded notifications: $notifications")
 
         val recyclerView: RecyclerView = view.findViewById(R.id.recycler_view_notifications)
         recyclerView.layoutManager = LinearLayoutManager(context)
@@ -56,7 +65,7 @@ class SeeAllNotificationsFragment : Fragment() {
             override fun downloadDictionary() {}
             override fun showTaskListDialog() {}
             override fun syncKeyId() {}
-        }, showMarkAsReadButton = true, false)
+        }, showMarkAsReadButton = true, showImages = false)
 
         recyclerView.adapter = notificationsAdapter
 
