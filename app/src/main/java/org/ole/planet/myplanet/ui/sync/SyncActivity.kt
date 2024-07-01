@@ -602,7 +602,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             serverAddresses.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
                 override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
                     val displayUrl = serverList[position]
-                    val actualUrl = displayUrl.replace(Regex("[\\p{So}\\s]"), "") // Remove emojis and spaces
+                    val actualUrl = displayUrl.replace(Regex("[\\p{So}\\s]"), "")
                     serverUrl.setText(actualUrl)
                     serverPassword.setText(getPinForUrl(actualUrl))
                 }
