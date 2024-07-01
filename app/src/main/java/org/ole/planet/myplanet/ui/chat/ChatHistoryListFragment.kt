@@ -9,6 +9,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.slidingpanelayout.widget.SlidingPaneLayout
 import io.realm.*
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.databinding.FragmentChatHistoryListBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.*
@@ -66,6 +67,11 @@ class ChatHistoryListFragment : Fragment() {
             if (model != null && !filteredHistoryList.contains(model)) {
                 filteredHistoryList.add(model)
             }
+        }
+        showNoData(fragmentChatHistoryListBinding.noChats, filteredHistoryList.size, "chatHistory")
+        if (filteredHistoryList.isEmpty()) {
+            fragmentChatHistoryListBinding.searchBar.visibility = View.GONE
+            fragmentChatHistoryListBinding.recyclerView.visibility = View.GONE
         }
         val adapter = ChatHistoryListAdapter(requireContext(), list)
         adapter.setChatHistoryItemClickListener(object : ChatHistoryListAdapter.ChatHistoryItemClickListener {
