@@ -67,7 +67,7 @@ class ChatHistoryListFragment : Fragment() {
                 filteredHistoryList.add(model)
             }
         }
-        val adapter = ChatHistoryListAdapter(requireContext(), list)
+        val adapter = ChatHistoryListAdapter(requireContext(), list, this)
         adapter.setChatHistoryItemClickListener(object : ChatHistoryListAdapter.ChatHistoryItemClickListener {
             override fun onChatHistoryItemClicked(conversations: RealmList<Conversation>?, _id: String, _rev:String?) {
                 conversations?.let { sharedViewModel.setSelectedChatHistory(it) }
@@ -88,6 +88,16 @@ class ChatHistoryListFragment : Fragment() {
 
             override fun afterTextChanged(s: Editable?) {}
         })
+    }
+
+    fun refreshChatHistoryList() {
+        val mRealm = DatabaseService(requireActivity()).realmInstance
+        val list = mRealm.where(RealmChatHistory::class.java).equalTo("user", user?.name)
+            .sort("id", Sort.DESCENDING)
+            .findAll()
+
+        val adapter = fragmentChatHistoryListBinding.recyclerView.adapter as ChatHistoryListAdapter
+        adapter.updateChatHistory(list)
     }
 }
 
