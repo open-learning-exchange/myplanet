@@ -55,7 +55,7 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
                     chat.title?.contains(query, ignoreCase = true) ==true
                 }
             }
-            notifyItemRangeChanged(0,itemCount)
+            notifyItemRangeChanged(0, filteredChatHistory.size)
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
