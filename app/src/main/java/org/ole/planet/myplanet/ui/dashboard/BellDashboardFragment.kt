@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.dashboard
 
 import android.content.ContentValues.TAG
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -58,24 +59,70 @@ class BellDashboardFragment : BaseDashboardFragment() {
         super.onViewCreated(view, savedInstanceState)
         fragmentHomeBellBinding.cardProfileBell.txtDate.text = TimeUtils.formatDate(Date().time)
         fragmentHomeBellBinding.cardProfileBell.txtCommunityName.text = model?.planetCode
+
+        val serverURL = settings?.getString("serverURL", "")
+        val serverUrls = listOf(
+            "https://example.com/server1",
+            "https://example.com/server2",
+            "https://example.com/server3",
+            "https://example.com/server4",
+            "https://example.com/server5",
+            "https://example.com/server6",
+            "https://example.com/server7",
+            "https://example.com/server8",
+            serverURL,
+            "https://example.com/server9"
+        )
+
         isNetworkConnectedFlow.onEach { isConnected ->
             if (isConnected) {
                 fragmentHomeBellBinding.cardProfileBell.imageView.borderColor = ContextCompat.getColor(requireActivity(), R.color.md_yellow_600)
-                val serverUrl = settings?.getString("serverURL", "")
-                if (!serverUrl.isNullOrEmpty()) {
-                    lifecycleScope.launch {
+
+                lifecycleScope.launch {
+                    var serverReachable = false
+                    for (serverUrl in serverUrls) {
                         val canReachServer = withContext(Dispatchers.IO) {
                             isServerReachable(serverUrl)
                         }
+
                         if (canReachServer) {
+                            serverReachable = true
+                            Log.d(TAG, "Server reachable: $serverUrl")
                             fragmentHomeBellBinding.cardProfileBell.imageView.borderColor = ContextCompat.getColor(requireActivity(), R.color.green)
+                            break
                         }
+                    }
+
+                    if (!serverReachable) {
+                        Log.d(TAG, "No server reachable")
+                        fragmentHomeBellBinding.cardProfileBell.imageView.borderColor = ContextCompat.getColor(requireActivity(), R.color.md_yellow_600)
                     }
                 }
             } else {
                 fragmentHomeBellBinding.cardProfileBell.imageView.borderColor = ContextCompat.getColor(requireActivity(), R.color.md_red_700)
             }
         }.launchIn(coroutineScope)
+
+//        isNetworkConnectedFlow.onEach { isConnected ->
+//            if (isConnected) {
+//                fragmentHomeBellBinding.cardProfileBell.imageView.borderColor = ContextCompat.getColor(requireActivity(), R.color.md_yellow_600)
+//                val serverUrl = settings?.getString("serverURL", "")
+//                if (!serverUrl.isNullOrEmpty()) {
+//                    lifecycleScope.launch {
+//                        val canReachServer = withContext(Dispatchers.IO) {
+//                            isServerReachable(serverUrl)
+//
+//                        }
+//                        if (canReachServer) {
+//                            Log.d(TAG, "isServerReachable: ${isServerReachable(serverUrl)}")
+//                            fragmentHomeBellBinding.cardProfileBell.imageView.borderColor = ContextCompat.getColor(requireActivity(), R.color.green)
+//                        }
+//                    }
+//                }
+//            } else {
+//                fragmentHomeBellBinding.cardProfileBell.imageView.borderColor = ContextCompat.getColor(requireActivity(), R.color.md_red_700)
+//            }
+//        }.launchIn(coroutineScope)
 
         (activity as DashboardActivity?)?.supportActionBar?.hide()
         fragmentHomeBellBinding.addResource.setOnClickListener {
@@ -118,8 +165,11 @@ class BellDashboardFragment : BaseDashboardFragment() {
         }
     }
 
-    private suspend fun isServerReachable(urlString: String): Boolean {
+    private suspend fun isServerReachable(urlString: String?): Boolean {
         return try {
+            if (urlString != null) {
+                Log.d("ollonde", urlString)
+            }
             val url = URL(urlString)
             val connection = withContext(Dispatchers.IO) {
                 url.openConnection()
@@ -133,7 +183,6 @@ class BellDashboardFragment : BaseDashboardFragment() {
             val responseCode = connection.responseCode
             connection.disconnect()
             responseCode in 200..299
-
         } catch (e: Exception) {
             false
         }
