@@ -104,7 +104,7 @@ abstract class BaseResourceFragment : Fragment() {
                         }
                         val inflater = activity?.layoutInflater
                         convertView = inflater?.inflate(R.layout.my_library_alertdialog, null)
-                        val alertDialogBuilder = AlertDialog.Builder(requireContext())
+                        val alertDialogBuilder = AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
                         alertDialogBuilder.setView(convertView)
                             .setTitle(R.string.download_suggestion)
                         alertDialogBuilder.setPositiveButton(R.string.download_selected) { _: DialogInterface?, _: Int ->

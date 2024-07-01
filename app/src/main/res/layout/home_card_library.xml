@@ -54,7 +54,7 @@
                 android:gravity="center"
                 android:padding="@dimen/padding_small"
                 android:text="12"
-                android:textColor="@color/md_black_1000"
+                android:textColor="@color/daynight_textColor"
                 android:textSize="18sp"
                 android:textStyle="bold" />
 
@@ -64,8 +64,9 @@
         <HorizontalScrollView
             android:layout_width="0dp"
             android:layout_height="match_parent"
+            android:layout_weight="1"
             android:contentDescription="@string/txt_myLibrary"
-            android:layout_weight="1">
+            android:background="@color/card_bg">
 
             <com.google.android.flexbox.FlexboxLayout
                 android:id="@+id/flexboxLayout"

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.appcompat.widget.Toolbar xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/bell_toolbar"
+    android:layout_width="match_parent"
+    android:layout_height="?android:attr/actionBarSize"
+    android:background="?attr/colorPrimary"
+    android:theme="@style/ThemeOverlay.AppCompat.Dark"
+    app:elevation="4dp"
+    app:popupTheme="@style/AppTheme">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <ImageView
+            android:id="@+id/img_logo"
+            android:layout_width="@dimen/_40dp"
+            android:layout_height="@dimen/_40dp"
+            android:layout_gravity="center"
+            android:padding="@dimen/padding_normal"
+            android:src="@drawable/ole_logo"
+            android:contentDescription="@string/menu" />
+
+        <TextView
+            android:id="@+id/app_title_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_margin="@dimen/padding_normal"
+            android:paddingEnd="65dp"
+            android:text="@string/app_name"
+            android:textColor="@color/md_white_1000"
+            android:textSize="@dimen/text_size_large"
+            android:textStyle="bold" />
+
+        <include
+            layout="@layout/bell_actionbar_items"
+            android:layout_width="wrap_content"
+            android:layout_height="?android:attr/actionBarSize" />
+
+        <ImageView
+            android:id="@+id/iv_sync"
+            android:layout_width="@dimen/_40dp"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            android:padding="@dimen/padding_small"
+            android:visibility="gone"
+            app:srcCompat="@drawable/sync_icon"
+            app:tint="@color/md_white_1000"
+            android:contentDescription="@string/sync" />
+
+        <ImageView
+            android:id="@+id/iv_setting"
+            android:layout_width="@dimen/_40dp"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            android:padding="@dimen/padding_small"
+            android:visibility="gone"
+            app:srcCompat="@drawable/settings"
+            app:tint="@color/md_white_1000"
+            android:contentDescription="@string/settings" />
+
+    </LinearLayout>
+</androidx.appcompat.widget.Toolbar>

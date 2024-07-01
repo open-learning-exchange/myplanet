@@ -239,6 +239,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         viewHolder.rowNewsBinding.imgNews.visibility = View.GONE
     }
 
+    @RequiresApi(Build.VERSION_CODES.M)
     private fun showReplyButton(holder: RecyclerView.ViewHolder, finalNews: RealmNews?, position: Int) {
         val viewHolder = holder as ViewHolderNews
         if (listener == null || fromLogin) {
@@ -247,6 +248,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         viewHolder.rowNewsBinding.btnReply.setOnClickListener { showEditAlert(finalNews?.id, false) }
         val replies: List<RealmNews> = mRealm.where(RealmNews::class.java).sort("time", Sort.DESCENDING).equalTo("replyTo", finalNews?.id, Case.INSENSITIVE).findAll()
         viewHolder.rowNewsBinding.btnShowReply.text = String.format(context.getString(R.string.show_replies) + " (%d)", replies.size)
+        viewHolder.rowNewsBinding.btnShowReply.setTextColor(context.getColor(R.color.daynight_textColor))
         viewHolder.rowNewsBinding.btnShowReply.visibility = if (replies.isNotEmpty()) {
             View.VISIBLE
         } else {

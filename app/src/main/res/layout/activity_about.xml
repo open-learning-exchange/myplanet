@@ -25,7 +25,6 @@
             android:layout_gravity="center"
             android:layout_weight="1"
             android:gravity="center"
-            android:textAlignment="textStart"
-            android:textColor="@color/md_black_1000" />
+            android:textAlignment="textStart" />
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

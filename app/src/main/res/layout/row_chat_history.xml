@@ -5,8 +5,9 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_gravity="top"
-    app:cardCornerRadius="@dimen/_10dp"
+    android:backgroundTint="@color/card_bg"
     app:cardElevation="4dp"
+    app:cardCornerRadius="@dimen/_10dp"
     app:cardUseCompatPadding="true"
     app:contentPadding="@dimen/padding_normal">
 
@@ -17,6 +18,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:textColor="@color/daynight_textColor"
             android:orientation="horizontal"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
