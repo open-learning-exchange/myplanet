@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.team
 
-import android.annotation.SuppressLint
 import android.content.DialogInterface
 import android.os.Build
 import android.os.Bundle
@@ -115,9 +114,7 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
                 map["message"] = msg
                 map["messageType"] = team?.teamType!!
                 map["messagePlanetCode"] = team?.teamPlanetCode!!
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    createNews(map, mRealm, user, imageList)
-                }
+                createNews(map, mRealm, user, imageList)
                 rvDiscussion.adapter?.notifyItemInserted(0)
             }.setNegativeButton(R.string.cancel, null).show()
     }
@@ -238,7 +235,6 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
         llRv.visibility = View.GONE
         tab.setText(s)
         listContent.adapter = object : ArrayAdapter<RealmUserModel?>(requireActivity(), android.R.layout.simple_list_item_1, data) {
-            @SuppressLint("SetTextI18n")
             override fun getView(position: Int, convert_View: View?, parent: ViewGroup): View {
                 var convertView = convert_View
                 if (convertView == null) {
