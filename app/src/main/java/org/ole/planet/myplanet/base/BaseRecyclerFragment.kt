@@ -295,6 +295,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                 "members" -> (v as TextView).setText(R.string.no_join_request_available)
                 "discussions" -> (v as TextView).setText(R.string.no_news)
                 "survey" -> (v as TextView).setText(R.string.no_surveys)
+                "submission" -> (v as TextView).setText(R.string.no_submissions)
                 else -> (v as TextView).setText(R.string.no_data_available_please_check_and_try_again)
             }
         }

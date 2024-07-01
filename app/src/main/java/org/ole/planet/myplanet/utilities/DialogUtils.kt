@@ -132,8 +132,7 @@ object DialogUtils {
             }
 
             override fun onFail() {
-                val url = ArrayList<String>()
-                url.add(path)
+                val url = arrayListOf(path)
                 if (progressDialog != null) {
                     progressDialog.setText(context.getString(R.string.downloading_file))
                     progressDialog.setCancelable(false)
