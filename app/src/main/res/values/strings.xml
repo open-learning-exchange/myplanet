@@ -178,6 +178,7 @@
     <string name="showing_reply_of">Showing reply of:</string>
     <string name="open_date">Open Date</string>
     <string name="my_survey">mySurvey</string>
+    <string name="planet_name">%s\'s Planet</string>
 
     <string-array name="level">
         <item></item>

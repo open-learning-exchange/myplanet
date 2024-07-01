@@ -1046,5 +1046,6 @@
     <string name="below_min_apk">إصدار Apk أقل من المسموح. يرجى تحديث التطبيق إلى أحدث إصدار.</string>
     <string name="add_note">إضافة ملاحظة (اختياري)</string>
     <string name="planet">كوكب</string>
+    <string name="planet_name">كوكب %s</string>
 
 </resources>

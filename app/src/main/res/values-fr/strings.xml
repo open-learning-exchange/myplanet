@@ -1046,5 +1046,6 @@
     <string name="below_min_apk">la version de l\'app est inférieure à celle autorisée. veuillez mettre à jour l\'application vers la dernière version.</string>
     <string name="add_note">Ajouter une note (optionnel)</string>
     <string name="planet">planète</string>
+    <string name="planet_name">%s planète</string>
 
 </resources>
