@@ -125,6 +125,13 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/spn_cloud">
 
+        <Spinner
+            android:id="@+id/serverUrls"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="16sp"
+            android:visibility="gone" />
+
         <EditText
             android:id="@+id/input_server_url"
             android:layout_width="match_parent"

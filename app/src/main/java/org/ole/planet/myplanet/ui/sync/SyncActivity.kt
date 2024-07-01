@@ -74,6 +74,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private lateinit var protocolCheckIn: RadioGroup
     private lateinit var serverUrl: EditText
     private lateinit var serverPassword: EditText
+    private lateinit var serverAddresses: Spinner
     private var teamList = ArrayList<String?>()
     private var teamAdapter: ArrayAdapter<String?>? = null
     var selectedTeamId: String? = null
@@ -390,6 +391,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         protocolCheckIn = dialogServerUrlBinding.radioProtocol
         serverUrl = dialogServerUrlBinding.inputServerUrl
         serverPassword = dialogServerUrlBinding.inputServerPassword
+        serverAddresses = dialogServerUrlBinding.serverUrls
+
         dialogServerUrlBinding.deviceName.setText(NetworkUtils.getDeviceName())
         val builder = MaterialDialog.Builder(this)
         builder.customView(dialogServerUrlBinding.root, true)
@@ -401,6 +404,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 val protocol = "${settings.getString("serverProtocol", "")}"
                 var url = "${serverUrl.text}"
                 val pin = "${serverPassword.text}"
+                editor.putString("serverURL", url).apply()
                 url = protocol + url
                 if (isUrlValid(url)) {
                     currentDialog = dialog
@@ -424,6 +428,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         } else {
             dialogServerUrlBinding.manualConfiguration.isChecked = true
             showConfigurationUIElements(dialogServerUrlBinding, true)
+            dialogServerUrlBinding.serverUrls.visibility = View.GONE
         }
         val dialog = builder.build()
         positiveAction = dialog.getActionButton(DialogAction.POSITIVE)
@@ -478,6 +483,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         dialogServerUrlBinding.clearData.setOnClickListener {
             clearDataDialog(getString(R.string.are_you_sure_you_want_to_clear_data))
         }
+
         val teams: List<RealmMyTeam> = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId").equalTo("status", "active").findAll()
         if (teams.isNotEmpty() && "${dialogServerUrlBinding.inputServerUrl.text}" != "") {
             dialogServerUrlBinding.team.visibility = View.VISIBLE
@@ -502,6 +508,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     }
                 }
             }
+
             dialogServerUrlBinding.team.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
                 override fun onItemSelected(parentView: AdapterView<*>?, selectedItemView: View, position: Int, id: Long) {
                     if (position > 0) {
@@ -536,19 +543,17 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         binding.syncSwitch.visibility = if (show) View.VISIBLE else View.GONE
         binding.ltDeviceName.visibility = if (show) View.VISIBLE else View.GONE
         if (show) {
+            serverAddresses.visibility = View.GONE
+            serverUrl.visibility = View.VISIBLE
             if (settings.getString("serverURL", "") == "https://planet.learning.ole.org") {
                 editor.putString("serverURL", "").apply()
                 editor.putString("serverPin", "").apply()
             }
             if (settings.getString("serverProtocol", "") == getString(R.string.http_protocol)) {
                 binding.radioHttp.isChecked = true
-                editor.putString("serverProtocol", getString(R.string.http_protocol))
-                    .apply()
+                editor.putString("serverProtocol", getString(R.string.http_protocol)).apply()
             }
-            if (settings.getString("serverProtocol", "") == getString(R.string.https_protocol)
-                && settings.getString("serverURL", "") != ""
-                && settings.getString("serverURL", "") != "https://planet.learning.ole.org"
-            ) {
+            if (settings.getString("serverProtocol", "") == getString(R.string.https_protocol) && settings.getString("serverURL", "") != "" && settings.getString("serverURL", "") != "https://planet.learning.ole.org") {
                 binding.radioHttps.isChecked = true
                 editor.putString("serverProtocol", getString(R.string.https_protocol)).apply()
             }
@@ -557,12 +562,76 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             serverUrl.isEnabled = true
             serverPassword.isEnabled = true
         } else {
-            serverUrl.setText(getString(R.string.message_placeholder, "planet.learning.ole.org"))
-            serverPassword.setText(getString(R.string.message_placeholder, "1983"))
+            serverUrl.visibility = View.GONE
+            serverAddresses.visibility = View.VISIBLE
+
+            val serverList = listOf(
+                "🌎 planet.earth.ole.org",
+                "🌎 planet.learning.ole.org",
+                "🌎 planet.vi.ole.org",
+                "🇸🇴 planet.somalia.ole.org",
+                "🇬🇹 planet.guatemala.ole.org",
+                "🇬🇹 planet.sanpablo.ole.org",
+                "🇬🇹 planet.campo.ole.org",
+                "🇰🇪 planet.uriur.ole.org",
+                "🇰🇪 planet.ruiru.ole.org",
+                "🇰🇪 planet.embakasi.ole.org",
+                "🇺🇸 planet.cambridge.ole.org",
+                "🇺🇸 planet.egdirbmac.ole.org",
+                "🇺🇸 planet.palmbay.ole.org"
+            )
+
+            val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, serverList)
+            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            serverAddresses.adapter = adapter
+
+            val storedUrl = settings.getString("serverURL", null)
+            val storedPin = settings.getString("serverPin", null)
+            if (storedUrl != null) {
+                val urlWithoutProtocol = storedUrl.replace(Regex("^https?://"), "")
+                val displayUrl = serverList.find { it.contains(urlWithoutProtocol) }
+                val index = serverList.indexOf(displayUrl)
+                if (index >= 0) {
+                    serverAddresses.setSelection(index)
+                }
+                serverUrl.setText(urlWithoutProtocol)
+                serverPassword.setText(storedPin)
+            }
+
+            serverAddresses.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
+                    val displayUrl = serverList[position]
+                    val actualUrl = displayUrl.replace(Regex("[\\p{So}\\s]"), "") // Remove emojis and spaces
+                    serverUrl.setText(actualUrl)
+                    serverPassword.setText(getPinForUrl(actualUrl))
+                }
+
+                override fun onNothingSelected(parent: AdapterView<*>) {}
+            }
+            
             serverUrl.isEnabled = false
             serverPassword.isEnabled = false
             editor.putString("serverProtocol", getString(R.string.https_protocol)).apply()
         }
+    }
+
+    private fun getPinForUrl(url: String): String {
+        val pinMap = mapOf(
+            "planet.earth.ole.org" to "7379",
+            "planet.learning.ole.org" to "1983",
+            "planet.vi.ole.org" to "0660",
+            "planet.somalia.ole.org" to "5932",
+            "planet.guatemala.ole.org" to "5562",
+            "planet.sanpablo.ole.org" to "0948",
+            "planet.campo.ole.org" to "4324",
+            "planet.uriur.ole.org" to "4025",
+            "planet.ruiru.ole.org" to "8925",
+            "planet.embakasi.ole.org" to "2165",
+            "planet.cambridge.ole.org" to "1565",
+            "planet.egdirbmac.ole.org" to "6407",
+            "planet.palmbay.ole.org" to "9699"
+        )
+        return pinMap[url] ?: ""
     }
 
     private fun onChangeServerUrl() {
