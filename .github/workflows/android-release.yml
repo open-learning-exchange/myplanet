@@ -50,13 +50,13 @@ jobs:
           done
           ls -al app/build.gradle
           ANDROID_VERSION_LITE=$(grep -oP 'versionName "\K[^\"]+' build.gradle)
-          echo "ANDROID_VERSION_LITE=${ANDROID_VERSION_LITE}" >> $GITHUB_ENV
+          echo "ANDROID_VERSION_LITE=$ANDROID_VERSION_LITE" >> $GITHUB_ENV
           sed -i 's/\(versionName "[0-9.]\+\)"/\1-lite"/' app/build.gradle
 
       - name: build release APK and AAB
         run: |
           ANDROID_VERSION_NAME=$(grep -oP 'versionName "\K[^\"]+' build.gradle)
-          echo "ANDROID_VERSION_NAME=${ANDROID_VERSION_NAME}" >> $GITHUB_ENV
+          echo "ANDROID_VERSION_NAME=$ANDROID_VERSION_NAME" >> $GITHUB_ENV
           echo ANDROID_VERSION_CODE="$(grep versionCode app/build.gradle | sed 's/[^0-9]//g')" >> $GITHUB_ENV
           ./gradlew assembleRelease bundleRelease
           ls -alR app/build/outputs
