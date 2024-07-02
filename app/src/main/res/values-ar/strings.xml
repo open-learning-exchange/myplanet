@@ -1045,5 +1045,7 @@
     <string name="checking_server">جارٍ فحص الخادم</string>
     <string name="below_min_apk">إصدار Apk أقل من المسموح. يرجى تحديث التطبيق إلى أحدث إصدار.</string>
     <string name="add_note">إضافة ملاحظة (اختياري)</string>
+    <string name="visit_count">%s (%d %s)</string>
+    <string name="visit_count">%s (%d %s)</string>
 
 </resources>

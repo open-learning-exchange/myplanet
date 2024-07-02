@@ -1045,5 +1045,7 @@
     <string name="checking_server">vérification du serveur</string>
     <string name="below_min_apk">la version de l\'app est inférieure à celle autorisée. veuillez mettre à jour l\'application vers la dernière version.</string>
     <string name="add_note">Ajouter une note (optionnel)</string>
+    <string name="visit_count">%s (%d %s)</string>
+    <string name="visit_count">%s (%d %s)</string>
 
 </resources>
