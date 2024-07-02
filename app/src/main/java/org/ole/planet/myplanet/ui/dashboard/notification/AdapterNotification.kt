@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.dashboard.notification
 
 import android.content.Context
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -74,8 +73,12 @@ class AdapterNotification(
 
     private fun markAsRead(notificationId: Int) {
         sharedPrefs.edit().putBoolean("notification_$notificationId", true).apply()
-        notificationList.removeAll { it.id == notificationId }
-        notifyDataSetChanged()
+
+        val position = notificationList.indexOfFirst { it.id == notificationId }
+        if (position != -1) {
+            notificationList.removeAt(position)
+            notifyItemRemoved(position)
+        }
     }
 
     fun markAllAsRead() {
