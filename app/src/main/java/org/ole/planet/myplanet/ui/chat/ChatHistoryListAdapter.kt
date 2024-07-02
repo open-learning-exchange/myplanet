@@ -55,8 +55,9 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
             if (chat.conversations != null && chat.conversations?.isNotEmpty() == true) {
                 chat.conversations?.get(0)?.query?.contains(query, ignoreCase = true) == true
             } else {
-                chat.title?.contains(query, ignoreCase = true) ==true
+                chat.title?.contains(query, ignoreCase = true) == true
             }
+        }
             notifyItemRangeChanged(0, filteredChatHistory.size)
     }
 
