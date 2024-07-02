@@ -567,19 +567,20 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             serverAddresses.visibility = View.VISIBLE
 
             val serverList = listOf(
-                "🌎 planet.earth.ole.org",
+//                "🌎 planet.earth.ole.org",
                 "🌎 planet.learning.ole.org",
-                "🌎 planet.vi.ole.org",
-                "🇸🇴 planet.somalia.ole.org",
+//                "🌎 planet.vi.ole.org",
+//                "🇸🇴 planet.somalia.ole.org",
                 "🇬🇹 planet.guatemala.ole.org",
-                "🇬🇹 planet.sanpablo.ole.org",
-                "🇬🇹 planet.campo.ole.org",
-                "🇰🇪 planet.uriur.ole.org",
-                "🇰🇪 planet.ruiru.ole.org",
-                "🇰🇪 planet.embakasi.ole.org",
-                "🇺🇸 planet.cambridge.ole.org",
-                "🇺🇸 planet.egdirbmac.ole.org",
-                "🇺🇸 planet.palmbay.ole.org"
+                "🇬🇹 192.168.48.253",
+//                "🇬🇹 planet.sanpablo.ole.org",
+//                "🇬🇹 planet.campo.ole.org",
+//                "🇰🇪 planet.uriur.ole.org",
+//                "🇰🇪 planet.ruiru.ole.org",
+//                "🇰🇪 planet.embakasi.ole.org",
+//                "🇺🇸 planet.cambridge.ole.org",
+//                "🇺🇸 planet.egdirbmac.ole.org",
+//                "🇺🇸 planet.palmbay.ole.org"
             )
 
             val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, serverList)
@@ -605,6 +606,11 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     val actualUrl = displayUrl.replace(Regex("[\\p{So}\\s]"), "")
                     serverUrl.setText(actualUrl)
                     serverPassword.setText(getPinForUrl(actualUrl))
+                    if (actualUrl == "192.168.48.253") {
+                        editor.putString("serverProtocol", "http://").apply()
+                    } else {
+                        editor.putString("serverProtocol", "https://").apply()
+                    }
                 }
 
                 override fun onNothingSelected(parent: AdapterView<*>) {}
@@ -618,19 +624,20 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     private fun getPinForUrl(url: String): String {
         val pinMap = mapOf(
-            "planet.earth.ole.org" to "7379",
+//            "planet.earth.ole.org" to "7379",
             "planet.learning.ole.org" to "1983",
-            "planet.vi.ole.org" to "0660",
-            "planet.somalia.ole.org" to "5932",
+//            "planet.vi.ole.org" to "0660",
+//            "planet.somalia.ole.org" to "5932",
             "planet.guatemala.ole.org" to "5562",
-            "planet.sanpablo.ole.org" to "0948",
-            "planet.campo.ole.org" to "4324",
-            "planet.uriur.ole.org" to "4025",
-            "planet.ruiru.ole.org" to "8925",
-            "planet.embakasi.ole.org" to "2165",
-            "planet.cambridge.ole.org" to "1565",
-            "planet.egdirbmac.ole.org" to "6407",
-            "planet.palmbay.ole.org" to "9699"
+            "192.168.48.253" to "0948",
+//            "planet.sanpablo.ole.org" to "0948",
+//            "planet.campo.ole.org" to "4324",
+//            "planet.uriur.ole.org" to "4025",
+//            "planet.ruiru.ole.org" to "8925",
+//            "planet.embakasi.ole.org" to "2165",
+//            "planet.cambridge.ole.org" to "1565",
+//            "planet.egdirbmac.ole.org" to "6407",
+//            "planet.palmbay.ole.org" to "9699"
         )
         return pinMap[url] ?: ""
     }
