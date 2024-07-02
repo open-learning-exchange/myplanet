@@ -1019,6 +1019,7 @@
     <string name="no_join_request_available">no join request available</string>
     <string name="no_news">news not available</string>
     <string name="no_surveys">surveys not available</string>
+    <string name="no_teams">teams not available</string>
     <string name="edit_image">edit profile image</string>
     <string name="compulsory_first_name">first name required</string>
     <string name="compulsory_last_name">last name is required</string>
