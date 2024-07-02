@@ -20,6 +20,11 @@ jobs:
         app/src/main/java/org/ole/planet/myplanet/base/PermissionActivity.kt
         app/src/main/java/org/ole/planet/myplanet/base/BaseContainerFragment.kt
         app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardActivity.kt
+      OUTPUTS: |
+        .apk
+        .apk.sha256
+        .aab
+        .aab.sha256
 
     steps:
       - name: checkout repository code
