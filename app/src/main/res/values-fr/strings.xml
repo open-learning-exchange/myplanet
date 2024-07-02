@@ -1047,5 +1047,6 @@
     <string name="add_note">Ajouter une note (optionnel)</string>
     <string name="no_teams">équipes non disponibles</string>
     <string name="no_submissions">soumissions non disponibles</string>
+    <string name="no_chats">aucune discussion précédente</string>
 
 </resources>

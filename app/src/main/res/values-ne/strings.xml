@@ -1047,5 +1047,6 @@
     <string name="add_note">नोट थप्नुहोस् (वैकल्पिक)</string>
     <string name="no_teams">टोलीहरू उपलब्ध छैनन्</string>
     <string name="no_submissions">पेशाहरू उपलब्ध छैनन्</string>
+    <string name="no_chats">अघिल्ला कुराकानीहरू छैनन्</string>
 
 </resources>

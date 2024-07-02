@@ -1047,5 +1047,6 @@
     <string name="add_note">إضافة ملاحظة (اختياري)</string>
     <string name="no_teams">الفرق غير متوفرة</string>
     <string name="no_submissions">التقديمات غير متاحة</string>
+    <string name="no_chats">لا توجد محادثات سابقة</string>
 
 </resources>
