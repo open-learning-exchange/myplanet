@@ -49,9 +49,10 @@ jobs:
             cp "${file}.lite" "$file"
           done
           ls -al app/build.gradle
-          ANDROID_VERSION_LITE=$(grep versionName app/build.gradle | sed 's/[^0-9.]//g')
+          ANDROID_VERSION_LITE=$(grep -oP 'versionName "\K[0-9.]+' app/build.gradle | sed 's/[^0-9.]//g')
           grep versionName app/build.gradle
-          grep versionName app/build.gradle | sed 's/[^0-9.]//g'
+          grep -oP 'versionName "\K[0-9.]+' app/build.gradle
+          grep -oP 'versionName "\K[0-9.]+' app/build.gradle | sed 's/[^0-9.]//g'
           echo $ANDROID_VERSION_LITE
           echo "ANDROID_VERSION_LITE=$ANDROID_VERSION_LITE" >> $GITHUB_ENV
           sed -i 's/\(versionName "[0-9.]\+\)"/\1-lite"/' app/build.gradle
