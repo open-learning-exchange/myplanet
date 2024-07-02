@@ -32,4 +32,6 @@
     <dimen name="_30dp">30dp</dimen>
     <dimen name="_50dp">50dp</dimen>
     <dimen name="_1000dp">1000dp</dimen>
+    <dimen name="dialog_min_width_major">65%</dimen>
+    <dimen name="dialog_min_width_minor">95%</dimen>
 </resources>
