@@ -476,55 +476,51 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         dialogServerUrlBinding.clearData.setOnClickListener {
             clearDataDialog(getString(R.string.are_you_sure_you_want_to_clear_data))
         }
-        if (prefData.getMANUALCONFIG()) {
-            val teams: List<RealmMyTeam> = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId").equalTo("status", "active").findAll()
-            if (teams.isNotEmpty() && "${dialogServerUrlBinding.inputServerUrl.text}" != "") {
-                dialogServerUrlBinding.team.visibility = View.VISIBLE
-                teamAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, teamList)
-                teamAdapter?.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-                teamList.clear()
-                teamList.add("select team")
-                for (team in teams) {
-                    if (team.isValid) {
-                        teamList.add(team.name)
-                    }
+        val teams: List<RealmMyTeam> = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId").equalTo("status", "active").findAll()
+        if (teams.isNotEmpty() && "${dialogServerUrlBinding.inputServerUrl.text}" != "") {
+            dialogServerUrlBinding.team.visibility = View.VISIBLE
+            teamAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, teamList)
+            teamAdapter?.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            teamList.clear()
+            teamList.add("select team")
+            for (team in teams) {
+                if (team.isValid) {
+                    teamList.add(team.name)
                 }
-                dialogServerUrlBinding.team.adapter = teamAdapter
-                val lastSelection = prefData.getSELECTEDTEAMID()
-                if (!lastSelection.isNullOrEmpty()) {
-                    for (i in teams.indices) {
-                        val team = teams[i]
-                        if (team._id != null && team._id == lastSelection && team.isValid) {
-                            val lastSelectedPosition = i + 1
-                            dialogServerUrlBinding.team.setSelection(lastSelectedPosition)
-                            break
-                        }
-                    }
-                }
-                dialogServerUrlBinding.team.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-                    override fun onItemSelected(parentView: AdapterView<*>?, selectedItemView: View, position: Int, id: Long) {
-                        if (position > 0) {
-                            val selectedTeam = teams[position - 1]
-                            val currentTeamId = prefData.getSELECTEDTEAMID()
-                            if (currentTeamId != selectedTeam._id) {
-                                prefData.setSELECTEDTEAMID(selectedTeam._id)
-                                if (this@SyncActivity is LoginActivity) {
-                                    this@SyncActivity.getTeamMembers()
-                                }
-                                dialog.dismiss()
-                            }
-                        }
-                    }
-
-                    override fun onNothingSelected(parentView: AdapterView<*>?) {
-                        // Do nothing when nothing is selected
-                    }
-                }
-            } else if (teams.isNotEmpty() && "${dialogServerUrlBinding.inputServerUrl.text}" == "") {
-                dialogServerUrlBinding.team.visibility = View.GONE
-            } else {
-                dialogServerUrlBinding.team.visibility = View.GONE
             }
+            dialogServerUrlBinding.team.adapter = teamAdapter
+            val lastSelection = prefData.getSELECTEDTEAMID()
+            if (!lastSelection.isNullOrEmpty()) {
+                for (i in teams.indices) {
+                    val team = teams[i]
+                    if (team._id != null && team._id == lastSelection && team.isValid) {
+                        val lastSelectedPosition = i + 1
+                        dialogServerUrlBinding.team.setSelection(lastSelectedPosition)
+                        break
+                    }
+                }
+            }
+            dialogServerUrlBinding.team.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(parentView: AdapterView<*>?, selectedItemView: View, position: Int, id: Long) {
+                    if (position > 0) {
+                        val selectedTeam = teams[position - 1]
+                        val currentTeamId = prefData.getSELECTEDTEAMID()
+                        if (currentTeamId != selectedTeam._id) {
+                            prefData.setSELECTEDTEAMID(selectedTeam._id)
+                            if (this@SyncActivity is LoginActivity) {
+                                this@SyncActivity.getTeamMembers()
+                            }
+                            dialog.dismiss()
+                        }
+                    }
+                }
+
+                override fun onNothingSelected(parentView: AdapterView<*>?) { }
+            }
+        } else if (teams.isNotEmpty() && "${dialogServerUrlBinding.inputServerUrl.text}" == "") {
+            dialogServerUrlBinding.team.visibility = View.GONE
+        } else {
+            dialogServerUrlBinding.team.visibility = View.GONE
         }
         dialog.show()
         sync(dialog)
