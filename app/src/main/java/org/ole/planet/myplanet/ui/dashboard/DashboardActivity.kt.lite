@@ -99,10 +99,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             val userProfileModel = profileDbHandler.userModel
             if (userProfileModel != null) {
                 var name: String? = userProfileModel.getFullName()
-                if (name?.trim { it <= ' ' }?.isEmpty() == true) {
+                if (name.isNullOrBlank()) {
                     name = profileDbHandler.userModel?.name
                 }
-                activityDashboardBinding.appBarBell.appTitleName.text = "$name's Planet"
+                activityDashboardBinding.appBarBell.appTitleName.text = getString(R.string.planet_name, name)
             } else {
                 activityDashboardBinding.appBarBell.appTitleName.text = getString(R.string.app_project_name)
             }
