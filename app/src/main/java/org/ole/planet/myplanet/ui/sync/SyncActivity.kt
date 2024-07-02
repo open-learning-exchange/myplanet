@@ -134,35 +134,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             .show()
     }
 
-    private fun clearSharedPref() {
-        val keysToKeep = setOf(prefData.FIRSTLAUNCH)
-        val tempStorage = HashMap<String, Boolean>()
-        for (key in keysToKeep) {
-            tempStorage[key] = settings.getBoolean(key, false)
-        }
-        editor.clear().commit()
-        val editor = editor
-        for ((key, value) in tempStorage) {
-            editor.putBoolean(key, value)
-        }
-        editor.commit()
-    }
-
-    private fun clearRealmDb(){
-        val realm = Realm.getDefaultInstance()
-        realm.executeTransaction { transactionRealm ->
-            transactionRealm.deleteAll()
-        }
-        realm.close()
-    }
-
-    private fun restartApp() {
-        val intent = packageManager.getLaunchIntentForPackage(packageName)
-        val mainIntent = Intent.makeRestartActivityTask(intent?.component)
-        startActivity(mainIntent)
-        Runtime.getRuntime().exit(0)
-    }
-
     private fun clearInternalStorage() {
         val myDir = File(Utilities.SD_PATH)
         if (myDir.isDirectory) {
@@ -763,5 +734,35 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     companion object {
         lateinit var cal_today: Calendar
         lateinit var cal_last_Sync: Calendar
+
+        fun clearRealmDb() {
+            val realm = Realm.getDefaultInstance()
+            realm.executeTransaction { transactionRealm ->
+                transactionRealm.deleteAll()
+            }
+            realm.close()
+        }
+
+        fun clearSharedPref() {
+            val settings = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            val editor = settings.edit()
+            val keysToKeep = setOf(SharedPrefManager(context).FIRSTLAUNCH)
+            val tempStorage = HashMap<String, Boolean>()
+            for (key in keysToKeep) {
+                tempStorage[key] = settings.getBoolean(key, false)
+            }
+            editor.clear().commit()
+            for ((key, value) in tempStorage) {
+                editor.putBoolean(key, value)
+            }
+            editor.commit()
+        }
+
+        fun restartApp() {
+            val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+            val mainIntent = Intent.makeRestartActivityTask(intent?.component)
+            context.startActivity(mainIntent)
+            Runtime.getRuntime().exit(0)
+        }
     }
 }
