@@ -43,7 +43,7 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
     private var newsList: RealmResults<RealmNews>? = null
 
     interface ChatHistoryItemClickListener {
-        fun onChatHistoryItemClicked(conversations: RealmList<Conversation>?, _id: String, _rev: String?)
+        fun onChatHistoryItemClicked(conversations: RealmList<Conversation>?, id: String, rev: String?)
     }
 
     fun setChatHistoryItemClickListener(listener: ChatHistoryItemClickListener) {

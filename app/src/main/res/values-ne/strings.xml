@@ -1049,5 +1049,7 @@
     <string name="planet_name">%s ग्रह</string>
     <string name="no_submissions">पेशाहरू उपलब्ध छैनन्</string>
     <string name="no_chats">अघिल्ला कुराकानीहरू छैनन्</string>
+    <string name="empty_text"></string>
+    <string name="message_placeholder">%s</string>
 
 </resources>

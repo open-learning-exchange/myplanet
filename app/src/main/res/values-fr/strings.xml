@@ -1049,5 +1049,7 @@
     <string name="planet_name">%s planète</string>
     <string name="no_submissions">soumissions non disponibles</string>
     <string name="no_chats">aucune discussion précédente</string>
+    <string name="empty_text"></string>
+    <string name="message_placeholder">%s</string>
 
 </resources>
