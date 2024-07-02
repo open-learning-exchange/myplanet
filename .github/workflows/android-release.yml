@@ -27,29 +27,6 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: expose version from build.gradle
-        if: matrix.build == 'lite'
-        uses: dogi/expose-android-build.gradle-version-code-and-name@v1.0.2
-        with:
-          expose-version-name: 'true'
-
-      - name: diff the code to get lite
-        if: matrix.build == 'lite'
-        run: |
-          echo "ANDROID_VERSION_NAME_ORIG=${ANDROID_VERSION_NAME}" >> $GITHUB_ENV
-          ls -al app/build.gradle
-          sed -i 's/\(versionName "[0-9.]\+\)"/\1-lite"/' app/build.gradle
-          echo "${{ env.FILES }}" | xargs -n 1 | while read file; do
-            ls -al $file*
-            cp "${file}.lite" "$file"
-          done
-
-      - name: expose version from build.gradle
-        uses: dogi/expose-android-build.gradle-version-code-and-name@v1.0.2
-        with:
-          expose-version-name: 'true'
-          expose-version-code: 'true'
-
       - name: setup JDK 17
         uses: actions/setup-java@v4
         with:
@@ -64,8 +41,21 @@ jobs:
           cache-read-only: false
           cache-write-only: false
 
+      - name: diff the code to get lite
+        if: matrix.build == 'lite'
+        run: |
+          echo "${{ env.FILES }}" | xargs -n 1 | while read file; do
+            ls -al $file*
+            cp "${file}.lite" "$file"
+          done
+          ls -al app/build.gradle
+          echo "ANDROID_VERSION_LITE=$(grep versionName app/build.gradle | sed 's/[^0-9.]//g')" >> $GITHUB_ENV
+          sed -i 's/\(versionName "[0-9.]\+\)"/\1-lite"/' app/build.gradle
+
       - name: build release APK and AAB
         run: |
+          echo "ANDROID_VERSION_NAME=$(grep versionName app/build.gradle | sed 's/[^0-9.]//g')" >> $GITHUB_ENV
+          echo "ANDROID_VERSION_CODE=$(grep versionCode app/build.gradle | sed 's/[^0-9.]//g')" >> $GITHUB_ENV
           ./gradlew assembleRelease bundleRelease
           ls -alR app/build/outputs
           mkdir -p sign
