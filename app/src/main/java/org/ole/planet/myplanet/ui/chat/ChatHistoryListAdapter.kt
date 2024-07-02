@@ -77,9 +77,23 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
     }
 
     fun updateChatHistory(newChatHistory: List<RealmChatHistory>) {
+        val oldListSize = chatHistory.size
+        val newListSize = newChatHistory.size
         chatHistory = newChatHistory
         filteredChatHistory = newChatHistory
-        notifyDataSetChanged()
+        if(oldListSize<newListSize){
+            notifyItemRangeInserted(oldListSize,newListSize-oldListSize)
+        }
+        else if(oldListSize>newListSize){
+            notifyItemRangeRemoved(newListSize,oldListSize-newListSize)
+        }
+        else{
+            for(i in 0 until newListSize){
+                if(chatHistory[i] != newChatHistory[i]){
+                    notifyItemChanged(i)
+                }
+            }
+        }
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
