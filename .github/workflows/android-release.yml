@@ -54,7 +54,7 @@ jobs:
 
       - name: build release APK and AAB
         run: |
-          grep versionCode app/build.gradle
+          grep -oP 'versionName "\K[0-9.]+' app/build.gradle
           echo "ANDROID_VERSION_NAME=$(grep -oP 'versionName "\K[0-9.]+' app/build.gradle | sed 's/[^0-9.]//g')" >> $GITHUB_ENV
           echo "ANDROID_VERSION_CODE=$(grep versionCode app/build.gradle | sed 's/[^0-9.]//g')" >> $GITHUB_ENV
           ./gradlew assembleRelease bundleRelease
