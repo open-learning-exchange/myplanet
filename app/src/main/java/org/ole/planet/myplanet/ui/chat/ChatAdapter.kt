@@ -77,9 +77,9 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context,
     }
 
     fun clearData() {
+        val size = chatList.size
         chatList.clear()
-        notifyDataSetChanged()
-        scrollToLastItem()
+        notifyItemRangeRemoved(0, size)
     }
 
     private fun scrollToLastItem() {
