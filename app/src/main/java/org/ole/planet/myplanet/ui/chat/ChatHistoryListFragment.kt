@@ -9,6 +9,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.slidingpanelayout.widget.SlidingPaneLayout
 import io.realm.*
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.databinding.FragmentChatHistoryListBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.*
@@ -67,7 +68,12 @@ class ChatHistoryListFragment : Fragment() {
                 filteredHistoryList.add(model)
             }
         }
-        val adapter = ChatHistoryListAdapter(requireContext(), list)
+        showNoData(fragmentChatHistoryListBinding.noChats, filteredHistoryList.size, "chatHistory")
+        if (filteredHistoryList.isEmpty()) {
+            fragmentChatHistoryListBinding.searchBar.visibility = View.GONE
+            fragmentChatHistoryListBinding.recyclerView.visibility = View.GONE
+        }
+        val adapter = ChatHistoryListAdapter(requireContext(), list, this)
         adapter.setChatHistoryItemClickListener(object : ChatHistoryListAdapter.ChatHistoryItemClickListener {
             override fun onChatHistoryItemClicked(conversations: RealmList<Conversation>?, _id: String, _rev:String?) {
                 conversations?.let { sharedViewModel.setSelectedChatHistory(it) }
@@ -88,6 +94,16 @@ class ChatHistoryListFragment : Fragment() {
 
             override fun afterTextChanged(s: Editable?) {}
         })
+    }
+
+    fun refreshChatHistoryList() {
+        val mRealm = DatabaseService(requireActivity()).realmInstance
+        val list = mRealm.where(RealmChatHistory::class.java).equalTo("user", user?.name)
+            .sort("id", Sort.DESCENDING)
+            .findAll()
+
+        val adapter = fragmentChatHistoryListBinding.recyclerView.adapter as ChatHistoryListAdapter
+        adapter.updateChatHistory(list)
     }
 }
 

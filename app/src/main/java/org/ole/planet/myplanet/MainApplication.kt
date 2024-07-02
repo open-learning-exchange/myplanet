@@ -120,6 +120,11 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         Utilities.setContext(base)
     }
 
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+        LocaleHelper.onAttach(this)
+    }
+
     override fun onActivityCreated(activity: Activity, bundle: Bundle?) {}
 
     override fun onActivityStarted(activity: Activity) {}

@@ -29,6 +29,9 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>() {
         spn = requireView().findViewById(R.id.spn_sort)
         addNewServey = requireView().findViewById(R.id.fab_add_new_survey)
         addNewServey.setOnClickListener { }
+        if (getAdapter().itemCount == 0) {
+            spn.visibility = View.GONE
+        }
         showNoData(tvMessage, getAdapter().itemCount, "survey")
         spn.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(adapterView: AdapterView<*>?, view: View?, i: Int, l: Long) {

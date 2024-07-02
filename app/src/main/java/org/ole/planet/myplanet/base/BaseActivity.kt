@@ -3,11 +3,17 @@ package org.ole.planet.myplanet.base
 import android.R
 import android.os.Bundle
 import android.view.MenuItem
+import android.content.Context
 import androidx.appcompat.app.AppCompatActivity
+import org.ole.planet.myplanet.utilities.LocaleHelper
 
 abstract class BaseActivity : AppCompatActivity() {
     public override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+    }
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LocaleHelper.onAttach(newBase))
     }
 
     fun initActionBar() {

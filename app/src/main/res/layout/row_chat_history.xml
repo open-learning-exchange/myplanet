@@ -40,7 +40,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:layout_marginEnd="@dimen/_4dp"
+                android:padding="10dp"
                 android:background="?attr/selectableItemBackground"
                 android:contentDescription="@string/share_chat"
                 android:src="@drawable/baseline_share_24"

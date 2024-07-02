@@ -19,6 +19,7 @@ import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 import kotlin.collections.List
 import io.realm.Realm
+import org.ole.planet.myplanet.R
 
 class CollectionsFragment : DialogFragment(), TagExpandableAdapter.OnClickTagItem, CompoundButton.OnCheckedChangeListener {
     private lateinit var fragmentCollectionsBinding: FragmentCollectionsBinding
@@ -32,7 +33,7 @@ class CollectionsFragment : DialogFragment(), TagExpandableAdapter.OnClickTagIte
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setStyle(STYLE_NO_TITLE, android.R.style.Theme_Holo_Light_Dialog_NoActionBar_MinWidth)
+        setStyle(STYLE_NO_TITLE, R.style.AppTheme_Dialog_NoActionBar_MinWidth)
         dbType = arguments?.getString("dbType")
     }
 

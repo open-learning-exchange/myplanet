@@ -222,13 +222,13 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         var msg = getString(R.string.success_you_have_added_the_following_courses)
         if ((selectedItems?.size ?: 0) <= 5) {
             for (i in selectedItems?.indices!!) {
-                msg += " - " + selectedItems!![i]?.courseTitle + "\n"
+                msg += " - ${selectedItems?.get(i)?.courseTitle} \n"
             }
         } else {
             for (i in 0..4) {
-                msg += " - " + selectedItems!![i]?.courseTitle + "\n"
+                msg += " - ${selectedItems?.get(i)?.courseTitle} \n"
             }
-            msg += getString(R.string.and) + ((selectedItems?.size ?: 0) - 5) + getString(R.string.more_course_s)
+            msg += "${getString(R.string.and)}${((selectedItems?.size ?: 0) - 5)}${getString(R.string.more_course_s)}"
         }
         msg += getString(R.string.return_to_the_home_tab_to_access_mycourses)
         builder.setMessage(msg)
@@ -271,7 +271,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         val li: MutableList<RealmTag> = ArrayList()
         li.add(tag)
         searchTags = li
-        tvSelected.text = R.string.selected.toString() + tag.name
+        tvSelected.text = "${R.string.selected} ${tag.name}"
         adapterCourses.setCourseList(filterCourseByTag(etSearch.text.toString(), li))
         showNoData(tvMessage, adapterCourses.itemCount, "courses")
     }
@@ -327,12 +327,12 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             val transaction = parentFragmentManager.beginTransaction()
             transaction.replace(R.id.fragment_container, fragment)
             transaction.addToBackStack(null)
-            transaction.commit()
+            transaction.commitAllowingStateLoss()
         } else {
             val transaction = parentFragmentManager.beginTransaction()
             transaction.replace(R.id.fragment_container, fragment)
             transaction.addToBackStack(null)
-            transaction.commit()
+            transaction.commitAllowingStateLoss()
         }
     }
 }

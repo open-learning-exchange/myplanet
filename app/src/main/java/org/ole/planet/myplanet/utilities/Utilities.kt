@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.graphics.Color
 import android.net.Uri
+import androidx.work.Data
 import android.text.TextUtils
 import android.text.format.DateUtils
 import android.util.Base64
@@ -13,6 +14,8 @@ import android.util.Patterns
 import android.webkit.MimeTypeMap
 import android.widget.ImageView
 import android.widget.Toast
+import androidx.work.OneTimeWorkRequest
+import androidx.work.WorkManager
 import com.bumptech.glide.Glide
 import fisk.chipcloud.ChipCloudConfig
 import org.ole.planet.myplanet.MainApplication.Companion.context
@@ -56,10 +59,18 @@ object Utilities {
     }
 
     fun openDownloadService(context: Context?, urls: ArrayList<String>, fromSync: Boolean) {
-        val intent = Intent(context, MyDownloadService::class.java)
-        intent.putStringArrayListExtra("urls", urls)
-        intent.putExtra("fromSync", fromSync)
-        context?.startService(intent)
+        val inputData = Data.Builder()
+            .putStringArray("urls", urls.toTypedArray())
+            .putBoolean("fromSync", fromSync)
+            .build()
+
+        val downloadWorkRequest = OneTimeWorkRequest.Builder(MyDownloadService::class.java)
+            .setInputData(inputData)
+            .build()
+
+        context?.let {
+            WorkManager.getInstance(it).enqueue(downloadWorkRequest)
+        }
     }
 
     @JvmStatic
