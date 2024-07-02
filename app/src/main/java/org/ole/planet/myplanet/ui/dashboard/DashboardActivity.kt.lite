@@ -17,7 +17,6 @@ import android.view.View
 import androidx.activity.OnBackPressedCallback
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
-import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.drawerlayout.widget.DrawerLayout
@@ -99,10 +98,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             val userProfileModel = profileDbHandler.userModel
             if (userProfileModel != null) {
                 var name: String? = userProfileModel.getFullName()
-                if (name?.trim { it <= ' ' }?.isEmpty() == true) {
+                if (name.isNullOrBlank()) {
                     name = profileDbHandler.userModel?.name
                 }
-                activityDashboardBinding.appBarBell.appTitleName.text = "$name's Planet"
+                activityDashboardBinding.appBarBell.appTitleName.text = getString(R.string.planet_name, name)
             } else {
                 activityDashboardBinding.appBarBell.appTitleName.text = getString(R.string.app_project_name)
             }
@@ -131,7 +130,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         result?.stickyFooter?.setPadding(0, 0, 0, 0) // moves logout button to the very bottom of the drawer. Without it, the "logout" button suspends a little.
         result?.actionBarDrawerToggle?.isDrawerIndicatorEnabled = true
         dl = result?.drawerLayout
-        WindowCompat.setDecorFitsSystemWindows(window, false)
         WindowInsetsControllerCompat(window, window.decorView).hide(WindowInsetsCompat.Type.statusBars())
         result?.drawerLayout?.fitsSystemWindows = false
         topbarSetting()
