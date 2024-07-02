@@ -12,8 +12,10 @@ import android.os.Handler
 import android.os.Looper
 import android.view.LayoutInflater
 import android.view.Menu
-import android.view.MenuItem
 import android.view.View
+import android.view.WindowManager
+import android.view.MenuItem
+import android.widget.PopupMenu
 import androidx.activity.OnBackPressedCallback
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
@@ -47,6 +49,9 @@ import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.chat.ChatHistoryListFragment
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
+import org.ole.planet.myplanet.ui.dashboard.notification.NotificationFragment
+import org.ole.planet.myplanet.ui.dashboard.notification.SeeAllNotificationsFragment
+//import org.ole.planet.myplanet.ui.dashboard.notification.SeeAllNotificationsFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
 import org.ole.planet.myplanet.ui.resources.ResourceDetailFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
@@ -168,6 +173,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 R.id.action_disclaimer -> openCallFragment(DisclaimerFragment())
                 R.id.action_about -> openCallFragment(AboutFragment())
                 R.id.action_logout -> logout()
+                //R.id.action_bell -> openCallFragment(NotificationFragment()) //placeholder
                 else -> {}
             }
             true
@@ -204,6 +210,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 }
             }
         })
+        val actionBellButton = findViewById<View>(R.id.action_bell)
+        actionBellButton.setOnClickListener {
+            showPopupMenu(actionBellButton)
+        }
     }
 
     private fun hideWifi() {
@@ -439,5 +449,36 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     companion object {
         const val MESSAGE_PROGRESS = "message_progress"
+    }
+    private fun showPopupMenu(anchorView: View) {
+        val popupMenu = PopupMenu(this, anchorView)
+        popupMenu.inflate(R.menu.popup_menu)
+        val placeholderItem = popupMenu.menu.findItem(R.id.menu_item_dynamic_placeholder)
+        placeholderItem.title = "Notification Holder"
+        val menu = popupMenu.menu
+        val seeAllItem = menu.add(Menu.NONE, Menu.NONE, 2, "See All")
+        seeAllItem.setOnMenuItemClickListener {
+            navigateToSeeAllPage()
+            true
+        }
+
+        popupMenu.setOnMenuItemClickListener { item: MenuItem ->
+            when (item.itemId) {
+                R.id.menu_item_mark_all_read -> {
+                    true
+                }
+                else -> false
+            }
+        }
+
+        popupMenu.show()
+    }
+
+    private fun navigateToSeeAllPage() {
+        val fragment = SeeAllNotificationsFragment()
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.fragment_container, fragment)
+            .addToBackStack(null)
+            .commit()
     }
 }

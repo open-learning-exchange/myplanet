@@ -1041,11 +1041,11 @@
     <string name="sign_up_to_chat">Please sign up to access AI chat</string>
     <string name="share_chat">share chat</string>
     <string name="shared_chat">shared chat</string>
+    <string name="bell" >Notifications</string>
     <string name="check_apk_version">checking app version</string>
     <string name="checking_server">checking server</string>
     <string name="below_min_apk">app is below allowed version. please update the app to the latest version.</string>
     <string name="add_note">add a note (optional)</string>
     <string name="no_submissions">submissions not available</string>
     <string name="no_chats">no previous chats</string>
-
 </resources>
