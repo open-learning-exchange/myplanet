@@ -5,12 +5,14 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
+import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmQuery
@@ -242,14 +244,11 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
             }
         fragmentTeamBinding.rvTeamList.adapter = adapterTeamList
         listContentDescription(conditionApplied)
-        if (list.isEmpty()) {
+        val itemCount = adapterTeamList?.itemCount
+        showNoData(fragmentTeamBinding.tvMessage, itemCount, "teams")
+        if (itemCount == 0) {
             fragmentTeamBinding.etSearch.visibility = View.GONE
             fragmentTeamBinding.tableTitle.visibility = View.GONE
-            fragmentTeamBinding.tvMessage.visibility = View.VISIBLE
-        } else {
-            fragmentTeamBinding.etSearch.visibility = View.VISIBLE
-            fragmentTeamBinding.tableTitle.visibility = View.VISIBLE
-            fragmentTeamBinding.tvMessage.visibility = View.GONE
         }
     }
 
