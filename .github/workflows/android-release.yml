@@ -108,12 +108,12 @@ jobs:
       - name: rename APK and AAB with version and branch for artifact
         if: github.event_name == 'workflow_dispatch'
         run: |
+          echo "BRANCHNAME=${GITHUB_REF##*/}" >> $GITHUB_ENV
           mv output/myPlanet.apk output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}.apk
           mv output/myPlanet.apk.sha256 output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}.apk.sha256
           mv output/myPlanet.aab output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}.aab
           mv output/myPlanet.aab.sha256 output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}.aab.sha256
           ls -alR output
-          echo "BRANCHNAME=${GITHUB_REF##*/}" >> $GITHUB_ENV
 
       - name: upload APK and AAB as build artifact
         if: github.event_name == 'workflow_dispatch'
@@ -130,7 +130,7 @@ jobs:
           mv output/myPlanet.apk.sha256 output/myPlanet-lite.apk.sha256
           mv output/myPlanet.aab output/myPlanet-lite.aab
           mv output/myPlanet.aab.sha256 output/myPlanet-lite.aab.sha256
-          echo "ANDROID_VERSION_NAME=${ANDROID_VERSION_NAME_ORIG}" >> $GITHUB_ENV
+          echo "ANDROID_VERSION_NAME=${ANDROID_VERSION_LITE}" >> $GITHUB_ENV
 
       - name: release APK and AAB on GitHub
         if: github.event_name != 'workflow_dispatch'
