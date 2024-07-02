@@ -49,14 +49,13 @@ jobs:
             cp "${file}.lite" "$file"
           done
           ls -al app/build.gradle
-          echo "ANDROID_VERSION_LITE=$(grep versionName app/build.gradle | sed 's/[^0-9.]//g')"
-          echo "ANDROID_VERSION_LITE=$(grep versionName app/build.gradle | sed 's/[^0-9.]//g')" >> $GITHUB_ENV
+          echo "ANDROID_VERSION_LITE=$(grep versionName app/build.gradle | sed 's/[^0-9.]//g')" | tee -a $GITHUB_ENV
           sed -i 's/\(versionName "[0-9.]\+\)"/\1-lite"/' app/build.gradle
 
       - name: build release APK and AAB
         run: |
-          echo "ANDROID_VERSION_NAME=$(grep versionName app/build.gradle | sed 's/[^0-9.]//g')" >> $GITHUB_ENV
-          echo "ANDROID_VERSION_CODE=$(grep versionCode app/build.gradle | sed 's/[^0-9.]//g')" >> $GITHUB_ENV
+          echo "ANDROID_VERSION_NAME=$(grep versionName app/build.gradle | sed 's/[^0-9.]//g')" | tee -a $GITHUB_ENV
+          echo "ANDROID_VERSION_CODE=$(grep versionCode app/build.gradle | sed 's/[^0-9.]//g')" | tee -a $GITHUB_ENV
           ./gradlew assembleRelease bundleRelease
           ls -alR app/build/outputs
           mkdir -p sign
