@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">My Planet</string>
+    <string name="planet">planète</string>
     <string name="app_project_name">myPlanet</string>
     <string name="action_settings">paramètres</string>
     <string name="hint_name">Nom d\'utilisateur</string>
@@ -1045,7 +1046,6 @@
     <string name="checking_server">vérification du serveur</string>
     <string name="below_min_apk">la version de l\'app est inférieure à celle autorisée. veuillez mettre à jour l\'application vers la dernière version.</string>
     <string name="add_note">Ajouter une note (optionnel)</string>
-    <string name="planet">planète</string>
     <string name="planet_name">%s planète</string>
     <string name="no_submissions">soumissions non disponibles</string>
     <string name="no_chats">aucune discussion précédente</string>

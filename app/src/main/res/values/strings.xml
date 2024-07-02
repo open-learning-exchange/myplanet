@@ -178,7 +178,6 @@
     <string name="showing_reply_of">Showing reply of:</string>
     <string name="open_date">Open Date</string>
     <string name="my_survey">mySurvey</string>
-    <string name="planet_name">%s\'s Planet</string>
 
     <string-array name="level">
         <item></item>
@@ -1047,6 +1046,7 @@
     <string name="checking_server">checking server</string>
     <string name="below_min_apk">app is below allowed version. please update the app to the latest version.</string>
     <string name="add_note">add a note (optional)</string>
+    <string name="planet_name">%s\'s Planet</string>
     <string name="no_submissions">submissions not available</string>
     <string name="no_chats">no previous chats</string>
 
