@@ -14,6 +14,7 @@ import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment.OnFeedbackSubmittedListener
+import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 
 class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     private lateinit var fragmentFeedbackListBinding: FragmentFeedbackListBinding
@@ -33,15 +34,8 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
             }
         }
 
-        mRealm.executeTransactionAsync(
-            Realm.Transaction { },
-            Realm.Transaction.OnSuccess {
-                feedbackList = mRealm.where(RealmFeedback::class.java)
-                    .equalTo("owner", userModel?.name).findAllAsync()
-                feedbackList?.addChangeListener { results ->
-                    updatedFeedbackList(results)
-                }
-            })
+        feedbackList = mRealm.where(RealmFeedback::class.java).equalTo("owner", userModel?.name).findAllAsync()
+        feedbackList?.addChangeListener { results -> updatedFeedbackList(results) }
         return fragmentFeedbackListBinding.root
     }
 
@@ -53,6 +47,16 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
         if (userModel?.isManager() == true) list = mRealm.where(RealmFeedback::class.java).findAll()
         val adapterFeedback = AdapterFeedback(requireActivity(), list)
         fragmentFeedbackListBinding.rvFeedback.adapter = adapterFeedback
+        val itemCount = feedbackList?.size ?: 0
+        showNoData(fragmentFeedbackListBinding.tvMessage, itemCount, "feedback")
+
+        if (itemCount == 0) {
+            fragmentFeedbackListBinding.tvTitle.visibility = View.GONE
+            fragmentFeedbackListBinding.tvType.visibility = View.GONE
+            fragmentFeedbackListBinding.tvPriority.visibility = View.GONE
+            fragmentFeedbackListBinding.tvStatus.visibility = View.GONE
+            fragmentFeedbackListBinding.tvOpenDate.visibility = View.GONE
+        }
     }
 
     override fun onDestroy() {
