@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.callback
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 
@@ -14,7 +15,12 @@ class ProgressBroadcastReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == DashboardActivity.MESSAGE_PROGRESS) {
-            val download = intent.getParcelableExtra<Download>("download")
+            val download: Download? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                intent.getParcelableExtra("download", Download::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                intent.getParcelableExtra("download")
+            }
             if (onProgressChange != null) {
                 onProgressChange!!.onProgressChange(
                     String.format(
