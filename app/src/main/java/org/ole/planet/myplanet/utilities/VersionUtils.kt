@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.provider.Settings
+import androidx.core.content.pm.PackageInfoCompat.getLongVersionCode
 
 object VersionUtils {
     @JvmStatic
@@ -11,7 +12,7 @@ object VersionUtils {
         try {
             val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                return (pInfo.longVersionCode and 0xFFFFFFFF).toInt()
+                return getLongVersionCode(pInfo).toInt()
             } else {
                 @Suppress("DEPRECATION")
                 return pInfo.versionCode
