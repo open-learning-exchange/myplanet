@@ -40,8 +40,8 @@ jobs:
         run: |
           echo "${{ env.FILES }}" | xargs -n 1 | while read file; do
             ls -al $file*
-            # Remove lines starting with // or XML comments and compare the files
-            diff <(grep -v '^\s*//' "$file" | grep -v '^\s*<!--' | grep -v '^\s*-->') <(grep -v '^\s*//' "$file.lite" | grep -v '^\s*<!--' | grep -v '^\s*-->') || true
+            # Remove comment signs and compare the files
+            diff <(sed 's/^\s*\/\///; s/^\s*<!--//; s/-->\s*$//' "$file") <(sed 's/^\s*\/\///; s/^\s*<!--//; s/-->\s*$//' "$file.lite") || true
           done
 
       - name: diff the code to get lite
