@@ -218,14 +218,12 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
 
     private fun setCourseList(tab: TabLayout.Tab, courses: RealmResults<RealmMyCourse>) {
         hideRv(tab, String.format(getString(R.string.courses_colon) + " (%s)", courses.size))
-        listContent.adapter =
-            ArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, courses)
-        listContent.onItemClickListener =
-            AdapterView.OnItemClickListener { _: AdapterView<*>?, _: View?, i: Int, _: Long ->
-                if (homeItemClickListener != null) {
-                    openFragment(courses[i]?.courseId, TakeCourseFragment())
-                }
+        listContent.adapter = ArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, courses)
+        listContent.onItemClickListener = AdapterView.OnItemClickListener { _: AdapterView<*>?, _: View?, i: Int, _: Long ->
+            if (homeItemClickListener != null) {
+                openFragment(courses[i]?.courseId, TakeCourseFragment())
             }
+        }
     }
 
     private fun hideRv(tab: TabLayout.Tab, s: String) {
