@@ -188,7 +188,6 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
                         listContent.visibility = View.GONE
                         llRv.visibility = View.VISIBLE
                     }
-
                     1 -> setListContent(tab, String.format(getString(R.string.joined_members_colon) + " (%s)", users.size), users)
                     2 -> setListContent(tab, String.format(getString(R.string.requested_members_colon) + " (%s)", reqUsers.size), reqUsers)
                     3 -> setCourseList(tab, courses)
