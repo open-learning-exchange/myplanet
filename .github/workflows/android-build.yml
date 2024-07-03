@@ -15,7 +15,7 @@ jobs:
       matrix:
         build: [default, lite]
     env:
-      FILES: |
+      LITES: |
         app/src/main/AndroidManifest.xml
         app/src/main/java/org/ole/planet/myplanet/base/PermissionActivity.kt
         app/src/main/java/org/ole/planet/myplanet/base/BaseContainerFragment.kt
@@ -30,7 +30,7 @@ jobs:
       - name: check for .lite diffs
         if: matrix.build == 'lite'
         run: |
-          echo "${{ env.FILES }}" | xargs -n 1 | while read file; do
+          echo "${{ env.LITES }}" | xargs -n 1 | while read file; do
             ls -al $file*
             diff "$file" "$file.lite" || true
           done
@@ -52,12 +52,12 @@ jobs:
       - name: diff the code to get lite
         if: matrix.build == 'lite'
         run: |
-          echo "${{ env.FILES }}" | xargs -n 1 | while read file; do
+          ls -al app/build.gradle
+          sed -i 's/\(versionName "[0-9.]\+\)"/\1-lite"/' app/build.gradle
+          echo "${{ env.LITES }}" | xargs -n 1 | while read file; do
             ls -al $file*
             cp "${file}.lite" "$file"
           done
-          ls -al app/build.gradle
-          sed -i 's/\(versionName "[0-9.]\+\)"/\1-lite"/' app/build.gradle
 
       - name: build debug as test
         run: ./gradlew assembleDebug --configuration-cache --no-daemon
