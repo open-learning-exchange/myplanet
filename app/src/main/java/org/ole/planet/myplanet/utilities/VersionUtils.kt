@@ -14,7 +14,7 @@ object VersionUtils {
                 return (pInfo.longVersionCode and 0xFFFFFFFF).toInt()
             } else {
                 @Suppress("DEPRECATION")
-                pInfo.versionCode
+                return pInfo.versionCode
             }
         } catch (e: PackageManager.NameNotFoundException) {
             e.printStackTrace()
