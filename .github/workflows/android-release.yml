@@ -118,7 +118,7 @@ jobs:
             mv "output/myPlanet${type}" "output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}${type}"
           done
           ls -alR output
-          
+
       - name: upload APK and AAB as build artifact
         if: github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
