@@ -15,40 +15,22 @@ jobs:
       matrix:
         build: [default, lite]
     env:
-      FILES: |
+      LITES: |
         app/src/main/AndroidManifest.xml
         app/src/main/java/org/ole/planet/myplanet/base/PermissionActivity.kt
         app/src/main/java/org/ole/planet/myplanet/base/BaseContainerFragment.kt
         app/src/main/java/org/ole/planet/myplanet/ui/dashboard/DashboardActivity.kt
+      OUTPUTS: |
+        .apk
+        .apk.sha256
+        .aab
+        .aab.sha256
 
     steps:
       - name: checkout repository code
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
-
-      - name: expose version from build.gradle
-        if: matrix.build == 'lite'
-        uses: dogi/expose-android-build.gradle-version-code-and-name@v1.0.2
-        with:
-          expose-version-name: 'true'
-
-      - name: diff the code to get lite
-        if: matrix.build == 'lite'
-        run: |
-          echo "ANDROID_VERSION_NAME_ORIG=${ANDROID_VERSION_NAME}" >> $GITHUB_ENV
-          ls -al app/build.gradle
-          sed -i 's/\(versionName "[0-9.]\+\)"/\1-lite"/' app/build.gradle
-          echo "${{ env.FILES }}" | xargs -n 1 | while read file; do
-            ls -al $file*
-            cp "${file}.lite" "$file"
-          done
-
-      - name: expose version from build.gradle
-        uses: dogi/expose-android-build.gradle-version-code-and-name@v1.0.2
-        with:
-          expose-version-name: 'true'
-          expose-version-code: 'true'
 
       - name: setup JDK 17
         uses: actions/setup-java@v4
@@ -64,8 +46,21 @@ jobs:
           cache-read-only: false
           cache-write-only: false
 
+      - name: diff the code to get lite
+        if: matrix.build == 'lite'
+        run: |
+          echo ANDROID_VERSION_LITE=$(grep -oP 'versionName "\K[^\"]+' app/build.gradle) >> $GITHUB_ENV
+          ls -al app/build.gradle
+          sed -i 's/\(versionName "[0-9.]\+\)"/\1-lite"/' app/build.gradle
+          echo "${{ env.LITES }}" | xargs -n 1 | while read file; do
+            ls -al $file*
+            cp "${file}.lite" "$file"
+          done
+
       - name: build release APK and AAB
         run: |
+          echo ANDROID_VERSION_NAME=$(grep -oP 'versionName "\K[^\"]+' app/build.gradle) >> $GITHUB_ENV
+          echo ANDROID_VERSION_CODE=$(grep versionCode app/build.gradle | sed 's/[^0-9]//g') >> $GITHUB_ENV
           ./gradlew assembleRelease bundleRelease
           ls -alR app/build/outputs
           mkdir -p sign
@@ -118,10 +113,9 @@ jobs:
       - name: rename APK and AAB with version and branch for artifact
         if: github.event_name == 'workflow_dispatch'
         run: |
-          mv output/myPlanet.apk output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}.apk
-          mv output/myPlanet.apk.sha256 output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}.apk.sha256
-          mv output/myPlanet.aab output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}.aab
-          mv output/myPlanet.aab.sha256 output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}.aab.sha256
+          echo "${{ env.OUTPUTS }}" | xargs -n 1 | while read type; do
+            mv "output/myPlanet${type}" "output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${GITHUB_REF##*/}${type}"
+          done
           ls -alR output
           echo "BRANCHNAME=${GITHUB_REF##*/}" >> $GITHUB_ENV
 
@@ -136,11 +130,10 @@ jobs:
       - name: pre-process files and tag for lite version
         if: github.event_name != 'workflow_dispatch' && matrix.build == 'lite'
         run: |
-          mv output/myPlanet.apk output/myPlanet-lite.apk
-          mv output/myPlanet.apk.sha256 output/myPlanet-lite.apk.sha256
-          mv output/myPlanet.aab output/myPlanet-lite.aab
-          mv output/myPlanet.aab.sha256 output/myPlanet-lite.aab.sha256
-          echo "ANDROID_VERSION_NAME=${ANDROID_VERSION_NAME_ORIG}" >> $GITHUB_ENV
+          echo "${{ env.OUTPUTS }}" | xargs -n 1 | while read type; do
+            mv "output/myPlanet${type}" "output/myPlanet-lite${type}"
+          done
+          echo "ANDROID_VERSION_NAME=${ANDROID_VERSION_LITE}" >> $GITHUB_ENV
 
       - name: release APK and AAB on GitHub
         if: github.event_name != 'workflow_dispatch'
