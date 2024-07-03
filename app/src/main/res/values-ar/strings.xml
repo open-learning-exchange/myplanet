@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">My Planet</string>
+    <string name="planet">كوكب</string>
     <string name="app_project_name">myPlanet</string>
     <string name="action_settings">الإعدادات</string>
     <string name="hint_name">اسم المستخدم</string>
@@ -1045,6 +1046,9 @@
     <string name="checking_server">جارٍ فحص الخادم</string>
     <string name="below_min_apk">إصدار Apk أقل من المسموح. يرجى تحديث التطبيق إلى أحدث إصدار.</string>
     <string name="add_note">إضافة ملاحظة (اختياري)</string>
+    <string name="visit_count">%s (%d %s)</string>
+    <string name="no_teams">الفرق غير متوفرة</string>
+    <string name="planet_name">كوكب %s</string>
     <string name="no_submissions">التقديمات غير متاحة</string>
     <string name="no_chats">لا توجد محادثات سابقة</string>
 

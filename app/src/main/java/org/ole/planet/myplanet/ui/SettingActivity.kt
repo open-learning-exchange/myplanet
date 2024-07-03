@@ -25,6 +25,9 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.dashboard.DashboardFragment
 import org.ole.planet.myplanet.ui.sync.LoginActivity
+import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.clearRealmDb
+import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.clearSharedPref
+import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.restartApp
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryFormattedString
@@ -100,15 +103,9 @@ class SettingActivity : AppCompatActivity() {
                 preference.onPreferenceClickListener = OnPreferenceClickListener {
                     AlertDialog.Builder(requireActivity()).setTitle(R.string.are_you_sure)
                         .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                            BaseResourceFragment.settings?.edit()?.clear()?.apply()
-                            mRealm.executeTransactionAsync(
-                                Realm.Transaction { realm: Realm -> realm.deleteAll() },
-                                Realm.Transaction.OnSuccess {
-                                    Utilities.toast(requireActivity(), R.string.data_cleared.toString())
-                                    startActivity(Intent(requireActivity(), LoginActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK))
-                                    openDashboard = false
-                                    requireActivity().finish()
-                                })
+                            clearRealmDb()
+                            clearSharedPref()
+                            restartApp()
                         }.setNegativeButton(R.string.no, null).show()
                     false
                 }

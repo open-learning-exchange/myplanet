@@ -8,6 +8,7 @@ import android.content.SharedPreferences
 import android.graphics.Color
 import android.graphics.PorterDuff
 import android.net.Uri
+import android.os.Build
 import android.text.TextUtils
 import android.view.View
 import android.view.WindowManager
@@ -41,7 +42,12 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
     var broadcastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action == DashboardActivity.MESSAGE_PROGRESS) {
-                val download = intent.getParcelableExtra<Download>("download")
+                val download: Download? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    intent.getParcelableExtra("download", Download::class.java)
+                } else {
+                    @Suppress("DEPRECATION")
+                    intent.getParcelableExtra("download")
+                }
                 val fromSync = intent.getBooleanExtra("fromSync", false)
                 if (!fromSync) {
                     checkDownloadResult(download)
