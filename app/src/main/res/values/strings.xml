@@ -1059,6 +1059,7 @@
     <string name="checking_server">checking server</string>
     <string name="below_min_apk">app is below allowed version. please update the app to the latest version.</string>
     <string name="add_note">add a note (optional)</string>
+    <string name="visit_count">%s (%d %s)</string
     <string name="no_teams">teams not available</string>
     <string name="planet_name">%s\'s Planet</string>
     <string name="no_submissions">submissions not available</string>

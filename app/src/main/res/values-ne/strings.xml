@@ -1059,7 +1059,8 @@
     <string name="checking_server">सर्भर जाँच गर्दै</string>
     <string name="below_min_apk">एप संस्करण अनुमत संस्करणभन्दा कम छ। कृपया अनुप्रयोगलाई नवीनतम संस्करणमा अद्यावधिक गर्नुहोस्।</string>
     <string name="add_note">नोट थप्नुहोस् (वैकल्पिक)</string>
-    <string name="no_teams">टोलीहरू उपलब्ध छैनन्</string>
+    <string name="visit_count">%s (%d %s)</string>
+    <string name="no_teams">टोलीहरू उपलब्ध छैनन्</stri
     <string name="planet_name">%s ग्रह</string>
     <string name="no_submissions">पेशाहरू उपलब्ध छैनन्</string>
     <string name="no_chats">अघिल्ला कुराकानीहरू छैनन्</string>

@@ -1059,6 +1059,7 @@
     <string name="checking_server">verificando el servidor</string>
     <string name="below_min_apk">la versión de la aplicación está por debajo de la permitida. Actualice la aplicación a la última versión.</string>
     <string name="add_note">Agregar una nota (opcional)</string>
+    <string name="visit_count">%s (%d %s)</string>
     <string name="no_teams">equipos no disponibles</string>
     <string name="planet_name">%s Planeta</string>
     <string name="no_submissions">envíos no disponibles</string>
