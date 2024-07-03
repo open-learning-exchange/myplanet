@@ -41,7 +41,7 @@ jobs:
           echo "${{ env.FILES }}" | xargs -n 1 | while read file; do
             ls -al $file*
             # Remove comment signs and compare the files
-            diff <(sed 's/^\s*\/\///; s/^\s*<!--//; s/-->\s*$//' "$file") <(sed 's/^\s*\/\///; s/^\s*<!--//; s/-->\s*$//' "$file.lite") || true
+            diff <(sed 's/^\s*\/\///; s/^\s*<!--//; s/-->\s*$//' "$file") <(sed 's/^\s*\/\///; s/^\s*<!--//; s/-->\s*$//' "$file.lite")
           done
 
       - name: diff the code to get lite
