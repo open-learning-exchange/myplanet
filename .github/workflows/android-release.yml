@@ -113,11 +113,11 @@ jobs:
       - name: rename APK and AAB with version and branch for artifact
         if: github.event_name == 'workflow_dispatch'
         run: |
-          echo "BRANCHNAME=${GITHUB_REF##*/}" >> $GITHUB_ENV
           echo "${{ env.OUTPUTS }}" | xargs -n 1 | while read type; do
-            mv "output/myPlanet${type}" "output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}${type}"
+            mv "output/myPlanet${type}" "output/myPlanet-${{ env.ANDROID_VERSION_NAME }}-${GITHUB_REF##*/}${type}"
           done
           ls -alR output
+          echo "BRANCHNAME=${GITHUB_REF##*/}" >> $GITHUB_ENV
 
       - name: upload APK and AAB as build artifact
         if: github.event_name == 'workflow_dispatch'
