@@ -21,7 +21,7 @@ import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
+import org.ole.planet.myplanet.utilities.CameraUtils.CapturePhoto
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utilities.JsonParserUtils.getStringAsJsonArray
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
@@ -210,7 +210,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         try {
             if (isCertified && !isMySurvey) {
                 context?.let { it1 ->
-                    capturePhoto(it1, object : ImageCaptureCallback {
+                    CapturePhoto(it1, object : ImageCaptureCallback {
                         override fun onImageCapture(fileUri: String?) {
                         }
                     })

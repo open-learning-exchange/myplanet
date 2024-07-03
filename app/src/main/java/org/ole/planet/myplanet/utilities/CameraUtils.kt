@@ -6,28 +6,24 @@ import android.content.pm.PackageManager
 import android.graphics.ImageFormat
 import android.graphics.SurfaceTexture
 import android.hardware.camera2.*
-import android.hardware.camera2.params.OutputConfiguration
-import android.hardware.camera2.params.SessionConfiguration
 import android.media.ImageReader
-import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
+import android.util.Size
 import android.view.Surface
 import androidx.core.content.ContextCompat
 import java.io.File
 import java.io.FileOutputStream
 import java.util.*
-import java.util.concurrent.Executors
 
 object CameraUtils {
     private var cameraDevice: CameraDevice? = null
     private var captureSession: CameraCaptureSession? = null
     private var imageReader: ImageReader? = null
     private var backgroundHandler: Handler
-    private var backgroundThread: HandlerThread = HandlerThread("CameraBackground")
-
+    private var backgroundThread: HandlerThread
     @JvmStatic
-    fun capturePhoto(context: Context, callback: ImageCaptureCallback) {
+    fun CapturePhoto(context: Context, callback: ImageCaptureCallback) {
         if (ContextCompat.checkSelfPermission(
                 context,
                 Manifest.permission.CAMERA
@@ -52,7 +48,11 @@ object CameraUtils {
         captureBuilder?.addTarget(imageReader!!.surface)
         captureBuilder?.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
 
-        val captureCallback = object : CameraCaptureSession.CaptureCallback() {}
+        val captureCallback = object : CameraCaptureSession.CaptureCallback() {
+            override fun onCaptureCompleted(session: CameraCaptureSession, request: CaptureRequest, result: TotalCaptureResult) {
+                super.onCaptureCompleted(session, request, result)
+            }
+        }
 
         captureSession?.stopRepeating()
         captureSession?.abortCaptures()
@@ -83,6 +83,13 @@ object CameraUtils {
         val manager = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
         try {
             val cameraId = manager.cameraIdList[0] // Assuming we want to use the first (rear) camera
+            val characteristics = manager.getCameraCharacteristics(cameraId)
+            val map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
+            val largest = Collections.max(
+                listOf(*map!!.getOutputSizes(ImageFormat.JPEG)),
+                CompareSizesByArea()
+            )
+            val reader = ImageReader.newInstance(largest.width, largest.height, ImageFormat.JPEG, 2)
             manager.openCamera(cameraId, object : CameraDevice.StateCallback() {
                 override fun onOpened(camera: CameraDevice) {
                     cameraDevice = camera
@@ -110,10 +117,9 @@ object CameraUtils {
             val surface = Surface(texture)
             val captureRequestBuilder = cameraDevice!!.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)
             captureRequestBuilder.addTarget(surface)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                val outputConfigurations = listOf(OutputConfiguration(surface))
-                val executor = Executors.newSingleThreadExecutor()
-                val stateCallback = object : CameraCaptureSession.StateCallback() {
+            cameraDevice!!.createCaptureSession(
+                listOf(surface),
+                object : CameraCaptureSession.StateCallback() {
                     override fun onConfigured(session: CameraCaptureSession) {
                         if (cameraDevice == null) return
                         captureSession = session
@@ -133,44 +139,9 @@ object CameraUtils {
                     }
 
                     override fun onConfigureFailed(session: CameraCaptureSession) {}
-                }
-
-                val sessionConfiguration = SessionConfiguration(
-                    SessionConfiguration.SESSION_REGULAR,
-                    outputConfigurations,
-                    executor,
-                    stateCallback
-                )
-
-                cameraDevice!!.createCaptureSession(sessionConfiguration)
-            } else {
-                @Suppress("DEPRECATION")
-                cameraDevice!!.createCaptureSession(
-                    listOf(surface),
-                    object : CameraCaptureSession.StateCallback() {
-                        override fun onConfigured(session: CameraCaptureSession) {
-                            if (cameraDevice == null) return
-                            captureSession = session
-                            try {
-                                captureRequestBuilder.set(
-                                    CaptureRequest.CONTROL_AF_MODE,
-                                    CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE
-                                )
-                                captureSession!!.setRepeatingRequest(
-                                    captureRequestBuilder.build(),
-                                    null,
-                                    backgroundHandler
-                                )
-                            } catch (e: CameraAccessException) {
-                                e.printStackTrace()
-                            }
-                        }
-
-                        override fun onConfigureFailed(session: CameraCaptureSession) {}
-                    },
-                    backgroundHandler
-                )
-            }
+                },
+                backgroundHandler
+            )
         } catch (e: CameraAccessException) {
             e.printStackTrace()
         }
@@ -180,7 +151,13 @@ object CameraUtils {
         fun onImageCapture(fileUri: String?)
     }
 
+    private class CompareSizesByArea : Comparator<Size> {
+        override fun compare(lhs: Size, rhs: Size): Int {
+            return java.lang.Long.signum(lhs.width.toLong() * lhs.height - rhs.width.toLong() * rhs.height)
+        }
+    }
     init {
+        backgroundThread = HandlerThread("CameraBackground")
         backgroundThread.start()
         backgroundHandler = Handler(backgroundThread.looper)
     }
