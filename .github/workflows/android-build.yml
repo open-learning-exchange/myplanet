@@ -32,14 +32,6 @@ jobs:
         run: |
           echo "${{ env.FILES }}" | xargs -n 1 | while read file; do
             ls -al $file*
-            diff "$file" "$file.lite" || true
-          done
-
-      - name: check for .lite diffs
-        if: matrix.build == 'lite'
-        run: |
-          echo "${{ env.FILES }}" | xargs -n 1 | while read file; do
-            ls -al $file*
             # Remove comment signs and compare the files
             diff <(sed 's/^\s*\/\///; s/^\s*<!--//; s/-->\s*$//' "$file") <(sed 's/^\s*\/\///; s/^\s*<!--//; s/-->\s*$//' "$file.lite")
           done
