@@ -32,7 +32,7 @@ jobs:
         run: |
           echo "${{ env.LITES }}" | xargs -n 1 | while read file; do
             ls -al $file*
-            diff "$file" "$file.lite" || true
+            diff <(sed 's/^\s*\/\///; s/^\s*<!--//; s/-->\s*$//' "$file") <(sed 's/^\s*\/\///; s/^\s*<!--//; s/-->\s*$//' "$file.lite")
           done
 
       - name: setup JDK 17
