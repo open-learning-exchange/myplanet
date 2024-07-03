@@ -35,6 +35,15 @@ jobs:
             diff "$file" "$file.lite" || true
           done
 
+      - name: check for .lite diffs
+        if: matrix.build == 'lite'
+        run: |
+          echo "${{ env.FILES }}" | xargs -n 1 | while read file; do
+            ls -al $file*
+            # Remove lines starting with // or XML comments and compare the files
+            diff <(grep -v '^\s*//' "$file" | grep -v '^\s*<!--' | grep -v '^\s*-->') <(grep -v '^\s*//' "$file.lite" | grep -v '^\s*<!--' | grep -v '^\s*-->') || true
+          done
+
       - name: diff the code to get lite
         if: matrix.build == 'lite'
         run: |
