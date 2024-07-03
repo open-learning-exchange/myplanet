@@ -296,6 +296,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                 "discussions" -> (v as TextView).setText(R.string.no_news)
                 "survey" -> (v as TextView).setText(R.string.no_surveys)
                 "submission" -> (v as TextView).setText(R.string.no_submissions)
+                "teams" -> (v as TextView).setText(R.string.no_teams)
                 "chatHistory" -> (v as TextView).setText(R.string.no_chats)
                 else -> (v as TextView).setText(R.string.no_data_available_please_check_and_try_again)
             }

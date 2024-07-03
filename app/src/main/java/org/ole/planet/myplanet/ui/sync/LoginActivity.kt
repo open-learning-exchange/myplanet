@@ -258,7 +258,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         selectedTeamId = prefData.getSELECTEDTEAMID().toString()
         if (selectedTeamId?.isNotEmpty() == true) {
             users = RealmMyTeam.getUsers(selectedTeamId, mRealm, "")
-            val userList = (users as MutableList<RealmUserModel>?)?.map {
+            val userList = (users as? MutableList<RealmUserModel>)?.map {
                 User(it.getFullName(), it.name ?: "", "", it.userImage ?: "", "team")
             } ?: emptyList()
 
@@ -268,22 +268,14 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             prefData.setSAVEDUSERS(updatedUserList)
         }
 
-        mAdapter = if (mAdapter == null) {
-            TeamListAdapter(prefData.getSAVEDUSERS().toMutableList(), this, this)
+        if (mAdapter == null) {
+            mAdapter = TeamListAdapter(prefData.getSAVEDUSERS().toMutableList(), this, this)
+            activityLoginBinding.recyclerView.layoutManager = LinearLayoutManager(this)
+            activityLoginBinding.recyclerView.adapter = mAdapter
         } else {
-            mAdapter?.clearList()
-            TeamListAdapter(prefData.getSAVEDUSERS().toMutableList(), this, this)
+            mAdapter?.updateList(prefData.getSAVEDUSERS().toMutableList())
         }
 
-        activityLoginBinding.recyclerView.layoutManager = LinearLayoutManager(this)
-        activityLoginBinding.recyclerView.adapter = mAdapter
-
-        val layoutManager: RecyclerView.LayoutManager = object : LinearLayoutManager(this) {
-            override fun generateDefaultLayoutParams(): RecyclerView.LayoutParams {
-                return RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-            }
-        }
-        activityLoginBinding.recyclerView.layoutManager = layoutManager
         activityLoginBinding.recyclerView.isNestedScrollingEnabled = true
         activityLoginBinding.recyclerView.setHasFixedSize(true)
     }
