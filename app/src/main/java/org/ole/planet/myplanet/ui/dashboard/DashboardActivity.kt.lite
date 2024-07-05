@@ -199,12 +199,16 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     }
                 }
 
-//                val fragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
-//                if (fragment is BaseContainerFragment) {
-//                    fragment.handleBackPressed()
-//                }
+                val fragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
+                if (fragment is BaseContainerFragment) {
+                    fragment.handleBackPressed()
+                }
             }
         })
+        val actionBellButton = findViewById<View>(R.id.action_bell)
+        actionBellButton.setOnClickListener {
+            showPopupMenu(actionBellButton)
+        }
     }
 
     fun refreshChatHistoryList() {
@@ -470,5 +474,36 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     companion object {
         const val MESSAGE_PROGRESS = "message_progress"
+    }
+    private fun showPopupMenu(anchorView: View) {
+        val popupMenu = PopupMenu(this, anchorView)
+        popupMenu.inflate(R.menu.popup_menu)
+        val placeholderItem = popupMenu.menu.findItem(R.id.menu_item_dynamic_placeholder)
+        placeholderItem.title = "Notification Holder"
+        val menu = popupMenu.menu
+        val seeAllItem = menu.add(Menu.NONE, Menu.NONE, 2, "See All")
+        seeAllItem.setOnMenuItemClickListener {
+            navigateToSeeAllPage()
+            true
+        }
+
+        popupMenu.setOnMenuItemClickListener { item: MenuItem ->
+            when (item.itemId) {
+                R.id.menu_item_mark_all_read -> {
+                    true
+                }
+                else -> false
+            }
+        }
+
+        popupMenu.show()
+    }
+
+    private fun navigateToSeeAllPage() {
+        val fragment = SeeAllNotificationsFragment()
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.fragment_container, fragment)
+            .addToBackStack(null)
+            .commit()
     }
 }
