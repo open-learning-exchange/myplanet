@@ -204,6 +204,13 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         })
     }
 
+    fun refreshChatHistoryList() {
+        val fragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
+        if (fragment is ChatHistoryListFragment) {
+            fragment.refreshChatHistoryList()
+        }
+    }
+
     private fun hideWifi() {
         val nav_Menu = activityDashboardBinding.appBarBell.bellToolbar.menu
         nav_Menu.findItem(R.id.menu_goOnline)

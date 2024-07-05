@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.datamanager.*
 import org.ole.planet.myplanet.model.*
 import org.ole.planet.myplanet.model.RealmChatHistory.Companion.addConversationToChatHistory
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utilities.Utilities
 import retrofit2.Call
 import retrofit2.Callback
@@ -293,6 +294,11 @@ class ChatDetailFragment : Fragment() {
                             conversationsArray.add(conversationObject)
 
                             jsonObject.add("conversations", conversationsArray)
+
+                            requireActivity().runOnUiThread {
+                                RealmChatHistory.insert(mRealm, jsonObject)
+                            }
+                            (requireActivity() as? DashboardActivity)?.refreshChatHistoryList()
                         }
                     } else {
                         fragmentChatDetailBinding.textGchatIndicator.visibility = View.VISIBLE
@@ -315,6 +321,7 @@ class ChatDetailFragment : Fragment() {
                         requireActivity().runOnUiThread {
                             RealmChatHistory.insert(mRealm, jsonObject)
                         }
+                        (requireActivity() as? DashboardActivity)?.refreshChatHistoryList()
                     }
                 } else {
                     fragmentChatDetailBinding.textGchatIndicator.visibility = View.VISIBLE
