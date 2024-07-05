@@ -49,7 +49,6 @@ import org.ole.planet.myplanet.ui.chat.ChatHistoryListFragment
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.dashboard.notification.SeeAllNotificationsFragment
-//import org.ole.planet.myplanet.ui.dashboard.notification.SeeAllNotificationsFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
 import org.ole.planet.myplanet.ui.resources.ResourceDetailFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
@@ -170,7 +169,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 R.id.action_disclaimer -> openCallFragment(DisclaimerFragment())
                 R.id.action_about -> openCallFragment(AboutFragment())
                 R.id.action_logout -> logout()
-                //R.id.action_bell -> openCallFragment(NotificationFragment()) //placeholder
                 else -> {}
             }
             true
