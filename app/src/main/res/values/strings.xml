@@ -1052,5 +1052,7 @@
     <string name="no_submissions">submissions not available</string>
     <string name="no_chats">no previous chats</string>
     <string name ="no_feedback">no feedback available</string>
+    <string name="empty_text"></string>
+    <string name="message_placeholder">%s</string>
 
 </resources>

@@ -1052,5 +1052,7 @@
     <string name="no_submissions">التقديمات غير متاحة</string>
     <string name="no_chats">لا توجد محادثات سابقة</string>
     <string name="no_feedback">لا توجد تعليقات متاحة</string>
+    <string name="empty_text"></string>
+    <string name="message_placeholder">%s</string>
 
 </resources>
