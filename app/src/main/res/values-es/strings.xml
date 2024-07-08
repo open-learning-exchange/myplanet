@@ -1051,5 +1051,7 @@
     <string name="planet_name">%s Planeta</string>
     <string name="no_submissions">envíos no disponibles</string>
     <string name="no_chats">no hay chats anteriores</string>
+    <string name="empty_text"></string>
+    <string name="message_placeholder">%s</string>
 
 </resources>
