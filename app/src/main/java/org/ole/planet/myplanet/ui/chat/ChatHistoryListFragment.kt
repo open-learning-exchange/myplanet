@@ -88,6 +88,8 @@ class ChatHistoryListFragment : Fragment() {
             fragmentChatHistoryListBinding.recyclerView.adapter = newAdapter
         } else {
             adapter.updateChatHistory(list)
+            fragmentChatHistoryListBinding.searchBar.visibility = View.VISIBLE
+            fragmentChatHistoryListBinding.recyclerView.visibility = View.VISIBLE
         }
 
         showNoData(fragmentChatHistoryListBinding.noChats, list.size, "chatHistory")
