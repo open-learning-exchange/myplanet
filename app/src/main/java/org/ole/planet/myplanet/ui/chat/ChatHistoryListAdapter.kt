@@ -43,7 +43,7 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
     private var newsList: RealmResults<RealmNews>? = null
 
     interface ChatHistoryItemClickListener {
-        fun onChatHistoryItemClicked(conversations: RealmList<Conversation>?, _id: String, _rev: String?)
+        fun onChatHistoryItemClicked(conversations: RealmList<Conversation>?, id: String, rev: String?)
     }
 
     fun setChatHistoryItemClickListener(listener: ChatHistoryItemClickListener) {
@@ -55,10 +55,10 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
             if (chat.conversations != null && chat.conversations?.isNotEmpty() == true) {
                 chat.conversations?.get(0)?.query?.contains(query, ignoreCase = true) == true
             } else {
-                chat.title?.contains(query, ignoreCase = true) ==true
+                chat.title?.contains(query, ignoreCase = true) == true
             }
         }
-        notifyDataSetChanged()
+            notifyItemRangeChanged(0, filteredChatHistory.size)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
@@ -77,9 +77,23 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
     }
 
     fun updateChatHistory(newChatHistory: List<RealmChatHistory>) {
+        val oldListSize = chatHistory.size
+        val newListSize = newChatHistory.size
         chatHistory = newChatHistory
         filteredChatHistory = newChatHistory
-        notifyDataSetChanged()
+        if(oldListSize<newListSize){
+            notifyItemRangeInserted(oldListSize,newListSize-oldListSize)
+        }
+        else if(oldListSize>newListSize){
+            notifyItemRangeRemoved(newListSize,oldListSize-newListSize)
+        }
+        else{
+            for(i in 0 until newListSize){
+                if(chatHistory[i] != newChatHistory[i]){
+                    notifyItemChanged(i)
+                }
+            }
+        }
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {

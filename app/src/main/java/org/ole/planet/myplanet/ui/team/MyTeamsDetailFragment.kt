@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.team
 
 import android.content.DialogInterface
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -10,6 +11,7 @@ import android.widget.ArrayAdapter
 import android.widget.LinearLayout
 import android.widget.ListView
 import android.widget.TextView
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -43,6 +45,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Date
 import java.util.UUID
 
+@RequiresApi(Build.VERSION_CODES.O)
 class MyTeamsDetailFragment : BaseNewsFragment() {
     private lateinit var fragmentMyTeamsDetailBinding: FragmentMyTeamsDetailBinding
     lateinit var tvDescription: TextView
@@ -50,7 +53,7 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
     var teamId: String? = null
     var team: RealmMyTeam? = null
     lateinit var listContent: ListView
-    lateinit var tabLayout: TabLayout
+    private lateinit var tabLayout: TabLayout
     lateinit var dbService: DatabaseService
     private lateinit var rvDiscussion: RecyclerView
     lateinit var llRv: LinearLayout
@@ -113,7 +116,7 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
                 map["messageType"] = team?.teamType!!
                 map["messagePlanetCode"] = team?.teamPlanetCode!!
                 createNews(map, mRealm, user, imageList)
-                rvDiscussion.adapter?.notifyDataSetChanged()
+                rvDiscussion.adapter?.notifyItemInserted(0)
             }.setNegativeButton(R.string.cancel, null).show()
     }
 
@@ -233,14 +236,15 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
         llRv.visibility = View.GONE
         tab.setText(s)
         listContent.adapter = object : ArrayAdapter<RealmUserModel?>(requireActivity(), android.R.layout.simple_list_item_1, data) {
-            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-                var convertView = convertView
+            override fun getView(position: Int, viewConverted: View?, parent: ViewGroup): View {
+                var convertView = viewConverted
                 if (convertView == null) {
                     convertView = LayoutInflater.from(activity)
                         .inflate(android.R.layout.simple_list_item_1, parent, false)
                 }
                 val tv = convertView!!.findViewById<TextView>(android.R.id.text1)
-                tv.text = getItem(position)?.name + " (" + getVisitCount(mRealm, getItem(position)?.name, teamId) + getString(R.string.visits) + ")"
+                val formattedText = getString(R.string.visit_count, getItem(position)?.name ?: "", getVisitCount(mRealm, getItem(position)?.name, teamId), getString(R.string.visits))
+                tv.text = formattedText
                 return convertView
             }
         }

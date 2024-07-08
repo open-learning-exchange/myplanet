@@ -11,6 +11,7 @@ import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
+import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmQuery
@@ -242,6 +243,12 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
             }
         fragmentTeamBinding.rvTeamList.adapter = adapterTeamList
         listContentDescription(conditionApplied)
+        val itemCount = adapterTeamList?.itemCount
+        showNoData(fragmentTeamBinding.tvMessage, itemCount, "teams")
+        if (itemCount == 0) {
+            fragmentTeamBinding.etSearch.visibility = View.GONE
+            fragmentTeamBinding.tableTitle.visibility = View.GONE
+        }
     }
 
     override fun onEditTeam(team: RealmMyTeam?) {
