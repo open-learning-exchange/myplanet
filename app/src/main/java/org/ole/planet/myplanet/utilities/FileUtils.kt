@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.utilities
 
+import android.app.PendingIntent
 import android.app.usage.StorageStatsManager
 import android.content.Context
 import android.content.Intent
@@ -13,9 +14,8 @@ import android.provider.MediaStore
 import android.text.TextUtils
 import android.webkit.MimeTypeMap
 import androidx.annotation.RequiresApi
-import androidx.core.content.FileProvider
-import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication
+import android.content.pm.PackageInstaller
 import org.ole.planet.myplanet.R
 import java.io.BufferedReader
 import java.io.File
@@ -116,26 +116,39 @@ object FileUtils {
 
     @JvmStatic
     fun installApk(activity: Context, file: String?) {
+        if (!file?.endsWith("apk")!!) return
+        val toInstall = File(file)
+        if (!toInstall.exists()) return
         try {
-            if (!file?.endsWith("apk")!!) return
-            val toInstall = getSDPathFromUrl(file)
-            toInstall.setReadable(true, false)
-            val apkUri: Uri
-            val intent: Intent
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                apkUri = FileProvider.getUriForFile(activity, BuildConfig.APPLICATION_ID + ".provider", toInstall)
-                intent = Intent(Intent.ACTION_INSTALL_PACKAGE)
-                intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                intent.setData(apkUri)
-            } else {
-                apkUri = Uri.fromFile(toInstall)
-                intent = Intent(Intent.ACTION_VIEW)
-                intent.setDataAndType(apkUri, "application/vnd.android.package-archive")
-                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            activity.startActivity(intent)
+            val packageInstaller = activity.packageManager.packageInstaller
+            val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL)
+            val sessionId = packageInstaller.createSession(params)
+            val session = packageInstaller.openSession(sessionId)
+            addApkToInstallSession(toInstall, session)
+            val intent = Intent(activity, activity.javaClass)
+            val pendingIntent = PendingIntent.getActivity(activity, 0, intent,
+                PendingIntent.FLAG_IMMUTABLE)
+            val intentSender = pendingIntent.intentSender
+            session.commit(intentSender)
+            session.close()
         } catch (e: Exception) {
             e.printStackTrace()
+        }
+    }
+
+    @Throws(IOException::class)
+    private fun addApkToInstallSession(apkFile: File, session: PackageInstaller.Session) {
+        val out: OutputStream = session.openWrite("my_app_session", 0, -1)
+        val fis = FileInputStream(apkFile)
+        fis.use { input ->
+            out.use { output ->
+                val buffer = ByteArray(4096)
+                var length: Int
+                while (input.read(buffer).also { length = it } != -1) {
+                    output.write(buffer, 0, length)
+                }
+                session.fsync(out)
+            }
         }
     }
 
@@ -223,24 +236,39 @@ object FileUtils {
 
     @JvmStatic
     fun getImagePath(context: Context, uri: Uri?): String? {
-        var cursor = uri?.let { context.contentResolver.query(it, null, null, null, null) }
-        return if (cursor != null && cursor.moveToFirst()) {
-            var document_id = cursor.getString(0)
-            document_id = document_id.substring(document_id.lastIndexOf(":") + 1)
-            cursor.close()
-            cursor = context.contentResolver.query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, null, MediaStore.Images.Media._ID + " = ? ", arrayOf(document_id), null)
+        if (uri == null) return null
+        val projection = arrayOf(MediaStore.Images.Media._ID, MediaStore.Images.Media.DATA)
+        var cursor: Cursor? = null
+        try {
+            cursor = context.contentResolver.query(uri, projection, null, null, null)
             if (cursor != null && cursor.moveToFirst()) {
-                val path = cursor.getString(cursor.getColumnIndex(MediaStore.Images.Media.DATA))
-                cursor.close()
-                path
-            } else {
-                // Handle the case when the cursor is empty or null
-                null // or return an appropriate default value or handle the error accordingly
+                val documentIdIndex = cursor.getColumnIndex(MediaStore.Images.Media._ID)
+                if (documentIdIndex >= 0) {
+                    val documentId = cursor.getString(documentIdIndex)
+                    cursor.close()
+                    val selection = "${MediaStore.Images.Media._ID} = ?"
+                    val selectionArgs = arrayOf(documentId)
+                    cursor = context.contentResolver.query(
+                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                        projection,
+                        selection,
+                        selectionArgs,
+                        null
+                    )
+                    if (cursor != null && cursor.moveToFirst()) {
+                        val dataIndex = cursor.getColumnIndex(MediaStore.Images.Media.DATA)
+                        if (dataIndex >= 0) {
+                            val path = cursor.getString(dataIndex)
+                            cursor.close()
+                            return path
+                        }
+                    }
+                }
             }
-        } else {
-            // Handle the case when the cursor is empty or null
-            null // or return an appropriate default value or handle the error accordingly
+        } finally {
+            cursor?.close()
         }
+        return null
     }
 
     @JvmStatic
@@ -417,7 +445,7 @@ object FileUtils {
 
     fun nameWithoutExtension(fileName: String?): String?{
         extractFileName(fileName)
-        val nameWithExtension = FileUtils.extractFileName(fileName)
+        val nameWithExtension = extractFileName(fileName)
         val nameWithoutExtension = nameWithExtension?.substringBeforeLast(".")
         return nameWithoutExtension
     }
