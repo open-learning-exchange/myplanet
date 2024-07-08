@@ -6,6 +6,7 @@ import android.content.DialogInterface
 import android.content.SharedPreferences
 import android.net.Uri
 import android.text.TextUtils
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.realm.Realm
@@ -163,63 +164,75 @@ class Service(private val context: Context) {
         })
     }
 
-    fun becomeMember(realm: Realm, obj: JsonObject, callback: CreateUserCallback) {
-        isPlanetAvailable(object : PlanetAvailableListener {
-            override fun isAvailable() {
-                retrofitInterface?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}")?.enqueue(object : Callback<JsonObject> {
-                    override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
-                        if (response.body() != null && response.body()?.has("_id") == true) {
-                            callback.onSuccess("Unable to create user, user already exists")
-                        } else {
-                            retrofitInterface.putDoc(null, "application/json", "${Utilities.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}", obj).enqueue(object : Callback<JsonObject> {
-                                override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
-                                    if (response.body() != null && response.body()!!.has("id")) {
-                                        uploadToShelf(obj)
-                                        saveUserToDb(realm, response.body()!!.get("id").asString, obj, callback)
-                                    } else {
-                                        callback.onSuccess("Unable to create user")
-                                    }
-                                }
-
-                                override fun onFailure(call: Call<JsonObject>, t: Throwable) {
+    fun becomeMember(realm: Realm, obj: JsonObject, callback: CreateUserCallback) { isPlanetAvailable(object : PlanetAvailableListener {
+        override fun isAvailable() {
+            retrofitInterface?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}")?.enqueue(object : Callback<JsonObject> {
+                override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
+                    Log.d("okuro11", "okuro:: ${response.body()}")
+                    if (response.body() != null && response.body()?.has("_id") == true) {
+                        callback.onSuccess("Unable to create user, user already exists")
+                    } else {
+                        Log.d("okuro12", "${Utilities.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}")
+                        retrofitInterface.putDoc(null, "application/json", "${Utilities.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}", obj).enqueue(object : Callback<JsonObject> {
+                            override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
+                                Log.d("okuro0", "${response.body()}")
+                                if (response.body() != null && response.body()!!.has("id")) {
+                                    Log.d("okuro1", "$obj")
+                                    uploadToShelf(obj)
+                                    saveUserToDb(realm, response.body()!!.get("id").asString, obj, callback)
+                                } else {
                                     callback.onSuccess("Unable to create user")
+                                    Log.d("okuro2", "Unable to create user")
                                 }
-                            })
-                        }
-                    }
+                            }
 
-                    override fun onFailure(call: Call<JsonObject>, t: Throwable) {
-                        callback.onSuccess("Unable to create user")
+                            override fun onFailure(call: Call<JsonObject>, t: Throwable) {
+                                callback.onSuccess("Unable to create user")
+                                Log.d("okuro3", "Unable to create user")
+                            }
+                        })
                     }
-                })
-            }
+                }
 
-            override fun notAvailable() {
-                val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                if (isUserExists(realm, obj["name"].asString)) {
-                    callback.onSuccess("User already exists")
-                    return
+                override fun onFailure(call: Call<JsonObject>, t: Throwable) {
+                    callback.onSuccess("Unable to create user")
+                    Log.d("okuro4", "Unable to create user")
                 }
-                realm.beginTransaction()
-                val model = populateUsersTable(obj, realm, settings)
-                val keyString = generateKey()
-                val iv = generateIv()
-                if (model != null) {
-                    model.key = keyString
-                    model.iv = iv
-                }
-                realm.commitTransaction()
-                Utilities.toast(MainApplication.context, "Not connected to planet, created user offline.")
-                callback.onSuccess("Not connected to planet, created user offline.")
+            })
+        }
+
+        override fun notAvailable() {
+            val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            if (isUserExists(realm, obj["name"].asString)) {
+                callback.onSuccess("User already exists")
+                return
             }
-        })
-    }
+            realm.beginTransaction()
+            val model = populateUsersTable(obj, realm, settings)
+            val keyString = generateKey()
+            val iv = generateIv()
+            if (model != null) {
+                model.key = keyString
+                model.iv = iv
+            }
+            realm.commitTransaction()
+            Utilities.toast(MainApplication.context, "Not connected to planet, created user offline.")
+            callback.onSuccess("Not connected to planet, created user offline.")
+        }
+    }) }
 
     private fun uploadToShelf(obj: JsonObject) {
-        retrofitInterface?.putDoc(null, "application/json", Utilities.getUrl() + "/shelf/org.couchdb.user:" + obj["name"].asString, JsonObject())?.enqueue(object : Callback<JsonObject?> {
-            override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {}
+        retrofitInterface?.putDoc(null, "application/json", "${Utilities.getUrl()}/shelf/org.couchdb.user:${obj["name"].asString}", JsonObject())?.enqueue(object : Callback<JsonObject?> {
+            override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
+                if (response.body() != null) {
+                    Log.d("okuro5", "User created successfully")
+                }
+            }
 
-            override fun onFailure(call: Call<JsonObject?>, t: Throwable) {}
+            override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
+                t.printStackTrace()
+                Log.d("okuro6", "Unable to save user please sync")
+            }
         })
     }
 
@@ -227,18 +240,24 @@ class Service(private val context: Context) {
         val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         realm.executeTransactionAsync({ realm1: Realm? ->
             try {
-                val res = retrofitInterface?.getJsonObject(Utilities.header, Utilities.getUrl() + "/_users/" + id)?.execute()
+                val res = retrofitInterface?.getJsonObject(Utilities.header,  "${Utilities.getUrl()}/_users/$id")?.execute()
                 if (res?.body() != null) {
                     val model = populateUsersTable(res.body(), realm1, settings)
                     if (model != null) {
                         UploadToShelfService(MainApplication.context).saveKeyIv(retrofitInterface, model, obj)
                     }
                 }
+                Log.d("okuro7", "inside try")
             } catch (e: IOException) {
                 e.printStackTrace()
+                Log.d("okuro8", "$e")
             }
-        }, { callback.onSuccess("User created successfully") }) { error: Throwable ->
+        }, {
+            Log.d("okuro9", "User created successfully")
+            callback.onSuccess("User created successfully") })
+        { error: Throwable ->
             error.printStackTrace()
+            Log.d("okuro10", "Unable to save user please sync")
             callback.onSuccess("Unable to save user please sync")
         }
     }

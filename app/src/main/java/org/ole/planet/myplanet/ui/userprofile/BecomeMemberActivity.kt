@@ -9,6 +9,7 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
+import android.util.Log
 import android.view.View
 import android.widget.ArrayAdapter
 import com.google.gson.JsonArray
@@ -229,19 +230,16 @@ class BecomeMemberActivity : BaseActivity() {
             obj.addProperty("betaEnabled", false)
             obj.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
             obj.addProperty("uniqueAndroidId", VersionUtils.getAndroidId(MainApplication.context))
-            obj.addProperty(
-                "customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context)
-            )
+            obj.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
             val roles = JsonArray()
             roles.add("learner")
             obj.add("roles", roles)
             activityBecomeMemberBinding.pbar.visibility = View.VISIBLE
-//            Service(this).becomeMember(mRealm, obj) {
-//
-//            }
+
             Service(this).becomeMember(mRealm, obj, object : Service.CreateUserCallback {
                 override fun onSuccess(message: String) {
                     runOnUiThread {
+                        Log.d("okuro", "object: $obj")
                         activityBecomeMemberBinding.pbar.visibility = View.GONE
                         Utilities.toast(this@BecomeMemberActivity, message)
                     }
