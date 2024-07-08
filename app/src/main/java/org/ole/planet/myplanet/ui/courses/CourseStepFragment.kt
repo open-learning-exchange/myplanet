@@ -25,7 +25,7 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.exam.TakeExamFragment
-import org.ole.planet.myplanet.utilities.CameraUtils.CapturePhoto
+import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
@@ -164,7 +164,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                 takeExam.arguments = b
                 homeItemClickListener?.openCallFragment(takeExam)
                 context?.let { it1 ->
-                    CapturePhoto(it1, object : ImageCaptureCallback {
+                    capturePhoto(it1, object : ImageCaptureCallback {
                         override fun onImageCapture(fileUri: String?) {
                         }
                     })
