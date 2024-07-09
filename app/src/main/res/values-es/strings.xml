@@ -1053,5 +1053,6 @@
     <string name="no_feedback">No hay comentarios aquí</string>
     <string name="empty_text"></string>
     <string name="message_placeholder">%s</string>
+    <string name="visit_count">%1$s (%2$d %3$s)</string>
 
 </resources>
