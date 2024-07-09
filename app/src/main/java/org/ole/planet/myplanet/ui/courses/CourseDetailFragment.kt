@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.courses
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -14,6 +15,7 @@ import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.FragmentCourseDetailBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getCourseSteps
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -44,6 +46,7 @@ class CourseDetailFragment() : BaseContainerFragment(), OnRatingChangeListener {
         dbService = DatabaseService(requireActivity())
         cRealm = dbService.realmInstance
         courses = cRealm.where(RealmMyCourse::class.java).equalTo("courseId", id).findFirst()
+        Log.d("okuro", "${courses?.courseId}")
         user = UserProfileDbHandler(requireContext()).userModel
         return fragmentCourseDetailBinding.root
     }
@@ -51,6 +54,7 @@ class CourseDetailFragment() : BaseContainerFragment(), OnRatingChangeListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         initRatingView("course", courses?.courseId, courses?.courseTitle, this)
+        Log.d("okuro", "${getCourseProgress()}")
         setCourseData()
     }
 
@@ -92,5 +96,19 @@ class CourseDetailFragment() : BaseContainerFragment(), OnRatingChangeListener {
     override fun onDownloadComplete() {
         super.onDownloadComplete()
         setCourseData()
+    }
+
+    private fun getCourseProgress(): Int {
+        val realm = DatabaseService(requireActivity()).realmInstance
+        val user = UserProfileDbHandler(requireActivity()).userModel
+        val courseProgressMap = RealmCourseProgress.getCourseProgress(realm, user?.id)
+
+        // Log the course progress map for debugging
+        Log.d("Okuro", "id: ${courses?.courseId}, Progress: $courseProgressMap")
+
+        // Extract the current progress for the specific courseId
+        val courseProgress = courseProgressMap[courses?.courseId]?.asJsonObject?.get("current")?.asInt
+        Log.d("Okuro", "id: ${courses?.courseId}, Progress: $courseProgress")
+        return courseProgress ?: 0
     }
 }

@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.courses
 
 import android.content.DialogInterface
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -15,6 +16,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentTakeCourseBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmCourseActivity.Companion.createActivity
+import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmCourseProgress.Companion.getCurrentProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyCourse
@@ -39,6 +41,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     lateinit var steps: List<RealmCourseStep?>
     var userModel: RealmUserModel ?= null
     var position = 0
+    private var currentStep = 0
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) {
@@ -73,7 +76,10 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         }
         setCourseData()
         setListeners()
-        fragmentTakeCourseBinding.viewPager2.currentItem = position
+        currentStep = getCourseProgress()
+        fragmentTakeCourseBinding.viewPager2.currentItem = currentStep
+
+//        fragmentTakeCourseBinding.viewPager2.currentItem = position
     }
 
     private fun setListeners() {
@@ -103,7 +109,8 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             fragmentTakeCourseBinding.btnRemove.visibility = View.GONE
         }
         createActivity(mRealm, userModel, currentCourse)
-        fragmentTakeCourseBinding.tvStep.text = String.format("Step %d/%d", fragmentTakeCourseBinding.viewPager2.currentItem, currentCourse?.courseSteps?.size)
+//        fragmentTakeCourseBinding.tvStep.text = String.format("Step %d/%d", fragmentTakeCourseBinding.viewPager2.currentItem, currentCourse?.courseSteps?.size)
+        fragmentTakeCourseBinding.tvStep.text = String.format("Step %d/%d", currentStep + 1, steps.size)
         fragmentTakeCourseBinding.courseProgress.max = steps.size
         val i = getCurrentProgress(steps, mRealm, userModel?.id, courseId)
         if (i < steps.size) fragmentTakeCourseBinding.courseProgress.secondaryProgress = i + 1
@@ -200,6 +207,20 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             getString(R.string.removed_from)
         })} ${getString(R.string.my_courses)}")
         setCourseData()
+    }
+
+    private fun getCourseProgress(): Int {
+        val realm = DatabaseService(requireActivity()).realmInstance
+        val user = UserProfileDbHandler(requireActivity()).userModel
+        val courseProgressMap = RealmCourseProgress.getCourseProgress(realm, user?.id)
+
+        // Log the course progress map for debugging
+        Log.d("Okuro", "id: $courseId, Progress: $courseProgressMap")
+
+        // Extract the current progress for the specific courseId
+        val courseProgress = courseProgressMap[courseId]?.asJsonObject?.get("current")?.asInt
+        Log.d("Okuro", "id: $courseId, Progress: $courseProgress")
+        return courseProgress ?: 0
     }
 
     private val isValidClickRight: Boolean
