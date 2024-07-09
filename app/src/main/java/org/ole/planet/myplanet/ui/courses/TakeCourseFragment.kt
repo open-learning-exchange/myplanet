@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.courses
 
 import android.content.DialogInterface
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -42,6 +41,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     var userModel: RealmUserModel ?= null
     var position = 0
     private var currentStep = 0
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) {
@@ -213,13 +213,8 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         val realm = DatabaseService(requireActivity()).realmInstance
         val user = UserProfileDbHandler(requireActivity()).userModel
         val courseProgressMap = RealmCourseProgress.getCourseProgress(realm, user?.id)
-
-        // Log the course progress map for debugging
-        Log.d("Okuro", "id: $courseId, Progress: $courseProgressMap")
-
         // Extract the current progress for the specific courseId
         val courseProgress = courseProgressMap[courseId]?.asJsonObject?.get("current")?.asInt
-        Log.d("Okuro", "id: $courseId, Progress: $courseProgress")
         return courseProgress ?: 0
     }
 

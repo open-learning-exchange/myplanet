@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.courses
 
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -46,7 +45,6 @@ class CourseDetailFragment() : BaseContainerFragment(), OnRatingChangeListener {
         dbService = DatabaseService(requireActivity())
         cRealm = dbService.realmInstance
         courses = cRealm.where(RealmMyCourse::class.java).equalTo("courseId", id).findFirst()
-        Log.d("okuro", "${courses?.courseId}")
         user = UserProfileDbHandler(requireContext()).userModel
         return fragmentCourseDetailBinding.root
     }
@@ -54,7 +52,6 @@ class CourseDetailFragment() : BaseContainerFragment(), OnRatingChangeListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         initRatingView("course", courses?.courseId, courses?.courseTitle, this)
-        Log.d("okuro", "${getCourseProgress()}")
         setCourseData()
     }
 
@@ -102,13 +99,8 @@ class CourseDetailFragment() : BaseContainerFragment(), OnRatingChangeListener {
         val realm = DatabaseService(requireActivity()).realmInstance
         val user = UserProfileDbHandler(requireActivity()).userModel
         val courseProgressMap = RealmCourseProgress.getCourseProgress(realm, user?.id)
-
-        // Log the course progress map for debugging
-        Log.d("Okuro", "id: ${courses?.courseId}, Progress: $courseProgressMap")
-
         // Extract the current progress for the specific courseId
         val courseProgress = courseProgressMap[courses?.courseId]?.asJsonObject?.get("current")?.asInt
-        Log.d("Okuro", "id: ${courses?.courseId}, Progress: $courseProgress")
         return courseProgress ?: 0
     }
 }
