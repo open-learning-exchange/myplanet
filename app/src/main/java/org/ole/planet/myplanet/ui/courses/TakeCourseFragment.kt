@@ -78,8 +78,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         setListeners()
         currentStep = getCourseProgress()
         fragmentTakeCourseBinding.viewPager2.currentItem = currentStep
-
-//        fragmentTakeCourseBinding.viewPager2.currentItem = position
     }
 
     private fun setListeners() {
@@ -109,11 +107,10 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             fragmentTakeCourseBinding.btnRemove.visibility = View.GONE
         }
         createActivity(mRealm, userModel, currentCourse)
-//        fragmentTakeCourseBinding.tvStep.text = String.format("Step %d/%d", fragmentTakeCourseBinding.viewPager2.currentItem, currentCourse?.courseSteps?.size)
-        fragmentTakeCourseBinding.tvStep.text = String.format("Step %d/%d", currentStep + 1, steps.size)
         fragmentTakeCourseBinding.courseProgress.max = steps.size
         val i = getCurrentProgress(steps, mRealm, userModel?.id, courseId)
         if (i < steps.size) fragmentTakeCourseBinding.courseProgress.secondaryProgress = i + 1
+        fragmentTakeCourseBinding.tvStep.text = String.format("Step %d/%d", currentStep + i, steps.size)
         fragmentTakeCourseBinding.courseProgress.progress = i
         if (currentCourse?.userId?.contains(userModel?.id) == true) {
             fragmentTakeCourseBinding.nextStep.visibility = View.VISIBLE
