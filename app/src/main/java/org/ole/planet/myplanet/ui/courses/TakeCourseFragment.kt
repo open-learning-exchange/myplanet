@@ -77,7 +77,11 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         setCourseData()
         setListeners()
         currentStep = getCourseProgress()
-        fragmentTakeCourseBinding.viewPager2.currentItem = currentStep
+        if (currentStep != 0) {
+            position = currentStep - 1
+        }
+        fragmentTakeCourseBinding.viewPager2.currentItem = position
+
     }
 
     private fun setListeners() {
