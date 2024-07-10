@@ -97,7 +97,7 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
                 }
             if (ratingMap.containsKey(libraryList[position]?.resourceId)) {
                 val `object` = ratingMap[libraryList[position]?.resourceId]
-                AdapterCourses.showRating(`object`, holder.rowLibraryBinding.rating, holder.rowLibraryBinding.timesRated, holder.rowLibraryBinding.ratingBar)
+                AdapterCourses.showRating(`object`, holder.rowLibraryBinding.rating, holder.rowLibraryBinding.timesRated, holder.rowLibraryBinding.ratingBar, context)
             } else {
                 holder.rowLibraryBinding.ratingBar.rating = 0f
             }

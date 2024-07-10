@@ -561,7 +561,7 @@
     <string name="number_of_exams">Tirada Baaristada:</string>
     <string name="description_colon">Sharaxaad:</string>
     <string name="download_resources">Dhig Resources</string>
-    <string name="take_test">Barto Imtixaan</string>
+    <string name="take_test">Barto Imtixaan [%d]</string>
     <string name="search">Raadi</string>
     <string name="for_ambulance">Ciidanka Masaajid</string>
     <string name="for_police">Ciidanka Boolis</string>
@@ -621,17 +621,12 @@
     <string name="please_select_link_item_from_list">Fadlan xulo xogta isku xirka listka.</string>
     <string name="title_is_required">Magaca waa loo baahan yahay</string>
     <string name="no_data_available">Wax macluumaad ah ayaa lama helin</string>
-    <string name="current_step">"Xidhiidhka hadda: "</string>
-    <string name="of">" ee "</string>
-    <string name="this_test_has">"Imtixaankan wuxuu leeyahay "</string>
-    <string name="questions">" su\'aalo"</string>
     <string name="are_you_sure_you_want_to_delete_these_courses">Ma hubtaa inaad tirtirto ka dhamaan kursiyadaan?</string>
     <string name="success_you_have_added_the_following_courses">Guul! Waxaad ku daraysay kursiyadaan soo socota:\n\n</string>
     <string name="return_to_the_home_tab_to_access_mycourses">\n\n Ku noqo tabka Home si aad uga heli karto myCourseska.\n</string>
     <string name="and">"Iyo "</string>
     <string name="more_course_s">" kursi dheer…\n"</string>
-    <string name="progress">"Habka "</string>
-    <string name="retake_test">Dib u habayn Imtixaanka</string>
+    <string name="retake_test">Dib u habayn Imtixaanka [%d]</string>
     <string name="do_you_want_to_join_this_course">Ma rabtaa inaad ka qaadato kursigaan?</string>
     <string name="join_this_course">Ka qaad kursigaan</string>
     <string name="download_dictionary">Soo deg Qaamuus.</string>
@@ -1054,5 +1049,14 @@
     <string name="no_feedback">wax jawaab celin ah lama hayo</string>
     <string name="empty_text"></string>
     <string name="message_placeholder">%s</string>
+    <string name="number_placeholder">%d</string>
+    <string name="prefix_content">%s%s</string>
+    <string name="rating_count_format">%d guud</string>
+    <string name="step_progress">Gaadhi hadda: %d ka %d</string>
+    <string name="percentage">%s%%</string>
+    <string name="test_size">Imtihan kan waxa uu ku jira %d su\'aalood</string>
+    <string name="course_progress">Habka %s ee %s</string>
+    <string name="tag_selected">Xulo: %s</string>
+    <string name="resources_size">Xogta [%d]</string>
 
 </resources>

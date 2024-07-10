@@ -561,7 +561,7 @@
     <string name="number_of_exams">Número de exámenes:</string>
     <string name="description_colon">Descripción:</string>
     <string name="download_resources">Descargar Recursos</string>
-    <string name="take_test">Realizar Examen</string>
+    <string name="take_test">Realizar Examen [%d]</string>
     <string name="search">Buscar</string>
     <string name="for_ambulance">Para Ambulancia</string>
     <string name="for_police">Para Policía</string>
@@ -621,17 +621,12 @@
     <string name="please_select_link_item_from_list">Por favor, selecciona un elemento de enlace de la lista.</string>
     <string name="title_is_required">Se requiere un título.</string>
     <string name="no_data_available">No hay datos disponibles.</string>
-    <string name="current_step">"Paso actual: "</string>
-    <string name="of">" de "</string>
-    <string name="this_test_has">"Este test tiene "</string>
-    <string name="questions">" preguntas"</string>
     <string name="are_you_sure_you_want_to_delete_these_courses">¿Estás seguro de que deseas eliminar estos cursos?</string>
     <string name="success_you_have_added_the_following_courses">¡Éxito! Has añadido los siguientes cursos:\n\n</string>
     <string name="return_to_the_home_tab_to_access_mycourses">\n\nVuelve a la pestaña de inicio para acceder a misCursos.\n</string>
     <string name="and">"Y "</string>
     <string name="more_course_s">" más curso(s)…\n"</string>
-    <string name="progress">"Progreso "</string>
-    <string name="retake_test">Volver a tomar el test</string>
+    <string name="retake_test">Volver a tomar el test [%d]</string>
     <string name="do_you_want_to_join_this_course">¿Deseas unirte a este curso?</string>
     <string name="join_this_course">Unirse a este curso</string>
     <string name="download_dictionary">Descargar diccionario.</string>
@@ -1054,5 +1049,14 @@
     <string name="no_feedback">No hay comentarios aquí</string>
     <string name="empty_text"></string>
     <string name="message_placeholder">%s</string>
+    <string name="number_placeholder">%d</string>
+    <string name="prefix_content">%s%s</string>
+    <string name="rating_count_format">%d total</string>
+    <string name="step_progress">Paso actual: %d de %d</string>
+    <string name="percentage">%s%%</string>
+    <string name="test_size">Este examen tiene %d preguntas</string>
+    <string name="course_progress">Progreso %s de %s</string>
+    <string name="tag_selected">Seleccionado: %s</string>
+    <string name="resources_size">Recursos [%d]</string>
 
 </resources>
