@@ -11,6 +11,8 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.ui.enterprises.EnterpriseCalendarFragment
+import org.ole.planet.myplanet.ui.enterprises.FinanceFragment
+import org.ole.planet.myplanet.ui.enterprises.ReportsFragment
 import org.ole.planet.myplanet.ui.team.teamCourse.TeamCourseFragment
 import org.ole.planet.myplanet.ui.team.teamDiscussion.DiscussionListFragment
 import org.ole.planet.myplanet.ui.team.teamMember.JoinedMemberFragment
@@ -28,6 +30,7 @@ class TeamPagerAdapter(fm: FragmentActivity, team: RealmMyTeam?, private val isI
         list.add(MainApplication.context.getString(if (isEnterprise) R.string.mission else R.string.plan))
         list.add(MainApplication.context.getString(if (isEnterprise) R.string.team else R.string.joined_members))
         if (isInMyTeam || team?.isPublic == true) {
+            if (isEnterprise) list.add("Reports")
             list.add(MainApplication.context.getString(R.string.tasks))
             list.add(MainApplication.context.getString(R.string.calendar))
             list.add(MainApplication.context.getString(if (isEnterprise) R.string.finances else R.string.courses))
@@ -51,7 +54,9 @@ class TeamPagerAdapter(fm: FragmentActivity, team: RealmMyTeam?, private val isI
             MainApplication.context.getString(R.string.joined_members), MainApplication.context.getString(R.string.team) -> JoinedMemberFragment()
             MainApplication.context.getString(R.string.tasks) -> TeamTaskFragment()
             MainApplication.context.getString(R.string.calendar) -> EnterpriseCalendarFragment()
-            MainApplication.context.getString(R.string.courses), MainApplication.context.getString(R.string.finances) -> TeamCourseFragment()
+            MainApplication.context.getString(R.string.courses) -> TeamCourseFragment()
+            MainApplication.context.getString(R.string.finances) -> FinanceFragment()
+            MainApplication.context.getString(R.string.reports) -> ReportsFragment()
             MainApplication.context.getString(R.string.resources), MainApplication.context.getString(R.string.documents) -> TeamResourceFragment().apply { MainApplication.listener = this }
             MainApplication.context.getString(R.string.join_requests), MainApplication.context.getString(R.string.applicants) -> MembersFragment()
             else -> throw IllegalArgumentException("Invalid fragment type for position: $position")

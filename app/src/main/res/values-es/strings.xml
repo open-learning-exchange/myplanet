@@ -1054,5 +1054,6 @@
     <string name="no_feedback">No hay comentarios aquí</string>
     <string name="empty_text"></string>
     <string name="message_placeholder">%s</string>
+    <string name="reports">informes</string>
 
 </resources>

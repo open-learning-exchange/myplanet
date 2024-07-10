@@ -1054,5 +1054,6 @@
     <string name="no_feedback">कुनै प्रतिक्रिया उपलब्ध छैन</string>
     <string name="empty_text"></string>
     <string name="message_placeholder">%s</string>
+    <string name="reports">रिपोर्टहरू</string>
 
 </resources>

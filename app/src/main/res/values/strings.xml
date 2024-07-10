@@ -1054,5 +1054,5 @@
     <string name ="no_feedback">no feedback available</string>
     <string name="empty_text"></string>
     <string name="message_placeholder">%s</string>
-
+    <string name="reports">Reports</string>
 </resources>
