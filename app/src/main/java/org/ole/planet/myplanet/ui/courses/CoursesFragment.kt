@@ -10,10 +10,14 @@ import android.widget.AdapterView
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
+import android.widget.ImageButton
 import android.widget.Spinner
 import android.widget.TextView
+import androidx.cardview.widget.CardView
+import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.textfield.TextInputLayout
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import org.ole.planet.myplanet.R
@@ -43,11 +47,18 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private lateinit var orderByDate: Button
     private lateinit var orderByTitle: Button
     private lateinit var selectAll: CheckBox
-    var userModel: RealmUserModel ?= null
-    lateinit var spnGrade: Spinner
-    lateinit var spnSubject: Spinner
-    lateinit var searchTags: MutableList<RealmTag>
+    private var userModel: RealmUserModel ?= null
+    private lateinit var spnGrade: Spinner
+    private lateinit var spnSubject: Spinner
+    private lateinit var searchTags: MutableList<RealmTag>
     private lateinit var confirmation: AlertDialog
+    private lateinit var filter: ImageButton
+    private lateinit var collections: Button
+    private lateinit var parentLayout: CoordinatorLayout
+    private lateinit var bottomSheet: CardView
+    private lateinit var tags: TextInputLayout
+    private lateinit var clearTags: Button
+
     override fun getLayout(): Int {
         return R.layout.fragment_my_course
     }
@@ -78,7 +89,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         super.onViewCreated(view, savedInstanceState)
         userModel = UserProfileDbHandler(requireContext()).userModel
         searchTags = ArrayList()
-        initializeView()
+
+        initializeView(view)
         if (isMyCourseLib) {
             tvDelete?.setText(R.string.archive)
             btnRemove.visibility = View.VISIBLE
@@ -113,7 +125,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 .setNegativeButton(R.string.no, null).show()
         }
 
-        requireView().findViewById<View>(R.id.btn_collections).setOnClickListener {
+       collections.setOnClickListener {
             val f = CollectionsFragment.getInstance(searchTags, "courses")
             f.setListener(this)
             f.show(childFragmentManager, "")
@@ -121,46 +133,54 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
         clearTags()
         showNoData(tvMessage, adapterCourses.itemCount, "courses")
-        setupUI(requireView().findViewById(R.id.my_course_parent_layout), requireActivity())
+        setupUI(parentLayout, requireActivity())
         changeButtonStatus()
         if (!isMyCourseLib) tvFragmentInfo.setText(R.string.our_courses)
         additionalSetup()
     }
 
     private fun additionalSetup() {
-        val bottomSheet = requireView().findViewById<View>(R.id.card_filter)
-        requireView().findViewById<View>(R.id.filter).setOnClickListener {
+        filter.setOnClickListener {
             bottomSheet.visibility = if (bottomSheet.visibility == View.VISIBLE) View.GONE else View.VISIBLE
         }
-        orderByDate = requireView().findViewById(R.id.order_by_date_button)
-        orderByTitle = requireView().findViewById(R.id.order_by_title_button)
         orderByDate.setOnClickListener { adapterCourses.toggleSortOrder() }
         orderByTitle.setOnClickListener { adapterCourses.toggleTitleSortOrder() }
     }
 
-    private fun initializeView() {
-        tvAddToLib = requireView().findViewById(R.id.tv_add)
+    private fun initializeView(view: View) {
+        tvAddToLib = view.findViewById(R.id.tv_add)
+        etSearch = view.findViewById(R.id.et_search)
+        tvSelected = view.findViewById(R.id.tv_selected)
+        btnRemove = view.findViewById(R.id.btn_remove)
+        spnGrade = view.findViewById(R.id.spn_grade)
+        spnSubject = view.findViewById(R.id.spn_subject)
+        tvMessage = view.findViewById(R.id.tv_message)
+        tvFragmentInfo = view.findViewById(R.id.tv_fragment_info)
+        selectAll = view.findViewById(R.id.selectAll)
+        filter = view.findViewById(R.id.filter)
+        collections = view.findViewById(R.id.btn_collections)
+        parentLayout = view.findViewById(R.id.my_course_parent_layout)
+        bottomSheet = view.findViewById(R.id.card_filter)
+        orderByDate = view.findViewById(R.id.order_by_date_button)
+        orderByTitle = view.findViewById(R.id.order_by_title_button)
+        tags = view.findViewById(R.id.tl_tags)
+        clearTags = view.findViewById(R.id.btn_clear_tags)
+
         tvAddToLib.setOnClickListener {
             if ((selectedItems?.size ?: 0) > 0) {
                 confirmation = createAlertDialog()
                 confirmation.show()
                 addToMyList()
                 selectedItems?.clear()
-                tvAddToLib.isEnabled = false // selectedItems will always have a size of 0
+                tvAddToLib.isEnabled = false
                 checkList()
             }
         }
-        etSearch = requireView().findViewById(R.id.et_search)
-        tvSelected = requireView().findViewById(R.id.tv_selected)
-        btnRemove = requireView().findViewById(R.id.btn_remove)
-        spnGrade = requireView().findViewById(R.id.spn_grade)
-        spnSubject = requireView().findViewById(R.id.spn_subject)
-        tvMessage = requireView().findViewById(R.id.tv_message)
-        requireView().findViewById<View>(R.id.tl_tags).visibility = View.GONE
-        tvFragmentInfo = requireView().findViewById(R.id.tv_fragment_info)
+
+        tags.visibility = View.GONE
+
         spnGrade.onItemSelectedListener = itemSelectedListener
         spnSubject.onItemSelectedListener = itemSelectedListener
-        selectAll = requireView().findViewById(R.id.selectAll)
         if(userModel?.isGuest() == true){
             tvAddToLib.visibility = View.GONE
             btnRemove.visibility = View.GONE
@@ -186,13 +206,12 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             selectAll.visibility = View.GONE
             etSearch.visibility = View.GONE
             tvAddToLib.visibility = View.GONE
-            requireView().findViewById<View>(R.id.filter).visibility = View.GONE
+            filter.visibility = View.GONE
             btnRemove.visibility = View.GONE
             tvSelected.visibility = View.GONE
             tvDelete?.visibility = View.GONE
         }
     }
-
 
     private val itemSelectedListener: AdapterView.OnItemSelectedListener = object : AdapterView.OnItemSelectedListener {
         override fun onItemSelected(adapterView: AdapterView<*>?, view: View, i: Int, l: Long) {
@@ -206,7 +225,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     private fun clearTags() {
-        requireView().findViewById<View>(R.id.btn_clear_tags).setOnClickListener {
+        clearTags.setOnClickListener {
             searchTags.clear()
             etSearch.setText("")
             tvSelected.text = ""
@@ -318,18 +337,16 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     private fun recreateFragment(fragment: Fragment) {
-        if (isMyCourseLib) {
-            val args = Bundle()
-            args.putBoolean("isMyCourseLib", true)
-            args.putString("courseLib", courseLib)
-            args.putSerializable("resources", resources?.let { ArrayList(it) })
-            fragment.arguments = args
+        if (isAdded && activity != null && !requireActivity().isFinishing) {
             val transaction = parentFragmentManager.beginTransaction()
-            transaction.replace(R.id.fragment_container, fragment)
-            transaction.addToBackStack(null)
-            transaction.commitAllowingStateLoss()
-        } else {
-            val transaction = parentFragmentManager.beginTransaction()
+            if (isMyCourseLib) {
+                val args = Bundle().apply {
+                    putBoolean("isMyCourseLib", true)
+                    putString("courseLib", courseLib)
+                    putSerializable("resources", resources?.let { ArrayList(it) })
+                }
+                fragment.arguments = args
+            }
             transaction.replace(R.id.fragment_container, fragment)
             transaction.addToBackStack(null)
             transaction.commitAllowingStateLoss()
