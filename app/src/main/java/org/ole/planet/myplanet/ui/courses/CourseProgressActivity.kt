@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.courses
 
-import android.content.Context
 import android.os.Bundle
 import androidx.recyclerview.widget.GridLayoutManager
 import com.google.gson.JsonArray
@@ -21,7 +20,7 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 
-class CourseProgressActivity(private val context: Context) : BaseActivity() {
+class CourseProgressActivity : BaseActivity() {
     private lateinit var activityCourseProgressBinding: ActivityCourseProgressBinding
     lateinit var realm: Realm
     var user: RealmUserModel? = null
@@ -46,7 +45,7 @@ class CourseProgressActivity(private val context: Context) : BaseActivity() {
             }
         }
         activityCourseProgressBinding.tvCourse.text = course?.courseTitle
-        activityCourseProgressBinding.tvProgress.text = context.getString(R.string.course_progress, courseProgress[courseId]?.get("current")?.asString, courseProgress[courseId]?.get("max")?.asString)
+        activityCourseProgressBinding.tvProgress.text = getString(R.string.course_progress, courseProgress[courseId]?.get("current")?.asString, courseProgress[courseId]?.get("max")?.asString)
         activityCourseProgressBinding.rvProgress.layoutManager = GridLayoutManager(this, 4)
         showProgress()
     }
