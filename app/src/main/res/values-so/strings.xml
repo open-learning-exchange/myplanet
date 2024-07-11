@@ -488,9 +488,9 @@
     <string name="update_profile_alert">Fadlan Buuxi Profaylkaaga si aad u hesho tallaabooyin oo dhan</string>
     <string name="other_notes">Fikirro Kale</string>
     <string name="archive">Arsiif</string>
-    <string name="Q1">Suaal: 1/</string>
+    <string name="Q1">Su\'aal: 1/%d</string>
     <string name="no_questions">Suaaladaan ma jiro</string>
-    <string name="Q">"Suaal: "</string>
+    <string name="Q">"Su\'aal: %d / %d"</string>
     <string name="finish">Dhammaad</string>
     <string name="submit">Ku Dir</string>
     <string name="our_courses">Koorsadayaashay</string>

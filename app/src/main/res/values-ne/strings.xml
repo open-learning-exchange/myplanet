@@ -488,9 +488,9 @@
     <string name="update_profile_alert">कृपया पूर्ण फिचर प्रयोग गर्नका लागि तपाईंको प्रोफाइल पूरा गर्नुहोस्</string>
     <string name="other_notes">अन्य नोट</string>
     <string name="archive">आर्काइभ</string>
-    <string name="Q1">प्रश्न: १/</string>
+    <string name="Q1">प्रश्न: 1/%d</string>
     <string name="no_questions">कुनै प्रश्न उपलब्ध छैन</string>
-    <string name="Q">"प्रश्न: "</string>
+    <string name="Q">"%d / %d प्रश्न"</string>
     <string name="finish">समाप्त</string>
     <string name="submit">पेश गर्नुहोस्</string>
     <string name="our_courses">हाम्रा कोर्सहरू</string>
