@@ -1053,6 +1053,9 @@
     <string name="no_feedback">कुनै प्रतिक्रिया उपलब्ध छैन</string>
     <string name="empty_text"></string>
     <string name="message_placeholder">%s</string>
+    <string name="number_placeholder">%d</string>
+    <string name="user_role">- %s</string>
+    <string name="offline_visits">%d भ्रमणहरू</string>
     <string name="visit_count">%1$s (%2$d %3$s)</string>
 
 </resources>
