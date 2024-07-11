@@ -61,6 +61,25 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                 }
                 return "0"
             }
+
+        fun createLog(type: String) {
+            val service = DatabaseService(context)
+            val mRealm = service.realmInstance
+            if (!mRealm.isInTransaction) {
+                mRealm.beginTransaction()
+            }
+            val log = mRealm.createObject(RealmApkLog::class.java, "${UUID.randomUUID()}")
+            val model = UserProfileDbHandler(context).userModel
+            if (model != null) {
+                log.parentCode = model.parentCode
+                log.createdOn = model.planetCode
+            }
+            log.time = "${Date().time}"
+            log.page = ""
+            log.version = getVersionName(context)
+            log.type = type
+            mRealm.commitTransaction()
+        }
     }
 
     private var activityReferences = 0
@@ -172,25 +191,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     }
 
     private fun onAppClosed() {}
-
-    private fun createLog(type: String) {
-        val service = DatabaseService(this)
-        val mRealm = service.realmInstance
-        if (!mRealm.isInTransaction) {
-            mRealm.beginTransaction()
-        }
-        val log = mRealm.createObject(RealmApkLog::class.java, "${UUID.randomUUID()}")
-        val model = UserProfileDbHandler(this).userModel
-        if (model != null) {
-            log.parentCode = model.parentCode
-            log.createdOn = model.planetCode
-        }
-        log.time = "${Date().time}"
-        log.page = ""
-        log.version = getVersionName(this)
-        log.type = type
-        mRealm.commitTransaction()
-    }
 
     private fun handleUncaughtException(e: Throwable) {
         e.printStackTrace()
