@@ -755,6 +755,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 editor.putBoolean(key, value)
             }
             editor.commit()
+
+            val preferences = PreferenceManager.getDefaultSharedPreferences(context)
+            preferences.edit().clear().commit()
         }
 
         fun restartApp() {
