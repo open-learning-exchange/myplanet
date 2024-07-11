@@ -1046,7 +1046,6 @@
     <string name="checking_server">checking server</string>
     <string name="below_min_apk">app is below allowed version. please update the app to the latest version.</string>
     <string name="add_note">add a note (optional)</string>
-    <string name="visit_count">%s (%d %s)</string>
     <string name="no_teams">teams not available</string>
     <string name="planet_name">%s\'s Planet</string>
     <string name="no_submissions">submissions not available</string>
@@ -1060,5 +1059,8 @@
     <string name="team_financial_report">%s Financial Report</string>
     <string name="report_date_details">Report created on: %s | Updated on: %s</string>
     <string name="formatted_date">%d/%d/%d</string>
+    <string name="user_role">- %s</string>
+    <string name="offline_visits">%d visits</string>
+    <string name="visit_count">%1$s (%2$d %3$s)</string>
 
 </resources>

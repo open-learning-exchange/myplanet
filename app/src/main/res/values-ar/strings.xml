@@ -1046,7 +1046,6 @@
     <string name="checking_server">جارٍ فحص الخادم</string>
     <string name="below_min_apk">إصدار Apk أقل من المسموح. يرجى تحديث التطبيق إلى أحدث إصدار.</string>
     <string name="add_note">إضافة ملاحظة (اختياري)</string>
-    <string name="visit_count">%s (%d %s)</string>
     <string name="no_teams">الفرق غير متوفرة</string>
     <string name="planet_name">كوكب %s</string>
     <string name="no_submissions">التقديمات غير متاحة</string>
@@ -1060,5 +1059,8 @@
     <string name="team_financial_report">تقرير مالي لـ %s</string>
     <string name="report_date_details">تم إنشاء التقرير في: %s | تم التحديث في: %s</string>
     <string name="formatted_date">%d/%d/%d</string>
+    <string name="user_role">- %s</string>
+    <string name="offline_visits">%d زيارة</string>
+    <string name="visit_count">%1$s (%2$d %3$s)</string>
 
 </resources>
