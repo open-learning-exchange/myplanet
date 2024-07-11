@@ -1,9 +1,7 @@
 package org.ole.planet.myplanet.ui.community
 
 import android.content.Context
-import android.os.Bundle
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.FragmentActivity
 import androidx.recyclerview.widget.RecyclerView
@@ -15,7 +13,6 @@ import org.ole.planet.myplanet.ui.team.teamMember.MemberDetailFragment
 class AdapterLeader(var context: Context, private var leaders: List<RealmUserModel>) :
     RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private lateinit var rowJoinedUserBinding: RowJoinedUserBinding
-
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         rowJoinedUserBinding = RowJoinedUserBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ViewHolderLeader(rowJoinedUserBinding)
