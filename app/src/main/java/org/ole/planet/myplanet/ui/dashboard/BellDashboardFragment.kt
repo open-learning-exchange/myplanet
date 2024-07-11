@@ -1,11 +1,12 @@
 package org.ole.planet.myplanet.ui.dashboard
 
-import android.content.ContentValues.TAG
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
@@ -44,6 +45,7 @@ import java.util.Date
 class BellDashboardFragment : BaseDashboardFragment() {
     private lateinit var fragmentHomeBellBinding: FragmentHomeBellBinding
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentHomeBellBinding = FragmentHomeBellBinding.inflate(inflater, container, false)
 
