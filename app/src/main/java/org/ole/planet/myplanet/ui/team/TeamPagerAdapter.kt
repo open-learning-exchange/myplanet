@@ -26,14 +26,14 @@ class TeamPagerAdapter(fm: FragmentActivity, team: RealmMyTeam?, private val isI
     private val isEnterprise: Boolean = TextUtils.equals(team?.type, "enterprise")
 
     init {
-        list.add(MainApplication.context.getString(R.string.chat))
         list.add(MainApplication.context.getString(if (isEnterprise) R.string.mission else R.string.plan))
         list.add(MainApplication.context.getString(if (isEnterprise) R.string.team else R.string.joined_members))
         if (isInMyTeam || team?.isPublic == true) {
-            if (isEnterprise) list.add("Reports")
+            list.add(MainApplication.context.getString(R.string.chat))
             list.add(MainApplication.context.getString(R.string.tasks))
             list.add(MainApplication.context.getString(R.string.calendar))
             list.add(MainApplication.context.getString(if (isEnterprise) R.string.finances else R.string.courses))
+            if (isEnterprise) list.add("Reports")
             list.add(MainApplication.context.getString(if (isEnterprise) R.string.documents else R.string.resources))
             list.add(MainApplication.context.getString(if (isEnterprise) R.string.applicants else R.string.join_requests))
         }
