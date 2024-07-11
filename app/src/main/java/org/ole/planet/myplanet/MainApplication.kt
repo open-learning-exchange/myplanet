@@ -62,11 +62,15 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                 return "0"
             }
     }
+
+    private var activityReferences = 0
+    private var isActivityChangingConfigurations = false
+    private var isFirstLaunch = true
+
     @RequiresApi(Build.VERSION_CODES.N)
     override fun onCreate() {
         super.onCreate()
         initialize(CoroutineScope(Dispatchers.IO))
-
 
         context = this
         preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
@@ -88,6 +92,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         }
         registerActivityLifecycleCallbacks(this)
         startListenNetworkState()
+        onAppStarted()
     }
 
     private fun scheduleAutoSyncWork(syncInterval: Int?) {
@@ -127,18 +132,64 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
     override fun onActivityCreated(activity: Activity, bundle: Bundle?) {}
 
-    override fun onActivityStarted(activity: Activity) {}
+    override fun onActivityStarted(activity: Activity) {
+        if (++activityReferences == 1 && !isActivityChangingConfigurations) {
+            onAppForegrounded()
+        }
+    }
 
     override fun onActivityResumed(activity: Activity) {}
 
     override fun onActivityPaused(activity: Activity) {}
 
-    override fun onActivityStopped(activity: Activity) {}
+    override fun onActivityStopped(activity: Activity) {
+        isActivityChangingConfigurations = activity.isChangingConfigurations
+        if (--activityReferences == 0 && !isActivityChangingConfigurations) {
+            onAppBackgrounded()
+        }
+    }
 
     override fun onActivitySaveInstanceState(activity: Activity, bundle: Bundle) {}
 
     override fun onActivityDestroyed(activity: Activity) {
         cancellAll(this)
+    }
+
+    private fun onAppForegrounded() {
+        if (isFirstLaunch) {
+            isFirstLaunch = false
+        } else {
+            val fromForeground = "foreground"
+            createLog(fromForeground)
+        }
+    }
+    
+    private fun onAppBackgrounded() {}
+
+    private fun onAppStarted() {
+        val newStart = "new launch"
+        createLog(newStart)
+    }
+
+    private fun onAppClosed() {}
+
+    private fun createLog(type: String) {
+        val service = DatabaseService(this)
+        val mRealm = service.realmInstance
+        if (!mRealm.isInTransaction) {
+            mRealm.beginTransaction()
+        }
+        val log = mRealm.createObject(RealmApkLog::class.java, "${UUID.randomUUID()}")
+        val model = UserProfileDbHandler(this).userModel
+        if (model != null) {
+            log.parentCode = model.parentCode
+            log.createdOn = model.planetCode
+        }
+        log.time = "${Date().time}"
+        log.page = ""
+        log.version = getVersionName(this)
+        log.type = type
+        mRealm.commitTransaction()
     }
 
     private fun handleUncaughtException(e: Throwable) {
@@ -162,7 +213,12 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         mRealm.commitTransaction()
         val homeIntent = Intent(Intent.ACTION_MAIN)
         homeIntent.addCategory(Intent.CATEGORY_HOME)
-        homeIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        homeIntent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
         startActivity(homeIntent)
+    }
+
+    override fun onTerminate() {
+        super.onTerminate()
+        onAppClosed()
     }
 }
