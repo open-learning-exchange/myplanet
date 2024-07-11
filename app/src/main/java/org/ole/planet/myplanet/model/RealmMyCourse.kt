@@ -160,6 +160,26 @@ open class RealmMyCourse : RealmObject() {
             return links
         }
 
+//        @JvmStatic
+//        fun saveConcatenatedLinksToPrefs() {
+//            val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+//            val existingJsonLinks = settings.getString("concatenated_links", null)
+//            val existingConcatenatedLinks = if (existingJsonLinks != null) {
+//                gson.fromJson(existingJsonLinks, Array<String>::class.java).toMutableList()
+//            } else {
+//                mutableListOf()
+//            }
+//
+//            for (link in concatenatedLinks) {
+//                if (!existingConcatenatedLinks.contains(link)) {
+//                    existingConcatenatedLinks.add(link)
+//                }
+//            }
+//
+//            val jsonConcatenatedLinks = gson.toJson(existingConcatenatedLinks)
+//            settings.edit().putString("concatenated_links", jsonConcatenatedLinks).apply()
+//        }
+
         @JvmStatic
         fun saveConcatenatedLinksToPrefs() {
             val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
@@ -170,9 +190,11 @@ open class RealmMyCourse : RealmObject() {
                 mutableListOf()
             }
 
-            for (link in concatenatedLinks) {
-                if (!existingConcatenatedLinks.contains(link)) {
-                    existingConcatenatedLinks.add(link)
+            synchronized(concatenatedLinks) {
+                for (link in concatenatedLinks) {
+                    if (!existingConcatenatedLinks.contains(link)) {
+                        existingConcatenatedLinks.add(link)
+                    }
                 }
             }
 
