@@ -1054,5 +1054,11 @@
     <string name="no_feedback">wax jawaab celin ah lama hayo</string>
     <string name="empty_text"></string>
     <string name="message_placeholder">%s</string>
+    <string name="number_placeholder">%d</string>
+    <string name="date_range">%s ilaa %s</string>
+    <string name="string_range">%s - %s</string>
+    <string name="team_financial_report">Warbixin lacagta ee %s</string>
+    <string name="report_date_details">Warbixin lagu sameeyay: %s | La cusbooneysiiyay: %s</string>
+    <string name="formatted_date">%d/%d/%d</string>
 
 </resources>
