@@ -212,8 +212,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun hideWifi() {
-        val nav_Menu = activityDashboardBinding.appBarBell.bellToolbar.menu
-        nav_Menu.findItem(R.id.menu_goOnline)
+        val navMenu = activityDashboardBinding.appBarBell.bellToolbar.menu
+        navMenu.findItem(R.id.menu_goOnline)
             .setVisible((showBetaFeature(Constants.KEY_SYNC, this)))
     }
 

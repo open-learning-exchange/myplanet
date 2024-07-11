@@ -1046,7 +1046,6 @@
     <string name="checking_server">hubinta server-ka</string>
     <string name="below_min_apk">nooca app-ga waa ka hooseeyaa kan la oggol yahay. fadlan cusbooneysii app-ka nooca ugu dambeeya.</string>
     <string name="add_note">Ku dar falanqeey (ixtiyaacsi ah)</string>
-    <string name="visit_count">%s (%d %s)</string>
     <string name="no_teams">kooxaha aan la heli karin</string>
     <string name="planet_name">%s Meerah</string>
     <string name="no_submissions">soo gudbin lama heli karo</string>
@@ -1054,5 +1053,9 @@
     <string name="no_feedback">wax jawaab celin ah lama hayo</string>
     <string name="empty_text"></string>
     <string name="message_placeholder">%s</string>
+    <string name="number_placeholder">%d</string>
+    <string name="user_role">- %s</string>
+    <string name="offline_visits">%d booqasho</string>
+    <string name="visit_count">%1$s (%2$d %3$s)</string>
 
 </resources>
