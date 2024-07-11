@@ -70,6 +70,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        if (!isAdded) return
         searchTags = ArrayList()
         config = Utilities.getCloudConfig().showClose(R.color.black_overlay)
         tvAddToLib = view.findViewById(R.id.tv_add)
@@ -179,6 +180,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private fun createAlertDialog(): AlertDialog {
+        if (!isAdded) return AlertDialog.Builder(requireContext()).create()
         val builder = AlertDialog.Builder(requireContext(), 5)
         var msg = getString(R.string.success_you_have_added_these_resources_to_your_mylibrary)
         if ((selectedItems?.size ?: 0) <= 5) {
@@ -291,7 +293,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         return b
     }
 
-
     override fun getSelectedFilter(): Map<String, Set<String>> {
         val b: MutableMap<String, Set<String>> = HashMap()
         b["languages"] = languages
@@ -347,7 +348,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             transaction.commit()
         }
     }
-
 
     private fun additionalSetup() {
         val bottomSheet = requireView().findViewById<View>(R.id.card_filter)
