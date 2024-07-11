@@ -262,26 +262,25 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
     private fun setUpMyLife(userId: String?) {
         val realm = DatabaseService(requireContext()).realmInstance
-        realm.executeTransactionAsync({ realmTransaction ->
-            val realmObjects = RealmMyLife.getMyLifeByUserId(realmTransaction, settings)
-            if (realmObjects.isEmpty()) {
-                val myLifeListBase = getMyLifeListBase(userId)
-                var weight = 1
-                for (item in myLifeListBase) {
-                    val ml = realmTransaction.createObject(RealmMyLife::class.java, UUID.randomUUID().toString())
-                    ml.title = item.title
-                    ml.imageId = item.imageId
-                    ml.weight = weight
-                    ml.userId = item.userId
-                    ml.isVisible = true
-                    weight++
-                }
+        val realmObjects = RealmMyLife.getMyLifeByUserId(mRealm, settings)
+        if (realmObjects.isEmpty()) {
+            if (!realm.isInTransaction) {
+                realm.beginTransaction()
             }
-        }, {
-            realm.close()
-        }, {
-            realm.close()
-        })
+            val myLifeListBase = getMyLifeListBase(userId)
+            var ml: RealmMyLife
+            var weight = 1
+            for (item in myLifeListBase) {
+                ml = realm.createObject(RealmMyLife::class.java, UUID.randomUUID().toString())
+                ml.title = item.title
+                ml.imageId = item.imageId
+                ml.weight = weight
+                ml.userId = item.userId
+                ml.isVisible = true
+                weight++
+            }
+            realm.commitTransaction()
+        }
     }
 
     private fun myLibraryItemClickAction(textView: TextView, items: RealmMyLibrary?) {
