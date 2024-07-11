@@ -1041,7 +1041,6 @@
     <string name="checking_server">सर्भर जाँच गर्दै</string>
     <string name="below_min_apk">एप संस्करण अनुमत संस्करणभन्दा कम छ। कृपया अनुप्रयोगलाई नवीनतम संस्करणमा अद्यावधिक गर्नुहोस्।</string>
     <string name="add_note">नोट थप्नुहोस् (वैकल्पिक)</string>
-    <string name="visit_count">%s (%d %s)</string>
     <string name="no_teams">टोलीहरू उपलब्ध छैनन्</string>
     <string name="planet_name">%s ग्रह</string>
     <string name="no_submissions">पेशाहरू उपलब्ध छैनन्</string>
@@ -1058,5 +1057,8 @@
     <string name="course_progress">%s को %s प्रगति</string>
     <string name="tag_selected">%s छनोट गरिएको</string>
     <string name="resources_size">स्रोतहरू [%d]</string>
+    <string name="user_role">- %s</string>
+    <string name="offline_visits">%d भ्रमणहरू</string>
+    <string name="visit_count">%1$s (%2$d %3$s)</string>
 
 </resources>

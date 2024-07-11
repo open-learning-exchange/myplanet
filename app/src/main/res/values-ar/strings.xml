@@ -1041,7 +1041,6 @@
     <string name="checking_server">جارٍ فحص الخادم</string>
     <string name="below_min_apk">إصدار Apk أقل من المسموح. يرجى تحديث التطبيق إلى أحدث إصدار.</string>
     <string name="add_note">إضافة ملاحظة (اختياري)</string>
-    <string name="visit_count">%s (%d %s)</string>
     <string name="no_teams">الفرق غير متوفرة</string>
     <string name="planet_name">كوكب %s</string>
     <string name="no_submissions">التقديمات غير متاحة</string>
@@ -1058,5 +1057,8 @@
     <string name="course_progress">التقدم %s من %s</string>
     <string name="tag_selected">تم اختيار: %s</string>
     <string name="resources_size">الموارد [%d]</string>
+    <string name="user_role">- %s</string>
+    <string name="offline_visits">%d زيارة</string>
+    <string name="visit_count">%1$s (%2$d %3$s)</string>
 
 </resources>
