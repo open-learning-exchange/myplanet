@@ -29,6 +29,7 @@ import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.DialogUtils.getAlertDialog
 import org.ole.planet.myplanet.utilities.Utilities
+import java.util.Locale
 
 class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnClickListener {
     private lateinit var fragmentTakeCourseBinding: FragmentTakeCourseBinding
@@ -103,7 +104,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             fragmentTakeCourseBinding.btnRemove.visibility = View.GONE
         }
         createActivity(mRealm, userModel, currentCourse)
-        fragmentTakeCourseBinding.tvStep.text = String.format("Step %d/%d", fragmentTakeCourseBinding.viewPager2.currentItem, currentCourse?.courseSteps?.size)
+        fragmentTakeCourseBinding.tvStep.text = String.format(Locale.getDefault(),"Step %d/%d", fragmentTakeCourseBinding.viewPager2.currentItem, currentCourse?.courseSteps?.size)
         fragmentTakeCourseBinding.courseProgress.max = steps.size
         val i = getCurrentProgress(steps, mRealm, userModel?.id, courseId)
         if (i < steps.size) fragmentTakeCourseBinding.courseProgress.secondaryProgress = i + 1
@@ -129,7 +130,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         val i = getCurrentProgress(steps, mRealm, userModel?.id, courseId)
         if (i < steps.size) fragmentTakeCourseBinding.courseProgress.secondaryProgress = i + 1
         fragmentTakeCourseBinding.courseProgress.progress = i
-        fragmentTakeCourseBinding.tvStep.text = String.format("Step %d/%d", position, steps.size)
+        fragmentTakeCourseBinding.tvStep.text = String.format(Locale.getDefault(),"Step %d/%d", position, steps.size)
     }
 
     private fun changeNextButtonState(position: Int) {
@@ -145,7 +146,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     override fun onPageScrollStateChanged(state: Int) {}
 
     private fun onClickNext() {
-        fragmentTakeCourseBinding.tvStep.text = String.format("Step %d/%d", fragmentTakeCourseBinding.viewPager2.currentItem, currentCourse?.courseSteps?.size)
+        fragmentTakeCourseBinding.tvStep.text = String.format(Locale.getDefault(),"Step %d/%d", fragmentTakeCourseBinding.viewPager2.currentItem, currentCourse?.courseSteps?.size)
         if (fragmentTakeCourseBinding.viewPager2.currentItem == currentCourse?.courseSteps?.size) {
             fragmentTakeCourseBinding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_grey_500))
             fragmentTakeCourseBinding.nextStep.visibility = View.GONE
@@ -155,7 +156,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private fun onClickPrevious() {
-        fragmentTakeCourseBinding.tvStep.text = String.format("Step %d/%d", fragmentTakeCourseBinding.viewPager2.currentItem - 1, currentCourse?.courseSteps?.size)
+        fragmentTakeCourseBinding.tvStep.text = String.format(Locale.getDefault(),"Step %d/%d", fragmentTakeCourseBinding.viewPager2.currentItem - 1, currentCourse?.courseSteps?.size)
         if (fragmentTakeCourseBinding.viewPager2.currentItem - 1 == 0) {
             fragmentTakeCourseBinding.previousStep.visibility = View.GONE
             fragmentTakeCourseBinding.nextStep.visibility = View.VISIBLE
