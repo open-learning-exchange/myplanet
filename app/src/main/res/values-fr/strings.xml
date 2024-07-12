@@ -80,6 +80,7 @@
     <string name="language_with_colon">Langue :</string>
     <string name="subject">Sujet(s) :</string>
     <string name="license">Licence :</string>
+    <string name="type">Type :</string>
     <string name="resource_colon">Ressource :</string>
     <string name="your_rating">Votre évaluation</string>
     <string name="your_comment">Laissez votre commentaire</string>

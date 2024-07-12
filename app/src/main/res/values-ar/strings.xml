@@ -80,6 +80,7 @@
     <string name="language_with_colon">اللغة:</string>
     <string name="subject">الموضوعات:</string>
     <string name="license">الترخيص:</string>
+    <string name="type">النوع:</string>
     <string name="resource_colon">المصدر:</string>
     <string name="your_rating">تقييمك</string>
     <string name="your_comment">اترك تعليقك</string>

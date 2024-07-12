@@ -80,6 +80,7 @@
     <string name="language_with_colon">भाषा:</string>
     <string name="subject">विषयहरू:</string>
     <string name="license">लाइसेन्स:</string>
+    <string name="type">प्रकार:</string>
     <string name="resource_colon">स्रोत:</string>
     <string name="your_rating">तपाईंको मत *</string>
     <string name="your_comment">तपाईंको टिप्पणी छोड्नुहोस्</string>
