@@ -1056,7 +1056,6 @@
     <string name="number_placeholder">%d</string>
     <string name="date_range">%s إلى %s</string>
     <string name="string_range">%s - %s</string>
-    <string name="team_financial_report">تقرير مالي لـ %s</string>
     <string name="team_financial_report">%s تقرير مالي لـ</string>
     <string name="report_date_details">%s في: تم إنشاء التقرير | %s في: تم التحديث</string>
     <string name="formatted_date">%d/%d/%d</string>
