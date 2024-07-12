@@ -69,7 +69,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 
     fun setRatings(`object`: JsonObject?) {
         if (`object` != null) {
-            AdapterCourses.showRating(`object`, rating, timesRated, ratingBar, context)
+            AdapterCourses.showRating(`object`, rating, timesRated, ratingBar)
         }
     }
     fun getUrlsAndStartDownload(
