@@ -71,13 +71,13 @@ class MyMeetupDetailFragment : Fragment(), View.OnClickListener {
         val keys = ArrayList(map?.keys ?: emptyList())
         listDesc?.adapter = object : ArrayAdapter<String?>(requireActivity(), R.layout.row_description, keys) {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-                var convertView = convertView
-                if (convertView == null) {
-                    convertView = LayoutInflater.from(activity).inflate(R.layout.row_description, parent, false)
+                var convertedView = convertView
+                if (convertedView == null) {
+                    convertedView = LayoutInflater.from(activity).inflate(R.layout.row_description, parent, false)
                 }
-                (convertView?.findViewById<View>(R.id.title) as TextView).text = "${getItem(position)} : "
-                (convertView.findViewById<View>(R.id.description) as TextView).text = "${map?.get(getItem(position))}"
-                return convertView
+                (convertedView?.findViewById<View>(R.id.title) as TextView).text = context.getString(R.string.message_placeholder, "${getItem(position)} : ")
+                (convertedView.findViewById<View>(R.id.description) as TextView).text = context.getString(R.string.message_placeholder, map?.get(getItem(position)))
+                return convertedView
             }
         }
     }
