@@ -1057,7 +1057,8 @@
     <string name="date_range">%s إلى %s</string>
     <string name="string_range">%s - %s</string>
     <string name="team_financial_report">تقرير مالي لـ %s</string>
-    <string name="report_date_details">تم إنشاء التقرير في: %s | تم التحديث في: %s</string>
+    <string name="team_financial_report">%s تقرير مالي لـ</string>
+    <string name="report_date_details">%s في: تم إنشاء التقرير | %s في: تم التحديث</string>
     <string name="formatted_date">%d/%d/%d</string>
     <string name="user_role">- %s</string>
     <string name="offline_visits">%d زيارة</string>
