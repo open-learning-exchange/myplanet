@@ -36,9 +36,9 @@ class UserListArrayAdapter(activity: Activity, val view: Int, var list: List<Rea
         }
 
         val um = getItem(position)
-        holder.tvName?.text = "${um?.getFullName()} (${um?.name})"
+        holder.tvName?.text = context.getString(R.string.two_strings, um?.getFullName(), "(${um?.name})")
         if (um != null) {
-            holder.joined?.text = "${context.getString(R.string.joined_colon)} ${TimeUtils.formatDate(um.joinDate)}"
+            holder.joined?.text = context.getString(R.string.joined_colon, TimeUtils.formatDate(um.joinDate))
         }
 
         if (!TextUtils.isEmpty(um?.userImage)) {

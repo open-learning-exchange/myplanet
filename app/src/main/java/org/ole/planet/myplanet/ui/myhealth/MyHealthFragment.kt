@@ -20,7 +20,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.gson.Gson
 import io.realm.Case
 import io.realm.Realm
-import io.realm.RealmResults
 import io.realm.Sort
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertHealthListBinding
@@ -182,7 +181,7 @@ class MyHealthFragment : Fragment() {
     private fun showRecords() {
         fragmentVitalSignBinding.layoutUserDetail.visibility = View.VISIBLE
         fragmentVitalSignBinding.tvMessage.visibility = View.GONE
-        fragmentVitalSignBinding.txtFullName.text = "${userModel?.firstName} ${userModel?.middleName} ${userModel?.lastName}"
+        fragmentVitalSignBinding.txtFullName.text = getString(R.string.three_strings, userModel?.firstName, userModel?.middleName, userModel?.lastName)
         fragmentVitalSignBinding.txtEmail.text = Utilities.checkNA(userModel?.email!!)
         fragmentVitalSignBinding.txtLanguage.text = Utilities.checkNA(userModel?.language!!)
         fragmentVitalSignBinding.txtDob.text = Utilities.checkNA(userModel?.dob!!)
@@ -201,9 +200,8 @@ class MyHealthFragment : Fragment() {
             fragmentVitalSignBinding.txtOtherNeed.text = Utilities.checkNA(myHealths?.notes!!)
             fragmentVitalSignBinding.txtSpecialNeeds.text = Utilities.checkNA(myHealths.specialNeeds)
             fragmentVitalSignBinding.txtBirthPlace.text = Utilities.checkNA(userModel?.birthPlace!!)
-            fragmentVitalSignBinding.txtEmergencyContact.text = ("${getString(R.string.name_colon)} ${Utilities.checkNA(myHealths.emergencyContactName)} " +
-                    "${getString(R.string.type)} ${Utilities.checkNA(myHealths.emergencyContactName)} " +
-                    "${getString(R.string.contact_colon)} ${Utilities.checkNA(myHealths.emergencyContact)}").trimIndent()
+            fragmentVitalSignBinding.txtEmergencyContact.text = getString(R.string.emergency_contact, Utilities.checkNA(myHealths.emergencyContactName),
+                    Utilities.checkNA(myHealths.emergencyContactName), Utilities.checkNA(myHealths.emergencyContact)).trimIndent()
             val list = getExaminations(mm)
 
             val adap = AdapterHealthExamination(requireActivity(), list, mh, userModel)
@@ -217,10 +215,10 @@ class MyHealthFragment : Fragment() {
                 fragmentVitalSignBinding.rvRecords.scrollToPosition(list?.size ?: (0 - 1))
             }
         } else {
-            fragmentVitalSignBinding.txtOtherNeed.text = ""
-            fragmentVitalSignBinding.txtSpecialNeeds.text = ""
-            fragmentVitalSignBinding.txtBirthPlace.text = ""
-            fragmentVitalSignBinding.txtEmergencyContact.text= ""
+            fragmentVitalSignBinding.txtOtherNeed.text = getString(R.string.empty_text)
+            fragmentVitalSignBinding.txtSpecialNeeds.text = getString(R.string.empty_text)
+            fragmentVitalSignBinding.txtBirthPlace.text = getString(R.string.empty_text)
+            fragmentVitalSignBinding.txtEmergencyContact.text= getString(R.string.empty_text)
             fragmentVitalSignBinding.rvRecords.adapter = null
         }
     }
