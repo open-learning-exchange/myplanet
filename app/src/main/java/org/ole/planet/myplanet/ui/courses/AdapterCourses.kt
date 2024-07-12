@@ -20,6 +20,7 @@ import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
 import io.realm.Realm
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnCourseItemSelected
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
@@ -231,7 +232,7 @@ class AdapterCourses(private val context: Context, private var courseList: List<
         showProgress(position)
         if (map.containsKey(courseList[position]!!.courseId)) {
             val `object` = map[courseList[position]!!.courseId]
-            showRating(`object`, viewHolder.rowCourseBinding.average, viewHolder.rowCourseBinding.timesRated, viewHolder.rowCourseBinding.ratingBar, context)
+            showRating(`object`, viewHolder.rowCourseBinding.average, viewHolder.rowCourseBinding.timesRated, viewHolder.rowCourseBinding.ratingBar)
         } else {
             viewHolder.rowCourseBinding.ratingBar.rating = 0f
         }
@@ -304,12 +305,12 @@ class AdapterCourses(private val context: Context, private var courseList: List<
 
     companion object {
         @JvmStatic
-        fun showRating(`object`: JsonObject?, average: TextView?, ratingCount: TextView?, ratingBar: AppCompatRatingBar?, context: Context?) {
+        fun showRating(`object`: JsonObject?, average: TextView?, ratingCount: TextView?, ratingBar: AppCompatRatingBar?) {
             if (average != null) {
                 average.text = String.format(Locale.getDefault(), "%.2f", `object`?.get("averageRating")?.asFloat)
             }
             if (ratingCount != null) {
-                ratingCount.text = context?.getString(R.string.rating_count_format, `object`?.get("total")?.asInt)
+                ratingCount.text = context.getString(R.string.rating_count_format, `object`?.get("total")?.asInt)
             }
             if (`object` != null) {
                 if (`object`.has("ratingByUser"))
