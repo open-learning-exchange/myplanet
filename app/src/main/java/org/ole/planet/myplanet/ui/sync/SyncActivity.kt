@@ -20,7 +20,9 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import io.realm.*
 import okhttp3.ResponseBody
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.databinding.*
@@ -315,6 +317,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 syncIconDrawable.stop()
                 syncIconDrawable.selectDrawable(0)
                 syncIcon.invalidateDrawable(syncIconDrawable)
+                createLog("synced successfully")
                 showSnack(findViewById(android.R.id.content), getString(R.string.sync_completed))
                 downloadAdditionalResources()
                 cancellAll(this)
@@ -752,6 +755,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 editor.putBoolean(key, value)
             }
             editor.commit()
+
+            val preferences = PreferenceManager.getDefaultSharedPreferences(context)
+            preferences.edit().clear().commit()
         }
 
         fun restartApp() {
