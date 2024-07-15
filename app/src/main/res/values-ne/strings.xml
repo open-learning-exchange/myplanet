@@ -1050,6 +1050,11 @@
     <string name="message_placeholder">%s</string>
     <string name="reports">रिपोर्टहरू</string>
     <string name="number_placeholder">%d</string>
+    <string name="date_range">%s देखि %s</string>
+    <string name="string_range">%s - %s</string>
+    <string name="team_financial_report">%s वित्तीय रिपोर्ट</string>
+    <string name="report_date_details">%s मा बनाइएको रिपोर्ट | %s मा अद्यावधिक गरिएको</string>
+    <string name="formatted_date">%d/%d/%d</string>
     <string name="prefix_content">%s%s</string>
     <string name="rating_count_format">%d कुल</string>
     <string name="step_progress">वर्तमान कदम: %d को %d</string>

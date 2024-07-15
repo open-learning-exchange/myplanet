@@ -1050,6 +1050,11 @@
     <string name="message_placeholder">%s</string>
     <string name="reports">warbixino</string>
     <string name="number_placeholder">%d</string>
+    <string name="date_range">%s ilaa %s</string>
+    <string name="string_range">%s - %s</string>
+    <string name="team_financial_report">Warbixin lacagta ee %s</string>
+    <string name="report_date_details">Warbixin lagu sameeyay: %s | La cusbooneysiiyay: %s</string>
+    <string name="formatted_date">%d/%d/%d</string>
     <string name="prefix_content">%s%s</string>
     <string name="rating_count_format">%d guud</string>
     <string name="step_progress">Gaadhi hadda: %d ka %d</string>

@@ -1050,6 +1050,11 @@
     <string name="message_placeholder">%s</string>
     <string name="reports">rapports</string>
     <string name="number_placeholder">%d</string>
+    <string name="date_range">%s à %s</string>
+    <string name="string_range">%s - %s</string>
+    <string name="team_financial_report">Rapport financier de %s</string>
+    <string name="report_date_details">Rapport créé le : %s | Mis à jour le : %s</string>
+    <string name="formatted_date">%d/%d/%d</string>
     <string name="prefix_content">%s%s</string>
     <string name="rating_count_format">%d total</string>
     <string name="step_progress">Étape actuelle : %d sur %d</string>

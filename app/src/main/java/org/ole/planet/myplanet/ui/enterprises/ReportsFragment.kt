@@ -3,16 +3,19 @@ package org.ole.planet.myplanet.ui.enterprises
 import android.app.Activity
 import android.app.DatePickerDialog
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.gson.JsonObject
 import io.realm.RealmResults
 import io.realm.Sort
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.DialogAddReportBinding
 import org.ole.planet.myplanet.databinding.FragmentReportsBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -28,6 +31,7 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
+@RequiresApi(Build.VERSION_CODES.O)
 class ReportsFragment : BaseTeamFragment() {
     private lateinit var fragmentReportsBinding: FragmentReportsBinding
     var list: RealmResults<RealmMyTeam>? = null
@@ -71,7 +75,7 @@ class ReportsFragment : BaseTeamFragment() {
                 val day = calendar.get(Calendar.DAY_OF_MONTH)
 
                 val dpd = DatePickerDialog(requireContext(), { _, selectedYear, selectedMonth, selectedDay ->
-                    dialogAddReportBinding.startDate.text = "$selectedDay/${selectedMonth + 1}/$selectedYear"
+                    dialogAddReportBinding.startDate.text = getString(R.string.formatted_date, selectedDay, selectedMonth + 1, selectedYear)
                     calendar.set(Calendar.YEAR, selectedYear)
                     calendar.set(Calendar.MONTH, selectedMonth)
                     calendar.set(Calendar.DAY_OF_MONTH, selectedDay)
@@ -88,7 +92,7 @@ class ReportsFragment : BaseTeamFragment() {
                 val day = calendar.get(Calendar.DAY_OF_MONTH)
 
                 val dpd = DatePickerDialog(requireContext(), { _, selectedYear, selectedMonth, selectedDay ->
-                    dialogAddReportBinding.endDate.text = "$selectedDay/${selectedMonth + 1}/$selectedYear"
+                    dialogAddReportBinding.endDate.text = getString(R.string.formatted_date, selectedDay, selectedMonth + 1, selectedYear)
                     calendar.set(Calendar.YEAR, selectedYear)
                     calendar.set(Calendar.MONTH, selectedMonth)
                     calendar.set(Calendar.DAY_OF_MONTH, selectedDay)
