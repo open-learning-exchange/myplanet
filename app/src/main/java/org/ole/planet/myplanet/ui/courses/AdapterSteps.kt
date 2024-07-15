@@ -52,7 +52,7 @@ class AdapterSteps(private val context: Context, private val list: List<RealmCou
             if (exam != null) {
                 size = exam.noOfQuestions
             }
-            rowStepsBinding.tvDescription.text = "${context.getString(R.string.this_test_has)}$size${context.getString(R.string.questions)}"
+            rowStepsBinding.tvDescription.text = context.getString(R.string.test_size, size)
             if (descriptionVisibilityList[position]) {
                 rowStepsBinding.tvDescription.visibility = View.VISIBLE
             } else {
