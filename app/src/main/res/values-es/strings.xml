@@ -334,7 +334,8 @@
     <string name="recurring_frequency">Frecuencia recurrente</string>
     <string name="filter_by_date">Filtro fecha </string>
     <string name="date_reset">Restablecer Fecha</string>
-    <string name="emergency_contact">Nombre: %s Tipo: %s Contacto: %s</string>
+    <string name="emergency_contact">Contacto de emergencia</string>
+    <string name="emergency_contact_details">Nombre: %s Tipo: %s Contacto: %s</string>
     <string name="contact">Contacto</string>
     <string name="special_needs">Necesidades especiales</string>
     <string name="other_need">Otras necesidades</string>
