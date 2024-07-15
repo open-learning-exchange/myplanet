@@ -28,6 +28,7 @@ import java.math.BigInteger
 
 object Utilities {
     private var contextRef: WeakReference<Context>? = null
+    private val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     fun setContext(ctx: Context) {
         contextRef = WeakReference(ctx.applicationContext)
@@ -59,10 +60,7 @@ object Utilities {
     }
 
     fun openDownloadService(context: Context?, urls: ArrayList<String>, fromSync: Boolean) {
-        // Store URLs in shared preferences
-        val sharedPreferences = context?.getSharedPreferences("MY_APP_PREFS", Context.MODE_PRIVATE)
-        sharedPreferences?.edit()?.putStringSet("url_list", urls.toSet())?.apply()
-
+        settings.edit()?.putStringSet("url_list", urls.toSet())?.apply()
         val inputData = Data.Builder()
             .putString("urls_key", "url_list")
             .putBoolean("fromSync", fromSync)
@@ -76,21 +74,6 @@ object Utilities {
             WorkManager.getInstance(it).enqueue(downloadWorkRequest)
         }
     }
-
-//    fun openDownloadService(context: Context?, urls: ArrayList<String>, fromSync: Boolean) {
-//        val inputData = Data.Builder()
-//            .putStringArray("urls", urls.toTypedArray())
-//            .putBoolean("fromSync", fromSync)
-//            .build()
-//
-//        val downloadWorkRequest = OneTimeWorkRequest.Builder(MyDownloadService::class.java)
-//            .setInputData(inputData)
-//            .build()
-//
-//        context?.let {
-//            WorkManager.getInstance(it).enqueue(downloadWorkRequest)
-//        }
-//    }
 
     @JvmStatic
     fun toast(context: Context?, s: String?) {
