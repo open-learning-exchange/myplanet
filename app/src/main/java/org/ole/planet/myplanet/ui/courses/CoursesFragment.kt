@@ -208,8 +208,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private fun clearTags() {
         requireView().findViewById<View>(R.id.btn_clear_tags).setOnClickListener {
             searchTags.clear()
-            etSearch.setText("")
-            tvSelected.text = ""
+            etSearch.setText(R.string.empty_text)
+            tvSelected.text = context?.getString(R.string.empty_text)
             adapterCourses.setCourseList(filterCourseByTag("", searchTags))
             showNoData(tvMessage, adapterCourses.itemCount, "courses")
             spnGrade.setSelection(0)
@@ -271,7 +271,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         val li: MutableList<RealmTag> = ArrayList()
         li.add(tag)
         searchTags = li
-        tvSelected.text = "${R.string.selected} ${tag.name}"
+        tvSelected.text = context?.getString(R.string.tag_selected, tag.name)
         adapterCourses.setCourseList(filterCourseByTag(etSearch.text.toString(), li))
         showNoData(tvMessage, adapterCourses.itemCount, "courses")
     }

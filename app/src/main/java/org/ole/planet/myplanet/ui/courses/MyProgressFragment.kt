@@ -54,13 +54,12 @@ class MyProgressFragment : Fragment() {
                     .equalTo("type", "exam")
                     .findAll()
             }
-            val totalMistakes = 0
             val exams = realm.where(RealmStepExam::class.java)
                 .equalTo("courseId", it.courseId)
                 .findAll()
             val examIds: List<String> = exams.map { it.id as String }
             if (submissions != null) {
-                submissionMap(submissions, realm, examIds, totalMistakes, obj)
+                submissionMap(submissions, realm, examIds, obj)
             }
             arr.add(obj)
         }
@@ -68,8 +67,8 @@ class MyProgressFragment : Fragment() {
         fragmentMyProgressBinding.rvMyprogress.adapter = AdapterMyProgress(requireActivity(), arr)
     }
 
-    private fun submissionMap(submissions: RealmResults<RealmSubmission>, realm: Realm, examIds: List<String>, totalMistakes: Int, obj: JsonObject) {
-        var totalMistakes1 = totalMistakes
+    private fun submissionMap(submissions: RealmResults<RealmSubmission>, realm: Realm, examIds: List<String>, obj: JsonObject) {
+        var totalMistakes = 0
         submissions.forEach {
             val answers = realm.where(RealmAnswer::class.java)
                 .equalTo("submissionId", it.id)
@@ -80,7 +79,7 @@ class MyProgressFragment : Fragment() {
                     .equalTo("id", r.questionId)
                     .findFirst()
                 if (examIds.contains(question?.examId)) {
-                    totalMistakes1 += r.mistakes
+                    totalMistakes += r.mistakes
                     if (mistakesMap.containsKey(question?.examId)) {
                         mistakesMap["${examIds.indexOf(question?.examId)}"] = mistakesMap[question?.examId]!!.plus(r.mistakes)
                     } else {
@@ -89,7 +88,7 @@ class MyProgressFragment : Fragment() {
                 }
             }
             obj.add("stepMistake", Gson().fromJson(Gson().toJson(mistakesMap), JsonObject::class.java))
-            obj.addProperty("mistakes", totalMistakes1)
+            obj.addProperty("mistakes", totalMistakes)
         }
     }
 }

@@ -14,7 +14,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
-import org.ole.planet.myplanet.utilities.Constants
+import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.NotificationUtil
 import org.ole.planet.myplanet.utilities.Utilities
@@ -51,9 +51,13 @@ class MyDownloadService(context: Context, params: WorkerParameters) : Worker(con
     }
 
     override fun doWork(): Result {
-        preferences = applicationContext.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+        preferences = applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        urls = inputData.getStringArray("urls") ?: return Result.failure()
+
+        val urlsKey = inputData.getString("urls_key")
+        val settings = applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        urls = (settings.getStringSet(urlsKey, emptySet())?.toList() ?: return Result.failure()).toTypedArray()
+
         fromSync = inputData.getBoolean("fromSync", false)
 
         if (urls.isEmpty()) {
@@ -186,7 +190,7 @@ class MyDownloadService(context: Context, params: WorkerParameters) : Worker(con
         download.fileName = FileUtils.getFileNameFromUrl(url)
         download.fileUrl = url
         download.progress = 100
-        if (currentIndex == (urls?.size ?: 0) - 1) {
+        if (currentIndex == urls.size - 1) {
             completeAll = true
             download.completeAll = true
         }

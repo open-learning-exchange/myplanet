@@ -31,12 +31,12 @@ class AdapterFinance(private val context: Context, private val list: RealmResult
             rowFinanceBinding.date.text = formatDate(it.date, "MMM dd, yyyy")
             rowFinanceBinding.note.text = it.description
             if (TextUtils.equals(it.type?.lowercase(Locale.getDefault()), "debit")) {
-                rowFinanceBinding.debit.text = "${it.amount}"
-                rowFinanceBinding.credit.text = " -"
+                rowFinanceBinding.debit.text = context.getString(R.string.number_placeholder, it.amount)
+                rowFinanceBinding.credit.text = context.getString(R.string.message_placeholder, " -")
                 rowFinanceBinding.credit.setTextColor(Color.BLACK)
             } else {
-                rowFinanceBinding.credit.text = "${it.amount}"
-                rowFinanceBinding.debit.text = " -"
+                rowFinanceBinding.credit.text = context.getString(R.string.number_placeholder, it.amount)
+                rowFinanceBinding.debit.text = context.getString(R.string.message_placeholder, " -")
                 rowFinanceBinding.debit.setTextColor(Color.BLACK)
             }
             rowFinanceBinding.balance.text = getBalance(position)
