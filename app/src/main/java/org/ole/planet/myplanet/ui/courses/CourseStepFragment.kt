@@ -96,7 +96,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         step = cRealm.where(RealmCourseStep::class.java).equalTo("id", stepId).findFirst()!!
         resources = cRealm.where(RealmMyLibrary::class.java).equalTo("stepId", stepId).findAll()
         stepExams = cRealm.where(RealmStepExam::class.java).equalTo("stepId", stepId).findAll()
-        fragmentCourseStepBinding.btnResources.text = getString(R.string.resources) + " [" + resources.size + "]"
+        fragmentCourseStepBinding.btnResources.text = getString(R.string.resources_size, resources.size)
         hideTestIfNoQuestion()
         fragmentCourseStepBinding.tvTitle.text = step.stepTitle
         val markdownContentWithLocalPaths = prependBaseUrlToImages(step.description, "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/")
@@ -125,8 +125,8 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     private fun hideTestIfNoQuestion() {
         fragmentCourseStepBinding.btnTakeTest.visibility = View.GONE
         if (stepExams.isNotEmpty()) {
-            val first_step_id = stepExams[0].id
-            val questions = cRealm.where(RealmExamQuestion::class.java).equalTo("examId", first_step_id).findAll()
+            val firstStepId = stepExams[0].id
+            val questions = cRealm.where(RealmExamQuestion::class.java).equalTo("examId", firstStepId).findAll()
             val submissionsCount = step.courseId?.let {
                 cRealm.where(RealmSubmission::class.java).contains("parentId",
                     it
@@ -136,10 +136,10 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                 if (submissionsCount != null) {
                     fragmentCourseStepBinding.btnTakeTest.text = (
                             if (submissionsCount > 0) {
-                                getString(R.string.retake_test)
+                                getString(R.string.retake_test, stepExams.size)
                             } else {
-                                getString(R.string.take_test)
-                            }) + " [${stepExams.size}]"
+                                getString(R.string.take_test, stepExams.size)
+                            })
                 }
                 fragmentCourseStepBinding.btnTakeTest.visibility = View.VISIBLE
             }
