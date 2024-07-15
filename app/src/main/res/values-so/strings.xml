@@ -323,6 +323,7 @@
     <string name="credit">Credit</string>
     <string name="balance">Baaki</string>
     <string name="total">Gudaha</string>
+    <string name="num_total">%d Guud</string>
     <string name="location">Goobta</string>
     <string name="start_date">Bilowga Dhibaatada</string>
     <string name="click_here_to_pick_time">Si aad u doorato waqtiga</string>
@@ -494,7 +495,7 @@
     <string name="finish">Dhammaad</string>
     <string name="submit">Ku Dir</string>
     <string name="our_courses">Koorsadayaashay</string>
-    <string name="file">"Fayl: "</string>
+    <string name="file">Faylka: %s</string>
     <string name="recording_audio">Furayaasha Sireyska......</string>
     <string name="show_replies">"Muuqaalka Jawaabo "</string>
     <string name="selected">"La Xulo: "</string>

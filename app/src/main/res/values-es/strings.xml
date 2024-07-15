@@ -323,6 +323,7 @@
     <string name="credit">Crédito</string>
     <string name="balance">Saldo</string>
     <string name="total">Total</string>
+    <string name="num_total">%d Total</string>
     <string name="location">Ubicación</string>
     <string name="start_date">Fecha de inicio</string>
     <string name="click_here_to_pick_time">Haz clic aquí para seleccionar la hora</string>
@@ -494,7 +495,7 @@
     <string name="finish">Finalizar</string>
     <string name="submit">Enviar</string>
     <string name="our_courses">Nuestros Cursos</string>
-    <string name="file">"Archivo: "</string>
+    <string name="file">Archivo: %s</string>
     <string name="recording_audio">Grabando audio…</string>
     <string name="show_replies">"Mostrar respuestas "</string>
     <string name="selected">"Seleccionado: "</string>
