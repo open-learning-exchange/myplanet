@@ -27,7 +27,7 @@ class TeamPagerAdapter(fm: FragmentActivity, team: RealmMyTeam?, private val isI
 
     init {
         list.add(MainApplication.context.getString(if (isEnterprise) R.string.mission else R.string.plan))
-        list.add(MainApplication.context.getString(if (isEnterprise) R.string.team else R.string.joined_members))
+        list.add(MainApplication.context.getString(if (isEnterprise) R.string.team else R.string.members))
         if (isInMyTeam || team?.isPublic == true) {
             list.add(MainApplication.context.getString(R.string.chat))
             list.add(MainApplication.context.getString(R.string.tasks))
@@ -36,6 +36,10 @@ class TeamPagerAdapter(fm: FragmentActivity, team: RealmMyTeam?, private val isI
             if (isEnterprise) list.add("Reports")
             list.add(MainApplication.context.getString(if (isEnterprise) R.string.documents else R.string.resources))
             list.add(MainApplication.context.getString(if (isEnterprise) R.string.applicants else R.string.join_requests))
+            list.removeAt(0)
+            list.removeAt(0)
+            list.add(1, MainApplication.context.getString(if (isEnterprise) R.string.mission else R.string.plan))
+            list.add(2, MainApplication.context.getString(if (isEnterprise) R.string.team else R.string.members))
         }
     }
 
@@ -51,7 +55,7 @@ class TeamPagerAdapter(fm: FragmentActivity, team: RealmMyTeam?, private val isI
         val fragment: Fragment = when (list[position]) {
             MainApplication.context.getString(R.string.chat) -> DiscussionListFragment()
             MainApplication.context.getString(R.string.plan), MainApplication.context.getString(R.string.mission) -> PlanFragment()
-            MainApplication.context.getString(R.string.joined_members), MainApplication.context.getString(R.string.team) -> JoinedMemberFragment()
+            MainApplication.context.getString(R.string.members), MainApplication.context.getString(R.string.team) -> JoinedMemberFragment()
             MainApplication.context.getString(R.string.tasks) -> TeamTaskFragment()
             MainApplication.context.getString(R.string.calendar) -> EnterpriseCalendarFragment()
             MainApplication.context.getString(R.string.courses) -> TeamCourseFragment()
