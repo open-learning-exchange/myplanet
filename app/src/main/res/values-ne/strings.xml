@@ -667,7 +667,7 @@
     <string name="session_expired">सत्र समाप्त भयो।</string>
     <string name="downloading_started_please_check_notificati">डाउनलोड सुरु भयो, कृपया सूचना जाँच गर्नुहोस्…</string>
     <string name="dictionary">शब्दकोश</string>
-    <string name="list_size">सूचीको आकार</string>
+    <string name="list_size">सूची आकार %d</string>
     <string name="word_not_available_in_our_database">शब्द हाम्रो डाटाबेसमा उपलब्ध छैन।</string>
     <string name="description_is_required">विवरण आवश्यक छ</string>
     <string name="start_time_is_required">समय आवश्यक छ</string>
