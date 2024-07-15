@@ -1048,6 +1048,7 @@
     <string name="no_feedback">कुनै प्रतिक्रिया उपलब्ध छैन</string>
     <string name="empty_text"></string>
     <string name="message_placeholder">%s</string>
+    <string name="reports">रिपोर्टहरू</string>
     <string name="number_placeholder">%d</string>
     <string name="prefix_content">%s%s</string>
     <string name="rating_count_format">%d कुल</string>

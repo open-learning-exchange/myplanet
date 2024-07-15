@@ -1048,6 +1048,7 @@
     <string name="no_feedback">لا توجد تعليقات متاحة</string>
     <string name="empty_text"></string>
     <string name="message_placeholder">%s</string>
+    <string name="reports">التقارير</string>
     <string name="number_placeholder">%d</string>
     <string name="prefix_content">%s%s</string>
     <string name="rating_count_format">%d الإجمالي</string>
