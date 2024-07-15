@@ -27,15 +27,13 @@ class TeamPagerAdapter(fm: FragmentActivity, team: RealmMyTeam?, private val isI
 
     init {
         list.add(MainApplication.context.getString(if (isEnterprise) R.string.mission else R.string.plan))
-        list.add(MainApplication.context.getString(if (isEnterprise) R.string.team else R.string.joined_members))
+        list.add(MainApplication.context.getString(if (isEnterprise) R.string.team else R.string.members))
         if (isInMyTeam || team?.isPublic == true) {
             list.add(MainApplication.context.getString(R.string.chat))
             list.add(MainApplication.context.getString(R.string.tasks))
             list.add(MainApplication.context.getString(R.string.calendar))
             list.add(MainApplication.context.getString(if (isEnterprise) R.string.finances else R.string.courses))
-            if (isEnterprise) {
-                list.add("Reports")
-            }
+            if (isEnterprise) list.add("Reports")
             list.add(MainApplication.context.getString(if (isEnterprise) R.string.documents else R.string.resources))
             list.add(MainApplication.context.getString(if (isEnterprise) R.string.applicants else R.string.join_requests))
             list.removeAt(0)
@@ -51,56 +49,28 @@ class TeamPagerAdapter(fm: FragmentActivity, team: RealmMyTeam?, private val isI
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun createFragment(position: Int): Fragment {
-        val f: Fragment? = if (!isInMyTeam) {
-            if (position == 0) PlanFragment() else {
-                JoinedMemberFragment()
-            }
-        } else {
-            checkCondition(position)
+        if (position < 0 || position >= list.size) {
+            throw IllegalArgumentException("Invalid position: $position. List size: ${list.size}")
         }
-        val b = Bundle()
-        b.putString("id", teamId)
-        f!!.arguments = b
-        return f
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    private fun checkCondition(position: Int): Fragment? {
-        var f: Fragment? = null
-        when (position) {
-            0 -> f = DiscussionListFragment()
-            1 -> f = PlanFragment()
-            2 -> f = JoinedMemberFragment()
-            3 -> f = TeamTaskFragment()
-            4 -> f = EnterpriseCalendarFragment()
-            5 -> f = fragment //finances
-            6 -> {
-                if (isEnterprise) {
-                    f = ReportsFragment()
-                } else {
-                    f = TeamResourceFragment()
-                    MainApplication.listener = f
-                }
-            }
-            7 -> {
-                if (isEnterprise) {
-                    f = TeamResourceFragment()
-                    MainApplication.listener = f
-                } else {
-                    f = MembersFragment()
-                }
-            }
-            8 -> {
-                if (isEnterprise) {
-                    f = MembersFragment()
-                }
-            }
+        val fragment: Fragment = when (list[position]) {
+            MainApplication.context.getString(R.string.chat) -> DiscussionListFragment()
+            MainApplication.context.getString(R.string.plan), MainApplication.context.getString(R.string.mission) -> PlanFragment()
+            MainApplication.context.getString(R.string.members), MainApplication.context.getString(R.string.team) -> JoinedMemberFragment()
+            MainApplication.context.getString(R.string.tasks) -> TeamTaskFragment()
+            MainApplication.context.getString(R.string.calendar) -> EnterpriseCalendarFragment()
+            MainApplication.context.getString(R.string.courses) -> TeamCourseFragment()
+            MainApplication.context.getString(R.string.finances) -> FinanceFragment()
+            MainApplication.context.getString(R.string.reports) -> ReportsFragment()
+            MainApplication.context.getString(R.string.resources), MainApplication.context.getString(R.string.documents) -> TeamResourceFragment().apply { MainApplication.listener = this }
+            MainApplication.context.getString(R.string.join_requests), MainApplication.context.getString(R.string.applicants) -> MembersFragment()
+            else -> throw IllegalArgumentException("Invalid fragment type for position: $position")
         }
-        return f
-    }
 
-    private val fragment: Fragment
-        get() = if (isEnterprise) FinanceFragment() else TeamCourseFragment()
+        val bundle = Bundle()
+        bundle.putString("id", teamId)
+        fragment.arguments = bundle
+        return fragment
+    }
 
     override fun getItemCount(): Int {
         return list.size

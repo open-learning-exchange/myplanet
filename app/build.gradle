@@ -135,7 +135,7 @@ dependencies {
     implementation 'de.rtner:PBKDF2:1.1.4'
     implementation 'org.osmdroid:osmdroid-android:6.1.18'
     implementation 'org.jetbrains:annotations:24.1.0'
-    implementation 'pl.droidsonroids.gif:android-gif-drawable:1.2.28'
+    implementation 'pl.droidsonroids.gif:android-gif-drawable:1.2.29'
 
     implementation 'com.mikepenz:google-material-typeface:3.0.1.1.original@aar'
     implementation 'com.mikepenz:fontawesome-typeface:5.3.1.1@aar'

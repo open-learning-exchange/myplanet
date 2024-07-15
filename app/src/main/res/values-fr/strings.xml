@@ -561,7 +561,7 @@
     <string name="number_of_exams">Nombre d\'examens :</string>
     <string name="description_colon">Description :</string>
     <string name="download_resources">Télécharger les ressources</string>
-    <string name="take_test">Passer le test</string>
+    <string name="take_test">Passer le test [%d]</string>
     <string name="search">Rechercher</string>
     <string name="for_ambulance">Pour les ambulances</string>
     <string name="for_police">Pour la police</string>
@@ -621,17 +621,12 @@
     <string name="please_select_link_item_from_list">Veuillez sélectionner un élément de lien dans la liste</string>
     <string name="title_is_required">Le titre est requis</string>
     <string name="no_data_available">Aucune donnée disponible</string>
-    <string name="current_step">Étape actuelle: </string>
-    <string name="of"> sur </string>
-    <string name="this_test_has">Ce test contient </string>
-    <string name="questions"> question(s)</string>
     <string name="are_you_sure_you_want_to_delete_these_courses">Êtes-vous sûr de vouloir supprimer ces cours ?</string>
     <string name="success_you_have_added_the_following_courses">Succès ! Vous avez ajouté les cours suivants:\n\n</string>
     <string name="return_to_the_home_tab_to_access_mycourses">\n\n Retournez à l\'onglet Accueil pour accéder à Mes cours.\n</string>
     <string name="and">Et </string>
     <string name="more_course_s">autre(s) cours…\n</string>
-    <string name="progress">Avancement </string>
-    <string name="retake_test">Repasser le test</string>
+    <string name="retake_test">Repasser le test [%d]</string>
     <string name="do_you_want_to_join_this_course">Voulez-vous rejoindre ce cours ?</string>
     <string name="join_this_course">Rejoindre ce cours</string>
     <string name="download_dictionary">Télécharger le dictionnaire.</string>
@@ -1046,7 +1041,6 @@
     <string name="checking_server">vérification du serveur</string>
     <string name="below_min_apk">la version de l\'app est inférieure à celle autorisée. veuillez mettre à jour l\'application vers la dernière version.</string>
     <string name="add_note">Ajouter une note (optionnel)</string>
-    <string name="visit_count">%s (%d %s)</string>
     <string name="no_teams">équipes non disponibles</string>
     <string name="planet_name">%s planète</string>
     <string name="no_submissions">soumissions non disponibles</string>
@@ -1054,5 +1048,18 @@
     <string name="no_feedback">aucun commentaire disponible</string>
     <string name="empty_text"></string>
     <string name="message_placeholder">%s</string>
+    <string name="reports">rapports</string>
+    <string name="number_placeholder">%d</string>
+    <string name="prefix_content">%s%s</string>
+    <string name="rating_count_format">%d total</string>
+    <string name="step_progress">Étape actuelle : %d sur %d</string>
+    <string name="percentage">%s%%</string>
+    <string name="test_size">Ce test comporte %d questions</string>
+    <string name="course_progress">Progression %s sur %s</string>
+    <string name="tag_selected">Sélectionné : %s</string>
+    <string name="resources_size">Ressources [%d]</string>
+    <string name="user_role">- %s</string>
+    <string name="offline_visits">%d visites</string>
+    <string name="visit_count">%1$s (%2$d %3$s)</string>
 
 </resources>
