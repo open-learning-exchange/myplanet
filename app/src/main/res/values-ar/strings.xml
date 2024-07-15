@@ -488,9 +488,9 @@
     <string name="update_profile_alert">يرجى استكمال ملف التعريف الخاص بك للاستمتاع بجميع الميزات</string>
     <string name="other_notes">ملاحظات أخرى</string>
     <string name="archive">الأرشيف</string>
-    <string name="Q1">السؤال: 1/</string>
+    <string name="Q1">السؤال: 1/%d</string>
     <string name="no_questions">لا تتوفر أسئلة</string>
-    <string name="Q">"السؤال: "</string>
+    <string name="Q">"السؤال: %d / %d"</string>
     <string name="finish">إنهاء</string>
     <string name="submit">إرسال</string>
     <string name="our_courses">دوراتنا</string>

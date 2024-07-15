@@ -488,9 +488,9 @@
     <string name="update_profile_alert">Please complete your profile to enjoy full features</string>
     <string name="other_notes">Other Notes</string>
     <string name="archive">Archive</string>
-    <string name="Q1">Question: 1/</string>
+    <string name="Q1">Question: 1/%d</string>
     <string name="no_questions">No questions available</string>
-    <string name="Q">"Question: "</string>
+    <string name="Q">"Question: %d / %d"</string>
     <string name="finish">Finish</string>
     <string name="submit">Submit</string>
     <string name="our_courses">Our Courses</string>

@@ -46,10 +46,10 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     var sub: RealmSubmission? = null
     var listAns: HashMap<String, String>? = null
     var isMySurvey = false
-    private var unique_id = getUniqueIdentifier()
+    private var uniqueId = getUniqueIdentifier()
     var date = Date().toString()
-    private var photo_path: String? = ""
-    var Submit_id = ""
+    private var photoPath: String? = ""
+    var submitId = ""
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         db = DatabaseService(requireActivity())
@@ -155,8 +155,8 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
         return false
     }
 
-    fun createAnswer(list: RealmList<RealmAnswer>?): RealmAnswer? {
-        var list = list
+    fun createAnswer(answerList: RealmList<RealmAnswer>?): RealmAnswer? {
+        var list = answerList
         if (list == null) {
             list = RealmList()
         }
@@ -180,23 +180,23 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     }
 
     abstract fun startExam(question: RealmExamQuestion?)
-    private fun insert_into_submitPhotos(submit_id: String?) {
+    private fun insertIntoSubmitPhotos(submitId: String?) {
         mRealm.beginTransaction()
         val submit = mRealm.createObject(RealmSubmitPhotos::class.java, UUID.randomUUID().toString())
-        submit.submissionId = submit_id
+        submit.submissionId = submitId
         submit.examId = exam?.id
         submit.courseId = exam?.courseId
         submit.memberId = user?.id
         submit.date = date
-        submit.uniqueId = unique_id
-        submit.photoLocation = photo_path
+        submit.uniqueId = uniqueId
+        submit.photoLocation = photoPath
         submit.uploaded = false
         mRealm.commitTransaction()
     }
 
     override fun onImageCapture(fileUri: String?) {
-        photo_path = fileUri
-        insert_into_submitPhotos(Submit_id)
+        photoPath = fileUri
+        insertIntoSubmitPhotos(submitId)
     }
 
     fun setMarkdownViewAndShowInput(etAnswer: EditText, type: String, oldAnswer: String?) {
