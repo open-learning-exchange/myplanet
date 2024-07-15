@@ -5,7 +5,6 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.graphics.Color
 import android.net.Uri
-import androidx.work.Data
 import android.text.TextUtils
 import android.text.format.DateUtils
 import android.util.Base64
@@ -14,6 +13,7 @@ import android.util.Patterns
 import android.webkit.MimeTypeMap
 import android.widget.ImageView
 import android.widget.Toast
+import androidx.work.Data
 import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkManager
 import com.bumptech.glide.Glide
@@ -28,7 +28,7 @@ import java.math.BigInteger
 
 object Utilities {
     private var contextRef: WeakReference<Context>? = null
-    private val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    private var settings: SharedPreferences? = null
 
     fun setContext(ctx: Context) {
         contextRef = WeakReference(ctx.applicationContext)
@@ -60,7 +60,8 @@ object Utilities {
     }
 
     fun openDownloadService(context: Context?, urls: ArrayList<String>, fromSync: Boolean) {
-        settings.edit()?.putStringSet("url_list", urls.toSet())?.apply()
+        settings = context?.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        settings?.edit()?.putStringSet("url_list", urls.toSet())?.apply()
         val inputData = Data.Builder()
             .putString("urls_key", "url_list")
             .putBoolean("fromSync", fromSync)
