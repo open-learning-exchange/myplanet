@@ -668,7 +668,7 @@
     <string name="session_expired">Session expired.</string>
     <string name="downloading_started_please_check_notificati">Downloading started, please check notification…</string>
     <string name="dictionary">Dictionary</string>
-    <string name="list_size">List size</string>
+    <string name="list_size">List size %d</string>
     <string name="word_not_available_in_our_database">Word not available in our database.</string>
     <string name="description_is_required">Description is required</string>
     <string name="start_time_is_required">Start time is required</string>
@@ -1048,6 +1048,7 @@
     <string name="no_feedback">no feedback available</string>
     <string name="empty_text"></string>
     <string name="message_placeholder">%s</string>
+    <string name="reports">Reports</string>
     <string name="number_placeholder">%d</string>
     <string name="date_range">%s to %s</string>
     <string name="string_range">%s - %s</string>
