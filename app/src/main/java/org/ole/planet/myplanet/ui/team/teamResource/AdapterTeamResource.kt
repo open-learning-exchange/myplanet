@@ -16,10 +16,9 @@ import org.ole.planet.myplanet.ui.team.teamResource.AdapterTeamResource.ViewHold
 class AdapterTeamResource(private val context: Context, private val list: List<RealmMyLibrary>, mRealm: Realm, teamId: String?, private val settings: SharedPreferences) : RecyclerView.Adapter<ViewHolderTeamResource>() {
     private lateinit var rowTeamResourceBinding: RowTeamResourceBinding
     private var listener: OnHomeItemClickListener? = null
-    private val teamCreator: String
+    private val teamCreator: String = getTeamCreator(teamId, mRealm)
 
     init {
-        teamCreator = getTeamCreator(teamId, mRealm)
         if (context is OnHomeItemClickListener) {
             listener = context
         }
