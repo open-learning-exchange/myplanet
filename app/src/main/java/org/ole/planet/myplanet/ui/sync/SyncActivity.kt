@@ -620,7 +620,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         val pinMap = mapOf(
             BuildConfig.PLANET_LEARNING_URL to BuildConfig.PLANET_LEARNING_PIN,
             BuildConfig.PLANET_GUATEMALA_URL to BuildConfig.PLANET_GUATEMALA_PIN,
-            BuildConfig.LOCAL_URL to BuildConfig.LOCAL_PIN
+            BuildConfig.PLANET_SANPABLO_URL to BuildConfig.PLANET_SANPABLO_PIN
         )
         return pinMap[url] ?: ""
     }
