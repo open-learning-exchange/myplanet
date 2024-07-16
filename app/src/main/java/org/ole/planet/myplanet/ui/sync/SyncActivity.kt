@@ -547,7 +547,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         val serverMap = mapOf(
             "🌎 planet learning" to BuildConfig.PLANET_LEARNING_URL,
             "🇬🇹 planet guatemala" to BuildConfig.PLANET_GUATEMALA_URL,
-            "🇬🇹 planet san pablo" to BuildConfig.LOCAL_URL
+            "🇬🇹 planet san pablo" to BuildConfig.PLANET_SANPABLO_URL
         )
 
         if (show) {
