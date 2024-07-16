@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.courses
 
 import android.content.DialogInterface
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -118,7 +117,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         createActivity(mRealm, userModel, currentCourse)
         fragmentTakeCourseBinding.courseProgress.max = steps.size
         val i = getCurrentProgress(steps, mRealm, userModel?.id, courseId)
-        Log.d("TakeCourseFragment", "setCourseData: $i")
         if (i < steps.size) fragmentTakeCourseBinding.courseProgress.secondaryProgress = i + 1
         fragmentTakeCourseBinding.tvStep.text = String.format("Step %d/%d", currentStep + i, steps.size)
         fragmentTakeCourseBinding.courseProgress.progress = i
