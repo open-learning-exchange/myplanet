@@ -69,7 +69,7 @@
     <string name="phone_number">رقم الهاتف</string>
     <string name="language">اللغة</string>
     <string name="last_name">الاسم الأخير</string>
-    <string name="version">الإصدار</string>
+    <string name="version">الإصدار s%</string>
     <string name="middle_name">الاسم الأوسط</string>
     <string name="first_name">الاسم الأول</string>
     <string name="search_dots">بحث…</string>
@@ -498,12 +498,12 @@
     <string name="recording_audio">جارٍ تسجيل الصوت…</string>
     <string name="show_replies">"عرض الردود "</string>
     <string name="selected">"المحدد: "</string>
-    <string name="last_sync"><![CDATA["آخر مزامنة مع الخادم: "]]></string>
+    <string name="last_sync">آخر مزامنة مع الخادم: %s</string>
     <string name="last_syncs">آخر مزامنة</string>
     <string name="login_user">اسم المستخدم لتسجيل الدخول</string>
     <string name="login_password">كلمة مرور المستخدم لتسجيل الدخول</string>
     <string name="no_team_available">لا توجد فرق/مؤسسات متاحة</string>
-    <string name="last_sync_date">"تاريخ آخر مزامنة: "</string>
+    <string name="last_sync_date">تاريخ آخر مزامنة: %s</string>
     <string name="no_assignee">لا يوجد مُعيَّن</string>
     <string name="note_">ملاحظات</string>
     <string name="diagno">التشخيص</string>

@@ -56,9 +56,9 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         }
     }
 
-    fun validateEditText(textField: EditText, textLayout: TextInputLayout, err_message: String?): Boolean {
+    fun validateEditText(textField: EditText, textLayout: TextInputLayout, errMessage: String?): Boolean {
         if (textField.text.toString().trim { it <= ' ' }.isEmpty()) {
-            textLayout.error = err_message
+            textLayout.error = errMessage
             requestFocus(textField)
             return false
         } else {
@@ -122,25 +122,25 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         val editor = settings.edit()
         val uri = Uri.parse(url)
         var couchdbURL: String
-        val url_user: String
-        val url_pwd: String
+        val urlUser: String
+        val urlPwd: String
         if (url.contains("@")) {
             val userinfo = getUserInfo(uri)
-            url_user = userinfo[0]
-            url_pwd = userinfo[1]
+            urlUser = userinfo[0]
+            urlPwd = userinfo[1]
             couchdbURL = url
         } else if (TextUtils.isEmpty(password)) {
             showAlert(this, "", getString(R.string.pin_is_required))
             return ""
         } else {
-            url_user = "satellite"
-            url_pwd = password
-            couchdbURL = uri.scheme + "://" + url_user + ":" + url_pwd + "@" + uri.host + ":" + if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port
+            urlUser = "satellite"
+            urlPwd = password
+            couchdbURL = uri.scheme + "://" + urlUser + ":" + urlPwd + "@" + uri.host + ":" + if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port
         }
         editor.putString("serverPin", password)
         saveUrlScheme(editor, uri, url, couchdbURL)
-        editor.putString("url_user", url_user)
-        editor.putString("url_pwd", url_pwd)
+        editor.putString("url_user", urlUser)
+        editor.putString("url_pwd", urlPwd)
         editor.putString("url_Scheme", uri.scheme)
         editor.putString("url_Host", uri.host)
         editor.apply()
@@ -199,9 +199,9 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         editor.apply()
     }
 
-    fun alertDialogOkay(Message: String?) {
+    fun alertDialogOkay(message: String?) {
         val builder1 = AlertDialog.Builder(this)
-        builder1.setMessage(Message)
+        builder1.setMessage(message)
         builder1.setCancelable(true)
         builder1.setNegativeButton(R.string.okay) { dialog: DialogInterface, _: Int -> dialog.cancel() }
         val alert11 = builder1.create()

@@ -69,7 +69,7 @@
     <string name="phone_number">Phone Number</string>
     <string name="language">Language</string>
     <string name="last_name">Last Name</string>
-    <string name="version">Version</string>
+    <string name="version">Version %s</string>
     <string name="middle_name">Middle Name</string>
     <string name="first_name">First Name</string>
     <string name="search_dots">Search…</string>
@@ -498,12 +498,12 @@
     <string name="recording_audio">Recording audio…</string>
     <string name="show_replies">"Show replies "</string>
     <string name="selected">"Selected: "</string>
-    <string name="last_sync"><![CDATA["Last sync with server: "]]></string>
+    <string name="last_sync">Last sync with server: %s></string>
     <string name="last_syncs">LastSync</string>
     <string name="login_user">loginUserName</string>
     <string name="login_password">loginUserPassword</string>
     <string name="no_team_available">No team / enterprise available</string>
-    <string name="last_sync_date">"last sync: "</string>
+    <string name="last_sync_date">last sync: %s</string>
     <string name="no_assignee">No assignee</string>
     <string name="note_">notes</string>
     <string name="diagno">diagnosis</string>

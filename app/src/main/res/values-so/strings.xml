@@ -69,7 +69,7 @@
     <string name="phone_number">Telefoon Number</string>
     <string name="language">Luuqad</string>
     <string name="last_name">Magaca Dambe</string>
-    <string name="version">Nooca</string>
+    <string name="version">Nooca %s</string>
     <string name="middle_name">Magaca Dhexe</string>
     <string name="first_name">Magaca koowaad</string>
     <string name="search_dots">Raadi…</string>
@@ -498,12 +498,12 @@
     <string name="recording_audio">Furayaasha Sireyska......</string>
     <string name="show_replies">"Muuqaalka Jawaabo "</string>
     <string name="selected">"La Xulo: "</string>
-    <string name="last_sync"><![CDATA["Halkan jeedadda hore ee iskaashiga: "]]></string>
+    <string name="last_sync">Iswaafajintii ugu dambeysay ee server-ka: %s</string>
     <string name="last_syncs">Halkan jeedadda ee Hore</string>
     <string name="login_user">Magaca Login</string>
     <string name="login_password">Furaha Erayga Login</string>
     <string name="no_team_available">Koox / Mashruuc la jira ma jiro</string>
-    <string name="last_sync_date">"Taariikhda Hore ee Iskaashiga: "</string>
+    <string name="last_sync_date">Taariikhda Hore ee Iskaashiga: %s</string>
     <string name="no_assignee">Qof oo xoolo aan la yeelan</string>
     <string name="note_">fikirro</string>
     <string name="diagno">xeerka qalbiga</string>

@@ -37,7 +37,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     var users: List<RealmUserModel>? = null
     private var mAdapter: TeamListAdapter? = null
     private var backPressedTime: Long = 0
-    private val BACK_PRESSED_INTERVAL: Long = 2000
+    private val backPressedInterval: Long = 2000
     private var fallbackLanguage: String = "en"
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -99,7 +99,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if (System.currentTimeMillis() - backPressedTime < BACK_PRESSED_INTERVAL) {
+                if (System.currentTimeMillis() - backPressedTime < backPressedInterval) {
                     finish()
                 } else {
                     toast(this@LoginActivity, getString(R.string.press_back_again_to_exit))
@@ -132,8 +132,8 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                     builder.setCancelable(false)
                     builder.setPositiveButton("Ok") { dialog: DialogInterface, _: Int ->
                         dialog.dismiss()
-                        activityLoginBinding.inputName.setText("")
-                        activityLoginBinding.inputPassword.setText("")
+                        activityLoginBinding.inputName.setText(R.string.empty_text)
+                        activityLoginBinding.inputPassword.setText(R.string.empty_text)
                     }
                     val dialog = builder.create()
                     dialog.show()
@@ -142,18 +142,18 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         }
         if (!settings.contains("serverProtocol")) settings.edit().putString("serverProtocol", "http://").apply()
         activityLoginBinding.becomeMember.setOnClickListener {
-            activityLoginBinding.inputName.setText("")
+            activityLoginBinding.inputName.setText(R.string.empty_text)
             becomeAMember()
         }
 
         activityLoginBinding.imgBtnSetting.setOnClickListener {
-            activityLoginBinding.inputName.setText("")
+            activityLoginBinding.inputName.setText(R.string.empty_text)
             settingDialog()
         }
 
         activityLoginBinding.btnGuestLogin.setOnClickListener {
             if (getUrl().isNotEmpty()) {
-                activityLoginBinding.inputName.setText("")
+                activityLoginBinding.inputName.setText(R.string.empty_text)
                 showGuestLoginDialog()
             } else {
                 toast(this, getString(R.string.please_enter_server_url_first))
@@ -174,7 +174,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                 forceSync = true
                 service.checkVersion(this, settings) }
             declareHideKeyboardElements()
-            activityLoginBinding.lblVersion.text = "${resources.getText(R.string.version)} ${resources.getText(R.string.app_version)}"
+            activityLoginBinding.lblVersion.text = resources.getText(R.string.version, resources.getText(R.string.app_version))
             activityLoginBinding.inputName.addTextChangedListener(MyTextWatcher(activityLoginBinding.inputName))
             activityLoginBinding.inputPassword.addTextChangedListener(MyTextWatcher(activityLoginBinding.inputPassword))
             activityLoginBinding.inputPassword.setOnEditorActionListener { _: TextView?, actionId: Int, event: KeyEvent? ->
