@@ -20,6 +20,7 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import io.realm.*
 import okhttp3.ResponseBody
+import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
@@ -542,10 +543,17 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         binding.ltIntervalLabel.visibility = if (show) View.VISIBLE else View.GONE
         binding.syncSwitch.visibility = if (show) View.VISIBLE else View.GONE
         binding.ltDeviceName.visibility = if (show) View.VISIBLE else View.GONE
+
+        val serverMap = mapOf(
+            "🌎 planet learning" to BuildConfig.PLANET_LEARNING_URL,
+            "🇬🇹 planet guatemala" to BuildConfig.PLANET_GUATEMALA_URL,
+            "🇬🇹 planet san pablo" to BuildConfig.PLANET_SANPABLO_URL
+        )
+
         if (show) {
             serverAddresses.visibility = View.GONE
             serverUrl.visibility = View.VISIBLE
-            if (settings.getString("serverURL", "") == "https://planet.learning.ole.org") {
+            if (settings.getString("serverURL", "") == "https://${BuildConfig.PLANET_LEARNING_URL}") {
                 editor.putString("serverURL", "").apply()
                 editor.putString("serverPin", "").apply()
             }
@@ -553,7 +561,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 binding.radioHttp.isChecked = true
                 editor.putString("serverProtocol", getString(R.string.http_protocol)).apply()
             }
-            if (settings.getString("serverProtocol", "") == getString(R.string.https_protocol) && settings.getString("serverURL", "") != "" && settings.getString("serverURL", "") != "https://planet.learning.ole.org") {
+            if (settings.getString("serverProtocol", "") == getString(R.string.https_protocol) && settings.getString("serverURL", "") != "" && settings.getString("serverURL", "") != "https://${BuildConfig.PLANET_LEARNING_URL}") {
                 binding.radioHttps.isChecked = true
                 editor.putString("serverProtocol", getString(R.string.https_protocol)).apply()
             }
@@ -565,22 +573,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             serverUrl.visibility = View.GONE
             serverAddresses.visibility = View.VISIBLE
 
-            val serverList = listOf(
-//                "🌎 planet.earth.ole.org",
-                "🌎 planet.learning.ole.org",
-//                "🌎 planet.vi.ole.org",
-//                "🇸🇴 planet.somalia.ole.org",
-                "🇬🇹 planet.guatemala.ole.org",
-                "🇬🇹 192.168.48.253",
-//                "🇬🇹 planet.sanpablo.ole.org",
-//                "🇬🇹 planet.campo.ole.org",
-//                "🇰🇪 planet.uriur.ole.org",
-//                "🇰🇪 planet.ruiru.ole.org",
-//                "🇰🇪 planet.embakasi.ole.org",
-//                "🇺🇸 planet.cambridge.ole.org",
-//                "🇺🇸 planet.egdirbmac.ole.org",
-//                "🇺🇸 planet.palmbay.ole.org"
-            )
+            val serverList = serverMap.keys.toList()
 
             val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, serverList)
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
@@ -590,11 +583,13 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             val storedPin = settings.getString("serverPin", null)
             if (storedUrl != null) {
                 val urlWithoutProtocol = storedUrl.replace(Regex("^https?://"), "")
-                val displayUrl = serverList.find { it.contains(urlWithoutProtocol) }
+                val displayUrl = serverMap.entries.find { it.value == urlWithoutProtocol }?.key
                 val index = serverList.indexOf(displayUrl)
+
                 if (index >= 0) {
                     serverAddresses.setSelection(index)
                 }
+
                 serverUrl.setText(urlWithoutProtocol)
                 serverPassword.setText(storedPin)
             }
@@ -602,10 +597,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             serverAddresses.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
                 override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
                     val displayUrl = serverList[position]
-                    val actualUrl = displayUrl.replace(Regex("[\\p{So}\\s]"), "")
+                    val actualUrl = serverMap[displayUrl] ?: ""
                     serverUrl.setText(actualUrl)
                     serverPassword.setText(getPinForUrl(actualUrl))
-                    if (actualUrl == "192.168.48.253") {
+                    if (actualUrl == BuildConfig.PLANET_SANPABLO_URL) {
                         editor.putString("serverProtocol", "http://").apply()
                     } else {
                         editor.putString("serverProtocol", "https://").apply()
@@ -623,20 +618,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     private fun getPinForUrl(url: String): String {
         val pinMap = mapOf(
-//            "planet.earth.ole.org" to "7379",
-            "planet.learning.ole.org" to "1983",
-//            "planet.vi.ole.org" to "0660",
-//            "planet.somalia.ole.org" to "5932",
-            "planet.guatemala.ole.org" to "5562",
-            "192.168.48.253" to "0948",
-//            "planet.sanpablo.ole.org" to "0948",
-//            "planet.campo.ole.org" to "4324",
-//            "planet.uriur.ole.org" to "4025",
-//            "planet.ruiru.ole.org" to "8925",
-//            "planet.embakasi.ole.org" to "2165",
-//            "planet.cambridge.ole.org" to "1565",
-//            "planet.egdirbmac.ole.org" to "6407",
-//            "planet.palmbay.ole.org" to "9699"
+            BuildConfig.PLANET_LEARNING_URL to BuildConfig.PLANET_LEARNING_PIN,
+            BuildConfig.PLANET_GUATEMALA_URL to BuildConfig.PLANET_GUATEMALA_PIN,
+            BuildConfig.PLANET_SANPABLO_URL to BuildConfig.PLANET_SANPABLO_PIN
         )
         return pinMap[url] ?: ""
     }
