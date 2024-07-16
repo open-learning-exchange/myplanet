@@ -323,6 +323,7 @@
     <string name="credit">دائن</string>
     <string name="balance">الرصيد</string>
     <string name="total">الإجمالي</string>
+    <string name="num_total">%d الإجمالي</string>
     <string name="location">الموقع</string>
     <string name="start_date">تاريخ البدء</string>
     <string name="click_here_to_pick_time">انقر هنا لاختيار الوقت</string>
@@ -495,7 +496,7 @@
     <string name="finish">إنهاء</string>
     <string name="submit">إرسال</string>
     <string name="our_courses">دوراتنا</string>
-    <string name="file">"ملف: "</string>
+    <string name="file">%s :الملف</string>
     <string name="recording_audio">جارٍ تسجيل الصوت…</string>
     <string name="show_replies">"عرض الردود "</string>
     <string name="selected">"المحدد: "</string>

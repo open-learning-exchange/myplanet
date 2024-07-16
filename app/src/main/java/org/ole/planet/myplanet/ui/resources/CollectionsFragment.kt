@@ -109,11 +109,11 @@ class CollectionsFragment : DialogFragment(), TagExpandableAdapter.OnClickTagIte
         dismiss()
     }
 
-    override fun onCheckboxTagSelected(tag: RealmTag) {
-        if (selectedItemsList.contains(tag)) {
-            selectedItemsList.remove(tag)
+    override fun onCheckboxTagSelected(tags: RealmTag) {
+        if (selectedItemsList.contains(tags)) {
+            selectedItemsList.remove(tags)
         } else {
-            selectedItemsList.add(tag)
+            selectedItemsList.add(tags)
         }
     }
 

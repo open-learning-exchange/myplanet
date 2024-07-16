@@ -323,6 +323,7 @@
     <string name="credit">श्रेय</string>
     <string name="balance">तल्लोधन</string>
     <string name="total">कुल</string>
+    <string name="num_total">%d कुल</string>
     <string name="location">स्थान</string>
     <string name="start_date">सुरु मिति</string>
     <string name="click_here_to_pick_time">समय चयन गर्न क्लिक गर्नुहोस्</string>
@@ -495,7 +496,7 @@
     <string name="finish">समाप्त</string>
     <string name="submit">पेश गर्नुहोस्</string>
     <string name="our_courses">हाम्रा कोर्सहरू</string>
-    <string name="file">"फाईल: "</string>
+    <string name="file">फाइल: %s</string>
     <string name="recording_audio">आवाज रेकर्ड गर्दै......</string>
     <string name="show_replies">"जवाफहरू देखाउनुहोस् "</string>
     <string name="selected">"छानिएको: "</string>
