@@ -75,16 +75,16 @@ android {
     def planetLearningPin = project.findProperty('PLANET_LEARNING_PIN') ?: ""
     def planetGuatemalaUrl = project.findProperty('PLANET_GUATEMALA_URL') ?: ""
     def planetGuatemalaPin = project.findProperty('PLANET_GUATEMALA_PIN') ?: ""
-    def localUrl = project.findProperty('LOCAL_URL') ?: ""
-    def localPin = project.findProperty('LOCAL_PIN') ?: ""
+    def planetSanPabloUrl = project.findProperty('PLANET_SANPABLO_URL') ?: ""
+    def planetSanPabloPin = project.findProperty('PLANET_SANPABLO_PIN') ?: ""
 
     buildTypes.each {
         it.buildConfigField 'String', 'PLANET_LEARNING_URL', "\"$planetLearningUrl\""
         it.buildConfigField 'String', 'PLANET_LEARNING_PIN', "\"${planetLearningPin}\""
         it.buildConfigField 'String', 'PLANET_GUATEMALA_URL', "\"${planetGuatemalaUrl}\""
         it.buildConfigField 'String', 'PLANET_GUATEMALA_PIN', "\"${planetGuatemalaPin}\""
-        it.buildConfigField 'String', 'LOCAL_URL', "\"${localUrl}\""
-        it.buildConfigField 'String', 'LOCAL_PIN', "\"${localPin}\""
+        it.buildConfigField 'String', 'PLANET_SANPABLO_URL', "\"${planetSanPabloUrl}\""
+        it.buildConfigField 'String', 'PLANET_SANPABLO_PIN', "\"${planetSanPabloPin}\""
     }
 }
 
