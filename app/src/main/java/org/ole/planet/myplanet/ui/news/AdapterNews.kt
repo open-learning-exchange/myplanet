@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.os.Build
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
@@ -268,7 +267,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         val llImage = v.findViewById<LinearLayout>(R.id.ll_alert_image)
         v.findViewById<View>(R.id.add_news_image).setOnClickListener { listener?.addImage(llImage) }
         val news = mRealm.where(RealmNews::class.java).equalTo("id", id).findFirst()
-        if (isEdit) et.setText("${news?.message}")
+        if (isEdit) et.setText(context.getString(R.string.message_placeholder, news?.message))
         AlertDialog.Builder(context).setTitle(if (isEdit) R.string.edit_post else R.string.reply)
             .setIcon(R.drawable.ic_edit).setView(v)
             .setPositiveButton(R.string.button_submit) { _: DialogInterface?, _: Int ->

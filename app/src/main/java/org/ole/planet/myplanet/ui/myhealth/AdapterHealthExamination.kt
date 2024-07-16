@@ -51,11 +51,10 @@ class AdapterHealthExamination(private val context: Context, private val list: L
         if (!TextUtils.isEmpty(createdBy) && !TextUtils.equals(createdBy, userModel?.id)) {
             val model = mRealm.where(RealmUserModel::class.java).equalTo("id", createdBy).findFirst()
             val name: String = model?.getFullName() ?: createdBy.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[1]
-            rowExaminationBinding.txtDate.text = "${rowExaminationBinding.txtDate.text} $name".trimIndent()
+            rowExaminationBinding.txtDate.text = context.getString(R.string.two_strings, rowExaminationBinding.txtDate.text, name).trimIndent()
             holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.md_grey_50))
-
         } else {
-            rowExaminationBinding.txtDate.text = "${rowExaminationBinding.txtDate.text}${context.getString(R.string.self_examination)}"
+            rowExaminationBinding.txtDate.text = context.getString(R.string.self_examination, rowExaminationBinding.txtDate.text)
             holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.md_green_50))
         }
 
@@ -84,16 +83,9 @@ class AdapterHealthExamination(private val context: Context, private val list: L
         val realmExamination = list?.get(position)
         val alertExaminationBinding = AlertExaminationBinding.inflate(LayoutInflater.from(context))
         if (realmExamination != null) {
-            alertExaminationBinding.tvVitals.text = """
-                ${context.getString(R.string.temperature_colon)}${checkEmpty(realmExamination.temperature)}
-                ${context.getString(R.string.pulse_colon)}${checkEmptyInt(realmExamination.pulse)}
-                ${context.getString(R.string.blood_pressure_colon)}${realmExamination.bp}
-                ${context.getString(R.string.height_colon)}${checkEmpty(realmExamination.height)}
-                ${context.getString(R.string.weight_colon)}${checkEmpty(realmExamination.weight)}
-                ${context.getString(R.string.vision_colon)}${realmExamination.vision}
-                ${context.getString(R.string.hearing_colon)}${realmExamination.hearing}
-                
-                """.trimIndent()
+            alertExaminationBinding.tvVitals.text = context.getString(R.string.vitals_format, checkEmpty(realmExamination.temperature),
+                checkEmptyInt(realmExamination.pulse), realmExamination.bp, checkEmpty(realmExamination.height),
+                checkEmpty(realmExamination.weight), realmExamination.vision, realmExamination.hearing).trimIndent()
         }
         showConditions(alertExaminationBinding.tvCondition, realmExamination)
         showEncryptedData(alertExaminationBinding.tvOtherNotes, encrypted)
@@ -126,25 +118,11 @@ class AdapterHealthExamination(private val context: Context, private val list: L
     }
 
     private fun showEncryptedData(tvOtherNotes: TextView, encrypted: JsonObject) {
-        tvOtherNotes.text = R.string.observations_notes_colon.toString() + Utilities.checkNA(
-                getString("notes", encrypted)
-            ) + "\n" + R.string.diagnosis_colon + Utilities.checkNA(
-                getString("diagnosis", encrypted)
-            ) + "\n" + R.string.treatments_colon + Utilities.checkNA(
-                getString("treatments", encrypted)
-            ) + "\n" + R.string.medications_colon + Utilities.checkNA(
-                getString("medications", encrypted)
-            ) + "\n" + R.string.immunizations_colon + Utilities.checkNA(
-                getString("immunizations", encrypted)
-            ) + "\n" + R.string.allergies_colon + Utilities.checkNA(
-                getString("allergies", encrypted)
-            ) + "\n" + R.string.x_rays_colon + Utilities.checkNA(
-                getString("xrays", encrypted)
-            ) + "\n" + R.string.lab_tests_colon + Utilities.checkNA(
-                getString("tests", encrypted)
-            ) + "\n" + R.string.referrals_colon + Utilities.checkNA(
-                getString("referrals", encrypted)
-            ) + "\n"
+        tvOtherNotes.text = context.getString(R.string.observations_notes_colon, Utilities.checkNA(getString("notes", encrypted)),
+            Utilities.checkNA(getString("diagnosis", encrypted)), Utilities.checkNA(getString("treatments", encrypted)),
+            Utilities.checkNA(getString("medications", encrypted)), Utilities.checkNA(getString("immunizations", encrypted)),
+            Utilities.checkNA(getString("allergies", encrypted)), Utilities.checkNA(getString("xrays", encrypted)),
+            Utilities.checkNA(getString("tests", encrypted)), Utilities.checkNA(getString("referrals", encrypted)))
     }
 
     override fun getItemCount(): Int {
