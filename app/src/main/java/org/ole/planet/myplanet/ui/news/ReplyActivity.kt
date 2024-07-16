@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.news
 
+import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -64,6 +65,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
                 handleImageSelection(url)
             }
         }
+        setResult(Activity.RESULT_OK)
     }
 
     fun showData(id: String?) {
