@@ -9,12 +9,7 @@ import org.ole.planet.myplanet.databinding.RowMemberRequestBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUserModel
 
-class AdapterMemberRequest(
-    private val context: Context,
-    private val list: MutableList<RealmUserModel>,
-    private val mRealm: Realm,
-    private val isTeamLeader: Boolean // Add this parameter
-) : RecyclerView.Adapter<AdapterMemberRequest.ViewHolderUser>() {
+class AdapterMemberRequest(private val context: Context, private val list: MutableList<RealmUserModel>, private val mRealm: Realm, private val isTeamLeader: Boolean) : RecyclerView.Adapter<AdapterMemberRequest.ViewHolderUser>() {
     private lateinit var rowMemberRequestBinding: RowMemberRequestBinding
     private var teamId: String? = null
 
