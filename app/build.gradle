@@ -16,7 +16,7 @@ android {
         vectorDrawables.useSupportLibrary = true
         multiDexEnabled true
     }
-    configurations.all {
+    configurations.configureEach {
         resolutionStrategy.force 'com.google.android.material:material:1.12.0'
     }
     buildTypes {
@@ -65,9 +65,25 @@ android {
             enableSplit = false
         }
     }
+
+    def planetLearningUrl = project.findProperty('PLANET_LEARNING_URL') ?: ""
+    def planetLearningPin = project.findProperty('PLANET_LEARNING_PIN') ?: ""
+    def planetGuatemalaUrl = project.findProperty('PLANET_GUATEMALA_URL') ?: ""
+    def planetGuatemalaPin = project.findProperty('PLANET_GUATEMALA_PIN') ?: ""
+    def localUrl = project.findProperty('LOCAL_URL') ?: ""
+    def localPin = project.findProperty('LOCAL_PIN') ?: ""
+
+    buildTypes.each {
+        it.buildConfigField 'String', 'PLANET_LEARNING_URL', "\"$planetLearningUrl\""
+        it.buildConfigField 'String', 'PLANET_LEARNING_PIN', "\"${planetLearningPin}\""
+        it.buildConfigField 'String', 'PLANET_GUATEMALA_URL', "\"${planetGuatemalaUrl}\""
+        it.buildConfigField 'String', 'PLANET_GUATEMALA_PIN', "\"${planetGuatemalaPin}\""
+        it.buildConfigField 'String', 'LOCAL_URL', "\"${localUrl}\""
+        it.buildConfigField 'String', 'LOCAL_PIN', "\"${localPin}\""
+    }
 }
 
-task generateVersionsXml {
+tasks.register('generateVersionsXml') {
     def versionName = android.defaultConfig.versionName
     doLast {
         def versionsXmlFile = file('src/main/res/values/versions.xml')
