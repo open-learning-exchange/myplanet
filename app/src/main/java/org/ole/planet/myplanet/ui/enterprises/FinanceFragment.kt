@@ -26,6 +26,7 @@ import java.util.Calendar
 import java.util.Locale
 import java.util.UUID
 
+@RequiresApi(Build.VERSION_CODES.O)
 class FinanceFragment : BaseTeamFragment() {
     private lateinit var fragmentFinanceBinding: FragmentFinanceBinding
     private lateinit var addTransactionBinding: AddTransactionBinding
@@ -127,9 +128,9 @@ class FinanceFragment : BaseTeamFragment() {
             }
         }
         val total = credit - debit
-        fragmentFinanceBinding.tvDebit.text = "$debit"
-        fragmentFinanceBinding.tvCredit.text = "$credit"
-        fragmentFinanceBinding.tvBalance.text = "$total"
+        fragmentFinanceBinding.tvDebit.text = getString(R.string.number_placeholder, debit)
+        fragmentFinanceBinding.tvCredit.text = getString(R.string.number_placeholder, credit)
+        fragmentFinanceBinding.tvBalance.text = getString(R.string.number_placeholder, total)
         if (total >= 0) fragmentFinanceBinding.balanceCaution.visibility = View.GONE
     }
 

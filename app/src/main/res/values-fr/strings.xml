@@ -323,6 +323,7 @@
     <string name="credit">Crédit</string>
     <string name="balance">Solde</string>
     <string name="total">Totale</string>
+    <string name="num_total">Total : %d</string>
     <string name="location">Emplacement</string>
     <string name="start_date">Date de début</string>
     <string name="click_here_to_pick_time">Cliquez ici pour choisir l\'heure</string>
@@ -335,6 +336,7 @@
     <string name="filter_by_date">Filtrer par date</string>
     <string name="date_reset">Réinitialisation de la date</string>
     <string name="emergency_contact">Contact d\'urgence</string>
+    <string name="emergency_contact_details">Nom : %s Type : %s Contact : %s</string>
     <string name="contact">Contact</string>
     <string name="special_needs">Besoins spéciaux</string>
     <string name="other_need">Autres besoins</string>
@@ -488,13 +490,13 @@
     <string name="update_profile_alert">Veuillez compléter votre profil pour profiter de toutes les fonctionnalités</string>
     <string name="other_notes">Autres notes</string>
     <string name="archive">Archiver</string>
-    <string name="Q1">Question : 1/</string>
+    <string name="Q1">Question : 1/%d</string>
     <string name="no_questions">Aucune question disponible</string>
-    <string name="Q">"Question : "</string>
+    <string name="Q">"Question : %d / %d"</string>
     <string name="finish">Terminer</string>
     <string name="submit">Soumettre</string>
     <string name="our_courses">Nos cours</string>
-    <string name="file">Fichier : </string>
+    <string name="file">Fichier : %s</string>
     <string name="recording_audio">Enregistrement audio en cours…</string>
     <string name="show_replies">Afficher les réponses </string>
     <string name="selected">Sélectionné : </string>
@@ -667,7 +669,7 @@
     <string name="session_expired">Session expirée.</string>
     <string name="downloading_started_please_check_notificati">Téléchargement commencé, veuillez vérifier les notifications…</string>
     <string name="dictionary">Dictionnaire</string>
-    <string name="list_size">Taille de la liste</string>
+    <string name="list_size">Taille de la liste %d</string>
     <string name="word_not_available_in_our_database">Le mot n\'est pas disponible dans notre base de données.</string>
     <string name="description_is_required">La description est requise</string>
     <string name="start_time_is_required">L\'heure de début est requise</string>
@@ -708,23 +710,31 @@
     <string name="more_resource_s"> autres ressource(s)…</string>
     <string name="return_to_the_home_tab_to_access_mylibrary">Retournez à l\'onglet Accueil pour accéder à votre bibliothèque.</string>
     <string name="note_you_may_still_need_to_download_the_newly_added_resources">Note: Vous devrez peut-être toujours télécharger les nouvelles ressources ajoutées.</string>
-    <string name="self_examination">Auto-examen</string>
-    <string name="temperature_colon">"Température: "</string>
-    <string name="pulse_colon">"Pouls: "</string>
-    <string name="blood_pressure_colon">"Tension artérielle: "</string>
-    <string name="height_colon">"Taille: "</string>
-    <string name="weight_colon">"Poids: "</string>
-    <string name="vision_colon">"Vision: "</string>
-    <string name="hearing_colon">"Audition: "</string>
-    <string name="observations_notes_colon"><![CDATA["Observations et notes: "]]></string>
+    <string name="self_examination">%s\nAuto-examen</string>
+    <string name="vitals_format">
+        Température : %s\n
+        Pouls : %s\n
+        Pression Artérielle : %s\n
+        Taille : %s\n
+        Poids : %s\n
+        Vision : %s\n
+        Audition : %s\n
+    </string>
+    <string name="observations_notes_colon">
+        Observations et notes : %s\n
+        %s\n
+        %s\n
+        %s\n
+        %s\n
+        Allergies : %s\n
+        Radiographies : %s\n
+        Tests de laboratoire : %s\n
+        Références : %s\n
+    </string>
     <string name="diagnosis_colon">"Diagnostic: "</string>
     <string name="treatments_colon">"Traitements: "</string>
     <string name="medications_colon">"Médicaments: "</string>
     <string name="immunizations_colon">"Vaccinations: "</string>
-    <string name="allergies_colon">"Allergies: "</string>
-    <string name="x_rays_colon">"Radiographies: "</string>
-    <string name="lab_tests_colon">"Examens de laboratoire: "</string>
-    <string name="referrals_colon">"Références: "</string>
     <string name="invalid_input">Entrée invalide</string>
     <string name="blood_pressure_should_be_numeric_systolic_diastolic">La tension artérielle doit être numérique systolique/diastolique</string>
     <string name="blood_pressure_should_be_systolic_diastolic">La tension artérielle doit être systolique/diastolique</string>
@@ -740,8 +750,7 @@
     <string name="yes_i_want_to_exit">"Oui, je veux quitter. "</string>
     <string name="my_health_saved_successfully">Mon dossier de santé enregistré avec succès</string>
     <string name="health_record_not_available">Dossier de santé non disponible.</string>
-    <string name="contact_colon">Contact:</string>
-    <string name="joined_colon">"Rejoint: "</string>
+    <string name="joined_colon">"Rejoint: %s"</string>
     <string name="is_now_hidden">" est maintenant masqué"</string>
     <string name="is_now_shown">" est maintenant affiché"</string>
     <string name="no_members_has_joined_this_meet_up">Aucun membre n\'a rejoint cette rencontre</string>
@@ -1048,7 +1057,13 @@
     <string name="no_feedback">aucun commentaire disponible</string>
     <string name="empty_text"></string>
     <string name="message_placeholder">%s</string>
+    <string name="reports">rapports</string>
     <string name="number_placeholder">%d</string>
+    <string name="date_range">%s à %s</string>
+    <string name="string_range">%s - %s</string>
+    <string name="team_financial_report">Rapport financier de %s</string>
+    <string name="report_date_details">Rapport créé le : %s | Mis à jour le : %s</string>
+    <string name="formatted_date">%d/%d/%d</string>
     <string name="prefix_content">%s%s</string>
     <string name="rating_count_format">%d total</string>
     <string name="step_progress">Étape actuelle : %d sur %d</string>
@@ -1060,5 +1075,7 @@
     <string name="user_role">- %s</string>
     <string name="offline_visits">%d visites</string>
     <string name="visit_count">%1$s (%2$d %3$s)</string>
+    <string name="two_strings">%s %s</string>
+    <string name="three_strings">%s %s %s</string>
 
 </resources>

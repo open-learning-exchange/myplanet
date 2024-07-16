@@ -323,6 +323,7 @@
     <string name="credit">Credit</string>
     <string name="balance">Balance</string>
     <string name="total">Total</string>
+    <string name="num_total">%d Total</string>
     <string name="location">Location</string>
     <string name="start_date">Start Date</string>
     <string name="click_here_to_pick_time">Click here to pick time</string>
@@ -335,6 +336,7 @@
     <string name="filter_by_date">Date Filter</string>
     <string name="date_reset">Date Reset</string>
     <string name="emergency_contact">Emergency Contact</string>
+    <string name="emergency_contact_details">Name: %s Type: %s Contact: %s</string>
     <string name="contact">Contact</string>
     <string name="special_needs">Special Needs</string>
     <string name="other_need">Other Needs</string>
@@ -488,13 +490,13 @@
     <string name="update_profile_alert">Please complete your profile to enjoy full features</string>
     <string name="other_notes">Other Notes</string>
     <string name="archive">Archive</string>
-    <string name="Q1">Question: 1/</string>
+    <string name="Q1">Question: 1/%d</string>
     <string name="no_questions">No questions available</string>
-    <string name="Q">"Question: "</string>
+    <string name="Q">"Question: %d / %d"</string>
     <string name="finish">Finish</string>
     <string name="submit">Submit</string>
     <string name="our_courses">Our Courses</string>
-    <string name="file">"File: "</string>
+    <string name="file">File: %s</string>
     <string name="recording_audio">Recording audio…</string>
     <string name="show_replies">"Show replies "</string>
     <string name="selected">"Selected: "</string>
@@ -668,7 +670,7 @@
     <string name="session_expired">Session expired.</string>
     <string name="downloading_started_please_check_notificati">Downloading started, please check notification…</string>
     <string name="dictionary">Dictionary</string>
-    <string name="list_size">List size</string>
+    <string name="list_size">List size %d</string>
     <string name="word_not_available_in_our_database">Word not available in our database.</string>
     <string name="description_is_required">Description is required</string>
     <string name="start_time_is_required">Start time is required</string>
@@ -709,23 +711,31 @@
     <string name="more_resource_s">" more resource(s)…\n"</string>
     <string name="return_to_the_home_tab_to_access_mylibrary">\n\nReturn to the Home tab to access myLibrary.\n</string>
     <string name="note_you_may_still_need_to_download_the_newly_added_resources">\nNote: You may still need to download the newly added resources.</string>
-    <string name="self_examination">\nSelf Examination</string>
-    <string name="temperature_colon">"Temperature: "</string>
-    <string name="pulse_colon">"Pulse: "</string>
-    <string name="blood_pressure_colon">"Blood Pressure: "</string>
-    <string name="height_colon">"Height: "</string>
-    <string name="weight_colon">"Weight: "</string>
-    <string name="vision_colon">"Vision: "</string>
-    <string name="hearing_colon">"Hearing: "</string>
-    <string name="observations_notes_colon"><![CDATA["Observations & Notes: "]]></string>
+    <string name="self_examination">%s\nSelf Examination</string>
+    <string name="vitals_format">
+        Temperature: %s\n
+        Pulse: %s\n
+        Blood Pressure: %s\n
+        Height: %s\n
+        Weight: %s\n
+        Vision: %s\n
+        Hearing: %s\n
+    </string>
+    <string name="observations_notes_colon">
+        Observations &amp; Notes: %s\n
+        %s\n
+        %s\n
+        %s\n
+        %s\n
+        Allergies: %s\n
+        X-rays: %s\n
+        Lab Tests: %s\n
+        Referrals: %s\n
+    </string>
     <string name="diagnosis_colon">"Diagnosis : "</string>
     <string name="treatments_colon">"Treatments: "</string>
     <string name="medications_colon">"Medications: "</string>
     <string name="immunizations_colon">"Immunizations: "</string>
-    <string name="allergies_colon">"Allergies: "</string>
-    <string name="x_rays_colon">"X-rays: "</string>
-    <string name="lab_tests_colon">"Lab Tests: "</string>
-    <string name="referrals_colon">"Referrals: "</string>
     <string name="invalid_input">Invalid input</string>
     <string name="blood_pressure_should_be_numeric_systolic_diastolic">Blood Pressure should be numeric systolic/diastolic</string>
     <string name="blood_pressure_should_be_systolic_diastolic">Blood Pressure should be systolic/diastolic</string>
@@ -741,8 +751,7 @@
     <string name="yes_i_want_to_exit">"Yes, I want to exit. "</string>
     <string name="my_health_saved_successfully">My health saved successfully</string>
     <string name="health_record_not_available">Health Record not available.</string>
-    <string name="contact_colon">Contact:</string>
-    <string name="joined_colon">"Joined: "</string>
+    <string name="joined_colon">"Joined: %s"</string>
     <string name="is_now_hidden">" is now hidden"</string>
     <string name="is_now_shown">" is now shown"</string>
     <string name="no_members_has_joined_this_meet_up">No members has joined this meet up</string>
@@ -1048,7 +1057,13 @@
     <string name="no_feedback">no feedback available</string>
     <string name="empty_text"></string>
     <string name="message_placeholder">%s</string>
+    <string name="reports">Reports</string>
     <string name="number_placeholder">%d</string>
+    <string name="date_range">%s to %s</string>
+    <string name="string_range">%s - %s</string>
+    <string name="team_financial_report">%s Financial Report</string>
+    <string name="report_date_details">Report created on: %s | Updated on: %s</string>
+    <string name="formatted_date">%d/%d/%d</string>
     <string name="prefix_content">%s%s</string>
     <string name="rating_count_format">%d total</string>
     <string name="step_progress">Current step: %d of %d</string>
@@ -1060,5 +1075,7 @@
     <string name="user_role">- %s</string>
     <string name="offline_visits">%d visits</string>
     <string name="visit_count">%1$s (%2$d %3$s)</string>
+    <string name="two_strings">%s %s</string>
+    <string name="three_strings">%s %s %s</string>
 
 </resources>

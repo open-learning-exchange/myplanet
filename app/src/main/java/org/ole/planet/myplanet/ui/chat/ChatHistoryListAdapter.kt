@@ -2,8 +2,10 @@ package org.ole.planet.myplanet.ui.chat
 
 import android.app.AlertDialog
 import android.content.Context
+import android.os.Build
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.annotation.RequiresApi
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.Gson
@@ -42,6 +44,11 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
     var user: RealmUserModel? = null
     private var newsList: RealmResults<RealmNews>? = null
 
+    init {
+        chatHistory = chatHistory.sortedByDescending { it.lastUsed }
+        filteredChatHistory = chatHistory
+    }
+
     interface ChatHistoryItemClickListener {
         fun onChatHistoryItemClicked(conversations: RealmList<Conversation>?, id: String, rev: String?)
     }
@@ -77,11 +84,12 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
     }
 
     fun updateChatHistory(newChatHistory: List<RealmChatHistory>) {
-        chatHistory = newChatHistory
-        filteredChatHistory = newChatHistory
+        chatHistory = newChatHistory.sortedByDescending { it.lastUsed }
+        filteredChatHistory = chatHistory
         notifyDataSetChanged()
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             val viewHolderChat = holder as ViewHolderChat
             if (filteredChatHistory[position].conversations != null && filteredChatHistory[position].conversations?.isNotEmpty() == true) {

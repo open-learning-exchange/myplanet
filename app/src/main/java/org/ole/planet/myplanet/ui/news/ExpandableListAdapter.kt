@@ -15,30 +15,30 @@ class ExpandableListAdapter(
     private val expandableDetailList: HashMap<String, List<String>>
 ) : BaseExpandableListAdapter() {
 
-    override fun getChild(lstPosn: Int, expanded_ListPosition: Int): Any {
-        return expandableDetailList[expandableTitleList[lstPosn]]!![expanded_ListPosition]
+    override fun getChild(lstPosn: Int, expandedListPosition: Int): Any {
+        return expandableDetailList[expandableTitleList[lstPosn]]!![expandedListPosition]
     }
 
-    override fun getChildId(listPosition: Int, expanded_ListPosition: Int): Long {
-        return expanded_ListPosition.toLong()
+    override fun getChildId(listPosition: Int, expandedListPosition: Int): Long {
+        return expandedListPosition.toLong()
     }
 
     override fun getChildView(
         lstPosn: Int,
-        expanded_ListPosition: Int,
+        expandedListPosition: Int,
         isLastChild: Boolean,
         convertView: View?, // Make convertView nullable
         parent: ViewGroup
     ): View {
-        var convertView = convertView
-        val expandedListText = getChild(lstPosn, expanded_ListPosition) as String
-        if (convertView == null) {
+        var reusedView = convertView
+        val expandedListText = getChild(lstPosn, expandedListPosition) as String
+        if (reusedView == null) {
             val layoutInflater = context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
-            convertView = layoutInflater.inflate(R.layout.expandable_list_item, null)
+            reusedView = layoutInflater.inflate(R.layout.expandable_list_item, null)
         }
-        val expandedListTextView = convertView?.findViewById<View>(R.id.expandedListItem) as TextView
+        val expandedListTextView = reusedView?.findViewById<View>(R.id.expandedListItem) as TextView
         expandedListTextView.text = expandedListText
-        return convertView
+        return reusedView
     }
 
     override fun getChildrenCount(listPosition: Int): Int {
@@ -63,16 +63,16 @@ class ExpandableListAdapter(
         convertView: View?, // Make convertView nullable
         parent: ViewGroup
     ): View {
-        var convertView = convertView
+        var reusedView = convertView
         val listTitle = getGroup(listPosition) as String
-        if (convertView == null) {
+        if (reusedView == null) {
             val layoutInflater = context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
-            convertView = layoutInflater.inflate(R.layout.expandable_list_group, null)
+            reusedView = layoutInflater.inflate(R.layout.expandable_list_group, null)
         }
-        val listTitleTextView = convertView?.findViewById<View>(R.id.listTitle) as TextView
+        val listTitleTextView = reusedView?.findViewById<View>(R.id.listTitle) as TextView
         listTitleTextView.setTypeface(null, Typeface.BOLD)
         listTitleTextView.text = listTitle
-        return convertView
+        return reusedView
     }
 
     override fun hasStableIds(): Boolean {
