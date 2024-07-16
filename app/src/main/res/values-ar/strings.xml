@@ -334,7 +334,8 @@
     <string name="recurring_frequency">تكرار التكرار</string>
     <string name="filter_by_date">تصفية حسب التاريخ</string>
     <string name="date_reset">إعادة تعيين التاريخ</string>
-    <string name="emergency_contact">جهة الاتصال الطارئة</string>
+    <string name="emergency_contact">جهة الاتصال في حالات الطوارئ</string>
+    <string name="emergency_contact_details">الاسم: %s النوع: %s الاتصال: %s</string>
     <string name="contact">اتصال</string>
     <string name="special_needs">احتياجات خاصة</string>
     <string name="other_need">احتياجات أخرى</string>
@@ -708,23 +709,31 @@
     <string name="more_resource_s">"مورد (موارد) أخرى…\n"</string>
     <string name="return_to_the_home_tab_to_access_mylibrary">\n\nعودة إلى علامة التبويب الرئيسية للوصول إلى "مكتبتي".\n</string>
     <string name="note_you_may_still_need_to_download_the_newly_added_resources">\nملاحظة: قد تحتاج لاستكمال تنزيل الموارد المضافة حديثًا.</string>
-    <string name="self_examination">\nفحص ذاتي</string>
-    <string name="temperature_colon">"الحرارة: "</string>
-    <string name="pulse_colon">"نبضات القلب: "</string>
-    <string name="blood_pressure_colon">"ضغط الدم: "</string>
-    <string name="height_colon">"الطول: "</string>
-    <string name="weight_colon">"الوزن: "</string>
-    <string name="vision_colon">"الرؤية: "</string>
-    <string name="hearing_colon">"الاستماع: "</string>
-    <string name="observations_notes_colon"><![CDATA["الملاحظات والملاحظات: "]]></string>
+    <string name="self_examination">%s\nالفحص الذاتي</string>
+    <string name="vitals_format">
+        الحرارة: %s\n
+        نبض القلب: %s\n
+        ضغط الدم: %s\n
+        الطول: %s\n
+        الوزن: %s\n
+        الرؤية: %s\n
+        السمع: %s\n
+    </string>
+    <string name="observations_notes_colon">
+        الملاحظات والملاحظات: %s\n
+        %s\n
+        %s\n
+        %s\n
+        %s\n
+        الحساسية: %s\n
+        أشعة الأشعة: %s\n
+        اختبارات المختبر: %s\n
+        الإحالات: %s\n
+    </string>
     <string name="diagnosis_colon">"التشخيص: "</string>
     <string name="treatments_colon">"العلاجات: "</string>
     <string name="medications_colon">"الأدوية: "</string>
     <string name="immunizations_colon">"التطعيمات: "</string>
-    <string name="allergies_colon">"الحساسية: "</string>
-    <string name="x_rays_colon">"أشعة سينية: "</string>
-    <string name="lab_tests_colon">"اختبارات مختبرية: "</string>
-    <string name="referrals_colon">"الإحالات: "</string>
     <string name="invalid_input">إدخال غير صالح</string>
     <string name="blood_pressure_should_be_numeric_systolic_diastolic">يجب أن يكون ضغط الدم عبارة عن أرقام نبضية/انبساطية</string>
     <string name="blood_pressure_should_be_systolic_diastolic">يجب أن يكون ضغط الدم عبارة عن نبضي/انبساطي</string>
@@ -740,8 +749,7 @@
     <string name="yes_i_want_to_exit">"نعم، أرغب في الخروج. "</string>
     <string name="my_health_saved_successfully">تم حفظ صحتي بنجاح</string>
     <string name="health_record_not_available">سجل الصحة غير متاح.</string>
-    <string name="contact_colon">جهة الاتصال:</string>
-    <string name="joined_colon">"انضم: "</string>
+    <string name="joined_colon">"انضم: %s"</string>
     <string name="is_now_hidden">"أصبح مخفيًا الآن"</string>
     <string name="is_now_shown">"أصبح ظاهرًا الآن"</string>
     <string name="no_members_has_joined_this_meet_up">لم ينضم أي أعضاء إلى هذا الاجتماع</string>
@@ -1066,5 +1074,7 @@
     <string name="user_role">- %s</string>
     <string name="offline_visits">%d زيارة</string>
     <string name="visit_count">%1$s (%2$d %3$s)</string>
+    <string name="two_strings">%s %s</string>
+    <string name="three_strings">%s %s %s</string>
 
 </resources>
