@@ -545,9 +545,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         binding.ltDeviceName.visibility = if (show) View.VISIBLE else View.GONE
 
         val serverMap = mapOf(
-            "🌎 planet learning" to BuildConfig.PLANET_LEARNING_URL,
-            "🇬🇹 planet guatemala" to BuildConfig.PLANET_GUATEMALA_URL,
-            "🇬🇹 planet san pablo" to BuildConfig.PLANET_SANPABLO_URL
+            "🌎 Planet Learning" to BuildConfig.PLANET_LEARNING_URL,
+            "🇬🇹 Planet Guatemala" to BuildConfig.PLANET_GUATEMALA_URL,
+            "🇬🇹 Planet San Pablo" to BuildConfig.PLANET_SANPABLO_URL
         )
 
         if (show) {
