@@ -35,13 +35,14 @@ import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.TimeUtils.getAge
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Date
+import java.util.Locale
 
 class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChangeListener {
     private lateinit var activityAddExaminationBinding: ActivityAddExaminationBinding
     lateinit var mRealm: Realm
     var userId: String? = null
     var user: RealmUserModel? = null
-    var currentUser: RealmUserModel? = null
+    private var currentUser: RealmUserModel? = null
     private var pojo: RealmMyHealthPojo? = null
     var health: RealmMyHealth? = null
     private var customDiag: MutableSet<String?>? = null
@@ -53,7 +54,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         config = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.close)
         activityAddExaminationBinding.btnAddDiag.setOnClickListener {
             customDiag?.add("${activityAddExaminationBinding.etOtherDiag.text}")
-            activityAddExaminationBinding.etOtherDiag.setText("")
+            activityAddExaminationBinding.etOtherDiag.setText(R.string.empty_text)
             showOtherDiagnosis()
         }
     }
@@ -95,11 +96,11 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
     private fun initExamination() {
         if (intent.hasExtra("id")) {
             examination = mRealm.where(RealmMyHealthPojo::class.java).equalTo("_id", intent.getStringExtra("id")).findFirst()!!
-            activityAddExaminationBinding.etTemperature.setText("${examination?.temperature}")
-            activityAddExaminationBinding.etPulseRate.setText("${examination?.pulse}")
-            activityAddExaminationBinding.etBloodpressure.setText("${examination?.bp}")
-            activityAddExaminationBinding.etHeight.setText("${examination?.height}")
-            activityAddExaminationBinding.etWeight.setText("${examination?.weight}")
+            activityAddExaminationBinding.etTemperature.setText(getString(R.string.number_placeholder, examination?.temperature))
+            activityAddExaminationBinding.etPulseRate.setText(getString(R.string.number_placeholder, examination?.pulse))
+            activityAddExaminationBinding.etBloodpressure.setText(getString(R.string.message_placeholder, examination?.bp))
+            activityAddExaminationBinding.etHeight.setText(getString(R.string.number_placeholder, examination?.height))
+            activityAddExaminationBinding.etWeight.setText(getString(R.string.number_placeholder, examination?.weight))
             activityAddExaminationBinding.etVision.setText(examination?.vision)
             activityAddExaminationBinding.etHearing.setText(examination?.hearing)
             val encrypted = user?.let { examination?.getEncryptedDataAsJson(it) }
@@ -311,7 +312,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
 
     private fun getFloat(trim: String): Float {
         return try {
-            String.format("%.1f", trim.toFloat()).toFloat()
+            String.format(Locale.getDefault(), "%.1f", trim.toFloat()).toFloat()
         } catch (e: Exception) {
             getInt(trim).toFloat()
         }
