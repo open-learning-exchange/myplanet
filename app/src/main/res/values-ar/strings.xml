@@ -488,9 +488,9 @@
     <string name="update_profile_alert">يرجى استكمال ملف التعريف الخاص بك للاستمتاع بجميع الميزات</string>
     <string name="other_notes">ملاحظات أخرى</string>
     <string name="archive">الأرشيف</string>
-    <string name="Q1">السؤال: 1/</string>
+    <string name="Q1">السؤال: 1/%d</string>
     <string name="no_questions">لا تتوفر أسئلة</string>
-    <string name="Q">"السؤال: "</string>
+    <string name="Q">"السؤال: %d / %d"</string>
     <string name="finish">إنهاء</string>
     <string name="submit">إرسال</string>
     <string name="our_courses">دوراتنا</string>
@@ -667,7 +667,7 @@
     <string name="session_expired">انتهت الجلسة.</string>
     <string name="downloading_started_please_check_notificati">بدأ التنزيل، يرجى التحقق من الإشعار…</string>
     <string name="dictionary">القاموس</string>
-    <string name="list_size">حجم القائمة</string>
+    <string name="list_size">%d حجم القائمة</string>
     <string name="word_not_available_in_our_database">الكلمة غير متوفرة في قاعدة بياناتنا.</string>
     <string name="description_is_required">الوصف مطلوب</string>
     <string name="start_time_is_required">وقت البدء مطلوب</string>
@@ -1048,7 +1048,13 @@
     <string name="no_feedback">لا توجد تعليقات متاحة</string>
     <string name="empty_text"></string>
     <string name="message_placeholder">%s</string>
+    <string name="reports">التقارير</string>
     <string name="number_placeholder">%d</string>
+    <string name="date_range">%s إلى %s</string>
+    <string name="string_range">%s - %s</string>
+    <string name="team_financial_report">%s تقرير مالي لـ</string>
+    <string name="report_date_details">%s في: تم إنشاء التقرير | %s في: تم التحديث</string>
+    <string name="formatted_date">%d/%d/%d</string>
     <string name="prefix_content">%s%s</string>
     <string name="rating_count_format">%d الإجمالي</string>
     <string name="step_progress">الخطوة الحالية: %d من %d</string>

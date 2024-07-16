@@ -488,9 +488,9 @@
     <string name="update_profile_alert">Fadlan Buuxi Profaylkaaga si aad u hesho tallaabooyin oo dhan</string>
     <string name="other_notes">Fikirro Kale</string>
     <string name="archive">Arsiif</string>
-    <string name="Q1">Suaal: 1/</string>
+    <string name="Q1">Su\'aal: 1/%d</string>
     <string name="no_questions">Suaaladaan ma jiro</string>
-    <string name="Q">"Suaal: "</string>
+    <string name="Q">"Su\'aal: %d / %d"</string>
     <string name="finish">Dhammaad</string>
     <string name="submit">Ku Dir</string>
     <string name="our_courses">Koorsadayaashay</string>
@@ -667,7 +667,7 @@
     <string name="session_expired">Ku dhacday wakhti la isla xiriiray.</string>
     <string name="downloading_started_please_check_notificati">Degsaday soo degista, fadlan check notifikishanka…</string>
     <string name="dictionary">Qaamuus</string>
-    <string name="list_size">Cinwaanka Liiska</string>
+    <string name="list_size">Cabbirka liiska %d</string>
     <string name="word_not_available_in_our_database">Ereyadan ma haysano daabacaadkeena.</string>
     <string name="description_is_required">Sharraxaad waa loo baahan yahay</string>
     <string name="start_time_is_required">Waqtiga bilaabid waa loo baahan yahay</string>
@@ -1048,7 +1048,13 @@
     <string name="no_feedback">wax jawaab celin ah lama hayo</string>
     <string name="empty_text"></string>
     <string name="message_placeholder">%s</string>
+    <string name="reports">warbixino</string>
     <string name="number_placeholder">%d</string>
+    <string name="date_range">%s ilaa %s</string>
+    <string name="string_range">%s - %s</string>
+    <string name="team_financial_report">Warbixin lacagta ee %s</string>
+    <string name="report_date_details">Warbixin lagu sameeyay: %s | La cusbooneysiiyay: %s</string>
+    <string name="formatted_date">%d/%d/%d</string>
     <string name="prefix_content">%s%s</string>
     <string name="rating_count_format">%d guud</string>
     <string name="step_progress">Gaadhi hadda: %d ka %d</string>

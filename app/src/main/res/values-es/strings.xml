@@ -488,9 +488,9 @@
     <string name="update_profile_alert">Por favor, completa tu perfil para disfrutar de todas las funciones</string>
     <string name="other_notes">Otras Notas</string>
     <string name="archive">Archivo</string>
-    <string name="Q1">Pregunta: 1/</string>
+    <string name="Q1">Pregunta: 1/%d</string>
     <string name="no_questions">No hay preguntas disponibles</string>
-    <string name="Q">"Pregunta: "</string>
+    <string name="Q">"Pregunta: %d / %d"</string>
     <string name="finish">Finalizar</string>
     <string name="submit">Enviar</string>
     <string name="our_courses">Nuestros Cursos</string>
@@ -667,7 +667,7 @@
     <string name="session_expired">Sesión expirada.</string>
     <string name="downloading_started_please_check_notificati">Descarga iniciada, por favor revisa las notificaciones…</string>
     <string name="dictionary">Diccionario</string>
-    <string name="list_size">Tamaño de la lista</string>
+    <string name="list_size">Tamaño de la lista %d</string>
     <string name="word_not_available_in_our_database">Palabra no disponible en nuestra base de datos.</string>
     <string name="description_is_required">Se requiere una descripción</string>
     <string name="start_time_is_required">Se requiere la hora de inicio</string>
@@ -1048,7 +1048,13 @@
     <string name="no_feedback">No hay comentarios aquí</string>
     <string name="empty_text"></string>
     <string name="message_placeholder">%s</string>
+    <string name="reports">informes</string>
     <string name="number_placeholder">%d</string>
+    <string name="date_range">%s a %s</string>
+    <string name="string_range">%s - %s</string>
+    <string name="team_financial_report">Informe financiero de %s</string>
+    <string name="report_date_details">Informe creado el: %s | Actualizado el: %s</string>
+    <string name="formatted_date">%d/%d/%d</string>
     <string name="prefix_content">%s%s</string>
     <string name="rating_count_format">%d total</string>
     <string name="step_progress">Paso actual: %d de %d</string>

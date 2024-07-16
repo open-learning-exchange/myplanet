@@ -488,9 +488,9 @@
     <string name="update_profile_alert">Veuillez compléter votre profil pour profiter de toutes les fonctionnalités</string>
     <string name="other_notes">Autres notes</string>
     <string name="archive">Archiver</string>
-    <string name="Q1">Question : 1/</string>
+    <string name="Q1">Question : 1/%d</string>
     <string name="no_questions">Aucune question disponible</string>
-    <string name="Q">"Question : "</string>
+    <string name="Q">"Question : %d / %d"</string>
     <string name="finish">Terminer</string>
     <string name="submit">Soumettre</string>
     <string name="our_courses">Nos cours</string>
@@ -667,7 +667,7 @@
     <string name="session_expired">Session expirée.</string>
     <string name="downloading_started_please_check_notificati">Téléchargement commencé, veuillez vérifier les notifications…</string>
     <string name="dictionary">Dictionnaire</string>
-    <string name="list_size">Taille de la liste</string>
+    <string name="list_size">Taille de la liste %d</string>
     <string name="word_not_available_in_our_database">Le mot n\'est pas disponible dans notre base de données.</string>
     <string name="description_is_required">La description est requise</string>
     <string name="start_time_is_required">L\'heure de début est requise</string>
@@ -1048,7 +1048,13 @@
     <string name="no_feedback">aucun commentaire disponible</string>
     <string name="empty_text"></string>
     <string name="message_placeholder">%s</string>
+    <string name="reports">rapports</string>
     <string name="number_placeholder">%d</string>
+    <string name="date_range">%s à %s</string>
+    <string name="string_range">%s - %s</string>
+    <string name="team_financial_report">Rapport financier de %s</string>
+    <string name="report_date_details">Rapport créé le : %s | Mis à jour le : %s</string>
+    <string name="formatted_date">%d/%d/%d</string>
     <string name="prefix_content">%s%s</string>
     <string name="rating_count_format">%d total</string>
     <string name="step_progress">Étape actuelle : %d sur %d</string>
