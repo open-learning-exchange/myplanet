@@ -34,25 +34,25 @@ class AdapterReports(private val context: Context, private var list: RealmResult
 
     override fun onBindViewHolder(holder: ViewHolderReports, position: Int) {
         val report = list[position]
-        reportListItemBinding.tvReportTitle.text = "${prefData.getTEAMNAME()} Financial Report"
+        reportListItemBinding.tvReportTitle.text = context.getString(R.string.team_financial_report, prefData.getTEAMNAME())
         report?.let {
             with(reportListItemBinding) {
                 val totalIncome = report.sales + report.otherIncome
                 val totalExpenses = report.wages + report.otherExpenses
                 val profitLoss = totalIncome - totalExpenses
 
-                date.text = "${TimeUtils.formatDate(it.startDate, " MMM dd, yyyy")} - ${TimeUtils.formatDate(it.endDate, "MMM dd, yyyy")}"
-                beginningBalanceValue.text = "${it.beginningBalance}"
-                salesValue.text = "${it.sales}"
-                otherValue.text = "${it.otherIncome}"
-                totalIncomeValue.text = "$totalIncome"
-                personnelValue.text = "${it.wages}"
-                nonPersonnelValue.text = "${it.otherExpenses}"
-                totalExpensesValue.text = "$totalExpenses"
-                profitLossValue.text = "$profitLoss"
-                endingBalanceValue.text = "${(profitLoss + it.beginningBalance)}"
-                tvReportDetails.text = it.description
-                createUpdate.text = "Report created on: ${TimeUtils.formatDate(it.createdDate, "MMM dd, yyyy")} | Updated on: ${TimeUtils.formatDate(it.updatedDate, "MMM dd, yyyy")}"
+                date.text = context.getString(R.string.string_range, TimeUtils.formatDate(it.startDate, " MMM dd, yyyy"), TimeUtils.formatDate(it.endDate, "MMM dd, yyyy"))
+                beginningBalanceValue.text = context.getString(R.string.number_placeholder, it.beginningBalance)
+                salesValue.text = context.getString(R.string.number_placeholder, it.sales)
+                otherValue.text = context.getString(R.string.number_placeholder, it.otherIncome)
+                totalIncomeValue.text = context.getString(R.string.number_placeholder, totalIncome)
+                personnelValue.text = context.getString(R.string.number_placeholder, it.wages)
+                nonPersonnelValue.text = context.getString(R.string.number_placeholder, it.otherExpenses)
+                totalExpensesValue.text = context.getString(R.string.number_placeholder, totalExpenses)
+                profitLossValue.text = context.getString(R.string.number_placeholder, profitLoss)
+                endingBalanceValue.text = context.getString(R.string.number_placeholder, profitLoss + it.beginningBalance)
+                tvReportDetails.text = context.getString(R.string.message_placeholder, it.description)
+                createUpdate.text = context.getString(R.string.report_date_details, TimeUtils.formatDate(it.createdDate, "MMM dd, yyyy"), TimeUtils.formatDate(it.updatedDate, "MMM dd, yyyy"))
             }
         }
 
@@ -72,14 +72,14 @@ class AdapterReports(private val context: Context, private var list: RealmResult
             val calendar = Calendar.getInstance()
             calendar.set(Calendar.DAY_OF_MONTH, 1)
 
-            dialogAddReportBinding.startDate.text = "${report?.let { it1 -> TimeUtils.formatDate(it1.startDate, " MMM dd, yyyy") }}"
-            dialogAddReportBinding.endDate.text = "${report?.let { it1 -> TimeUtils.formatDate(it1.endDate, " MMM dd, yyyy") }}"
-            dialogAddReportBinding.summary.setText("${report?.description}")
-            dialogAddReportBinding.beginningBalance.setText("${report?.beginningBalance}")
-            dialogAddReportBinding.sales.setText("${report?.sales}")
-            dialogAddReportBinding.otherIncome.setText("${report?.otherIncome}")
-            dialogAddReportBinding.personnel.setText("${report?.wages}")
-            dialogAddReportBinding.nonPersonnel.setText("${report?.otherExpenses}")
+            dialogAddReportBinding.startDate.text = context.getString(R.string.message_placeholder, report?.let { it1 -> TimeUtils.formatDate(it1.startDate, " MMM dd, yyyy") })
+            dialogAddReportBinding.endDate.text = context.getString(R.string.message_placeholder, report?.let { it1 -> TimeUtils.formatDate(it1.endDate, " MMM dd, yyyy") })
+            dialogAddReportBinding.summary.setText(context.getString(R.string.message_placeholder, report?.description))
+            dialogAddReportBinding.beginningBalance.setText(context.getString(R.string.number_placeholder, report?.beginningBalance))
+            dialogAddReportBinding.sales.setText(context.getString(R.string.number_placeholder, report?.sales))
+            dialogAddReportBinding.otherIncome.setText(context.getString(R.string.number_placeholder, report?.otherIncome))
+            dialogAddReportBinding.personnel.setText(context.getString(R.string.number_placeholder, report?.wages))
+            dialogAddReportBinding.nonPersonnel.setText(context.getString(R.string.number_placeholder, report?.otherExpenses))
 
             dialogAddReportBinding.ltStartDate.setOnClickListener {
                 val year = calendar.get(Calendar.YEAR)
@@ -87,12 +87,12 @@ class AdapterReports(private val context: Context, private var list: RealmResult
                 val day = calendar.get(Calendar.DAY_OF_MONTH)
 
                 val dpd = DatePickerDialog(context, { _, selectedYear, selectedMonth, selectedDay ->
-                    dialogAddReportBinding.startDate.text = "$selectedDay/${selectedMonth + 1}/$selectedYear"
+                    dialogAddReportBinding.startDate.text = context.getString(R.string.formatted_date, selectedDay, selectedMonth + 1, selectedYear)
                     calendar.set(Calendar.YEAR, selectedYear)
                     calendar.set(Calendar.MONTH, selectedMonth)
                     calendar.set(Calendar.DAY_OF_MONTH, selectedDay)
 
-                    startTimeStamp = "${calendar.timeInMillis}"
+                    startTimeStamp = context.getString(R.string.number_placeholder, calendar.timeInMillis)
                 }, year, month, day)
 
                 dpd.show()
@@ -104,7 +104,7 @@ class AdapterReports(private val context: Context, private var list: RealmResult
                 val day = calendar.get(Calendar.DAY_OF_MONTH)
 
                 val dpd = DatePickerDialog(context, { _, selectedYear, selectedMonth, selectedDay ->
-                    dialogAddReportBinding.endDate.text = "$selectedDay/${selectedMonth + 1}/$selectedYear"
+                    dialogAddReportBinding.endDate.text = context.getString(R.string.formatted_date, selectedDay, selectedMonth + 1, selectedYear)
                     calendar.set(Calendar.YEAR, selectedYear)
                     calendar.set(Calendar.MONTH, selectedMonth)
                     calendar.set(Calendar.DAY_OF_MONTH, selectedDay)

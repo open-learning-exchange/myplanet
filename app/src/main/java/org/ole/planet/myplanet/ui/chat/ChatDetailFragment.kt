@@ -16,10 +16,12 @@ import org.ole.planet.myplanet.datamanager.*
 import org.ole.planet.myplanet.model.*
 import org.ole.planet.myplanet.model.RealmChatHistory.Companion.addConversationToChatHistory
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utilities.Utilities
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import java.util.Date
 
 class ChatDetailFragment : Fragment() {
     lateinit var fragmentChatDetailBinding: FragmentChatDetailBinding
@@ -30,6 +32,7 @@ class ChatDetailFragment : Fragment() {
     private var aiName: String = ""
     private var aiModel: String = ""
     private lateinit var mRealm: Realm
+    var user: RealmUserModel? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,7 +46,7 @@ class ChatDetailFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         mRealm = DatabaseService(requireContext()).realmInstance
-        val user = UserProfileDbHandler(requireContext()).userModel
+        user = UserProfileDbHandler(requireContext()).userModel
         mAdapter = ChatAdapter(ArrayList(), requireContext(), fragmentChatDetailBinding.recyclerGchat)
         fragmentChatDetailBinding.recyclerGchat.adapter = mAdapter
         val layoutManager: RecyclerView.LayoutManager = LinearLayoutManager(requireContext())
@@ -268,6 +271,7 @@ class ChatDetailFragment : Fragment() {
             override fun onResponse(call: Call<ChatModel>, response: Response<ChatModel>) {
                 val responseBody = response.body()
                 if (response.isSuccessful && responseBody != null) {
+                    val jsonObject = JsonObject()
                     if (responseBody.status == "Success") {
                         val chatResponse = response.body()?.chat
                         if (chatResponse != null) {
@@ -275,12 +279,13 @@ class ChatDetailFragment : Fragment() {
                             mAdapter.addResponse(chatResponse)
                             _id = "${response.body()?.couchDBResponse?.id}"
                             _rev = "${response.body()?.couchDBResponse?.rev}"
-                            val jsonObject = JsonObject()
                             jsonObject.addProperty("_rev", "${response.body()?.couchDBResponse?.rev}")
                             jsonObject.addProperty("_id", "${response.body()?.couchDBResponse?.id}")
-                            jsonObject.addProperty("time", "")
-                            jsonObject.addProperty("title", "")
-                            jsonObject.addProperty("updatedTime", "")
+                            jsonObject.addProperty("aiProvider", aiName)
+                            jsonObject.addProperty("user", user?.name)
+                            jsonObject.addProperty("title", query)
+                            jsonObject.addProperty("createdTime", Date().time)
+                            jsonObject.addProperty("updatedDate", "")
 
                             val conversationsArray = JsonArray()
                             val conversationObject = JsonObject()
@@ -289,16 +294,22 @@ class ChatDetailFragment : Fragment() {
                             conversationsArray.add(conversationObject)
 
                             jsonObject.add("conversations", conversationsArray)
+
+                            requireActivity().runOnUiThread {
+                                RealmChatHistory.insert(mRealm, jsonObject)
+                            }
+                            (requireActivity() as? DashboardActivity)?.refreshChatHistoryList()
                         }
                     } else {
                         fragmentChatDetailBinding.textGchatIndicator.visibility = View.VISIBLE
                         fragmentChatDetailBinding.textGchatIndicator.text = context?.getString(R.string.message_placeholder, responseBody.message)
-                        val jsonObject = JsonObject()
                         jsonObject.addProperty("_rev", "")
                         jsonObject.addProperty("_id", "")
-                        jsonObject.addProperty("time", "")
-                        jsonObject.addProperty("title", "")
-                        jsonObject.addProperty("updatedTime", "")
+                        jsonObject.addProperty("aiProvider", aiName)
+                        jsonObject.addProperty("user", user?.name)
+                        jsonObject.addProperty("title", query)
+                        jsonObject.addProperty("createdTime", Date().time)
+                        jsonObject.addProperty("updatedDate", "")
 
                         val conversationsArray = JsonArray()
                         val conversationObject = JsonObject()
@@ -310,6 +321,7 @@ class ChatDetailFragment : Fragment() {
                         requireActivity().runOnUiThread {
                             RealmChatHistory.insert(mRealm, jsonObject)
                         }
+                        (requireActivity() as? DashboardActivity)?.refreshChatHistoryList()
                     }
                 } else {
                     fragmentChatDetailBinding.textGchatIndicator.visibility = View.VISIBLE
@@ -317,23 +329,6 @@ class ChatDetailFragment : Fragment() {
                         getString(R.string.request_failed_please_retry)
                     } else {
                         response.message()
-                    }
-                    val jsonObject = JsonObject()
-                    jsonObject.addProperty("_rev", "")
-                    jsonObject.addProperty("_id", "")
-                    jsonObject.addProperty("time", "")
-                    jsonObject.addProperty("title", "")
-                    jsonObject.addProperty("updatedTime", "")
-
-                    val conversationsArray = JsonArray()
-                    val conversationObject = JsonObject()
-                    conversationObject.addProperty("query", query)
-                    conversationObject.addProperty("response", "")
-                    conversationsArray.add(conversationObject)
-
-                    jsonObject.add("conversations", conversationsArray)
-                    requireActivity().runOnUiThread {
-                        RealmChatHistory.insert(mRealm, jsonObject)
                     }
                 }
 
@@ -343,23 +338,6 @@ class ChatDetailFragment : Fragment() {
             }
 
             override fun onFailure(call: Call<ChatModel>, t: Throwable) {
-                val jsonObject = JsonObject()
-                jsonObject.addProperty("_rev", "")
-                jsonObject.addProperty("_id", "")
-                jsonObject.addProperty("time", "")
-                jsonObject.addProperty("title", "")
-                jsonObject.addProperty("updatedTime", "")
-
-                val conversationsArray = JsonArray()
-                val conversationObject = JsonObject()
-                conversationObject.addProperty("query", query)
-                conversationObject.addProperty("response", "")
-                conversationsArray.add(conversationObject)
-
-                jsonObject.add("conversations", conversationsArray)
-                requireActivity().runOnUiThread {
-                    RealmChatHistory.insert(mRealm, jsonObject)
-                }
                 fragmentChatDetailBinding.textGchatIndicator.visibility = View.VISIBLE
                 fragmentChatDetailBinding.textGchatIndicator.text = context?.getString(R.string.message_placeholder, t.message)
                 fragmentChatDetailBinding.buttonGchatSend.isEnabled = true

@@ -323,6 +323,7 @@
     <string name="credit">Crédito</string>
     <string name="balance">Saldo</string>
     <string name="total">Total</string>
+    <string name="num_total">%d Total</string>
     <string name="location">Ubicación</string>
     <string name="start_date">Fecha de inicio</string>
     <string name="click_here_to_pick_time">Haz clic aquí para seleccionar la hora</string>
@@ -335,6 +336,7 @@
     <string name="filter_by_date">Filtro fecha </string>
     <string name="date_reset">Restablecer Fecha</string>
     <string name="emergency_contact">Contacto de emergencia</string>
+    <string name="emergency_contact_details">Nombre: %s Tipo: %s Contacto: %s</string>
     <string name="contact">Contacto</string>
     <string name="special_needs">Necesidades especiales</string>
     <string name="other_need">Otras necesidades</string>
@@ -488,13 +490,13 @@
     <string name="update_profile_alert">Por favor, completa tu perfil para disfrutar de todas las funciones</string>
     <string name="other_notes">Otras Notas</string>
     <string name="archive">Archivo</string>
-    <string name="Q1">Pregunta: 1/</string>
+    <string name="Q1">Pregunta: 1/%d</string>
     <string name="no_questions">No hay preguntas disponibles</string>
-    <string name="Q">"Pregunta: "</string>
+    <string name="Q">"Pregunta: %d / %d"</string>
     <string name="finish">Finalizar</string>
     <string name="submit">Enviar</string>
     <string name="our_courses">Nuestros Cursos</string>
-    <string name="file">"Archivo: "</string>
+    <string name="file">Archivo: %s</string>
     <string name="recording_audio">Grabando audio…</string>
     <string name="show_replies">"Mostrar respuestas "</string>
     <string name="selected">"Seleccionado: "</string>
@@ -561,7 +563,7 @@
     <string name="number_of_exams">Número de exámenes:</string>
     <string name="description_colon">Descripción:</string>
     <string name="download_resources">Descargar Recursos</string>
-    <string name="take_test">Realizar Examen</string>
+    <string name="take_test">Realizar Examen [%d]</string>
     <string name="search">Buscar</string>
     <string name="for_ambulance">Para Ambulancia</string>
     <string name="for_police">Para Policía</string>
@@ -621,17 +623,12 @@
     <string name="please_select_link_item_from_list">Por favor, selecciona un elemento de enlace de la lista.</string>
     <string name="title_is_required">Se requiere un título.</string>
     <string name="no_data_available">No hay datos disponibles.</string>
-    <string name="current_step">"Paso actual: "</string>
-    <string name="of">" de "</string>
-    <string name="this_test_has">"Este test tiene "</string>
-    <string name="questions">" preguntas"</string>
     <string name="are_you_sure_you_want_to_delete_these_courses">¿Estás seguro de que deseas eliminar estos cursos?</string>
     <string name="success_you_have_added_the_following_courses">¡Éxito! Has añadido los siguientes cursos:\n\n</string>
     <string name="return_to_the_home_tab_to_access_mycourses">\n\nVuelve a la pestaña de inicio para acceder a misCursos.\n</string>
     <string name="and">"Y "</string>
     <string name="more_course_s">" más curso(s)…\n"</string>
-    <string name="progress">"Progreso "</string>
-    <string name="retake_test">Volver a tomar el test</string>
+    <string name="retake_test">Volver a tomar el test [%d]</string>
     <string name="do_you_want_to_join_this_course">¿Deseas unirte a este curso?</string>
     <string name="join_this_course">Unirse a este curso</string>
     <string name="download_dictionary">Descargar diccionario.</string>
@@ -672,7 +669,7 @@
     <string name="session_expired">Sesión expirada.</string>
     <string name="downloading_started_please_check_notificati">Descarga iniciada, por favor revisa las notificaciones…</string>
     <string name="dictionary">Diccionario</string>
-    <string name="list_size">Tamaño de la lista</string>
+    <string name="list_size">Tamaño de la lista %d</string>
     <string name="word_not_available_in_our_database">Palabra no disponible en nuestra base de datos.</string>
     <string name="description_is_required">Se requiere una descripción</string>
     <string name="start_time_is_required">Se requiere la hora de inicio</string>
@@ -713,23 +710,31 @@
     <string name="more_resource_s">" más recurso(s)…\n"</string>
     <string name="return_to_the_home_tab_to_access_mylibrary">\n\nRegresa a la pestaña de Inicio para acceder a miBiblioteca.\n</string>
     <string name="note_you_may_still_need_to_download_the_newly_added_resources">\nNota: Es posible que aún necesites descargar los recursos recién agregados.</string>
-    <string name="self_examination">\nAutoexamen</string>
-    <string name="temperature_colon">"Temperatura: "</string>
-    <string name="pulse_colon">"Pulso: "</string>
-    <string name="blood_pressure_colon">"Presión arterial: "</string>
-    <string name="height_colon">"Altura: "</string>
-    <string name="weight_colon">"Peso: "</string>
-    <string name="vision_colon">"Visión: "</string>
-    <string name="hearing_colon">"Audición: "</string>
-    <string name="observations_notes_colon"><![CDATA["Observaciones y Notas: "]]></string>
+    <string name="self_examination">%s\nAutoexamen</string>
+    <string name="vitals_format">
+        Temperatura: %s\n
+        Pulso: %s\n
+        Presión Arterial: %s\n
+        Altura: %s\n
+        Peso: %s\n
+        Visión: %s\n
+        Audición: %s\n
+    </string>
+    <string name="observations_notes_colon">
+        Observaciones y notas: %s\n
+        %s\n
+        %s\n
+        %s\n
+        %s\n
+        Alergias: %s\n
+        Radiografías: %s\n
+        Pruebas de laboratorio: %s\n
+        Referencias: %s\n
+    </string>
     <string name="diagnosis_colon">"Diagnóstico: "</string>
     <string name="treatments_colon">"Tratamientos: "</string>
     <string name="medications_colon">"Medicamentos: "</string>
     <string name="immunizations_colon">"Inmunizaciones: "</string>
-    <string name="allergies_colon">"Alergias: "</string>
-    <string name="x_rays_colon">"Radiografías: "</string>
-    <string name="lab_tests_colon">"Pruebas de laboratorio: "</string>
-    <string name="referrals_colon">"Referencias: "</string>
     <string name="invalid_input">Entrada inválida</string>
     <string name="blood_pressure_should_be_numeric_systolic_diastolic">La presión arterial debe ser numérica sistólica/diastólica</string>
     <string name="blood_pressure_should_be_systolic_diastolic">La presión arterial debe ser sistólica/diastólica</string>
@@ -745,8 +750,7 @@
     <string name="yes_i_want_to_exit">"Sí, quiero salir. "</string>
     <string name="my_health_saved_successfully">Mi salud guardada correctamente</string>
     <string name="health_record_not_available">Registro de salud no disponible.</string>
-    <string name="contact_colon">Contacto:</string>
-    <string name="joined_colon">"Unido: "</string>
+    <string name="joined_colon">"Unido: %s"</string>
     <string name="is_now_hidden">" ahora está oculto"</string>
     <string name="is_now_shown">" ahora se muestra"</string>
     <string name="no_members_has_joined_this_meet_up">Ningún miembro se ha unido a este encuentro</string>
@@ -1046,7 +1050,6 @@
     <string name="checking_server">verificando el servidor</string>
     <string name="below_min_apk">la versión de la aplicación está por debajo de la permitida. Actualice la aplicación a la última versión.</string>
     <string name="add_note">Agregar una nota (opcional)</string>
-    <string name="visit_count">%s (%d %s)</string>
     <string name="no_teams">equipos no disponibles</string>
     <string name="planet_name">%s Planeta</string>
     <string name="no_submissions">envíos no disponibles</string>
@@ -1054,5 +1057,25 @@
     <string name="no_feedback">No hay comentarios aquí</string>
     <string name="empty_text"></string>
     <string name="message_placeholder">%s</string>
+    <string name="reports">informes</string>
+    <string name="number_placeholder">%d</string>
+    <string name="date_range">%s a %s</string>
+    <string name="string_range">%s - %s</string>
+    <string name="team_financial_report">Informe financiero de %s</string>
+    <string name="report_date_details">Informe creado el: %s | Actualizado el: %s</string>
+    <string name="formatted_date">%d/%d/%d</string>
+    <string name="prefix_content">%s%s</string>
+    <string name="rating_count_format">%d total</string>
+    <string name="step_progress">Paso actual: %d de %d</string>
+    <string name="percentage">%s%%</string>
+    <string name="test_size">Este examen tiene %d preguntas</string>
+    <string name="course_progress">Progreso %s de %s</string>
+    <string name="tag_selected">Seleccionado: %s</string>
+    <string name="resources_size">Recursos [%d]</string>
+    <string name="user_role">- %s</string>
+    <string name="offline_visits">%d visitas</string>
+    <string name="visit_count">%1$s (%2$d %3$s)</string>
+    <string name="two_strings">%s %s</string>
+    <string name="three_strings">%s %s %s</string>
 
 </resources>

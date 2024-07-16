@@ -2,8 +2,10 @@ package org.ole.planet.myplanet.ui.chat
 
 import android.app.AlertDialog
 import android.content.Context
+import android.os.Build
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.annotation.RequiresApi
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.Gson
@@ -42,6 +44,11 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
     var user: RealmUserModel? = null
     private var newsList: RealmResults<RealmNews>? = null
 
+    init {
+        chatHistory = chatHistory.sortedByDescending { it.lastUsed }
+        filteredChatHistory = chatHistory
+    }
+
     interface ChatHistoryItemClickListener {
         fun onChatHistoryItemClicked(conversations: RealmList<Conversation>?, id: String, rev: String?)
     }
@@ -55,10 +62,10 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
             if (chat.conversations != null && chat.conversations?.isNotEmpty() == true) {
                 chat.conversations?.get(0)?.query?.contains(query, ignoreCase = true) == true
             } else {
-                chat.title?.contains(query, ignoreCase = true) == true
+                chat.title?.contains(query, ignoreCase = true) ==true
             }
         }
-            notifyItemRangeChanged(0, filteredChatHistory.size)
+        notifyDataSetChanged()
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
@@ -77,25 +84,12 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
     }
 
     fun updateChatHistory(newChatHistory: List<RealmChatHistory>) {
-        val oldListSize = chatHistory.size
-        val newListSize = newChatHistory.size
-        chatHistory = newChatHistory
-        filteredChatHistory = newChatHistory
-        if(oldListSize<newListSize){
-            notifyItemRangeInserted(oldListSize,newListSize-oldListSize)
-        }
-        else if(oldListSize>newListSize){
-            notifyItemRangeRemoved(newListSize,oldListSize-newListSize)
-        }
-        else{
-            for(i in 0 until newListSize){
-                if(chatHistory[i] != newChatHistory[i]){
-                    notifyItemChanged(i)
-                }
-            }
-        }
+        chatHistory = newChatHistory.sortedByDescending { it.lastUsed }
+        filteredChatHistory = chatHistory
+        notifyDataSetChanged()
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             val viewHolderChat = holder as ViewHolderChat
             if (filteredChatHistory[position].conversations != null && filteredChatHistory[position].conversations?.isNotEmpty() == true) {

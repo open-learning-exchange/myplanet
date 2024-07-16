@@ -170,9 +170,11 @@ open class RealmMyCourse : RealmObject() {
                 mutableListOf()
             }
 
-            for (link in concatenatedLinks) {
-                if (!existingConcatenatedLinks.contains(link)) {
-                    existingConcatenatedLinks.add(link)
+            synchronized(concatenatedLinks) {
+                for (link in concatenatedLinks) {
+                    if (!existingConcatenatedLinks.contains(link)) {
+                        existingConcatenatedLinks.add(link)
+                    }
                 }
             }
 
