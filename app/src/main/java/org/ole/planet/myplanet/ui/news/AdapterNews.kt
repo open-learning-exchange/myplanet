@@ -89,6 +89,22 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
             val news = getNews(holder, position)
 
             if (news?.isValid == true) {
+                holder.rowNewsBinding.tvName.text = ""
+                holder.rowNewsBinding.imgUser.setImageResource(0)
+                holder.rowNewsBinding.llEditDelete.visibility = View.GONE
+                holder.rowNewsBinding.linearLayout51.visibility = View.VISIBLE
+                holder.rowNewsBinding.tvMessage.text = ""
+                holder.rowNewsBinding.tvDate.text = ""
+                holder.rowNewsBinding.imgDelete.setOnClickListener(null)
+                holder.rowNewsBinding.imgEdit.setOnClickListener(null)
+                holder.rowNewsBinding.btnAddLabel.visibility = View.GONE
+                holder.rowNewsBinding.imgEdit.visibility = View.GONE
+                holder.rowNewsBinding.imgDelete.visibility = View.GONE
+                holder.rowNewsBinding.btnReply.visibility = View.GONE
+                holder.rowNewsBinding.imgNews.visibility = View.GONE
+                holder.rowNewsBinding.recyclerGchat.visibility = View.GONE
+                holder.rowNewsBinding.sharedChat.visibility = View.GONE
+
                 val userModel = mRealm.where(RealmUserModel::class.java).equalTo("id", news.userId).findFirst()
                 if (userModel != null && currentUser != null) {
                     holder.rowNewsBinding.tvName.text = userModel.toString()
@@ -96,7 +112,6 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                     showHideButtons(userModel, holder)
                 } else {
                     holder.rowNewsBinding.tvName.text = news.userName
-                    holder.rowNewsBinding.llEditDelete.visibility = View.GONE
                 }
                 showShareButton(holder, news)
                 if ("${news.messageWithoutMarkdown}" != "</br>") {
@@ -126,11 +141,6 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                 holder.rowNewsBinding.btnReply.visibility = if (fromLogin) View.GONE else View.VISIBLE
                 loadImage(holder, news)
                 showReplyButton(holder, news, position)
-                if (news.isCommunityNews) {
-                    holder.itemView.setOnClickListener {
-                        context.startActivity(Intent(context, NewsDetailActivity::class.java).putExtra("newsId", list[position]?.id))
-                    }
-                }
                 addLabels(holder, news)
                 showChips(holder, news)
 
@@ -151,6 +161,8 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
 
                     holder.rowNewsBinding.recyclerGchat.adapter = chatAdapter
                     holder.rowNewsBinding.recyclerGchat.layoutManager = LinearLayoutManager(context)
+                    holder.rowNewsBinding.recyclerGchat.visibility = View.VISIBLE
+                    holder.rowNewsBinding.sharedChat.visibility = View.VISIBLE
                 } else {
                     holder.rowNewsBinding.recyclerGchat.visibility = View.GONE
                     holder.rowNewsBinding.sharedChat.visibility = View.GONE
