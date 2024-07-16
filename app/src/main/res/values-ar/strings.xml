@@ -495,7 +495,7 @@
     <string name="finish">إنهاء</string>
     <string name="submit">إرسال</string>
     <string name="our_courses">دوراتنا</string>
-    <string name="file">الملف: %s</string>
+    <string name="file">%s :الملف</string>
     <string name="recording_audio">جارٍ تسجيل الصوت…</string>
     <string name="show_replies">"عرض الردود "</string>
     <string name="selected">"المحدد: "</string>
