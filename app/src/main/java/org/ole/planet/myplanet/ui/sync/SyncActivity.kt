@@ -600,7 +600,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     val actualUrl = serverMap[displayUrl] ?: ""
                     serverUrl.setText(actualUrl)
                     serverPassword.setText(getPinForUrl(actualUrl))
-                    if (actualUrl == BuildConfig.LOCAL_URL) {
+                    if (actualUrl == BuildConfig.PLANET_SANPABLO_URL) {
                         editor.putString("serverProtocol", "http://").apply()
                     } else {
                         editor.putString("serverProtocol", "https://").apply()
