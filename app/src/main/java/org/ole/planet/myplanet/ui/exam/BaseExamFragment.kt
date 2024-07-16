@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
+import android.util.Log
 import android.view.View
 import android.widget.CompoundButton
 import android.widget.EditText
@@ -25,6 +26,8 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmitPhotos
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.ui.survey.AdapterSurvey
+import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utilities.NetworkUtils.getUniqueIdentifier
 import org.ole.planet.myplanet.utilities.Utilities
@@ -134,15 +137,21 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     }
 
     private fun showUserInfoDialog() {
-        if (!isMySurvey && !exam?.isFromNation!!) {
-            UserInformationFragment.getInstance(sub?.id).show(childFragmentManager, "")
-        } else {
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
-            sub?.status = "complete"
-            mRealm.commitTransaction()
-            Utilities.toast(activity, getString(R.string.thank_you_for_taking_this_survey))
-            parentFragmentManager.popBackStack()
-        }
+//        if (!isMySurvey && !exam?.isFromNation!!) {
+//            UserInformationFragment.getInstance(sub?.id).show(childFragmentManager, "")
+//        }
+        if (!mRealm.isInTransaction) mRealm.beginTransaction()
+        sub?.status = "complete"
+        mRealm.commitTransaction()
+        Utilities.toast(activity, getString(R.string.thank_you_for_taking_this_survey))
+        navigateToSurveyList()
+    }
+
+    private fun navigateToSurveyList() {
+        val surveyListFragment = SurveyFragment()  // Replace with your actual survey list fragment class
+        parentFragmentManager.beginTransaction()
+            .replace(R.id.fragment_container, surveyListFragment) // Use the container ID where your fragments are added
+            .commit()
     }
 
     fun showErrorMessage(s: String?): Boolean {
