@@ -69,7 +69,7 @@
     <string name="phone_number">رقم الهاتف</string>
     <string name="language">اللغة</string>
     <string name="last_name">الاسم الأخير</string>
-    <string name="version">الإصدار s%</string>
+    <string name="version">الإصدار %s</string>
     <string name="middle_name">الاسم الأوسط</string>
     <string name="first_name">الاسم الأول</string>
     <string name="search_dots">بحث…</string>

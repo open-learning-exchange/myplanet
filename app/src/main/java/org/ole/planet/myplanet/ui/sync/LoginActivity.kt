@@ -174,7 +174,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                 forceSync = true
                 service.checkVersion(this, settings) }
             declareHideKeyboardElements()
-            activityLoginBinding.lblVersion.text = resources.getText(R.string.version, resources.getText(R.string.app_version))
+            activityLoginBinding.lblVersion.text = getString(R.string.version, resources.getText(R.string.app_version))
             activityLoginBinding.inputName.addTextChangedListener(MyTextWatcher(activityLoginBinding.inputName))
             activityLoginBinding.inputPassword.addTextChangedListener(MyTextWatcher(activityLoginBinding.inputPassword))
             activityLoginBinding.inputPassword.setOnEditorActionListener { _: TextView?, actionId: Int, event: KeyEvent? ->
