@@ -30,7 +30,7 @@ class AdapterTask(private val context: Context, private val realm: Realm, privat
         list?.get(position)?.let {
             rowTaskBinding.checkbox.text = it.title
             rowTaskBinding.checkbox.isChecked = it.completed
-            if (it.completed) {
+            if (!it.completed) {
                 rowTaskBinding.deadline.text = context.getString(R.string.deadline_colon, formatDate(it.deadline))
             } else {
                 rowTaskBinding.deadline.text =context.getString(R.string.two_strings,
