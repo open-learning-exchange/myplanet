@@ -69,7 +69,7 @@
     <string name="phone_number">Número de teléfono</string>
     <string name="language">Idioma</string>
     <string name="last_name">Apellido</string>
-    <string name="version">Versión</string>
+    <string name="version">Versión %s</string>
     <string name="middle_name">Segundo nombre</string>
     <string name="first_name">Nombre de Pila</string>
     <string name="search_dots">Buscar…</string>
@@ -500,12 +500,12 @@
     <string name="recording_audio">Grabando audio…</string>
     <string name="show_replies">"Mostrar respuestas "</string>
     <string name="selected">"Seleccionado: "</string>
-    <string name="last_sync"><![CDATA["Última sincronización con el servidor: "]]></string>
+    <string name="last_sync">Última sincronización con el servidor: %s</string>
     <string name="last_syncs">Última Sincronización</string>
     <string name="login_user">iniciarsesión Nombre de usuario</string>
     <string name="login_password">Iniciar sesión Usuario Contraseña</string>
     <string name="no_team_available">No hay equipo/empresa disponible</string>
-    <string name="last_sync_date">"Fecha de última sincronización: "</string>
+    <string name="last_sync_date">Fecha de última sincronización: %s</string>
     <string name="no_assignee">Sin asignado/a</string>
     <string name="note_">notas</string>
     <string name="diagno">diagnósticos</string>
