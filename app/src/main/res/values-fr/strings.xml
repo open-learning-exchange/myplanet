@@ -559,6 +559,8 @@
     <string name="subject_level_colon">Niveau du sujet :</string>
     <string name="grade_level_colon">Niveau scolaire :</string>
     <string name="language_colon">Langue :</string>
+    <string name="gender_colon">Genre: %s</string>
+    <string name="level_colon">Niveau: %s</string>
     <string name="method">Méthode :</string>
     <string name="number_of_exams">Nombre d\'examens :</string>
     <string name="description_colon">Description :</string>

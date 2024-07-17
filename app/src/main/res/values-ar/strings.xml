@@ -559,6 +559,8 @@
     <string name="subject_level_colon">مستوى الموضوع:</string>
     <string name="grade_level_colon">مستوى الصف:</string>
     <string name="language_colon">اللغة:</string>
+    <string name="gender_colon">الجنس: %s</string>
+    <string name="level_colon">المستوى: %s</string>
     <string name="method">الطريقة:</string>
     <string name="number_of_exams">عدد الامتحانات:</string>
     <string name="description_colon">الوصف:</string>
