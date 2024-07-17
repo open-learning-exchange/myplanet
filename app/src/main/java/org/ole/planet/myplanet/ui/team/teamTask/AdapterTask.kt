@@ -14,7 +14,6 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.team.teamTask.AdapterTask.ViewHolderTask
 import org.ole.planet.myplanet.utilities.DialogUtils.showCloseAlert
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
-import org.ole.planet.myplanet.utilities.Utilities
 
 class AdapterTask(private val context: Context, private val realm: Realm, private val list: List<RealmTeamTask>?) : RecyclerView.Adapter<ViewHolderTask>() {
     private lateinit var rowTaskBinding: RowTaskBinding
@@ -31,11 +30,11 @@ class AdapterTask(private val context: Context, private val realm: Realm, privat
         list?.get(position)?.let {
             rowTaskBinding.checkbox.text = it.title
             rowTaskBinding.checkbox.isChecked = it.completed
-            rowTaskBinding.deadline.text = context.getString(R.string.deadline_colon) +
-                    formatDate(it.deadline) + if (it.completed) {
-                context.getString(R.string.completed_colon) + formatDate(it.completedTime)
+            if (!it.completed) {
+                rowTaskBinding.deadline.text = context.getString(R.string.deadline_colon, formatDate(it.deadline))
             } else {
-                ""
+                rowTaskBinding.deadline.text =context.getString(R.string.two_strings,
+                    context.getString(R.string.deadline_colon, formatDate(it.deadline)), context.getString(R.string.completed_colon, formatDate(it.deadline)))
             }
             showAssignee(it)
             rowTaskBinding.checkbox.setOnCheckedChangeListener { _: CompoundButton?, b: Boolean ->
@@ -60,7 +59,7 @@ class AdapterTask(private val context: Context, private val realm: Realm, privat
         if (!TextUtils.isEmpty(realmTeamTask.assignee)) {
             val model = realm.where(RealmUserModel::class.java).equalTo("id", realmTeamTask.assignee).findFirst()
             if (model != null) {
-                rowTaskBinding.assignee.text = "${context.getString(R.string.assigned_to_colon)}${model.name}"
+                rowTaskBinding.assignee.text = context.getString(R.string.assigned_to_colon, model.name)
             }
         } else {
             rowTaskBinding.assignee.setText(R.string.no_assignee) }

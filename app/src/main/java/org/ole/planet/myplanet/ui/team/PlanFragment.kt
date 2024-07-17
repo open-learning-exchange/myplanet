@@ -12,6 +12,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentPlanBinding
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
+@RequiresApi(Build.VERSION_CODES.O)
 class PlanFragment : BaseTeamFragment() {
     private lateinit var fragmentPlanBinding: FragmentPlanBinding
     private var missionText: String? = null
@@ -22,7 +23,6 @@ class PlanFragment : BaseTeamFragment() {
         return fragmentPlanBinding.root
     }
 
-    @RequiresApi(Build.VERSION_CODES.N)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         if (TextUtils.equals(team.type, "enterprise")) {
@@ -48,6 +48,6 @@ class PlanFragment : BaseTeamFragment() {
         } else {
             fragmentPlanBinding.tvDescription.text = team.description
         }
-        fragmentPlanBinding.tvDate.text = "${getString(R.string.created_on)} ${formatDate(team.createdDate)}"
+        fragmentPlanBinding.tvDate.text = getString(R.string.two_strings, getString(R.string.created_on), formatDate(team.createdDate))
     }
 }
