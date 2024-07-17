@@ -187,25 +187,30 @@ object TransactionSyncManager {
             }
         }
         saveConcatenatedLinksToPrefs()
-        meetupWriteCsv()
-        achievementWriteCsv()
-        certificationWriteCsv()
-        chatWriteCsv()
-        progressWriteCsv()
-        feedbackWriteCsv()
-        courseWriteCsv()
-        healthWriteCsv()
-        libraryWriteCsv()
-        teamLogWriteCsv()
-        teamWriteCsv()
-        newsWriteCsv()
-        offlineWriteCsv()
-        ratingWriteCsv()
-        stepExamWriteCsv()
-        submissionWriteCsv()
-        tagWriteCsv()
-        teamTaskWriteCsv()
-        userWriteCsv()
+
+        val syncFiles = settings.getBoolean("download_sync_files", false)
+
+        if (syncFiles) {
+            meetupWriteCsv()
+            achievementWriteCsv()
+            certificationWriteCsv()
+            chatWriteCsv()
+            progressWriteCsv()
+            feedbackWriteCsv()
+            courseWriteCsv()
+            healthWriteCsv()
+            libraryWriteCsv()
+            teamLogWriteCsv()
+            teamWriteCsv()
+            newsWriteCsv()
+            offlineWriteCsv()
+            ratingWriteCsv()
+            stepExamWriteCsv()
+            submissionWriteCsv()
+            tagWriteCsv()
+            teamTaskWriteCsv()
+            userWriteCsv()
+        }
     }
 
     private fun callMethod(mRealm: Realm, jsonDoc: JsonObject, type: String) {

@@ -1055,7 +1055,7 @@
     <string name="no_submissions">envíos no disponibles</string>
     <string name="no_chats">no hay chats anteriores</string>
     <string name="no_feedback">No hay comentarios aquí</string>
-    <string name="empty_text"></string>
+    <string name="empty_text" />
     <string name="message_placeholder">%s</string>
     <string name="reports">informes</string>
     <string name="number_placeholder">%d</string>
@@ -1077,5 +1077,6 @@
     <string name="visit_count">%1$s (%2$d %3$s)</string>
     <string name="two_strings">%s %s</string>
     <string name="three_strings">%s %s %s</string>
+    <string name="download_sync_files">descargar archivos de sincronización</string>
 
 </resources>
