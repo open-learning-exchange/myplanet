@@ -27,17 +27,15 @@ import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Locale
 
 class AdapterResource(private val context: Context, private var libraryList: List<RealmMyLibrary?>, private val ratingMap: HashMap<String?, JsonObject>, private val realm: Realm) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-    private val selectedItems: MutableList<RealmMyLibrary?>
+    private val selectedItems: MutableList<RealmMyLibrary?> = ArrayList()
     private var listener: OnLibraryItemSelected? = null
-    private val config: ChipCloudConfig
+    private val config: ChipCloudConfig = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.single)
     private var homeItemClickListener: OnHomeItemClickListener? = null
     private var ratingChangeListener: OnRatingChangeListener? = null
     private var isAscending = true
     private var isTitleAscending = true
 
     init {
-        selectedItems = ArrayList()
-        config = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.single)
         if (context is OnHomeItemClickListener) {
             homeItemClickListener = context
         }
@@ -71,14 +69,14 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
             holder.bind()
             holder.rowLibraryBinding.title.text = libraryList[position]?.title
             setMarkdownText(holder.rowLibraryBinding.description, libraryList[position]?.description!!)
-            holder.rowLibraryBinding.timesRated.text = "${libraryList[position]?.timesRated} ${context.getString(R.string.total)}"
+            holder.rowLibraryBinding.timesRated.text = context.getString(R.string.num_total, libraryList[position]?.timesRated)
             holder.rowLibraryBinding.checkbox.isChecked = selectedItems.contains(libraryList[position])
             holder.rowLibraryBinding.checkbox.contentDescription = "${context.getString(R.string.selected)} ${libraryList[position]?.title}"
             holder.rowLibraryBinding.rating.text =
                 if (TextUtils.isEmpty(libraryList[position]?.averageRating)) {
                     "0.0"
                 } else {
-                    String.format("%.1f", libraryList[position]?.averageRating?.toDouble())
+                    String.format(Locale.getDefault(), "%.1f", libraryList[position]?.averageRating?.toDouble())
                 }
             holder.rowLibraryBinding.tvDate.text = libraryList[position]?.createdDate?.let { formatDate(it, "MMM dd, yyyy") }
             displayTagCloud(holder.rowLibraryBinding.flexboxDrawable, position)
