@@ -151,11 +151,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private fun updateTvDelete(){
-        if (selectedItems?.size!! == 0) {
-            tvDelete?.isEnabled = false
-        } else{
-            tvDelete?.isEnabled = true
-        }
+        tvDelete?.isEnabled = selectedItems?.size!! != 0
     }
 
     private fun checkList() {
@@ -206,8 +202,8 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         clearTags.setOnClickListener {
             saveSearchActivity()
             searchTags.clear()
-            etSearch.setText("")
-            tvSelected.text = ""
+            etSearch.setText(R.string.empty_text)
+            tvSelected.text = getString(R.string.empty_text)
             levels.clear()
             mediums.clear()
             subjects.clear()
@@ -238,7 +234,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         val li: MutableList<RealmTag> = ArrayList()
         li.add(tag)
         searchTags = li
-        tvSelected.text = "${getString(R.string.selected)}${tag.name}"
+        tvSelected.text = getString(R.string.tag_selected, tag.name)
         adapterLibrary.setLibraryList(applyFilter(filterLibraryByTag(etSearch.text.toString(), li)))
         showNoData(tvMessage, adapterLibrary.itemCount, "resources")
     }
