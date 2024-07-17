@@ -45,6 +45,8 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
     @JvmField
     protected var adapterNews: AdapterNews? = null
     lateinit var openFolderLauncher: ActivityResultLauncher<Intent>
+    private lateinit var replyActivityLauncher: ActivityResultLauncher<Intent>
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         imageList = RealmList()
@@ -78,6 +80,12 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
                     }
                 }
             }
+        replyActivityLauncher = registerForActivityResult(
+            ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                adapterNews?.notifyDataSetChanged()
+            }
+        }
     }
 
     override fun onAttach(context: Context) {
@@ -92,10 +100,9 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
 
     override fun showReply(news: RealmNews?, fromLogin: Boolean) {
         if (news != null) {
-            startActivity(
-                Intent(activity, ReplyActivity::class.java).putExtra("id", news.id)
-                    .putExtra("fromLogin", fromLogin)
-            )
+            val intent = Intent(activity, ReplyActivity::class.java).putExtra("id", news.id)
+                .putExtra("fromLogin", fromLogin)
+            replyActivityLauncher.launch(intent)
         }
     }
 
