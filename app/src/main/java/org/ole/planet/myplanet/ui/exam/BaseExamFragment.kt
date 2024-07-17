@@ -11,6 +11,7 @@ import android.widget.CompoundButton
 import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentActivity
 import io.noties.markwon.Markwon
 import io.noties.markwon.editor.MarkwonEditor
 import io.noties.markwon.editor.MarkwonEditorTextWatcher
@@ -137,21 +138,24 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     }
 
     private fun showUserInfoDialog() {
-//        if (!isMySurvey && !exam?.isFromNation!!) {
-//            UserInformationFragment.getInstance(sub?.id).show(childFragmentManager, "")
-//        }
-        if (!mRealm.isInTransaction) mRealm.beginTransaction()
-        sub?.status = "complete"
-        mRealm.commitTransaction()
-        Utilities.toast(activity, getString(R.string.thank_you_for_taking_this_survey))
-        navigateToSurveyList()
+        if (!isMySurvey && !exam?.isFromNation!!) {
+            UserInformationFragment.getInstance(sub?.id).show(childFragmentManager, "")
+        } else {
+            if (!mRealm.isInTransaction) mRealm.beginTransaction()
+            sub?.status = "complete"
+            mRealm.commitTransaction()
+            Utilities.toast(activity, getString(R.string.thank_you_for_taking_this_survey))
+            navigateToSurveyList(requireActivity())
+        }
     }
 
-    private fun navigateToSurveyList() {
-        val surveyListFragment = SurveyFragment()  // Replace with your actual survey list fragment class
-        parentFragmentManager.beginTransaction()
-            .replace(R.id.fragment_container, surveyListFragment) // Use the container ID where your fragments are added
-            .commit()
+    companion object {
+        fun navigateToSurveyList(activity: FragmentActivity) {
+            val surveyListFragment = SurveyFragment()
+            activity.supportFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, surveyListFragment)
+                .commit()
+        }
     }
 
     fun showErrorMessage(s: String?): Boolean {
