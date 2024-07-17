@@ -12,7 +12,7 @@ import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.model.RealmStepExam
 
 class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>() {
-    private lateinit var addNewServey: FloatingActionButton
+    private lateinit var addNewSurvey: FloatingActionButton
     private lateinit var spn: Spinner
     override fun getLayout(): Int {
         return R.layout.fragment_survey
@@ -27,8 +27,8 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         spn = requireView().findViewById(R.id.spn_sort)
-        addNewServey = requireView().findViewById(R.id.fab_add_new_survey)
-        addNewServey.setOnClickListener { }
+        addNewSurvey = requireView().findViewById(R.id.fab_add_new_survey)
+        addNewSurvey.setOnClickListener { }
         if (getAdapter().itemCount == 0) {
             spn.visibility = View.GONE
         }

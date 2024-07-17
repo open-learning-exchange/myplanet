@@ -57,14 +57,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private lateinit var syncDate: TextView
     lateinit var lblLastSyncDate: TextView
     private lateinit var intervalLabel: TextView
-    lateinit var tvNodata: TextView
+    lateinit var tvNoData: TextView
     lateinit var spinner: Spinner
     private lateinit var syncSwitch: SwitchCompat
     var convertedDate = 0
     private var connectionResult = false
     lateinit var mRealm: Realm
     private lateinit var editor: SharedPreferences.Editor
-    private var syncTimeInteval = intArrayOf(60 * 60, 3 * 60 * 60)
+    private var syncTimeInterval = intArrayOf(60 * 60, 3 * 60 * 60)
     lateinit var syncIcon: ImageView
     lateinit var syncIconDrawable: AnimationDrawable
     lateinit var inputLayoutName: TextInputLayout
@@ -72,7 +72,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     lateinit var prefData: SharedPrefManager
     lateinit var profileDbHandler: UserProfileDbHandler
     private lateinit var spnCloud: Spinner
-    private lateinit var protocol_checkin: RadioGroup
+    private lateinit var protocolCheckIn: RadioGroup
     private lateinit var serverUrl: EditText
     private lateinit var serverPassword: EditText
     private lateinit var serverAddresses: Spinner
@@ -204,7 +204,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private fun dateCheck(dialog: MaterialDialog) {
         // Check if the user never synced
         syncDate = dialog.findViewById(R.id.lastDateSynced) as TextView
-        syncDate.text = "${getString(R.string.last_sync_date)}${convertDate()}"
+        syncDate.text = getString(R.string.last_sync_date, convertDate())
         syncDropdownAdd()
     }
 
@@ -229,7 +229,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     private fun saveSyncInfoToPreference() {
         editor.putBoolean("autoSync", syncSwitch.isChecked)
-        editor.putInt("autoSyncInterval", syncTimeInteval[spinner.selectedItemPosition])
+        editor.putInt("autoSyncInterval", syncTimeInterval[spinner.selectedItemPosition])
         editor.putInt("autoSyncPosition", spinner.selectedItemPosition)
         editor.commit()
     }
@@ -253,8 +253,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     private fun checkName(username: String?, password: String?, isManagerMode: Boolean): Boolean {
         try {
-            val db_users = mRealm.where(RealmUserModel::class.java).equalTo("name", username).findAll()
-            for (user in db_users) {
+            val dbUsers = mRealm.where(RealmUserModel::class.java).equalTo("name", username).findAll()
+            for (user in dbUsers) {
                 if (user._id?.isEmpty() == true) {
                     if (username == user.name && password == user.password) {
                         saveUserInfoPref(settings, password, user)
@@ -338,7 +338,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         if (settings.getLong(getString(R.string.last_syncs), 0) <= 0) {
             lblLastSyncDate.text = getString(R.string.last_synced_never)
         } else {
-            lblLastSyncDate.text = "${getString(R.string.last_sync)} ${getRelativeTime(settings.getLong(getString(R.string.last_syncs), 0))}"
+            lblLastSyncDate.text = getString(R.string.last_sync, getRelativeTime(settings.getLong(getString(R.string.last_syncs), 0)))
         }
         if (autoSynFeature(Constants.KEY_AUTOSYNC_, applicationContext) && autoSynFeature(Constants.KEY_AUTOSYNC_WEEKLY, applicationContext)) {
             return checkForceSync(7)
@@ -389,7 +389,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     fun settingDialog() {
         val dialogServerUrlBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this))
         spnCloud = dialogServerUrlBinding.spnCloud
-        protocol_checkin = dialogServerUrlBinding.radioProtocol
+        protocolCheckIn = dialogServerUrlBinding.radioProtocol
         serverUrl = dialogServerUrlBinding.inputServerUrl
         serverPassword = dialogServerUrlBinding.inputServerPassword
         serverAddresses = dialogServerUrlBinding.serverUrls
@@ -468,7 +468,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 serverUrl.addTextChangedListener(MyTextWatcher(serverUrl))
                 dialogServerUrlBinding.switchServerUrl.isChecked = settings.getBoolean("switchCloudUrl", false)
                 setUrlAndPin(settings.getBoolean("switchCloudUrl", false))
-                protocol_semantics()
+                protocolSemantics()
             } else {
                 prefData.setMANUALCONFIG(false)
                 showConfigurationUIElements(dialogServerUrlBinding, false)
@@ -629,7 +629,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         val selected = spnCloud.selectedItem
         if (selected is RealmCommunity && selected.isValid) {
             serverUrl.setText(selected.localDomain)
-            protocol_checkin.check(R.id.radio_https)
+            protocolCheckIn.check(R.id.radio_https)
             settings.getString("serverProtocol", getString(R.string.https_protocol))
             serverPassword.setText(if (selected.weight == 0) "1983" else "")
             serverPassword.isEnabled = selected.weight != 0
@@ -642,7 +642,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         } else {
             serverUrl.setText(settings.getString("serverURL", "")?.let { removeProtocol(it) })
             serverPassword.setText(settings.getString("serverPin", ""))
-            protocol_checkin.check(
+            protocolCheckIn.check(
                 if (TextUtils.equals(settings.getString("serverProtocol", ""), "http://")) {
                     R.id.radio_http
                 } else {
@@ -654,11 +654,11 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         serverPassword.isEnabled = !checked
         serverPassword.clearFocus()
         serverUrl.clearFocus()
-        protocol_checkin.isEnabled = !checked
+        protocolCheckIn.isEnabled = !checked
     }
 
-    private fun protocol_semantics() {
-        protocol_checkin.setOnCheckedChangeListener { _: RadioGroup?, i: Int ->
+    private fun protocolSemantics() {
+        protocolCheckIn.setOnCheckedChangeListener { _: RadioGroup?, i: Int ->
             when (i) {
                 R.id.radio_http -> editor.putString("serverProtocol", getString(R.string.http_protocol)).apply()
                 R.id.radio_https -> editor.putString("serverProtocol", getString(R.string.https_protocol)).apply()
@@ -667,10 +667,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     private fun removeProtocol(url: String): String {
-        var url = url
-        url = url.replaceFirst(getString(R.string.https_protocol).toRegex(), "")
-        url = url.replaceFirst(getString(R.string.http_protocol).toRegex(), "")
-        return url
+        var modifiedUrl = url
+        modifiedUrl = modifiedUrl.replaceFirst(getString(R.string.https_protocol).toRegex(), "")
+        modifiedUrl = modifiedUrl.replaceFirst(getString(R.string.http_protocol).toRegex(), "")
+        return modifiedUrl
     }
 
     private fun continueSync(dialog: MaterialDialog) {
@@ -701,7 +701,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
         editor.putLong("lastUsageUploaded", Date().time).apply()
         if (::lblLastSyncDate.isInitialized) {
-            lblLastSyncDate.text = "${getString(R.string.last_sync)}${getRelativeTime(Date().time)} >>"
+            lblLastSyncDate.text = getString(R.string.message_placeholder, "${getString(R.string.last_sync, getRelativeTime(Date().time))} >>")
         }
     }
 
