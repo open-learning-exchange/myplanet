@@ -804,9 +804,9 @@
     <string name="team_leader">قائد الفريق</string>
     <string name="select_resource">اختر المصدر:</string>
     <string name="add">إضافة</string>
-    <string name="deadline_colon">الموعد النهائي: %s</string>
+    <string name="deadline_colon">%s :الموعد النهائي</string>
     <string name="completed_colon">%s :اكتمل\n</string>
-    <string name="assigned_to_colon">معيّن لـ: %s</string>
+    <string name="assigned_to_colon">%s :معيّن لـ</string>
     <string name="add_task">إضافة مهمة</string>
     <string name="task_title_is_required">اسم المهمة مطلوب</string>
     <string name="deadline_is_required">الموعد النهائي مطلوب</string>
