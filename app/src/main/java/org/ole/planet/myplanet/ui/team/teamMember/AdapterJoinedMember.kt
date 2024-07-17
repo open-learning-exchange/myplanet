@@ -33,7 +33,7 @@ class AdapterJoinedMember(private val context: Context, private val list: List<R
     override fun onBindViewHolder(holder: ViewHolderUser, position: Int) {
         val member = list[position]
         rowJoinedUserBinding.tvTitle.text = if (member.toString() == " ") member.name else member.toString()
-        rowJoinedUserBinding.tvDescription.text = "${member.getRoleAsString()} (${RealmTeamLog.getVisitCount(mRealm, member.name, teamId)} ${context.getString(R.string.visits)})"
+        rowJoinedUserBinding.tvDescription.text = context.getString(R.string.member_description, member.getRoleAsString(), RealmTeamLog.getVisitCount(mRealm, member.name, teamId))
         Glide.with(context)
             .load(list[position].userImage)
             .placeholder(R.drawable.profile)
