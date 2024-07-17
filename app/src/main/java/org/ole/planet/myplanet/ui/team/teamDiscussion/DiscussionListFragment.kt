@@ -140,8 +140,8 @@ class DiscussionListFragment : BaseTeamFragment() {
                 map["viewInId"] = teamId
                 map["viewInSection"] = "teams"
                 map["message"] = msg
-                map["messageType"] = team.teamType!!
-                map["messagePlanetCode"] = team.teamPlanetCode!!
+                map["messageType"] = team.teamType ?: ""
+                map["messagePlanetCode"] = team.teamPlanetCode ?: ""
                 user?.let { createNews(map, mRealm, it, imageList) }
                 fragmentDiscussionListBinding.rvDiscussion.adapter?.notifyDataSetChanged()
                 setData(news)
