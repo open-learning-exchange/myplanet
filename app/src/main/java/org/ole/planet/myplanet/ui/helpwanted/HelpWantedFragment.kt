@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import android.os.Build
 import android.os.Bundle
 import android.text.Html
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -26,6 +27,7 @@ class HelpWantedFragment : Fragment() {
         fragmentHelpWantedBinding = FragmentHelpWantedBinding.inflate(inflater, container, false)
         settings = requireActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         if (settings.contains("user_admin")) manager = parseString(settings.getString("user_admin", "")).asJsonObject
+        Log.d("HelpWantedFragment", "onCreateView: $manager")
         return fragmentHelpWantedBinding.root
     }
 

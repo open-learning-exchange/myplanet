@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.team
 import android.content.DialogInterface
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -76,6 +77,8 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
         mRealm = dbService.realmInstance
         user = profileDbHandler.userModel?.let { mRealm.copyFromRealm(it) }
         team = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
+
+        Log.d("Okuro", "MyTeamsDetailFragment: teamId: $teamId")
         return fragmentMyTeamsDetailBinding.root
     }
 

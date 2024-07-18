@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.model;
 
 import android.content.SharedPreferences
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
@@ -290,6 +291,7 @@ open class RealmMyTeam : RealmObject() {
 
         @JvmStatic
         fun getJoinedMember(teamId: String, realm: Realm): MutableList<RealmUserModel> {
+            Log.d("JoinedMemberFragment", "onCreateView: $teamId")
             return getUsers(teamId, realm, "membership")
         }
 
@@ -311,13 +313,17 @@ open class RealmMyTeam : RealmObject() {
                 query = query.equalTo("docType", docType)
             }
             val myteam = query.findAll()
+            Log.d("okuro", "query: $myteam")
             val list = mutableListOf<RealmUserModel>()
             for (team in myteam) {
                 val model = mRealm.where(RealmUserModel::class.java)
                     .equalTo("id", team.userId)
                     .findFirst()
-                if (model != null && !list.contains(model)) list.add(model)
+                if (model != null && !list.contains(model)) {
+                    list.add(model)
+                }
             }
+            Log.d("okuro", "getUsers: $list")
             return list
         }
 
