@@ -559,6 +559,8 @@
     <string name="subject_level_colon">विषय स्तर:</string>
     <string name="grade_level_colon">ग्रेड स्तर:</string>
     <string name="language_colon">भाषा:</string>
+    <string name="gender_colon">लिङ्ग: %s</string>
+    <string name="level_colon">स्तर: %s</string>
     <string name="method">तरिका:</string>
     <string name="number_of_exams">परीक्षाहरूको संख्या:</string>
     <string name="description_colon">वर्णन:</string>

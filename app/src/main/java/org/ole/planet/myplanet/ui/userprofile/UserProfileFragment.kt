@@ -54,7 +54,7 @@ class UserProfileFragment : Fragment() {
     private var model: RealmUserModel? = null
     private var imageUrl = ""
     private lateinit var pickImageLauncher: ActivityResultLauncher<Intent>
-    var selectedGender: String? = null
+    private var selectedGender: String? = null
     var selectedLevel: String? = null
     var selectedLanguage: String? = null
     var date: String? = null
@@ -89,7 +89,7 @@ class UserProfileFragment : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentUserProfileBinding = FragmentUserProfileBinding.inflate(inflater, container, false)
-        settings = requireContext().getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        settings = requireContext().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         handler = UserProfileDbHandler(requireContext())
         realmService = DatabaseService(requireContext())
         mRealm = realmService.realmInstance
@@ -103,12 +103,12 @@ class UserProfileFragment : Fragment() {
         } else {
             model?.name ?: ""
         }
-        fragmentUserProfileBinding.txtEmail.text = getString(R.string.email_colon) + Utilities.checkNA(model?.email)
+        fragmentUserProfileBinding.txtEmail.text = getString(R.string.two_strings, getString(R.string.email_colon), Utilities.checkNA(model?.email))
         val dob = if (TextUtils.isEmpty(model?.dob)) "N/A" else TimeUtils.getFormatedDate(model?.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
-        fragmentUserProfileBinding.txtDob.text = "${getString(R.string.date_of_birth)}$dob"
-        fragmentUserProfileBinding.txtGender.text = "Gender: ${Utilities.checkNA(model?.gender)}"
-        fragmentUserProfileBinding.txtLanguage.text = "${getString(R.string.language_colon)}${Utilities.checkNA(model?.language)}"
-        fragmentUserProfileBinding.txtLevel.text = "Level: ${Utilities.checkNA(model?.level)}"
+        fragmentUserProfileBinding.txtDob.text = getString(R.string.two_strings, getString(R.string.date_of_birth), dob)
+        fragmentUserProfileBinding.txtGender.text = getString(R.string.gender_colon, Utilities.checkNA(model?.gender))
+        fragmentUserProfileBinding.txtLanguage.text = getString(R.string.two_strings, getString(R.string.language_colon), Utilities.checkNA(model?.language))
+        fragmentUserProfileBinding.txtLevel.text = getString(R.string.level_colon, Utilities.checkNA(model?.level))
 
         model?.userImage.let {
             Glide.with(requireContext())
@@ -151,7 +151,7 @@ class UserProfileFragment : Fragment() {
             languageList.add(0, "Language")
             val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, languageList)
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-            editProfileDialogBinding.language.setAdapter(adapter)
+            editProfileDialogBinding.language.adapter = adapter
             if (model?.language != null) {
                 val language = resources.getStringArray(language)
                 val languageLists = listOf(*language)
@@ -176,7 +176,7 @@ class UserProfileFragment : Fragment() {
             levelList.add(0, "Level")
             val levelAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, levelList)
             levelAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-            editProfileDialogBinding.level.setAdapter(levelAdapter)
+            editProfileDialogBinding.level.adapter = levelAdapter
             if (model?.level != null) {
                 val level = resources.getStringArray(subject_level)
                 val leveList = level.filter { it != "All" }
@@ -199,9 +199,9 @@ class UserProfileFragment : Fragment() {
                 }
             }
             if ("male".equals(model?.gender, ignoreCase = true)) {
-                editProfileDialogBinding.rbMale.setChecked(true)
+                editProfileDialogBinding.rbMale.isChecked = true
             } else if ("female".equals(model?.gender, ignoreCase = true)) {
-                editProfileDialogBinding.rbFemale.setChecked(true)
+                editProfileDialogBinding.rbFemale.isChecked = true
             }
             editProfileDialogBinding.dateOfBirth.setOnClickListener {
                 val now: Calendar = Calendar.getInstance()
@@ -211,7 +211,7 @@ class UserProfileFragment : Fragment() {
                     editProfileDialogBinding.dateOfBirth.text = dob2 },
                     now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH)
                 )
-                dpd.datePicker.maxDate = now.getTimeInMillis()
+                dpd.datePicker.maxDate = now.timeInMillis
                 dpd.show()
             }
             editProfileDialogBinding.btnSave.setOnClickListener {
@@ -294,12 +294,12 @@ class UserProfileFragment : Fragment() {
     private fun updateUIWithUserData(model: RealmUserModel?) {
         model?.let {
             fragmentUserProfileBinding.txtName.text = String.format("%s %s %s", it.firstName, it.middleName, it.lastName)
-            fragmentUserProfileBinding.txtEmail.text = getString(R.string.email_colon) + Utilities.checkNA(it.email)
+            fragmentUserProfileBinding.txtEmail.text = getString(R.string.two_strings, getString(R.string.email_colon), Utilities.checkNA(it.email))
             val dob = if (TextUtils.isEmpty(it.dob)) "N/A" else TimeUtils.getFormatedDate(it.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
-            fragmentUserProfileBinding.txtDob.text = "${getString(R.string.date_of_birth)}$dob"
-            fragmentUserProfileBinding.txtGender.text = "Gender: ${Utilities.checkNA(it.gender)}"
-            fragmentUserProfileBinding.txtLanguage.text = "${getString(R.string.language_colon)}${Utilities.checkNA(it.language)}"
-            fragmentUserProfileBinding.txtLevel.text = "Level: ${Utilities.checkNA(it.level)}"
+            fragmentUserProfileBinding.txtDob.text = getString(R.string.two_strings, getString(R.string.date_of_birth), dob)
+            fragmentUserProfileBinding.txtGender.text = getString(R.string.gender_colon, Utilities.checkNA(it.gender))
+            fragmentUserProfileBinding.txtLanguage.text = getString(R.string.two_strings, getString(R.string.language_colon), Utilities.checkNA(it.language))
+            fragmentUserProfileBinding.txtLevel.text = getString(R.string.level_colon, Utilities.checkNA(it.level))
         }
     }
 

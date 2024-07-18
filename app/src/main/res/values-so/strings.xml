@@ -559,6 +559,8 @@
     <string name="subject_level_colon">Darajo Mawduuc:</string>
     <string name="grade_level_colon">Darajo Loo qoondeeyey:</string>
     <string name="language_colon">Luqadda:</string>
+    <string name="gender_colon">Jinsi: %s</string>
+    <string name="level_colon">Heer: %s</string>
     <string name="method">Hab:</string>
     <string name="number_of_exams">Tirada Baaristada:</string>
     <string name="description_colon">Sharaxaad:</string>
