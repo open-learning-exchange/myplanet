@@ -98,7 +98,11 @@ class UserProfileFragment : Fragment() {
 
         fragmentUserProfileBinding.btProfilePic.setOnClickListener { searchForPhoto() }
         model = handler.userModel
-        fragmentUserProfileBinding.txtName.text = String.format("%s %s %s", model?.firstName, model?.middleName, model?.lastName)
+        fragmentUserProfileBinding.txtName.text = if (!model?.firstName.isNullOrEmpty() && !model?.middleName.isNullOrEmpty() && !model?.lastName.isNullOrEmpty()) {
+            "${model?.firstName} ${model?.middleName} ${model?.lastName}"
+        } else {
+            model?.name ?: ""
+        }
         fragmentUserProfileBinding.txtEmail.text = getString(R.string.two_strings, getString(R.string.email_colon), Utilities.checkNA(model?.email))
         val dob = if (TextUtils.isEmpty(model?.dob)) "N/A" else TimeUtils.getFormatedDate(model?.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
         fragmentUserProfileBinding.txtDob.text = getString(R.string.two_strings, getString(R.string.date_of_birth), dob)
