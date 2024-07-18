@@ -1078,5 +1078,7 @@
     <string name="two_strings">%s %s</string>
     <string name="three_strings">%s %s %s</string>
     <string name="member_description">%1$s (%2$d भ्रमण)</string>
+    <string name="are_you_sure_you_want_to_archive_these_courses">के तपाइँ यी पाठ्यक्रमहरू संग्रह गर्न निश्चित हुनुहुन्छ?</string>
+    <string name="are_you_sure_you_want_to_archive_this_course">के तपाइँ निश्चित हुनुहुन्छ कि तपाइँ यो पाठ्यक्रम संग्रह गर्न चाहनुहुन्छ?</string>
 
 </resources>
