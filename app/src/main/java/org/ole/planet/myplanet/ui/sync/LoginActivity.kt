@@ -530,11 +530,14 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             }
         } else if (source === "member") {
             var userProfile = profileDbHandler.userModel?.userImage
-            var userName: String? = profileDbHandler.userModel?.name
+            var fullName: String? = profileDbHandler.userModel?.getFullName()
             if (userProfile == null) {
                 userProfile = ""
             }
-            val newUser = User(userName, name, password, userProfile, "member")
+            if (fullName?.trim { it <= ' ' }?.isEmpty() == true) {
+                fullName = profileDbHandler.userModel?.name
+            }
+            val newUser = User(fullName, name, password, userProfile, "member")
             val existingUsers: MutableList<User> = ArrayList(prefData.getSAVEDUSERS())
             var newUserExists = false
             for ((fullName1) in existingUsers) {
