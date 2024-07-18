@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.team.teamTask
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.DialogInterface
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -11,6 +12,7 @@ import android.widget.ArrayAdapter
 import android.widget.DatePicker
 import android.widget.TextView
 import android.widget.TimePicker
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.gson.Gson
@@ -36,6 +38,7 @@ import java.util.Calendar
 import java.util.Date
 import java.util.UUID
 
+@RequiresApi(Build.VERSION_CODES.O)
 class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
     private lateinit var fragmentTeamTaskBinding: FragmentTeamTaskBinding
     private var deadline: Calendar? = null
@@ -113,27 +116,27 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
             }.setNegativeButton(getString(R.string.cancel), null).show()
     }
 
-    private fun createOrUpdateTask(task: String, desc: String, t: RealmTeamTask?) {
-        var t = t
-        val isCreate = t == null
+    private fun createOrUpdateTask(task: String, desc: String, teamTask: RealmTeamTask?) {
+        var realmTeamTask = teamTask
+        val isCreate = realmTeamTask == null
         if (!mRealm.isInTransaction) {
             mRealm.beginTransaction()
         }
-        if (t == null) {
-            t = mRealm.createObject(RealmTeamTask::class.java, "${UUID.randomUUID()}")
+        if (realmTeamTask == null) {
+            realmTeamTask = mRealm.createObject(RealmTeamTask::class.java, "${UUID.randomUUID()}")
         }
-        t?.title = task
-        t?.description = desc
-        t?.deadline = deadline?.timeInMillis!!
-        t?.teamId = teamId
-        t?.isUpdated = true
+        realmTeamTask?.title = task
+        realmTeamTask?.description = desc
+        realmTeamTask?.deadline = deadline?.timeInMillis!!
+        realmTeamTask?.teamId = teamId
+        realmTeamTask?.isUpdated = true
         val ob = JsonObject()
         ob.addProperty("teams", teamId)
-        t?.link = Gson().toJson(ob)
-        val obsync = JsonObject()
-        obsync.addProperty("type", "local")
-        obsync.addProperty("planetCode", user?.planetCode)
-        t?.sync = Gson().toJson(obsync)
+        realmTeamTask?.link = Gson().toJson(ob)
+        val obSync = JsonObject()
+        obSync.addProperty("type", "local")
+        obSync.addProperty("planetCode", user?.planetCode)
+        realmTeamTask?.sync = Gson().toJson(obSync)
         mRealm.commitTransaction()
         if (fragmentTeamTaskBinding.rvTask.adapter != null) {
             fragmentTeamTaskBinding.rvTask.adapter?.notifyDataSetChanged()
