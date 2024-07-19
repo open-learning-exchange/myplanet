@@ -47,7 +47,7 @@ import kotlin.plus
 
 class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDateSetListener {
     private lateinit var fragmentEditAchievementBinding: FragmentEditAchievementBinding
-    private lateinit var editAttachementBinding: EditAttachementBinding
+    private lateinit var editAttachmentBinding: EditAttachementBinding
     private lateinit var editOtherInfoBinding: EditOtherInfoBinding
     private lateinit var alertReferenceBinding: AlertReferenceBinding
     private lateinit var alertAddAttachmentBinding: AlertAddAttachmentBinding
@@ -68,7 +68,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         initializeData()
         setListeners()
         if (achievementArray != null) showAchievementAndInfo()
-        if (referenceArray != null) showreference()
+        if (referenceArray != null) showReference()
         return fragmentEditAchievementBinding.root
     }
 
@@ -86,10 +86,10 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             fragmentManager.popBackStack()
         }
         fragmentEditAchievementBinding.btnAchievement.setOnClickListener {
-            showAddachievementAlert(null)
+            showAddAchievementAlert(null)
         }
         fragmentEditAchievementBinding.btnOther.setOnClickListener {
-            showreferenceDialog(null)
+            showReferenceDialog(null)
         }
         fragmentEditAchievementBinding.txtDob.setOnClickListener {
             val now = Calendar.getInstance()
@@ -103,40 +103,40 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         val config = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.single)
         fragmentEditAchievementBinding.llAttachment.removeAllViews()
         for (e in achievementArray!!) {
-            editAttachementBinding = EditAttachementBinding.inflate(LayoutInflater.from(activity))
-            editAttachementBinding.tvTitle.text = e.asJsonObject["title"].asString
-            val flexboxLayout = editAttachementBinding.flexbox
+            editAttachmentBinding = EditAttachementBinding.inflate(LayoutInflater.from(activity))
+            editAttachmentBinding.tvTitle.text = e.asJsonObject["title"].asString
+            val flexboxLayout = editAttachmentBinding.flexbox
             flexboxLayout.removeAllViews()
             val chipCloud = ChipCloud(activity, flexboxLayout, config)
             for (element in e.asJsonObject.getAsJsonArray("resources")) {
                 chipCloud.addChip(element.asJsonObject["title"].asString)
             }
-            editAttachementBinding.ivDelete.setOnClickListener {
+            editAttachmentBinding.ivDelete.setOnClickListener {
                 achievementArray?.remove(e)
                 showAchievementAndInfo()
             }
-            editAttachementBinding.edit.setOnClickListener { showAddachievementAlert(e.asJsonObject) }
-            val editAttachementView: View = editAttachementBinding.root
-            fragmentEditAchievementBinding.llAttachment.addView(editAttachementView)
+            editAttachmentBinding.edit.setOnClickListener { showAddAchievementAlert(e.asJsonObject) }
+            val editAttachmentView: View = editAttachmentBinding.root
+            fragmentEditAchievementBinding.llAttachment.addView(editAttachmentView)
         }
     }
 
-    private fun showreference() {
+    private fun showReference() {
         fragmentEditAchievementBinding.llOtherInfo.removeAllViews()
         for (e in referenceArray!!) {
             editOtherInfoBinding = EditOtherInfoBinding.inflate(LayoutInflater.from(activity))
             editOtherInfoBinding.tvTitle.text = e.asJsonObject["name"].asString
             editOtherInfoBinding.ivDelete.setOnClickListener {
                 referenceArray?.remove(e)
-                showreference()
+                showReference()
             }
-            editOtherInfoBinding.edit.setOnClickListener { showreferenceDialog(e.asJsonObject) }
+            editOtherInfoBinding.edit.setOnClickListener { showReferenceDialog(e.asJsonObject) }
             val editOtherInfoView: View = editOtherInfoBinding.root
             fragmentEditAchievementBinding.llOtherInfo.addView(editOtherInfoView)
         }
     }
 
-    private fun showreferenceDialog(`object`: JsonObject?) {
+    private fun showReferenceDialog(`object`: JsonObject?) {
         alertReferenceBinding = AlertReferenceBinding.inflate(LayoutInflater.from(activity))
         val ar = arrayOf(
             alertReferenceBinding.etName,
@@ -156,7 +156,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             if (`object` != null) referenceArray?.remove(`object`)
             if (referenceArray == null) referenceArray = JsonArray()
             referenceArray?.add(createReference(name, alertReferenceBinding.etRelationship, alertReferenceBinding.etPhone, alertReferenceBinding.etEmail))
-            showreference()
+            showReference()
             d.dismiss()
         }
     }
@@ -171,7 +171,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     }
 
     var date = ""
-    private fun showAddachievementAlert(`object`: JsonObject?) {
+    private fun showAddAchievementAlert(`object`: JsonObject?) {
         alertAddAttachmentBinding = AlertAddAttachmentBinding.inflate(LayoutInflater.from(activity))
         alertAddAttachmentBinding.tvDate.setOnClickListener {
             val now = Calendar.getInstance()
@@ -190,7 +190,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             alertAddAttachmentBinding.tvDate as AppCompatTextView
         )
         alertAddAttachmentBinding.btnAddResources.setOnClickListener {
-            showResourseListDialog(prevList)
+            showResourceListDialog(prevList)
         }
         val alertAddAttachmentView: View = alertAddAttachmentBinding.root
         AlertDialog.Builder(requireActivity()).setTitle(R.string.add_achievement)
@@ -233,7 +233,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         showAchievementAndInfo()
     }
 
-    private fun showResourseListDialog(prevList: List<String?>) {
+    private fun showResourceListDialog(prevList: List<String?>) {
         val builder = AlertDialog.Builder(requireActivity())
         builder.setTitle(R.string.select_resources)
         val list: List<RealmMyLibrary> = aRealm.where(RealmMyLibrary::class.java).findAll()
@@ -285,8 +285,8 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         }
         val adapter: ArrayAdapter<String?> = object : ArrayAdapter<String?>(requireActivity(), R.layout.item_checkbox, R.id.checkBoxRowLayout, names) {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-                val rowlayoutBinding = RowlayoutBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-                val textView = rowlayoutBinding.root
+                val rowLayoutBinding = RowlayoutBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+                val textView = rowLayoutBinding.root
                 textView.text = getItem(position)
                 textView.isChecked = myLibraryAlertdialogBinding.alertDialogListView.selectedItemsList.contains(position)
                 myLibraryAlertdialogBinding.alertDialogListView.setItemChecked(position, myLibraryAlertdialogBinding.alertDialogListView.selectedItemsList.contains(position))
