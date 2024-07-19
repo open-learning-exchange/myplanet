@@ -96,7 +96,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         recyclerView.adapter = adapter
         if (isMyCourseLib && adapter.itemCount != 0 && courseLib == "courses") {
             resources?.let { showDownloadDialog(it) }
-        } else if (isMyCourseLib && courseLib == null) {
+        } else if (isMyCourseLib && courseLib == null && !isSurvey) {
             showDownloadDialog(getLibraryList(mRealm))
         }
         return v
