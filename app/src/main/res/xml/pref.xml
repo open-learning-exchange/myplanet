@@ -72,12 +72,6 @@
 <!--            android:key="beta_healthWorker"-->
 <!--            android:title="Beta Function for Health Care Provider" />-->
 
-        <SwitchPreference
-            android:defaultValue="true"
-            android:key="beta_achievement"
-            android:title="@string/beta_function_for_achievement" />
-
-
     </PreferenceCategory>
     <PreferenceCategory
         android:dependency="beta_function"
