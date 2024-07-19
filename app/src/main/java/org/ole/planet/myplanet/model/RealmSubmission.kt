@@ -188,7 +188,7 @@ open class RealmSubmission : RealmObject() {
 
         @JvmStatic
         fun getNoOfSubmissionByUser(id: String?, userId: String?, mRealm: Realm): String {
-            val submissionCount = mRealm.where(RealmSubmission::class.java).equalTo("parentId", id).equalTo("userId", userId).findAll().size
+            val submissionCount = mRealm.where(RealmSubmission::class.java).equalTo("parentId", id).equalTo("userId", userId).equalTo("status", "complete").findAll().size
             val pluralizedString: String = if (submissionCount == 1) {
                 MainApplication.context.getString(R.string.time)
             } else {
