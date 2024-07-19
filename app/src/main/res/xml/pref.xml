@@ -53,10 +53,6 @@
             android:title="@string/beta_function_for_course" />
         <SwitchPreference
             android:defaultValue="true"
-            android:key="beta_auto_update"
-            android:title="@string/beta_function_for_auto_update" />
-        <SwitchPreference
-            android:defaultValue="true"
             android:key="beta_addImageToMessage"
             android:title="@string/addImageToMessage" />
         <SwitchPreference
