@@ -26,13 +26,11 @@ object Constants {
     @JvmField
     var shelfDataList = mutableListOf<ShelfData>()
     const val KEY_RATING = "beta_rating"
-    const val KEY_EXAM = "beta_course"
     const val KEY_SYNC = "beta_wifi_switch"
     const val KEY_SURVEY = "beta_survey"
     const val KEY_MEETUPS = "key_meetup"
     const val KEY_TEAMS = "key_teams"
     const val KEY_DELETE = "key_delete"
-    const val KEY_ACHIEVEMENT = "beta_achievement"
     const val KEY_MYHEALTH = "beta_myHealth"
     const val KEY_HEALTHWORKER = "beta_healthWorker"
     const val KEY_AUTOSYNC_ = "auto_sync_with_server"
