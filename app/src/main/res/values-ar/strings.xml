@@ -941,7 +941,6 @@
     <string name="auto_sync">مزامنة تلقائية</string>
     <string name="force_weekly_sync">فرض مزامنة أسبوعية</string>
     <string name="force_monthly_sync">فرض مزامنة شهرية</string>
-    <string name="beta_function_for_auto_update">وظيفة بيتا للتحديث التلقائي</string>
     <string name="beta_function_for_wifi_switch">وظيفة بيتا لتبديل الواي فاي</string>
     <string name="upgrade_application">ترقية التطبيق</string>
     <string name="auto_upgrade">ترقية تلقائية</string>

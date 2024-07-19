@@ -14,7 +14,6 @@ import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.datamanager.Service.CheckVersionCallback
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.ui.sync.LoginActivity
-import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils.startDownloadUpdate
 import org.ole.planet.myplanet.utilities.Utilities
@@ -53,9 +52,7 @@ class AutoSyncWorker(private val context: Context, workerParams: WorkerParameter
     }
 
     override fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean) {
-        if (Constants.showBetaFeature(Constants.KEY_AUTOUPDATE, context)) {
-            startDownloadUpdate(context, Utilities.getApkUpdateUrl(info?.localapkpath), null)
-        }
+        startDownloadUpdate(context, Utilities.getApkUpdateUrl(info?.localapkpath), null)
     }
 
     override fun onCheckingVersion() {}

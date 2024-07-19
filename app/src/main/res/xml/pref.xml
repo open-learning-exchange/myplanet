@@ -49,10 +49,6 @@
         android:title="@string/beta_functionality">
         <SwitchPreference
             android:defaultValue="true"
-            android:key="beta_auto_update"
-            android:title="@string/beta_function_for_auto_update" />
-        <SwitchPreference
-            android:defaultValue="true"
             android:key="beta_addImageToMessage"
             android:title="@string/addImageToMessage" />
         <SwitchPreference
@@ -67,7 +63,6 @@
 <!--            android:defaultValue="false"-->
 <!--            android:key="beta_healthWorker"-->
 <!--            android:title="Beta Function for Health Care Provider" />-->
-
     </PreferenceCategory>
     <PreferenceCategory
         android:dependency="beta_function"
