@@ -26,7 +26,6 @@ object Constants {
     @JvmField
     var shelfDataList = mutableListOf<ShelfData>()
     const val KEY_RATING = "beta_rating"
-    const val KEY_EXAM = "beta_course"
     const val KEY_SYNC = "beta_wifi_switch"
     const val KEY_SURVEY = "beta_survey"
     const val KEY_MEETUPS = "key_meetup"

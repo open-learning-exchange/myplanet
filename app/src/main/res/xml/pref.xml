@@ -49,10 +49,6 @@
         android:title="@string/beta_functionality">
         <SwitchPreference
             android:defaultValue="true"
-            android:key="beta_course"
-            android:title="@string/beta_function_for_course" />
-        <SwitchPreference
-            android:defaultValue="true"
             android:key="beta_auto_update"
             android:title="@string/beta_function_for_auto_update" />
         <SwitchPreference
