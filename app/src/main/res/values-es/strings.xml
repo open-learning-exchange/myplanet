@@ -942,7 +942,6 @@
     <string name="force_weekly_sync">Forzar sincronización semanal</string>
     <string name="force_monthly_sync">Forzar sincronización mensual</string>
     <string name="beta_function_for_wifi_switch">Función beta para interruptor de WiFi</string>
-    <string name="beta_function_for_achievement">Función beta para logros</string>
     <string name="upgrade_application">Actualizar aplicación</string>
     <string name="auto_upgrade">Actualización automática</string>
     <string name="always_move_to_maximum_version">¿Mover siempre a la versión máxima?</string>

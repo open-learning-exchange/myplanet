@@ -943,7 +943,6 @@
     <string name="force_weekly_sync">Force Weekly Sync</string>
     <string name="force_monthly_sync">Force Monthly Sync</string>
     <string name="beta_function_for_wifi_switch">Beta Function for WiFi Switch</string>
-    <string name="beta_function_for_achievement">Beta Function for Achievement</string>
     <string name="upgrade_application">Upgrade Application</string>
     <string name="auto_upgrade">Auto Upgrade</string>
     <string name="always_move_to_maximum_version">Always move to maximum version?</string>

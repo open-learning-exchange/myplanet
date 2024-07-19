@@ -31,7 +31,6 @@ object Constants {
     const val KEY_MEETUPS = "key_meetup"
     const val KEY_TEAMS = "key_teams"
     const val KEY_DELETE = "key_delete"
-    const val KEY_ACHIEVEMENT = "beta_achievement"
     const val KEY_MYHEALTH = "beta_myHealth"
     const val KEY_HEALTHWORKER = "beta_healthWorker"
     const val KEY_AUTOSYNC_ = "auto_sync_with_server"

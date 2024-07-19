@@ -133,7 +133,7 @@ class SettingActivity : AppCompatActivity() {
 
         private fun setBetaToggleOn() {
             val beta = findPreference<SwitchPreference>("beta_function")
-            val achievement = findPreference<SwitchPreference>("beta_achievement")
+            val course = findPreference<SwitchPreference>("beta_course")
 //            val rating = findPreference<SwitchPreference>("beta_rating")
 //            val myHealth = findPreference<SwitchPreference>("beta_myHealth")
 //            val healthWorker = findPreference<SwitchPreference>("beta_healthWorker")
@@ -142,8 +142,8 @@ class SettingActivity : AppCompatActivity() {
             if (beta != null) {
                 beta.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, _: Any? ->
                     if (beta.isChecked) {
-                        if (achievement != null) {
-                            achievement.isChecked = true
+                        if (course != null) {
+                            course.isChecked = true
                         }
                     }
                     true
