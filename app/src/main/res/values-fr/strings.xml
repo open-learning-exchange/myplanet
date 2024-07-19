@@ -944,7 +944,6 @@
     <string name="beta_function_for_course">Fonction bêta pour les cours</string>
     <string name="beta_function_for_auto_update">Fonction bêta pour les mises à jour automatiques</string>
     <string name="beta_function_for_wifi_switch">Fonction bêta pour le commutateur Wi-Fi</string>
-    <string name="beta_function_for_achievement">Fonction bêta pour les réalisations</string>
     <string name="upgrade_application">Mettre à niveau l\'application</string>
     <string name="auto_upgrade">Mise à niveau automatique</string>
     <string name="always_move_to_maximum_version">Passer toujours à la version maximale ?</string>
