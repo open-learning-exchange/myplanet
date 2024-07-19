@@ -26,8 +26,6 @@ import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onRemove
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.isStepCompleted
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.utilities.Constants
-import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.DialogUtils.getAlertDialog
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Locale
@@ -147,7 +145,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private fun changeNextButtonState(position: Int) {
-        if (isStepCompleted(mRealm, steps[position - 1]?.id, userModel?.id) || !showBetaFeature(Constants.KEY_EXAM, requireContext())) {
+        if (isStepCompleted(mRealm, steps[position - 1]?.id, userModel?.id)) {
             fragmentTakeCourseBinding.nextStep.isClickable = true
             fragmentTakeCourseBinding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
         } else {
@@ -164,7 +162,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             fragmentTakeCourseBinding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_grey_500))
             fragmentTakeCourseBinding.nextStep.visibility = View.GONE
             fragmentTakeCourseBinding.finishStep.visibility = View.VISIBLE
-
         }
     }
 
