@@ -33,11 +33,6 @@ class TeamListAdapter(private var membersList: MutableList<User>, val context: C
         return membersList.size
     }
 
-    fun clearList() {
-        membersList.clear()
-        notifyDataSetChanged()
-    }
-
     fun updateList(newUserList: MutableList<User>) {
         membersList = newUserList
         notifyDataSetChanged()

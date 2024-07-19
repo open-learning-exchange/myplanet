@@ -25,15 +25,15 @@ import org.ole.planet.myplanet.utilities.Utilities
 import java.io.File
 
 class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompleteListener, OnPageErrorListener, AudioRecordListener {
-    private lateinit var activityPdfreaderBinding: ActivityPdfreaderBinding
+    private lateinit var activityPdfReaderBinding: ActivityPdfreaderBinding
     private var fileName: String? = null
     private lateinit var audioRecorderService: AudioRecorderService
     private lateinit var library: RealmMyLibrary
     private lateinit var mRealm: Realm
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        activityPdfreaderBinding = ActivityPdfreaderBinding.inflate(layoutInflater)
-        setContentView(activityPdfreaderBinding.root)
+        activityPdfReaderBinding = ActivityPdfreaderBinding.inflate(layoutInflater)
+        setContentView(activityPdfReaderBinding.root)
         audioRecorderService = AudioRecorderService().setAudioRecordListener(this)
         mRealm = DatabaseService(this).realmInstance
         if (intent.hasExtra("resourceId")) {
@@ -41,14 +41,14 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
             library = mRealm.where(RealmMyLibrary::class.java).equalTo("id", resourceID).findFirst()!!
         }
         renderPdfFile()
-        activityPdfreaderBinding.fabRecord.setOnClickListener {
+        activityPdfReaderBinding.fabRecord.setOnClickListener {
             if (audioRecorderService.isRecording()) {
                 audioRecorderService.stopRecording()
             } else {
                 audioRecorderService.startRecording()
             }
         }
-        activityPdfreaderBinding.fabPlay.setOnClickListener {
+        activityPdfReaderBinding.fabPlay.setOnClickListener {
             if (this::library.isInitialized && !TextUtils.isEmpty(library.translationAudioPath)) {
                 openAudioFile(this, library.translationAudioPath)
             }
@@ -59,16 +59,16 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
         val pdfOpenIntent = intent
         fileName = pdfOpenIntent.getStringExtra("TOUCHED_FILE")
         if (!fileName.isNullOrEmpty()) {
-            activityPdfreaderBinding.pdfFileName.text = FileUtils.nameWithoutExtension(fileName)
-            activityPdfreaderBinding.pdfFileName.visibility = View.VISIBLE
+            activityPdfReaderBinding.pdfFileName.text = FileUtils.nameWithoutExtension(fileName)
+            activityPdfReaderBinding.pdfFileName.visibility = View.VISIBLE
         } else {
-            activityPdfreaderBinding.pdfFileName.text = "No file selected"
-            activityPdfreaderBinding.pdfFileName.visibility = View.VISIBLE
+            activityPdfReaderBinding.pdfFileName.text = getString(R.string.message_placeholder, "No file selected")
+            activityPdfReaderBinding.pdfFileName.visibility = View.VISIBLE
         }
         val file = File(getExternalFilesDir(null), "ole/$fileName")
         if (file.exists()) {
             try {
-                activityPdfreaderBinding.pdfView.fromFile(file).defaultPage(0)
+                activityPdfReaderBinding.pdfView.fromFile(file).defaultPage(0)
                     .enableAnnotationRendering(true).onLoad(this).onPageChange(this)
                     .scrollHandle(DefaultScrollHandle(this)).load()
             } catch (e: Exception) {
@@ -88,7 +88,7 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
     override fun onRecordStarted() {
         Utilities.toast(this, getString(R.string.recording_started))
         create(this, R.drawable.ic_mic, "Recording Audio", getString(R.string.ole_is_recording_audio))
-        activityPdfreaderBinding.fabRecord.setImageResource(R.drawable.ic_stop)
+        activityPdfReaderBinding.fabRecord.setImageResource(R.drawable.ic_stop)
     }
 
     override fun onRecordStopped(outputFile: String?) {
@@ -96,7 +96,7 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
         cancellAll(this)
         updateTranslation(outputFile)
         AddResourceFragment.showAlert(this, outputFile)
-        activityPdfreaderBinding.fabRecord.setImageResource(R.drawable.ic_mic)
+        activityPdfReaderBinding.fabRecord.setImageResource(R.drawable.ic_mic)
     }
 
     private fun updateTranslation(outputFile: String?) {
@@ -118,10 +118,6 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
     override fun onError(error: String?) {
         cancellAll(this)
         Utilities.toast(this, error)
-        activityPdfreaderBinding.fabRecord.setImageResource(R.drawable.ic_mic)
-    }
-
-    companion object {
-        private const val TAG = "PDF Reader Log"
+        activityPdfReaderBinding.fabRecord.setImageResource(R.drawable.ic_mic)
     }
 }
