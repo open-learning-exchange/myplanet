@@ -1,10 +1,12 @@
 package org.ole.planet.myplanet.ui.userprofile
 
 import android.content.Context
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.annotation.RequiresApi
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.gson.Gson
 import com.google.gson.JsonArray
@@ -49,6 +51,7 @@ class AchievementFragment : BaseContainerFragment() {
         return fragmentAchievementBinding.root
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         achievement = aRealm.where(RealmAchievement::class.java).equalTo("_id", user?.id + "@" + user?.planetCode).findFirst()
@@ -118,6 +121,7 @@ class AchievementFragment : BaseContainerFragment() {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun createAchievementList() {
         for (s in achievement?.achievements!!) {
             rowAchievementBinding = RowAchievementBinding.inflate(LayoutInflater.from(MainApplication.context))
