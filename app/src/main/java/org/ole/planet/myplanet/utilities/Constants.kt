@@ -39,7 +39,6 @@ object Constants {
     const val KEY_AUTOSYNC_WEEKLY = "force_weekly_sync"
     const val KEY_AUTOSYNC_MONTHLY = "force_monthly_sync"
     const val KEY_NEWSADDIMAGE = "beta_addImageToMessage"
-    const val KEY_AUTOUPDATE = "beta_auto_update"
     const val KEY_UPGRADE_MAX = "beta_upgrade_max"
     const val DISCLAIMER = R.string.disclaimer
     const val ABOUT = R.string.about

@@ -941,7 +941,6 @@
     <string name="auto_sync">स्वचालित सिङ्क</string>
     <string name="force_weekly_sync">प्रतिवार्षिक सिङ्क बलवान्त गर्नुहोस्</string>
     <string name="force_monthly_sync">मासिक सिङ्क बलवान्त गर्नुहोस्</string>
-    <string name="beta_function_for_course">कोर्सका लागि बीटा कार्य</string>
     <string name="beta_function_for_auto_update">स्वत: अपडेटका लागि बीटा कार्य</string>
     <string name="beta_function_for_wifi_switch">वाईफाई स्विचका लागि बीटा कार्य</string>
     <string name="beta_function_for_achievement">उपलब्धि हस्तान्तरणका लागि बीटा कार्य</string>

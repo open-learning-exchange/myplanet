@@ -942,7 +942,6 @@
     <string name="auto_sync">Auto Sync</string>
     <string name="force_weekly_sync">Force Weekly Sync</string>
     <string name="force_monthly_sync">Force Monthly Sync</string>
-    <string name="beta_function_for_course">Beta Function for Course</string>
     <string name="beta_function_for_auto_update">Beta Function for auto update</string>
     <string name="beta_function_for_wifi_switch">Beta Function for WiFi Switch</string>
     <string name="beta_function_for_achievement">Beta Function for Achievement</string>
