@@ -27,10 +27,8 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.exam.TakeExamFragment
-import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
-import org.ole.planet.myplanet.utilities.Constants
-import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
+import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
 import org.ole.planet.myplanet.utilities.CustomClickableSpan
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import java.util.Date
@@ -60,7 +58,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         dbService = DatabaseService(requireActivity())
         cRealm = dbService.realmInstance
         user = UserProfileDbHandler(requireContext()).userModel
-        fragmentCourseStepBinding.btnTakeTest.visibility = if (showBetaFeature(Constants.KEY_EXAM, requireContext())) View.VISIBLE else View.GONE
+        fragmentCourseStepBinding.btnTakeTest.visibility = View.VISIBLE
         return fragmentCourseStepBinding.root
     }
 
