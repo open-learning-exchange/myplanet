@@ -32,7 +32,6 @@ import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.FileUtils.getImagePath
 import org.ole.planet.myplanet.utilities.FileUtils.getRealPathFromURI
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
-
 import java.io.File
 
 open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
