@@ -32,7 +32,7 @@ import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.FileUtils.getImagePath
 import org.ole.planet.myplanet.utilities.FileUtils.getRealPathFromURI
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
-import org.ole.planet.myplanet.utilities.Utilities
+
 import java.io.File
 
 open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
@@ -44,6 +44,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     private lateinit var imageList: RealmList<String>
     private var llImage: LinearLayout? = null
     private lateinit var openFolderLauncher: ActivityResultLauncher<Intent>
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         activityReplyBinding = ActivityReplyBinding.inflate(layoutInflater)
@@ -83,24 +84,32 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     override fun addImage(llImage: LinearLayout?) {
         this.llImage = llImage
         val intent = Intent(Intent.ACTION_GET_CONTENT)
-        val uri = Uri.parse(Utilities.SD_PATH)
-        intent.setDataAndType(uri, "*/*")
-        openFolderLauncher.launch(Intent.createChooser(intent, "Open folder"))
+        intent.type = "image/*"
+        openFolderLauncher.launch(Intent.createChooser(intent, "Select Image"))
     }
 
     private fun handleImageSelection(url: Uri?) {
+        if (url == null) {
+            return
+        }
+
         var path: String? = getRealPathFromURI(this, url)
         if (TextUtils.isEmpty(path)) {
             path = getImagePath(this, url)
         }
-        val `object` = JsonObject()
-        `object`.addProperty("imageUrl", path)
-        `object`.addProperty("fileName", getFileNameFromUrl(path))
-        imageList.add(Gson().toJson(`object`))
+
+        if (path == null) {
+            return
+        }
+
+        val jsonObject = JsonObject()
+        jsonObject.addProperty("imageUrl", path)
+        jsonObject.addProperty("fileName", getFileNameFromUrl(path))
+        imageList.add(Gson().toJson(jsonObject))
+
         try {
             showSelectedImages()
         } catch (e: Exception) {
-            e.printStackTrace()
         }
     }
 
