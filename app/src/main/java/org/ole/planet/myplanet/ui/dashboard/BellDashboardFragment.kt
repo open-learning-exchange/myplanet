@@ -18,6 +18,7 @@ import kotlinx.coroutines.*
 import org.json.JSONException
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseRecyclerParentFragment
 import org.ole.planet.myplanet.databinding.FragmentHomeBellBinding
 import org.ole.planet.myplanet.model.RealmCertification
 import org.ole.planet.myplanet.model.RealmCourseProgress
@@ -202,7 +203,10 @@ class BellDashboardFragment : BaseDashboardFragment() {
         fragmentHomeBellBinding.homeCardCourses.myCoursesImageButton.setOnClickListener { openHelperFragment(CoursesFragment()) }
         fragmentHomeBellBinding.fabMyProgress.setOnClickListener { openHelperFragment(MyProgressFragment()) }
         fragmentHomeBellBinding.fabMyActivity.setOnClickListener { openHelperFragment(MyActivityFragment()) }
-        fragmentHomeBellBinding.fabSurvey.setOnClickListener { openHelperFragment(SurveyFragment()) }
+        fragmentHomeBellBinding.fabSurvey.setOnClickListener {
+            BaseRecyclerParentFragment.isSurvey = true
+            openHelperFragment(SurveyFragment())
+        }
         fragmentHomeBellBinding.cardProfileBell.fabFeedback.setOnClickListener { openHelperFragment(FeedbackListFragment()) }
         fragmentHomeBellBinding.homeCardMyLife.myLifeImageButton.setOnClickListener { homeItemClickListener?.openCallFragment(LifeFragment()) }
         fragmentHomeBellBinding.fabNotification.setOnClickListener { showNotificationFragment() }

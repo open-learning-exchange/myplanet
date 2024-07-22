@@ -559,6 +559,8 @@
     <string name="subject_level_colon">Nivel de Asignatura:</string>
     <string name="grade_level_colon">Nivel de Grado:</string>
     <string name="language_colon">Idioma:</string>
+    <string name="gender_colon">Género: %s</string>
+    <string name="level_colon">Nivel: %s</string>
     <string name="method">Método:</string>
     <string name="number_of_exams">Número de exámenes:</string>
     <string name="description_colon">Descripción:</string>
@@ -939,10 +941,7 @@
     <string name="auto_sync">Sincronización automática</string>
     <string name="force_weekly_sync">Forzar sincronización semanal</string>
     <string name="force_monthly_sync">Forzar sincronización mensual</string>
-    <string name="beta_function_for_course">Función beta para curso</string>
-    <string name="beta_function_for_auto_update">Función beta para actualización automática</string>
     <string name="beta_function_for_wifi_switch">Función beta para interruptor de WiFi</string>
-    <string name="beta_function_for_achievement">Función beta para logros</string>
     <string name="upgrade_application">Actualizar aplicación</string>
     <string name="auto_upgrade">Actualización automática</string>
     <string name="always_move_to_maximum_version">¿Mover siempre a la versión máxima?</string>

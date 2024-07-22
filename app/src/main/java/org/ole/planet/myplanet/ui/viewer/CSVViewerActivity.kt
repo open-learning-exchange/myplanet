@@ -5,17 +5,18 @@ import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import com.opencsv.CSVParserBuilder
 import com.opencsv.CSVReaderBuilder
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityCsvviewerBinding
 import org.ole.planet.myplanet.utilities.FileUtils
 import java.io.File
 import java.io.FileReader
 
 class CSVViewerActivity : AppCompatActivity() {
-    private lateinit var activityCsvviewerBinding: ActivityCsvviewerBinding
+    private lateinit var activityCsvViewerBinding: ActivityCsvviewerBinding
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        activityCsvviewerBinding = ActivityCsvviewerBinding.inflate(layoutInflater)
-        setContentView(activityCsvviewerBinding.root)
+        activityCsvViewerBinding = ActivityCsvviewerBinding.inflate(layoutInflater)
+        setContentView(activityCsvViewerBinding.root)
         renderCSVFile()
     }
 
@@ -23,11 +24,11 @@ class CSVViewerActivity : AppCompatActivity() {
         val csvFileOpenIntent = intent
         val fileName = csvFileOpenIntent.getStringExtra("TOUCHED_FILE")
         if (!fileName.isNullOrEmpty()) {
-            activityCsvviewerBinding.csvFileName.text = FileUtils.nameWithoutExtension(fileName)
-            activityCsvviewerBinding.csvFileName.visibility = View.VISIBLE
+            activityCsvViewerBinding.csvFileName.text = FileUtils.nameWithoutExtension(fileName)
+            activityCsvViewerBinding.csvFileName.visibility = View.VISIBLE
         } else {
-            activityCsvviewerBinding.csvFileName.text = "No file selected"
-            activityCsvviewerBinding.csvFileName.visibility = View.VISIBLE
+            activityCsvViewerBinding.csvFileName.text = getString(R.string.message_placeholder, "No file selected")
+            activityCsvViewerBinding.csvFileName.visibility = View.VISIBLE
         }
 
         try {
@@ -44,8 +45,8 @@ class CSVViewerActivity : AppCompatActivity() {
             ).build()
             val allRows = reader.readAll()
             for (row in allRows) {
-                activityCsvviewerBinding.csvFileContent.append(row.contentToString())
-                activityCsvviewerBinding.csvFileContent.append("\n")
+                activityCsvViewerBinding.csvFileContent.append(row.contentToString())
+                activityCsvViewerBinding.csvFileContent.append("\n")
             }
         } catch (e: Exception) {
             e.printStackTrace()
