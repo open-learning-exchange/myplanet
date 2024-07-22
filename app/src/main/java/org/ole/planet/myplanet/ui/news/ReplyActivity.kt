@@ -110,6 +110,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         try {
             showSelectedImages()
         } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
