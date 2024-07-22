@@ -57,7 +57,7 @@ class SeeAllNotificationsFragment : Fragment() {
 
         val recyclerView: RecyclerView = view.findViewById(R.id.recycler_view_notifications)
         recyclerView.layoutManager = LinearLayoutManager(context)
-        notificationsAdapter = AdapterNotification(requireContext(), notifications, object : NotificationCallback {
+        notificationsAdapter = AdapterNotification(notifications, object : NotificationCallback {
             override fun showResourceDownloadDialog() {}
             override fun showUserResourceDialog() {}
             override fun showPendingSurveyDialog() {}
