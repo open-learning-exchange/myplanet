@@ -8,17 +8,12 @@ import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.NotificationCallback
 import org.ole.planet.myplanet.model.Notifications
 
-class AdapterNotification(
-    private val context: Context,
-    private val notificationList: MutableList<Notifications>,
-    private val callback: NotificationCallback,
-    private val showMarkAsReadButton: Boolean,
-    private val showImages: Boolean
-) : RecyclerView.Adapter<AdapterNotification.ViewHolderNotification>() {
+class AdapterNotification(private val notificationList: MutableList<Notifications>, private val callback: NotificationCallback, private val showMarkAsReadButton: Boolean, private val showImages: Boolean) : RecyclerView.Adapter<AdapterNotification.ViewHolderNotification>() {
 
     private val sharedPrefs = context.getSharedPreferences("notifications_prefs", Context.MODE_PRIVATE)
 
