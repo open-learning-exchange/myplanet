@@ -231,7 +231,11 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         val flag: Boolean
         startTransaction()
         sub?.status = if (currentIndex == (questions?.size ?: 0) - 1) {
-            "requires grading"
+            if (sub?.type == "survey") {
+                "complete"
+            } else {
+                "requires grading"
+            }
         } else {
             "pending"
         }
