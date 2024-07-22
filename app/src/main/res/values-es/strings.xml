@@ -1077,5 +1077,7 @@
     <string name="two_strings">%s %s</string>
     <string name="three_strings">%s %s %s</string>
     <string name="member_description">%1$s (%2$d visitas)</string>
+    <string name="are_you_sure_you_want_to_archive_these_courses">¿Está seguro de que desea archivar estos cursos?</string>
+    <string name="are_you_sure_you_want_to_archive_this_course">¿Estás seguro de que deseas archivar este curso?</string>
 
 </resources>
