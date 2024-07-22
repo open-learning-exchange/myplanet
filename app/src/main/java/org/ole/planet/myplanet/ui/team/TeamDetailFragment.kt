@@ -35,6 +35,9 @@ class TeamDetailFragment : BaseTeamFragment() {
             tab.text = (fragmentTeamDetailBinding.viewPager2.adapter as TeamPagerAdapter).getPageTitle(position)
         }.attach()
 
+        fragmentTeamDetailBinding.title.text = team.name
+        fragmentTeamDetailBinding.subtitle.text = team.type
+
         if (!isMyTeam) {
             fragmentTeamDetailBinding.llActionButtons.visibility = View.GONE
         } else {
