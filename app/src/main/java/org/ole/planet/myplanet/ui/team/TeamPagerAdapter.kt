@@ -20,7 +20,7 @@ import org.ole.planet.myplanet.ui.team.teamMember.MembersFragment
 import org.ole.planet.myplanet.ui.team.teamResource.TeamResourceFragment
 import org.ole.planet.myplanet.ui.team.teamTask.TeamTaskFragment
 
-class TeamPagerAdapter(fm: FragmentActivity, team: RealmMyTeam?, private val isInMyTeam: Boolean) : FragmentStateAdapter(fm) {
+class TeamPagerAdapter(fm: FragmentActivity, team: RealmMyTeam?, isInMyTeam: Boolean) : FragmentStateAdapter(fm) {
     private val teamId: String? = team?._id
     private val list: MutableList<String> = ArrayList()
     private val isEnterprise: Boolean = TextUtils.equals(team?.type, "enterprise")

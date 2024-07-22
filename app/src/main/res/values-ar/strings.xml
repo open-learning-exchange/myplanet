@@ -69,7 +69,7 @@
     <string name="phone_number">رقم الهاتف</string>
     <string name="language">اللغة</string>
     <string name="last_name">الاسم الأخير</string>
-    <string name="version">الإصدار</string>
+    <string name="version">%s الإصدار</string>
     <string name="middle_name">الاسم الأوسط</string>
     <string name="first_name">الاسم الأول</string>
     <string name="search_dots">بحث…</string>
@@ -500,12 +500,12 @@
     <string name="recording_audio">جارٍ تسجيل الصوت…</string>
     <string name="show_replies">"عرض الردود "</string>
     <string name="selected">"المحدد: "</string>
-    <string name="last_sync"><![CDATA["آخر مزامنة مع الخادم: "]]></string>
+    <string name="last_sync">%s :آخر مزامنة مع الخادم</string>
     <string name="last_syncs">آخر مزامنة</string>
     <string name="login_user">اسم المستخدم لتسجيل الدخول</string>
     <string name="login_password">كلمة مرور المستخدم لتسجيل الدخول</string>
     <string name="no_team_available">لا توجد فرق/مؤسسات متاحة</string>
-    <string name="last_sync_date">"تاريخ آخر مزامنة: "</string>
+    <string name="last_sync_date">%s :تاريخ آخر مزامنة</string>
     <string name="no_assignee">لا يوجد مُعيَّن</string>
     <string name="note_">ملاحظات</string>
     <string name="diagno">التشخيص</string>
@@ -559,6 +559,8 @@
     <string name="subject_level_colon">مستوى الموضوع:</string>
     <string name="grade_level_colon">مستوى الصف:</string>
     <string name="language_colon">اللغة:</string>
+    <string name="gender_colon">%s :الجنس</string>
+    <string name="level_colon">%s :المستوى</string>
     <string name="method">الطريقة:</string>
     <string name="number_of_exams">عدد الامتحانات:</string>
     <string name="description_colon">الوصف:</string>
@@ -804,9 +806,9 @@
     <string name="team_leader">قائد الفريق</string>
     <string name="select_resource">اختر المصدر:</string>
     <string name="add">إضافة</string>
-    <string name="deadline_colon">الموعد النهائي:</string>
-    <string name="completed_colon">تم الانتهاء:</string>
-    <string name="assigned_to_colon">معيّن لـ:</string>
+    <string name="deadline_colon">%s :الموعد النهائي</string>
+    <string name="completed_colon">%s :اكتمل\n</string>
+    <string name="assigned_to_colon">%s :معيّن لـ</string>
     <string name="add_task">إضافة مهمة</string>
     <string name="task_title_is_required">اسم المهمة مطلوب</string>
     <string name="deadline_is_required">الموعد النهائي مطلوب</string>
@@ -939,10 +941,7 @@
     <string name="auto_sync">مزامنة تلقائية</string>
     <string name="force_weekly_sync">فرض مزامنة أسبوعية</string>
     <string name="force_monthly_sync">فرض مزامنة شهرية</string>
-    <string name="beta_function_for_course">وظيفة بيتا للدورة التدريبية</string>
-    <string name="beta_function_for_auto_update">وظيفة بيتا للتحديث التلقائي</string>
     <string name="beta_function_for_wifi_switch">وظيفة بيتا لتبديل الواي فاي</string>
-    <string name="beta_function_for_achievement">وظيفة بيتا للإنجاز</string>
     <string name="upgrade_application">ترقية التطبيق</string>
     <string name="auto_upgrade">ترقية تلقائية</string>
     <string name="always_move_to_maximum_version">الانتقال دائمًا إلى الإصدار الأعلى؟</string>
@@ -1078,5 +1077,6 @@
     <string name="two_strings">%s %s</string>
     <string name="three_strings">%s %s %s</string>
     <string name="download_sync_files">تنزيل ملفات المزامنة</string>
+    <string name="member_description"><![CDATA[(\u200E%2$d زيارة) \u200E%1$s]]></string>
 
 </resources>

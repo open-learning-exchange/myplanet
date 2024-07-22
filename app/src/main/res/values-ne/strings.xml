@@ -69,7 +69,7 @@
     <string name="phone_number">फोन नम्बर</string>
     <string name="language">भाषा</string>
     <string name="last_name">थर</string>
-    <string name="version">संस्करण</string>
+    <string name="version">संस्करण %s</string>
     <string name="middle_name">विचारको नाम</string>
     <string name="first_name">नाम</string>
     <string name="search_dots">खोज्नुहोस्…</string>
@@ -500,12 +500,12 @@
     <string name="recording_audio">आवाज रेकर्ड गर्दै......</string>
     <string name="show_replies">"जवाफहरू देखाउनुहोस् "</string>
     <string name="selected">"छानिएको: "</string>
-    <string name="last_sync"><![CDATA["अन्तिम सर्वर सिङ्क: "]]></string>
+    <string name="last_sync">सर्भरसँग अन्तिम समिकरण: %s</string>
     <string name="last_syncs">अन्तिमसर्वरसिङ्क</string>
     <string name="login_user">लगइनप्रयोगकर्तानाम</string>
     <string name="login_password">लगइनप्रयोगकर्तापासवर्ड</string>
     <string name="no_team_available">कुनै टिम/एन्टरप्राइज उपलब्ध छैन</string>
-    <string name="last_sync_date">"अन्तिम सिङ्क मिति: "</string>
+    <string name="last_sync_date">अन्तिम सिङ्क मिति: %s</string>
     <string name="no_assignee">कुनै निर्धारित व्यक्ति छैन</string>
     <string name="note_">नोटहरू</string>
     <string name="diagno">निदान</string>
@@ -559,6 +559,8 @@
     <string name="subject_level_colon">विषय स्तर:</string>
     <string name="grade_level_colon">ग्रेड स्तर:</string>
     <string name="language_colon">भाषा:</string>
+    <string name="gender_colon">लिङ्ग: %s</string>
+    <string name="level_colon">स्तर: %s</string>
     <string name="method">तरिका:</string>
     <string name="number_of_exams">परीक्षाहरूको संख्या:</string>
     <string name="description_colon">वर्णन:</string>
@@ -804,9 +806,9 @@
     <string name="team_leader">टिम नेता</string>
     <string name="select_resource">"स्रोत छान्नुहोस्: "</string>
     <string name="add">थप्नुहोस्</string>
-    <string name="deadline_colon">"अन्तिम मिति: "</string>
-    <string name="completed_colon">"\n सम्पन्न भएको: "</string>
-    <string name="assigned_to_colon">"कुनैले सौंपाइएको: "</string>
+    <string name="deadline_colon">अन्तिम मिति: %s</string>
+    <string name="completed_colon">\n सम्पन्न भएको: %s</string>
+    <string name="assigned_to_colon">कुनैले सौंपाइएको: %s</string>
     <string name="add_task">काम थप्नुहोस्</string>
     <string name="task_title_is_required">कामको शीर्षक आवश्यक छ</string>
     <string name="deadline_is_required">अन्तिम मिति आवश्यक छ</string>
@@ -939,10 +941,7 @@
     <string name="auto_sync">स्वचालित सिङ्क</string>
     <string name="force_weekly_sync">प्रतिवार्षिक सिङ्क बलवान्त गर्नुहोस्</string>
     <string name="force_monthly_sync">मासिक सिङ्क बलवान्त गर्नुहोस्</string>
-    <string name="beta_function_for_course">कोर्सका लागि बीटा कार्य</string>
-    <string name="beta_function_for_auto_update">स्वत: अपडेटका लागि बीटा कार्य</string>
     <string name="beta_function_for_wifi_switch">वाईफाई स्विचका लागि बीटा कार्य</string>
-    <string name="beta_function_for_achievement">उपलब्धि हस्तान्तरणका लागि बीटा कार्य</string>
     <string name="upgrade_application">अनुप्रयोग अपग्रेड गर्नुहोस्</string>
     <string name="auto_upgrade">स्वतः अपग्रेड</string>
     <string name="always_move_to_maximum_version">सधैं महत्तम संस्करणमा जानुहोस्?</string>
@@ -1078,5 +1077,6 @@
     <string name="two_strings">%s %s</string>
     <string name="three_strings">%s %s %s</string>
     <string name="download_sync_files">समक्रमण फाइलहरू डाउनलोड गर्नुहोस्</string>
+    <string name="member_description">%1$s (%2$d भ्रमण)</string>
 
 </resources>

@@ -18,14 +18,11 @@ import androidx.preference.PreferenceManager
 import androidx.preference.SwitchPreference
 import io.realm.Realm
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.base.BaseResourceFragment
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
-import org.ole.planet.myplanet.ui.dashboard.DashboardFragment
-import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.clearRealmDb
 import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.clearSharedPref
 import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.restartApp
@@ -139,7 +136,6 @@ class SettingActivity : AppCompatActivity() {
         private fun setBetaToggleOn() {
             val beta = findPreference<SwitchPreference>("beta_function")
             val course = findPreference<SwitchPreference>("beta_course")
-            val achievement = findPreference<SwitchPreference>("beta_achievement")
 //            val rating = findPreference<SwitchPreference>("beta_rating")
 //            val myHealth = findPreference<SwitchPreference>("beta_myHealth")
 //            val healthWorker = findPreference<SwitchPreference>("beta_healthWorker")
@@ -150,9 +146,6 @@ class SettingActivity : AppCompatActivity() {
                     if (beta.isChecked) {
                         if (course != null) {
                             course.isChecked = true
-                        }
-                        if (achievement != null) {
-                            achievement.isChecked = true
                         }
                     }
                     true
