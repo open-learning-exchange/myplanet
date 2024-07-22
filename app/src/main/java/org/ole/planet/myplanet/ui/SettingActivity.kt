@@ -80,11 +80,13 @@ class SettingActivity : AppCompatActivity() {
             setBetaToggleOn()
             setAutoSyncToggleOn()
             val lp = findPreference<ListPreference>("app_language")
+            requireActivity().recreate()
             if (lp != null) {
                 lp.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, o: Any ->
                     LocaleHelper.setLocale(requireActivity(), o.toString())
                     requireActivity().recreate()
                     true
+
                 }
             }
 
