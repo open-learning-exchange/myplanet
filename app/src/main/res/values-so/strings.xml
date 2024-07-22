@@ -941,10 +941,7 @@
     <string name="auto_sync">Shidka saxda ah</string>
     <string name="force_weekly_sync">Shidka xisaabtan sare</string>
     <string name="force_monthly_sync">Shidka bishaan sare</string>
-    <string name="beta_function_for_course">Beta Function for Course</string>
-    <string name="beta_function_for_auto_update">Beta Function for auto update</string>
     <string name="beta_function_for_wifi_switch">Beta Function for WiFi Switch</string>
-    <string name="beta_function_for_achievement">Beta Function for Achievement</string>
     <string name="upgrade_application">Codsiga cusboonaysii</string>
     <string name="auto_upgrade">Casriyeynta tooska ah</string>
     <string name="always_move_to_maximum_version">Haddaaba kuso geli kala hore</string>
@@ -1080,5 +1077,7 @@
     <string name="two_strings">%s %s</string>
     <string name="three_strings">%s %s %s</string>
     <string name="member_description">%1$s (%2$d booqasho)</string>
+    <string name="are_you_sure_you_want_to_archive_these_courses">Ma hubtaa inaad rabto inaad kaydiso koorsooyinkan?</string>
+    <string name="are_you_sure_you_want_to_archive_this_course">Ma hubtaa inaad rabto inaad kaydiso koorsadan?</string>
 
 </resources>

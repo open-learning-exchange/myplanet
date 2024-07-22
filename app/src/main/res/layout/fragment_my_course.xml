@@ -84,15 +84,15 @@
                     android:visibility="gone"
                     app:drawableLeftCompat="@drawable/ic_delete" />
 
-                <TextView
-                    android:id="@+id/tv_delete"
+                <Button
+                    android:id="@+id/btn_archive"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:layout_margin="@dimen/_10dp"
                     android:background="?attr/selectableItemBackground"
                     android:gravity="start|center_vertical"
-                    android:text="@string/remove_selected"
+                    android:text="@string/archive"
                     android:textColor="@drawable/tv_color"
                     android:textSize="@dimen/text_size_mid"
                     android:visibility="gone"

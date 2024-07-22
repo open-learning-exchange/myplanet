@@ -941,10 +941,7 @@
     <string name="auto_sync">Sincronización automática</string>
     <string name="force_weekly_sync">Forzar sincronización semanal</string>
     <string name="force_monthly_sync">Forzar sincronización mensual</string>
-    <string name="beta_function_for_course">Función beta para curso</string>
-    <string name="beta_function_for_auto_update">Función beta para actualización automática</string>
     <string name="beta_function_for_wifi_switch">Función beta para interruptor de WiFi</string>
-    <string name="beta_function_for_achievement">Función beta para logros</string>
     <string name="upgrade_application">Actualizar aplicación</string>
     <string name="auto_upgrade">Actualización automática</string>
     <string name="always_move_to_maximum_version">¿Mover siempre a la versión máxima?</string>
@@ -1080,5 +1077,7 @@
     <string name="two_strings">%s %s</string>
     <string name="three_strings">%s %s %s</string>
     <string name="member_description">%1$s (%2$d visitas)</string>
+    <string name="are_you_sure_you_want_to_archive_these_courses">¿Está seguro de que desea archivar estos cursos?</string>
+    <string name="are_you_sure_you_want_to_archive_this_course">¿Estás seguro de que deseas archivar este curso?</string>
 
 </resources>
