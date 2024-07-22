@@ -86,7 +86,6 @@ class SettingActivity : AppCompatActivity() {
                     LocaleHelper.setLocale(requireActivity(), o.toString())
                     requireActivity().recreate()
                     true
-
                 }
             }
 
