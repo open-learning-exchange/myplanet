@@ -3,31 +3,45 @@
   myPlanet
 </h1>
 
-**myPlanet** works in conjunction with [Open Learning Exchange](https://ole.org)’s web application, [Planet](https://github.com/open-learning-exchange/planet). The app is designed to run offline or online, ensuring that learning and community engagement can continue even in areas with limited internet access.
+**myPlanet** is an mobile app that complements [Open Learning Exchange](https://ole.org)’s Learning Management System, [Planet](https://github.com/open-learning-exchange/planet). Designed for offline and online use, it ensures continuous learning and community engagement even with limited internet access.
+
+MyPlanet integrates with Planet community and nation instances, providing a mobile platform for accessing user created multilingual educational resources like books, videos, and courses. It supports personalized learning, course creation, student management, team management, and enterprise management, enabling users to transform knowledge into action and address their community's learning needs.
 
 <p align="center">
- <a href="https://play.google.com/store/apps/details?id=org.ole.planet.myplanet&hl=en"><img src="https://play.google.com/intl/en_us/badges/images/generic/en-play-badge.png" alt="Get it on Google Play" height="60"></a>
+  <a href="https://play.google.com/store/apps/details?id=org.ole.planet.myplanet&hl=en"><img src="https://play.google.com/intl/en_us/badges/images/generic/en-play-badge.png" alt="Get it on Google Play" height="80"></a>
 </p>
 
 <p align="center">
-  <a href="#key-features">Key Features</a> •
+  <a href="#feature-highlights">Feature Highlights</a> •
+  <a href="#about-myplanet">About myPlanet</a> •
   <a href="#how-to-use">How To Use</a> •
   <a href="#license">License</a> •
   <a href="#contact">Contact</a>
 </p>
 
-## Key Features
+## Feature Highlights
 
 - **Offline Access** - Download educational materials and access them without an internet connection.
 - **Content Synchronization** - Sync with the Planet server to get the latest educational content.
 - **Data Collection** - Collects usage data to help assess educational impact and user engagement.
 - **AI Chatbot**: Provides an AI-powered chatbot to assist users with navigating the app, finding resources, and answering questions.
-- **Collaboration and Sharing** - Supports collaborative learning and knowledge sharing.
+- **Teams and Enterprises**: Collaborate with other users, complete tasks and courses, and download resources to work on together.
+- **Multilingual Support**: Supports English, Arabic, Spanish, French, Nepali, and Somali
+
+## About myPlanet
+
+myPlanet is a mobile application designed as an offline extension of the Planet learning system. It allows users to access a broad range of learning resources, including books, videos, and interactive learning games, without needing an internet connection. This functionality ensures that learners can engage with educational materials anywhere, even in areas with unreliable or no internet access.
+
+The app functions as a bridge between the user’s device and the Planet server, facilitating data synchronization. Learners can download selected collections of learning resources from the server and store them locally on their mobile devices. This personalized approach helps users access content tailored to their specific needs and interests.
+
+In addition to providing access to learning materials, myPlanet includes robust software tools for content management, learner evaluation, and course creation. Users can manage their learning progress, track performance, and participate in interactive activities. The app also supports frequent assessments and provides feedback metrics, making it a valuable resource for learners, coaches, and administrators alike.
+
+By leveraging myPlanet, users gain seamless access to the Planet system’s extensive repository of educational resources, enhancing the accessibility and usability of the learning system for individuals of all ages and expertise levels.
 
 ## How To Use
 
 1. Download and open the myPlanet app.
-2. Allow the app to sync and sign up.
+2. Configure the app to sync, then sign in or create an account.
 3. Browse available educational resources.
 4. Download the resources that are needed for offline access.
 5. Utilize the app's features to enhance your learning experience.
@@ -38,4 +52,4 @@ This project is licensed under AGPL.
 
 ## Contact
 
-For any questions or feedback, please contact us at solutions@ole.org.
+For any questions or feedback, please join [our Discord server](https://discord.gg/mtgGD4EnYW) or contact us at solutions@ole.org.
