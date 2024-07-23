@@ -46,7 +46,6 @@
 
             </LinearLayout>
 
-
         </FrameLayout>
 
         <HorizontalScrollView
@@ -65,6 +64,5 @@
                 app:flexWrap="wrap" />
         </HorizontalScrollView>
     </LinearLayout>
-
 
 </androidx.cardview.widget.CardView>
