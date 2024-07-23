@@ -11,12 +11,10 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-
         <com.google.android.material.appbar.AppBarLayout
             android:id="@+id/app_bar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
-
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -73,7 +71,6 @@
                 </LinearLayout>
             </LinearLayout>
 
-
         </com.google.android.material.appbar.AppBarLayout>
 
         <LinearLayout
@@ -97,7 +94,6 @@
                 android:background="@color/secondary_bg" />
 
         </LinearLayout>
-
 
     </LinearLayout>
 </FrameLayout>
