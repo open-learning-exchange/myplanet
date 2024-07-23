@@ -118,7 +118,8 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:background="@color/secondary_bg">
 
             <CheckBox
                 android:id="@+id/selectAll"
@@ -129,7 +130,9 @@
                 android:padding="8dp"
                 android:layout_weight="1"
                 android:text="@string/select_all"
-                android:textSize="@dimen/text_size_mid" />
+                android:textColor="@color/daynight_textColor"
+                android:textSize="@dimen/text_size_mid"
+                android:buttonTint="@color/daynight_textColor" />
 
             <include
                 layout="@layout/layout_search"
@@ -141,7 +144,8 @@
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="1">
+            android:layout_weight="1"
+            android:background="@color/secondary_bg">
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/recycler"

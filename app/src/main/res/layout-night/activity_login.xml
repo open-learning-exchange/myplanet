@@ -34,7 +34,7 @@
                 android:layout_weight="5"
                 android:gravity="center"
                 android:orientation="horizontal"
-                android:background="@color/light_dark">
+                android:background="@color/primary">
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="0dp"
@@ -84,7 +84,8 @@
                             android:contentDescription="@string/settings"
                             android:paddingTop="6dp"
                             android:paddingRight="10dp"
-                            app:srcCompat="@drawable/ic_settings_black_24dp" />
+                            app:srcCompat="@drawable/ic_settings_black_24dp"
+                            app:tint="@color/daynight_textColor"/>
 
                     </RelativeLayout>
 
@@ -154,7 +155,8 @@
                             app:layout_constraintEnd_toEndOf="parent"
                             app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintTop_toBottomOf="@+id/ltInputName"
-                            app:passwordToggleEnabled="true">
+                            app:passwordToggleEnabled="true"
+                            app:passwordToggleTint="@color/daynight_textColor">
 
                             <EditText
                                 android:id="@+id/input_password"
@@ -252,7 +254,7 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="4"
-            android:background="@color/mainColor"
+            android:background="@color/secondary_bg"
             android:orientation="vertical"
             android:weightSum="5">
 
@@ -329,9 +331,10 @@
 
                 <LinearLayout
                     android:id="@+id/ltAvailablaSpace"
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
+                    app:layout_constraintBottom_toTopOf="@+id/recyclerView"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/customDeviceName">
@@ -341,7 +344,8 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="6dp"
                         android:paddingHorizontal="@dimen/padding_small"
-                        app:srcCompat="@drawable/baseline_storage_24" />
+                        app:srcCompat="@drawable/baseline_storage_24"
+                        app:tint="@color/daynight_textColor" />
 
                     <TextView
                         android:id="@+id/tv_available_space"
@@ -360,9 +364,11 @@
                     android:layout_marginTop="@dimen/_10dp"
                     android:layout_marginEnd="3dp"
                     android:layout_marginBottom="5dp"
-                    app:layout_constraintTop_toBottomOf="@+id/ltAvailablaSpace"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent" />
+                    app:layout_constraintTop_toBottomOf="@+id/ltAvailablaSpace" />
+
             </androidx.constraintlayout.widget.ConstraintLayout>
         </LinearLayout>
     </LinearLayout>
