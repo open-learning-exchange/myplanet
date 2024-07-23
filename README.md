@@ -1,15 +1,12 @@
 <h1 align="center">
-  <br>
-  <a href="https://play.google.com/store/apps/details?id=org.ole.planet.myplanet&hl=en"><img src="app/src/main/res/drawable/ole_logo.png" alt="myPlanet" width="200"></a>
-  <br>
+  <a href="https://play.google.com/store/apps/details?id=org.ole.planet.myplanet&hl=en"><img src="app/src/main/res/drawable/ole_logo.png" alt="myPlanet" height="25"></a>
   myPlanet
-  <br>
 </h1>
 
-<h4 align="center">An Android port of the <a href="https://github.com/open-learning-exchange/planet" target="_blank">Planet web application</a>, designed to facilitate access to educational resources in underserved communities.</h4>
+**myPlanet** works in conjunction with [Open Learning Exchange](https://ole.org)’s web application, [Planet](https://github.com/open-learning-exchange/planet). The app is designed to run offline or online, ensuring that learning and community engagement can continue even in areas with limited internet access.
 
 <p align="center">
- <a href="https://play.google.com/store/apps/details?id=org.ole.planet.myplanet&hl=en"><img src="https://play.google.com/intl/en_us/badges/images/generic/en-play-badge.png" alt="Google Play Store" height="50"></a>
+ <a href="https://play.google.com/store/apps/details?id=org.ole.planet.myplanet&hl=en"><img src="https://play.google.com/intl/en_us/badges/images/generic/en-play-badge.png" alt="Get it on Google Play" height="60"></a>
 </p>
 
 <p align="center">
@@ -19,9 +16,9 @@
   <a href="#contact">Contact</a>
 </p>
 
-<p align="center">
-  <img src="app/src/main/res/drawable/myplanet_readme_image.png" alt="myPlanet App">
-</p>
+## Screenshots
+
+[!myPlanet App](app/src/main/res/drawable/myplanet_readme_image.png)
 
 ## Key Features
 
