@@ -20,16 +20,13 @@
         android:title="@string/dark_mode"
         android:summary="Set the App Theme to Dark Mode or Back to Normal" />
 
-
     <Preference
         android:key="reset_app"
         android:title="@string/reset_app" />
 
-
     <Preference
         android:key="freeup_space"
         android:title="@string/freeup_space" />
-
 
     <PreferenceCategory
         android:dependency="auto_sync_with_server"
@@ -50,7 +47,6 @@
             android:title="@string/last_synced_colon" />
 
     </PreferenceCategory>
-
 
     <PreferenceCategory
         android:dependency="beta_function"
@@ -75,7 +71,6 @@
     <PreferenceCategory
         android:dependency="beta_function"
         android:title="@string/upgrade_application">
-
 
         <SwitchPreference
             android:defaultValue="true"
