@@ -37,11 +37,7 @@ By leveraging myPlanet, users gain seamless access to the Planet system’s exte
 
 ## How To Use
 
-1. Download and open the myPlanet app.
-2. Configure the app to sync, then sign in or create an account.
-3. Browse available educational resources.
-4. Download the resources that are needed for offline access.
-5. Utilize the app's features to enhance your learning experience.
+For the app usage manual, please visit the [myPlanet Manual page](https://open-learning-exchange.github.io/#!pages/manual/myplanet/overview.md) on OLE Support.
 
 ## License
 
