@@ -35,6 +35,7 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
+import org.ole.planet.myplanet.ui.chat.ChatAdapter.Companion.clickListener
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
@@ -162,6 +163,10 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                     holder.rowNewsBinding.recyclerGchat.layoutManager = LinearLayoutManager(context)
                     holder.rowNewsBinding.recyclerGchat.visibility = View.VISIBLE
                     holder.rowNewsBinding.sharedChat.visibility = View.VISIBLE
+
+                    holder.rowNewsBinding.linearLayout5.setOnClickListener {
+                        clickListener(news.conversations, news.newsId, news.newsRev)
+                    }
                 } else {
                     holder.rowNewsBinding.recyclerGchat.visibility = View.GONE
                     holder.rowNewsBinding.sharedChat.visibility = View.GONE
