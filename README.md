@@ -3,6 +3,8 @@
   myPlanet
 </h1>
 
+[![chat on discord](https://img.shields.io/discord/1079980988421132369?logo=discord&color=%237785cc)](https://discord.gg/NdrumrSNSA)
+
 **myPlanet** is a mobile app designed to complement the [Open Learning Exchange](https://ole.org)’s Learning Management System, [Planet](https://github.com/open-learning-exchange/planet). Tailored for both offline and online use, myPlanet ensures continuous learning and community engagement even in areas with limited internet access. It seamlessly integrates with Planet's community and nation instances, offering a mobile platform to access user-created educational resources such as books, videos, and courses.
 
 <p align="center">
@@ -45,4 +47,4 @@ This project is licensed under AGPL.
 
 ## Contact
 
-For any questions or feedback, please join [our Discord server](https://discord.gg/mtgGD4EnYW) or contact us at solutions@ole.org.
+For any questions or feedback, please join [our Discord server](https://discord.gg/mtgGD4EnYW).
