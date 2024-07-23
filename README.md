@@ -18,7 +18,8 @@
 
 ## Screenshots
 
-[!myPlanet App](app/src/main/res/drawable/myplanet_readme_image.png)
+![myPlanet dashboard](screenshots/myplanet-dashboard.png)
+![myPlanet navigation menu](screenshots/myplanet-navigation-menu.png)
 
 ## Key Features
 
@@ -29,7 +30,7 @@
 - **Collaboration and Sharing** - Supports collaborative learning and knowledge sharing.
 
 ## How To Use
- 
+
 1. Download and open the myPlanet app.
 2. Allow the app to sync and sign up.
 3. Browse available educational resources.
