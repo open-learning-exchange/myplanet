@@ -28,6 +28,8 @@ import org.ole.planet.myplanet.model.RealmMyTeam.Companion.teamWriteCsv
 import org.ole.planet.myplanet.model.RealmNews.Companion.newsWriteCsv
 import org.ole.planet.myplanet.model.RealmOfflineActivity.Companion.offlineWriteCsv
 import org.ole.planet.myplanet.model.RealmRating.Companion.ratingWriteCsv
+import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveNewCourseData
+import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.saveNewResourceData
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.stepExamWriteCsv
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.submissionWriteCsv
@@ -211,6 +213,8 @@ object TransactionSyncManager {
             teamTaskWriteCsv()
             userWriteCsv()
         }
+        saveNewCourseData()
+        saveNewResourceData()
     }
 
     private fun callMethod(mRealm: Realm, jsonDoc: JsonObject, type: String) {

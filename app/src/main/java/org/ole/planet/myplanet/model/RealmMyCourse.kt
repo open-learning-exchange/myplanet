@@ -8,6 +8,7 @@ import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.opencsv.CSVWriter
+import com.google.gson.reflect.TypeToken
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
@@ -82,10 +83,11 @@ open class RealmMyCourse : RealmObject() {
         private val gson = Gson()
         private val concatenatedLinks = ArrayList<String>()
         val courseDataList: MutableList<Array<String>> = mutableListOf()
+        private val newCourses = mutableListOf<JsonObject?>()
+        val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
 
         @JvmStatic
         fun insertMyCourses(userId: String?, myCoursesDoc: JsonObject?, mRealm: Realm) {
-            context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
             }
@@ -93,6 +95,7 @@ open class RealmMyCourse : RealmObject() {
             var myMyCoursesDB = mRealm.where(RealmMyCourse::class.java).equalTo("id", id).findFirst()
             if (myMyCoursesDB == null) {
                 myMyCoursesDB = mRealm.createObject(RealmMyCourse::class.java, id)
+                newCourses.add(myCoursesDoc)
             }
             myMyCoursesDB?.setUserId(userId)
             myMyCoursesDB?.courseId = JsonUtils.getString("_id", myCoursesDoc)
@@ -201,7 +204,6 @@ open class RealmMyCourse : RealmObject() {
 
         @JvmStatic
         fun saveConcatenatedLinksToPrefs() {
-            val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             val existingJsonLinks = settings.getString("concatenated_links", null)
             val existingConcatenatedLinks = if (existingJsonLinks != null) {
                 gson.fromJson(existingJsonLinks, Array<String>::class.java).toMutableList()
@@ -219,6 +221,30 @@ open class RealmMyCourse : RealmObject() {
 
             val jsonConcatenatedLinks = gson.toJson(existingConcatenatedLinks)
             settings.edit().putString("concatenated_links", jsonConcatenatedLinks).apply()
+        }
+
+        fun saveNewCourseData() {
+            val existingSavedData = settings.getString("new_data", null)
+            val existingData: MutableList<JsonObject> = if (existingSavedData != null) {
+                val type = TypeToken.getParameterized(List::class.java, JsonObject::class.java).type
+                gson.fromJson(existingSavedData, type)
+            } else {
+                mutableListOf()
+            }
+
+            synchronized(newCourses) {
+                for (newCourse in newCourses) {
+                    if (newCourse != null) {
+                        newCourse.addProperty("source", "course")
+                        if (!existingData.contains(newCourse)) {
+                            existingData.add(newCourse)
+                        }
+                    }
+                }
+            }
+
+            val jsonNewCourses = gson.toJson(existingData)
+            settings.edit().putString("new_data", jsonNewCourses).apply()
         }
 
         fun getCourseSteps(mRealm: Realm, courseId: String?): List<RealmCourseStep> {
