@@ -3,7 +3,7 @@
   myPlanet
 </h1>
 
-**myPlanet** is a mobile app designed to complement the [Open Learning Exchange](https://ole.org)’s Learning Management System, [Planet](https://github.com/open-learning-exchange/planet). Tailored for both offline and online use, myPlanet ensures continuous learning and community engagement even in areas with limited internet access. It seamlessly integrates with Planet's community and nation instances, offering a mobile platform to access user-created, multilingual educational resources such as books, videos, and courses.
+**myPlanet** is a mobile app designed to complement the [Open Learning Exchange](https://ole.org)’s Learning Management System, [Planet](https://github.com/open-learning-exchange/planet). Tailored for both offline and online use, myPlanet ensures continuous learning and community engagement even in areas with limited internet access. It seamlessly integrates with Planet's community and nation instances, offering a mobile platform to access user-created educational resources such as books, videos, and courses.
 
 <p align="center">
   <a href="https://play.google.com/store/apps/details?id=org.ole.planet.myplanet&hl=en"><img src="https://play.google.com/intl/en_us/badges/images/generic/en-play-badge.png" alt="Get it on Google Play" height="80"></a>
