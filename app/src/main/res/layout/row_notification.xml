@@ -7,7 +7,6 @@
     android:padding="@dimen/padding_small"
     android:background="@color/light_dark">
 
-
     <ImageView
         android:id="@+id/icon"
         android:layout_width="@dimen/_40dp"
