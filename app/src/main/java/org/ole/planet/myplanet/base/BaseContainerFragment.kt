@@ -94,8 +94,11 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 }
                 true
             }
-            setOnClickListener {
-                homeItemClickListener?.showRatingDialog(type, id, title, listener)
+            val userModel = UserProfileDbHandler(context).userModel
+            if (!userModel?.isGuest()!!) {
+                setOnClickListener {
+                    homeItemClickListener?.showRatingDialog(type, id, title, listener)
+                }
             }
         }
     }

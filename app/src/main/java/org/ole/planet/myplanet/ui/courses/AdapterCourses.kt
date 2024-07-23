@@ -48,7 +48,7 @@ class AdapterCourses(private val context: Context, private var courseList: List<
     private var mRealm: Realm? = null
     private val config: ChipCloudConfig
     private var isAscending = true
-    private var isTitleAscending = true
+    private var isTitleAscending = false
     private var areAllSelected = true
     var userModel: RealmUserModel?= null
 
@@ -157,11 +157,18 @@ class AdapterCourses(private val context: Context, private var courseList: List<
                 setTextViewContent(holder.rowCourseBinding.subjectLevel, course.subjectLevel, holder.rowCourseBinding.subjectLevel, context.getString(R.string.subject_level_colon))
                 holder.rowCourseBinding.courseProgress.max = course.getnumberOfSteps()
                 displayTagCloud(holder.rowCourseBinding.flexboxDrawable, position)
-                holder.rowCourseBinding.ratingBar.setOnTouchListener { _: View?, event: MotionEvent ->
-                    if (event.action == MotionEvent.ACTION_UP) homeItemClickListener?.showRatingDialog("course", course.courseId, course.courseTitle, ratingChangeListener)
-                    true
-                }
                 userModel = UserProfileDbHandler(context).userModel
+                if (!userModel?.isGuest()!!) {
+                    holder.rowCourseBinding.ratingBar.setOnTouchListener { _: View?, event: MotionEvent ->
+                        if (event.action == MotionEvent.ACTION_UP) homeItemClickListener?.showRatingDialog(
+                            "course",
+                            course.courseId,
+                            course.courseTitle,
+                            ratingChangeListener
+                        )
+                        true
+                    }
+                }
                 if (!userModel?.isGuest()!!) {
                     holder.rowCourseBinding.checkbox.isChecked = selectedItems.contains(course)
                     holder.rowCourseBinding.checkbox.setOnClickListener { view: View ->

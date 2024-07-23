@@ -47,7 +47,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         super.onViewCreated(view, savedInstanceState)
         initExam()
         questions = mRealm.where(RealmExamQuestion::class.java).equalTo("examId", exam?.id).findAll()
-        fragmentTakeExamBinding.tvQuestionCount.text = getString(R.string.Q1) + questions?.size
+        fragmentTakeExamBinding.tvQuestionCount.text = getString(R.string.Q1, questions?.size)
         var q: RealmQuery<*> = mRealm.where(RealmSubmission::class.java)
             .equalTo("userId", user?.id)
             .equalTo("parentId", if (!TextUtils.isEmpty(exam?.courseId)) {
@@ -102,7 +102,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     override fun startExam(question: RealmExamQuestion?) {
-        fragmentTakeExamBinding.tvQuestionCount.text = "${getString(R.string.Q) + (currentIndex + 1)} / ${questions?.size}"
+        fragmentTakeExamBinding.tvQuestionCount.text = getString(R.string.Q, currentIndex + 1, questions?.size)
         setButtonText()
         fragmentTakeExamBinding.groupChoices.removeAllViews()
         fragmentTakeExamBinding.llCheckbox.removeAllViews()
@@ -134,7 +134,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
     private fun clearAnswer() {
         ans = ""
-        fragmentTakeExamBinding.etAnswer.setText("")
+        fragmentTakeExamBinding.etAnswer.setText(R.string.empty_text)
         listAns?.clear()
     }
 
@@ -231,7 +231,11 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         val flag: Boolean
         startTransaction()
         sub?.status = if (currentIndex == (questions?.size ?: 0) - 1) {
-            "requires grading"
+            if (sub?.type == "survey") {
+                "complete"
+            } else {
+                "requires grading"
+            }
         } else {
             "pending"
         }
@@ -242,7 +246,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         answer?.value = ans
         answer?.setValueChoices(listAns, isLastAnsvalid)
         answer?.submissionId = sub?.id
-        Submit_id = answer?.submissionId ?: ""
+        submitId = answer?.submissionId ?: ""
         if ((que?.getCorrectChoice()?.size ?: 0) == 0) {
             answer?.grade = 0
             answer?.mistakes = 0

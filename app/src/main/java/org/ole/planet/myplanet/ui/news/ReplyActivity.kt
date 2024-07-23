@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.news
 
+import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -64,9 +65,10 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
                 handleImageSelection(url)
             }
         }
+        setResult(Activity.RESULT_OK)
     }
 
-    fun showData(id: String?) {
+    private fun showData(id: String?) {
         val news = mRealm.where(RealmNews::class.java).equalTo("id", id).findFirst()
         val list: List<RealmNews?> = mRealm.where(RealmNews::class.java).sort("time", Sort.DESCENDING).equalTo("replyTo", id, Case.INSENSITIVE).findAll()
         newsAdapter = AdapterNews(this, list.toMutableList(), user, news)

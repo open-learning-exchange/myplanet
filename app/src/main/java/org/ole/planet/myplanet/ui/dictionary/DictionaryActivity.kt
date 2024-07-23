@@ -19,7 +19,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 import java.util.UUID
 
 class DictionaryActivity : BaseActivity() {
-    lateinit var fragmentDictionaryBinding: FragmentDictionaryBinding
+    private lateinit var fragmentDictionaryBinding: FragmentDictionaryBinding
     lateinit var mRealm: Realm
     var list: RealmResults<RealmDictionary>? = null
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -30,7 +30,7 @@ class DictionaryActivity : BaseActivity() {
         title = getString(R.string.dictionary)
         mRealm = DatabaseService(this).realmInstance
         list = mRealm.where(RealmDictionary::class.java)?.findAll()
-        fragmentDictionaryBinding.tvResult.text = "${getString(R.string.list_size)} ${list?.size}"
+        fragmentDictionaryBinding.tvResult.text = getString(R.string.list_size, list?.size)
         if (FileUtils.checkFileExist(Constants.DICTIONARY_URL)) {
             insertDictionary()
         } else {

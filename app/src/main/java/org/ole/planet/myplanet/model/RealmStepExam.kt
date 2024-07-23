@@ -128,5 +128,11 @@ open class RealmStepExam : RealmObject() {
             }
             return ids
         }
+
+        @JvmStatic
+        fun getSurveyCreationTime(surveyId: String, mRealm: Realm): Long? {
+            val survey = mRealm.where(RealmStepExam::class.java).equalTo("id", surveyId).findFirst()
+            return survey?.createdDate
+        }
     }
 }

@@ -40,6 +40,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private lateinit var etSearch: EditText
     private lateinit var adapterCourses: AdapterCourses
     private lateinit var btnRemove: Button
+    private lateinit var btnArchive: Button
     private lateinit var orderByDate: Button
     private lateinit var orderByTitle: Button
     private lateinit var selectAll: CheckBox
@@ -80,8 +81,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         searchTags = ArrayList()
         initializeView()
         if (isMyCourseLib) {
-            tvDelete?.setText(R.string.archive)
             btnRemove.visibility = View.VISIBLE
+            btnArchive.visibility = View.VISIBLE
             checkList()
         }
 
@@ -102,6 +103,22 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 R.string.are_you_sure_you_want_to_delete_this_course
             } else {
                 R.string.are_you_sure_you_want_to_delete_these_courses
+            }
+            alertDialogBuilder.setMessage(message)
+                .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
+                    deleteSelected(true)
+                    val newFragment = CoursesFragment()
+                    recreateFragment(newFragment)
+                    checkList()
+                }
+                .setNegativeButton(R.string.no, null).show()
+        }
+        btnArchive.setOnClickListener {
+            val alertDialogBuilder = AlertDialog.Builder(this.context)
+            val message = if (countSelected() == 1) {
+                R.string.are_you_sure_you_want_to_archive_this_course
+            } else {
+                R.string.are_you_sure_you_want_to_archive_these_courses
             }
             alertDialogBuilder.setMessage(message)
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
@@ -153,6 +170,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         etSearch = requireView().findViewById(R.id.et_search)
         tvSelected = requireView().findViewById(R.id.tv_selected)
         btnRemove = requireView().findViewById(R.id.btn_remove)
+        btnArchive = requireView().findViewById(R.id.btn_archive)
         spnGrade = requireView().findViewById(R.id.spn_grade)
         spnSubject = requireView().findViewById(R.id.spn_subject)
         tvMessage = requireView().findViewById(R.id.tv_message)
@@ -164,6 +182,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         if(userModel?.isGuest() == true){
             tvAddToLib.visibility = View.GONE
             btnRemove.visibility = View.GONE
+            btnArchive.visibility = View.GONE
             selectAll.visibility = View.GONE
         }
         checkList()
@@ -189,13 +208,15 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             requireView().findViewById<View>(R.id.filter).visibility = View.GONE
             btnRemove.visibility = View.GONE
             tvSelected.visibility = View.GONE
-            tvDelete?.visibility = View.GONE
+            btnArchive.visibility = View.GONE
         }
     }
 
-
     private val itemSelectedListener: AdapterView.OnItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-        override fun onItemSelected(adapterView: AdapterView<*>?, view: View, i: Int, l: Long) {
+        override fun onItemSelected(adapterView: AdapterView<*>?, view: View?, i: Int, l: Long) {
+            if (view == null) {
+                return
+            }
             gradeLevel = if (spnGrade.selectedItem.toString() == "All") "" else spnGrade.selectedItem.toString()
             subjectLevel = if (spnSubject.selectedItem.toString() == "All") "" else spnSubject.selectedItem.toString()
             adapterCourses.setCourseList(filterCourseByTag(etSearch.text.toString(), searchTags))
@@ -258,6 +279,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private fun changeButtonStatus() {
         tvAddToLib.isEnabled = (selectedItems?.size ?: 0) > 0
         btnRemove.isEnabled = (selectedItems?.size ?: 0) > 0
+        btnArchive.isEnabled = (selectedItems?.size ?: 0) > 0
         if (adapterCourses.areAllSelected()) {
             selectAll.isChecked = true
             selectAll.text = getString(R.string.unselect_all)

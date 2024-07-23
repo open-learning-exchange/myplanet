@@ -15,6 +15,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentTakeCourseBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmCourseActivity.Companion.createActivity
+import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmCourseProgress.Companion.getCurrentProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyCourse
@@ -25,8 +26,6 @@ import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onRemove
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.isStepCompleted
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.utilities.Constants
-import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.DialogUtils.getAlertDialog
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Locale
@@ -40,6 +39,8 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     lateinit var steps: List<RealmCourseStep?>
     var userModel: RealmUserModel ?= null
     var position = 0
+    private var currentStep = 0
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) {
@@ -74,7 +75,16 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         }
         setCourseData()
         setListeners()
+        currentStep = getCourseProgress()
+        if (currentStep != 0) {
+            position = if (currentStep == steps.size) {
+                0
+            } else {
+                currentStep - 1
+            }
+        }
         fragmentTakeCourseBinding.viewPager2.currentItem = position
+
     }
 
     private fun setListeners() {
@@ -108,6 +118,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         fragmentTakeCourseBinding.courseProgress.max = steps.size
         val i = getCurrentProgress(steps, mRealm, userModel?.id, courseId)
         if (i < steps.size) fragmentTakeCourseBinding.courseProgress.secondaryProgress = i + 1
+        fragmentTakeCourseBinding.tvStep.text = String.format("Step %d/%d", currentStep + i, steps.size)
         fragmentTakeCourseBinding.courseProgress.progress = i
         if (currentCourse?.userId?.contains(userModel?.id) == true) {
             fragmentTakeCourseBinding.nextStep.visibility = View.VISIBLE
@@ -134,7 +145,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private fun changeNextButtonState(position: Int) {
-        if (isStepCompleted(mRealm, steps[position - 1]?.id, userModel?.id) || !showBetaFeature(Constants.KEY_EXAM, requireContext())) {
+        if (isStepCompleted(mRealm, steps[position - 1]?.id, userModel?.id)) {
             fragmentTakeCourseBinding.nextStep.isClickable = true
             fragmentTakeCourseBinding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
         } else {
@@ -151,7 +162,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             fragmentTakeCourseBinding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_grey_500))
             fragmentTakeCourseBinding.nextStep.visibility = View.GONE
             fragmentTakeCourseBinding.finishStep.visibility = View.VISIBLE
-
         }
     }
 
@@ -201,6 +211,15 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             getString(R.string.removed_from)
         })} ${getString(R.string.my_courses)}")
         setCourseData()
+    }
+
+    private fun getCourseProgress(): Int {
+        val realm = DatabaseService(requireActivity()).realmInstance
+        val user = UserProfileDbHandler(requireActivity()).userModel
+        val courseProgressMap = RealmCourseProgress.getCourseProgress(realm, user?.id)
+        // Extract the current progress for the specific courseId
+        val courseProgress = courseProgressMap[courseId]?.asJsonObject?.get("current")?.asInt
+        return courseProgress ?: 0
     }
 
     private val isValidClickRight: Boolean
