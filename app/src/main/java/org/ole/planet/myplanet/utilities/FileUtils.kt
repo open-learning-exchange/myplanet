@@ -265,6 +265,8 @@ object FileUtils {
                     }
                 }
             }
+        } catch (e: Exception) {
+            e.printStackTrace()
         } finally {
             cursor?.close()
         }

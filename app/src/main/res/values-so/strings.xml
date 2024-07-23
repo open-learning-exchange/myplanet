@@ -1083,5 +1083,7 @@
         <item>ON</item>
         <item>Raac Nidaamka</item>
     </string-array>
+    <string name="are_you_sure_you_want_to_archive_these_courses">Ma hubtaa inaad rabto inaad kaydiso koorsooyinkan?</string>
+    <string name="are_you_sure_you_want_to_archive_this_course">Ma hubtaa inaad rabto inaad kaydiso koorsadan?</string>
 
 </resources>

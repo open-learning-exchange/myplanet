@@ -1083,5 +1083,7 @@
         <item>Encendido</item>
         <item>Seguir el sistema</item>
     </string-array>
+    <string name="are_you_sure_you_want_to_archive_these_courses">¿Está seguro de que desea archivar estos cursos?</string>
+    <string name="are_you_sure_you_want_to_archive_this_course">¿Estás seguro de que deseas archivar este curso?</string>
 
 </resources>

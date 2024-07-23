@@ -1083,5 +1083,7 @@
         <item>ON</item>
         <item>Follow System</item>
     </string-array>
+    <string name="are_you_sure_you_want_to_archive_these_courses">Are you sure you want to archive these courses?</string>
+    <string name="are_you_sure_you_want_to_archive_this_course">Are you sure you want to archive this course?</string>
 
 </resources>

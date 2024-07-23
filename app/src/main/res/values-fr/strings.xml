@@ -1083,5 +1083,7 @@
         <item>Activé</item>
         <item>Suivre le système</item>
     </string-array>
+    <string name="are_you_sure_you_want_to_archive_these_courses">Etes-vous sûr de vouloir archiver ces cours ?</string>
+    <string name="are_you_sure_you_want_to_archive_this_course">Êtes-vous sûr de vouloir archiver ce cours ?</string>
 
 </resources>
