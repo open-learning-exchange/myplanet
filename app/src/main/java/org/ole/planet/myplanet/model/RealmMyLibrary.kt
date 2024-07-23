@@ -423,6 +423,7 @@ open class RealmMyLibrary : RealmObject() {
                 for (newResource in newResources) {
                     if (newResource != null) {
                         newResource.addProperty("source", "resource")
+                        newResource.addProperty("read", "false")
                         if (!existingData.contains(newResource)) {
                             existingData.add(newResource)
                         }
