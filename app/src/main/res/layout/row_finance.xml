@@ -27,7 +27,6 @@
         android:textSize="@dimen/text_size_mid"
         android:textColor="@color/daynight_textColor" />
 
-
     <TextView
         android:id="@+id/credit"
         android:layout_width="0dp"
@@ -47,7 +46,6 @@
         android:text="@string/debit"
         android:textColor="@color/md_red_500"
         android:textSize="@dimen/text_size_mid" />
-
 
     <TextView
         android:id="@+id/balance"
