@@ -8,6 +8,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.ui.enterprises.EnterpriseCalendarFragment
@@ -24,7 +25,6 @@ class TeamPagerAdapter(fm: FragmentActivity, team: RealmMyTeam?, isInMyTeam: Boo
     private val teamId: String? = team?._id
     private val list: MutableList<String> = ArrayList()
     private val isEnterprise: Boolean = TextUtils.equals(team?.type, "enterprise")
-    private val context = fm
 
     init {
         list.add(context.getString(if (isEnterprise) R.string.mission else R.string.plan))
