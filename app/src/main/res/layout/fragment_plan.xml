@@ -26,6 +26,5 @@
             android:textColor="@color/daynight_textColor"
             android:textSize="@dimen/text_size_mid" />
 
-
     </LinearLayout>
 </FrameLayout>
