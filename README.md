@@ -16,11 +16,6 @@
   <a href="#contact">Contact</a>
 </p>
 
-## Screenshots
-
-![myPlanet dashboard](screenshots/myplanet-dashboard.png)
-![myPlanet navigation menu](screenshots/myplanet-navigation-menu.png)
-
 ## Key Features
 
 - **Offline Access** - Download educational materials and access them without an internet connection.
