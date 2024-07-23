@@ -3,9 +3,7 @@
   myPlanet
 </h1>
 
-**myPlanet** is an mobile app that complements [Open Learning Exchange](https://ole.org)’s Learning Management System, [Planet](https://github.com/open-learning-exchange/planet). Designed for offline and online use, it ensures continuous learning and community engagement even with limited internet access.
-
-MyPlanet integrates with Planet community and nation instances, providing a mobile platform for accessing user created multilingual educational resources like books, videos, and courses. It supports personalized learning, course creation, student management, team management, and enterprise management, enabling users to transform knowledge into action and address their community's learning needs.
+**myPlanet** is a mobile app designed to complement the [Open Learning Exchange](https://ole.org)’s Learning Management System, [Planet](https://github.com/open-learning-exchange/planet). Tailored for both offline and online use, myPlanet ensures continuous learning and community engagement even in areas with limited internet access. It seamlessly integrates with Planet's community and nation instances, offering a mobile platform to access user-created, multilingual educational resources such as books, videos, and courses.
 
 <p align="center">
   <a href="https://play.google.com/store/apps/details?id=org.ole.planet.myplanet&hl=en"><img src="https://play.google.com/intl/en_us/badges/images/generic/en-play-badge.png" alt="Get it on Google Play" height="80"></a>
@@ -23,7 +21,6 @@ MyPlanet integrates with Planet community and nation instances, providing a mobi
 
 - **Offline Access** - Download educational materials and access them without an internet connection.
 - **Content Synchronization** - Sync with the Planet server to get the latest educational content.
-- **Data Collection** - Collects usage data to help assess educational impact and user engagement.
 - **AI Chatbot**: Provides an AI-powered chatbot to assist users with navigating the app, finding resources, and answering questions.
 - **Teams and Enterprises**: Collaborate with other users, complete tasks and courses, and download resources to work on together.
 - **Multilingual Support**: Supports English, Arabic, Spanish, French, Nepali, and Somali
