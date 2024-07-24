@@ -1,6 +1,6 @@
 # ![ole_logo](https://github.com/user-attachments/assets/088e6283-42bb-4e6c-b6ed-67f32f341c44) myPlanet
 
-[![chat on discord](https://img.shields.io/discord/1079980988421132369?logo=discord&color=%237785cc)](https://discord.gg/NdrumrSNSA)
+[![chat on discord](https://img.shields.io/discord/1079980988421132369?logo=discord&color=%237785cc)](https://discord.gg/BVrFEeNtQZ)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![latest development release](https://img.shields.io/github/v/release/open-learning-exchange/myplanet)](https://github.com/open-learning-exchange/myplanet/releases/latest)
 
@@ -37,4 +37,4 @@ For the app usage manual, please visit the [myPlanet Manual page](https://open-l
 
 ## Contact
 
-For any questions or feedback, please join [our Discord server](https://discord.gg/mtgGD4EnYW).
+For any questions or feedback, please join [our Discord server](https://discord.gg/BVrFEeNtQZ).
