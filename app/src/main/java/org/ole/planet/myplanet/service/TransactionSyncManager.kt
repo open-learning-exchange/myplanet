@@ -117,8 +117,14 @@ object TransactionSyncManager {
         mRealm.executeTransactionAsync({ realm: Realm ->
             val userModel = realm.where(RealmUserModel::class.java).equalTo("id", id).findFirst()
             syncHealthData(userModel, header)
-        }, { listener.onSyncComplete() }) { error: Throwable ->
-            error.message?.let { listener.onSyncFailed(it) }
+        }, {
+            listener.onSyncComplete()
+            val end = System.currentTimeMillis()
+            logDuration(start, end, "syncKeyIv")
+        }) { error: Throwable ->
+            error.message?.let {
+                listener.onSyncFailed(it)
+            }
         }
     }
 
