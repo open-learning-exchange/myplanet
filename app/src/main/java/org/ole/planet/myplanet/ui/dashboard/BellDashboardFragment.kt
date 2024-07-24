@@ -59,7 +59,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        fragmentHomeBellBinding.cardProfileBell.txtDate.text = TimeUtils.formatDate(Date().time)
+        fragmentHomeBellBinding.cardProfileBell.txtDate.text = TimeUtils.formatDate(Date().time, "")
         fragmentHomeBellBinding.cardProfileBell.txtCommunityName.text = model?.planetCode
         isNetworkConnectedFlow.onEach { isConnected ->
             if (isConnected) {

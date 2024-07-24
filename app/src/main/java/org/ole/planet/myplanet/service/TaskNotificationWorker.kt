@@ -26,7 +26,7 @@ class TaskNotificationWorker(private val context: Context, workerParams: WorkerP
                 .findAll()
             mRealm.beginTransaction()
             for (`in` in tasks) {
-                create(context, R.drawable.ole_logo, `in`.title, "Task expires on " + formatDate(`in`.deadline))
+                create(context, R.drawable.ole_logo, `in`.title, "Task expires on " + formatDate(`in`.deadline, ""))
                 `in`.isNotified = true
             }
             mRealm.commitTransaction()
