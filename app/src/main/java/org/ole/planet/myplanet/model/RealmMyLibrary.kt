@@ -2,6 +2,8 @@ package org.ole.planet.myplanet.model
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.text.TextUtils
+import android.util.Log
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
@@ -279,7 +281,11 @@ open class RealmMyLibrary : RealmObject() {
 
         @JvmStatic
         fun insertMyLibrary(userId: String?, doc: JsonObject, mRealm: Realm) {
+            if (!mRealm.isInTransaction) {
+                mRealm.beginTransaction()
+            }
             insertMyLibrary(userId, "", "", doc, mRealm)
+            mRealm.commitTransaction()
         }
 
         @JvmStatic
@@ -293,8 +299,10 @@ open class RealmMyLibrary : RealmObject() {
 
         @JvmStatic
         fun insertMyLibrary(userId: String?, stepId: String?, courseId: String?, doc: JsonObject, mRealm: Realm) {
-            if (!mRealm.isInTransaction) {
-                mRealm.beginTransaction()
+            if(mRealm.isInTransaction) {
+                Log.e("RealmMyLibrary", "insertMyLibrary: Transaction is already in progress")
+            } else{
+                Log.e("RealmMyLibrary", "insertMyLibrary: Transaction is not in progress")
             }
             val resourceId = JsonUtils.getString("_id", doc)
             val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
