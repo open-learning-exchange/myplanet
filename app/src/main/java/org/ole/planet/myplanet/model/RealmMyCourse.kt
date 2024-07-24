@@ -4,6 +4,7 @@ import android.content.Context.MODE_PRIVATE
 import android.content.SharedPreferences
 import android.text.TextUtils
 import android.util.Base64
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -85,9 +86,10 @@ open class RealmMyCourse : RealmObject() {
 
         @JvmStatic
         fun insertMyCourses(userId: String?, myCoursesDoc: JsonObject?, mRealm: Realm) {
-            context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-            if (!mRealm.isInTransaction) {
-                mRealm.beginTransaction()
+            if(mRealm.isInTransaction) {
+                Log.e("RealmMyCourse", "insertMyCourses: Transaction is already in progress")
+            } else{
+                Log.e("RealmMyCourse", "insertMyCourses: Transaction is not in progress")
             }
             val id = JsonUtils.getString("_id", myCoursesDoc)
             var myMyCoursesDB = mRealm.where(RealmMyCourse::class.java).equalTo("id", id).findFirst()
@@ -137,15 +139,9 @@ open class RealmMyCourse : RealmObject() {
                 courseStepsList.add(step)
             }
 
-            if (mRealm.isInTransaction) {
-                mRealm.commitTransaction()
-            }
-
-            if (!mRealm.isInTransaction) {
-                mRealm.beginTransaction()
-            }
             myMyCoursesDB?.courseSteps = RealmList()
             myMyCoursesDB?.courseSteps?.addAll(courseStepsList)
+
             mRealm.commitTransaction()
 
             val csvRow = arrayOf(
@@ -283,7 +279,11 @@ open class RealmMyCourse : RealmObject() {
 
         @JvmStatic
         fun insert(mRealm: Realm, myCoursesDoc: JsonObject?) {
+            if (!mRealm.isInTransaction) {
+                mRealm.beginTransaction()
+            }
             insertMyCourses("", myCoursesDoc, mRealm)
+            mRealm.commitTransaction()
         }
 
         @JvmStatic

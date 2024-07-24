@@ -6,6 +6,7 @@ import android.graphics.drawable.AnimationDrawable
 import android.os.Build
 import android.os.Bundle
 import android.text.*
+import android.util.Log
 import android.view.*
 import android.webkit.URLUtil
 import android.widget.*
@@ -188,12 +189,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     @Throws(Exception::class)
     fun isServerReachable(processedUrl: String?): Boolean {
+        Log.d("SyncActivity", "isServerReachable")
         customProgressDialog?.setText(getString(R.string.connecting_to_server))
         customProgressDialog?.show()
         val apiInterface = client?.create(ApiInterface::class.java)
         apiInterface?.isPlanetAvailable("$processedUrl/_all_dbs")?.enqueue(object : Callback<ResponseBody?> {
             override fun onResponse(call: Call<ResponseBody?>, response: Response<ResponseBody?>) {
                 try {
+                    Log.d("SyncActivity", "isServerReachable onResponse")
                     customProgressDialog?.dismiss()
                     val ss = response.body()?.string()
                     val myList = ss?.split(",".toRegex())?.dropLastWhile { it.isEmpty() }?.let { listOf(*it.toTypedArray()) }
@@ -302,6 +305,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     fun startSync() {
+        Log.d("SyncActivity", "startSync")
         SyncManager.instance?.start(this@SyncActivity)
     }
 
