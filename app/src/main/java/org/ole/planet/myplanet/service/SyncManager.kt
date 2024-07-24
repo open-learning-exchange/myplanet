@@ -26,6 +26,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.save
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.insertMyTeams
 import org.ole.planet.myplanet.model.RealmResourceActivity.Companion.onSynced
 import org.ole.planet.myplanet.model.Rows
+import org.ole.planet.myplanet.service.TransactionSyncManager.logDuration
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Constants.ShelfData
@@ -76,17 +77,21 @@ class SyncManager private constructor(private val context: Context) {
 
     private fun authenticateAndSync() {
         td = Thread {
+            val start = System.currentTimeMillis()
             if (TransactionSyncManager.authenticate()) {
                 startSync()
             } else {
                 handleException(context.getString(R.string.invalid_configuration))
                 destroy()
             }
+            val end = System.currentTimeMillis()
+            logDuration(start, end, "authenticateAndSync")
         }
         td?.start()
     }
 
     private fun startSync() {
+        val start = System.currentTimeMillis()
         try {
             val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
             val wifiInfo = wifiManager.connectionInfo
@@ -123,6 +128,8 @@ class SyncManager private constructor(private val context: Context) {
             err.printStackTrace()
             handleException(err.message)
         } finally {
+            val end = System.currentTimeMillis()
+            logDuration(start, end, "startSync")
             destroy()
         }
     }
