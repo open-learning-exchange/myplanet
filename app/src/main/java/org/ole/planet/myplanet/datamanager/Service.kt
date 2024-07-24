@@ -19,6 +19,7 @@ import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmCommunity
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.isUserExists
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.populateUsersTable
+import org.ole.planet.myplanet.service.TransactionSyncManager.logDuration
 import org.ole.planet.myplanet.service.UploadToShelfService
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateIv
@@ -94,6 +95,7 @@ class Service(private val context: Context) {
             callback.onError(context.getString(R.string.config_not_available), true)
             return
         }
+        val start = System.currentTimeMillis()
         retrofitInterface?.checkVersion(Utilities.getUpdateUrl(settings))?.enqueue(object : Callback<MyPlanet?> {
             @RequiresApi(Build.VERSION_CODES.M)
             override fun onResponse(call: Call<MyPlanet?>, response: Response<MyPlanet?>) {
@@ -133,7 +135,11 @@ class Service(private val context: Context) {
                                         callback.onError("Planet up to date", false)
                                     }
                                 }
+                                val end = System.currentTimeMillis()
+                                logDuration(start, end, "checkVersion")
                             } catch (e: Exception) {
+                                val end = System.currentTimeMillis()
+                                logDuration(start, end, "checkVersion")
                                 callback.onError("New apk version required  but not found on server - Contact admin", false)
                             }
                         }
@@ -295,7 +301,7 @@ class Service(private val context: Context) {
             setText(context.getString(R.string.check_apk_version))
             show()
         }
-
+        val start = System.currentTimeMillis()
         retrofitInterface?.getConfiguration("$url/versions")?.enqueue(object : Callback<JsonObject?> {
             override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
                 if (response.isSuccessful) {
@@ -325,6 +331,8 @@ class Service(private val context: Context) {
                                             val code = doc.getAsJsonPrimitive("code").asString
                                             listener?.onConfigurationIdReceived(id, code)
                                             activity.setSyncFailed(false)
+                                            val end = System.currentTimeMillis()
+                                            logDuration(start, end, "check app version")
                                         } else {
                                             activity.setSyncFailed(true)
                                             showAlertDialog(context.getString(R.string.failed_to_get_configuration_id), false)
