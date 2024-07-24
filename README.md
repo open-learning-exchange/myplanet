@@ -1,7 +1,4 @@
-<h1 align="center">
-  <a href="https://play.google.com/store/apps/details?id=org.ole.planet.myplanet&hl=en"><img src="app/src/main/res/drawable/ole_logo.png" alt="myPlanet" height="25"></a>
-  myPlanet
-</h1>
+# ![ole_logo](https://github.com/user-attachments/assets/088e6283-42bb-4e6c-b6ed-67f32f341c44) myPlanet 
 
 [![chat on discord](https://img.shields.io/discord/1079980988421132369?logo=discord&color=%237785cc)](https://discord.gg/NdrumrSNSA)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
@@ -9,17 +6,12 @@
 
 **myPlanet** is a mobile app designed to complement the [Open Learning Exchange](https://ole.org)’s Learning Management System, [Planet](https://github.com/open-learning-exchange/planet). Tailored for both offline and online use, myPlanet ensures continuous learning and community engagement even in areas with limited internet access. It seamlessly integrates with Planet's community and nation instances, offering a mobile platform to access user-created educational resources such as books, videos, and courses.
 
-<p align="center">
-  <a href="https://play.google.com/store/apps/details?id=org.ole.planet.myplanet&hl=en"><img src="https://play.google.com/intl/en_us/badges/images/generic/en-play-badge.png" alt="Get it on Google Play" height="80"></a>
-</p>
+[![Get myPlanet on Google Play](https://github.com/user-attachments/assets/c0fa9273-78f1-45c9-a33c-99b024296a51)](https://play.google.com/store/apps/details?id=org.ole.planet.myplanet)
 
-<p align="center">
-  <a href="#feature-highlights">Feature Highlights</a> •
-  <a href="#about-myplanet">About myPlanet</a> •
-  <a href="#how-to-use">How To Use</a> •
-  <a href="#license">License</a> •
-  <a href="#contact">Contact</a>
-</p>
+- [Feature Highlights](#feature-highlights)
+- [About myPlanet](#about-myplanet)
+- [How To Use](#how-to-use)
+- [Contact](#contact)
 
 ## Feature Highlights
 
@@ -42,10 +34,6 @@ By leveraging myPlanet, users gain seamless access to the Planet system’s exte
 ## How To Use
 
 For the app usage manual, please visit the [myPlanet Manual page](https://open-learning-exchange.github.io/#!pages/manual/myplanet/overview.md) on OLE Support.
-
-## License
-
-This project is licensed under AGPL.
 
 ## Contact
 
