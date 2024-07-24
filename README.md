@@ -3,11 +3,9 @@
 [![chat on discord](https://img.shields.io/discord/1079980988421132369?logo=discord&color=%237785cc)](https://discord.gg/BVrFEeNtQZ)
 [![license: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![latest development release](https://img.shields.io/github/v/release/open-learning-exchange/myplanet)](https://github.com/open-learning-exchange/myplanet/releases/latest)
-![Get myPlanet on Google Play Store](https://img.shields.io/endpoint?url=https%3A%2F%2Fplay.cuzi.workers.dev%2Fplay%3Fi%3Dorg.ole.planet.myplanet%26gl%3DUS%26hl%3Den%26l%3DGet%2520It%2520On%2520Google%2520Play%2520Store%26m%3D%24shortinstallsinstalls%2520%257C%2520updated%2520%2524updated%2520%257C%2520version%2520%2524version%2520&logo=google-play&logoColor=green&link=https%3A%2F%2Fplay.google.com%2Fstore%2Fapps%2Fdetails%3Fid%3Dorg.ole.planet.myplanet)
+[![Get myPlanet on Google Play Store](https://img.shields.io/endpoint?url=https%3A%2F%2Fplay.cuzi.workers.dev%2Fplay%3Fi%3Dorg.ole.planet.myplanet%26gl%3DUS%26hl%3Den%26l%3Drelease%26m%3D%24version&logo=google-play&logoColor=green&color=green)](https://play.google.com/store/apps/details?id=org.ole.planet.myplanet)
 
 **myPlanet** is a mobile app designed to complement the [Open Learning Exchange](https://ole.org)’s Learning Management System, [Planet](https://github.com/open-learning-exchange/planet). Tailored for both offline and online use, myPlanet ensures continuous learning and community engagement even in areas with limited internet access. It seamlessly integrates with Planet's community and nation instances, offering a mobile platform to access user-created educational resources such as books, videos, and courses.
-
-[![Get myPlanet on Google Play](https://github.com/user-attachments/assets/c0fa9273-78f1-45c9-a33c-99b024296a51)](https://play.google.com/store/apps/details?id=org.ole.planet.myplanet)
 
 - [Feature Highlights](#feature-highlights)
 - [About myPlanet](#about-myplanet)
