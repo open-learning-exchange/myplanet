@@ -57,6 +57,7 @@
         android:id="@+id/action_bell"
         android:icon="@drawable/notifications"
         android:title="@string/bell"
+        app:actionLayout="@layout/custom_action_item_layout"
         android:contentDescription="@string/bell"
         app:showAsAction="always" />
 </menu>
