@@ -49,18 +49,24 @@ import java.io.IOException
 object TransactionSyncManager {
     fun authenticate(): Boolean {
         val apiInterface = client?.create(ApiInterface::class.java)
+        val start = System.currentTimeMillis()
         try {
             val response: Response<DocumentResponse>? = apiInterface?.getDocuments(Utilities.header, Utilities.getUrl() + "/tablet_users/_all_docs")?.execute()
             if (response != null) {
+                val end = System.currentTimeMillis()
+                logDuration(start, end, "authenticate")
                 return response.code() == 200
             }
         } catch (e: IOException) {
             e.printStackTrace()
         }
+        val end = System.currentTimeMillis()
+        logDuration(start, end, "authenticate")
         return false
     }
 
     fun syncAllHealthData(mRealm: Realm, settings: SharedPreferences, listener: SyncListener) {
+        val start = System.currentTimeMillis()
         listener.onSyncStarted()
         val userName = settings.getString("loginUserName", "")
         val password = settings.getString("loginUserPassword", "")
@@ -70,8 +76,14 @@ object TransactionSyncManager {
             for (userModel in users) {
                 syncHealthData(userModel, header)
             }
-        }, { listener.onSyncComplete() }) { error: Throwable ->
+        }, {
+            listener.onSyncComplete()
+            val end = System.currentTimeMillis()
+            logDuration(start, end, "syncAllHealthData")
+        }) { error: Throwable ->
             error.message?.let { listener.onSyncFailed(it) }
+            val end = System.currentTimeMillis()
+            logDuration(start, end, "syncAllHealthData")
         }
     }
 
@@ -94,6 +106,7 @@ object TransactionSyncManager {
     }
 
     fun syncKeyIv(mRealm: Realm, settings: SharedPreferences, listener: SyncListener) {
+        val start = System.currentTimeMillis()
         listener.onSyncStarted()
         val model = UserProfileDbHandler(MainApplication.context).userModel
         val userName = settings.getString("loginUserName", "")
@@ -227,5 +240,10 @@ object TransactionSyncManager {
         } catch (e: Exception) {
             e.printStackTrace()
         }
+    }
+
+    fun logDuration(start: Long, end: Long, operation: String) {
+        val duration = end - start
+        println("Operation $operation took $duration milliseconds")
     }
 }
