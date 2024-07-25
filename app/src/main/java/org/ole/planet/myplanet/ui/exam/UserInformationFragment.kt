@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.exam
 
+import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.content.DialogInterface
 import android.os.Bundle
@@ -8,6 +9,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.RadioButton
+import androidx.core.content.ContextCompat
 import com.google.gson.JsonObject
 import io.realm.Realm
 import org.ole.planet.myplanet.MainApplication
@@ -28,6 +30,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     lateinit var mRealm: Realm
     private var submissions: RealmSubmission? = null
     var userModel: RealmUserModel? = null
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentUserInformationBinding = FragmentUserInformationBinding.inflate(inflater, container, false)
         mRealm = DatabaseService(requireActivity()).realmInstance
@@ -46,9 +49,18 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         fragmentUserInformationBinding.etPhone.setText(getString(R.string.message_placeholder, userModel?.phoneNumber))
         fragmentUserInformationBinding.txtDob.text = getString(R.string.message_placeholder, userModel?.dob)
         dob = userModel?.dob
+        updateSubmitButton()
         fragmentUserInformationBinding.btnCancel.setOnClickListener(this)
         fragmentUserInformationBinding.btnSubmit.setOnClickListener(this)
         fragmentUserInformationBinding.txtDob.setOnClickListener(this)
+    }
+
+    private fun updateSubmitButton() {
+        if (userModel?.isUpdated == true) {
+            fragmentUserInformationBinding.btnSubmit.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.colorPrimary))
+        } else {
+            fragmentUserInformationBinding.btnSubmit.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.colorAccent))
+        }
     }
 
     override fun onClick(view: View) {
@@ -90,6 +102,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
                     if (!TextUtils.isEmpty(finalGender)) model.gender = finalGender
                     model.isUpdated = true
                 }
+                updateSubmitButton()
             }, {
                 Utilities.toast(MainApplication.context, getString(R.string.user_profile_updated))
                 if (isAdded) {
