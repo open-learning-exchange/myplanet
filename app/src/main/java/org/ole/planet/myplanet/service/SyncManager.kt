@@ -87,47 +87,6 @@ class SyncManager private constructor(private val context: Context) {
         td?.start()
     }
 
-//    private fun startSync() {
-//        try {
-//            val wifiManager = context.getSystemService(Context.WIFI_SERVICE) as WifiManager
-//            val wifiInfo = wifiManager.connectionInfo
-//            if (wifiInfo.supplicantState == SupplicantState.COMPLETED) {
-//                settings.edit().putString("LastWifiSSID", wifiInfo.ssid).apply()
-//            }
-//            isSyncing = true
-//            create(context, R.mipmap.ic_launcher, " Syncing data", "Please wait...")
-//            mRealm = dbService.realmInstance
-//            TransactionSyncManager.syncDb(mRealm, "tablet_users")
-//            myLibraryTransactionSync()
-//            TransactionSyncManager.syncDb(mRealm, "courses")
-//            TransactionSyncManager.syncDb(mRealm, "exams")
-//            TransactionSyncManager.syncDb(mRealm, "ratings")
-//            TransactionSyncManager.syncDb(mRealm, "courses_progress")
-//            TransactionSyncManager.syncDb(mRealm, "achievements")
-//            TransactionSyncManager.syncDb(mRealm, "tags")
-//            TransactionSyncManager.syncDb(mRealm, "submissions")
-//            TransactionSyncManager.syncDb(mRealm, "news")
-//            TransactionSyncManager.syncDb(mRealm, "feedback")
-//            TransactionSyncManager.syncDb(mRealm, "teams")
-//            TransactionSyncManager.syncDb(mRealm, "tasks")
-//            TransactionSyncManager.syncDb(mRealm, "login_activities")
-//            TransactionSyncManager.syncDb(mRealm, "meetups")
-//            TransactionSyncManager.syncDb(mRealm, "health")
-//            TransactionSyncManager.syncDb(mRealm, "certifications")
-//            TransactionSyncManager.syncDb(mRealm, "team_activities")
-//            TransactionSyncManager.syncDb(mRealm, "chat_history")
-//            ManagerSync.instance?.syncAdmin()
-//            resourceTransactionSync()
-//            onSynced(mRealm, settings)
-//            mRealm.close()
-//        } catch (err: Exception) {
-//            err.printStackTrace()
-//            handleException(err.message)
-//        } finally {
-//            destroy()
-//        }
-//    }
-
     private fun startSync() {
         try {
             val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
@@ -293,24 +252,6 @@ class SyncManager private constructor(private val context: Context) {
         }
     }
 
-//    private fun triggerInsert(stringArray: Array<String?>, resourceDoc: JsonObject) {
-//        when (stringArray[2]) {
-//            "resources" -> insertMyLibrary(stringArray[0], resourceDoc, mRealm)
-//            "meetups" -> insert(mRealm, resourceDoc)
-//            "courses" -> {
-//                if (!mRealm.isInTransaction){
-//                    mRealm.beginTransaction()
-//                }
-//                insertMyCourses(stringArray[0], resourceDoc, mRealm)
-//                if (mRealm.isInTransaction){
-//                    mRealm.commitTransaction()
-//                }
-//            }
-//            "teams" -> insertMyTeams(resourceDoc, mRealm)
-//        }
-//        saveConcatenatedLinksToPrefs()
-//    }
-
     private fun triggerInsert(stringArray: Array<String?>, resourceDoc: JsonObject) {
         val realm = Realm.getDefaultInstance()
         try {
@@ -324,18 +265,10 @@ class SyncManager private constructor(private val context: Context) {
 
             // Perform insertion based on category
             when (stringArray[2]) {
-                "resources" -> {
-                    insertMyLibrary(stringArray[0], resourceDoc, realm)
-                }
-                "meetups" -> {
-                    insert(realm, resourceDoc)
-                }
-                "courses" -> {
-                    insertMyCourses(stringArray[0], resourceDoc, realm)
-                }
-                "teams" -> {
-                    insertMyTeams(resourceDoc, realm)
-                }
+                "resources" -> insertMyLibrary(stringArray[0], resourceDoc, realm)
+                "meetups" -> insert(realm, resourceDoc)
+                "courses" -> insertMyCourses(stringArray[0], resourceDoc, realm)
+                "teams" -> insertMyTeams(resourceDoc, realm)
             }
 
             // Commit transaction if it is still in progress
@@ -357,50 +290,30 @@ class SyncManager private constructor(private val context: Context) {
         }
         saveConcatenatedLinksToPrefs()
     }
-//        when (stringArray[2]) {
-//            "resources" -> {
-//                mRealm.beginTransaction()
-//                try {
-//                    insertMyLibrary(stringArray[0], resourceDoc, mRealm)
-//                    mRealm.commitTransaction()
-//                } catch (e: Exception) {
-//                    mRealm.cancelTransaction()
-//                    Log.e("SyncManager", "Error inserting into resources: ${e.message}")
+//    private fun triggerInsert(stringArray: Array<String?>, resourceDoc: JsonObject) {
+//        val realm = Realm.getDefaultInstance()
+//        try {
+//            realm.executeTransaction { transactionRealm ->
+//                Log.d("SyncManager", "Transaction started for ${stringArray[2]}")
+//
+//                // Perform insertion based on category
+//                when (stringArray[2]) {
+//                    "resources" -> insertMyLibrary(stringArray[0], resourceDoc, transactionRealm)
+//                    "meetups" -> insert(transactionRealm, resourceDoc)
+//                    "courses" -> insertMyCourses(stringArray[0], resourceDoc, transactionRealm)
+//                    "teams" -> insertMyTeams(resourceDoc, transactionRealm)
 //                }
+//
+//                Log.d("SyncManager", "Transaction committed for ${stringArray[2]}")
 //            }
-//            "meetups" -> {
-//                mRealm.beginTransaction()
-//                try {
-//                    insert(mRealm, resourceDoc)
-//                    mRealm.commitTransaction()
-//                } catch (e: Exception) {
-//                    mRealm.cancelTransaction()
-//                    Log.e("SyncManager", "Error inserting into meetups: ${e.message}")
-//                }
-//            }
-//            "courses" -> {
-//                mRealm.beginTransaction()
-//                try {
-//                    insertMyCourses(stringArray[0], resourceDoc, mRealm)
-//                    mRealm.commitTransaction()
-//                } catch (e: Exception) {
-//                    mRealm.cancelTransaction()
-//                    Log.e("SyncManager", "Error inserting into courses: ${e.message}")
-//                }
-//            }
-//            "teams" -> {
-//                mRealm.beginTransaction()
-//                try {
-//                    insertMyTeams(resourceDoc, mRealm)
-//                    mRealm.commitTransaction()
-//                } catch (e: Exception) {
-//                    mRealm.cancelTransaction()
-//                    Log.e("SyncManager", "Error inserting into teams: ${e.message}")
-//                }
-//            }
+//        } catch (e: Exception) {
+//            Log.e("SyncManager", "Error inserting into ${stringArray[2]}: ${e.message}")
+//        } finally {
+//            realm.close()
 //        }
 //        saveConcatenatedLinksToPrefs()
 //    }
+
 
     companion object {
         private var ourInstance: SyncManager? = null
