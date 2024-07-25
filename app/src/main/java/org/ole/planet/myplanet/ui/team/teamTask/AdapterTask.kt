@@ -12,7 +12,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowTaskBinding
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.ui.team.teamDiscussion.DiscussionListFragment
 import org.ole.planet.myplanet.ui.team.teamTask.AdapterTask.ViewHolderTask
 import org.ole.planet.myplanet.utilities.DialogUtils.showCloseAlert
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate

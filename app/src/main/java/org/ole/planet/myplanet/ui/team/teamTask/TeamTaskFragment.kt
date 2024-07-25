@@ -30,7 +30,6 @@ import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.myhealth.UserListArrayAdapter
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
-import org.ole.planet.myplanet.ui.team.teamDiscussion.DiscussionListFragment
 import org.ole.planet.myplanet.ui.team.teamTask.AdapterTask.OnCompletedListener
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDateTZ
