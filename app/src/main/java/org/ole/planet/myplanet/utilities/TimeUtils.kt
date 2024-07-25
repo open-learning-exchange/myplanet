@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.utilities
 
-import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -24,30 +23,30 @@ object TimeUtils {
     @JvmStatic
     fun getFormatedDateWithTime(date: Long): String {
         val d = Date(date)
-        val dateformat = SimpleDateFormat("EEE dd, MMMM yyyy , hh:mm aa")
-        return dateformat.format(d)
+        val dateFormat = SimpleDateFormat("EEE dd, MMMM yyyy , hh:mm aa")
+        return dateFormat.format(d)
     }
 
     @JvmStatic
     fun formatDateTZ(data: Long): String {
-        val dateformat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-        return dateformat.format(data)
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+        return dateFormat.format(data)
     }
 
     @JvmStatic
     fun getAge(date: String): Int {
-        val dateformat1 = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-        val dateformat2 = SimpleDateFormat("yyyy-MM-dd")
+        val dateFormatTimeIncluded = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd")
         val dob = Calendar.getInstance()
         val today = Calendar.getInstance()
         try {
             if (date.contains("T")) {
-                val dt = dateformat1.parse(date.replace("T".toRegex(), " ").replace(".000Z".toRegex(), ""))
+                val dt = dateFormatTimeIncluded.parse(date.replace("T".toRegex(), " ").replace(".000Z".toRegex(), ""))
                 if (dt != null) {
                     dob.time = dt
                 }
             } else {
-                val dt2 = dateformat2.parse(date)
+                val dt2 = dateFormat.parse(date)
                 if (dt2 != null) {
                     dob.time = dt2
                 }
@@ -78,40 +77,20 @@ object TimeUtils {
     @JvmStatic
     fun currentDate(): String {
         val c = Calendar.getInstance()
-        val dateformat = SimpleDateFormat("EEE dd, MMMM yyyy")
-        return dateformat.format(c.time)
-    }
-
-    fun currentDateLong(): Long {
-        val c = Calendar.getInstance()
-        val dateformat = SimpleDateFormat("EEE dd, MMMM yyyy")
-        try {
-            c.time = dateformat.parse(currentDate())!!
-        } catch (e: ParseException) {
-            e.printStackTrace()
-        }
-        return c.timeInMillis
+        val dateFormat = SimpleDateFormat("EEE dd, MMMM yyyy")
+        return dateFormat.format(c.time)
     }
 
     @JvmStatic
     fun formatDate(date: Long): String {
-        val dateformat = SimpleDateFormat("EEE dd, MMMM yyyy")
-        return dateformat.format(date)
+        val dateFormat = SimpleDateFormat("EEE dd, MMMM yyyy")
+        return dateFormat.format(date)
     }
 
     @JvmStatic
     fun formatDate(date: Long, format: String?): String {
-        val dateformat = SimpleDateFormat(format)
-        return dateformat.format(date)
+        val dateFormat = SimpleDateFormat(format)
+        return dateFormat.format(date)
     }
 
-    fun dateToLong(date: String?): Any? {
-        try {
-            val dateformat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-            return date?.let { dateformat.parse(it) }?.time
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-        return 0
-    }
 }
