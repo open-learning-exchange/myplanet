@@ -27,7 +27,7 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
     private var newList: RealmResults<RealmNews>? = null
     override fun addImage(llImage: LinearLayout?) {}
 
-    override fun showReply(news: RealmNews?, fromLogin: Boolean) {
+    override fun showReply(news: RealmNews?, fromLogin: Boolean, nonTeamMember: Boolean) {
         if (news != null) {
             startActivity(
                 Intent(activity, ReplyActivity::class.java).putExtra("id", news.id)

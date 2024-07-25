@@ -34,6 +34,9 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         showLibraryList()
+        if (!isMember()) {
+            fragmentTeamResourceBinding.fabAddResource.visibility = View.GONE
+        }
         fragmentTeamResourceBinding.fabAddResource.setOnClickListener { showResourceListDialog() }
     }
 

@@ -98,10 +98,11 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
         profileDbHandler.onDestory()
     }
 
-    override fun showReply(news: RealmNews?, fromLogin: Boolean) {
+    override fun showReply(news: RealmNews?, fromLogin: Boolean, nonTeamMember: Boolean) {
         if (news != null) {
             val intent = Intent(activity, ReplyActivity::class.java).putExtra("id", news.id)
                 .putExtra("fromLogin", fromLogin)
+                .putExtra("nonTeamMember", nonTeamMember)
             replyActivityLauncher.launch(intent)
         }
     }
