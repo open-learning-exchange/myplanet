@@ -413,7 +413,6 @@ open class RealmMyLibrary : RealmObject() {
             resource?.setTag(JsonUtils.getJsonArray("tags", doc), resource)
             resource?.isPrivate = JsonUtils.getBoolean("private", doc)
             resource?.setLanguages(JsonUtils.getJsonArray("languages", doc), resource)
-            mRealm.commitTransaction()
 
             val csvRow = arrayOf(
                 JsonUtils.getString("_id", doc),
