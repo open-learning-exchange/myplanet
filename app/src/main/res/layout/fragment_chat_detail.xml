@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/secondary_bg"
     tools:context=".ui.chat.ChatDetailFragment">
 
     <View
@@ -117,7 +118,7 @@
         android:id="@+id/view"
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:background="#e0e0e0"
+        android:background="@color/hint_color"
         app:layout_constraintBottom_toTopOf="@+id/layout_gchat_chatbox" />
 
     <RelativeLayout
@@ -136,6 +137,8 @@
             android:layout_toStartOf="@+id/button_gchat_send"
             android:background="@android:color/transparent"
             android:hint="Enter Message"
+            android:textColorHint="@color/hint_color"
+            android:textColor="@color/daynight_textColor"
             android:inputType="textMultiLine"
             android:maxLines="6"
             tools:ignore="Autofill" />

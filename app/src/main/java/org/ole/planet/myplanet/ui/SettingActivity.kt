@@ -9,6 +9,7 @@ import android.view.MenuItem
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.preference.ListPreference
 import androidx.preference.Preference
 import androidx.preference.Preference.OnPreferenceChangeListener
@@ -17,14 +18,11 @@ import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.SwitchPreference
 import io.realm.Realm
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.base.BaseResourceFragment
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
-import org.ole.planet.myplanet.ui.dashboard.DashboardFragment
-import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.clearRealmDb
 import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.clearSharedPref
 import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.restartApp
@@ -43,7 +41,7 @@ class SettingActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        supportActionBar!!.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportFragmentManager.beginTransaction().replace(android.R.id.content, SettingFragment()).commit()
         title = getString(R.string.action_settings)
     }
@@ -73,6 +71,7 @@ class SettingActivity : AppCompatActivity() {
 
         @RequiresApi(Build.VERSION_CODES.O)
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
+            requireContext().setTheme(R.style.PreferencesTheme)
             setPreferencesFromResource(R.xml.pref, rootKey)
             profileDbHandler = UserProfileDbHandler(requireActivity())
             user = profileDbHandler.userModel
@@ -85,6 +84,17 @@ class SettingActivity : AppCompatActivity() {
                     LocaleHelper.setLocale(requireActivity(), o.toString())
                     requireActivity().recreate()
                     true
+                }
+            }
+
+            val darkMode = findPreference<Preference>("dark_mode")
+            if (darkMode != null) {
+                darkMode.onPreferenceChangeListener = OnPreferenceChangeListener { preference: Preference?, newValue: Any? ->
+                    if (preference?.key == "dark_mode") {
+                        darkMode(newValue.toString())
+                        return@OnPreferenceChangeListener true
+                    }
+                    false
                 }
             }
 
@@ -137,7 +147,6 @@ class SettingActivity : AppCompatActivity() {
         private fun setBetaToggleOn() {
             val beta = findPreference<SwitchPreference>("beta_function")
             val course = findPreference<SwitchPreference>("beta_course")
-            val achievement = findPreference<SwitchPreference>("beta_achievement")
 //            val rating = findPreference<SwitchPreference>("beta_rating")
 //            val myHealth = findPreference<SwitchPreference>("beta_myHealth")
 //            val healthWorker = findPreference<SwitchPreference>("beta_healthWorker")
@@ -148,9 +157,6 @@ class SettingActivity : AppCompatActivity() {
                     if (beta.isChecked) {
                         if (course != null) {
                             course.isChecked = true
-                        }
-                        if (achievement != null) {
-                            achievement.isChecked = true
                         }
                     }
                     true
@@ -186,6 +192,14 @@ class SettingActivity : AppCompatActivity() {
             super.onDestroy()
             if (this::profileDbHandler.isInitialized) {
                 profileDbHandler.onDestory()
+            }
+        }
+
+        private fun darkMode(key: String) {
+            when (key) {
+                "ON" ->  AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+                "OFF" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+                "Follow System" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
             }
         }
     }

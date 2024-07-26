@@ -73,4 +73,8 @@ abstract class BaseRecyclerParentFragment<LI> : BaseResourceFragment() {
         list.forEach { array.add(it) }
         return array
     }
+
+    companion object {
+        var isSurvey: Boolean = false
+    }
 }

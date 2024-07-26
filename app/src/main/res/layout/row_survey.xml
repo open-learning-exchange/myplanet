@@ -4,6 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:foreground="?attr/selectableItemBackground"
+    android:backgroundTint="@color/card_bg"
     app:cardUseCompatPadding="true"
     app:contentPadding="@dimen/padding_normal">
 
@@ -23,19 +24,18 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:padding="@dimen/padding_small"
-                android:textColor="@color/md_black_1000"
+                android:textColor="@color/daynight_textColor"
                 android:textSize="@dimen/text_size_large"
                 android:textStyle="bold" />
 
             <TextView
-                android:id="@+id/tv_date"
+                android:id="@+id/tv_date_completed"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:padding="@dimen/padding_small" />
 
         </LinearLayout>
-
 
         <TextView
             android:id="@+id/tv_description"
@@ -50,16 +50,31 @@
             android:layout_height="wrap_content"
             android:padding="@dimen/padding_small">
 
-            <TextView
-                android:id="@+id/tv_no_submissions"
+            <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:layout_weight="1"
-                android:padding="@dimen/padding_small"
-                android:textColor="@color/colorPrimary"
-                android:textSize="@dimen/text_size_mid"
-                android:textStyle="bold" />
+                android:layout_weight="2"
+                android:orientation="vertical"
+                android:padding="4dp">
+
+                <TextView
+                    android:id="@+id/tv_no_submissions"
+                    android:layout_width="wrap_content"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:padding="@dimen/padding_normal"
+                    android:textColor="@color/colorPrimary"
+                    android:textSize="@dimen/text_size_mid"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tv_date"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="@dimen/padding_normal"
+                    android:textColor="@color/colorPrimary" />
+
+            </LinearLayout>
 
             <Button
                 android:id="@+id/send_survey"

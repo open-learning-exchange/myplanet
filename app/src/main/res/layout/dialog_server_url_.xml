@@ -2,7 +2,8 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:background="@color/secondary_bg">
 
     <TextView
         android:id="@+id/textView2"
@@ -11,7 +12,7 @@
         android:layout_marginStart="10dp"
         android:layout_marginTop="10dp"
         android:text="@string/action_settings"
-        android:textColor="@color/md_black_1000"
+        android:textColor="@color/daynight_textColor"
         android:textSize="18sp"
         android:textStyle="bold"
         app:layout_constraintStart_toStartOf="parent"
@@ -39,7 +40,8 @@
             android:checked="false"
             android:padding="@dimen/padding_normal"
             android:text="manual"
-            android:textSize="16sp" />
+            android:textSize="16sp"
+            android:textColor="@color/daynight_textColor" />
 
         <androidx.appcompat.widget.SwitchCompat
             android:id="@+id/switch_server_url"
@@ -51,6 +53,7 @@
             android:padding="@dimen/padding_normal"
             android:text="@string/cloud_url"
             android:textSize="16sp"
+            android:textColor="@color/daynight_textColor"
             android:visibility="gone" />
     </LinearLayout>
 
@@ -79,14 +82,18 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="@string/radio_http"
-                android:textSize="16sp" />
+                android:textSize="16sp"
+                android:textColor="@color/daynight_textColor"
+                android:buttonTint="@color/daynight_textColor" />
 
             <RadioButton
                 android:id="@+id/radio_https"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/radio_https"
-                android:textSize="16sp" />
+                android:textSize="16sp"
+                android:textColor="@color/daynight_textColor"
+                android:buttonTint="@color/daynight_textColor" />
 
         </RadioGroup>
     </LinearLayout>
@@ -99,6 +106,7 @@
         android:layout_marginEnd="10dp"
         android:textSize="16sp"
         android:visibility="gone"
+        android:backgroundTint="@color/daynight_textColor"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/ltProtocol" />
@@ -110,6 +118,7 @@
         android:layout_marginStart="10dp"
         android:layout_marginEnd="10dp"
         android:hint="@string/hint_serverURl"
+        android:textColorHint="@color/hint_color"
         android:labelFor="@+id/input_server_url"
         app:errorTextAppearance="@style/MyAppTheme.TextInputLayout"
         app:layout_constraintEnd_toEndOf="parent"
@@ -129,8 +138,8 @@
             android:layout_height="wrap_content"
             android:inputType="textUri"
             android:singleLine="true"
-            android:textColor="@android:color/background_dark"
-            android:textColorHint="@android:color/darker_gray"
+            android:textColor="@color/daynight_textColor"
+            android:textColorHint="@color/hint_color"
             android:textSize="16sp" />
     </com.google.android.material.textfield.TextInputLayout>
 
@@ -141,6 +150,7 @@
         android:layout_marginStart="10dp"
         android:layout_marginEnd="10dp"
         android:hint="@string/hint_serverPin"
+        android:textColorHint="@color/hint_color"
         android:labelFor="@id/input_server_Password"
         app:errorTextAppearance="@style/MyAppTheme.TextInputLayout"
         app:layout_constraintEnd_toEndOf="parent"
@@ -152,8 +162,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="numberPassword"
-            android:textColor="@android:color/background_dark"
-            android:textColorHint="@android:color/darker_gray"
+            android:textColor="@color/daynight_textColor"
+            android:textColorHint="@color/hint_color"
             android:textSize="16sp" />
     </com.google.android.material.textfield.TextInputLayout>
 
@@ -167,6 +177,7 @@
         android:textOff="@string/autosync_off"
         android:textOn="@string/autosync_on"
         android:textSize="16sp"
+        android:textColor="@color/daynight_textColor"
         android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -190,7 +201,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="@string/interval"
-            android:textColor="@color/dialog_sync_labels"
+            android:textColor="@color/daynight_textColor"
             android:textSize="16sp" />
 
         <Spinner
@@ -199,7 +210,8 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:drawSelectorOnTop="true"
-            android:textSize="16sp" />
+            android:textSize="16sp"
+            android:backgroundTint="@color/daynight_textColor" />
     </LinearLayout>
 
     <LinearLayout
@@ -219,6 +231,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:textColorHint="@color/daynight_textColor"
             app:errorTextAppearance="@style/MyAppTheme.TextInputLayout">
 
             <EditText
@@ -229,8 +242,8 @@
                 android:inputType="text"
                 android:maxLines="1"
                 android:minWidth="140dp"
-                android:textColor="@android:color/background_dark"
-                android:textColorHint="@android:color/darker_gray"
+                android:textColor="@color/daynight_textColor"
+                android:textColorHint="@color/hint_color"
                 android:textSize="11sp" />
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -240,6 +253,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text=""
+            android:textColor="@color/daynight_textColor"
             android:textSize="12sp"
             android:textStyle="italic" />
     </LinearLayout>

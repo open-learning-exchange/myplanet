@@ -559,6 +559,8 @@
     <string name="subject_level_colon">Subject Level:</string>
     <string name="grade_level_colon">Grade Level:</string>
     <string name="language_colon">Language:</string>
+    <string name="gender_colon">Gender: %s</string>
+    <string name="level_colon">Level: %s</string>
     <string name="method">Method:</string>
     <string name="number_of_exams">Number of exams:</string>
     <string name="description_colon">description:</string>
@@ -940,10 +942,7 @@
     <string name="auto_sync">Auto Sync</string>
     <string name="force_weekly_sync">Force Weekly Sync</string>
     <string name="force_monthly_sync">Force Monthly Sync</string>
-    <string name="beta_function_for_course">Beta Function for Course</string>
-    <string name="beta_function_for_auto_update">Beta Function for auto update</string>
     <string name="beta_function_for_wifi_switch">Beta Function for WiFi Switch</string>
-    <string name="beta_function_for_achievement">Beta Function for Achievement</string>
     <string name="upgrade_application">Upgrade Application</string>
     <string name="auto_upgrade">Auto Upgrade</string>
     <string name="always_move_to_maximum_version">Always move to maximum version?</string>
@@ -1078,5 +1077,13 @@
     <string name="two_strings">%s %s</string>
     <string name="three_strings">%s %s %s</string>
     <string name="member_description">%1$s (%2$d visits)</string>
+    <string name="dark_mode">Dark Mode</string>
+    <string-array name="dark_mode_options">
+        <item>OFF</item>
+        <item>ON</item>
+        <item>Follow System</item>
+    </string-array>
+    <string name="are_you_sure_you_want_to_archive_these_courses">Are you sure you want to archive these courses?</string>
+    <string name="are_you_sure_you_want_to_archive_this_course">Are you sure you want to archive this course?</string>
 
 </resources>

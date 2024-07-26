@@ -16,8 +16,8 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.preference.PreferenceManager
 import com.afollestad.materialdialogs.*
 import com.google.android.material.textfield.TextInputLayout
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 import io.realm.*
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.BuildConfig
@@ -231,7 +231,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         editor.putBoolean("autoSync", syncSwitch.isChecked)
         editor.putInt("autoSyncInterval", syncTimeInterval[spinner.selectedItemPosition])
         editor.putInt("autoSyncPosition", spinner.selectedItemPosition)
-        editor.commit()
+        editor.apply()
     }
 
     fun authenticateUser(settings: SharedPreferences?, username: String?, password: String?, isManagerMode: Boolean): Boolean {
@@ -253,17 +253,17 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     private fun checkName(username: String?, password: String?, isManagerMode: Boolean): Boolean {
         try {
-            val dbUsers = mRealm.where(RealmUserModel::class.java).equalTo("name", username).findAll()
-            for (user in dbUsers) {
-                if (user._id?.isEmpty() == true) {
-                    if (username == user.name && password == user.password) {
-                        saveUserInfoPref(settings, password, user)
+            val user = mRealm.where(RealmUserModel::class.java).equalTo("name", username).findFirst()
+            user?.let {
+                if (it._id?.isEmpty() == true) {
+                    if (username == it.name && password == it.password) {
+                        saveUserInfoPref(settings, password, it)
                         return true
                     }
                 } else {
-                    if (AndroidDecrypter(username, password, user.derived_key, user.salt)) {
-                        if (isManagerMode && !user.isManager()) return false
-                        saveUserInfoPref(settings, password, user)
+                    if (AndroidDecrypter(username, password, it.derived_key, it.salt)) {
+                        if (isManagerMode && !it.isManager()) return false
+                        saveUserInfoPref(settings, password, it)
                         return true
                     }
                 }
@@ -329,7 +329,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private fun downloadAdditionalResources() {
         val storedJsonConcatenatedLinks = settings.getString("concatenated_links", null)
         if (storedJsonConcatenatedLinks != null) {
-            val storedConcatenatedLinks: ArrayList<String> = Gson().fromJson(storedJsonConcatenatedLinks, object : TypeToken<ArrayList<String>>() {}.type)
+            val storedConcatenatedLinks: ArrayList<String> = Json.decodeFromString(storedJsonConcatenatedLinks)
             openDownloadService(context, storedConcatenatedLinks, true)
         }
     }
@@ -809,14 +809,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             for (key in keysToKeep) {
                 tempStorage[key] = settings.getBoolean(key, false)
             }
-            editor.clear().commit()
+            editor.clear().apply()
             for ((key, value) in tempStorage) {
                 editor.putBoolean(key, value)
             }
             editor.commit()
 
             val preferences = PreferenceManager.getDefaultSharedPreferences(context)
-            preferences.edit().clear().commit()
+            preferences.edit().clear().apply()
         }
 
         fun restartApp() {

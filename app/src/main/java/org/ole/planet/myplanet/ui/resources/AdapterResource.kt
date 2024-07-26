@@ -33,7 +33,7 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
     private var homeItemClickListener: OnHomeItemClickListener? = null
     private var ratingChangeListener: OnRatingChangeListener? = null
     private var isAscending = true
-    private var isTitleAscending = true
+    private var isTitleAscending = false
 
     init {
         if (context is OnHomeItemClickListener) {

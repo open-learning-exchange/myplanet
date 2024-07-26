@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.SharedPreferences
+import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.PorterDuff
 import android.net.Uri
@@ -18,6 +19,7 @@ import android.widget.EditText
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import com.google.android.material.textfield.TextInputLayout
 import org.ole.planet.myplanet.R
@@ -115,7 +117,11 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         val green = Color.green(newColor)
         val blue = Color.blue(newColor)
         val alphaWhite = Color.argb(alpha, red, green, blue)
-        logo.setColorFilter(alphaWhite, PorterDuff.Mode.SRC_ATOP)
+        val currentNightMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+        if (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_NO ||
+            (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM && currentNightMode == Configuration.UI_MODE_NIGHT_NO)) {
+            logo.setColorFilter(alphaWhite, PorterDuff.Mode.SRC_ATOP)
+        }
     }
 
     fun setUrlParts(url: String, password: String): String {
