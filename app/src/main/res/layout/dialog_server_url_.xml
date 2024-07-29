@@ -3,7 +3,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@color/secondary_bg">
+    android:background="@color/secondary_bg"
+    android:theme="@style/AppTheme.MaterialComponents">
 
     <TextView
         android:id="@+id/textView2"
@@ -111,6 +112,19 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/ltProtocol" />
 
+    <TextView
+        android:id="@+id/syncToServerText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:layout_marginTop="8dp"
+        android:text="Sync to server:"
+        android:textColor="@color/daynight_textColor"
+        android:textSize="16sp"
+        android:visibility="gone"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/spn_cloud" />
+
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/input_layout_name"
         android:layout_width="match_parent"
@@ -125,12 +139,38 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/spn_cloud">
 
-        <Spinner
+        <org.ole.planet.myplanet.utilities.CustomButtonToggleGroup
             android:id="@+id/serverUrls"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="16sp"
-            android:visibility="gone" />
+            android:orientation="vertical"
+            android:padding="8dp"
+            android:layout_marginTop="10dp"
+            android:visibility="gone">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/toggle_planet_learning"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:elevation="0dp"
+                android:text="🌎 Planet Learning"
+                app:cornerRadius="10dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/toggle_planet_guatemala"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🇬🇹 Planet Guatemala"
+                app:cornerRadius="10dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/toggle_planet_sanpablo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🇬🇹 Planet San Pablo"
+                app:cornerRadius="10dp" />
+
+        </org.ole.planet.myplanet.utilities.CustomButtonToggleGroup>
 
         <EditText
             android:id="@+id/input_server_url"

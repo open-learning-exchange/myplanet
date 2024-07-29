@@ -16,7 +16,6 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.preference.PreferenceManager
 import com.afollestad.materialdialogs.*
 import com.google.android.material.textfield.TextInputLayout
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import io.realm.*
 import okhttp3.ResponseBody
@@ -75,7 +74,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private lateinit var protocolCheckIn: RadioGroup
     private lateinit var serverUrl: EditText
     private lateinit var serverPassword: EditText
-    private lateinit var serverAddresses: Spinner
+    private lateinit var serverAddresses: CustomButtonToggleGroup
+    private lateinit var syncToServerText: TextView
     private var teamList = ArrayList<String?>()
     private var teamAdapter: ArrayAdapter<String?>? = null
     var selectedTeamId: String? = null
@@ -393,6 +393,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         serverUrl = dialogServerUrlBinding.inputServerUrl
         serverPassword = dialogServerUrlBinding.inputServerPassword
         serverAddresses = dialogServerUrlBinding.serverUrls
+        syncToServerText = dialogServerUrlBinding.syncToServerText
 
         dialogServerUrlBinding.deviceName.setText(NetworkUtils.getDeviceName())
         val builder = MaterialDialog.Builder(this)
@@ -552,6 +553,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
         if (show) {
             serverAddresses.visibility = View.GONE
+            syncToServerText.visibility = View.GONE
             serverUrl.visibility = View.VISIBLE
             if (settings.getString("serverURL", "") == "https://${BuildConfig.PLANET_LEARNING_URL}") {
                 editor.putString("serverURL", "").apply()
@@ -571,33 +573,36 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             serverPassword.isEnabled = true
         } else {
             serverUrl.visibility = View.GONE
+            serverPassword.visibility = View.GONE
             serverAddresses.visibility = View.VISIBLE
+            syncToServerText.visibility = View.VISIBLE
 
-            val serverList = serverMap.keys.toList()
 
-            val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, serverList)
-            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-            serverAddresses.adapter = adapter
+            val toggleButtonMap = mapOf(
+                R.id.toggle_planet_learning to BuildConfig.PLANET_LEARNING_URL,
+                R.id.toggle_planet_guatemala to BuildConfig.PLANET_GUATEMALA_URL,
+                R.id.toggle_planet_sanpablo to BuildConfig.PLANET_SANPABLO_URL
+            )
 
             val storedUrl = settings.getString("serverURL", null)
             val storedPin = settings.getString("serverPin", null)
+
             if (storedUrl != null) {
                 val urlWithoutProtocol = storedUrl.replace(Regex("^https?://"), "")
-                val displayUrl = serverMap.entries.find { it.value == urlWithoutProtocol }?.key
-                val index = serverList.indexOf(displayUrl)
+                serverMap.entries.find { it.value == urlWithoutProtocol }?.key
+                val toggleButtonId = toggleButtonMap.filterValues { it == urlWithoutProtocol }.keys.firstOrNull()
 
-                if (index >= 0) {
-                    serverAddresses.setSelection(index)
+                if (toggleButtonId != null) {
+                    serverAddresses.check(toggleButtonId)
                 }
 
                 serverUrl.setText(urlWithoutProtocol)
                 serverPassword.setText(storedPin)
             }
 
-            serverAddresses.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-                override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
-                    val displayUrl = serverList[position]
-                    val actualUrl = serverMap[displayUrl] ?: ""
+            binding.serverUrls.addOnButtonCheckedListener { _, checkedId, isChecked ->
+                if (isChecked) {
+                    val actualUrl = toggleButtonMap[checkedId] ?: ""
                     serverUrl.setText(actualUrl)
                     serverPassword.setText(getPinForUrl(actualUrl))
                     if (actualUrl == BuildConfig.PLANET_SANPABLO_URL) {
@@ -606,8 +611,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                         editor.putString("serverProtocol", "https://").apply()
                     }
                 }
-
-                override fun onNothingSelected(parent: AdapterView<*>) {}
             }
 
             serverUrl.isEnabled = false
