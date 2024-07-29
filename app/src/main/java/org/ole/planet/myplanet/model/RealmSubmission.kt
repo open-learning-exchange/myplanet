@@ -152,7 +152,7 @@ open class RealmSubmission : RealmObject() {
             writeCsv("${context.getExternalFilesDir(null)}/ole/submission.csv", submissionDataList)
         }
 
-        fun serializeExamResult(mRealm: Realm, sub: RealmSubmission, context: Context): JsonObject {
+        private fun serializeExamResult(mRealm: Realm, sub: RealmSubmission, context: Context): JsonObject {
             val `object` = JsonObject()
             val user = mRealm.where(RealmUserModel::class.java).equalTo("id", sub.userId).findFirst()
             var examId = sub.parentId
@@ -201,11 +201,11 @@ open class RealmSubmission : RealmObject() {
 
         @JvmStatic
         fun createSubmission(sub: RealmSubmission?, mRealm: Realm): RealmSubmission {
-            var sub = sub
-            if (sub == null || sub.status == "complete" && sub.type == "exam") sub =
-                mRealm.createObject(RealmSubmission::class.java, UUID.randomUUID().toString())
-            sub!!.lastUpdateTime = Date().time
-            return sub
+            var submission = sub
+            if (submission == null || submission.status == "complete" && (submission.type == "exam" || submission.type == "survey"))
+                submission = mRealm.createObject(RealmSubmission::class.java, UUID.randomUUID().toString())
+            submission!!.lastUpdateTime = Date().time
+            return submission
         }
 
         @JvmStatic
@@ -225,12 +225,11 @@ open class RealmSubmission : RealmObject() {
 
         @JvmStatic
         fun getNoOfSubmissionByUser(id: String?, userId: String?, mRealm: Realm): String {
-            val submissionCount = mRealm.where(RealmSubmission::class.java).equalTo("parentId", id).equalTo("userId", userId).findAll().size
-            var pluralizedString: String? = null
-            if (submissionCount <= 1) {
-                pluralizedString = MainApplication.context.getString(R.string.time)
-            } else if (submissionCount > 1) {
-                pluralizedString = MainApplication.context.getString(R.string.times)
+            val submissionCount = mRealm.where(RealmSubmission::class.java).equalTo("parentId", id).equalTo("userId", userId).equalTo("status", "complete").findAll().size
+            val pluralizedString: String = if (submissionCount == 1) {
+                MainApplication.context.getString(R.string.time)
+            } else {
+                MainApplication.context.getString(R.string.times)
             }
             return MainApplication.context.getString(R.string.survey_taken) + " " + submissionCount + " " + pluralizedString
         }

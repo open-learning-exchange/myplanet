@@ -1078,5 +1078,13 @@
     <string name="three_strings">%s %s %s</string>
     <string name="download_sync_files">download sync files</string>
     <string name="member_description">%1$s (%2$d visits)</string>
+    <string name="dark_mode">Dark Mode</string>
+    <string-array name="dark_mode_options">
+        <item>OFF</item>
+        <item>ON</item>
+        <item>Follow System</item>
+    </string-array>
+    <string name="are_you_sure_you_want_to_archive_these_courses">Are you sure you want to archive these courses?</string>
+    <string name="are_you_sure_you_want_to_archive_this_course">Are you sure you want to archive this course?</string>
 
 </resources>

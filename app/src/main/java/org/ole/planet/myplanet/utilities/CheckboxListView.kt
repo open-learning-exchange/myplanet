@@ -9,7 +9,6 @@ import android.widget.ListView
 class CheckboxListView : ListView, AdapterView.OnItemClickListener {
     @JvmField
     var selectedItemsList = ArrayList<Int>()
-    var selectedItems = ArrayList<String>()
     var listener: CheckChangeListener? = null
 
     constructor(context: Context?, attrs: AttributeSet?) : super(context, attrs) {

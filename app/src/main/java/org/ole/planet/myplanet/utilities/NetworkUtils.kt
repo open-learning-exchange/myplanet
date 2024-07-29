@@ -15,8 +15,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.*
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import java.net.NetworkInterface
-import java.util.Collections
 import java.util.Locale
 
 object NetworkUtils {
@@ -54,18 +52,6 @@ object NetworkUtils {
         }
 
         connectivityManager.registerDefaultNetworkCallback(networkCallback)
-    }
-
-    fun stopListenNetworkState() {
-        if (!_currentNetwork.value.isListening) {
-            return
-        }
-
-        _currentNetwork.update {
-            it.copy(isListening = false)
-        }
-
-        connectivityManager.unregisterNetworkCallback(networkCallback)
     }
 
     private class NetworkCallback : ConnectivityManager.NetworkCallback() {
@@ -163,32 +149,6 @@ object NetworkUtils {
         val androidId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
         val buildId = Build.ID
         return androidId + "_" + buildId
-    }
-
-    @JvmStatic
-    fun getMacAddr(): String {
-        try {
-            val all = Collections.list(NetworkInterface.getNetworkInterfaces())
-            for (nif in all) {
-                if (!nif.name.equals("wlan0", ignoreCase = true)) continue
-                return getAddress(nif)
-            }
-        } catch (ex: Exception) {
-            ex.printStackTrace()
-        }
-        return ""
-    }
-
-    private fun getAddress(nif: NetworkInterface): String {
-        val macBytes = nif.hardwareAddress ?: return ""
-        val res1 = StringBuilder()
-        for (b in macBytes) {
-            res1.append(String.format("%02X:", b))
-        }
-        if (res1.isNotEmpty()) {
-            res1.deleteCharAt(res1.length - 1)
-        }
-        return res1.toString()
     }
 
     @JvmStatic

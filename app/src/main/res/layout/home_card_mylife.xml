@@ -46,14 +46,14 @@
 
             </LinearLayout>
 
-
         </FrameLayout>
 
         <HorizontalScrollView
             android:layout_width="0dp"
             android:contentDescription="@string/txt_myLife"
             android:layout_height="match_parent"
-            android:layout_weight="1">
+            android:layout_weight="1"
+            android:background="@color/card_bg">
 
             <com.google.android.flexbox.FlexboxLayout
                 android:id="@+id/flexboxLayoutMyLife"
@@ -64,6 +64,5 @@
                 app:flexWrap="wrap" />
         </HorizontalScrollView>
     </LinearLayout>
-
 
 </androidx.cardview.widget.CardView>
