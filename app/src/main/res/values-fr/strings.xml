@@ -1054,7 +1054,7 @@
     <string name="no_submissions">soumissions non disponibles</string>
     <string name="no_chats">aucune discussion précédente</string>
     <string name="no_feedback">aucun commentaire disponible</string>
-    <string name="empty_text"></string>
+    <string name="empty_text" />
     <string name="message_placeholder">%s</string>
     <string name="reports">rapports</string>
     <string name="number_placeholder">%d</string>
@@ -1076,6 +1076,7 @@
     <string name="visit_count">%1$s (%2$d %3$s)</string>
     <string name="two_strings">%s %s</string>
     <string name="three_strings">%s %s %s</string>
+    <string name="download_sync_files">télécharger les fichiers de synchronisation</string>
     <string name="member_description">%1$s (%2$d visites)</string>
     <string name="dark_mode">Mode Sombre</string>
     <string-array name="dark_mode_options">

@@ -3,11 +3,17 @@ package org.ole.planet.myplanet.model
 import android.text.TextUtils
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import com.opencsv.CSVWriter
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
+import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.model.RealmMyCourse.Companion.courseDataList
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.JsonUtils
+import java.io.File
+import java.io.FileWriter
+import java.io.IOException
 
 open class RealmMyHealthPojo : RealmObject() {
     @PrimaryKey
@@ -76,6 +82,8 @@ open class RealmMyHealthPojo : RealmObject() {
     }
 
     companion object {
+        val healthDataList: MutableList<Array<String>> = mutableListOf()
+
         @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject?) {
             if (!mRealm.isInTransaction) {
@@ -106,6 +114,47 @@ open class RealmMyHealthPojo : RealmObject() {
             myHealth?.planetCode = JsonUtils.getString("planetCode", act)
             myHealth?.conditions = Gson().toJson(JsonUtils.getJsonObject("conditions", act))
             mRealm.commitTransaction()
+            val csvRow = arrayOf(
+                JsonUtils.getString("_id", act),
+                JsonUtils.getString("_rev", act),
+                JsonUtils.getString("data", act),
+                JsonUtils.getFloat("temperature", act).toString(),
+                JsonUtils.getInt("pulse", act).toString(),
+                JsonUtils.getString("bp", act),
+                JsonUtils.getFloat("height", act).toString(),
+                JsonUtils.getFloat("weight", act).toString(),
+                JsonUtils.getString("vision", act),
+                JsonUtils.getString("hearing", act),
+                JsonUtils.getLong("date", act).toString(),
+                JsonUtils.getBoolean("selfExamination", act).toString(),
+                JsonUtils.getString("planetCode", act),
+                JsonUtils.getBoolean("hasInfo", act).toString(),
+                JsonUtils.getString("profileId", act),
+                JsonUtils.getString("creatorId", act),
+                JsonUtils.getInt("age", act).toString(),
+                JsonUtils.getString("gender", act),
+                JsonUtils.getJsonObject("conditions", act).toString()
+            )
+            healthDataList.add(csvRow)
+        }
+
+        fun writeCsv(filePath: String, data: List<Array<String>>) {
+            try {
+                val file = File(filePath)
+                file.parentFile?.mkdirs()
+                val writer = CSVWriter(FileWriter(file))
+                writer.writeNext(arrayOf("healthId", "health_rev", "data", "temperature", "pulse", "bp", "height", "weight", "vision", "hearing", "date", "selfExamination", "planetCode", "hasInfo", "profileId", "creator", "age", "gender", "conditions"))
+                for (row in data) {
+                    writer.writeNext(row)
+                }
+                writer.close()
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        }
+
+        fun healthWriteCsv() {
+            writeCsv("${context.getExternalFilesDir(null)}/ole/health.csv", healthDataList)
         }
 
         @JvmStatic

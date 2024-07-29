@@ -2,13 +2,19 @@ package org.ole.planet.myplanet.model
 
 import android.content.Context
 import com.google.gson.JsonObject
+import com.opencsv.CSVWriter
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.Sort
 import io.realm.annotations.PrimaryKey
+import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.model.RealmNews.Companion.newsDataList
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
+import java.io.File
+import java.io.FileWriter
+import java.io.IOException
 
 open class RealmOfflineActivity : RealmObject() {
     @PrimaryKey
@@ -43,6 +49,7 @@ open class RealmOfflineActivity : RealmObject() {
     }
 
     companion object {
+        val offlineDataList: MutableList<Array<String>> = mutableListOf()
         @JvmStatic
         fun serializeLoginActivities(realm_offlineActivities: RealmOfflineActivity, context: Context): JsonObject {
             val ob = JsonObject()
@@ -95,6 +102,38 @@ open class RealmOfflineActivity : RealmObject() {
                 activities.androidId = JsonUtils.getString("androidId", act)
             }
             mRealm.commitTransaction()
+
+            val csvRow = arrayOf(
+                JsonUtils.getString("_id", act),
+                JsonUtils.getString("_rev", act),
+                JsonUtils.getString("user", act),
+                JsonUtils.getString("type", act),
+                JsonUtils.getString("createdOn", act),
+                JsonUtils.getString("parentCode", act),
+                JsonUtils.getLong("loginTime", act).toString(),
+                JsonUtils.getLong("logoutTime", act).toString(),
+                JsonUtils.getString("androidId", act)
+            )
+            offlineDataList.add(csvRow)
+        }
+
+        fun writeCsv(filePath: String, data: List<Array<String>>) {
+            try {
+                val file = File(filePath)
+                file.parentFile?.mkdirs()
+                val writer = CSVWriter(FileWriter(file))
+                writer.writeNext(arrayOf("id", "_rev", "userName", "type", "createdOn", "parentCode", "loginTime", "logoutTime", "androidId"))
+                for (row in data) {
+                    writer.writeNext(row)
+                }
+                writer.close()
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        }
+
+        fun offlineWriteCsv() {
+            writeCsv("${context.getExternalFilesDir(null)}/ole/offlineActivity.csv", offlineDataList)
         }
     }
 }
