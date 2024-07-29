@@ -182,4 +182,3 @@ open class RealmMeetup : RealmObject() {
         }
     }
 }
-
