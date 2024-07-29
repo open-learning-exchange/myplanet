@@ -275,7 +275,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
             viewHolder.rowNewsBinding.btnShowReply.visibility = View.GONE
         }
         viewHolder.rowNewsBinding.btnShowReply.setOnClickListener {
-            sharedPreferences?.setREPLIEDNEWSID(finalNews?.id)
+            sharedPreferences?.setRepliedNewsId(finalNews?.id)
             listener?.showReply(finalNews, fromLogin, nonTeamMember)
         }
     }
