@@ -13,7 +13,7 @@ abstract class BaseRecyclerParentFragment<LI> : BaseResourceFragment() {
     fun getList(c: Class<*>): List<LI> {
         return when {
             c == RealmStepExam::class.java -> {
-                mRealm.where(c).equalTo("type", "surveys").findAll().toList()
+                mRealm.where(c).equalTo("type", "surveys").findAll().toList() as List<LI>
             }
             isMyCourseLib -> {
                 getMyLibItems(c as Class<out RealmModel>)
@@ -34,7 +34,7 @@ abstract class BaseRecyclerParentFragment<LI> : BaseResourceFragment() {
     fun getList(c: Class<*>, orderBy: String? = null, sort: Sort = Sort.ASCENDING): List<LI> {
         return when {
             c == RealmStepExam::class.java -> {
-                mRealm.where(c).equalTo("type", "surveys").sort(orderBy ?: "", sort).findAll().toList()
+                mRealm.where(c).equalTo("type", "surveys").sort(orderBy ?: "", sort).findAll().toList() as List<LI>
             }
             isMyCourseLib -> {
                 getMyLibItems(c as Class<out RealmModel>, orderBy)
