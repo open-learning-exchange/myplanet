@@ -19,7 +19,7 @@ import org.ole.planet.myplanet.service.AudioRecorderService.AudioRecordListener
 import org.ole.planet.myplanet.ui.resources.AddResourceFragment
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.IntentUtils.openAudioFile
-import org.ole.planet.myplanet.utilities.NotificationUtil.cancellAll
+import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
 import org.ole.planet.myplanet.utilities.NotificationUtil.create
 import org.ole.planet.myplanet.utilities.Utilities
 import java.io.File
@@ -93,7 +93,7 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
 
     override fun onRecordStopped(outputFile: String?) {
         Utilities.toast(this, getString(R.string.recording_stopped))
-        cancellAll(this)
+        cancelAll(this)
         updateTranslation(outputFile)
         AddResourceFragment.showAlert(this, outputFile)
         activityPdfReaderBinding.fabRecord.setImageResource(R.drawable.ic_mic)
@@ -116,7 +116,7 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
     }
 
     override fun onError(error: String?) {
-        cancellAll(this)
+        cancelAll(this)
         Utilities.toast(this, error)
         activityPdfReaderBinding.fabRecord.setImageResource(R.drawable.ic_mic)
     }

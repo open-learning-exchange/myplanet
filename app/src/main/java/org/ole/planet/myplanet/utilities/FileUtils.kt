@@ -12,7 +12,6 @@ import android.os.StatFs
 import android.os.storage.StorageManager
 import android.provider.MediaStore
 import android.text.TextUtils
-import android.webkit.MimeTypeMap
 import androidx.annotation.RequiresApi
 import org.ole.planet.myplanet.MainApplication
 import android.content.pm.PackageInstaller
@@ -28,7 +27,6 @@ import java.io.OutputStream
 import java.util.UUID
 
 object FileUtils {
-    private val SD_PATH = MainApplication.context.getExternalFilesDir(null).toString() + "/ole"
     @JvmStatic
     @Throws(IOException::class)
     fun fullyReadFileToBytes(f: File): ByteArray {
@@ -152,16 +150,6 @@ object FileUtils {
         }
     }
 
-    private fun getMimeType(url: String): String? {
-        var type: String? = null
-        val extension = MimeTypeMap.getFileExtensionFromUrl(url)
-        if (extension != null) {
-            val mime = MimeTypeMap.getSingleton()
-            type = mime.getMimeTypeFromExtension(extension)
-        }
-        return type
-    }
-
     @JvmStatic
     fun copyAssets(context: Context) {
         val tiles = arrayOf("dhulikhel.mbtiles", "somalia.mbtiles")
@@ -196,9 +184,9 @@ object FileUtils {
         return try {
             val proj = arrayOf(MediaStore.Images.Media.DATA)
             cursor = contentUri?.let { context.contentResolver.query(it, proj, null, null, null) }
-            val column_index = cursor?.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
+            val columnIndex = cursor?.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
             cursor?.moveToFirst()
-            cursor?.getString(column_index ?: 0)
+            cursor?.getString(columnIndex ?: 0)
         } finally {
             cursor?.close()
         }
@@ -274,45 +262,6 @@ object FileUtils {
     }
 
     @JvmStatic
-    fun getMediaType(path: String): String {
-        val ext = getFileExtension(path)
-        if (ext.equals("jpg", ignoreCase = true) || ext.equals("png", ignoreCase = true))
-            return "image"
-        else if (ext.equals("mp4", ignoreCase = true))
-            return "mp4"
-        else if (ext.equals("mp3", ignoreCase = true) || ext.equals("aac", ignoreCase = true))
-            return "audio"
-        return ""
-    }
-
-    // Disk space utilities
-    @JvmStatic
-    val totalInternalMemorySize: Long
-        /**
-         * @return Total internal memory capacity.
-         */
-        get() {
-            val path = Environment.getDataDirectory()
-            val stat = StatFs(path.path)
-            val blockSize = stat.blockSizeLong
-            val totalBlocks = stat.blockCountLong
-            return totalBlocks * blockSize
-        }
-
-    @JvmStatic
-    val availableInternalMemorySize: Long
-        /**
-         * Find space left in the internal memory.
-         */
-        get() {
-            val path = Environment.getDataDirectory()
-            val stat = StatFs(path.path)
-            val blockSize = stat.blockSizeLong
-            val availableBlocks = stat.availableBlocksLong
-            return availableBlocks * blockSize
-        }
-
-    @JvmStatic
     fun externalMemoryAvailable(): Boolean {
         return Environment.getExternalStorageState() == Environment.MEDIA_MOUNTED
     }
@@ -334,21 +283,6 @@ object FileUtils {
                 0
             }
 
-    @JvmStatic
-    val totalExternalMemorySize: Long
-        /**
-         * @return Total capacity of the external memory
-         */
-        get() = if (externalMemoryAvailable()) {
-            val path = Environment.getExternalStorageDirectory()
-            val stat = StatFs(path.path)
-            val blockSize = stat.blockSizeLong
-            val totalBlocks = stat.blockCountLong
-            totalBlocks * blockSize
-        } else {
-            0
-        }
-
     /**
      * Coverts Bytes to KB/MB/GB and changes magnitude accordingly.
      *
@@ -357,21 +291,21 @@ object FileUtils {
      */
     @JvmStatic
     fun formatSize(size: Long): String {
-        var size = size
+        var formattedSize = size
         var suffix: String? = null
-        if (size >= 1024) {
+        if (formattedSize >= 1024) {
             suffix = "KB"
-            size /= 1024
+            formattedSize /= 1024
         }
-        if (size >= 1024) {
+        if (formattedSize >= 1024) {
             suffix = "MB"
-            size /= 1024
+            formattedSize /= 1024
         }
-        if (size >= 1024) {
+        if (formattedSize >= 1024) {
             suffix = "GB"
-            size /= 1024
+            formattedSize /= 1024
         }
-        val resultBuffer = StringBuilder(size.toString())
+        val resultBuffer = StringBuilder(formattedSize.toString())
         var commaOffset = resultBuffer.length - 3
         while (commaOffset > 0) {
             resultBuffer.insert(commaOffset, ',')
@@ -439,7 +373,7 @@ object FileUtils {
             return Pair(totalBytes, availableBytes)
         }
     }
-    fun extractFileName(filePath: String?): String?{
+    private fun extractFileName(filePath: String?): String?{
         if(filePath.isNullOrEmpty()) return null
         val regex = Regex(".+/(.+\\.[a-zA-Z0-9]+)")
         return regex.find(filePath)?.groupValues?.get(1)

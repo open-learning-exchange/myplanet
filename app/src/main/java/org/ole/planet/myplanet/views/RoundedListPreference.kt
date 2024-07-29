@@ -5,24 +5,11 @@ import android.content.Context
 import android.content.DialogInterface
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
-import android.util.AttributeSet
 import android.view.ContextThemeWrapper
 import androidx.preference.ListPreference
 import org.ole.planet.myplanet.R
 
-class RoundedListPreference : ListPreference {
-
-    constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int, defStyleRes: Int) : super(
-        context,
-        attrs,
-        defStyleAttr
-    )
-
-    constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int) : super(context, attrs, defStyleAttr)
-
-    constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
-
-    constructor(context: Context) : super(context)
+class RoundedListPreference(context: Context) : ListPreference(context) {
 
     override fun onClick() {
         val currentIndex = findIndexOfValue(value)

@@ -34,7 +34,7 @@ class AdapterReports(private val context: Context, private var list: RealmResult
 
     override fun onBindViewHolder(holder: ViewHolderReports, position: Int) {
         val report = list[position]
-        reportListItemBinding.tvReportTitle.text = context.getString(R.string.team_financial_report, prefData.getTEAMNAME())
+        reportListItemBinding.tvReportTitle.text = context.getString(R.string.team_financial_report, prefData.getTeamName())
         report?.let {
             with(reportListItemBinding) {
                 val totalIncome = report.sales + report.otherIncome

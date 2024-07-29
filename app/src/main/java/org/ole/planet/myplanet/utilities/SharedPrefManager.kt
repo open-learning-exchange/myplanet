@@ -9,25 +9,19 @@ import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 
 class SharedPrefManager(context: Context) {
-    var PRIVATE_MODE = 0
-    var pref: SharedPreferences
-    var editor: SharedPreferences.Editor
+    private var privateMode = 0
+    private var pref: SharedPreferences = context.getSharedPreferences(PREFS_NAME, privateMode)
+    private var editor: SharedPreferences.Editor = pref.edit()
 
-    var SAVEDUSERS = "savedUsers"
-    var REPLIEDNEWSID = "repliedNewsId"
-    var MANUALCONFIG = "manualConfig"
-    var SELECTEDTEAMID = "selectedTeamId"
-    var FIRSTLAUNCH = "firstLaunch"
-    var TEAMNAME = "teamName"
+    private var savedUsers = "savedUsers"
+    private var repliedNewsId = "repliedNewsId"
+    private var manualConfig = "manualConfig"
+    private var selectedTeamId = "selectedTeamId"
+    var firstLaunch = "firstLaunch"
+    private var teamName = "teamName"
 
-    init {
-        pref = context.getSharedPreferences(PREFS_NAME, PRIVATE_MODE)
-        editor = pref.edit()
-    }
-
-    @JvmName("getSAVEDUSERS1")
-    fun getSAVEDUSERS(): List<User> {
-        val usersJson = pref.getString(SAVEDUSERS, null)
+    fun getSavedUsers(): List<User> {
+        val usersJson = pref.getString(savedUsers, null)
         return if (usersJson != null) {
             try {
                 val jsonArray = JSONArray(usersJson)
@@ -51,8 +45,7 @@ class SharedPrefManager(context: Context) {
         }
     }
 
-    @JvmName("setSAVEDUSERS1")
-    fun setSAVEDUSERS(users: List<User>) {
+    fun setSavedUsers(users: List<User>) {
         val jsonArray = JSONArray()
         for (user in users) {
             val userJson = JSONObject()
@@ -63,68 +56,53 @@ class SharedPrefManager(context: Context) {
             userJson.put("source", user.source)
             jsonArray.put(userJson)
         }
-        editor.putString(SAVEDUSERS, jsonArray.toString())
+        editor.putString(savedUsers, jsonArray.toString())
         editor.apply()
     }
 
-    @JvmName("getREPLIEDNEWSID1")
-    fun getREPLIEDNEWSID(): String? {
-        return if (pref.getString(REPLIEDNEWSID, "") != "") pref.getString(
-            REPLIEDNEWSID, "") else ""
-    }
-
-    @JvmName("setREPLIEDNEWSID1")
-    fun setREPLIEDNEWSID(repliedNewsId: String?) {
-        editor.putString(REPLIEDNEWSID, repliedNewsId)
+    fun setRepliedNewsId(repliedNewsId: String?) {
+        editor.putString(this.repliedNewsId, repliedNewsId)
         editor.apply()
     }
 
-    @JvmName("getMANUALCONFIG1")
-    fun getMANUALCONFIG(): Boolean {
-        return pref.getBoolean(MANUALCONFIG, false)
+    fun getManualConfig(): Boolean {
+        return pref.getBoolean(manualConfig, false)
     }
 
-    @JvmName("setMANUALCONFIG1")
-    fun setMANUALCONFIG(manualConfig: Boolean) {
-        editor.putBoolean(MANUALCONFIG, manualConfig)
+    fun setManualConfig(manualConfig: Boolean) {
+        editor.putBoolean(this.manualConfig, manualConfig)
         editor.apply()
     }
 
-    @JvmName("getSELECTEDTEAMID1")
-    fun getSELECTEDTEAMID(): String? {
-        return if (pref.getString(SELECTEDTEAMID, "") != "") pref.getString(
-            SELECTEDTEAMID, "") else ""
+    fun getSelectedTeamId(): String? {
+        return if (pref.getString(selectedTeamId, "") != "") pref.getString(
+            selectedTeamId, "") else ""
     }
 
-    @JvmName("setSELECTEDTEAMID1")
-    fun setSELECTEDTEAMID(selectedTeamId: String?) {
-        editor.putString(SELECTEDTEAMID, selectedTeamId)
+    fun setSelectedTeamId(selectedTeamId: String?) {
+        editor.putString(this.selectedTeamId, selectedTeamId)
         editor.apply()
     }
 
-    @JvmName("getFIRSTLAUNCH1")
-    fun getFIRSTLAUNCH(): Boolean {
-        return pref.getBoolean(FIRSTLAUNCH, false)
+    fun getFirstLaunch(): Boolean {
+        return pref.getBoolean(firstLaunch, false)
     }
 
-    @JvmName("setFIRSTLAUNCH1")
-    fun setFIRSTLAUNCH(firstLaunch: Boolean) {
-        editor.putBoolean(FIRSTLAUNCH, firstLaunch)
+    fun setFirstLaunch(firstLaunch: Boolean) {
+        editor.putBoolean(this.firstLaunch, firstLaunch)
         editor.apply()
     }
 
-    @JvmName("getTEAMNAME1")
-    fun getTEAMNAME(): String? {
-        return if (pref.getString(TEAMNAME, "") != "") {
-            pref.getString(TEAMNAME, "")
+    fun getTeamName(): String? {
+        return if (pref.getString(teamName, "") != "") {
+            pref.getString(teamName, "")
         } else {
             ""
         }
     }
 
-    @JvmName("setTEAMNAME1")
-    fun setTEAMNAME(teamName: String?) {
-        editor.putString(TEAMNAME, teamName)
+    fun setTeamName(teamName: String?) {
+        editor.putString(this.teamName, teamName)
         editor.apply()
     }
 }

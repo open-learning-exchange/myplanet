@@ -150,7 +150,7 @@ class ReportsFragment : BaseTeamFragment() {
             val currentDate = Date()
             val dateFormat = SimpleDateFormat("EEE_MMM_dd_yyyy", Locale.US)
             val formattedDate = dateFormat.format(currentDate)
-            val teamName = prefData.getTEAMNAME()?.replace(" ", "_")
+            val teamName = prefData.getTeamName()?.replace(" ", "_")
 
             val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
                 addCategory(Intent.CATEGORY_OPENABLE)
@@ -200,7 +200,7 @@ class ReportsFragment : BaseTeamFragment() {
                             .equalTo("docType", "report")
                             .sort("date", Sort.DESCENDING).findAll()
                         val csvBuilder = StringBuilder()
-                        csvBuilder.append("${prefData.getTEAMNAME()} Financial Report Summary\n\n")
+                        csvBuilder.append("${prefData.getTeamName()} Financial Report Summary\n\n")
                         csvBuilder.append("Start Date, End Date, Created Date, Updated Date, Beginning Balance, Sales, Other Income, Wages, Other Expenses, Profit/Loss, Ending Balance\n")
                         for (report in reports) {
                             val dateFormat = SimpleDateFormat("EEE MMM dd yyyy HH:mm:ss 'GMT'Z (z)", Locale.US)

@@ -96,9 +96,9 @@ object Utilities {
     }
 
     fun getRelativeTime(timestamp: Long): String {
-        val nowtime = System.currentTimeMillis()
-        return if (timestamp < nowtime) {
-            DateUtils.getRelativeTimeSpanString(timestamp, nowtime, 0).toString()
+        val timeNow = System.currentTimeMillis()
+        return if (timestamp < timeNow) {
+            DateUtils.getRelativeTimeSpanString(timestamp, timeNow, 0).toString()
         } else "Just now"
     }
 
