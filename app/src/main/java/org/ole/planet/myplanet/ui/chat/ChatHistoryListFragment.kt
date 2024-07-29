@@ -9,6 +9,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.slidingpanelayout.widget.SlidingPaneLayout
 import io.realm.*
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.databinding.FragmentChatHistoryListBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.*
@@ -53,41 +54,49 @@ class ChatHistoryListFragment : Fragment() {
             }
         }
 
-        val mRealm = DatabaseService(requireActivity()).realmInstance
-        val chats = mRealm.where(RealmChatHistory::class.java).findAll()
-
-        val list = mRealm.where(RealmChatHistory::class.java).equalTo("user", user?.name)
-            .sort("id", Sort.DESCENDING)
-            .findAll()
-
-        val filteredHistoryList = ArrayList<RealmChatHistory>()
-        for (chat in chats) {
-            val model = list.find { it.id == chat.id }
-            if (model != null && !filteredHistoryList.contains(model)) {
-                filteredHistoryList.add(model)
-            }
-        }
-        val adapter = ChatHistoryListAdapter(requireContext(), list)
-        adapter.setChatHistoryItemClickListener(object : ChatHistoryListAdapter.ChatHistoryItemClickListener {
-            override fun onChatHistoryItemClicked(conversations: RealmList<Conversation>?, _id: String, _rev:String?) {
-                conversations?.let { sharedViewModel.setSelectedChatHistory(it) }
-                sharedViewModel.setSelected_id(_id)
-                _rev?.let { sharedViewModel.setSelected_rev(it) }
-
-                fragmentChatHistoryListBinding.slidingPaneLayout.openPane()
-            }
-        })
-        fragmentChatHistoryListBinding.recyclerView.adapter = adapter
+        refreshChatHistoryList()
 
         fragmentChatHistoryListBinding.searchBar.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
 
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                adapter.filter(s.toString())
+                (fragmentChatHistoryListBinding.recyclerView.adapter as? ChatHistoryListAdapter)?.filter(s.toString())
             }
 
             override fun afterTextChanged(s: Editable?) {}
         })
+    }
+
+    fun refreshChatHistoryList() {
+        val mRealm = DatabaseService(requireActivity()).realmInstance
+        val list = mRealm.where(RealmChatHistory::class.java).equalTo("user", user?.name)
+            .sort("id", Sort.DESCENDING)
+            .findAll()
+
+        val adapter = fragmentChatHistoryListBinding.recyclerView.adapter as? ChatHistoryListAdapter
+        if (adapter == null) {
+            val newAdapter = ChatHistoryListAdapter(requireContext(), list, this)
+            newAdapter.setChatHistoryItemClickListener(object : ChatHistoryListAdapter.ChatHistoryItemClickListener {
+                override fun onChatHistoryItemClicked(conversations: RealmList<Conversation>?, id: String, rev: String?) {
+                    conversations?.let { sharedViewModel.setSelectedChatHistory(it) }
+                    sharedViewModel.setSelected_id(id)
+                    rev?.let { sharedViewModel.setSelected_rev(it) }
+
+                    fragmentChatHistoryListBinding.slidingPaneLayout.openPane()
+                }
+            })
+            fragmentChatHistoryListBinding.recyclerView.adapter = newAdapter
+        } else {
+            adapter.updateChatHistory(list)
+            fragmentChatHistoryListBinding.searchBar.visibility = View.VISIBLE
+            fragmentChatHistoryListBinding.recyclerView.visibility = View.VISIBLE
+        }
+
+        showNoData(fragmentChatHistoryListBinding.noChats, list.size, "chatHistory")
+        if (list.isEmpty()) {
+            fragmentChatHistoryListBinding.searchBar.visibility = View.GONE
+            fragmentChatHistoryListBinding.recyclerView.visibility = View.GONE
+        }
     }
 }
 

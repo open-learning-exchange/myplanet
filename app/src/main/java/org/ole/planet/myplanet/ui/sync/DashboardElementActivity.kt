@@ -29,7 +29,6 @@ import org.ole.planet.myplanet.ui.dashboard.DashboardFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.rating.RatingFragment.Companion.newInstance
-import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.ui.team.TeamFragment
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
@@ -65,11 +64,13 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         return true
     }
 
-    fun openCallFragment(newfragment: Fragment, tag: String?) {
-        supportFragmentManager.beginTransaction()
-            .replace(R.id.fragment_container, newfragment, tag)
-            .addToBackStack(null)
-            .commitAllowingStateLoss()
+    fun openCallFragment(newFragment: Fragment, tag: String?) {
+        if (!isDestroyed && !isFinishing) {
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, newFragment, tag)
+                .addToBackStack(null)
+                .commitAllowingStateLoss()
+        }
     }
 
     override fun onPrepareOptionsMenu(menu: Menu): Boolean {
@@ -147,9 +148,9 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         profileDbHandler.onLogout()
         settings.edit().putBoolean(Constants.KEY_LOGIN, false).apply()
         settings.edit().putBoolean(Constants.KEY_NOTIFICATION_SHOWN, false).apply()
-        val loginscreen = Intent(this, LoginActivity::class.java)
+        val loginScreen = Intent(this, LoginActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
-        startActivity(loginscreen)
+        startActivity(loginScreen)
         doubleBackToExitPressedOnce = true
         finish()
     }
@@ -166,8 +167,8 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         }
     }
 
-    fun showRatingDialog(type: String?, resource_id: String?, title: String?, listener: OnRatingChangeListener?) {
-        val f = newInstance(type, resource_id, title)
+    fun showRatingDialog(type: String?, resourceId: String?, title: String?, listener: OnRatingChangeListener?) {
+        val f = newInstance(type, resourceId, title)
         f.setListener(listener)
         f.show(supportFragmentManager, "")
     }
@@ -185,7 +186,6 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
                 .setChecked(true)
         } else if (f is DashboardFragment) {
             navigationView.menu.findItem(R.id.menu_home).setChecked(true)
-        } else if (f is SurveyFragment) {
         }
     }
 

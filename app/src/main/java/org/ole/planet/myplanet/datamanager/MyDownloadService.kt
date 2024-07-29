@@ -1,11 +1,13 @@
 package org.ole.planet.myplanet.datamanager
 
-import android.app.IntentService
 import android.app.NotificationManager
+import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import androidx.core.app.NotificationCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import androidx.work.Worker
+import androidx.work.WorkerParameters
 import io.realm.Realm
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.R
@@ -26,16 +28,16 @@ import java.io.OutputStream
 import kotlin.math.pow
 import kotlin.math.roundToInt
 
-class MyDownloadService : IntentService("Download Service") {
-    var count = 0
-    var data = ByteArray(1024 * 4)
+class MyDownloadService(context: Context, params: WorkerParameters) : Worker(context, params) {
+    private var count = 0
+    private var data = ByteArray(1024 * 4)
     private var outputFile: File? = null
     private var notificationBuilder: NotificationCompat.Builder? = null
     private var notificationManager: NotificationManager? = null
     private var totalFileSize = 0
     private var preferences: SharedPreferences? = null
     private var url: String? = null
-    private var urls: ArrayList<String>? = null
+    private lateinit var urls: Array<String>
     private var currentIndex = 0
     private var request: Call<ResponseBody>? = null
     private var completeAll = false
@@ -48,25 +50,34 @@ class MyDownloadService : IntentService("Download Service") {
         databaseService.realmInstance
     }
 
-    override fun onHandleIntent(intent: Intent?) {
-        preferences = applicationContext.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-        if (urls == null) {
-            stopSelf()
+    override fun doWork(): Result {
+        preferences = applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        val urlsKey = inputData.getString("urls_key")
+        val settings = applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        urls = (settings.getStringSet(urlsKey, emptySet())?.toList() ?: return Result.failure()).toTypedArray()
+
+        fromSync = inputData.getBoolean("fromSync", false)
+
+        if (urls.isEmpty()) {
+            return Result.failure()
         }
-        notificationBuilder = NotificationCompat.Builder(this, "11")
+
+        notificationBuilder = NotificationCompat.Builder(applicationContext, "11")
         NotificationUtil.setChannel(notificationManager)
         val noti = notificationBuilder?.setSmallIcon(R.mipmap.ic_launcher)
             ?.setContentTitle("OLE Download")?.setContentText("Downloading File...")
             ?.setAutoCancel(true)?.build()
         notificationManager?.notify(0, noti)
-        urls = intent?.getStringArrayListExtra("urls")
-        fromSync = intent?.getBooleanExtra("fromSync", false) == true
-        for (i in urls?.indices ?: emptyList()) {
-            url = urls?.get(i)
+
+        for (i in urls.indices) {
+            url = urls[i]
             currentIndex = i
             initDownload(fromSync)
         }
+
+        return Result.success()
     }
 
     private fun initDownload(fromSync: Boolean) {
@@ -101,7 +112,6 @@ class MyDownloadService : IntentService("Download Service") {
         d.failed = true
         d.message = message
         sendIntent(d, fromSync)
-        stopSelf()
     }
 
     @Throws(IOException::class)
@@ -169,7 +179,7 @@ class MyDownloadService : IntentService("Download Service") {
         val intent = Intent(DashboardActivity.MESSAGE_PROGRESS)
         intent.putExtra("download", download)
         intent.putExtra("fromSync", fromSync)
-        LocalBroadcastManager.getInstance(this@MyDownloadService).sendBroadcast(intent)
+        LocalBroadcastManager.getInstance(applicationContext).sendBroadcast(intent)
     }
 
     private fun onDownloadComplete() {
@@ -180,7 +190,7 @@ class MyDownloadService : IntentService("Download Service") {
         download.fileName = FileUtils.getFileNameFromUrl(url)
         download.fileUrl = url
         download.progress = 100
-        if (currentIndex == (urls?.size ?: 0) - 1) {
+        if (currentIndex == urls.size - 1) {
             completeAll = true
             download.completeAll = true
         }
@@ -189,21 +199,6 @@ class MyDownloadService : IntentService("Download Service") {
         notificationBuilder?.setProgress(0, 0, false)
         notificationBuilder?.setContentText("File Downloaded")
         notificationManager?.notify(0, notificationBuilder?.build())
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        if (!completeAll) {
-            stopDownload()
-        }
-    }
-
-    private fun stopDownload() {
-        if (request != null && outputFile != null) {
-            request?.cancel()
-            outputFile?.delete()
-            notificationManager?.cancelAll()
-        }
     }
 
     private fun changeOfflineStatus() {
@@ -219,9 +214,5 @@ class MyDownloadService : IntentService("Download Service") {
                 }
             }
         }
-    }
-
-    override fun onTaskRemoved(rootIntent: Intent) {
-        notificationManager?.cancel(0)
     }
 }

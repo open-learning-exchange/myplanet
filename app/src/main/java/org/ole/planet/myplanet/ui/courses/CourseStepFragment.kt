@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.courses
 
+import android.os.Build
 import android.os.Bundle
 import android.text.Spannable
 import android.text.method.LinkMovementMethod
@@ -7,6 +8,7 @@ import android.text.style.URLSpan
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.annotation.RequiresApi
 import androidx.fragment.app.Fragment
 import io.realm.Case
 import io.realm.Realm
@@ -25,10 +27,8 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.exam.TakeExamFragment
-import org.ole.planet.myplanet.utilities.CameraUtils.CapturePhoto
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
-import org.ole.planet.myplanet.utilities.Constants
-import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
+import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
 import org.ole.planet.myplanet.utilities.CustomClickableSpan
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import java.util.Date
@@ -51,7 +51,6 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
             stepId = requireArguments().getString("stepId")
             stepNumber = requireArguments().getInt("stepNumber")
         }
-        userVisibleHint = false
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -59,7 +58,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         dbService = DatabaseService(requireActivity())
         cRealm = dbService.realmInstance
         user = UserProfileDbHandler(requireContext()).userModel
-        fragmentCourseStepBinding.btnTakeTest.visibility = if (showBetaFeature(Constants.KEY_EXAM, requireContext())) View.VISIBLE else View.GONE
+        fragmentCourseStepBinding.btnTakeTest.visibility = View.VISIBLE
         return fragmentCourseStepBinding.root
     }
 
@@ -89,12 +88,13 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         step = cRealm.where(RealmCourseStep::class.java).equalTo("id", stepId).findFirst()!!
         resources = cRealm.where(RealmMyLibrary::class.java).equalTo("stepId", stepId).findAll()
         stepExams = cRealm.where(RealmStepExam::class.java).equalTo("stepId", stepId).findAll()
-        fragmentCourseStepBinding.btnResources.text = getString(R.string.resources) + " [" + resources.size + "]"
+        fragmentCourseStepBinding.btnResources.text = getString(R.string.resources_size, resources.size)
         hideTestIfNoQuestion()
         fragmentCourseStepBinding.tvTitle.text = step.stepTitle
         val markdownContentWithLocalPaths = prependBaseUrlToImages(step.description, "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/")
@@ -115,13 +115,16 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                 textWithSpans.removeSpan(urlSpan)
             }
         }
+        if (isVisible && isMyCourse(user?.id, step.courseId, cRealm)) {
+            saveCourseProgress()
+        }
     }
 
     private fun hideTestIfNoQuestion() {
         fragmentCourseStepBinding.btnTakeTest.visibility = View.GONE
         if (stepExams.isNotEmpty()) {
-            val first_step_id = stepExams[0].id
-            val questions = cRealm.where(RealmExamQuestion::class.java).equalTo("examId", first_step_id).findAll()
+            val firstStepId = stepExams[0].id
+            val questions = cRealm.where(RealmExamQuestion::class.java).equalTo("examId", firstStepId).findAll()
             val submissionsCount = step.courseId?.let {
                 cRealm.where(RealmSubmission::class.java).contains("parentId",
                     it
@@ -131,10 +134,10 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                 if (submissionsCount != null) {
                     fragmentCourseStepBinding.btnTakeTest.text = (
                             if (submissionsCount > 0) {
-                                getString(R.string.retake_test)
+                                getString(R.string.retake_test, stepExams.size)
                             } else {
-                                getString(R.string.take_test)
-                            }) + " [${stepExams.size}]"
+                                getString(R.string.take_test, stepExams.size)
+                            })
                 }
                 fragmentCourseStepBinding.btnTakeTest.visibility = View.VISIBLE
             }
@@ -152,6 +155,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun setListeners() {
         val notDownloadedResources: List<RealmMyLibrary> = cRealm.where(RealmMyLibrary::class.java).equalTo("stepId", stepId).equalTo("resourceOffline", false).isNotNull("resourceLocalAddress").findAll()
         setResourceButton(notDownloadedResources, fragmentCourseStepBinding.btnResources)
@@ -164,7 +168,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                 takeExam.arguments = b
                 homeItemClickListener?.openCallFragment(takeExam)
                 context?.let { it1 ->
-                    CapturePhoto(it1, object : ImageCaptureCallback {
+                    capturePhoto(it1, object : ImageCaptureCallback {
                         override fun onImageCapture(fileUri: String?) {
                         }
                     })
@@ -175,6 +179,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         setOpenResourceButton(downloadedResources, fragmentCourseStepBinding.btnOpen)
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onDownloadComplete() {
         super.onDownloadComplete()
         setListeners()
@@ -184,7 +189,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
 
     companion object {
         fun prependBaseUrlToImages(markdownContent: String?, baseUrl: String): String {
-            val pattern = "!\\[.*?\\]\\((.*?)\\)"
+            val pattern = "!\\[.*?]\\((.*?)\\)"
             val imagePattern = Pattern.compile(pattern)
             val matcher = markdownContent?.let { imagePattern.matcher(it) }
             val result = StringBuffer()

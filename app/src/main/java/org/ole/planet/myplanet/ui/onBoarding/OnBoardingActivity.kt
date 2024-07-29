@@ -12,7 +12,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityOnBoardingBinding
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.sync.LoginActivity
-import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.FileUtils.copyAssets
@@ -42,7 +41,7 @@ class OnBoardingActivity : AppCompatActivity() {
             return
         }
 
-        if (prefData.getFIRSTLAUNCH()) {
+        if (prefData.getFirstLaunch()) {
             startActivity(Intent(this, LoginActivity::class.java))
             finish()
         }
@@ -94,7 +93,7 @@ class OnBoardingActivity : AppCompatActivity() {
         val descArrayPage3 = intArrayOf(R.string.ob_desc3_1, R.string.ob_desc3_2)
         val descArrayPage4 = intArrayOf(R.string.ob_desc4_1, R.string.ob_desc4_2, R.string.ob_desc4_3, R.string.ob_desc4_4, R.string.ob_desc4_5)
         val header = intArrayOf(R.string.welcome_to_myPlanet, R.string.learn_offline, R.string.open_learning, R.string.unleash_learning_power)
-        val imageId = intArrayOf(R.drawable.ole_logo, R.drawable.o_a, R.drawable.b_b, R.drawable.c_c);
+        val imageId = intArrayOf(R.drawable.ole_logo, R.drawable.o_a, R.drawable.b_b, R.drawable.c_c)
 
         for (i in imageId.indices) {
             val descResourceArray = when (i) {
@@ -140,7 +139,7 @@ class OnBoardingActivity : AppCompatActivity() {
     }
 
     private fun finishTutorial() {
-        prefData.setFIRSTLAUNCH(true)
+        prefData.setFirstLaunch(true)
         startActivity(Intent(this, LoginActivity::class.java))
     }
 }

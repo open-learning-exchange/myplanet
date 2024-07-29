@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.utilities
 import de.rtner.misc.BinTools
 import de.rtner.security.auth.spi.PBKDF2Engine
 import de.rtner.security.auth.spi.PBKDF2Parameters
-import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
 import java.security.SecureRandom
 import java.util.Locale
@@ -15,27 +14,6 @@ import javax.crypto.spec.SecretKeySpec
 
 class AndroidDecrypter {
     companion object {
-        @JvmStatic
-        fun md5(s: String): String {
-            val MD5 = "MD5"
-            try {
-                val digest = MessageDigest.getInstance(MD5)
-                digest.update(s.toByteArray())
-                val messageDigest = digest.digest()
-
-                val hexString = StringBuilder()
-                for (aMessageDigest in messageDigest) {
-                    var h = Integer.toHexString(0xFF and aMessageDigest.toInt())
-                    while (h.length < 2) h = "0$h"
-                    hexString.append(h)
-                }
-                return hexString.toString()
-
-            } catch (e: NoSuchAlgorithmException) {
-                e.printStackTrace()
-            }
-            return ""
-        }
 
         @JvmStatic
         @Throws(Exception::class)
@@ -95,12 +73,12 @@ class AndroidDecrypter {
         }
 
         @JvmStatic
-        fun AndroidDecrypter(usr_ID: String?, usr_rawPswd: String?, db_PswdkeyValue: String?, db_Salt: String?): Boolean {
+        fun androidDecrypter(usrId: String?, usrRawPwd: String?, dbPwdKeyValue: String?, dbSalt: String?): Boolean {
             try {
-                val p = PBKDF2Parameters("HmacSHA1", "utf-8", db_Salt?.toByteArray(), 10)
-                val dk = PBKDF2Engine(p).deriveKey(usr_rawPswd, 20)
-                println("$usr_ID Value ${BinTools.bin2hex(dk).lowercase(Locale.ROOT)}")
-                return db_PswdkeyValue.equals(BinTools.bin2hex(dk).lowercase(Locale.ROOT), ignoreCase = true)
+                val p = PBKDF2Parameters("HmacSHA1", "utf-8", dbSalt?.toByteArray(), 10)
+                val dk = PBKDF2Engine(p).deriveKey(usrRawPwd, 20)
+                println("$usrId Value ${BinTools.bin2hex(dk).lowercase(Locale.ROOT)}")
+                return dbPwdKeyValue.equals(BinTools.bin2hex(dk).lowercase(Locale.ROOT), ignoreCase = true)
 
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -111,10 +89,10 @@ class AndroidDecrypter {
         @JvmStatic
         fun generateIv(): String {
             try {
-                val IV = ByteArray(16)
+                val iv = ByteArray(16)
                 val random = SecureRandom()
-                random.nextBytes(IV)
-                return bytesToHex(IV)
+                random.nextBytes(iv)
+                return bytesToHex(iv)
             } catch (e: Exception) {
                 e.printStackTrace()
             }

@@ -13,6 +13,9 @@ import android.util.Patterns
 import android.webkit.MimeTypeMap
 import android.widget.ImageView
 import android.widget.Toast
+import androidx.work.Data
+import androidx.work.OneTimeWorkRequest
+import androidx.work.WorkManager
 import com.bumptech.glide.Glide
 import fisk.chipcloud.ChipCloudConfig
 import org.ole.planet.myplanet.MainApplication.Companion.context
@@ -25,6 +28,7 @@ import java.math.BigInteger
 
 object Utilities {
     private var contextRef: WeakReference<Context>? = null
+    private var settings: SharedPreferences? = null
 
     fun setContext(ctx: Context) {
         contextRef = WeakReference(ctx.applicationContext)
@@ -56,10 +60,20 @@ object Utilities {
     }
 
     fun openDownloadService(context: Context?, urls: ArrayList<String>, fromSync: Boolean) {
-        val intent = Intent(context, MyDownloadService::class.java)
-        intent.putStringArrayListExtra("urls", urls)
-        intent.putExtra("fromSync", fromSync)
-        context?.startService(intent)
+        settings = context?.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        settings?.edit()?.putStringSet("url_list", urls.toSet())?.apply()
+        val inputData = Data.Builder()
+            .putString("urls_key", "url_list")
+            .putBoolean("fromSync", fromSync)
+            .build()
+
+        val downloadWorkRequest = OneTimeWorkRequest.Builder(MyDownloadService::class.java)
+            .setInputData(inputData)
+            .build()
+
+        context?.let {
+            WorkManager.getInstance(it).enqueue(downloadWorkRequest)
+        }
     }
 
     @JvmStatic
@@ -82,9 +96,9 @@ object Utilities {
     }
 
     fun getRelativeTime(timestamp: Long): String {
-        val nowtime = System.currentTimeMillis()
-        return if (timestamp < nowtime) {
-            DateUtils.getRelativeTimeSpanString(timestamp, nowtime, 0).toString()
+        val timeNow = System.currentTimeMillis()
+        return if (timestamp < timeNow) {
+            DateUtils.getRelativeTimeSpanString(timestamp, timeNow, 0).toString()
         } else "Just now"
     }
 

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">My Planet</string>
+    <string name="planet">Planet</string>
     <string name="app_project_name">myPlanet</string>
     <string name="action_settings">settings</string>
     <string name="hint_name">username</string>
@@ -68,7 +69,7 @@
     <string name="phone_number">Phone Number</string>
     <string name="language">Language</string>
     <string name="last_name">Last Name</string>
-    <string name="version">Version</string>
+    <string name="version">Version %s</string>
     <string name="middle_name">Middle Name</string>
     <string name="first_name">First Name</string>
     <string name="search_dots">Search…</string>
@@ -322,6 +323,7 @@
     <string name="credit">Credit</string>
     <string name="balance">Balance</string>
     <string name="total">Total</string>
+    <string name="num_total">%d Total</string>
     <string name="location">Location</string>
     <string name="start_date">Start Date</string>
     <string name="click_here_to_pick_time">Click here to pick time</string>
@@ -334,6 +336,7 @@
     <string name="filter_by_date">Date Filter</string>
     <string name="date_reset">Date Reset</string>
     <string name="emergency_contact">Emergency Contact</string>
+    <string name="emergency_contact_details">Name: %s Type: %s Contact: %s</string>
     <string name="contact">Contact</string>
     <string name="special_needs">Special Needs</string>
     <string name="other_need">Other Needs</string>
@@ -487,22 +490,22 @@
     <string name="update_profile_alert">Please complete your profile to enjoy full features</string>
     <string name="other_notes">Other Notes</string>
     <string name="archive">Archive</string>
-    <string name="Q1">Question: 1/</string>
+    <string name="Q1">Question: 1/%d</string>
     <string name="no_questions">No questions available</string>
-    <string name="Q">"Question: "</string>
+    <string name="Q">"Question: %d / %d"</string>
     <string name="finish">Finish</string>
     <string name="submit">Submit</string>
     <string name="our_courses">Our Courses</string>
-    <string name="file">"File: "</string>
+    <string name="file">File: %s</string>
     <string name="recording_audio">Recording audio…</string>
     <string name="show_replies">"Show replies "</string>
     <string name="selected">"Selected: "</string>
-    <string name="last_sync"><![CDATA["Last sync with server: "]]></string>
+    <string name="last_sync">Last sync with server: %s></string>
     <string name="last_syncs">LastSync</string>
     <string name="login_user">loginUserName</string>
     <string name="login_password">loginUserPassword</string>
     <string name="no_team_available">No team / enterprise available</string>
-    <string name="last_sync_date">"last sync: "</string>
+    <string name="last_sync_date">last sync: %s</string>
     <string name="no_assignee">No assignee</string>
     <string name="note_">notes</string>
     <string name="diagno">diagnosis</string>
@@ -556,11 +559,13 @@
     <string name="subject_level_colon">Subject Level:</string>
     <string name="grade_level_colon">Grade Level:</string>
     <string name="language_colon">Language:</string>
+    <string name="gender_colon">Gender: %s</string>
+    <string name="level_colon">Level: %s</string>
     <string name="method">Method:</string>
     <string name="number_of_exams">Number of exams:</string>
     <string name="description_colon">description:</string>
     <string name="download_resources">Download Resources</string>
-    <string name="take_test">Take Test</string>
+    <string name="take_test">Take Test [%d]</string>
     <string name="search">search</string>
     <string name="for_ambulance">For Ambulance</string>
     <string name="for_police">For Police</string>
@@ -620,18 +625,13 @@
     <string name="please_select_link_item_from_list">Please select link item from list</string>
     <string name="title_is_required">Title is required</string>
     <string name="no_data_available">No data available</string>
-    <string name="current_step">"Current step: "</string>
-    <string name="of">" of "</string>
-    <string name="this_test_has">"This test has "</string>
-    <string name="questions">" questions"</string>
     <string name="are_you_sure_you_want_to_delete_these_courses">Are you sure you want to delete these courses?</string>
     <string name="are_you_sure_you_want_to_delete_this_course">Are you sure you want to delete this course?</string>
     <string name="success_you_have_added_the_following_courses">Success! You have added the following courses:\n\n</string>
     <string name="return_to_the_home_tab_to_access_mycourses">\n\n Return to the Home tab to access myCourses.\n</string>
     <string name="and">"And "</string>
     <string name="more_course_s">" more course(s)...\n"</string>
-    <string name="progress">"Progress "</string>
-    <string name="retake_test">Retake Test</string>
+    <string name="retake_test">Retake Test [%d]</string>
     <string name="do_you_want_to_join_this_course">Do you want to join this course?</string>
     <string name="join_this_course">Join this course</string>
     <string name="download_dictionary">Download dictionary.</string>
@@ -672,7 +672,7 @@
     <string name="session_expired">Session expired.</string>
     <string name="downloading_started_please_check_notificati">Downloading started, please check notification…</string>
     <string name="dictionary">Dictionary</string>
-    <string name="list_size">List size</string>
+    <string name="list_size">List size %d</string>
     <string name="word_not_available_in_our_database">Word not available in our database.</string>
     <string name="description_is_required">Description is required</string>
     <string name="start_time_is_required">Start time is required</string>
@@ -713,23 +713,31 @@
     <string name="more_resource_s">" more resource(s)…\n"</string>
     <string name="return_to_the_home_tab_to_access_mylibrary">\n\nReturn to the Home tab to access myLibrary.\n</string>
     <string name="note_you_may_still_need_to_download_the_newly_added_resources">\nNote: You may still need to download the newly added resources.</string>
-    <string name="self_examination">\nSelf Examination</string>
-    <string name="temperature_colon">"Temperature: "</string>
-    <string name="pulse_colon">"Pulse: "</string>
-    <string name="blood_pressure_colon">"Blood Pressure: "</string>
-    <string name="height_colon">"Height: "</string>
-    <string name="weight_colon">"Weight: "</string>
-    <string name="vision_colon">"Vision: "</string>
-    <string name="hearing_colon">"Hearing: "</string>
-    <string name="observations_notes_colon"><![CDATA["Observations & Notes: "]]></string>
+    <string name="self_examination">%s\nSelf Examination</string>
+    <string name="vitals_format">
+        Temperature: %s\n
+        Pulse: %s\n
+        Blood Pressure: %s\n
+        Height: %s\n
+        Weight: %s\n
+        Vision: %s\n
+        Hearing: %s\n
+    </string>
+    <string name="observations_notes_colon">
+        Observations &amp; Notes: %s\n
+        %s\n
+        %s\n
+        %s\n
+        %s\n
+        Allergies: %s\n
+        X-rays: %s\n
+        Lab Tests: %s\n
+        Referrals: %s\n
+    </string>
     <string name="diagnosis_colon">"Diagnosis : "</string>
     <string name="treatments_colon">"Treatments: "</string>
     <string name="medications_colon">"Medications: "</string>
     <string name="immunizations_colon">"Immunizations: "</string>
-    <string name="allergies_colon">"Allergies: "</string>
-    <string name="x_rays_colon">"X-rays: "</string>
-    <string name="lab_tests_colon">"Lab Tests: "</string>
-    <string name="referrals_colon">"Referrals: "</string>
     <string name="invalid_input">Invalid input</string>
     <string name="blood_pressure_should_be_numeric_systolic_diastolic">Blood Pressure should be numeric systolic/diastolic</string>
     <string name="blood_pressure_should_be_systolic_diastolic">Blood Pressure should be systolic/diastolic</string>
@@ -745,8 +753,7 @@
     <string name="yes_i_want_to_exit">"Yes, I want to exit. "</string>
     <string name="my_health_saved_successfully">My health saved successfully</string>
     <string name="health_record_not_available">Health Record not available.</string>
-    <string name="contact_colon">Contact:</string>
-    <string name="joined_colon">"Joined: "</string>
+    <string name="joined_colon">"Joined: %s"</string>
     <string name="is_now_hidden">" is now hidden"</string>
     <string name="is_now_shown">" is now shown"</string>
     <string name="no_members_has_joined_this_meet_up">No members has joined this meet up</string>
@@ -800,9 +807,9 @@
     <string name="team_leader">Team Leader</string>
     <string name="select_resource">"Select Resource: "</string>
     <string name="add">Add</string>
-    <string name="deadline_colon">"Deadline: "</string>
-    <string name="completed_colon">"\n Completed: "</string>
-    <string name="assigned_to_colon">"Assigned to: "</string>
+    <string name="deadline_colon">Deadline: %s</string>
+    <string name="completed_colon">\n Completed: %s</string>
+    <string name="assigned_to_colon">Assigned to: %s</string>
     <string name="add_task">Add Task</string>
     <string name="task_title_is_required">Task title is required</string>
     <string name="deadline_is_required">Deadline is required</string>
@@ -935,10 +942,7 @@
     <string name="auto_sync">Auto Sync</string>
     <string name="force_weekly_sync">Force Weekly Sync</string>
     <string name="force_monthly_sync">Force Monthly Sync</string>
-    <string name="beta_function_for_course">Beta Function for Course</string>
-    <string name="beta_function_for_auto_update">Beta Function for auto update</string>
     <string name="beta_function_for_wifi_switch">Beta Function for WiFi Switch</string>
-    <string name="beta_function_for_achievement">Beta Function for Achievement</string>
     <string name="upgrade_application">Upgrade Application</string>
     <string name="auto_upgrade">Auto Upgrade</string>
     <string name="always_move_to_maximum_version">Always move to maximum version?</string>
@@ -1045,5 +1049,41 @@
     <string name="checking_server">checking server</string>
     <string name="below_min_apk">app is below allowed version. please update the app to the latest version.</string>
     <string name="add_note">add a note (optional)</string>
+    <string name="no_teams">teams not available</string>
+    <string name="planet_name">%s\'s Planet</string>
+    <string name="no_submissions">submissions not available</string>
+    <string name="no_chats">no previous chats</string>
+    <string name="no_feedback">no feedback available</string>
+    <string name="empty_text"></string>
+    <string name="message_placeholder">%s</string>
+    <string name="reports">Reports</string>
+    <string name="number_placeholder">%d</string>
+    <string name="date_range">%s to %s</string>
+    <string name="string_range">%s - %s</string>
+    <string name="team_financial_report">%s Financial Report</string>
+    <string name="report_date_details">Report created on: %s | Updated on: %s</string>
+    <string name="formatted_date">%d/%d/%d</string>
+    <string name="prefix_content">%s%s</string>
+    <string name="rating_count_format">%d total</string>
+    <string name="step_progress">Current step: %d of %d</string>
+    <string name="percentage">%s%%</string>
+    <string name="test_size">This test has %d questions</string>
+    <string name="course_progress">Progress %s of %s</string>
+    <string name="tag_selected">Selected: %s</string>
+    <string name="resources_size">Resources [%d]</string>
+    <string name="user_role">- %s</string>
+    <string name="offline_visits">%d visits</string>
+    <string name="visit_count">%1$s (%2$d %3$s)</string>
+    <string name="two_strings">%s %s</string>
+    <string name="three_strings">%s %s %s</string>
+    <string name="member_description">%1$s (%2$d visits)</string>
+    <string name="dark_mode">Dark Mode</string>
+    <string-array name="dark_mode_options">
+        <item>OFF</item>
+        <item>ON</item>
+        <item>Follow System</item>
+    </string-array>
+    <string name="are_you_sure_you_want_to_archive_these_courses">Are you sure you want to archive these courses?</string>
+    <string name="are_you_sure_you_want_to_archive_this_course">Are you sure you want to archive this course?</string>
 
 </resources>

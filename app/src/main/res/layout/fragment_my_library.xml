@@ -38,7 +38,7 @@
                     android:gravity="center_vertical"
                     android:padding="@dimen/padding_normal"
                     android:text="@string/library"
-                    android:textColor="@color/md_white_1000"
+                    android:textColor="@color/textColorPrimary"
                     android:textSize="@dimen/text_size_large"
                     android:textStyle="bold" />
 
@@ -61,7 +61,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:padding="@dimen/padding_small"
-                    android:textColor="@color/md_white_1000"
+                    android:textColor="@color/textColorPrimary"
                     android:textSize="@dimen/text_size_mid" />
 
                 <TextView
@@ -76,7 +76,8 @@
                     android:textColor="@drawable/tv_color"
                     android:textSize="@dimen/text_size_mid"
                     android:visibility="gone"
-                    app:drawableLeftCompat="@drawable/ic_delete" />
+                    app:drawableLeftCompat="@drawable/ic_delete"
+                    app:tint="@color/textColorPrimary" />
 
                 <ImageButton
                     android:id="@+id/filter"
@@ -88,7 +89,7 @@
                     android:padding="@dimen/padding_normal"
                     android:text="@string/more_action"
                     android:contentDescription="@string/more_action"
-                    android:textColor="@color/md_white_1000"
+                    android:textColor="@color/textColorPrimary"
                     app:srcCompat="@drawable/ic_filter" />
 
             </LinearLayout>
@@ -98,7 +99,8 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:background="@color/secondary_bg">
 
             <CheckBox
                 android:id="@+id/selectAll"
@@ -108,7 +110,9 @@
                 android:layout_weight="1"
                 android:padding="8dp"
                 android:text="@string/select_all"
-                android:textSize="@dimen/text_size_mid" />
+                android:textColor="@color/daynight_textColor"
+                android:textSize="@dimen/text_size_mid"
+                android:buttonTint="@color/daynight_textColor" />
 
             <include
                 layout="@layout/layout_search"
@@ -120,7 +124,8 @@
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="1">
+            android:layout_weight="1"
+            android:background="@color/secondary_bg">
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/recycler"
@@ -178,7 +183,7 @@
                     android:layout_weight="1"
                     android:background="@drawable/buttonblue"
                     android:text="@string/order_by_date"
-                    android:textColor="@color/md_white_1000" />
+                    android:textColor="@color/textColorPrimary" />
 
                 <Button
                     android:id="@+id/order_by_title_button"
@@ -188,7 +193,7 @@
                     android:layout_weight="1"
                     android:background="@drawable/buttonblue"
                     android:text="@string/order_by_title"
-                    android:textColor="@color/md_white_1000" />
+                    android:textColor="@color/textColorPrimary" />
             </LinearLayout>
 
             <LinearLayout
@@ -205,7 +210,7 @@
                     android:layout_weight="1"
                     android:background="@drawable/buttonblue"
                     android:text="Filter by category"
-                    android:textColor="@color/md_white_1000" />
+                    android:textColor="@color/textColorPrimary" />
 
                 <Button
                     android:id="@+id/btn_collections"
@@ -215,7 +220,7 @@
                     android:layout_weight="1"
                     android:background="@drawable/buttonblue"
                     android:text="@string/collections"
-                    android:textColor="@color/md_white_1000" />
+                    android:textColor="@color/textColorPrimary" />
             </LinearLayout>
 
             <LinearLayout
@@ -231,7 +236,7 @@
                     android:layout_weight="1"
                     android:background="@drawable/buttonblue"
                     android:text="@string/clear_tags"
-                    android:textColor="@color/md_white_1000" />
+                    android:textColor="@color/textColorPrimary" />
 
                 <TextView
                     android:layout_width="0dp"

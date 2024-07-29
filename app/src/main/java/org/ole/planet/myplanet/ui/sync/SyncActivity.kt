@@ -16,11 +16,12 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.preference.PreferenceManager
 import com.afollestad.materialdialogs.*
 import com.google.android.material.textfield.TextInputLayout
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 import io.realm.*
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.databinding.*
@@ -31,7 +32,7 @@ import org.ole.planet.myplanet.model.*
 import org.ole.planet.myplanet.service.*
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.team.AdapterTeam.OnUserSelectedListener
-import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.AndroidDecrypter
+import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.androidDecrypter
 import org.ole.planet.myplanet.utilities.*
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Constants.autoSynFeature
@@ -40,7 +41,7 @@ import org.ole.planet.myplanet.utilities.DialogUtils.showAlert
 import org.ole.planet.myplanet.utilities.DialogUtils.showSnack
 import org.ole.planet.myplanet.utilities.DialogUtils.showWifiSettingDialog
 import org.ole.planet.myplanet.utilities.NetworkUtils.getCustomDeviceName
-import org.ole.planet.myplanet.utilities.NotificationUtil.cancellAll
+import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
 import org.ole.planet.myplanet.utilities.Utilities.getRelativeTime
 import org.ole.planet.myplanet.utilities.Utilities.openDownloadService
 import retrofit2.Call
@@ -55,14 +56,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private lateinit var syncDate: TextView
     lateinit var lblLastSyncDate: TextView
     private lateinit var intervalLabel: TextView
-    lateinit var tvNodata: TextView
+    lateinit var tvNoData: TextView
     lateinit var spinner: Spinner
     private lateinit var syncSwitch: SwitchCompat
     var convertedDate = 0
     private var connectionResult = false
     lateinit var mRealm: Realm
     private lateinit var editor: SharedPreferences.Editor
-    private var syncTimeInteval = intArrayOf(60 * 60, 3 * 60 * 60)
+    private var syncTimeInterval = intArrayOf(60 * 60, 3 * 60 * 60)
     lateinit var syncIcon: ImageView
     lateinit var syncIconDrawable: AnimationDrawable
     lateinit var inputLayoutName: TextInputLayout
@@ -70,7 +71,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     lateinit var prefData: SharedPrefManager
     lateinit var profileDbHandler: UserProfileDbHandler
     private lateinit var spnCloud: Spinner
-    private lateinit var protocol_checkin: RadioGroup
+    private lateinit var protocolCheckIn: RadioGroup
     private lateinit var serverUrl: EditText
     private lateinit var serverPassword: EditText
     private var teamList = ArrayList<String?>()
@@ -132,35 +133,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             }
             .setNegativeButton(getString(R.string.cancel), null)
             .show()
-    }
-
-    private fun clearSharedPref() {
-        val keysToKeep = setOf(prefData.FIRSTLAUNCH)
-        val tempStorage = HashMap<String, Boolean>()
-        for (key in keysToKeep) {
-            tempStorage[key] = settings.getBoolean(key, false)
-        }
-        editor.clear().commit()
-        val editor = editor
-        for ((key, value) in tempStorage) {
-            editor.putBoolean(key, value)
-        }
-        editor.commit()
-    }
-
-    private fun clearRealmDb(){
-        val realm = Realm.getDefaultInstance()
-        realm.executeTransaction { transactionRealm ->
-            transactionRealm.deleteAll()
-        }
-        realm.close()
-    }
-
-    private fun restartApp() {
-        val intent = packageManager.getLaunchIntentForPackage(packageName)
-        val mainIntent = Intent.makeRestartActivityTask(intent?.component)
-        startActivity(mainIntent)
-        Runtime.getRuntime().exit(0)
     }
 
     private fun clearInternalStorage() {
@@ -230,7 +202,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private fun dateCheck(dialog: MaterialDialog) {
         // Check if the user never synced
         syncDate = dialog.findViewById(R.id.lastDateSynced) as TextView
-        syncDate.text = "${getString(R.string.last_sync_date)}${convertDate()}"
+        syncDate.text = getString(R.string.last_sync_date, convertDate())
         syncDropdownAdd()
     }
 
@@ -255,9 +227,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     private fun saveSyncInfoToPreference() {
         editor.putBoolean("autoSync", syncSwitch.isChecked)
-        editor.putInt("autoSyncInterval", syncTimeInteval[spinner.selectedItemPosition])
+        editor.putInt("autoSyncInterval", syncTimeInterval[spinner.selectedItemPosition])
         editor.putInt("autoSyncPosition", spinner.selectedItemPosition)
-        editor.commit()
+        editor.apply()
     }
 
     fun authenticateUser(settings: SharedPreferences?, username: String?, password: String?, isManagerMode: Boolean): Boolean {
@@ -279,17 +251,17 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     private fun checkName(username: String?, password: String?, isManagerMode: Boolean): Boolean {
         try {
-            val db_users = mRealm.where(RealmUserModel::class.java).equalTo("name", username).findAll()
-            for (user in db_users) {
-                if (user._id?.isEmpty() == true) {
-                    if (username == user.name && password == user.password) {
-                        saveUserInfoPref(settings, password, user)
+            val user = mRealm.where(RealmUserModel::class.java).equalTo("name", username).findFirst()
+            user?.let {
+                if (it._id?.isEmpty() == true) {
+                    if (username == it.name && password == it.password) {
+                        saveUserInfoPref(settings, password, it)
                         return true
                     }
                 } else {
-                    if (AndroidDecrypter(username, password, user.derived_key, user.salt)) {
-                        if (isManagerMode && !user.isManager()) return false
-                        saveUserInfoPref(settings, password, user)
+                    if (androidDecrypter(username, password, it.derived_key, it.salt)) {
+                        if (isManagerMode && !it.isManager()) return false
+                        saveUserInfoPref(settings, password, it)
                         return true
                     }
                 }
@@ -344,9 +316,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 syncIconDrawable.stop()
                 syncIconDrawable.selectDrawable(0)
                 syncIcon.invalidateDrawable(syncIconDrawable)
+                createLog("synced successfully")
                 showSnack(findViewById(android.R.id.content), getString(R.string.sync_completed))
                 downloadAdditionalResources()
-                cancellAll(this)
+                cancelAll(this)
             }
         }
     }
@@ -354,7 +327,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private fun downloadAdditionalResources() {
         val storedJsonConcatenatedLinks = settings.getString("concatenated_links", null)
         if (storedJsonConcatenatedLinks != null) {
-            val storedConcatenatedLinks: ArrayList<String> = Gson().fromJson(storedJsonConcatenatedLinks, object : TypeToken<ArrayList<String>>() {}.type)
+            val storedConcatenatedLinks: ArrayList<String> = Json.decodeFromString(storedJsonConcatenatedLinks)
             openDownloadService(context, storedConcatenatedLinks, true)
         }
     }
@@ -363,7 +336,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         if (settings.getLong(getString(R.string.last_syncs), 0) <= 0) {
             lblLastSyncDate.text = getString(R.string.last_synced_never)
         } else {
-            lblLastSyncDate.text = "${getString(R.string.last_sync)} ${getRelativeTime(settings.getLong(getString(R.string.last_syncs), 0))}"
+            lblLastSyncDate.text = getString(R.string.last_sync, getRelativeTime(settings.getLong(getString(R.string.last_syncs), 0)))
         }
         if (autoSynFeature(Constants.KEY_AUTOSYNC_, applicationContext) && autoSynFeature(Constants.KEY_AUTOSYNC_WEEKLY, applicationContext)) {
             return checkForceSync(7)
@@ -414,7 +387,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     fun settingDialog() {
         val dialogServerUrlBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this))
         spnCloud = dialogServerUrlBinding.spnCloud
-        protocol_checkin = dialogServerUrlBinding.radioProtocol
+        protocolCheckIn = dialogServerUrlBinding.radioProtocol
         serverUrl = dialogServerUrlBinding.inputServerUrl
         serverPassword = dialogServerUrlBinding.inputServerPassword
         dialogServerUrlBinding.deviceName.setText(NetworkUtils.getDeviceName())
@@ -445,7 +418,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     service.getMinApk(this, url, pin)
                 }
             }
-        if (!prefData.getMANUALCONFIG()) {
+        if (!prefData.getManualConfig()) {
             dialogServerUrlBinding.manualConfiguration.isChecked = false
             showConfigurationUIElements(dialogServerUrlBinding, false)
         } else {
@@ -456,7 +429,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         positiveAction = dialog.getActionButton(DialogAction.POSITIVE)
         dialogServerUrlBinding.manualConfiguration.setOnCheckedChangeListener { _: CompoundButton?, isChecked: Boolean ->
             if (isChecked) {
-                prefData.setMANUALCONFIG(true)
+                prefData.setManualConfig(true)
                 editor.putString("serverURL", "").apply()
                 editor.putString("serverPin", "").apply()
                 dialogServerUrlBinding.radioHttp.isChecked = true
@@ -489,9 +462,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 serverUrl.addTextChangedListener(MyTextWatcher(serverUrl))
                 dialogServerUrlBinding.switchServerUrl.isChecked = settings.getBoolean("switchCloudUrl", false)
                 setUrlAndPin(settings.getBoolean("switchCloudUrl", false))
-                protocol_semantics()
+                protocolSemantics()
             } else {
-                prefData.setMANUALCONFIG(false)
+                prefData.setManualConfig(false)
                 showConfigurationUIElements(dialogServerUrlBinding, false)
                 editor.putBoolean("switchCloudUrl", false).apply()
             }
@@ -505,55 +478,51 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         dialogServerUrlBinding.clearData.setOnClickListener {
             clearDataDialog(getString(R.string.are_you_sure_you_want_to_clear_data))
         }
-        if (prefData.getMANUALCONFIG()) {
-            val teams: List<RealmMyTeam> = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId").equalTo("status", "active").findAll()
-            if (teams.isNotEmpty() && "${dialogServerUrlBinding.inputServerUrl.text}" != "") {
-                dialogServerUrlBinding.team.visibility = View.VISIBLE
-                teamAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, teamList)
-                teamAdapter?.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-                teamList.clear()
-                teamList.add("select team")
-                for (team in teams) {
-                    if (team.isValid) {
-                        teamList.add(team.name)
-                    }
+        val teams: List<RealmMyTeam> = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId").equalTo("status", "active").findAll()
+        if (teams.isNotEmpty() && "${dialogServerUrlBinding.inputServerUrl.text}" != "") {
+            dialogServerUrlBinding.team.visibility = View.VISIBLE
+            teamAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, teamList)
+            teamAdapter?.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            teamList.clear()
+            teamList.add("select team")
+            for (team in teams) {
+                if (team.isValid) {
+                    teamList.add(team.name)
                 }
-                dialogServerUrlBinding.team.adapter = teamAdapter
-                val lastSelection = prefData.getSELECTEDTEAMID()
-                if (!lastSelection.isNullOrEmpty()) {
-                    for (i in teams.indices) {
-                        val team = teams[i]
-                        if (team._id != null && team._id == lastSelection && team.isValid) {
-                            val lastSelectedPosition = i + 1
-                            dialogServerUrlBinding.team.setSelection(lastSelectedPosition)
-                            break
-                        }
-                    }
-                }
-                dialogServerUrlBinding.team.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-                    override fun onItemSelected(parentView: AdapterView<*>?, selectedItemView: View, position: Int, id: Long) {
-                        if (position > 0) {
-                            val selectedTeam = teams[position - 1]
-                            val currentTeamId = prefData.getSELECTEDTEAMID()
-                            if (currentTeamId != selectedTeam._id) {
-                                prefData.setSELECTEDTEAMID(selectedTeam._id)
-                                if (this@SyncActivity is LoginActivity) {
-                                    this@SyncActivity.getTeamMembers()
-                                }
-                                dialog.dismiss()
-                            }
-                        }
-                    }
-
-                    override fun onNothingSelected(parentView: AdapterView<*>?) {
-                        // Do nothing when nothing is selected
-                    }
-                }
-            } else if (teams.isNotEmpty() && "${dialogServerUrlBinding.inputServerUrl.text}" == "") {
-                dialogServerUrlBinding.team.visibility = View.GONE
-            } else {
-                dialogServerUrlBinding.team.visibility = View.GONE
             }
+            dialogServerUrlBinding.team.adapter = teamAdapter
+            val lastSelection = prefData.getSelectedTeamId()
+            if (!lastSelection.isNullOrEmpty()) {
+                for (i in teams.indices) {
+                    val team = teams[i]
+                    if (team._id != null && team._id == lastSelection && team.isValid) {
+                        val lastSelectedPosition = i + 1
+                        dialogServerUrlBinding.team.setSelection(lastSelectedPosition)
+                        break
+                    }
+                }
+            }
+            dialogServerUrlBinding.team.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(parentView: AdapterView<*>?, selectedItemView: View, position: Int, id: Long) {
+                    if (position > 0) {
+                        val selectedTeam = teams[position - 1]
+                        val currentTeamId = prefData.getSelectedTeamId()
+                        if (currentTeamId != selectedTeam._id) {
+                            prefData.setSelectedTeamId(selectedTeam._id)
+                            if (this@SyncActivity is LoginActivity) {
+                                this@SyncActivity.getTeamMembers()
+                            }
+                            dialog.dismiss()
+                        }
+                    }
+                }
+
+                override fun onNothingSelected(parentView: AdapterView<*>?) { }
+            }
+        } else if (teams.isNotEmpty() && "${dialogServerUrlBinding.inputServerUrl.text}" == "") {
+            dialogServerUrlBinding.team.visibility = View.GONE
+        } else {
+            dialogServerUrlBinding.team.visibility = View.GONE
         }
         dialog.show()
         sync(dialog)
@@ -588,8 +557,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             serverUrl.isEnabled = true
             serverPassword.isEnabled = true
         } else {
-            serverUrl.setText("planet.learning.ole.org")
-            serverPassword.setText("1983")
+            serverUrl.setText(getString(R.string.message_placeholder, "planet.learning.ole.org"))
+            serverPassword.setText(getString(R.string.message_placeholder, "1983"))
             serverUrl.isEnabled = false
             serverPassword.isEnabled = false
             editor.putString("serverProtocol", getString(R.string.https_protocol)).apply()
@@ -600,7 +569,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         val selected = spnCloud.selectedItem
         if (selected is RealmCommunity && selected.isValid) {
             serverUrl.setText(selected.localDomain)
-            protocol_checkin.check(R.id.radio_https)
+            protocolCheckIn.check(R.id.radio_https)
             settings.getString("serverProtocol", getString(R.string.https_protocol))
             serverPassword.setText(if (selected.weight == 0) "1983" else "")
             serverPassword.isEnabled = selected.weight != 0
@@ -613,7 +582,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         } else {
             serverUrl.setText(settings.getString("serverURL", "")?.let { removeProtocol(it) })
             serverPassword.setText(settings.getString("serverPin", ""))
-            protocol_checkin.check(
+            protocolCheckIn.check(
                 if (TextUtils.equals(settings.getString("serverProtocol", ""), "http://")) {
                     R.id.radio_http
                 } else {
@@ -625,11 +594,11 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         serverPassword.isEnabled = !checked
         serverPassword.clearFocus()
         serverUrl.clearFocus()
-        protocol_checkin.isEnabled = !checked
+        protocolCheckIn.isEnabled = !checked
     }
 
-    private fun protocol_semantics() {
-        protocol_checkin.setOnCheckedChangeListener { _: RadioGroup?, i: Int ->
+    private fun protocolSemantics() {
+        protocolCheckIn.setOnCheckedChangeListener { _: RadioGroup?, i: Int ->
             when (i) {
                 R.id.radio_http -> editor.putString("serverProtocol", getString(R.string.http_protocol)).apply()
                 R.id.radio_https -> editor.putString("serverProtocol", getString(R.string.https_protocol)).apply()
@@ -638,10 +607,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     private fun removeProtocol(url: String): String {
-        var url = url
-        url = url.replaceFirst(getString(R.string.https_protocol).toRegex(), "")
-        url = url.replaceFirst(getString(R.string.http_protocol).toRegex(), "")
-        return url
+        var modifiedUrl = url
+        modifiedUrl = modifiedUrl.replaceFirst(getString(R.string.https_protocol).toRegex(), "")
+        modifiedUrl = modifiedUrl.replaceFirst(getString(R.string.http_protocol).toRegex(), "")
+        return modifiedUrl
     }
 
     private fun continueSync(dialog: MaterialDialog) {
@@ -672,7 +641,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
         editor.putLong("lastUsageUploaded", Date().time).apply()
         if (::lblLastSyncDate.isInitialized) {
-            lblLastSyncDate.text = "${getString(R.string.last_sync)}${getRelativeTime(Date().time)} >>"
+            lblLastSyncDate.text = getString(R.string.message_placeholder, "${getString(R.string.last_sync, getRelativeTime(Date().time))} >>")
         }
     }
 
@@ -763,5 +732,38 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     companion object {
         lateinit var cal_today: Calendar
         lateinit var cal_last_Sync: Calendar
+
+        fun clearRealmDb() {
+            val realm = Realm.getDefaultInstance()
+            realm.executeTransaction { transactionRealm ->
+                transactionRealm.deleteAll()
+            }
+            realm.close()
+        }
+
+        fun clearSharedPref() {
+            val settings = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            val editor = settings.edit()
+            val keysToKeep = setOf(SharedPrefManager(context).firstLaunch)
+            val tempStorage = HashMap<String, Boolean>()
+            for (key in keysToKeep) {
+                tempStorage[key] = settings.getBoolean(key, false)
+            }
+            editor.clear().apply()
+            for ((key, value) in tempStorage) {
+                editor.putBoolean(key, value)
+            }
+            editor.commit()
+
+            val preferences = PreferenceManager.getDefaultSharedPreferences(context)
+            preferences.edit().clear().apply()
+        }
+
+        fun restartApp() {
+            val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+            val mainIntent = Intent.makeRestartActivityTask(intent?.component)
+            context.startActivity(mainIntent)
+            Runtime.getRuntime().exit(0)
+        }
     }
 }

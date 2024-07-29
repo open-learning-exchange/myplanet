@@ -67,8 +67,6 @@ open class RealmUserModel : RealmObject() {
     @JvmField
     var birthPlace: String? = null
     @JvmField
-    var communityName: String? = null
-    @JvmField
     var userImage: String? = null
     @JvmField
     var key: String? = null
@@ -172,7 +170,7 @@ open class RealmUserModel : RealmObject() {
     }
 
     override fun toString(): String {
-        return "$firstName $lastName"
+        return "$name"
     }
 
     companion object {

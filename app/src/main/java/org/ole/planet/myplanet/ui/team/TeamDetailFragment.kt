@@ -1,10 +1,12 @@
 package org.ole.planet.myplanet.ui.team
 
 import android.content.DialogInterface
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import com.google.android.material.tabs.TabLayoutMediator
 import org.ole.planet.myplanet.MainApplication
@@ -19,6 +21,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Date
 import java.util.UUID
 
+@RequiresApi(Build.VERSION_CODES.O)
 class TeamDetailFragment : BaseTeamFragment() {
     private lateinit var fragmentTeamDetailBinding: FragmentTeamDetailBinding
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -31,6 +34,9 @@ class TeamDetailFragment : BaseTeamFragment() {
         TabLayoutMediator(fragmentTeamDetailBinding.tabLayout, fragmentTeamDetailBinding.viewPager2) { tab, position ->
             tab.text = (fragmentTeamDetailBinding.viewPager2.adapter as TeamPagerAdapter).getPageTitle(position)
         }.attach()
+
+        fragmentTeamDetailBinding.title.text = team.name
+        fragmentTeamDetailBinding.subtitle.text = team.type
 
         if (!isMyTeam) {
             fragmentTeamDetailBinding.llActionButtons.visibility = View.GONE

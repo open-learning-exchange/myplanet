@@ -37,7 +37,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     var users: List<RealmUserModel>? = null
     private var mAdapter: TeamListAdapter? = null
     private var backPressedTime: Long = 0
-    private val BACK_PRESSED_INTERVAL: Long = 2000
+    private val backPressedInterval: Long = 2000
     private var fallbackLanguage: String = "en"
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -99,7 +99,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if (System.currentTimeMillis() - backPressedTime < BACK_PRESSED_INTERVAL) {
+                if (System.currentTimeMillis() - backPressedTime < backPressedInterval) {
                     finish()
                 } else {
                     toast(this@LoginActivity, getString(R.string.press_back_again_to_exit))
@@ -132,8 +132,8 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                     builder.setCancelable(false)
                     builder.setPositiveButton("Ok") { dialog: DialogInterface, _: Int ->
                         dialog.dismiss()
-                        activityLoginBinding.inputName.setText("")
-                        activityLoginBinding.inputPassword.setText("")
+                        activityLoginBinding.inputName.setText(R.string.empty_text)
+                        activityLoginBinding.inputPassword.setText(R.string.empty_text)
                     }
                     val dialog = builder.create()
                     dialog.show()
@@ -142,18 +142,18 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         }
         if (!settings.contains("serverProtocol")) settings.edit().putString("serverProtocol", "http://").apply()
         activityLoginBinding.becomeMember.setOnClickListener {
-            activityLoginBinding.inputName.setText("")
+            activityLoginBinding.inputName.setText(R.string.empty_text)
             becomeAMember()
         }
 
         activityLoginBinding.imgBtnSetting.setOnClickListener {
-            activityLoginBinding.inputName.setText("")
+            activityLoginBinding.inputName.setText(R.string.empty_text)
             settingDialog()
         }
 
         activityLoginBinding.btnGuestLogin.setOnClickListener {
             if (getUrl().isNotEmpty()) {
-                activityLoginBinding.inputName.setText("")
+                activityLoginBinding.inputName.setText(R.string.empty_text)
                 showGuestLoginDialog()
             } else {
                 toast(this, getString(R.string.please_enter_server_url_first))
@@ -174,7 +174,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                 forceSync = true
                 service.checkVersion(this, settings) }
             declareHideKeyboardElements()
-            activityLoginBinding.lblVersion.text = "${resources.getText(R.string.version)} ${resources.getText(R.string.app_version)}"
+            activityLoginBinding.lblVersion.text = getString(R.string.version, resources.getText(R.string.app_version))
             activityLoginBinding.inputName.addTextChangedListener(MyTextWatcher(activityLoginBinding.inputName))
             activityLoginBinding.inputPassword.addTextChangedListener(MyTextWatcher(activityLoginBinding.inputPassword))
             activityLoginBinding.inputPassword.setOnEditorActionListener { _: TextView?, actionId: Int, event: KeyEvent? ->
@@ -255,35 +255,27 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     }
 
     fun getTeamMembers() {
-        selectedTeamId = prefData.getSELECTEDTEAMID().toString()
+        selectedTeamId = prefData.getSelectedTeamId().toString()
         if (selectedTeamId?.isNotEmpty() == true) {
-            users = RealmMyTeam.getUsers(selectedTeamId, mRealm, "")
-            val userList = (users as MutableList<RealmUserModel>?)?.map {
-                User(it.getFullName(), it.name ?: "", "", it.userImage ?: "", "team")
+            users = RealmMyTeam.getUsers(selectedTeamId, mRealm, "membership")
+            val userList = (users as? MutableList<RealmUserModel>)?.map {
+                User(it.name ?: "", it.name ?: "", "", it.userImage ?: "", "team")
             } ?: emptyList()
 
-            val existingUsers = prefData.getSAVEDUSERS().toMutableList()
+            val existingUsers = prefData.getSavedUsers().toMutableList()
             val filteredExistingUsers = existingUsers.filter { it.source != "team" }
             val updatedUserList = userList.filterNot { user -> filteredExistingUsers.any { it.name == user.name } } + filteredExistingUsers
-            prefData.setSAVEDUSERS(updatedUserList)
+            prefData.setSavedUsers(updatedUserList)
         }
 
-        mAdapter = if (mAdapter == null) {
-            TeamListAdapter(prefData.getSAVEDUSERS().toMutableList(), this, this)
+        if (mAdapter == null) {
+            mAdapter = TeamListAdapter(prefData.getSavedUsers().toMutableList(), this, this)
+            activityLoginBinding.recyclerView.layoutManager = LinearLayoutManager(this)
+            activityLoginBinding.recyclerView.adapter = mAdapter
         } else {
-            mAdapter?.clearList()
-            TeamListAdapter(prefData.getSAVEDUSERS().toMutableList(), this, this)
+            mAdapter?.updateList(prefData.getSavedUsers().toMutableList())
         }
 
-        activityLoginBinding.recyclerView.layoutManager = LinearLayoutManager(this)
-        activityLoginBinding.recyclerView.adapter = mAdapter
-
-        val layoutManager: RecyclerView.LayoutManager = object : LinearLayoutManager(this) {
-            override fun generateDefaultLayoutParams(): RecyclerView.LayoutParams {
-                return RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-            }
-        }
-        activityLoginBinding.recyclerView.layoutManager = layoutManager
         activityLoginBinding.recyclerView.isNestedScrollingEnabled = true
         activityLoginBinding.recyclerView.setHasFixedSize(true)
     }
@@ -523,7 +515,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         if (source === "guest") {
             val newUser = User("", name, password, "", "guest")
             val existingUsers: MutableList<User> = ArrayList(
-                prefData.getSAVEDUSERS()
+                prefData.getSavedUsers()
             )
             var newUserExists = false
             for ((_, name1) in existingUsers) {
@@ -534,19 +526,16 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             }
             if (!newUserExists) {
                 existingUsers.add(newUser)
-                prefData.setSAVEDUSERS(existingUsers)
+                prefData.setSavedUsers(existingUsers)
             }
         } else if (source === "member") {
             var userProfile = profileDbHandler.userModel?.userImage
-            var fullName: String? = profileDbHandler.userModel?.getFullName()
+            var userName: String? = profileDbHandler.userModel?.name
             if (userProfile == null) {
                 userProfile = ""
             }
-            if (fullName?.trim { it <= ' ' }?.isEmpty() == true) {
-                fullName = profileDbHandler.userModel?.name
-            }
-            val newUser = User(fullName, name, password, userProfile, "member")
-            val existingUsers: MutableList<User> = ArrayList(prefData.getSAVEDUSERS())
+            val newUser = User(userName, name, password, userProfile, "member")
+            val existingUsers: MutableList<User> = ArrayList(prefData.getSavedUsers())
             var newUserExists = false
             for ((fullName1) in existingUsers) {
                 if (fullName1 == newUser.fullName?.trim { it <= ' ' }) {
@@ -556,7 +545,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             }
             if (!newUserExists) {
                 existingUsers.add(newUser)
-                prefData.setSAVEDUSERS(existingUsers)
+                prefData.setSavedUsers(existingUsers)
             }
         }
     }
@@ -575,7 +564,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     }
 
     private fun resetGuestAsMember(username: String?) {
-        val existingUsers = prefData.getSAVEDUSERS().toMutableList()
+        val existingUsers = prefData.getSavedUsers().toMutableList()
         var newUserExists = false
         for ((_, name) in existingUsers) {
             if (name == username) {
@@ -591,7 +580,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                     iterator.remove()
                 }
             }
-            prefData.setSAVEDUSERS(existingUsers)
+            prefData.setSavedUsers(existingUsers)
         }
     }
 

@@ -11,6 +11,8 @@ import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
 import android.provider.Settings
 import androidx.annotation.RequiresApi
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.preference.PreferenceManager
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
@@ -27,7 +29,7 @@ import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.NetworkUtils.initialize
 import org.ole.planet.myplanet.utilities.NetworkUtils.startListenNetworkState
-import org.ole.planet.myplanet.utilities.NotificationUtil.cancellAll
+import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils.getVersionName
 import java.util.Date
@@ -61,15 +63,41 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                 }
                 return "0"
             }
+
+        fun createLog(type: String) {
+            val service = DatabaseService(context)
+            val mRealm = service.realmInstance
+            if (!mRealm.isInTransaction) {
+                mRealm.beginTransaction()
+            }
+            val log = mRealm.createObject(RealmApkLog::class.java, "${UUID.randomUUID()}")
+            val model = UserProfileDbHandler(context).userModel
+            if (model != null) {
+                log.parentCode = model.parentCode
+                log.createdOn = model.planetCode
+            }
+            log.time = "${Date().time}"
+            log.page = ""
+            log.version = getVersionName(context)
+            log.type = type
+            mRealm.commitTransaction()
+        }
     }
+
+    private var activityReferences = 0
+    private var isActivityChangingConfigurations = false
+    private var isFirstLaunch = true
+
     @RequiresApi(Build.VERSION_CODES.N)
     override fun onCreate() {
         super.onCreate()
         initialize(CoroutineScope(Dispatchers.IO))
 
-
         context = this
         preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        nightMode()
+        // UNCOMMENT BELOW TO FORCE DARK MODE FOR DARK MODE DEVELOPMENT
+//        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
         val builder = VmPolicy.Builder()
         StrictMode.setVmPolicy(builder.build())
         builder.detectFileUriExposure()
@@ -88,6 +116,17 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         }
         registerActivityLifecycleCallbacks(this)
         startListenNetworkState()
+        onAppStarted()
+    }
+
+    private fun nightMode() {
+        val preference = PreferenceManager.getDefaultSharedPreferences(this).getString("dark_mode", "OFF")
+        val options = listOf(*resources.getStringArray(R.array.dark_mode_options))
+        when (options.indexOf(preference)) {
+            0 -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+            1 -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+            2 -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+        }
     }
 
     private fun scheduleAutoSyncWork(syncInterval: Int?) {
@@ -127,19 +166,46 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
     override fun onActivityCreated(activity: Activity, bundle: Bundle?) {}
 
-    override fun onActivityStarted(activity: Activity) {}
+    override fun onActivityStarted(activity: Activity) {
+        if (++activityReferences == 1 && !isActivityChangingConfigurations) {
+            onAppForegrounded()
+        }
+    }
 
     override fun onActivityResumed(activity: Activity) {}
 
     override fun onActivityPaused(activity: Activity) {}
 
-    override fun onActivityStopped(activity: Activity) {}
+    override fun onActivityStopped(activity: Activity) {
+        isActivityChangingConfigurations = activity.isChangingConfigurations
+        if (--activityReferences == 0 && !isActivityChangingConfigurations) {
+            onAppBackgrounded()
+        }
+    }
 
     override fun onActivitySaveInstanceState(activity: Activity, bundle: Bundle) {}
 
     override fun onActivityDestroyed(activity: Activity) {
-        cancellAll(this)
+        cancelAll(this)
     }
+
+    private fun onAppForegrounded() {
+        if (isFirstLaunch) {
+            isFirstLaunch = false
+        } else {
+            val fromForeground = "foreground"
+            createLog(fromForeground)
+        }
+    }
+    
+    private fun onAppBackgrounded() {}
+
+    private fun onAppStarted() {
+        val newStart = "new launch"
+        createLog(newStart)
+    }
+
+    private fun onAppClosed() {}
 
     private fun handleUncaughtException(e: Throwable) {
         e.printStackTrace()
@@ -162,7 +228,12 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         mRealm.commitTransaction()
         val homeIntent = Intent(Intent.ACTION_MAIN)
         homeIntent.addCategory(Intent.CATEGORY_HOME)
-        homeIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        homeIntent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
         startActivity(homeIntent)
+    }
+
+    override fun onTerminate() {
+        super.onTerminate()
+        onAppClosed()
     }
 }

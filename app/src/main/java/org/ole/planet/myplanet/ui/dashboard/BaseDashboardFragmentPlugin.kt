@@ -1,10 +1,12 @@
 package org.ole.planet.myplanet.ui.dashboard
 
+import android.os.Build
 import android.os.Bundle
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.TextView
+import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import io.realm.RealmObject
@@ -40,13 +42,14 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
                 if (f is TeamDetailFragment) {
                     b.putBoolean("isMyTeam", true)
                 }
-                prefData.setTEAMNAME(title)
+                prefData.setTeamName(title)
                 f.arguments = b
                 homeItemClickListener?.openCallFragment(f)
             }
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun handleClickMyLife(title: String, v: View) {
         v.setOnClickListener {
             if (homeItemClickListener != null) {
@@ -106,6 +109,7 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         setBackgroundColor(textView, itemCnt)
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     fun getLayout(itemCnt: Int, obj: RealmObject): View {
         val itemMyLifeBinding = ItemMyLifeBinding.inflate(LayoutInflater.from(activity))
         val v = itemMyLifeBinding.root
@@ -149,7 +153,7 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         if (count % 2 == 0) {
             v.setBackgroundResource(R.drawable.light_rect)
         } else {
-            v.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.md_grey_300))
+            v.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.dashboard_item_alternative))
         }
     }
 }

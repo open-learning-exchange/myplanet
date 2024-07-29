@@ -1,9 +1,11 @@
 package org.ole.planet.myplanet.ui.dashboard
 
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import io.realm.Realm
 import org.ole.planet.myplanet.R
@@ -22,6 +24,7 @@ class DashboardFragment : BaseDashboardFragment() {
     private lateinit var fragmentHomeBinding: FragmentHomeBinding
     private lateinit var dRealm: Realm
     private lateinit var databaseService: DatabaseService
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentHomeBinding = FragmentHomeBinding.inflate(inflater, container, false)
         val view: View = fragmentHomeBinding.root
@@ -34,7 +37,7 @@ class DashboardFragment : BaseDashboardFragment() {
         fragmentHomeBinding.cardProfile.tvSubmission.setOnClickListener {
             homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("exam"))
         }
-        fragmentHomeBinding.cardProfile.tvAchievement.visibility = if (showBetaFeature(Constants.KEY_ACHIEVEMENT, requireContext())) View.VISIBLE else View.GONE
+        fragmentHomeBinding.cardProfile.tvAchievement.visibility = View.VISIBLE
         fragmentHomeBinding.cardProfile.tvAchievement.setOnClickListener {
             homeItemClickListener?.openCallFragment(AchievementFragment())
         }

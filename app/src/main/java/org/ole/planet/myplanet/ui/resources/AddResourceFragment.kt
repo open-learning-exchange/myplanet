@@ -137,7 +137,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
             }
 
             override fun onRecordStopped(outputFile: String?) {
-                tvTime?.text = ""
+                tvTime?.text = getString(R.string.empty_text)
                 dialog.dismiss()
                 audioStartIntent(outputFile)
                 floatingActionButton?.setImageResource(R.drawable.ic_mic)

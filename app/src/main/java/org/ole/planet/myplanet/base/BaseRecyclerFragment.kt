@@ -66,7 +66,12 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         arguments?.let {
             isMyCourseLib = it.getBoolean("isMyCourseLib")
             courseLib = it.getString("courseLib")
-            resources = it.getSerializable("resources", ArrayList::class.java) as? List<RealmMyLibrary>
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                resources = it.getSerializable("resources", ArrayList::class.java) as? List<RealmMyLibrary>
+            } else {
+                @Suppress("DEPRECATION")
+                resources = it.getSerializable("resources") as? List<RealmMyLibrary>
+            }
         }
     }
 
@@ -91,7 +96,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         recyclerView.adapter = adapter
         if (isMyCourseLib && adapter.itemCount != 0 && courseLib == "courses") {
             resources?.let { showDownloadDialog(it) }
-        } else if (isMyCourseLib && courseLib == null) {
+        } else if (isMyCourseLib && courseLib == null && !isSurvey) {
             showDownloadDialog(getLibraryList(mRealm))
         }
         return v
@@ -295,6 +300,10 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                 "members" -> (v as TextView).setText(R.string.no_join_request_available)
                 "discussions" -> (v as TextView).setText(R.string.no_news)
                 "survey" -> (v as TextView).setText(R.string.no_surveys)
+                "submission" -> (v as TextView).setText(R.string.no_submissions)
+                "teams" -> (v as TextView).setText(R.string.no_teams)
+                "chatHistory" -> (v as TextView).setText(R.string.no_chats)
+                "feedback" -> (v as TextView).setText(R.string.no_feedback)
                 else -> (v as TextView).setText(R.string.no_data_available_please_check_and_try_again)
             }
         }
