@@ -7,6 +7,7 @@ import android.util.Base64
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import com.opencsv.CSVWriter
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
@@ -14,11 +15,15 @@ import io.realm.RealmResults
 import io.realm.annotations.PrimaryKey
 import io.realm.kotlin.where
 import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.model.RealmFeedback.Companion.feedbacksDataList
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.createStepResource
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.Utilities
+import java.io.File
+import java.io.FileWriter
+import java.io.IOException
 import java.util.regex.Pattern
 
 open class RealmMyCourse : RealmObject() {
@@ -77,6 +82,7 @@ open class RealmMyCourse : RealmObject() {
     companion object {
         private val gson = Gson()
         private val concatenatedLinks = ArrayList<String>()
+        val courseDataList: MutableList<Array<String>> = mutableListOf()
 
         @JvmStatic
         fun insertMyCourses(userId: String?, myCousesDoc: JsonObject?, mRealm: Realm) {
@@ -141,6 +147,40 @@ open class RealmMyCourse : RealmObject() {
             myMyCoursesDB?.courseSteps = RealmList()
             myMyCoursesDB?.courseSteps?.addAll(courseStepsList)
             mRealm.commitTransaction()
+
+            val csvRow = arrayOf(
+                JsonUtils.getString("_id", myCousesDoc),
+                JsonUtils.getString("_rev", myCousesDoc),
+                JsonUtils.getString("languageOfInstruction", myCousesDoc),
+                JsonUtils.getString("courseTitle", myCousesDoc),
+                JsonUtils.getInt("memberLimit", myCousesDoc).toString(),
+                JsonUtils.getString("description", myCousesDoc),
+                JsonUtils.getString("method", myCousesDoc),
+                JsonUtils.getString("gradeLevel", myCousesDoc),
+                JsonUtils.getString("subjectLevel", myCousesDoc),
+                JsonUtils.getLong("createdDate", myCousesDoc).toString(),
+                JsonUtils.getJsonArray("steps", myCousesDoc).toString()
+            )
+            courseDataList.add(csvRow)
+        }
+
+        fun writeCsv(filePath: String, data: List<Array<String>>) {
+            try {
+                val file = File(filePath)
+                file.parentFile?.mkdirs()
+                val writer = CSVWriter(FileWriter(file))
+                writer.writeNext(arrayOf("courseId", "course_rev", "languageOfInstruction", "courseTitle", "memberLimit", "description", "method", "gradeLevel", "subjectLevel", "createdDate", "steps"))
+                for (row in data) {
+                    writer.writeNext(row)
+                }
+                writer.close()
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        }
+
+        fun courseWriteCsv() {
+            writeCsv("${context.getExternalFilesDir(null)}/ole/course.csv", courseDataList)
         }
 
         private fun extractLinks(text: String?): ArrayList<String> {
