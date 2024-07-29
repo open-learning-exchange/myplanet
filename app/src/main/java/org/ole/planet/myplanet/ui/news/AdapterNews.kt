@@ -165,7 +165,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                     holder.rowNewsBinding.sharedChat.visibility = View.VISIBLE
 
                     holder.rowNewsBinding.linearLayout5.setOnClickListener {
-                        clickListener(news.conversations, news.newsId, news.newsRev)
+                        listener?.onNewsItemClick(news)
                     }
                 } else {
                     holder.rowNewsBinding.recyclerGchat.visibility = View.GONE
@@ -379,6 +379,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     interface OnNewsItemClickListener {
         fun showReply(news: RealmNews?, fromLogin: Boolean)
         fun addImage(llImage: LinearLayout?)
+        fun onNewsItemClick(news: RealmNews?)
     }
 
     private fun getLabel(s: String): String {

@@ -127,6 +127,8 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
         setTeamList()
     }
 
+    override fun onNewsItemClick(news: RealmNews?) {}
+
     private fun setTeamList() {
         val users: List<RealmUserModel> = getUsers(teamId, mRealm, "")
         createTeamLog()
