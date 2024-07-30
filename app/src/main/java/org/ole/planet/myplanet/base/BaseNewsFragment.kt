@@ -114,10 +114,10 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
     private fun getImagePath(uri: Uri?): String? {
         var cursor = uri?.let { requireContext().contentResolver.query(it, null, null, null, null) }
         cursor?.moveToFirst()
-        var document_id = cursor?.getString(0)
-        document_id = document_id?.substring(document_id.lastIndexOf(":") + 1)
+        var documentId = cursor?.getString(0)
+        documentId = documentId?.substring(documentId.lastIndexOf(":") + 1)
         cursor?.close()
-        cursor = requireContext().contentResolver.query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, null, MediaStore.Images.Media._ID + " = ? ", arrayOf(document_id), null)
+        cursor = requireContext().contentResolver.query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, null, MediaStore.Images.Media._ID + " = ? ", arrayOf(documentId), null)
         cursor?.moveToFirst()
         val path = cursor?.getString(cursor.getColumnIndex(MediaStore.Images.Media.DATA))
         cursor?.close()
