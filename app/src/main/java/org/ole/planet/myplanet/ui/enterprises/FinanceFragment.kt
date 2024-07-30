@@ -19,6 +19,7 @@ import org.ole.planet.myplanet.databinding.AddTransactionBinding
 import org.ole.planet.myplanet.databinding.FragmentFinanceBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDateTZ
 import org.ole.planet.myplanet.utilities.Utilities
@@ -116,6 +117,8 @@ class FinanceFragment : BaseTeamFragment() {
         updatedFinanceList(list as RealmResults<RealmMyTeam>)
         showNoData(fragmentFinanceBinding.tvNodata, list?.size, "finances")
     }
+
+    override fun onNewsItemClick(news: RealmNews?) {}
 
     private fun calculateTotal(list: List<RealmMyTeam>?) {
         var debit = 0

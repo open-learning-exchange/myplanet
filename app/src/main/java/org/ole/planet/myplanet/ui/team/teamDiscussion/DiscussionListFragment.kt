@@ -22,6 +22,7 @@ import org.ole.planet.myplanet.databinding.FragmentDiscussionListBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmTeamNotification
+import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.news.AdapterNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.Constants
@@ -63,6 +64,21 @@ class DiscussionListFragment : BaseTeamFragment() {
         }
         changeLayoutManager(resources.configuration.orientation, fragmentDiscussionListBinding.rvDiscussion)
         showRecyclerView(realmNewsList)
+    }
+
+    override fun onNewsItemClick(news: RealmNews?) {
+        val bundle = Bundle()
+        bundle.putString("newsId", news?.newsId)
+        bundle.putString("newsRev", news?.newsRev)
+        bundle.putString("conversations", news?.conversations)
+
+        val chatDetailFragment = ChatDetailFragment()
+        chatDetailFragment.arguments = bundle
+
+        parentFragmentManager.beginTransaction()
+            .replace(R.id.fragment_container, chatDetailFragment)
+            .addToBackStack(null)
+            .commit()
     }
 
     private fun filterNewsList(results: RealmResults<RealmNews>): List<RealmNews?> {
