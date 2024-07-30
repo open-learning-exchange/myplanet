@@ -309,8 +309,7 @@ class Service(private val context: Context) {
                                 couchdbURL = url
                             } else {
                                 val urlUser = "satellite"
-                                couchdbURL =
-                                    "${uri.scheme}://$urlUser:$pin@${uri.host}:${if (uri.port == -1) if (uri.scheme == "http") 80 else 443 else uri.port}"
+                                couchdbURL = "${uri.scheme}://$urlUser:$pin@${uri.host}:${if (uri.port == -1) if (uri.scheme == "http") 80 else 443 else uri.port}"
                             }
                             retrofitInterface.getConfiguration("${getUrl(couchdbURL)}/configurations/_all_docs?include_docs=true").enqueue(object : Callback<JsonObject?> {
                                 override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
