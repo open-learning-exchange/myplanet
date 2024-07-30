@@ -21,7 +21,7 @@ open class FileUploadService {
         val f = personal.path?.let { File(it) }
         val name = FileUtils.getFileNameFromUrl(personal.path)
         if (f != null) {
-            upload_doc(id, rev, "%s/resources/%s/%s", f, name, listener)
+            uploadDoc(id, rev, "%s/resources/%s/%s", f, name, listener)
         }
     }
 
@@ -29,7 +29,7 @@ open class FileUploadService {
         val f = personal.resourceLocalAddress?.let { File(it) }
         val name = FileUtils.getFileNameFromUrl(personal.resourceLocalAddress)
         if (f != null) {
-            upload_doc(id, rev, "%s/resources/%s/%s", f, name, listener)
+            uploadDoc(id, rev, "%s/resources/%s/%s", f, name, listener)
         }
     }
 
@@ -37,11 +37,11 @@ open class FileUploadService {
         val f = personal.photoLocation?.let { File(it) }
         val name = FileUtils.getFileNameFromUrl(personal.photoLocation)
         if (f != null) {
-            upload_doc(id, rev, "%s/submissions/%s/%s", f, name, listener)
+            uploadDoc(id, rev, "%s/submissions/%s/%s", f, name, listener)
         }
     }
 
-    private fun upload_doc(id: String, rev: String, format: String, f: File, name: String, listener: SuccessListener) {
+    private fun uploadDoc(id: String, rev: String, format: String, f: File, name: String, listener: SuccessListener) {
         val apiInterface = ApiClient.client?.create(ApiInterface::class.java)
         try {
             val connection = f.toURI().toURL().openConnection()
