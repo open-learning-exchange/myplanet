@@ -60,4 +60,4 @@ jobs:
           done
 
       - name: build debug as test
-        run: ./gradlew assembleDebug --configuration-cache --no-daemon
+        run: ./gradlew assembleDebug --configuration-cache --no-daemon --warning-mode all --stacktrace
