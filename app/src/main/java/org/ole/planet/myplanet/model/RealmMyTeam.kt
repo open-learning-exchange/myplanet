@@ -1,16 +1,22 @@
-package org.ole.planet.myplanet.model;
+package org.ole.planet.myplanet.model
 
 import android.content.SharedPreferences
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import com.opencsv.CSVWriter
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.RealmResults
 import io.realm.annotations.PrimaryKey
+import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.libraryDataList
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.JsonUtils
+import java.io.File
+import java.io.FileWriter
+import java.io.IOException
 import java.util.Date
 
 open class RealmMyTeam : RealmObject() {
@@ -91,6 +97,9 @@ open class RealmMyTeam : RealmObject() {
     var updatedDate: Long = 0
 
     companion object {
+        val teamDataList: MutableList<Array<String>> = mutableListOf()
+        val reportsDataList: MutableList<Array<String>> = mutableListOf()
+
         @JvmStatic
         fun insertMyTeams(doc: JsonObject, mRealm: Realm) {
             val teamId = JsonUtils.getString("_id", doc)
@@ -141,6 +150,62 @@ open class RealmMyTeam : RealmObject() {
                     }
                 }
             }
+            val csvRow = arrayOf(
+                JsonUtils.getString("userId", doc),
+                JsonUtils.getString("teamId", doc),
+                JsonUtils.getString("_rev", doc),
+                JsonUtils.getString("name", doc),
+                JsonUtils.getString("sourcePlanet", doc),
+                JsonUtils.getString("title", doc),
+                JsonUtils.getString("description", doc),
+                JsonUtils.getInt("limit", doc).toString(),
+                JsonUtils.getString("status", doc),
+                JsonUtils.getString("teamPlanetCode", doc),
+                JsonUtils.getLong("createdDate", doc).toString(),
+                JsonUtils.getString("resourceId", doc),
+                JsonUtils.getString("teamType", doc),
+                JsonUtils.getString("route", doc),
+                JsonUtils.getString("type", doc),
+                JsonUtils.getString("services", doc),
+                JsonUtils.getString("rules", doc),
+                JsonUtils.getString("parentCode", doc),
+                JsonUtils.getString("createdBy", doc),
+                JsonUtils.getString("userPlanetCode", doc),
+                JsonUtils.getBoolean("isLeader", doc).toString(),
+                JsonUtils.getInt("amount", doc).toString(),
+                JsonUtils.getLong("date", doc).toString(),
+                JsonUtils.getString("docType", doc),
+                JsonUtils.getBoolean("public", doc).toString(),
+                JsonUtils.getInt("beginningBalance", doc).toString(),
+                JsonUtils.getInt("sales", doc).toString(),
+                JsonUtils.getInt("otherIncome", doc).toString(),
+                JsonUtils.getInt("wages", doc).toString(),
+                JsonUtils.getInt("otherExpenses", doc).toString(),
+                JsonUtils.getLong("startDate", doc).toString(),
+                JsonUtils.getLong("endDate", doc).toString(),
+                JsonUtils.getLong("updatedDate", doc).toString(),
+                JsonUtils.getJsonArray("courses", doc).toString()
+            )
+            teamDataList.add(csvRow)
+        }
+
+        fun writeCsv(filePath: String, data: List<Array<String>>) {
+            try {
+                val file = File(filePath)
+                file.parentFile?.mkdirs()
+                val writer = CSVWriter(FileWriter(file))
+                writer.writeNext(arrayOf("userId", "teamId", "teamId_rev", "name", "sourcePlanet", "title", "description", "limit", "status", "teamPlanetCode", "createdDate", "resourceId", "teamType", "route", "type", "services", "rules", "parentCode", "createdBy", "userPlanetCode", "isLeader", "amount", "date", "docType", "public", "beginningBalance", "sales", "otherIncome", "wages", "otherExpenses", "startDate", "endDate", "updatedDate", "courses"))
+                for (row in data) {
+                    writer.writeNext(row)
+                }
+                writer.close()
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        }
+
+        fun teamWriteCsv() {
+            writeCsv("${context.getExternalFilesDir(null)}/ole/team.csv", teamDataList)
         }
 
         @JvmStatic
@@ -171,6 +236,44 @@ open class RealmMyTeam : RealmObject() {
                 myTeams.updated = JsonUtils.getBoolean("updated", doc)
             }
             mRealm.commitTransaction()
+
+            val csvRow = arrayOf(
+                JsonUtils.getString("teamId", doc),
+                JsonUtils.getString("description", doc),
+                JsonUtils.getString("teamPlanetCode", doc),
+                JsonUtils.getLong("createdDate", doc).toString(),
+                JsonUtils.getString("teamType", doc),
+                JsonUtils.getString("docType", doc),
+                JsonUtils.getInt("beginningBalance", doc).toString(),
+                JsonUtils.getInt("sales", doc).toString(),
+                JsonUtils.getInt("otherIncome", doc).toString(),
+                JsonUtils.getInt("wages", doc).toString(),
+                JsonUtils.getInt("otherExpenses", doc).toString(),
+                JsonUtils.getLong("startDate", doc).toString(),
+                JsonUtils.getLong("endDate", doc).toString(),
+                JsonUtils.getLong("updatedDate", doc).toString(),
+                JsonUtils.getBoolean("updated", doc).toString()
+            )
+            reportsDataList.add(csvRow)
+        }
+
+        fun reportWriteCsv(filePath: String, data: List<Array<String>>) {
+            try {
+                val file = File(filePath)
+                file.parentFile?.mkdirs()
+                val writer = CSVWriter(FileWriter(file))
+                writer.writeNext(arrayOf("teamId", "description", "teamPlanetCode", "createdDate", "teamType", "docType", "beginningBalance", "sales", "otherIncome", "wages", "otherExpenses", "startDate", "endDate", "updatedDate", "updated"))
+                for (row in data) {
+                    writer.writeNext(row)
+                }
+                writer.close()
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        }
+
+        fun reportsWriteCsv() {
+            reportWriteCsv("${context.getExternalFilesDir(null)}/ole/reports.csv", reportsDataList)
         }
 
         @JvmStatic
@@ -273,17 +376,6 @@ open class RealmMyTeam : RealmObject() {
         }
 
         @JvmStatic
-        fun leaveTeam(teamId: String, userModel: RealmUserModel, mRealm: Realm) {
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
-            val team = mRealm.where(RealmMyTeam::class.java)
-                .equalTo("teamId", teamId)
-                .equalTo("userId", userModel.id)
-                .findFirst()
-            team?.deleteFromRealm()
-            mRealm.commitTransaction()
-        }
-
-        @JvmStatic
         fun getRequestedMember(teamId: String, realm: Realm): MutableList<RealmUserModel> {
             return getUsers(teamId, realm, "request")
         }
@@ -310,9 +402,9 @@ open class RealmMyTeam : RealmObject() {
             if (docType.isNotEmpty()) {
                 query = query.equalTo("docType", docType)
             }
-            val myteam = query.findAll()
+            val myTeam = query.findAll()
             val list = mutableListOf<RealmUserModel>()
-            for (team in myteam) {
+            for (team in myTeam) {
                 val model = mRealm.where(RealmUserModel::class.java)
                     .equalTo("id", team.userId)
                     .findFirst()
@@ -323,9 +415,9 @@ open class RealmMyTeam : RealmObject() {
 
         @JvmStatic
         fun filterUsers(teamId: String?, user: String, mRealm: Realm): MutableList<RealmUserModel> {
-            val myteam = mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId).findAll()
+            val myTeam = mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId).findAll()
             val list = mutableListOf<RealmUserModel>()
-            for (team in myteam) {
+            for (team in myTeam) {
                 val model = mRealm.where(RealmUserModel::class.java)
                     .equalTo("id", team.userId)
                     .findFirst()

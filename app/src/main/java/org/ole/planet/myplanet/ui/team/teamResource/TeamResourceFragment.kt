@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.databinding.MyLibraryAlertdialogBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getResourceIds
+import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.CheckboxListView
 import java.util.UUID
@@ -34,8 +35,13 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         showLibraryList()
+        if (!isMember()) {
+            fragmentTeamResourceBinding.fabAddResource.visibility = View.GONE
+        }
         fragmentTeamResourceBinding.fabAddResource.setOnClickListener { showResourceListDialog() }
     }
+
+    override fun onNewsItemClick(news: RealmNews?) {}
 
     private fun showLibraryList() {
         val libraries: List<RealmMyLibrary> = mRealm.where(RealmMyLibrary::class.java).`in`("id", getResourceIds(teamId, mRealm).toTypedArray<String>()).findAll()

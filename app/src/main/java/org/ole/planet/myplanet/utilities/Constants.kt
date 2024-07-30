@@ -25,14 +25,8 @@ object Constants {
     const val DICTIONARY_URL = "http://157.245.241.39:8000/output.json"
     @JvmField
     var shelfDataList = mutableListOf<ShelfData>()
-    const val KEY_RATING = "beta_rating"
     const val KEY_SYNC = "beta_wifi_switch"
-    const val KEY_SURVEY = "beta_survey"
     const val KEY_MEETUPS = "key_meetup"
-    const val KEY_TEAMS = "key_teams"
-    const val KEY_DELETE = "key_delete"
-    const val KEY_MYHEALTH = "beta_myHealth"
-    const val KEY_HEALTHWORKER = "beta_healthWorker"
     const val KEY_AUTOSYNC_ = "auto_sync_with_server"
     const val KEY_AUTOSYNC_WEEKLY = "force_weekly_sync"
     const val KEY_AUTOSYNC_MONTHLY = "force_monthly_sync"
@@ -41,7 +35,7 @@ object Constants {
     const val DISCLAIMER = R.string.disclaimer
     const val ABOUT = R.string.about
     const val PREFS_NAME = "OLE_PLANET"
-    val COLOR_MAP = HashMap<Class<*>, Int>()
+    private val COLOR_MAP = HashMap<Class<*>, Int>()
     @JvmField
     var classList = HashMap<String, Class<*>>()
     @JvmField
@@ -53,10 +47,10 @@ object Constants {
         initClasses()
         shelfDataList = ArrayList()
         LABELS = HashMap()
-        shelfDataList.add(ShelfData("resourceIds", "resources", "resourceId", RealmMyLibrary::class.java))
-        shelfDataList.add(ShelfData("meetupIds", "meetups", "meetupId", RealmMeetup::class.java))
-        shelfDataList.add(ShelfData("courseIds", "courses", "courseId", RealmMyCourse::class.java))
-        shelfDataList.add(ShelfData("myTeamIds", "teams", "teamId", RealmMyTeam::class.java))
+        shelfDataList.add(ShelfData("resourceIds", "resources", "resourceId"))
+        shelfDataList.add(ShelfData("meetupIds", "meetups", "meetupId"))
+        shelfDataList.add(ShelfData("courseIds", "courses", "courseId"))
+        shelfDataList.add(ShelfData("myTeamIds", "teams", "teamId"))
         COLOR_MAP[RealmMyLibrary::class.java] = R.color.md_red_200
         COLOR_MAP[RealmMyCourse::class.java] = R.color.md_amber_200
         COLOR_MAP[RealmMyTeam::class.java] = R.color.md_green_200
@@ -99,7 +93,6 @@ object Constants {
     class ShelfData(
         @JvmField var key: String,
         @JvmField var type: String,
-        @JvmField var categoryKey: String,
-        @JvmField var aClass: Class<*>
+        @JvmField var categoryKey: String
     )
 }

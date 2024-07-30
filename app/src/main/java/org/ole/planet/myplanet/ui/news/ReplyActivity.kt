@@ -75,10 +75,11 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         newsAdapter.setListener(this)
         newsAdapter.setmRealm(mRealm)
         newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))
+        newsAdapter.setNonTeamMember(intent.getBooleanExtra("nonTeamMember", false))
         activityReplyBinding.rvReply.adapter = newsAdapter
     }
 
-    override fun showReply(news: RealmNews?, fromLogin: Boolean) {
+    override fun showReply(news: RealmNews?, fromLogin: Boolean, nonTeamMember: Boolean) {
         startActivity(Intent(this, ReplyActivity::class.java).putExtra("id", news?.id))
     }
 
@@ -88,6 +89,8 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         intent.type = "image/*"
         openFolderLauncher.launch(Intent.createChooser(intent, "Select Image"))
     }
+
+    override fun onNewsItemClick(news: RealmNews?) {}
 
     private fun handleImageSelection(url: Uri?) {
         if (url == null) {

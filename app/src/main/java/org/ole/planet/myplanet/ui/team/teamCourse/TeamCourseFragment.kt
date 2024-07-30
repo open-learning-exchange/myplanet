@@ -9,6 +9,7 @@ import androidx.annotation.RequiresApi
 import androidx.recyclerview.widget.LinearLayoutManager
 import org.ole.planet.myplanet.databinding.FragmentTeamCourseBinding
 import org.ole.planet.myplanet.model.RealmMyCourse
+import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -29,4 +30,6 @@ class TeamCourseFragment : BaseTeamFragment() {
             showNoData(fragmentTeamCourseBinding.tvNodata, adapterTeamCourse.itemCount, "teamCourses")
         }
     }
+
+    override fun onNewsItemClick(news: RealmNews?) {}
 }

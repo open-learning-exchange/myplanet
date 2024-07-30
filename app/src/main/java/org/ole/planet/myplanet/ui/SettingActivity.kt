@@ -19,6 +19,7 @@ import androidx.preference.Preference
 import androidx.preference.Preference.OnPreferenceChangeListener
 import androidx.preference.Preference.OnPreferenceClickListener
 import androidx.preference.PreferenceFragmentCompat
+import androidx.preference.PreferenceManager
 import androidx.preference.SwitchPreference
 import io.realm.Realm
 import org.ole.planet.myplanet.R
@@ -92,6 +93,7 @@ class SettingActivity : AppCompatActivity() {
             dialog = DialogUtils.getCustomProgressDialog(requireActivity())
             setBetaToggleOn()
             setAutoSyncToggleOn()
+            setDownloadSyncFilesToggle()
             val lp = findPreference<ListPreference>("app_language")
             if (lp != null) {
                 lp.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, o: Any ->
@@ -199,6 +201,16 @@ class SettingActivity : AppCompatActivity() {
                 lastSyncDate?.setTitle(R.string.last_synced_never)
             } else if (lastSyncDate != null) {
                 lastSyncDate.title = getString(R.string.last_synced_colon) + Utilities.getRelativeTime(lastSynced)
+            }
+        }
+
+        private fun setDownloadSyncFilesToggle() {
+            val downloadSyncFiles = findPreference<SwitchPreference>("download_sync_files")
+            downloadSyncFiles?.onPreferenceChangeListener = OnPreferenceChangeListener { _, newValue ->
+                val isEnabled = newValue as Boolean
+                val sharedPreferences = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                sharedPreferences.edit().putBoolean("download_sync_files", isEnabled).apply()
+                true
             }
         }
 

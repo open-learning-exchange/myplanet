@@ -9,7 +9,7 @@ import io.realm.Realm
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.populateUsersTable
-import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.AndroidDecrypter
+import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.androidDecrypter
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.Utilities
@@ -41,7 +41,7 @@ class ManagerSync private constructor(context: Context) {
 //                          val decrypt = AndroidDecrypter()
                             val derivedKey = jsonDoc["derived_key"].asString
                             val salt = jsonDoc["salt"].asString
-                            if (AndroidDecrypter(userName, password, derivedKey, salt)) {
+                            if (androidDecrypter(userName, password, derivedKey, salt)) {
                                 checkManagerAndInsert(jsonDoc, mRealm, listener)
                             } else {
                                 listener.onSyncFailed("Name or password is incorrect.")

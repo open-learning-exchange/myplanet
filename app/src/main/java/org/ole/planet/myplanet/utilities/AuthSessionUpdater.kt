@@ -30,8 +30,8 @@ class AuthSessionUpdater(private val callback: AuthCallback, private val setting
     }
 
     // sendPost() - Meant to get New AuthSession Token for viewing Online resources such as Video, and basically any file.
-    // It creates a session of about 20mins after which a new AuthSession Token will be needed.
-    // During these 20mins items.getResourceRemoteAddress() will work in obtaining the files necessary.
+    // It creates a session of about 20 mins after which a new AuthSession Token will be needed.
+    // During these 20 mins items.getResourceRemoteAddress() will work in obtaining the files necessary.
     private fun sendPost(settings: SharedPreferences) {
         val thread = Thread {
             try {

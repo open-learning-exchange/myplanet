@@ -195,8 +195,8 @@ object DialogUtils {
             dialog?.setCancelable(state)
         }
 
-        fun setIndeterminate(isIndeterminate: Boolean) {
-            progressBar.isIndeterminate = isIndeterminate
+        private fun setIndeterminate() {
+            progressBar.isIndeterminate = false
         }
 
         fun setMax(maxValue: Int) {
@@ -204,7 +204,7 @@ object DialogUtils {
         }
 
         fun setProgress(value: Int) {
-            setIndeterminate(false)
+            setIndeterminate()
             progressBar.progress = value
         }
 

@@ -40,6 +40,14 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
 
     override fun setData(list: List<RealmNews?>?) {}
 
+    fun isMember(): Boolean {
+        return mRealm.where(RealmMyTeam::class.java)
+            .equalTo("userId", user?.id)
+            .equalTo("teamId", teamId)
+            .equalTo("docType", "membership")
+            .count() > 0
+    }
+
     companion object {
         var settings: SharedPreferences? = null
     }
