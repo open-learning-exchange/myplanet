@@ -44,7 +44,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     private var timesRated: TextView? = null
     var rating: TextView? = null
     private var ratingBar: AppCompatRatingBar? = null
-    private val INSTALL_UNKNOWN_SOURCES_REQUEST_CODE = 112
+    private val installUnknownSourcesRequestCode = 112
     var hasInstallPermission = hasInstallPermission(MainApplication.context)
     private var currentLibrary: RealmMyLibrary? = null
     private lateinit var installApkLauncher: ActivityResultLauncher<Intent>
@@ -219,7 +219,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    private fun openFileType(items: RealmMyLibrary, videotype: String) {
+    private fun openFileType(items: RealmMyLibrary, videoType: String) {
         val mimetype = Utilities.getMimeType(items.resourceLocalAddress)
         if (mimetype == null) {
             Utilities.toast(activity, getString(R.string.unable_to_open_resource))
@@ -228,7 +228,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         profileDbHandler = UserProfileDbHandler(requireContext())
         profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_OPEN)
         if (mimetype.startsWith("video")) {
-            playVideo(videotype, items)
+            playVideo(videoType, items)
         } else {
             checkFileExtension(items)
         }
@@ -300,7 +300,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             btnResources.visibility = View.GONE
         } else {
             btnResources.visibility = View.VISIBLE
-            btnResources.text = getString(R.string.resources) + " [" + resources.size + "]"
+            btnResources.text = getString(R.string.resources_size, resources.size)
             btnResources.setOnClickListener {
                 if (resources.isNotEmpty()) {
                     showDownloadDialog(resources)

@@ -8,7 +8,7 @@ import androidx.appcompat.app.AppCompatActivity
 import org.ole.planet.myplanet.utilities.LocaleHelper
 
 abstract class BaseActivity : AppCompatActivity() {
-    public override fun onCreate(savedInstanceState: Bundle?) {
+    override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
     }
 
