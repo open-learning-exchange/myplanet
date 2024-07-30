@@ -26,6 +26,7 @@ import org.ole.planet.myplanet.databinding.AlertTaskBinding
 import org.ole.planet.myplanet.databinding.AlertUsersSpinnerBinding
 import org.ole.planet.myplanet.databinding.FragmentTeamTaskBinding
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMember
+import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.myhealth.UserListArrayAdapter
@@ -174,6 +175,8 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
             setAdapter()
         }
     }
+
+    override fun onNewsItemClick(news: RealmNews?) {}
 
     private fun setAdapter() {
         if(isAdded) {

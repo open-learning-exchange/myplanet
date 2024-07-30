@@ -10,6 +10,7 @@ import android.view.ViewGroup
 import androidx.annotation.RequiresApi
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentPlanBinding
+import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -50,4 +51,6 @@ class PlanFragment : BaseTeamFragment() {
         }
         fragmentPlanBinding.tvDate.text = getString(R.string.two_strings, getString(R.string.created_on), formatDate(team.createdDate))
     }
+
+    override fun onNewsItemClick(news: RealmNews?) {}
 }

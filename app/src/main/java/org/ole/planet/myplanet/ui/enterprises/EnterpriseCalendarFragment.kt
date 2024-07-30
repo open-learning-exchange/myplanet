@@ -14,6 +14,7 @@ import com.google.gson.*
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.*
 import org.ole.planet.myplanet.model.RealmMeetup
+import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.mymeetup.AdapterMeetup
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.*
@@ -140,6 +141,8 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
 
         refreshCalendarView()
     }
+
+    override fun onNewsItemClick(news: RealmNews?) {}
 
     private fun showMeetupDetails(dateInMillis: Long) {
         fragmentEnterpriseCalendarBinding.meetup.visibility = View.VISIBLE

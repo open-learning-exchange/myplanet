@@ -1,13 +1,18 @@
 package org.ole.planet.myplanet.model
 
 import com.google.gson.JsonObject
+import com.opencsv.CSVWriter
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
+import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getCourseSteps
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourseByUserId
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.isMyCourse
 import org.ole.planet.myplanet.utilities.JsonUtils
+import java.io.File
+import java.io.FileWriter
+import java.io.IOException
 
 open class RealmCourseProgress : RealmObject() {
     @PrimaryKey
@@ -34,6 +39,7 @@ open class RealmCourseProgress : RealmObject() {
     var parentCode: String? = null
 
     companion object {
+        val progressDataList: MutableList<Array<String>> = mutableListOf()
         @JvmStatic
         fun serializeProgress(progress: RealmCourseProgress): JsonObject {
             val `object` = JsonObject()
@@ -110,6 +116,39 @@ open class RealmCourseProgress : RealmObject() {
             courseProgress?.createdDate = JsonUtils.getLong("createdDate", act)
             courseProgress?.updatedDate = JsonUtils.getLong("updatedDate", act)
             mRealm.commitTransaction()
+
+            val csvRow = arrayOf(
+                JsonUtils.getString("_id", act),
+                JsonUtils.getString("_rev", act),
+                JsonUtils.getBoolean("passed", act).toString(),
+                JsonUtils.getInt("stepNum", act).toString(),
+                JsonUtils.getString("userId", act),
+                JsonUtils.getString("parentCode", act),
+                JsonUtils.getString("courseId", act),
+                JsonUtils.getString("createdOn", act),
+                JsonUtils.getLong("createdDate", act).toString(),
+                JsonUtils.getLong("updatedDate", act).toString()
+            )
+            progressDataList.add(csvRow)
+        }
+
+        fun writeCsv(filePath: String, data: List<Array<String>>) {
+            try {
+                val file = File(filePath)
+                file.parentFile?.mkdirs()
+                val writer = CSVWriter(FileWriter(file))
+                writer.writeNext(arrayOf("progressId", "progress_rev", "passed", "stepNum", "userId", "parentCode", "courseId", "createdOn", "createdDate", "updatedDate"))
+                for (row in data) {
+                    writer.writeNext(row)
+                }
+                writer.close()
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        }
+
+        fun progressWriteCsv() {
+            writeCsv("${context.getExternalFilesDir(null)}/ole/chatHistory.csv", progressDataList)
         }
     }
 }
