@@ -297,13 +297,23 @@ open class RealmMyLibrary : RealmObject() {
             mRealm.commitTransaction()
         }
 
-        @JvmStatic
         fun insertMyLibrary(userId: String?, stepId: String?, courseId: String?, doc: JsonObject, mRealm: Realm) {
-            if(mRealm.isInTransaction) {
-                Log.e("RealmMyLibrary", "insertMyLibrary: Transaction is already in progress")
-            } else{
-                Log.e("RealmMyLibrary", "insertMyLibrary: Transaction is not in progress")
+            try {
+                if (!mRealm.isInTransaction) {
+                    mRealm.executeTransaction { realm ->
+                        insertOrUpdateLibrary(userId, stepId, courseId, doc, realm)
+                    }
+                } else {
+                    insertOrUpdateLibrary(userId, stepId, courseId, doc, mRealm)
+                }
+            } catch (e: Exception) {
+                Log.e("RealmMyLibrary", "Error during insertion into library: ${e.message}")
+                throw e
             }
+        }
+        
+        @JvmStatic
+        fun insertOrUpdateLibrary(userId: String?, stepId: String?, courseId: String?, doc: JsonObject, mRealm: Realm) {
             val resourceId = JsonUtils.getString("_id", doc)
             val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             var resource = mRealm.where(RealmMyLibrary::class.java).equalTo("id", resourceId).findFirst()
