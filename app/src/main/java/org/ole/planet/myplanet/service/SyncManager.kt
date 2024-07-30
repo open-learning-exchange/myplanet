@@ -254,33 +254,30 @@ class SyncManager private constructor(private val context: Context) {
 
     private fun triggerInsert(stringArray: Array<String?>, resourceDoc: JsonObject) {
         val realm = Realm.getDefaultInstance()
+        var transactionStarted = false
+
         try {
-            // Start transaction if not already in progress
             if (!realm.isInTransaction) {
                 realm.beginTransaction()
+                transactionStarted = true
                 Log.d("SyncManager", "Transaction started for ${stringArray[2]}")
-            } else {
-                Log.e("SyncManager", "Transaction already in progress for ${stringArray[2]}")
-            }
 
-            // Perform insertion based on category
-            when (stringArray[2]) {
-                "resources" -> insertMyLibrary(stringArray[0], resourceDoc, realm)
-                "meetups" -> insert(realm, resourceDoc)
-                "courses" -> insertMyCourses(stringArray[0], resourceDoc, realm)
-                "teams" -> insertMyTeams(resourceDoc, realm)
-            }
+                when (stringArray[2]) {
+                    "resources" -> insertMyLibrary(stringArray[0], resourceDoc, realm)
+                    "meetups" -> insert(realm, resourceDoc)
+                    "courses" -> insertMyCourses(stringArray[0], resourceDoc, realm)
+                    "teams" -> insertMyTeams(resourceDoc, realm)
+                }
 
-            // Commit transaction if it is still in progress
-            if (realm.isInTransaction) {
-                realm.commitTransaction()
-                Log.d("SyncManager", "Transaction committed for ${stringArray[2]}")
+                if (realm.isInTransaction) {
+                    realm.commitTransaction()
+                    Log.d("SyncManager", "Transaction committed for ${stringArray[2]}")
+                }
             } else {
-                Log.e("SyncManager", "No transaction in progress to commit for ${stringArray[2]}")
+                Log.e("SyncManager", "The Realm is already in a write transaction for ${stringArray[2]}")
             }
         } catch (e: Exception) {
-            // Cancel transaction if an exception occurs and transaction is in progress
-            if (realm.isInTransaction) {
+            if (transactionStarted && realm.isInTransaction) {
                 realm.cancelTransaction()
                 Log.e("SyncManager", "Transaction canceled for ${stringArray[2]}: ${e.message}")
             }
@@ -290,37 +287,12 @@ class SyncManager private constructor(private val context: Context) {
         }
         saveConcatenatedLinksToPrefs()
     }
-//    private fun triggerInsert(stringArray: Array<String?>, resourceDoc: JsonObject) {
-//        val realm = Realm.getDefaultInstance()
-//        try {
-//            realm.executeTransaction { transactionRealm ->
-//                Log.d("SyncManager", "Transaction started for ${stringArray[2]}")
-//
-//                // Perform insertion based on category
-//                when (stringArray[2]) {
-//                    "resources" -> insertMyLibrary(stringArray[0], resourceDoc, transactionRealm)
-//                    "meetups" -> insert(transactionRealm, resourceDoc)
-//                    "courses" -> insertMyCourses(stringArray[0], resourceDoc, transactionRealm)
-//                    "teams" -> insertMyTeams(resourceDoc, transactionRealm)
-//                }
-//
-//                Log.d("SyncManager", "Transaction committed for ${stringArray[2]}")
-//            }
-//        } catch (e: Exception) {
-//            Log.e("SyncManager", "Error inserting into ${stringArray[2]}: ${e.message}")
-//        } finally {
-//            realm.close()
-//        }
-//        saveConcatenatedLinksToPrefs()
-//    }
-
 
     companion object {
         private var ourInstance: SyncManager? = null
-        val instance: SyncManager?
-            get() {
-                ourInstance = SyncManager(MainApplication.context)
-                return ourInstance
-            }
+        val instance: SyncManager? get() {
+            ourInstance = SyncManager(MainApplication.context)
+            return ourInstance
+        }
     }
 }
