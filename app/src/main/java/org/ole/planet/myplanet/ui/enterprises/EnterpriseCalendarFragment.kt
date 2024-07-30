@@ -34,6 +34,9 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
         fragmentEnterpriseCalendarBinding = FragmentEnterpriseCalendarBinding.inflate(inflater, container, false)
         start = Calendar.getInstance()
         end = Calendar.getInstance()
+        if (!isMember()) {
+            fragmentEnterpriseCalendarBinding.addEvent.visibility = View.GONE
+        }
         fragmentEnterpriseCalendarBinding.addEvent.setOnClickListener { showMeetupAlert() }
         return fragmentEnterpriseCalendarBinding.root
     }

@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.model;
+package org.ole.planet.myplanet.model
 
 import android.content.SharedPreferences
 import com.google.gson.Gson
@@ -376,17 +376,6 @@ open class RealmMyTeam : RealmObject() {
         }
 
         @JvmStatic
-        fun leaveTeam(teamId: String, userModel: RealmUserModel, mRealm: Realm) {
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
-            val team = mRealm.where(RealmMyTeam::class.java)
-                .equalTo("teamId", teamId)
-                .equalTo("userId", userModel.id)
-                .findFirst()
-            team?.deleteFromRealm()
-            mRealm.commitTransaction()
-        }
-
-        @JvmStatic
         fun getRequestedMember(teamId: String, realm: Realm): MutableList<RealmUserModel> {
             return getUsers(teamId, realm, "request")
         }
@@ -413,9 +402,9 @@ open class RealmMyTeam : RealmObject() {
             if (docType.isNotEmpty()) {
                 query = query.equalTo("docType", docType)
             }
-            val myteam = query.findAll()
+            val myTeam = query.findAll()
             val list = mutableListOf<RealmUserModel>()
-            for (team in myteam) {
+            for (team in myTeam) {
                 val model = mRealm.where(RealmUserModel::class.java)
                     .equalTo("id", team.userId)
                     .findFirst()
@@ -426,9 +415,9 @@ open class RealmMyTeam : RealmObject() {
 
         @JvmStatic
         fun filterUsers(teamId: String?, user: String, mRealm: Realm): MutableList<RealmUserModel> {
-            val myteam = mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId).findAll()
+            val myTeam = mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId).findAll()
             val list = mutableListOf<RealmUserModel>()
-            for (team in myteam) {
+            for (team in myTeam) {
                 val model = mRealm.where(RealmUserModel::class.java)
                     .equalTo("id", team.userId)
                     .findFirst()

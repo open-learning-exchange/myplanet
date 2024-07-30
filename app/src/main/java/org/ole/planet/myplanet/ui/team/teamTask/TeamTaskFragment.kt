@@ -74,6 +74,9 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentTeamTaskBinding = FragmentTeamTaskBinding.inflate(inflater, container, false)
+        if (!isMember()) {
+            fragmentTeamTaskBinding.fab.visibility = View.GONE
+        }
         fragmentTeamTaskBinding.fab.setOnClickListener { showTaskAlert(null) }
         teamTaskList = mRealm.where(RealmTeamTask::class.java).equalTo("teamId", teamId)
             .notEqualTo("status", "archived").findAllAsync()
@@ -177,7 +180,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
 
     private fun setAdapter() {
         if(isAdded) {
-            adapterTask = AdapterTask(requireContext(), mRealm, list)
+            adapterTask = AdapterTask(requireContext(), mRealm, list, !isMember())
             adapterTask.setListener(this)
             fragmentTeamTaskBinding.rvTask.adapter = adapterTask
         }
@@ -235,7 +238,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
 
     private fun updatedTeamTaskList(updatedList: RealmResults<RealmTeamTask>) {
         activity?.runOnUiThread {
-            adapterTask = AdapterTask(requireContext(), mRealm, updatedList)
+            adapterTask = AdapterTask(requireContext(), mRealm, updatedList, !isMember())
             adapterTask.setListener(this)
             fragmentTeamTaskBinding.rvTask.adapter = adapterTask
             adapterTask.notifyDataSetChanged()

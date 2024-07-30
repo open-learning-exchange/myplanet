@@ -45,6 +45,9 @@ class ReportsFragment : BaseTeamFragment() {
         fragmentReportsBinding = FragmentReportsBinding.inflate(inflater, container, false)
         mRealm = DatabaseService(requireActivity()).realmInstance
         prefData = SharedPrefManager(requireContext())
+        if (!isMember()) {
+            fragmentReportsBinding.addReports.visibility = View.GONE
+        }
         fragmentReportsBinding.addReports.setOnClickListener{
             val dialogAddReportBinding = DialogAddReportBinding.inflate(LayoutInflater.from(requireContext()))
             val v: View = dialogAddReportBinding.root
@@ -185,6 +188,7 @@ class ReportsFragment : BaseTeamFragment() {
     private fun updatedReportsList(results: RealmResults<RealmMyTeam>) {
         activity?.runOnUiThread {
             adapterReports = AdapterReports(requireContext(), results)
+            adapterReports.setNonTeamMember(!isMember())
             fragmentReportsBinding.rvReports.layoutManager = LinearLayoutManager(activity)
             fragmentReportsBinding.rvReports.adapter = adapterReports
             adapterReports.notifyDataSetChanged()
