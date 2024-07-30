@@ -5,16 +5,22 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.view.ContextThemeWrapper
+import android.view.LayoutInflater
 import android.view.MenuItem
+import android.view.View
+import android.view.ViewGroup
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.content.ContextCompat
 import androidx.preference.ListPreference
 import androidx.preference.Preference
 import androidx.preference.Preference.OnPreferenceChangeListener
 import androidx.preference.Preference.OnPreferenceClickListener
 import androidx.preference.PreferenceFragmentCompat
+import androidx.preference.PreferenceScreen
 import androidx.preference.SwitchPreference
 import io.realm.Realm
 import org.ole.planet.myplanet.R
@@ -69,8 +75,19 @@ class SettingActivity : AppCompatActivity() {
         var user: RealmUserModel? = null
         private lateinit var dialog: DialogUtils.CustomProgressDialog
 
+        override fun onCreateView(
+            inflater: LayoutInflater,
+            container: ViewGroup?,
+            savedInstanceState: Bundle?
+        ): View {
+            val view = super.onCreateView(inflater, container, savedInstanceState)
+            view.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.secondary_bg))
+            return view
+        }
+
         @RequiresApi(Build.VERSION_CODES.O)
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
+            requireContext().setTheme(R.style.PreferencesTheme)
             setPreferencesFromResource(R.xml.pref, rootKey)
             profileDbHandler = UserProfileDbHandler(requireActivity())
             user = profileDbHandler.userModel

@@ -174,8 +174,7 @@
         <item name="android:textColor">@color/daynight_textColor</item>
     </style>
 
-    <style name="PreferencesTheme">
-        <item name="android:background">@color/secondary_bg</item>
+    <style name="PreferencesTheme" parent="ThemeOverlay.AppCompat.DayNight">
         <item name="android:textColor">@color/daynight_textColor</item>
         <item name="android:textColorSecondary">@color/hint_color</item>
     </style>
