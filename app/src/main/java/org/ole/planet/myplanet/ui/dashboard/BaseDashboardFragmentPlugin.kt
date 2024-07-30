@@ -42,7 +42,7 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
                 if (f is TeamDetailFragment) {
                     b.putBoolean("isMyTeam", true)
                 }
-                prefData.setTEAMNAME(title)
+                prefData.setTeamName(title)
                 f.arguments = b
                 homeItemClickListener?.openCallFragment(f)
             }
@@ -153,7 +153,7 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         if (count % 2 == 0) {
             v.setBackgroundResource(R.drawable.light_rect)
         } else {
-            v.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.md_grey_300))
+            v.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.dashboard_item_alternative))
         }
     }
 }

@@ -3,6 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:backgroundTint="@color/card_bg"
     app:cardElevation="2dp"
     app:cardUseCompatPadding="true"
     app:contentPadding="@dimen/padding_normal">
@@ -10,14 +11,15 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:background="@color/card_bg">
 
         <TextView
             android:id="@+id/tv_title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="@dimen/padding_normal"
-            android:textColor="@color/md_black_1000"
+            android:textColor="@color/daynight_textColor"
             android:textSize="@dimen/text_size_mid"
             android:textStyle="bold" />
 
@@ -28,6 +30,5 @@
             android:visibility="gone" />
 
     </LinearLayout>
-
 
 </androidx.cardview.widget.CardView>

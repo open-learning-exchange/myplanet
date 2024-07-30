@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.survey
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.View
 import android.widget.AdapterView
@@ -25,6 +26,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>() {
         }!!
     }
 
+    @SuppressLint("ResourceAsColor")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         spn = requireView().findViewById(R.id.spn_sort)

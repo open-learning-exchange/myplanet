@@ -6,11 +6,16 @@ import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
+import com.opencsv.CSVWriter
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
+import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utilities.JsonUtils
+import java.io.File
+import java.io.FileWriter
+import java.io.IOException
 
 open class RealmAchievement : RealmObject() {
     @JvmField
@@ -76,6 +81,8 @@ open class RealmAchievement : RealmObject() {
     }
 
     companion object {
+        private val achievementDataList: MutableList<Array<String>> = mutableListOf()
+
         @JvmStatic
         fun serialize(sub: RealmAchievement): JsonObject {
             val `object` = JsonObject()
@@ -116,6 +123,38 @@ open class RealmAchievement : RealmObject() {
             achievement?.setreferences(JsonUtils.getJsonArray("references", act))
             achievement?.setAchievements(JsonUtils.getJsonArray("achievements", act))
             mRealm.commitTransaction()
+
+            val csvRow = arrayOf(
+                JsonUtils.getString("_id", act),
+                JsonUtils.getString("_rev", act),
+                JsonUtils.getString("purpose", act),
+                JsonUtils.getString("goals", act),
+                JsonUtils.getString("achievementsHeader", act),
+                JsonUtils.getJsonArray("references", act).toString(),
+                JsonUtils.getJsonArray("achievements", act).toString()
+            )
+            achievementDataList.add(csvRow)
+        }
+
+        @JvmStatic
+        fun writeCsv(filePath: String, data: List<Array<String>>) {
+            try {
+                val file = File(filePath)
+                file.parentFile?.mkdirs()
+                val writer = CSVWriter(FileWriter(file))
+                writer.writeNext(arrayOf("achievementId", "achievement_rev", "purpose", "goals", "achievementsHeader", "references", "achievements"))
+                for (row in data) {
+                    writer.writeNext(row)
+                }
+                writer.close()
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        }
+
+        @JvmStatic
+        fun achievementWriteCsv() {
+            writeCsv("${context.getExternalFilesDir(null)}/ole/achievements.csv", achievementDataList)
         }
     }
 }

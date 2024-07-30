@@ -72,7 +72,7 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
                 b.putBoolean("isMyTeam", isMyTeam)
                 f.arguments = b
                 (context as OnHomeItemClickListener).openCallFragment(f)
-                prefData.setTEAMNAME(filteredList[position].name)
+                prefData.setTeamName(filteredList[position].name)
             }
         }
         itemTeamListBinding.btnFeedback.setOnClickListener {
