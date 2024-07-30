@@ -9,6 +9,7 @@ import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.base.BaseMemberFragment
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getRequestedMember
+import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 
@@ -20,6 +21,8 @@ class MembersFragment : BaseMemberFragment() {
         super.onAttach(context)
         currentUser = UserProfileDbHandler(context).userModel!!
     }
+
+    override fun onNewsItemClick(news: RealmNews?) {}
 
     override val list: List<RealmUserModel>
         @RequiresApi(Build.VERSION_CODES.O)
