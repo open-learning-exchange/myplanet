@@ -19,6 +19,7 @@ import io.realm.Sort
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertInputBinding
 import org.ole.planet.myplanet.databinding.FragmentDiscussionListBinding
+import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmTeamNotification
@@ -36,9 +37,14 @@ class DiscussionListFragment : BaseTeamFragment() {
     private lateinit var fragmentDiscussionListBinding: FragmentDiscussionListBinding
     private var updatedNewsList: RealmResults<RealmNews>? = null
     private var filteredNewsList: List<RealmNews?> = listOf()
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentDiscussionListBinding = FragmentDiscussionListBinding.inflate(inflater, container, false)
         fragmentDiscussionListBinding.addMessage.setOnClickListener { showAddMessage() }
+        team =  mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst() ?: throw IllegalArgumentException("Team not found for ID: $teamId")
+        if (!isMember()) {
+            fragmentDiscussionListBinding.addMessage.visibility = View.GONE
+        }
 
         updatedNewsList = mRealm.where(RealmNews::class.java).isEmpty("replyTo").sort("time", Sort.DESCENDING).findAllAsync()
 
@@ -130,6 +136,7 @@ class DiscussionListFragment : BaseTeamFragment() {
         }
         adapterNews?.setmRealm(mRealm)
         adapterNews?.setListener(this)
+        if (!isMember()) adapterNews?.setNonTeamMember(true)
         fragmentDiscussionListBinding.rvDiscussion.adapter = adapterNews
         if (adapterNews != null) {
             showNoData(fragmentDiscussionListBinding.tvNodata, adapterNews.itemCount, "discussions")

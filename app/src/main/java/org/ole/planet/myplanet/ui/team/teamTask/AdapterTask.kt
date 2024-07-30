@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.team.teamTask
 import android.content.Context
 import android.text.TextUtils
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import android.widget.CompoundButton
 import androidx.recyclerview.widget.RecyclerView
@@ -15,7 +16,7 @@ import org.ole.planet.myplanet.ui.team.teamTask.AdapterTask.ViewHolderTask
 import org.ole.planet.myplanet.utilities.DialogUtils.showCloseAlert
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
-class AdapterTask(private val context: Context, private val realm: Realm, private val list: List<RealmTeamTask>?) : RecyclerView.Adapter<ViewHolderTask>() {
+class AdapterTask(private val context: Context, private val realm: Realm, private val list: List<RealmTeamTask>?, private val nonTeamMember: Boolean) : RecyclerView.Adapter<ViewHolderTask>() {
     private lateinit var rowTaskBinding: RowTaskBinding
     private var listener: OnCompletedListener? = null
     fun setListener(listener: OnCompletedListener?) {
@@ -37,9 +38,6 @@ class AdapterTask(private val context: Context, private val realm: Realm, privat
                     context.getString(R.string.deadline_colon, formatDate(it.deadline)), context.getString(R.string.completed_colon, formatDate(it.deadline)))
             }
             showAssignee(it)
-            rowTaskBinding.checkbox.setOnCheckedChangeListener { _: CompoundButton?, b: Boolean ->
-                listener?.onCheckChange(it, b)
-            }
             rowTaskBinding.icMore.setOnClickListener {
                 listener?.onClickMore(list[position])
             }
@@ -51,6 +49,17 @@ class AdapterTask(private val context: Context, private val realm: Realm, privat
             }
             holder.itemView.setOnClickListener {
                 showCloseAlert(context, list[position].title, list[position].description!!)
+            }
+            if (nonTeamMember) {
+                rowTaskBinding.editTask.visibility = View.GONE
+                rowTaskBinding.deleteTask.visibility = View.GONE
+                rowTaskBinding.icMore.visibility = View.GONE
+                rowTaskBinding.checkbox.isClickable = false
+                rowTaskBinding.checkbox.isFocusable = false
+            } else {
+                rowTaskBinding.checkbox.setOnCheckedChangeListener { _: CompoundButton?, b: Boolean ->
+                    listener?.onCheckChange(it, b)
+                }
             }
         }
     }
