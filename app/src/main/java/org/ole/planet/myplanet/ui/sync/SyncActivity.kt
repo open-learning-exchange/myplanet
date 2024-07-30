@@ -56,7 +56,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     lateinit var lblLastSyncDate: TextView
     private lateinit var intervalLabel: TextView
     lateinit var tvNodata: TextView
-    lateinit var spinner: Spinner
+//    lateinit var spinner: Spinner
+    lateinit var radioGroup: RadioGroup
+    private lateinit var radioGroupServers: RadioGroup
     private lateinit var syncSwitch: SwitchCompat
     var convertedDate = 0
     private var connectionResult = false
@@ -69,11 +71,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     lateinit var inputLayoutPassword: TextInputLayout
     lateinit var prefData: SharedPrefManager
     lateinit var profileDbHandler: UserProfileDbHandler
-    private lateinit var spnCloud: Spinner
     private lateinit var protocol_checkin: RadioGroup
     private lateinit var serverUrl: EditText
     private lateinit var serverPassword: EditText
-    private lateinit var serverAddresses: Spinner
+//    private lateinit var serverAddresses: Spinner
     private var teamList = ArrayList<String?>()
     private var teamAdapter: ArrayAdapter<String?>? = null
     var selectedTeamId: String? = null
@@ -86,6 +87,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     lateinit var service: Service
     private var currentDialog: MaterialDialog? = null
     private var serverConfigAction = ""
+    private var selectedServerUrl: String? = null
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -178,7 +180,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     fun sync(dialog: MaterialDialog) {
-        spinner = dialog.findViewById(R.id.intervalDropper) as Spinner
+//        spinner = dialog.findViewById(R.id.intervalDropper) as Spinner
+        radioGroup = dialog.findViewById(R.id.intervalDropper) as RadioGroup
         syncSwitch = dialog.findViewById(R.id.syncSwitch) as SwitchCompat
         intervalLabel = dialog.findViewById(R.id.intervalLabel) as TextView
         syncSwitch.setOnCheckedChangeListener { _: CompoundButton?, isChecked: Boolean ->
@@ -191,9 +194,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private fun setSpinnerVisibility(isChecked: Boolean) {
         if (isChecked) {
             intervalLabel.visibility = View.VISIBLE
-            spinner.visibility = View.VISIBLE
+            radioGroupServers!!.visibility = View.VISIBLE
         } else {
-            spinner.visibility = View.GONE
+            radioGroupServers!!.visibility = View.GONE
             intervalLabel.visibility = View.GONE
         }
     }
@@ -232,7 +235,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         // Check if the user never synced
         syncDate = dialog.findViewById(R.id.lastDateSynced) as TextView
         syncDate.text = "${getString(R.string.last_sync_date)}${convertDate()}"
-        syncDropdownAdd()
     }
 
     // Converts OS date to human date
@@ -245,19 +247,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
     }
 
-    private fun syncDropdownAdd() {
-        val list: MutableList<String> = ArrayList()
-        list.add("1 hour")
-        list.add("3 hours")
-        val spinnerArrayAdapter = ArrayAdapter(this, R.layout.spinner_item, list)
-        spinnerArrayAdapter.setDropDownViewResource(R.layout.spinner_item)
-        spinner.adapter = spinnerArrayAdapter
-    }
-
     private fun saveSyncInfoToPreference() {
         editor.putBoolean("autoSync", syncSwitch.isChecked)
-        editor.putInt("autoSyncInterval", syncTimeInteval[spinner.selectedItemPosition])
-        editor.putInt("autoSyncPosition", spinner.selectedItemPosition)
+        editor.putInt("autoSyncInterval", syncTimeInteval[radioGroupServers!!.checkedRadioButtonId])
+        radioGroupServers?.let { editor.putInt("autoSyncPosition", it.checkedRadioButtonId) }
         editor.commit()
     }
 
@@ -414,15 +407,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     fun settingDialog() {
         val dialogServerUrlBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this))
-        spnCloud = dialogServerUrlBinding.spnCloud
         protocol_checkin = dialogServerUrlBinding.radioProtocol
         serverUrl = dialogServerUrlBinding.inputServerUrl
         serverPassword = dialogServerUrlBinding.inputServerPassword
-        serverAddresses = dialogServerUrlBinding.serverUrls
+        radioGroupServers = dialogServerUrlBinding.serverUrls
 
         dialogServerUrlBinding.deviceName.setText(NetworkUtils.getDeviceName())
         val builder = MaterialDialog.Builder(this)
-        builder.customView(dialogServerUrlBinding.root, true)
+            .customView(dialogServerUrlBinding.root, true)
             .positiveText(R.string.btn_sync)
             .negativeText(R.string.btn_sync_cancel)
             .neutralText(R.string.btn_sync_save)
@@ -474,17 +466,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                         nonEmptyCommunities.add(community)
                     }
                 }
-                dialogServerUrlBinding.spnCloud.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, nonEmptyCommunities)
-                dialogServerUrlBinding.spnCloud.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-                    override fun onItemSelected(adapterView: AdapterView<*>?, view: View, i: Int, l: Long) {
-                        onChangeServerUrl()
-                    }
-
-                    override fun onNothingSelected(adapterView: AdapterView<*>?) {}
-                }
                 dialogServerUrlBinding.switchServerUrl.setOnCheckedChangeListener { _: CompoundButton?, b: Boolean ->
                     editor.putBoolean("switchCloudUrl", b).apply()
-                    dialogServerUrlBinding.spnCloud.visibility = if (b) {
+                    radioGroupServers.visibility = if (b) {
                         View.VISIBLE
                     } else {
                         View.GONE
@@ -550,7 +534,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     }
                 }
 
-                override fun onNothingSelected(parentView: AdapterView<*>?) { }
+                override fun onNothingSelected(parentView: AdapterView<*>?) {}
             }
         } else if (teams.isNotEmpty() && "${dialogServerUrlBinding.inputServerUrl.text}" == "") {
             dialogServerUrlBinding.team.visibility = View.GONE
@@ -559,6 +543,13 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
         dialog.show()
         sync(dialog)
+
+        radioGroupServers.setOnCheckedChangeListener { group, checkedId ->
+            val radioButton = group.findViewById<RadioButton>(checkedId)
+            val actualUrl = radioButton.text.toString().replace(Regex("[\\p{So}\\s]"), "")
+            serverUrl.setText(actualUrl)
+            serverPassword.setText(getPinForUrl(actualUrl))
+        }
     }
 
     private fun showConfigurationUIElements(binding: DialogServerUrlBinding, show: Boolean) {
@@ -569,7 +560,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         binding.syncSwitch.visibility = if (show) View.VISIBLE else View.GONE
         binding.ltDeviceName.visibility = if (show) View.VISIBLE else View.GONE
         if (show) {
-            serverAddresses.visibility = View.GONE
+            radioGroupServers!!.visibility = View.GONE
             serverUrl.visibility = View.VISIBLE
             if (settings.getString("serverURL", "") == "https://planet.learning.ole.org") {
                 editor.putString("serverURL", "").apply()
@@ -589,51 +580,52 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             serverPassword.isEnabled = true
         } else {
             serverUrl.visibility = View.GONE
-            serverAddresses.visibility = View.VISIBLE
+            radioGroupServers!!.visibility = View.VISIBLE
 
             val serverList = listOf(
-                "🌎 planet.earth.ole.org",
+//                "🌎 planet.earth.ole.org",
                 "🌎 planet.learning.ole.org",
-                "🌎 planet.vi.ole.org",
-                "🇸🇴 planet.somalia.ole.org",
+//                "🌎 planet.vi.ole.org",
+//                "🇸🇴 planet.somalia.ole.org",
                 "🇬🇹 planet.guatemala.ole.org",
                 "🇬🇹 planet.sanpablo.ole.org",
-                "🇬🇹 planet.campo.ole.org",
-                "🇰🇪 planet.uriur.ole.org",
-                "🇰🇪 planet.ruiru.ole.org",
-                "🇰🇪 planet.embakasi.ole.org",
-                "🇺🇸 planet.cambridge.ole.org",
-                "🇺🇸 planet.egdirbmac.ole.org",
-                "🇺🇸 planet.palmbay.ole.org"
+//                "🇬🇹 planet.campo.ole.org",
+//                "🇰🇪 planet.uriur.ole.org",
+//                "🇰🇪 planet.ruiru.ole.org",
+//                "🇰🇪 planet.embakasi.ole.org",
+//                "🇺🇸 planet.cambridge.ole.org",
+//                "🇺🇸 planet.egdirbmac.ole.org",
+//                "🇺🇸 planet.palmbay.ole.org"
             )
 
-            val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, serverList)
-            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-            serverAddresses.adapter = adapter
+            for (server in serverList) {
+                val radioButton = RadioButton(this)
+                radioButton.text = server
+                radioButton.id = View.generateViewId()
+                radioGroupServers!!.addView(radioButton)
+            }
 
             val storedUrl = settings.getString("serverURL", null)
             val storedPin = settings.getString("serverPin", null)
             if (storedUrl != null) {
                 val urlWithoutProtocol = storedUrl.replace(Regex("^https?://"), "")
-                val displayUrl = serverList.find { it.contains(urlWithoutProtocol) }
-                val index = serverList.indexOf(displayUrl)
-                if (index >= 0) {
-                    serverAddresses.setSelection(index)
+                for (i in 0 until radioGroupServers!!.childCount) {
+                    val radioButton = radioGroupServers!!.getChildAt(i) as RadioButton
+                    if (radioButton.text.toString().contains(urlWithoutProtocol)) {
+                        radioButton.isChecked = true
+                        break
+                    }
                 }
                 serverUrl.setText(urlWithoutProtocol)
                 serverPassword.setText(storedPin)
             }
 
-            serverAddresses.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-                override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
-                    val displayUrl = serverList[position]
-                    val actualUrl = displayUrl.replace(Regex("[\\p{So}\\s]"), "") // Remove emojis and spaces
-                    serverUrl.setText(actualUrl)
-                    serverPassword.setText(getPinForUrl(actualUrl))
-                }
-
-                override fun onNothingSelected(parent: AdapterView<*>) {}
-            }
+//            radioGroupServers!!.setOnCheckedChangeListener { _, checkedId ->
+//                val radioButton = findViewById<RadioButton>(checkedId)
+//                val actualUrl = radioButton.text.toString().replace(Regex("[\\p{So}\\s]"), "")
+//                serverUrl.setText(actualUrl)
+//                serverPassword.setText(getPinForUrl(actualUrl))
+//            }
 
             serverUrl.isEnabled = false
             serverPassword.isEnabled = false
@@ -643,31 +635,31 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     private fun getPinForUrl(url: String): String {
         val pinMap = mapOf(
-            "planet.earth.ole.org" to "7379",
+//            "planet.earth.ole.org" to "7379",
             "planet.learning.ole.org" to "1983",
-            "planet.vi.ole.org" to "0660",
-            "planet.somalia.ole.org" to "5932",
+//            "planet.vi.ole.org" to "0660",
+//            "planet.somalia.ole.org" to "5932",
             "planet.guatemala.ole.org" to "5562",
             "planet.sanpablo.ole.org" to "0948",
-            "planet.campo.ole.org" to "4324",
-            "planet.uriur.ole.org" to "4025",
-            "planet.ruiru.ole.org" to "8925",
-            "planet.embakasi.ole.org" to "2165",
-            "planet.cambridge.ole.org" to "1565",
-            "planet.egdirbmac.ole.org" to "6407",
-            "planet.palmbay.ole.org" to "9699"
+//            "planet.campo.ole.org" to "4324",
+//            "planet.uriur.ole.org" to "4025",
+//            "planet.ruiru.ole.org" to "8925",
+//            "planet.embakasi.ole.org" to "2165",
+//            "planet.cambridge.ole.org" to "1565",
+//            "planet.egdirbmac.ole.org" to "6407",
+//            "planet.palmbay.ole.org" to "9699"
         )
         return pinMap[url] ?: ""
     }
 
     private fun onChangeServerUrl() {
-        val selected = spnCloud.selectedItem
-        if (selected is RealmCommunity && selected.isValid) {
-            serverUrl.setText(selected.localDomain)
+        val selected = findViewById<RadioButton>(radioGroupServers.checkedRadioButtonId)
+        if (selected != null) {
+            serverUrl.setText(selected.text.toString().replace(Regex("[\\p{So}\\s]"), ""))
             protocol_checkin.check(R.id.radio_https)
             settings.getString("serverProtocol", getString(R.string.https_protocol))
-            serverPassword.setText(if (selected.weight == 0) "1983" else "")
-            serverPassword.isEnabled = selected.weight != 0
+            serverPassword.setText(getPinForUrl(selected.text.toString().replace(Regex("[\\p{So}\\s]"), "")))
+            serverPassword.isEnabled = true
         }
     }
 
