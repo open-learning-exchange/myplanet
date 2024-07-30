@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.model;
+package org.ole.planet.myplanet.model
 
 import io.realm.Realm
 import io.realm.RealmObject

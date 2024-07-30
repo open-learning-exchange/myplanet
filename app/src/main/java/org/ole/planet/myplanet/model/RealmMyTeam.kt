@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.model;
+package org.ole.planet.myplanet.model
 
 import android.content.SharedPreferences
 import com.google.gson.Gson
@@ -11,7 +11,6 @@ import io.realm.RealmObject
 import io.realm.RealmResults
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.libraryDataList
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.JsonUtils
 import java.io.File
@@ -97,7 +96,7 @@ open class RealmMyTeam : RealmObject() {
     var updatedDate: Long = 0
 
     companion object {
-        val teamDataList: MutableList<Array<String>> = mutableListOf()
+        private val teamDataList: MutableList<Array<String>> = mutableListOf()
         val reportsDataList: MutableList<Array<String>> = mutableListOf()
 
         @JvmStatic
@@ -257,25 +256,6 @@ open class RealmMyTeam : RealmObject() {
             reportsDataList.add(csvRow)
         }
 
-        fun reportWriteCsv(filePath: String, data: List<Array<String>>) {
-            try {
-                val file = File(filePath)
-                file.parentFile?.mkdirs()
-                val writer = CSVWriter(FileWriter(file))
-                writer.writeNext(arrayOf("teamId", "description", "teamPlanetCode", "createdDate", "teamType", "docType", "beginningBalance", "sales", "otherIncome", "wages", "otherExpenses", "startDate", "endDate", "updatedDate", "updated"))
-                for (row in data) {
-                    writer.writeNext(row)
-                }
-                writer.close()
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
-        }
-
-        fun reportsWriteCsv() {
-            reportWriteCsv("${context.getExternalFilesDir(null)}/ole/reports.csv", reportsDataList)
-        }
-
         @JvmStatic
         fun updateReports(doc: JsonObject, mRealm: Realm) {
             mRealm.executeTransactionAsync { realm ->
@@ -376,17 +356,6 @@ open class RealmMyTeam : RealmObject() {
         }
 
         @JvmStatic
-        fun leaveTeam(teamId: String, userModel: RealmUserModel, mRealm: Realm) {
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
-            val team = mRealm.where(RealmMyTeam::class.java)
-                .equalTo("teamId", teamId)
-                .equalTo("userId", userModel.id)
-                .findFirst()
-            team?.deleteFromRealm()
-            mRealm.commitTransaction()
-        }
-
-        @JvmStatic
         fun getRequestedMember(teamId: String, realm: Realm): MutableList<RealmUserModel> {
             return getUsers(teamId, realm, "request")
         }
@@ -413,9 +382,9 @@ open class RealmMyTeam : RealmObject() {
             if (docType.isNotEmpty()) {
                 query = query.equalTo("docType", docType)
             }
-            val myteam = query.findAll()
+            val myTeam = query.findAll()
             val list = mutableListOf<RealmUserModel>()
-            for (team in myteam) {
+            for (team in myTeam) {
                 val model = mRealm.where(RealmUserModel::class.java)
                     .equalTo("id", team.userId)
                     .findFirst()
@@ -426,9 +395,9 @@ open class RealmMyTeam : RealmObject() {
 
         @JvmStatic
         fun filterUsers(teamId: String?, user: String, mRealm: Realm): MutableList<RealmUserModel> {
-            val myteam = mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId).findAll()
+            val myTeam = mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId).findAll()
             val list = mutableListOf<RealmUserModel>()
-            for (team in myteam) {
+            for (team in myTeam) {
                 val model = mRealm.where(RealmUserModel::class.java)
                     .equalTo("id", team.userId)
                     .findFirst()

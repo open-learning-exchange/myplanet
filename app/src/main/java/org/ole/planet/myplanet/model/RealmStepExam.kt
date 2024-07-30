@@ -8,7 +8,6 @@ import io.realm.RealmObject
 import io.realm.RealmResults
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.model.RealmNews.Companion.newsDataList
 import org.ole.planet.myplanet.utilities.JsonUtils
 import java.io.File
 import java.io.FileWriter
@@ -49,12 +48,12 @@ open class RealmStepExam : RealmObject() {
         val examDataList: MutableList<Array<String>> = mutableListOf()
 
         @JvmStatic
-        fun insertCourseStepsExams(myCoursesID: String?, step_id: String?, exam: JsonObject, mRealm: Realm) {
-            insertCourseStepsExams(myCoursesID, step_id, exam, "", mRealm)
+        fun insertCourseStepsExams(myCoursesID: String?, stepId: String?, exam: JsonObject, mRealm: Realm) {
+            insertCourseStepsExams(myCoursesID, stepId, exam, "", mRealm)
         }
 
         @JvmStatic
-        fun insertCourseStepsExams(myCoursesID: String?, step_id: String?, exam: JsonObject, parentId: String?, mRealm: Realm) {
+        fun insertCourseStepsExams(myCoursesID: String?, stepId: String?, exam: JsonObject, parentId: String?, mRealm: Realm) {
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
             }
@@ -69,7 +68,7 @@ open class RealmStepExam : RealmObject() {
                     }
                 )
             }
-            checkIdsAndInsert(myCoursesID, step_id, myExam)
+            checkIdsAndInsert(myCoursesID, stepId, myExam)
             myExam?.type = if (exam.has("type")) JsonUtils.getString("type", exam) else "exam"
             myExam?.name = JsonUtils.getString("name", exam)
             myExam?.passingPercentage = JsonUtils.getString("passingPercentage", exam)
@@ -126,12 +125,12 @@ open class RealmStepExam : RealmObject() {
             writeCsv("${context.getExternalFilesDir(null)}/ole/stepExam.csv", examDataList)
         }
 
-        private fun checkIdsAndInsert(myCoursesID: String?, step_id: String?, myExam: RealmStepExam?) {
+        private fun checkIdsAndInsert(myCoursesID: String?, stepId: String?, myExam: RealmStepExam?) {
             if (!TextUtils.isEmpty(myCoursesID)) {
                 myExam?.courseId = myCoursesID
             }
-            if (!TextUtils.isEmpty(step_id)) {
-                myExam?.stepId = step_id
+            if (!TextUtils.isEmpty(stepId)) {
+                myExam?.stepId = stepId
             }
         }
 

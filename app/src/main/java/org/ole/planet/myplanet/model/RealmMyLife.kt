@@ -41,25 +41,19 @@ open class RealmMyLife : RealmObject {
                 .sort("weight")
         }
 
-        fun createMyLife(myLife: RealmMyLife, mRealm: Realm, _id: String?) {
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
-            myLife._id = _id
-            mRealm.commitTransaction()
-        }
-
         @JvmStatic
-        fun updateWeight(weight: Int, _id: String?, realm: Realm, userId: String?) {
+        fun updateWeight(weight: Int, id: String?, realm: Realm, userId: String?) {
             realm.executeTransaction { mRealm ->
                 var currentWeight = -1
                 val myLifeList = getMyLifeByUserId(mRealm, userId)
                 for (item in myLifeList) {
-                    if (_id?.let { item._id?.contains(it) } == true) {
+                    if (id?.let { item._id?.contains(it) } == true) {
                         currentWeight = item.weight
                         item.weight = weight
                     }
                 }
                 for (item in myLifeList) {
-                    if (currentWeight != -1 && item.weight == weight && !_id?.let { item._id?.contains(it) }!!) {
+                    if (currentWeight != -1 && item.weight == weight && !id?.let { item._id?.contains(it) }!!) {
                         item.weight = currentWeight
                     }
                 }
@@ -67,11 +61,11 @@ open class RealmMyLife : RealmObject {
         }
 
         @JvmStatic
-        fun updateVisibility(isVisible: Boolean, _id: String?, realm: Realm, userId: String?) {
+        fun updateVisibility(isVisible: Boolean, id: String?, realm: Realm, userId: String?) {
             realm.executeTransaction { mRealm ->
                 val myLifeList = getMyLifeByUserId(mRealm, userId)
                 for (item in myLifeList) {
-                    if (_id?.let { item._id?.contains(it) } == true) {
+                    if (id?.let { item._id?.contains(it) } == true) {
                         item.isVisible = isVisible
                     }
                 }

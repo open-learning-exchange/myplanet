@@ -36,15 +36,15 @@ open class RealmResourceActivity : RealmObject() {
 
     companion object {
         @JvmStatic
-        fun serializeResourceActivities(realm_resourceActivities: RealmResourceActivity): JsonObject {
+        fun serializeResourceActivities(realmResourceActivities: RealmResourceActivity): JsonObject {
             val ob = JsonObject()
-            ob.addProperty("user", realm_resourceActivities.user)
-            ob.addProperty("resourceId", realm_resourceActivities.resourceId)
-            ob.addProperty("type", realm_resourceActivities.type)
-            ob.addProperty("title", realm_resourceActivities.title)
-            ob.addProperty("time", realm_resourceActivities.time)
-            ob.addProperty("createdOn", realm_resourceActivities.createdOn)
-            ob.addProperty("parentCode", realm_resourceActivities.parentCode)
+            ob.addProperty("user", realmResourceActivities.user)
+            ob.addProperty("resourceId", realmResourceActivities.resourceId)
+            ob.addProperty("type", realmResourceActivities.type)
+            ob.addProperty("title", realmResourceActivities.title)
+            ob.addProperty("time", realmResourceActivities.time)
+            ob.addProperty("createdOn", realmResourceActivities.createdOn)
+            ob.addProperty("parentCode", realmResourceActivities.parentCode)
             ob.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
             ob.addProperty("deviceName", NetworkUtils.getDeviceName())
             return ob

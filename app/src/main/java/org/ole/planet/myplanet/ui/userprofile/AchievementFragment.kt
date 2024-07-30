@@ -102,7 +102,7 @@ class AchievementFragment : BaseContainerFragment() {
                         rowAchievementBinding.tvTitle.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0)
                         createAchievementList()
                         fragmentAchievementBinding.rvOtherInfo.layoutManager = LinearLayoutManager(MainApplication.context)
-                        fragmentAchievementBinding.rvOtherInfo.adapter = AdapterOtherInfo(MainApplication.context, achievement?.getreferences()!!)
+                        fragmentAchievementBinding.rvOtherInfo.adapter = AdapterOtherInfo(MainApplication.context, achievement?.getReferences()!!)
                     }
                     aRealm.addChangeListener {
                         fragmentAchievementBinding.llAchievement.removeAllViews()
@@ -117,7 +117,7 @@ class AchievementFragment : BaseContainerFragment() {
                 fragmentAchievementBinding.llAchievement.addView(rowAchievementBinding.root)
             }
             fragmentAchievementBinding.rvOtherInfo.layoutManager = LinearLayoutManager(MainApplication.context)
-            fragmentAchievementBinding.rvOtherInfo.adapter = AdapterOtherInfo(MainApplication.context, achievement?.getreferences()!!)
+            fragmentAchievementBinding.rvOtherInfo.adapter = AdapterOtherInfo(MainApplication.context, achievement?.getReferences()!!)
         }
     }
 

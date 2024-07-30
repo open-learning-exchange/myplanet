@@ -155,7 +155,7 @@ class AdapterCourses(private val context: Context, private var courseList: List<
                 }
                 setTextViewContent(holder.rowCourseBinding.gradLevel, course.gradeLevel, holder.rowCourseBinding.gradLevel, context.getString(R.string.grade_level_colon))
                 setTextViewContent(holder.rowCourseBinding.subjectLevel, course.subjectLevel, holder.rowCourseBinding.subjectLevel, context.getString(R.string.subject_level_colon))
-                holder.rowCourseBinding.courseProgress.max = course.getnumberOfSteps()
+                holder.rowCourseBinding.courseProgress.max = course.getNumberOfSteps()
                 displayTagCloud(holder.rowCourseBinding.flexboxDrawable, position)
                 userModel = UserProfileDbHandler(context).userModel
                 if (!userModel?.isGuest()!!) {

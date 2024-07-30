@@ -11,7 +11,6 @@ import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.model.RealmMyTeam.Companion.reportsDataList
 import org.ole.planet.myplanet.utilities.JsonUtils
 import java.io.File
 import java.io.FileWriter
@@ -186,7 +185,7 @@ open class RealmNews : RealmObject() {
                 JsonUtils.getString("replyTo", doc),
                 JsonUtils.getString("parentCode", doc),
                 JsonUtils.getString("user", doc),
-                JsonUtils.getString("time", doc).toString(),
+                JsonUtils.getString("time", doc),
                 JsonUtils.getString("message", doc),
                 JsonUtils.getString("images", doc),
                 JsonUtils.getString("labels", doc),

@@ -126,11 +126,11 @@ class ChatDetailFragment : Fragment() {
             }
         }
 
-        sharedViewModel.getSelected_id().observe(viewLifecycleOwner) { selectedId ->
+        sharedViewModel.getSelectedId().observe(viewLifecycleOwner) { selectedId ->
             _id = selectedId
         }
 
-        sharedViewModel.getSelected_rev().observe(viewLifecycleOwner) { selectedRev ->
+        sharedViewModel.getSelectedRev().observe(viewLifecycleOwner) { selectedRev ->
             _rev = selectedRev
         }
         view.post {

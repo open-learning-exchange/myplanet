@@ -8,7 +8,6 @@ import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.courseDataList
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.JsonUtils
 import java.io.File
@@ -63,14 +62,6 @@ open class RealmMyHealthPojo : RealmObject() {
         return if (!TextUtils.isEmpty(data)) Gson().fromJson(
             AndroidDecrypter.decrypt(data, model.key, model.iv), JsonObject::class.java
         ) else JsonObject()
-    }
-
-    fun setTemperature(temperature: Int) {
-        this.temperature = temperature.toFloat()
-    }
-
-    fun setWeight(weight: Int) {
-        this.weight = weight.toFloat()
     }
 
     fun setTemperature(temperature: Float) {

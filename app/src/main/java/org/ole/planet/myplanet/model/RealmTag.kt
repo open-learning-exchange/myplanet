@@ -8,7 +8,6 @@ import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.model.RealmStepExam.Companion.examDataList
 import org.ole.planet.myplanet.utilities.JsonUtils
 import java.io.File
 import java.io.FileWriter
@@ -19,11 +18,11 @@ open class RealmTag : RealmObject() {
     @PrimaryKey
     var id: String? = null
     @JvmField
+    var _id: String? = null
+    @JvmField
     var _rev: String? = null
     @JvmField
     var name: String? = null
-    @JvmField
-    var _id: String? = null
     @JvmField
     var linkId: String? = null
     @JvmField
@@ -48,21 +47,8 @@ open class RealmTag : RealmObject() {
         return name!!
     }
 
-    fun setAttachedTo(attachedTo: RealmList<String>?) {
-        this.attachedTo = attachedTo
-    }
-
     companion object {
-        val tagDataList: MutableList<Array<String>> = mutableListOf()
-
-        @JvmStatic
-        fun getListAsMap(list: List<RealmTag>): HashMap<String?, RealmTag> {
-            val map = HashMap<String?, RealmTag>()
-            for (r in list) {
-                map[r._id] = r
-            }
-            return map
-        }
+        private val tagDataList: MutableList<Array<String>> = mutableListOf()
 
         @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject) {

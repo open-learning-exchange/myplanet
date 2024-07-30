@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.model
 
 import android.text.TextUtils
-import android.util.Log
 import com.google.gson.*
 import com.opencsv.CSVWriter
 import io.realm.*
@@ -21,7 +20,7 @@ open class RealmMeetup : RealmObject() {
     @JvmField
     var meetupId: String? = null
     @JvmField
-    var meetupId_rev: String? = null
+    var meetupIdRev: String? = null
     @JvmField
     var title: String? = null
     @JvmField
@@ -68,7 +67,7 @@ open class RealmMeetup : RealmObject() {
             }
             myMeetupsDB?.meetupId = JsonUtils.getString("_id", meetupDoc)
             myMeetupsDB?.userId = userId
-            myMeetupsDB?.meetupId_rev = JsonUtils.getString("_rev", meetupDoc)
+            myMeetupsDB?.meetupIdRev = JsonUtils.getString("_rev", meetupDoc)
             myMeetupsDB?.title = JsonUtils.getString("title", meetupDoc)
             myMeetupsDB?.description = JsonUtils.getString("description", meetupDoc)
             myMeetupsDB?.startDate = JsonUtils.getLong("startDate", meetupDoc)
@@ -172,13 +171,13 @@ open class RealmMeetup : RealmObject() {
             return myIds
         }
 
-        fun checkNull(s: String?): String {
+        private fun checkNull(s: String?): String {
             return if (TextUtils.isEmpty(s)) "" else s!!
         }
 
         @JvmStatic
         fun meetupWriteCsv() {
-            writeCsv("${context.getExternalFilesDir(null)}/ole/meetups.csv", RealmMeetup.meetupDataList)
+            writeCsv("${context.getExternalFilesDir(null)}/ole/meetups.csv", meetupDataList)
         }
     }
 }

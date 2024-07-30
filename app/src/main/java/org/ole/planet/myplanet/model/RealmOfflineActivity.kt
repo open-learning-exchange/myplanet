@@ -8,7 +8,6 @@ import io.realm.RealmObject
 import io.realm.Sort
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.model.RealmNews.Companion.newsDataList
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
@@ -49,24 +48,24 @@ open class RealmOfflineActivity : RealmObject() {
     }
 
     companion object {
-        val offlineDataList: MutableList<Array<String>> = mutableListOf()
+        private val offlineDataList: MutableList<Array<String>> = mutableListOf()
         @JvmStatic
-        fun serializeLoginActivities(realm_offlineActivities: RealmOfflineActivity, context: Context): JsonObject {
+        fun serializeLoginActivities(realmOfflineActivities: RealmOfflineActivity, context: Context): JsonObject {
             val ob = JsonObject()
-            ob.addProperty("user", realm_offlineActivities.userName)
-            ob.addProperty("type", realm_offlineActivities.type)
-            ob.addProperty("loginTime", realm_offlineActivities.loginTime)
-            ob.addProperty("logoutTime", realm_offlineActivities.logoutTime)
-            ob.addProperty("createdOn", realm_offlineActivities.createdOn)
-            ob.addProperty("parentCode", realm_offlineActivities.parentCode)
+            ob.addProperty("user", realmOfflineActivities.userName)
+            ob.addProperty("type", realmOfflineActivities.type)
+            ob.addProperty("loginTime", realmOfflineActivities.loginTime)
+            ob.addProperty("logoutTime", realmOfflineActivities.logoutTime)
+            ob.addProperty("createdOn", realmOfflineActivities.createdOn)
+            ob.addProperty("parentCode", realmOfflineActivities.parentCode)
             ob.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
             ob.addProperty("deviceName", NetworkUtils.getDeviceName())
             ob.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
-            if (realm_offlineActivities._id != null) {
-                ob.addProperty("_id", realm_offlineActivities.logoutTime)
+            if (realmOfflineActivities._id != null) {
+                ob.addProperty("_id", realmOfflineActivities.logoutTime)
             }
-            if (realm_offlineActivities._rev != null) {
-                ob.addProperty("_rev", realm_offlineActivities._rev)
+            if (realmOfflineActivities._rev != null) {
+                ob.addProperty("_rev", realmOfflineActivities._rev)
             }
             return ob
         }

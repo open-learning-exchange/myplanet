@@ -5,12 +5,10 @@ import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Build
-import androidx.annotation.RequiresApi
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.VersionUtils
@@ -91,7 +89,6 @@ class MyPlanet : Serializable {
             return arr
         }
 
-        @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
         private fun addStats(s: UsageStats, arr: JsonArray, context: Context) {
             if (s.packageName == MainApplication.context.packageName) {
                 val `object` = JsonObject()
