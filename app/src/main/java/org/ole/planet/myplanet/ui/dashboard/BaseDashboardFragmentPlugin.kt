@@ -42,7 +42,7 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
                 if (f is TeamDetailFragment) {
                     b.putBoolean("isMyTeam", true)
                 }
-                prefData.setTEAMNAME(title)
+                prefData.setTeamName(title)
                 f.arguments = b
                 homeItemClickListener?.openCallFragment(f)
             }
