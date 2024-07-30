@@ -52,273 +52,269 @@
             android:layout_weight="1"
             android:checked="false"
             android:padding="@dimen/padding_normal"
+            android:visibility="gone"
             android:text="@string/cloud_url"
             android:textSize="16sp"
-            android:textColor="@color/daynight_textColor"
-            android:visibility="gone" />
+            android:textColor="@color/daynight_textColor" />
     </LinearLayout>
 
-    <LinearLayout
-        android:id="@+id/ltProtocol"
+    <com.google.android.material.button.MaterialButtonToggleGroup
+        android:id="@+id/serverUrls"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="10dp"
-        android:layout_marginTop="4dp"
-        android:layout_marginEnd="10dp"
-        android:orientation="horizontal"
+        android:orientation="vertical"
         android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/linearLayout2"
+        app:singleSelection="true">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/toggle_planet_learning"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:elevation="0dp"
+            android:text="🌎 Planet Learning" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/toggle_planet_guatemala"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🇬🇹 Planet Guatemala" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/toggle_planet_sanpablo"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🇬🇹 Planet San Pablo" />
+
+    </com.google.android.material.button.MaterialButtonToggleGroup>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/ltAdvanced"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/linearLayout2">
 
-        <RadioGroup
-            android:id="@+id/radio_protocol"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:id="@+id/ltProtocol"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:layout_marginStart="10dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginEnd="10dp"
+            android:orientation="horizontal"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
 
-            <RadioButton
-                android:id="@+id/radio_http"
+            <RadioGroup
+                android:id="@+id/radio_protocol"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <RadioButton
+                    android:id="@+id/radio_http"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:buttonTint="@color/daynight_textColor"
+                    android:text="@string/radio_http"
+                    android:textColor="@color/daynight_textColor"
+                    android:textSize="16sp" />
+
+                <RadioButton
+                    android:id="@+id/radio_https"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:buttonTint="@color/daynight_textColor"
+                    android:text="@string/radio_https"
+                    android:textColor="@color/daynight_textColor"
+                    android:textSize="16sp" />
+
+            </RadioGroup>
+        </LinearLayout>
+
+        <Spinner
+            android:id="@+id/spn_cloud"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="10dp"
+            android:backgroundTint="@color/daynight_textColor"
+            android:textSize="16sp"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/ltProtocol" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/input_layout_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="10dp"
+            android:hint="@string/hint_serverURl"
+            android:labelFor="@+id/input_server_url"
+            android:textColorHint="@color/hint_color"
+            app:errorTextAppearance="@style/MyAppTheme.TextInputLayout"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/spn_cloud">
+
+            <EditText
+                android:id="@+id/input_server_url"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textUri"
+                android:singleLine="true"
+                android:textColor="@color/daynight_textColor"
+                android:textColorHint="@color/hint_color"
+                android:textSize="16sp" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/input_layout_password"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="10dp"
+            android:hint="@string/hint_serverPin"
+            android:labelFor="@id/input_server_Password"
+            android:textColorHint="@color/hint_color"
+            app:errorTextAppearance="@style/MyAppTheme.TextInputLayout"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/input_layout_name">
+
+            <EditText
+                android:id="@+id/input_server_Password"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="numberPassword"
+                android:textColor="@color/daynight_textColor"
+                android:textColorHint="@color/hint_color"
+                android:textSize="16sp" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/syncSwitch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="10dp"
+            android:text="@string/autosync"
+            android:textColor="@color/daynight_textColor"
+            android:textOff="@string/autosync_off"
+            android:textOn="@string/autosync_on"
+            android:textSize="16sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/input_layout_password" />
+
+        <LinearLayout
+            android:id="@+id/ltIntervalLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="10dp"
+            android:orientation="horizontal"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/syncSwitch">
+
+            <TextView
+                android:id="@+id/intervalLabel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="@string/radio_http"
-                android:textSize="16sp"
+                android:text="@string/interval"
                 android:textColor="@color/daynight_textColor"
-                android:buttonTint="@color/daynight_textColor" />
+                android:textSize="16sp" />
 
-            <RadioButton
-                android:id="@+id/radio_https"
+            <Spinner
+                android:id="@+id/intervalDropper"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/radio_https"
-                android:textSize="16sp"
-                android:textColor="@color/daynight_textColor"
-                android:buttonTint="@color/daynight_textColor" />
+                android:layout_weight="1"
+                android:backgroundTint="@color/daynight_textColor"
+                android:drawSelectorOnTop="true"
+                android:textSize="16sp" />
+        </LinearLayout>
 
-        </RadioGroup>
-    </LinearLayout>
-
-    <Spinner
-        android:id="@+id/spn_cloud"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="10dp"
-        android:layout_marginEnd="10dp"
-        android:textSize="16sp"
-        android:visibility="gone"
-        android:backgroundTint="@color/daynight_textColor"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/ltProtocol" />
-
-    <TextView
-        android:id="@+id/syncToServerText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="10dp"
-        android:layout_marginTop="8dp"
-        android:text="Sync to server:"
-        android:textColor="@color/daynight_textColor"
-        android:textSize="16sp"
-        android:visibility="gone"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/spn_cloud" />
-
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/input_layout_name"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="10dp"
-        android:layout_marginEnd="10dp"
-        android:hint="@string/hint_serverURl"
-        android:textColorHint="@color/hint_color"
-        android:labelFor="@+id/input_server_url"
-        app:errorTextAppearance="@style/MyAppTheme.TextInputLayout"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/spn_cloud">
-
-        <org.ole.planet.myplanet.utilities.CustomButtonToggleGroup
-            android:id="@+id/serverUrls"
+        <LinearLayout
+            android:id="@+id/ltDeviceName"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="8dp"
-            android:layout_marginTop="15dp"
-            android:visibility="gone">
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="10dp"
+            android:orientation="horizontal"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/ltIntervalLabel">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/toggle_planet_learning"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:elevation="0dp"
-                android:text="🌎 Planet Learning"
-                app:cornerRadius="10dp" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/toggle_planet_guatemala"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="🇬🇹 Planet Guatemala"
-                app:cornerRadius="10dp" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/toggle_planet_sanpablo"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="🇬🇹 Planet San Pablo"
-                app:cornerRadius="10dp" />
-
-        </org.ole.planet.myplanet.utilities.CustomButtonToggleGroup>
-
-        <EditText
-            android:id="@+id/input_server_url"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="textUri"
-            android:singleLine="true"
-            android:textColor="@color/daynight_textColor"
-            android:textColorHint="@color/hint_color"
-            android:textSize="16sp" />
-    </com.google.android.material.textfield.TextInputLayout>
-
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/input_layout_password"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="10dp"
-        android:layout_marginEnd="10dp"
-        android:hint="@string/hint_serverPin"
-        android:textColorHint="@color/hint_color"
-        android:labelFor="@id/input_server_Password"
-        app:errorTextAppearance="@style/MyAppTheme.TextInputLayout"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/input_layout_name">
-
-        <EditText
-            android:id="@+id/input_server_Password"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="numberPassword"
-            android:textColor="@color/daynight_textColor"
-            android:textColorHint="@color/hint_color"
-            android:textSize="16sp" />
-    </com.google.android.material.textfield.TextInputLayout>
-
-    <androidx.appcompat.widget.SwitchCompat
-        android:id="@+id/syncSwitch"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="10dp"
-        android:layout_marginEnd="10dp"
-        android:text="@string/autosync"
-        android:textOff="@string/autosync_off"
-        android:textOn="@string/autosync_on"
-        android:textSize="16sp"
-        android:textColor="@color/daynight_textColor"
-        android:visibility="gone"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/input_layout_password" />
-
-    <LinearLayout
-        android:id="@+id/ltIntervalLabel"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="10dp"
-        android:layout_marginEnd="10dp"
-        android:orientation="horizontal"
-        android:visibility="gone"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/syncSwitch">
-
-        <TextView
-            android:id="@+id/intervalLabel"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/interval"
-            android:textColor="@color/daynight_textColor"
-            android:textSize="16sp" />
-
-        <Spinner
-            android:id="@+id/intervalDropper"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:drawSelectorOnTop="true"
-            android:textSize="16sp"
-            android:backgroundTint="@color/daynight_textColor" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/ltDeviceName"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="10dp"
-        android:layout_marginEnd="10dp"
-        android:orientation="horizontal"
-        android:visibility="gone"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/ltIntervalLabel">
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/til_device_name"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:textColorHint="@color/daynight_textColor"
-            app:errorTextAppearance="@style/MyAppTheme.TextInputLayout">
-
-            <EditText
-                android:id="@+id/deviceName"
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/til_device_name"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:hint="@string/device_name"
-                android:inputType="text"
-                android:maxLines="1"
-                android:minWidth="140dp"
-                android:textColor="@color/daynight_textColor"
-                android:textColorHint="@color/hint_color"
-                android:textSize="11sp" />
-        </com.google.android.material.textfield.TextInputLayout>
+                android:layout_weight="1"
+                android:textColorHint="@color/daynight_textColor"
+                app:errorTextAppearance="@style/MyAppTheme.TextInputLayout">
 
-        <TextView
-            android:id="@+id/lastDateSynced"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text=""
-            android:textColor="@color/daynight_textColor"
-            android:textSize="12sp"
-            android:textStyle="italic" />
-    </LinearLayout>
+                <EditText
+                    android:id="@+id/deviceName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/device_name"
+                    android:inputType="text"
+                    android:maxLines="1"
+                    android:minWidth="140dp"
+                    android:textColor="@color/daynight_textColor"
+                    android:textColorHint="@color/hint_color"
+                    android:textSize="11sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView
+                android:id="@+id/lastDateSynced"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text=""
+                android:textColor="@color/daynight_textColor"
+                android:textSize="12sp"
+                android:textStyle="italic" />
+        </LinearLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
     <Spinner
         android:id="@+id/team"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="10dp"
+        android:textColor="@color/daynight_textColor"
         android:textSize="16sp"
         android:visibility="gone"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/ltDeviceName" />
+        app:layout_constraintTop_toBottomOf="@+id/ltAdvanced" />
 
     <Button
         android:id="@+id/clearData"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="12dp"
-        android:layout_marginTop="@dimen/_10dp"
         android:background="@color/colorPrimary"
         android:padding="@dimen/_2dp"
         android:text="@string/clear_data"
         android:textAllCaps="false"
         android:textColor="@color/bg_white"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/team" />
 

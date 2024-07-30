@@ -15,6 +15,7 @@ import androidx.appcompat.widget.SwitchCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.preference.PreferenceManager
 import com.afollestad.materialdialogs.*
+import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.textfield.TextInputLayout
 import kotlinx.serialization.json.Json
 import io.realm.*
@@ -74,8 +75,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private lateinit var protocolCheckIn: RadioGroup
     private lateinit var serverUrl: EditText
     private lateinit var serverPassword: EditText
-    private lateinit var serverAddresses: CustomButtonToggleGroup
-    private lateinit var syncToServerText: TextView
+    private lateinit var serverAddresses: MaterialButtonToggleGroup
     private var teamList = ArrayList<String?>()
     private var teamAdapter: ArrayAdapter<String?>? = null
     var selectedTeamId: String? = null
@@ -393,7 +393,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         serverUrl = dialogServerUrlBinding.inputServerUrl
         serverPassword = dialogServerUrlBinding.inputServerPassword
         serverAddresses = dialogServerUrlBinding.serverUrls
-        syncToServerText = dialogServerUrlBinding.syncToServerText
 
         dialogServerUrlBinding.deviceName.setText(NetworkUtils.getDeviceName())
         val builder = MaterialDialog.Builder(this)
@@ -430,7 +429,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         } else {
             dialogServerUrlBinding.manualConfiguration.isChecked = true
             showConfigurationUIElements(dialogServerUrlBinding, true)
-            dialogServerUrlBinding.serverUrls.visibility = View.GONE
         }
         val dialog = builder.build()
         positiveAction = dialog.getActionButton(DialogAction.POSITIVE)
@@ -538,12 +536,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     private fun showConfigurationUIElements(binding: DialogServerUrlBinding, show: Boolean) {
-        binding.radioProtocol.visibility = if (show) View.VISIBLE else View.GONE
+        binding.serverUrls.visibility = if (show) View.GONE else View.VISIBLE
+        binding.ltAdvanced.visibility = if (show) View.VISIBLE else View.INVISIBLE
         binding.switchServerUrl.visibility = if (show) View.VISIBLE else View.GONE
-        binding.ltProtocol.visibility = if (show) View.VISIBLE else View.GONE
-        binding.ltIntervalLabel.visibility = if (show) View.VISIBLE else View.GONE
-        binding.syncSwitch.visibility = if (show) View.VISIBLE else View.GONE
-        binding.ltDeviceName.visibility = if (show) View.VISIBLE else View.GONE
 
         val serverMap = mapOf(
             "🌎 Planet Learning" to BuildConfig.PLANET_LEARNING_URL,
@@ -552,9 +547,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         )
 
         if (show) {
-            serverAddresses.visibility = View.GONE
-            syncToServerText.visibility = View.GONE
-            serverUrl.visibility = View.VISIBLE
             if (settings.getString("serverURL", "") == "https://${BuildConfig.PLANET_LEARNING_URL}") {
                 editor.putString("serverURL", "").apply()
                 editor.putString("serverPin", "").apply()
@@ -572,12 +564,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             serverUrl.isEnabled = true
             serverPassword.isEnabled = true
         } else {
-            serverUrl.visibility = View.GONE
-            serverPassword.visibility = View.GONE
-            serverAddresses.visibility = View.VISIBLE
-            syncToServerText.visibility = View.VISIBLE
-
-
             val toggleButtonMap = mapOf(
                 R.id.toggle_planet_learning to BuildConfig.PLANET_LEARNING_URL,
                 R.id.toggle_planet_guatemala to BuildConfig.PLANET_GUATEMALA_URL,
