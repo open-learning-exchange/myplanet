@@ -1054,7 +1054,7 @@
     <string name="no_submissions">पेशाहरू उपलब्ध छैनन्</string>
     <string name="no_chats">अघिल्ला कुराकानीहरू छैनन्</string>
     <string name="no_feedback">कुनै प्रतिक्रिया उपलब्ध छैन</string>
-    <string name="empty_text"></string>
+    <string name="empty_text" />
     <string name="message_placeholder">%s</string>
     <string name="reports">रिपोर्टहरू</string>
     <string name="number_placeholder">%d</string>
@@ -1076,6 +1076,7 @@
     <string name="visit_count">%1$s (%2$d %3$s)</string>
     <string name="two_strings">%s %s</string>
     <string name="three_strings">%s %s %s</string>
+    <string name="download_sync_files">समक्रमण फाइलहरू डाउनलोड गर्नुहोस्</string>
     <string name="member_description">%1$s (%2$d भ्रमण)</string>
     <string name="dark_mode">अँध्यारो मोड</string>
     <string-array name="dark_mode_options">
