@@ -33,6 +33,7 @@ class ChatDetailFragment : Fragment() {
     private var aiModel: String = ""
     private lateinit var mRealm: Realm
     var user: RealmUserModel? = null
+    var newsId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,6 +54,9 @@ class ChatDetailFragment : Fragment() {
         fragmentChatDetailBinding.recyclerGchat.layoutManager = layoutManager
         fragmentChatDetailBinding.recyclerGchat.isNestedScrollingEnabled = true
         fragmentChatDetailBinding.recyclerGchat.setHasFixedSize(true)
+        newsId = arguments?.getString("newsId")
+        val newsRev = arguments?.getString("newsRev")
+        val newsConversations = arguments?.getString("conversations")
         checkAiProviders()
         if (mAdapter.itemCount > 0) {
             fragmentChatDetailBinding.recyclerGchat.scrollToPosition(mAdapter.itemCount - 1)
@@ -64,7 +68,8 @@ class ChatDetailFragment : Fragment() {
             fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
             if (TextUtils.isEmpty("${fragmentChatDetailBinding.editGchatMessage.text}".trim())) {
                 fragmentChatDetailBinding.textGchatIndicator.visibility = View.VISIBLE
-                fragmentChatDetailBinding.textGchatIndicator.text = getString(R.string.kindly_enter_message)
+                fragmentChatDetailBinding.textGchatIndicator.text =
+                    getString(R.string.kindly_enter_message)
             } else {
                 val message = "${fragmentChatDetailBinding.editGchatMessage.text}".replace("\n", " ")
                 mAdapter.addQuery(message)
@@ -83,7 +88,6 @@ class ChatDetailFragment : Fragment() {
                 fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
             }
         }
-
         fragmentChatDetailBinding.editGchatMessage.setOnKeyListener { _, _, event ->
             if (event.action == KeyEvent.ACTION_DOWN) {
                 if (event.keyCode == KeyEvent.KEYCODE_ENTER && event.isShiftPressed) {
@@ -96,10 +100,8 @@ class ChatDetailFragment : Fragment() {
             }
             false
         }
-
         fragmentChatDetailBinding.editGchatMessage.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
             }
@@ -107,34 +109,49 @@ class ChatDetailFragment : Fragment() {
             override fun afterTextChanged(s: Editable?) {}
         })
 
-        sharedViewModel.getSelectedChatHistory().observe(viewLifecycleOwner) { conversations ->
-            mAdapter.clearData()
-            fragmentChatDetailBinding.editGchatMessage.text.clear()
-            fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
-            if (conversations.isValid) {
-                for (conversation in conversations) {
-                    val query = conversation.query
-                    val response = conversation.response
-                    if (query != null) {
-                        mAdapter.addQuery(query)
-                    }
-                    mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_SHARED_VIEW_MODEL
-                    if (response != null) {
-                        mAdapter.addResponse(response)
+        if (newsId != null) {
+            _id = "$newsId"
+            _rev = newsRev ?: ""
+            val conversations = Gson().fromJson(newsConversations, Array<Conversation>::class.java).toList()
+            for (conversation in conversations) {
+                val query = conversation.query
+                val response = conversation.response
+                if (query != null) {
+                    mAdapter.addQuery(query)
+                }
+                mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_SHARED_VIEW_MODEL
+                if (response != null) {
+                    mAdapter.addResponse(response)
+                }
+            }
+        } else {
+            sharedViewModel.getSelectedChatHistory().observe(viewLifecycleOwner) { conversations ->
+                mAdapter.clearData()
+                fragmentChatDetailBinding.editGchatMessage.text.clear()
+                fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
+                if (conversations.isValid) {
+                    for (conversation in conversations) {
+                        val query = conversation.query
+                        val response = conversation.response
+                        if (query != null) {
+                            mAdapter.addQuery(query)
+                        }
+                        mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_SHARED_VIEW_MODEL
+                        if (response != null) {
+                            mAdapter.addResponse(response)
+                        }
                     }
                 }
             }
-        }
-
-        sharedViewModel.getSelected_id().observe(viewLifecycleOwner) { selectedId ->
-            _id = selectedId
-        }
-
-        sharedViewModel.getSelected_rev().observe(viewLifecycleOwner) { selectedRev ->
-            _rev = selectedRev
-        }
-        view.post {
-            clearChatDetail()
+            sharedViewModel.getSelected_id().observe(viewLifecycleOwner) { selectedId ->
+                _id = selectedId
+            }
+            sharedViewModel.getSelected_rev().observe(viewLifecycleOwner) { selectedRev ->
+                _rev = selectedRev
+            }
+            view.post {
+                clearChatDetail()
+            }
         }
     }
 
@@ -166,7 +183,6 @@ class ChatDetailFragment : Fragment() {
 
                                         fragmentChatDetailBinding.tvGemini.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.disable_color))
                                         fragmentChatDetailBinding.tvGemini.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
-
                                         clearChatDetail()
                                         fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
                                         aiName = getString(R.string.openai)
@@ -406,10 +422,12 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun clearChatDetail() {
-        if (::mAdapter.isInitialized) {
-            mAdapter.clearData()
-            _id = ""
-            _rev = ""
+        if (newsId == null) {
+            if (::mAdapter.isInitialized) {
+                mAdapter.clearData()
+                _id = ""
+                _rev = ""
+            }
         }
     }
 }

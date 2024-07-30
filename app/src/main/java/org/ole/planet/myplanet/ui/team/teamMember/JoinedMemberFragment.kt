@@ -7,6 +7,7 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.base.BaseMemberFragment
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMember
+import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 
 class JoinedMemberFragment : BaseMemberFragment() {
@@ -27,4 +28,6 @@ class JoinedMemberFragment : BaseMemberFragment() {
             }
             return GridLayoutManager(activity, columns)
         }
+
+    override fun onNewsItemClick(news: RealmNews?) {}
 }

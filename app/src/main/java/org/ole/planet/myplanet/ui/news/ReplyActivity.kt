@@ -89,6 +89,8 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         openFolderLauncher.launch(Intent.createChooser(intent, "Select Image"))
     }
 
+    override fun onNewsItemClick(news: RealmNews?) {}
+
     private fun handleImageSelection(url: Uri?) {
         if (url == null) {
             return
