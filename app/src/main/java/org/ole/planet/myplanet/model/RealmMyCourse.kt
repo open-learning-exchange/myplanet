@@ -19,12 +19,12 @@ import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.createStepResource
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import java.io.File
 import java.io.FileWriter
 import java.io.IOException
+import java.util.regex.Pattern
 
 open class RealmMyCourse : RealmObject() {
     @JvmField
@@ -82,90 +82,20 @@ open class RealmMyCourse : RealmObject() {
     companion object {
         private val gson = Gson()
         private val concatenatedLinks = ArrayList<String>()
-        val courseDataList: MutableList<Array<String>> = mutableListOf()
+        private val courseDataList: MutableList<Array<String>> = mutableListOf()
 
         @JvmStatic
-        fun insertMyCourses(userId: String?, myCoursesDoc: JsonObject?, mRealm: Realm) {
+        fun insertMyCourses(userId: String?, myCousesDoc: JsonObject?, mRealm: Realm) {
             try {
                 if (!mRealm.isInTransaction) {
-                    Log.e("RealmMyCourse", "insertMyCourses: Transaction is not in progress")
-                    return
-                } else {
-                    Log.e("RealmMyCourse", "insertMyCourses: Transaction is already in progress")
-                }
-                val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-                val id = JsonUtils.getString("_id", myCoursesDoc)
-                var myMyCoursesDB = mRealm.where(RealmMyCourse::class.java).equalTo("id", id).findFirst()
-                if (myMyCoursesDB == null) {
-                    myMyCoursesDB = mRealm.createObject(RealmMyCourse::class.java, id)
-                }
-                myMyCoursesDB?.setUserId(userId)
-                myMyCoursesDB?.courseId = JsonUtils.getString("_id", myCoursesDoc)
-                myMyCoursesDB?.courseRev = JsonUtils.getString("_rev", myCoursesDoc)
-                myMyCoursesDB?.languageOfInstruction =
-                    JsonUtils.getString("languageOfInstruction", myCoursesDoc)
-                myMyCoursesDB?.courseTitle = JsonUtils.getString("courseTitle", myCoursesDoc)
-                myMyCoursesDB?.memberLimit = JsonUtils.getInt("memberLimit", myCoursesDoc)
-                myMyCoursesDB?.description = JsonUtils.getString("description", myCoursesDoc)
-                val description = JsonUtils.getString("description", myCoursesDoc)
-                val links = extractLinks(description)
-                val baseUrl = Utilities.getUrl()
-                for (link in links) {
-                    val concatenatedLink = "$baseUrl/$link"
-                    concatenatedLinks.add(concatenatedLink)
-                }
-                myMyCoursesDB?.method = JsonUtils.getString("method", myCoursesDoc)
-                myMyCoursesDB?.gradeLevel = JsonUtils.getString("gradeLevel", myCoursesDoc)
-                myMyCoursesDB?.subjectLevel = JsonUtils.getString("subjectLevel", myCoursesDoc)
-                myMyCoursesDB?.createdDate = JsonUtils.getLong("createdDate", myCoursesDoc)
-                myMyCoursesDB?.numberOfSteps = JsonUtils.getJsonArray("steps", myCoursesDoc).size()
-                val courseStepsJsonArray = JsonUtils.getJsonArray("steps", myCoursesDoc)
-                val courseStepsList = mutableListOf<RealmCourseStep>()
-
-                for (i in 0 until courseStepsJsonArray.size()) {
-                    val step_id = Base64.encodeToString(
-                        courseStepsJsonArray[i].toString().toByteArray(),
-                        Base64.NO_WRAP
-                    )
-                    val stepJson = courseStepsJsonArray[i].asJsonObject
-                    val step = RealmCourseStep()
-                    step.id = step_id
-                    step.stepTitle = JsonUtils.getString("stepTitle", stepJson)
-                    step.description = JsonUtils.getString("description", stepJson)
-                    val stepDescription = JsonUtils.getString("description", stepJson)
-                    val stepLinks = extractLinks(stepDescription)
-                    for (stepLink in stepLinks) {
-                        val concatenatedLink = "$baseUrl/$stepLink"
-                        concatenatedLinks.add(concatenatedLink)
+                    mRealm.executeTransaction { realm ->
+                        insertOrUpdateCourse(userId, myCousesDoc, realm)
                     }
-                    insertCourseStepsAttachments(myMyCoursesDB?.courseId, step_id, JsonUtils.getJsonArray("resources", stepJson), mRealm)
-                    insertExam(stepJson, mRealm, step_id, i + 1, myMyCoursesDB?.courseId)
-                    step.noOfResources = JsonUtils.getJsonArray("resources", stepJson).size()
-                    step.courseId = myMyCoursesDB?.courseId
-                    courseStepsList.add(step)
+                } else {
+                    insertOrUpdateCourse(userId, myCousesDoc, mRealm)
                 }
-
-                myMyCoursesDB?.courseSteps = RealmList()
-                myMyCoursesDB?.courseSteps?.addAll(courseStepsList)
-
-                mRealm.commitTransaction()
-
-                val csvRow = arrayOf(
-                    JsonUtils.getString("_id", myCoursesDoc),
-                    JsonUtils.getString("_rev", myCoursesDoc),
-                    JsonUtils.getString("languageOfInstruction", myCoursesDoc),
-                    JsonUtils.getString("courseTitle", myCoursesDoc),
-                    JsonUtils.getInt("memberLimit", myCoursesDoc).toString(),
-                    JsonUtils.getString("description", myCoursesDoc),
-                    JsonUtils.getString("method", myCoursesDoc),
-                    JsonUtils.getString("gradeLevel", myCoursesDoc),
-                    JsonUtils.getString("subjectLevel", myCoursesDoc),
-                    JsonUtils.getLong("createdDate", myCoursesDoc).toString(),
-                    JsonUtils.getJsonArray("steps", myCoursesDoc).toString()
-                )
-                courseDataList.add(csvRow)
             } catch (e: Exception) {
-                Log.e("RealmMyCourse", "Error during insertion into courses: ${e.message}")
+                Log.e("RealmMyCourse1", "Error during insertion into courses: ${e.message}")
                 throw e
             }
         }
@@ -187,6 +117,92 @@ open class RealmMyCourse : RealmObject() {
 
         fun courseWriteCsv() {
             writeCsv("${context.getExternalFilesDir(null)}/ole/course.csv", courseDataList)
+        }
+
+        private fun insertOrUpdateCourse(userId: String?, myCousesDoc: JsonObject?, mRealm: Realm) {
+            val id = JsonUtils.getString("_id", myCousesDoc)
+            var myMyCoursesDB = mRealm.where(RealmMyCourse::class.java).equalTo("id", id).findFirst()
+            if (myMyCoursesDB == null) {
+                myMyCoursesDB = mRealm.createObject(RealmMyCourse::class.java, id)
+            }
+            myMyCoursesDB?.setUserId(userId)
+            myMyCoursesDB?.courseId = JsonUtils.getString("_id", myCousesDoc)
+            myMyCoursesDB?.courseRev = JsonUtils.getString("_rev", myCousesDoc)
+            myMyCoursesDB?.languageOfInstruction = JsonUtils.getString("languageOfInstruction", myCousesDoc)
+            myMyCoursesDB?.courseTitle = JsonUtils.getString("courseTitle", myCousesDoc)
+            myMyCoursesDB?.memberLimit = JsonUtils.getInt("memberLimit", myCousesDoc)
+            myMyCoursesDB?.description = JsonUtils.getString("description", myCousesDoc)
+            val description = JsonUtils.getString("description", myCousesDoc)
+            val links = extractLinks(description)
+            val baseUrl = Utilities.getUrl()
+            for (link in links) {
+                val concatenatedLink = "$baseUrl/$link"
+                concatenatedLinks.add(concatenatedLink)
+            }
+            myMyCoursesDB?.method = JsonUtils.getString("method", myCousesDoc)
+            myMyCoursesDB?.gradeLevel = JsonUtils.getString("gradeLevel", myCousesDoc)
+            myMyCoursesDB?.subjectLevel = JsonUtils.getString("subjectLevel", myCousesDoc)
+            myMyCoursesDB?.createdDate = JsonUtils.getLong("createdDate", myCousesDoc)
+            myMyCoursesDB?.setNumberOfSteps(JsonUtils.getJsonArray("steps", myCousesDoc).size())
+            val courseStepsJsonArray = JsonUtils.getJsonArray("steps", myCousesDoc)
+            val courseStepsList = mutableListOf<RealmCourseStep>()
+
+            for (i in 0 until courseStepsJsonArray.size()) {
+                val step_id = Base64.encodeToString(courseStepsJsonArray[i].toString().toByteArray(), Base64.NO_WRAP)
+                val stepJson = courseStepsJsonArray[i].asJsonObject
+                val step = RealmCourseStep()
+                step.id = step_id
+                step.stepTitle = JsonUtils.getString("stepTitle", stepJson)
+                step.description = JsonUtils.getString("description", stepJson)
+                val stepDescription = JsonUtils.getString("description", stepJson)
+                val stepLinks = extractLinks(stepDescription)
+                for (stepLink in stepLinks) {
+                    val concatenatedLink = "$baseUrl/$stepLink"
+                    concatenatedLinks.add(concatenatedLink)
+                }
+                insertCourseStepsAttachments(myMyCoursesDB?.courseId, step_id, JsonUtils.getJsonArray("resources", stepJson), mRealm)
+                insertExam(stepJson, mRealm, step_id, i + 1, myMyCoursesDB?.courseId)
+                step.noOfResources = JsonUtils.getJsonArray("resources", stepJson).size()
+                step.courseId = myMyCoursesDB?.courseId
+                courseStepsList.add(step)
+            }
+
+            mRealm.executeTransaction {
+                myMyCoursesDB?.courseSteps?.clear()
+                myMyCoursesDB?.courseSteps?.addAll(courseStepsList)
+            }
+
+            val csvRow = arrayOf(
+                JsonUtils.getString("_id", myCousesDoc),
+                JsonUtils.getString("_rev", myCousesDoc),
+                JsonUtils.getString("languageOfInstruction", myCousesDoc),
+                JsonUtils.getString("courseTitle", myCousesDoc),
+                JsonUtils.getInt("memberLimit", myCousesDoc).toString(),
+                JsonUtils.getString("description", myCousesDoc),
+                JsonUtils.getString("method", myCousesDoc),
+                JsonUtils.getString("gradeLevel", myCousesDoc),
+                JsonUtils.getString("subjectLevel", myCousesDoc),
+                JsonUtils.getLong("createdDate", myCousesDoc).toString(),
+                JsonUtils.getJsonArray("steps", myCousesDoc).toString()
+            )
+            courseDataList.add(csvRow)
+        }
+
+        private fun extractLinks(text: String?): ArrayList<String> {
+            val links = ArrayList<String>()
+            val pattern = Pattern.compile("!\\[.*?]\\((.*?)\\)")
+            val matcher = text?.let { pattern.matcher(it) }
+            if (matcher != null) {
+                while (matcher.find()) {
+                    val link = matcher.group(1)
+                    if (link != null) {
+                        if (link.isNotEmpty()) {
+                            links.add(link)
+                        }
+                    }
+                }
+            }
+            return links
         }
 
         @JvmStatic
