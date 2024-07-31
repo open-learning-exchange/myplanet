@@ -1036,7 +1036,7 @@
     <string name="recurring_colon">récurrent:</string>
     <string name="created_by_colon">créé par:</string>
     <string name="failed_to_get_configuration_id">Impossible de récupérer l\'identifiant de configuration. Veuillez contacter l\'administrateur</string>
-    <string name="you_want_to_connect_to_a_different_server">Vous souhaitez vous connecter à un autre serveur. Effacez les données de l'application pour continuer</string>
+    <string name="you_want_to_connect_to_a_different_server">Vous souhaitez vous connecter à un autre serveur. Effacez les données de l\'application pour continuer</string>
     <string name="are_you_sure_you_want_to_clear_data">Êtes-vous sûr de vouloir effacer toutes les données ?</string>
     <string name="feedback_list">liste des retours</string>
     <string name="enterprise_list">liste des entreprises</string>
