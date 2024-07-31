@@ -154,7 +154,6 @@ class ChatDetailFragment : Fragment() {
         }
         view.post {
             clearChatDetail()
-
         }
     }
 
