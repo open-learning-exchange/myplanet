@@ -58,14 +58,28 @@
             android:textColor="@color/daynight_textColor" />
     </LinearLayout>
 
-    <com.google.android.material.button.MaterialButtonToggleGroup
+    <TextView
+        android:id="@+id/syncToServerText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:layout_marginTop="8dp"
+        android:text="Sync to server:"
+        android:textColor="@color/daynight_textColor"
+        android:textSize="16sp"
+        android:visibility="gone"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/linearLayout2" />
+
+    <org.ole.planet.myplanet.utilities.CustomButtonToggleGroup
         android:id="@+id/serverUrls"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:visibility="gone"
+        android:layout_marginTop="3dp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/linearLayout2"
+        app:layout_constraintTop_toBottomOf="@+id/syncToServerText"
         app:singleSelection="true">
 
         <com.google.android.material.button.MaterialButton
@@ -86,14 +100,14 @@
             android:text="🇬🇹 Planet Guatemala" />
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/toggle_planet_sanpablo"
+            android:id="@+id/toggle_planet_san_pablo"
             style="@style/Widget.MaterialComponents.Button.OutlinedButton"
             android:layout_width="match_parent"
             android:gravity="start|center_vertical"
             android:layout_height="wrap_content"
             android:text="🇬🇹 Planet San Pablo" />
 
-    </com.google.android.material.button.MaterialButtonToggleGroup>
+    </org.ole.planet.myplanet.utilities.CustomButtonToggleGroup>
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/ltAdvanced"

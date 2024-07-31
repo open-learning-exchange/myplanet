@@ -15,7 +15,6 @@ import androidx.appcompat.widget.SwitchCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.preference.PreferenceManager
 import com.afollestad.materialdialogs.*
-import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.textfield.TextInputLayout
 import kotlinx.serialization.json.Json
 import io.realm.*
@@ -75,7 +74,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private lateinit var protocolCheckIn: RadioGroup
     private lateinit var serverUrl: EditText
     private lateinit var serverPassword: EditText
-    private lateinit var serverAddresses: MaterialButtonToggleGroup
+    private lateinit var serverAddresses: CustomButtonToggleGroup
+    private lateinit var syncToServerText: TextView
     private var teamList = ArrayList<String?>()
     private var teamAdapter: ArrayAdapter<String?>? = null
     var selectedTeamId: String? = null
@@ -126,18 +126,21 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
     }
 
-    private fun clearDataDialog(message: String) {
+    private fun clearDataDialog(message: String): Boolean {
+        var success = false
         AlertDialog.Builder(this)
             .setMessage(message)
             .setPositiveButton(getString(R.string.clear_data)) { _, _ ->
                 clearRealmDb()
                 clearSharedPref()
                 restartApp()
+                success = true
             }
             .setNegativeButton(getString(R.string.cancel)) { _, _ ->
                 previousCheckedId?.let { serverAddresses.check(it) }
             }
             .show()
+        return success
     }
 
     private fun clearInternalStorage() {
@@ -396,6 +399,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         serverUrl = dialogServerUrlBinding.inputServerUrl
         serverPassword = dialogServerUrlBinding.inputServerPassword
         serverAddresses = dialogServerUrlBinding.serverUrls
+        syncToServerText = dialogServerUrlBinding.syncToServerText
 
         dialogServerUrlBinding.deviceName.setText(NetworkUtils.getDeviceName())
         val builder = MaterialDialog.Builder(this)
@@ -426,15 +430,15 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     service.getMinApk(this, url, pin)
                 }
             }
-        if (!prefData.getMANUALCONFIG()) {
-            dialogServerUrlBinding.manualConfiguration.isChecked = false
-            showConfigurationUIElements(dialogServerUrlBinding, false)
-        } else {
-            dialogServerUrlBinding.manualConfiguration.isChecked = true
-            showConfigurationUIElements(dialogServerUrlBinding, true)
-        }
         val dialog = builder.build()
         positiveAction = dialog.getActionButton(DialogAction.POSITIVE)
+        if (!prefData.getMANUALCONFIG()) {
+            dialogServerUrlBinding.manualConfiguration.isChecked = false
+            showConfigurationUIElements(dialogServerUrlBinding, false, dialog)
+        } else {
+            dialogServerUrlBinding.manualConfiguration.isChecked = true
+            showConfigurationUIElements(dialogServerUrlBinding, true, dialog)
+        }
         dialogServerUrlBinding.manualConfiguration.setOnCheckedChangeListener { _: CompoundButton?, isChecked: Boolean ->
             if (isChecked) {
                 prefData.setMANUALCONFIG(true)
@@ -442,7 +446,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 editor.putString("serverPin", "").apply()
                 dialogServerUrlBinding.radioHttp.isChecked = true
                 editor.putString("serverProtocol", getString(R.string.http_protocol)).apply()
-                showConfigurationUIElements(dialogServerUrlBinding, true)
+                showConfigurationUIElements(dialogServerUrlBinding, true, dialog)
                 val communities: List<RealmCommunity> = mRealm.where(RealmCommunity::class.java).sort("weight", Sort.ASCENDING).findAll()
                 val nonEmptyCommunities: MutableList<RealmCommunity> = ArrayList()
                 for (community in communities) {
@@ -473,7 +477,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 protocolSemantics()
             } else {
                 prefData.setMANUALCONFIG(false)
-                showConfigurationUIElements(dialogServerUrlBinding, false)
+                showConfigurationUIElements(dialogServerUrlBinding, false, dialog)
                 editor.putBoolean("switchCloudUrl", false).apply()
             }
         }
@@ -538,12 +542,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         sync(dialog)
     }
 
-    private fun showConfigurationUIElements(binding: DialogServerUrlBinding, show: Boolean) {
-        binding.serverUrls.visibility = if (show) View.GONE else View.VISIBLE
-        binding.ltAdvanced.visibility = if (show) View.VISIBLE else View.GONE
-        binding.switchServerUrl.visibility = if (show) View.VISIBLE else View.GONE
+    private fun showConfigurationUIElements(binding: DialogServerUrlBinding, manualSelected: Boolean, dialog: MaterialDialog) {
+        serverAddresses.visibility = if (manualSelected) View.GONE else View.VISIBLE
+        syncToServerText.visibility = if (manualSelected) View.GONE else View.VISIBLE
+        positiveAction.visibility = if (manualSelected) View.VISIBLE else View.GONE
+        binding.ltAdvanced.visibility = if (manualSelected) View.VISIBLE else View.GONE
+        binding.switchServerUrl.visibility = if (manualSelected) View.VISIBLE else View.GONE
 
-        if (show) {
+        if (manualSelected) {
             if (settings.getString("serverURL", "") == "https://${BuildConfig.PLANET_LEARNING_URL}") {
                 editor.putString("serverURL", "").apply()
                 editor.putString("serverPin", "").apply()
@@ -567,7 +573,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             val toggleButtonMap = mapOf(
                 R.id.toggle_planet_learning to BuildConfig.PLANET_LEARNING_URL,
                 R.id.toggle_planet_guatemala to BuildConfig.PLANET_GUATEMALA_URL,
-                R.id.toggle_planet_sanpablo to BuildConfig.PLANET_SANPABLO_URL
+                R.id.toggle_planet_san_pablo to BuildConfig.PLANET_SANPABLO_URL
             )
 
             val storedUrl = settings.getString("serverURL", null)
@@ -575,24 +581,40 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             val urlWithoutProtocol = storedUrl?.replace(Regex("^https?://"), "")
 
             if (!prefData.getMANUALCONFIG()) {
-                val actualUrl = BuildConfig.PLANET_LEARNING_URL
-                serverAddresses.check(R.id.toggle_planet_learning)
-                serverUrl.setText(actualUrl)
-                serverPassword.setText(getPinForUrl(actualUrl))
-                editor.putString("serverURL", "https://$actualUrl").apply()
-                editor.putString("serverPin", serverPassword.text.toString()).apply()
+                if (storedUrl != null) {
+                    val toggleButtonId = toggleButtonMap.filterValues { it == urlWithoutProtocol }.keys.firstOrNull()
+                    if (toggleButtonId != null) {
+                        serverAddresses.check(toggleButtonId)
+                        previousCheckedId = toggleButtonId
+                    } else {
+                        val actualUrl = BuildConfig.PLANET_LEARNING_URL
+                        serverAddresses.check(R.id.toggle_planet_learning)
+                        serverUrl.setText(actualUrl)
+                        serverPassword.setText(getPinForUrl(actualUrl))
+                        editor.putString("serverURL", "https://$actualUrl").apply()
+                        editor.putString("serverPin", serverPassword.text.toString()).apply()
+                    }
+                    serverUrl.setText(urlWithoutProtocol)
+                    serverPassword.setText(storedPin)
+                } else {
+                    val actualUrl = BuildConfig.PLANET_LEARNING_URL
+                    serverAddresses.check(R.id.toggle_planet_learning)
+                    serverUrl.setText(actualUrl)
+                    serverPassword.setText(getPinForUrl(actualUrl))
+                    editor.putString("serverURL", "https://$actualUrl").apply()
+                    editor.putString("serverPin", serverPassword.text.toString()).apply()
+                }
             } else if (storedUrl != null) {
                 val toggleButtonId = toggleButtonMap.filterValues { it == urlWithoutProtocol }.keys.firstOrNull()
                 if (toggleButtonId != null) {
                     serverAddresses.check(toggleButtonId)
                     previousCheckedId = toggleButtonId
                 }
-
                 serverUrl.setText(urlWithoutProtocol)
                 serverPassword.setText(storedPin)
             }
 
-            binding.serverUrls.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            serverAddresses.addOnButtonCheckedListener { _, checkedId, isChecked ->
                 val actualUrl = toggleButtonMap[checkedId] ?: ""
                 if (isChecked) {
                     if (urlWithoutProtocol != null && urlWithoutProtocol != actualUrl) {
@@ -604,6 +626,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
                         val protocol = if (actualUrl == BuildConfig.PLANET_SANPABLO_URL) "http://" else "https://"
                         editor.putString("serverProtocol", protocol).apply()
+                        performSync(dialog)
                     }
                 }
             }
@@ -611,6 +634,19 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             serverUrl.isEnabled = false
             serverPassword.isEnabled = false
             editor.putString("serverProtocol", getString(R.string.https_protocol)).apply()
+        }
+    }
+
+    private fun performSync(dialog: MaterialDialog) {
+        serverConfigAction = "sync"
+        val protocol = "${settings.getString("serverProtocol", "")}"
+        var url = "${serverUrl.text}"
+        val pin = "${serverPassword.text}"
+        editor.putString("serverURL", url).apply()
+        url = protocol + url
+        if (isUrlValid(url)) {
+            currentDialog = dialog
+            service.getMinApk(this, url, pin)
         }
     }
 
