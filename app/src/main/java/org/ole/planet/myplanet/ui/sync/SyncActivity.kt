@@ -83,6 +83,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     lateinit var processedUrl: String
     var isSync = false
     var forceSync = false
+    private var syncFailed = false
     lateinit var btnSignIn: Button
     lateinit var defaultPref: SharedPreferences
     lateinit var service: Service
@@ -194,12 +195,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                         startSync()
                     }
                 } catch (e: Exception) {
+                    syncFailed = true
                     alertDialogOkay(getString(R.string.device_couldn_t_reach_server_check_and_try_again))
                     customProgressDialog?.dismiss()
                 }
             }
 
                 override fun onFailure(call: Call<ResponseBody?>, t: Throwable) {
+                    syncFailed = true
                     alertDialogOkay(getString(R.string.device_couldn_t_reach_server_check_and_try_again))
                     customProgressDialog?.dismiss()
                 }
@@ -408,16 +411,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             .negativeText(R.string.btn_sync_cancel)
             .neutralText(R.string.btn_sync_save)
             .onPositive { dialog: MaterialDialog, _: DialogAction? ->
-                serverConfigAction = "sync"
-                val protocol = "${settings.getString("serverProtocol", "")}"
-                var url = "${serverUrl.text}"
-                val pin = "${serverPassword.text}"
-                editor.putString("serverURL", url).apply()
-                url = protocol + url
-                if (isUrlValid(url)) {
-                    currentDialog = dialog
-                    service.getMinApk(this, url, pin)
-                }
+                performSync(dialog)
             }
             .onNeutral { dialog: MaterialDialog, _: DialogAction? ->
                 serverConfigAction = "save"
@@ -581,28 +575,16 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             val urlWithoutProtocol = storedUrl?.replace(Regex("^https?://"), "")
 
             if (!prefData.getManualConfig()) {
-                if (storedUrl != null) {
+                if (storedUrl != null && !syncFailed) {
                     val toggleButtonId = toggleButtonMap.filterValues { it == urlWithoutProtocol }.keys.firstOrNull()
                     if (toggleButtonId != null) {
                         serverAddresses.check(toggleButtonId)
                         previousCheckedId = toggleButtonId
-                    } else {
-                        val actualUrl = BuildConfig.PLANET_LEARNING_URL
-                        serverAddresses.check(R.id.toggle_planet_learning)
-                        serverUrl.setText(actualUrl)
-                        serverPassword.setText(getPinForUrl(actualUrl))
-                        editor.putString("serverURL", "https://$actualUrl").apply()
-                        editor.putString("serverPin", serverPassword.text.toString()).apply()
                     }
                     serverUrl.setText(urlWithoutProtocol)
                     serverPassword.setText(storedPin)
-                } else {
-                    val actualUrl = BuildConfig.PLANET_LEARNING_URL
-                    serverAddresses.check(R.id.toggle_planet_learning)
-                    serverUrl.setText(actualUrl)
-                    serverPassword.setText(getPinForUrl(actualUrl))
-                    editor.putString("serverURL", "https://$actualUrl").apply()
-                    editor.putString("serverPin", serverPassword.text.toString()).apply()
+                } else if (syncFailed) {
+                    serverAddresses.clearChecked()
                 }
             } else if (storedUrl != null) {
                 val toggleButtonId = toggleButtonMap.filterValues { it == urlWithoutProtocol }.keys.firstOrNull()
@@ -720,6 +702,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             }
             override fun notAvailable() {
                 if (!isFinishing) {
+                    syncFailed = true
                     showAlert(context, "Error", getString(R.string.planet_server_not_reachable))
                 }
             }
@@ -737,6 +720,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         if (::lblLastSyncDate.isInitialized) {
             lblLastSyncDate.text = getString(R.string.message_placeholder, "${getString(R.string.last_sync, getRelativeTime(Date().time))} >>")
         }
+        syncFailed = false
     }
 
     override fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean) {
