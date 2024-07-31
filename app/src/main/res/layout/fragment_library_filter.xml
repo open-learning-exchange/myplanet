@@ -28,6 +28,7 @@
                 android:src="@drawable/close_x" />
         </LinearLayout>
 
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
@@ -42,28 +43,17 @@
             <TextView
                 style="@style/HeaderText"
                 android:layout_width="0dp"
-
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="@string/languages" />
 
-            <TextView
-                style="@style/HeaderText"
-                android:layout_width="0dp"
-
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/mediums" />
-
-            <TextView
-                style="@style/HeaderText"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-
-                android:text="@string/levels" />
 
         </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/daynight_textColor" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -94,6 +84,44 @@
                 android:layout_width="1dp"
                 android:layout_height="match_parent"
                 android:background="@color/md_grey_200" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/daynight_textColor" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <TextView
+                style="@style/HeaderText"
+                android:layout_width="0dp"
+
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/mediums" />
+
+            <TextView
+                style="@style/HeaderText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+
+                android:text="@string/levels" />
+
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/daynight_textColor" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="horizontal">
 
             <ListView
                 android:id="@+id/list_medium"
