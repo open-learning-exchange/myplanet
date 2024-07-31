@@ -15,6 +15,7 @@ import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.isTeamLeader
+import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Utilities
@@ -72,6 +73,8 @@ class TeamDetailFragment : BaseTeamFragment() {
         super.onViewCreated(view, savedInstanceState)
         createTeamLog()
     }
+
+    override fun onNewsItemClick(news: RealmNews?) {}
 
     private fun createTeamLog() {
         val user = UserProfileDbHandler(requireContext()).userModel
