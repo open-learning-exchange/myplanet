@@ -23,6 +23,7 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.FileUtils.openOleFolder
@@ -35,6 +36,7 @@ class NewsFragment : BaseNewsFragment() {
     var user: RealmUserModel? = null
     private var updatedNewsList: RealmResults<RealmNews>? = null
     private var filteredNewsList: List<RealmNews?> = listOf()
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentNewsBinding = FragmentNewsBinding.inflate(inflater, container, false)
         llImage = fragmentNewsBinding.llImages
@@ -166,12 +168,7 @@ class NewsFragment : BaseNewsFragment() {
                 .findAll()
             getUrlsAndStartDownload(lib, urls)
             adapterNews = activity?.let {
-                AdapterNews(
-                    it,
-                    list?.toMutableList() ?: mutableListOf(),
-                    user,
-                    null
-                )
+                AdapterNews(it, list?.toMutableList() ?: mutableListOf(), user, null)
             }
             adapterNews?.setmRealm(mRealm)
             adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
@@ -182,6 +179,24 @@ class NewsFragment : BaseNewsFragment() {
             fragmentNewsBinding.llAddNews.visibility = View.GONE
             fragmentNewsBinding.btnAddStory.text = getString(R.string.add_story)
             adapterNews?.notifyDataSetChanged()
+        }
+    }
+
+    override fun onNewsItemClick(news: RealmNews?) {
+        val fromLogin = arguments?.getBoolean("fromLogin")
+        if (fromLogin == false) {
+            val bundle = Bundle()
+            bundle.putString("newsId", news?.newsId)
+            bundle.putString("newsRev", news?.newsRev)
+            bundle.putString("conversations", news?.conversations)
+
+            val chatDetailFragment = ChatDetailFragment()
+            chatDetailFragment.arguments = bundle
+
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, chatDetailFragment)
+                .addToBackStack(null)
+                .commit()
         }
     }
 
