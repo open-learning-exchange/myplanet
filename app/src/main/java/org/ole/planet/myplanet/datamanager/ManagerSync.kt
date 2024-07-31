@@ -19,15 +19,9 @@ import retrofit2.Response
 import java.util.Locale
 
 class ManagerSync private constructor(context: Context) {
-    private val settings: SharedPreferences
-    private val dbService: DatabaseService
-    private val mRealm: Realm
-
-    init {
-        settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        dbService = DatabaseService(context)
-        mRealm = dbService.realmInstance
-    }
+    private val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    private val dbService: DatabaseService = DatabaseService(context)
+    private val mRealm: Realm = dbService.realmInstance
 
     fun login(userName: String?, password: String?, listener: SyncListener) {
         listener.onSyncStarted()

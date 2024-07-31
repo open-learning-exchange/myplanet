@@ -8,7 +8,7 @@ import java.lang.reflect.Modifier
 import java.util.concurrent.TimeUnit
 
 object ApiClient {
-    const val BASE_URL = "https://vi.media.mit.edu/"
+    private const val BASE_URL = "https://vi.media.mit.edu/"
     private var retrofit: Retrofit? = null
     @JvmStatic
     val client: Retrofit?
