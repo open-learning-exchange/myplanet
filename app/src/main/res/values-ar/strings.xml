@@ -1036,7 +1036,7 @@
     <string name="recurring_colon">متكرر:</string>
     <string name="created_by_colon">تم إنشاؤه بواسطة:</string>
     <string name="failed_to_get_configuration_id">فشل في الحصول على معرف التكوين. يرجى الاتصال بالمسؤول</string>
-    <string name="you_want_to_connect_to_a_different_server">هل ترغب في الاتصال بخادم مختلف؟ امسح بيانات التطبيق للمتابعة</string>
+    <string name="you_want_to_connect_to_a_different_server">تريد الاتصال بخادم مختلف. امسح بيانات التطبيق للمتابعة</string>
     <string name="are_you_sure_you_want_to_clear_data">هل أنت متأكد أنك تريد مسح جميع البيانات؟</string>
     <string name="feedback_list">قائمة التغذية الراجعة</string>
     <string name="enterprise_list">قائمة الشركات</string>
@@ -1085,5 +1085,6 @@
     </string-array>
     <string name="are_you_sure_you_want_to_archive_these_courses">هل أنت متأكد أنك تريد أرشفة هذه الدورات؟</string>
     <string name="are_you_sure_you_want_to_archive_this_course">هل أنت متأكد أنك تريد أرشفة هذه الدورة؟</string>
+    <string name="manual">دليل</string>
 
 </resources>

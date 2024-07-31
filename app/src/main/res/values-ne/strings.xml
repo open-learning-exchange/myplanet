@@ -1036,7 +1036,7 @@
     <string name="recurring_colon">आवर्तमान:</string>
     <string name="created_by_colon">बनाएको:</string>
     <string name="failed_to_get_configuration_id">बनावट आईडी प्राप्त गर्न असफल भयो। कृपया व्यवस्थापकसँग सम्पर्क गर्नुहोस्।</string>
-    <string name="you_want_to_connect_to_a_different_server">के तपाईं विभिन्न सर्भरमा जडान गर्न चाहानुहुन्छ? जारी गर्न डाटा मेटाउनको लागि एप्लिकेशन डाटा हटाउनुहोस्</string>
+    <string name="you_want_to_connect_to_a_different_server">तपाईं अर्को सर्भरमा जडान गर्न चाहनुहुन्छ। अगाडि बढ्नका लागि एपको डेटा मेटाउनुहोस्</string>
     <string name="are_you_sure_you_want_to_clear_data">के तपाईं सबै डाटा हटाउन निश्चित हुनुहुन्छ?</string>
     <string name="feedback_list">प्रतिक्रिया सूची</string>
     <string name="enterprise_list">उद्यम सूची</string>
@@ -1085,5 +1085,6 @@
     </string-array>
     <string name="are_you_sure_you_want_to_archive_these_courses">के तपाइँ यी पाठ्यक्रमहरू संग्रह गर्न निश्चित हुनुहुन्छ?</string>
     <string name="are_you_sure_you_want_to_archive_this_course">के तपाइँ निश्चित हुनुहुन्छ कि तपाइँ यो पाठ्यक्रम संग्रह गर्न चाहनुहुन्छ?</string>
+    <string name="manual">हस्तपुस्तिका</string>
 
 </resources>

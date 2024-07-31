@@ -88,6 +88,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     lateinit var service: Service
     private var currentDialog: MaterialDialog? = null
     private var serverConfigAction = ""
+    private var previousCheckedId: Int? = null
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -133,7 +134,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 clearSharedPref()
                 restartApp()
             }
-            .setNegativeButton(getString(R.string.cancel), null)
+            .setNegativeButton(getString(R.string.cancel)) { _, _ ->
+                previousCheckedId?.let { serverAddresses.check(it) }
+            }
             .show()
     }
 
@@ -537,14 +540,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     private fun showConfigurationUIElements(binding: DialogServerUrlBinding, show: Boolean) {
         binding.serverUrls.visibility = if (show) View.GONE else View.VISIBLE
-        binding.ltAdvanced.visibility = if (show) View.VISIBLE else View.INVISIBLE
+        binding.ltAdvanced.visibility = if (show) View.VISIBLE else View.GONE
         binding.switchServerUrl.visibility = if (show) View.VISIBLE else View.GONE
-
-        val serverMap = mapOf(
-            "🌎 Planet Learning" to BuildConfig.PLANET_LEARNING_URL,
-            "🇬🇹 Planet Guatemala" to BuildConfig.PLANET_GUATEMALA_URL,
-            "🇬🇹 Planet San Pablo" to BuildConfig.PLANET_SANPABLO_URL
-        )
 
         if (show) {
             if (settings.getString("serverURL", "") == "https://${BuildConfig.PLANET_LEARNING_URL}") {
@@ -555,7 +552,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 binding.radioHttp.isChecked = true
                 editor.putString("serverProtocol", getString(R.string.http_protocol)).apply()
             }
-            if (settings.getString("serverProtocol", "") == getString(R.string.https_protocol) && settings.getString("serverURL", "") != "" && settings.getString("serverURL", "") != "https://${BuildConfig.PLANET_LEARNING_URL}") {
+            if (settings.getString("serverProtocol", "") == getString(R.string.https_protocol) &&
+                settings.getString("serverURL", "") != "" &&
+                settings.getString("serverURL", "") != "https://${BuildConfig.PLANET_LEARNING_URL}"
+            ) {
                 binding.radioHttps.isChecked = true
                 editor.putString("serverProtocol", getString(R.string.https_protocol)).apply()
             }
@@ -572,14 +572,20 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
             val storedUrl = settings.getString("serverURL", null)
             val storedPin = settings.getString("serverPin", null)
+            val urlWithoutProtocol = storedUrl?.replace(Regex("^https?://"), "")
 
-            if (storedUrl != null) {
-                val urlWithoutProtocol = storedUrl.replace(Regex("^https?://"), "")
-                serverMap.entries.find { it.value == urlWithoutProtocol }?.key
+            if (!prefData.getMANUALCONFIG()) {
+                val actualUrl = BuildConfig.PLANET_LEARNING_URL
+                serverAddresses.check(R.id.toggle_planet_learning)
+                serverUrl.setText(actualUrl)
+                serverPassword.setText(getPinForUrl(actualUrl))
+                editor.putString("serverURL", "https://$actualUrl").apply()
+                editor.putString("serverPin", serverPassword.text.toString()).apply()
+            } else if (storedUrl != null) {
                 val toggleButtonId = toggleButtonMap.filterValues { it == urlWithoutProtocol }.keys.firstOrNull()
-
                 if (toggleButtonId != null) {
                     serverAddresses.check(toggleButtonId)
+                    previousCheckedId = toggleButtonId
                 }
 
                 serverUrl.setText(urlWithoutProtocol)
@@ -587,14 +593,17 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             }
 
             binding.serverUrls.addOnButtonCheckedListener { _, checkedId, isChecked ->
+                val actualUrl = toggleButtonMap[checkedId] ?: ""
                 if (isChecked) {
-                    val actualUrl = toggleButtonMap[checkedId] ?: ""
-                    serverUrl.setText(actualUrl)
-                    serverPassword.setText(getPinForUrl(actualUrl))
-                    if (actualUrl == BuildConfig.PLANET_SANPABLO_URL) {
-                        editor.putString("serverProtocol", "http://").apply()
+                    if (urlWithoutProtocol != null && urlWithoutProtocol != actualUrl) {
+                        previousCheckedId = previousCheckedId ?: serverAddresses.checkedButtonId
+                        clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server))
                     } else {
-                        editor.putString("serverProtocol", "https://").apply()
+                        serverUrl.setText(actualUrl)
+                        serverPassword.setText(getPinForUrl(actualUrl))
+
+                        val protocol = if (actualUrl == BuildConfig.PLANET_SANPABLO_URL) "http://" else "https://"
+                        editor.putString("serverProtocol", protocol).apply()
                     }
                 }
             }

@@ -1037,7 +1037,7 @@
     <string name="recurring_colon">recurring:</string>
     <string name="created_by_colon">created by:</string>
     <string name="failed_to_get_configuration_id">failed to get configuration id. kindly contact admin</string>
-    <string name="you_want_to_connect_to_a_different_server">You want to connect to a different server. Clear app data to proceed</string>
+    <string name="you_want_to_connect_to_a_different_server">Are you sure you want to change the configuration? This action will clear the app data.</string>
     <string name="are_you_sure_you_want_to_clear_data">are you sure you want to clear all data?</string>
     <string name="feedback_list">list of feedback</string>
     <string name="enterprise_list">list of enterprises</string>
@@ -1085,5 +1085,6 @@
     </string-array>
     <string name="are_you_sure_you_want_to_archive_these_courses">Are you sure you want to archive these courses?</string>
     <string name="are_you_sure_you_want_to_archive_this_course">Are you sure you want to archive this course?</string>
+    <string name="manual">manual</string>
 
 </resources>

@@ -40,7 +40,7 @@
             android:layout_weight="1"
             android:checked="false"
             android:padding="@dimen/padding_normal"
-            android:text="manual"
+            android:text="@string/manual"
             android:textSize="16sp"
             android:textColor="@color/daynight_textColor" />
 
@@ -60,11 +60,10 @@
 
     <com.google.android.material.button.MaterialButtonToggleGroup
         android:id="@+id/serverUrls"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:visibility="gone"
-        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/linearLayout2"
         app:singleSelection="true">
@@ -75,12 +74,14 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:elevation="0dp"
+            android:gravity="start|center_vertical"
             android:text="🌎 Planet Learning" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/toggle_planet_guatemala"
             style="@style/Widget.MaterialComponents.Button.OutlinedButton"
             android:layout_width="match_parent"
+            android:gravity="start|center_vertical"
             android:layout_height="wrap_content"
             android:text="🇬🇹 Planet Guatemala" />
 
@@ -88,6 +89,7 @@
             android:id="@+id/toggle_planet_sanpablo"
             style="@style/Widget.MaterialComponents.Button.OutlinedButton"
             android:layout_width="match_parent"
+            android:gravity="start|center_vertical"
             android:layout_height="wrap_content"
             android:text="🇬🇹 Planet San Pablo" />
 
@@ -291,31 +293,33 @@
                 android:textStyle="italic" />
         </LinearLayout>
 
+        <Spinner
+            android:id="@+id/team"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:textColor="@color/daynight_textColor"
+            android:textSize="16sp"
+            android:visibility="gone"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/ltDeviceName" />
+
+        <Button
+            android:id="@+id/clearData"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:background="@color/colorPrimary"
+            android:padding="@dimen/_2dp"
+            android:text="@string/clear_data"
+            android:textAllCaps="false"
+            android:textColor="@color/bg_white"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/team" />
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <Spinner
-        android:id="@+id/team"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="10dp"
-        android:textColor="@color/daynight_textColor"
-        android:textSize="16sp"
-        android:visibility="gone"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/ltAdvanced" />
 
-    <Button
-        android:id="@+id/clearData"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
-        android:background="@color/colorPrimary"
-        android:padding="@dimen/_2dp"
-        android:text="@string/clear_data"
-        android:textAllCaps="false"
-        android:textColor="@color/bg_white"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/team" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
