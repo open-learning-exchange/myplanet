@@ -20,7 +20,7 @@ open class RealmCertification : RealmObject() {
     @JvmField
     var _rev: String? = null
     var name: String? = null
-    var courseIds: String? = null
+    private var courseIds: String? = null
 
     fun setCourseIds(courseIds: JsonArray?) {
         this.courseIds = Gson().toJson(courseIds)

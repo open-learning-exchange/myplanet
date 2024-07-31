@@ -6,9 +6,7 @@ import com.opencsv.CSVWriter
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.model.RealmNews.Companion.newsDataList
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import java.io.File
@@ -48,7 +46,7 @@ open class RealmRating : RealmObject() {
     var user: String? = null
 
     companion object {
-        val ratingDataList: MutableList<Array<String>> = mutableListOf()
+        private val ratingDataList: MutableList<Array<String>> = mutableListOf()
         @JvmStatic
         fun getRatings(mRealm: Realm, type: String?, userId: String?): HashMap<String?, JsonObject> {
             val r = mRealm.where(RealmRating::class.java).equalTo("type", type).findAll()
@@ -82,21 +80,21 @@ open class RealmRating : RealmObject() {
         }
 
         @JvmStatic
-        fun serializeRating(realm_rating: RealmRating): JsonObject {
+        fun serializeRating(realmRating: RealmRating): JsonObject {
             val ob = JsonObject()
-            if (realm_rating._id != null) ob.addProperty("_id", realm_rating._id)
-            if (realm_rating._rev != null) ob.addProperty("_rev", realm_rating._rev)
-            ob.add("user", Gson().fromJson(realm_rating.user, JsonObject::class.java))
-            ob.addProperty("item", realm_rating.item)
-            ob.addProperty("type", realm_rating.type)
-            ob.addProperty("title", realm_rating.title)
-            ob.addProperty("time", realm_rating.time)
-            ob.addProperty("comment", realm_rating.comment)
-            ob.addProperty("rate", realm_rating.rate)
-            ob.addProperty("createdOn", realm_rating.createdOn)
-            ob.addProperty("parentCode", realm_rating.parentCode)
-            ob.addProperty("planetCode", realm_rating.planetCode)
-            ob.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
+            if (realmRating._id != null) ob.addProperty("_id", realmRating._id)
+            if (realmRating._rev != null) ob.addProperty("_rev", realmRating._rev)
+            ob.add("user", Gson().fromJson(realmRating.user, JsonObject::class.java))
+            ob.addProperty("item", realmRating.item)
+            ob.addProperty("type", realmRating.type)
+            ob.addProperty("title", realmRating.title)
+            ob.addProperty("time", realmRating.time)
+            ob.addProperty("comment", realmRating.comment)
+            ob.addProperty("rate", realmRating.rate)
+            ob.addProperty("createdOn", realmRating.createdOn)
+            ob.addProperty("parentCode", realmRating.parentCode)
+            ob.addProperty("planetCode", realmRating.planetCode)
+            ob.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
             ob.addProperty("deviceName", NetworkUtils.getDeviceName())
             ob.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
             return ob

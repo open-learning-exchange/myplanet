@@ -16,7 +16,6 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.preference.PreferenceManager
 import com.afollestad.materialdialogs.*
 import com.google.android.material.textfield.TextInputLayout
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import io.realm.*
 import okhttp3.ResponseBody
