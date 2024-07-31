@@ -583,34 +583,34 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             radioGroupServers!!.visibility = View.VISIBLE
 
             val serverList = listOf(
-//                "🌎 planet.earth.ole.org",
                 "🌎 planet.learning.ole.org",
-//                "🌎 planet.vi.ole.org",
-//                "🇸🇴 planet.somalia.ole.org",
                 "🇬🇹 planet.guatemala.ole.org",
                 "🇬🇹 planet.sanpablo.ole.org",
-//                "🇬🇹 planet.campo.ole.org",
-//                "🇰🇪 planet.uriur.ole.org",
-//                "🇰🇪 planet.ruiru.ole.org",
-//                "🇰🇪 planet.embakasi.ole.org",
-//                "🇺🇸 planet.cambridge.ole.org",
-//                "🇺🇸 planet.egdirbmac.ole.org",
-//                "🇺🇸 planet.palmbay.ole.org"
             )
-
+            val serverName = listOf(
+                "Planet Learning",
+                "Planet Guatemala",
+                "Planet San Pablo"
+            )
+            radioGroupServers.removeAllViews()
             for (server in serverList) {
                 val radioButton = RadioButton(this)
                 radioButton.text = server
                 radioButton.id = View.generateViewId()
-                radioGroupServers!!.addView(radioButton)
+                radioGroupServers.addView(radioButton)
             }
+            val planetLearningRadioButton = radioGroupServers.getChildAt(0) as RadioButton
+            planetLearningRadioButton.performClick()
+            val planetLearningUrl = "planet.learning.ole.org"
+            serverUrl.setText(planetLearningUrl.replace(Regex("^https?://"), ""))
+            serverPassword.setText(getPinForUrl(planetLearningUrl))
 
             val storedUrl = settings.getString("serverURL", null)
             val storedPin = settings.getString("serverPin", null)
             if (storedUrl != null) {
                 val urlWithoutProtocol = storedUrl.replace(Regex("^https?://"), "")
-                for (i in 0 until radioGroupServers!!.childCount) {
-                    val radioButton = radioGroupServers!!.getChildAt(i) as RadioButton
+                for (i in 0 until radioGroupServers.childCount) {
+                    val radioButton = radioGroupServers.getChildAt(i) as RadioButton
                     if (radioButton.text.toString().contains(urlWithoutProtocol)) {
                         radioButton.isChecked = true
                         break
@@ -620,13 +620,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 serverPassword.setText(storedPin)
             }
 
-//            radioGroupServers!!.setOnCheckedChangeListener { _, checkedId ->
-//                val radioButton = findViewById<RadioButton>(checkedId)
-//                val actualUrl = radioButton.text.toString().replace(Regex("[\\p{So}\\s]"), "")
-//                serverUrl.setText(actualUrl)
-//                serverPassword.setText(getPinForUrl(actualUrl))
-//            }
-
             serverUrl.isEnabled = false
             serverPassword.isEnabled = false
             editor.putString("serverProtocol", getString(R.string.https_protocol)).apply()
@@ -635,19 +628,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     private fun getPinForUrl(url: String): String {
         val pinMap = mapOf(
-//            "planet.earth.ole.org" to "7379",
             "planet.learning.ole.org" to "1983",
-//            "planet.vi.ole.org" to "0660",
-//            "planet.somalia.ole.org" to "5932",
             "planet.guatemala.ole.org" to "5562",
             "planet.sanpablo.ole.org" to "0948",
-//            "planet.campo.ole.org" to "4324",
-//            "planet.uriur.ole.org" to "4025",
-//            "planet.ruiru.ole.org" to "8925",
-//            "planet.embakasi.ole.org" to "2165",
-//            "planet.cambridge.ole.org" to "1565",
-//            "planet.egdirbmac.ole.org" to "6407",
-//            "planet.palmbay.ole.org" to "9699"
         )
         return pinMap[url] ?: ""
     }
