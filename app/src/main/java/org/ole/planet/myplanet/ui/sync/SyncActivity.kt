@@ -432,7 +432,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             }
         val dialog = builder.build()
         positiveAction = dialog.getActionButton(DialogAction.POSITIVE)
-        if (!prefData.getMANUALCONFIG()) {
+        if (!prefData.getManualConfig()) {
             dialogServerUrlBinding.manualConfiguration.isChecked = false
             showConfigurationUIElements(dialogServerUrlBinding, false, dialog)
         } else {
@@ -476,7 +476,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 setUrlAndPin(settings.getBoolean("switchCloudUrl", false))
                 protocolSemantics()
             } else {
-                prefData.setMANUALCONFIG(false)
+                prefData.setManualConfig(false)
                 showConfigurationUIElements(dialogServerUrlBinding, false, dialog)
                 editor.putBoolean("switchCloudUrl", false).apply()
             }
@@ -580,7 +580,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             val storedPin = settings.getString("serverPin", null)
             val urlWithoutProtocol = storedUrl?.replace(Regex("^https?://"), "")
 
-            if (!prefData.getMANUALCONFIG()) {
+            if (!prefData.getManualConfig()) {
                 if (storedUrl != null) {
                     val toggleButtonId = toggleButtonMap.filterValues { it == urlWithoutProtocol }.keys.firstOrNull()
                     if (toggleButtonId != null) {
