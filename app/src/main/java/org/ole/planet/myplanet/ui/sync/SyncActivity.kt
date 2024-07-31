@@ -421,7 +421,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 url = protocol + url
                 if (isUrlValid(url)) {
                     currentDialog = dialog
-                    service.getMinApk(this, url, pin)
+                    service.getMinApk(this, url, pin, this)
                 }
             }
         val dialog = builder.build()
@@ -628,7 +628,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         url = protocol + url
         if (isUrlValid(url)) {
             currentDialog = dialog
-            service.getMinApk(this, url, pin)
+            service.getMinApk(this, url, pin, this)
         }
     }
 
@@ -772,6 +772,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         } catch (e: Exception) {
             e.printStackTrace()
         }
+    }
+
+    fun setSyncFailed(newValue: Boolean) {
+        syncFailed = newValue
     }
 
     override fun onSelectedUser(userModel: RealmUserModel) {
