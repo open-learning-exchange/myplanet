@@ -16,7 +16,7 @@ android {
         vectorDrawables.useSupportLibrary = true
         multiDexEnabled true
     }
-    configurations.all {
+    configurations.configureEach {
         resolutionStrategy.force 'com.google.android.material:material:1.12.0'
     }
     buildTypes {
@@ -67,7 +67,7 @@ android {
     }
 }
 
-task generateVersionsXml {
+tasks.register('generateVersionsXml') {
     def versionName = android.defaultConfig.versionName
     doLast {
         def versionsXmlFile = file('src/main/res/values/versions.xml')
