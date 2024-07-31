@@ -1087,5 +1087,9 @@
     <string name="are_you_sure_you_want_to_archive_these_courses">هل أنت متأكد أنك تريد أرشفة هذه الدورات؟</string>
     <string name="are_you_sure_you_want_to_archive_this_course">هل أنت متأكد أنك تريد أرشفة هذه الدورة؟</string>
     <string name="manual">دليل</string>
+    <string name="sync_to_server">المزامنة إلى الخادم:</string>
+    <string name="sync_planet_learning">🌎 بلانيت ليرنينج</string>
+    <string name="sync_guatemala">🇬🇹 بلانيت غواتيمالا</string>
+    <string name="sync_san_pablo">🇬🇹 بلانيت سان بابلو</string>
 
 </resources>

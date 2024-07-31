@@ -64,7 +64,7 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="10dp"
         android:layout_marginTop="8dp"
-        android:text="Sync to server:"
+        android:text="@string/sync_to_server"
         android:textColor="@color/daynight_textColor"
         android:textSize="16sp"
         android:visibility="gone"
@@ -89,7 +89,7 @@
             android:layout_height="wrap_content"
             android:elevation="0dp"
             android:gravity="start|center_vertical"
-            android:text="🌎 Planet Learning" />
+            android:text="@string/sync_planet_learning" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/toggle_planet_guatemala"
@@ -97,7 +97,7 @@
             android:layout_width="match_parent"
             android:gravity="start|center_vertical"
             android:layout_height="wrap_content"
-            android:text="🇬🇹 Planet Guatemala" />
+            android:text="@string/sync_guatemala" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/toggle_planet_san_pablo"
@@ -105,7 +105,7 @@
             android:layout_width="match_parent"
             android:gravity="start|center_vertical"
             android:layout_height="wrap_content"
-            android:text="🇬🇹 Planet San Pablo" />
+            android:text="@string/sync_san_pablo" />
 
     </org.ole.planet.myplanet.utilities.CustomButtonToggleGroup>
 

@@ -1087,5 +1087,9 @@
     <string name="are_you_sure_you_want_to_archive_these_courses">Are you sure you want to archive these courses?</string>
     <string name="are_you_sure_you_want_to_archive_this_course">Are you sure you want to archive this course?</string>
     <string name="manual">manual</string>
+    <string name="sync_to_server">Sync to server:</string>
+    <string name="sync_planet_learning">🌎 Planet Learning</string>
+    <string name="sync_guatemala">🇬🇹 Planet Guatemala</string>
+    <string name="sync_san_pablo">🇬🇹 Planet San Pablo</string>
 
 </resources>
