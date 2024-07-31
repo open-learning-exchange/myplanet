@@ -5,11 +5,16 @@ import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonSyntaxException
+import com.opencsv.CSVWriter
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
+import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utilities.JsonUtils
+import java.io.File
+import java.io.FileWriter
+import java.io.IOException
 import java.util.Date
 import java.util.UUID
 
@@ -118,6 +123,8 @@ open class RealmNews : RealmObject() {
         }
 
     companion object {
+        val newsDataList: MutableList<Array<String>> = mutableListOf()
+
         @JvmStatic
         fun insert(mRealm: Realm, doc: JsonObject?) {
             if (!mRealm.isInTransaction) mRealm.beginTransaction()
@@ -163,6 +170,49 @@ open class RealmNews : RealmObject() {
             news?.newsCreatedDate = JsonUtils.getLong("createdDate", newsObj)
             news?.newsUpdatedDate = JsonUtils.getLong("updatedDate", newsObj)
             mRealm.commitTransaction()
+
+            val csvRow = arrayOf(
+                JsonUtils.getString("_id", doc),
+                JsonUtils.getString("_rev", doc),
+                JsonUtils.getString("viewableBy", doc),
+                JsonUtils.getString("docType", doc),
+                JsonUtils.getString("avatar", doc),
+                JsonUtils.getLong("updatedDate", doc).toString(),
+                JsonUtils.getString("viewableId", doc),
+                JsonUtils.getString("createdOn", doc),
+                JsonUtils.getString("messageType", doc),
+                JsonUtils.getString("messagePlanetCode", doc),
+                JsonUtils.getString("replyTo", doc),
+                JsonUtils.getString("parentCode", doc),
+                JsonUtils.getString("user", doc),
+                JsonUtils.getString("time", doc),
+                JsonUtils.getString("message", doc),
+                JsonUtils.getString("images", doc),
+                JsonUtils.getString("labels", doc),
+                JsonUtils.getString("viewIn", doc),
+                JsonUtils.getBoolean("chat", doc).toString(),
+                JsonUtils.getString("news", doc)
+            )
+            newsDataList.add(csvRow)
+        }
+
+        fun writeCsv(filePath: String, data: List<Array<String>>) {
+            try {
+                val file = File(filePath)
+                file.parentFile?.mkdirs()
+                val writer = CSVWriter(FileWriter(file))
+                writer.writeNext(arrayOf("_id", "_rev", "viewableBy", "docType", "avatar", "updatedDate", "viewableId", "createdOn", "messageType", "messagePlanetCode", "replyTo", "parentCode", "user", "time", "message", "images", "labels", "viewIn", "chat", "news"))
+                for (row in data) {
+                    writer.writeNext(row)
+                }
+                writer.close()
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        }
+
+        fun newsWriteCsv() {
+            writeCsv("${context.getExternalFilesDir(null)}/ole/news.csv", newsDataList)
         }
 
         @JvmStatic

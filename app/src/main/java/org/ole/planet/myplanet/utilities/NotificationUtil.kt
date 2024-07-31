@@ -13,9 +13,9 @@ object NotificationUtil {
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val a = NotificationCompat.Builder(context, "11")
         setChannel(manager)
-        val noti = a.setContentTitle(contentTitle).setContentText(contentText).setSmallIcon(smallIcon)
+        val notification = a.setContentTitle(contentTitle).setContentText(contentText).setSmallIcon(smallIcon)
             .setProgress(0, 0, true).setAutoCancel(true).build()
-        manager.notify(111, noti)
+        manager.notify(111, notification)
     }
 
     @JvmStatic
@@ -25,7 +25,7 @@ object NotificationUtil {
     }
 
     @JvmStatic
-    fun cancellAll(context: Context) {
+    fun cancelAll(context: Context) {
         val nm = NotificationManagerCompat.from(context)
         nm.cancelAll()
     }

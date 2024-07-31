@@ -41,7 +41,7 @@ class OnBoardingActivity : AppCompatActivity() {
             return
         }
 
-        if (prefData.getFIRSTLAUNCH()) {
+        if (prefData.getFirstLaunch()) {
             startActivity(Intent(this, LoginActivity::class.java))
             finish()
         }
@@ -139,7 +139,7 @@ class OnBoardingActivity : AppCompatActivity() {
     }
 
     private fun finishTutorial() {
-        prefData.setFIRSTLAUNCH(true)
+        prefData.setFirstLaunch(true)
         startActivity(Intent(this, LoginActivity::class.java))
     }
 }

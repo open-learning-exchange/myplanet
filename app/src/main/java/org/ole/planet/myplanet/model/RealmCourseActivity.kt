@@ -50,15 +50,15 @@ open class RealmCourseActivity : RealmObject() {
         }
 
         @JvmStatic
-        fun serializeSerialize(realm_courseActivities: RealmCourseActivity): JsonObject {
+        fun serializeSerialize(realmCourseActivities: RealmCourseActivity): JsonObject {
             val ob = JsonObject()
-            ob.addProperty("user", realm_courseActivities.user)
-            ob.addProperty("courseId", realm_courseActivities.courseId)
-            ob.addProperty("type", realm_courseActivities.type)
-            ob.addProperty("title", realm_courseActivities.title)
-            ob.addProperty("time", realm_courseActivities.time)
-            ob.addProperty("createdOn", realm_courseActivities.createdOn)
-            ob.addProperty("parentCode", realm_courseActivities.parentCode)
+            ob.addProperty("user", realmCourseActivities.user)
+            ob.addProperty("courseId", realmCourseActivities.courseId)
+            ob.addProperty("type", realmCourseActivities.type)
+            ob.addProperty("title", realmCourseActivities.title)
+            ob.addProperty("time", realmCourseActivities.time)
+            ob.addProperty("createdOn", realmCourseActivities.createdOn)
+            ob.addProperty("parentCode", realmCourseActivities.parentCode)
             ob.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
             ob.addProperty("deviceName", NetworkUtils.getDeviceName())
             return ob

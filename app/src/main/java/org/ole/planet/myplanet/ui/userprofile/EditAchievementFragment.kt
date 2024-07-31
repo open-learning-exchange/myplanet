@@ -262,7 +262,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             return
         } else {
             achievementArray = achievement?.achievementsArray
-            referenceArray = achievement?.getreferencesArray()
+            referenceArray = achievement?.getReferencesArray()
             fragmentEditAchievementBinding.etAchievement.setText(achievement?.achievementsHeader)
             fragmentEditAchievementBinding.etPurpose.setText(achievement?.purpose)
             fragmentEditAchievementBinding.etGoals.setText(achievement?.goals)
@@ -305,7 +305,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         achievement?.goals = fragmentEditAchievementBinding.etGoals.text.toString().trim { it <= ' ' }
         achievement?.purpose = fragmentEditAchievementBinding.etPurpose.text.toString().trim { it <= ' ' }
         achievement?.setAchievements(achievementArray!!)
-        achievement?.setreferences(referenceArray)
+        achievement?.setReferences(referenceArray)
         achievement?.sendToNation = fragmentEditAchievementBinding.cbSendToNation.isChecked.toString() + ""
     }
 }

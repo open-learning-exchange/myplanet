@@ -10,19 +10,7 @@ import android.view.ContextThemeWrapper
 import androidx.preference.ListPreference
 import org.ole.planet.myplanet.R
 
-class RoundedListPreference : ListPreference {
-
-    constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int, defStyleRes: Int) : super(
-        context,
-        attrs,
-        defStyleAttr
-    )
-
-    constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int) : super(context, attrs, defStyleAttr)
-
-    constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
-
-    constructor(context: Context) : super(context)
+class RoundedListPreference(context: Context, attrs: AttributeSet) : ListPreference(context, attrs) {
 
     override fun onClick() {
         val currentIndex = findIndexOfValue(value)
@@ -36,8 +24,6 @@ class RoundedListPreference : ListPreference {
             }
             .setNegativeButton(R.string.cancel) { dialog: DialogInterface, _: Int -> dialog.dismiss() }.create()
         dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-
         dialog.show()
     }
-
 }

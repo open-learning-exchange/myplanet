@@ -1054,7 +1054,7 @@
     <string name="no_submissions">soo gudbin lama heli karo</string>
     <string name="no_chats">ma jiraan wada sheekaysi hore</string>
     <string name="no_feedback">wax jawaab celin ah lama hayo</string>
-    <string name="empty_text"></string>
+    <string name="empty_text" />
     <string name="message_placeholder">%s</string>
     <string name="reports">warbixino</string>
     <string name="number_placeholder">%d</string>
@@ -1076,6 +1076,7 @@
     <string name="visit_count">%1$s (%2$d %3$s)</string>
     <string name="two_strings">%s %s</string>
     <string name="three_strings">%s %s %s</string>
+    <string name="download_sync_files">soo dejiso faylalka is-waafajinta</string>
     <string name="member_description">%1$s (%2$d booqasho)</string>
     <string name="dark_mode">Habka Hodan</string>
     <string-array name="dark_mode_options">

@@ -5,6 +5,7 @@ import android.text.TextUtils
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import com.opencsv.CSVWriter
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
@@ -15,6 +16,9 @@ import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils
+import java.io.File
+import java.io.FileWriter
+import java.io.IOException
 import java.util.Locale
 import java.util.UUID
 
@@ -80,6 +84,7 @@ open class RealmUserModel : RealmObject() {
     var isShowTopbar = false
     @JvmField
     var isArchived = false
+
     fun serialize(): JsonObject {
         val `object` = JsonObject()
         if (_id?.isNotEmpty() == true) {
@@ -122,7 +127,7 @@ open class RealmUserModel : RealmObject() {
         return `object`
     }
 
-    fun getRoles(): JsonArray {
+    private fun getRoles(): JsonArray {
         val ar = JsonArray()
         for (s in rolesList ?: emptyList())    {
             ar.add(s)
@@ -174,6 +179,8 @@ open class RealmUserModel : RealmObject() {
     }
 
     companion object {
+        private val userDataList: MutableList<Array<String>> = mutableListOf()
+
         @JvmStatic
         fun createGuestUser(username: String?, mRealm: Realm, settings: SharedPreferences): RealmUserModel? {
             val `object` = JsonObject()
@@ -190,11 +197,11 @@ open class RealmUserModel : RealmObject() {
         @JvmStatic
         fun populateUsersTable(jsonDoc: JsonObject?, mRealm: Realm?, settings: SharedPreferences): RealmUserModel? {
             try {
-                var _id = JsonUtils.getString("_id", jsonDoc)
-                if (_id.isEmpty()) _id = UUID.randomUUID().toString()
-                var user = mRealm?.where(RealmUserModel::class.java)?.equalTo("_id", _id)?.findFirst()
+                var id = JsonUtils.getString("_id", jsonDoc)
+                if (id.isEmpty()) id = UUID.randomUUID().toString()
+                var user = mRealm?.where(RealmUserModel::class.java)?.equalTo("_id", id)?.findFirst()
                 if (user == null) {
-                    user = mRealm?.createObject(RealmUserModel::class.java, _id)
+                    user = mRealm?.createObject(RealmUserModel::class.java, id)
                 }
                 insertIntoUsers(jsonDoc, user, settings)
                 return user
@@ -247,10 +254,56 @@ open class RealmUserModel : RealmObject() {
                 if (!TextUtils.isEmpty(JsonUtils.getString("planetCode", jsonDoc))) {
                     settings.edit().putString("planetCode", JsonUtils.getString("planetCode", jsonDoc)).apply()
                 }
-                if (!TextUtils.isEmpty(JsonUtils.getString("parentCode", jsonDoc))) settings.edit()
-                    .putString("parentCode", JsonUtils.getString("parentCode", jsonDoc)).apply()
+                if (!TextUtils.isEmpty(JsonUtils.getString("parentCode", jsonDoc))) {
+                    settings.edit().putString("parentCode", JsonUtils.getString("parentCode", jsonDoc)).apply()
+                }
+
+                val csvRow = arrayOf(
+                    user.userAdmin.toString(),
+                    user._id.toString(),
+                    user.name.toString(),
+                    user.firstName.toString(),
+                    user.lastName.toString(),
+                    user.email.toString(),
+                    user.phoneNumber.toString(),
+                    user.planetCode.toString(),
+                    user.parentCode.toString(),
+                    user.password_scheme.toString(),
+                    user.iterations.toString(),
+                    user.derived_key.toString(),
+                    user.salt.toString(),
+                    user.level.toString(),
+                    user.language.toString(),
+                    user.gender.toString(),
+                    user.dob.toString(),
+                    user.birthPlace.toString(),
+                    user.userImage.toString(),
+                    user.isArchived.toString()
+                )
+
+                userDataList.add(csvRow)
             }
         }
+
+        fun writeCsv(filePath: String, data: List<Array<String>>) {
+            try {
+                val file = File(filePath)
+                file.parentFile?.mkdirs()
+                val writer = CSVWriter(FileWriter(file))
+                writer.writeNext(arrayOf("userAdmin", "_id", "name", "firstName", "lastName", "email", "phoneNumber", "planetCode", "parentCode", "password_scheme", "iterations", "derived_key", "salt", "level"))
+                for (row in data) {
+                    writer.writeNext(row)
+                }
+                writer.close()
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        }
+
+        fun userWriteCsv() {
+            writeCsv("${context.getExternalFilesDir(null)}/ole/userData.csv", userDataList)
+        }
+
 
         fun updateUserDetails(realm: Realm, userId: String?, firstName: String?, lastName: String?,
         middleName: String?, email: String?, phoneNumber: String?, level: String?, language: String?,

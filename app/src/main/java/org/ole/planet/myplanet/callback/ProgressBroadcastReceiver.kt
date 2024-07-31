@@ -6,12 +6,10 @@ import android.content.Intent
 import android.os.Build
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
+import java.util.Locale
 
 class ProgressBroadcastReceiver : BroadcastReceiver() {
     private var onProgressChange: OnProgressChange? = null
-    fun setOnProgressChange(onProgressChange: OnProgressChange?) {
-        this.onProgressChange = onProgressChange
-    }
 
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == DashboardActivity.MESSAGE_PROGRESS) {
@@ -24,6 +22,7 @@ class ProgressBroadcastReceiver : BroadcastReceiver() {
             if (onProgressChange != null) {
                 onProgressChange!!.onProgressChange(
                     String.format(
+                        Locale.getDefault(),
                         "Downloading file %d/%d KB\n%d%% Completed.",
                         download!!.currentFileSize, download.totalFileSize, download.progress
                     )

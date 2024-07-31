@@ -1053,8 +1053,8 @@
     <string name="planet_name">%s\'s Planet</string>
     <string name="no_submissions">submissions not available</string>
     <string name="no_chats">no previous chats</string>
-    <string name="no_feedback">no feedback available</string>
-    <string name="empty_text"></string>
+    <string name ="no_feedback">no feedback available</string>
+    <string name="empty_text" />
     <string name="message_placeholder">%s</string>
     <string name="reports">Reports</string>
     <string name="number_placeholder">%d</string>
@@ -1076,6 +1076,7 @@
     <string name="visit_count">%1$s (%2$d %3$s)</string>
     <string name="two_strings">%s %s</string>
     <string name="three_strings">%s %s %s</string>
+    <string name="download_sync_files">download sync files</string>
     <string name="member_description">%1$s (%2$d visits)</string>
     <string name="dark_mode">Dark Mode</string>
     <string-array name="dark_mode_options">

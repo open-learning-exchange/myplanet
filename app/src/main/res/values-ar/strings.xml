@@ -1054,7 +1054,7 @@
     <string name="no_submissions">التقديمات غير متاحة</string>
     <string name="no_chats">لا توجد محادثات سابقة</string>
     <string name="no_feedback">لا توجد تعليقات متاحة</string>
-    <string name="empty_text"></string>
+    <string name="empty_text" />
     <string name="message_placeholder">%s</string>
     <string name="reports">التقارير</string>
     <string name="number_placeholder">%d</string>
@@ -1076,6 +1076,7 @@
     <string name="visit_count">%1$s (%2$d %3$s)</string>
     <string name="two_strings">%s %s</string>
     <string name="three_strings">%s %s %s</string>
+    <string name="download_sync_files">تنزيل ملفات المزامنة</string>
     <string name="member_description"><![CDATA[(\u200E%2$d زيارة) \u200E%1$s]]></string>
     <string name="dark_mode">الوضع الداكن</string>
     <string-array name="dark_mode_options">

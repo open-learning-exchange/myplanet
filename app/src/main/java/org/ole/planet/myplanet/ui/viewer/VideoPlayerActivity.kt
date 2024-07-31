@@ -114,6 +114,16 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        exoPlayer?.playWhenReady = true
+    }
+
+    override fun onPause() {
+        super.onPause()
+        exoPlayer?.playWhenReady = false
+    }
+
     override fun onStop() {
         super.onStop()
         releasePlayer()

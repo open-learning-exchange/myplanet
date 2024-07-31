@@ -255,25 +255,25 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     }
 
     fun getTeamMembers() {
-        selectedTeamId = prefData.getSELECTEDTEAMID().toString()
+        selectedTeamId = prefData.getSelectedTeamId().toString()
         if (selectedTeamId?.isNotEmpty() == true) {
             users = RealmMyTeam.getUsers(selectedTeamId, mRealm, "membership")
             val userList = (users as? MutableList<RealmUserModel>)?.map {
                 User(it.name ?: "", it.name ?: "", "", it.userImage ?: "", "team")
             } ?: emptyList()
 
-            val existingUsers = prefData.getSAVEDUSERS().toMutableList()
+            val existingUsers = prefData.getSavedUsers().toMutableList()
             val filteredExistingUsers = existingUsers.filter { it.source != "team" }
             val updatedUserList = userList.filterNot { user -> filteredExistingUsers.any { it.name == user.name } } + filteredExistingUsers
-            prefData.setSAVEDUSERS(updatedUserList)
+            prefData.setSavedUsers(updatedUserList)
         }
 
         if (mAdapter == null) {
-            mAdapter = TeamListAdapter(prefData.getSAVEDUSERS().toMutableList(), this, this)
+            mAdapter = TeamListAdapter(prefData.getSavedUsers().toMutableList(), this, this)
             activityLoginBinding.recyclerView.layoutManager = LinearLayoutManager(this)
             activityLoginBinding.recyclerView.adapter = mAdapter
         } else {
-            mAdapter?.updateList(prefData.getSAVEDUSERS().toMutableList())
+            mAdapter?.updateList(prefData.getSavedUsers().toMutableList())
         }
 
         activityLoginBinding.recyclerView.isNestedScrollingEnabled = true
@@ -515,7 +515,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         if (source === "guest") {
             val newUser = User("", name, password, "", "guest")
             val existingUsers: MutableList<User> = ArrayList(
-                prefData.getSAVEDUSERS()
+                prefData.getSavedUsers()
             )
             var newUserExists = false
             for ((_, name1) in existingUsers) {
@@ -526,7 +526,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             }
             if (!newUserExists) {
                 existingUsers.add(newUser)
-                prefData.setSAVEDUSERS(existingUsers)
+                prefData.setSavedUsers(existingUsers)
             }
         } else if (source === "member") {
             var userProfile = profileDbHandler.userModel?.userImage
@@ -535,7 +535,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                 userProfile = ""
             }
             val newUser = User(userName, name, password, userProfile, "member")
-            val existingUsers: MutableList<User> = ArrayList(prefData.getSAVEDUSERS())
+            val existingUsers: MutableList<User> = ArrayList(prefData.getSavedUsers())
             var newUserExists = false
             for ((fullName1) in existingUsers) {
                 if (fullName1 == newUser.fullName?.trim { it <= ' ' }) {
@@ -545,7 +545,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             }
             if (!newUserExists) {
                 existingUsers.add(newUser)
-                prefData.setSAVEDUSERS(existingUsers)
+                prefData.setSavedUsers(existingUsers)
             }
         }
     }
@@ -564,7 +564,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     }
 
     private fun resetGuestAsMember(username: String?) {
-        val existingUsers = prefData.getSAVEDUSERS().toMutableList()
+        val existingUsers = prefData.getSavedUsers().toMutableList()
         var newUserExists = false
         for ((_, name) in existingUsers) {
             if (name == username) {
@@ -580,7 +580,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                     iterator.remove()
                 }
             }
-            prefData.setSAVEDUSERS(existingUsers)
+            prefData.setSavedUsers(existingUsers)
         }
     }
 

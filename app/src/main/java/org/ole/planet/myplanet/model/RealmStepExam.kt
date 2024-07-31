@@ -2,11 +2,16 @@ package org.ole.planet.myplanet.model
 
 import android.text.TextUtils
 import com.google.gson.JsonObject
+import com.opencsv.CSVWriter
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.RealmResults
 import io.realm.annotations.PrimaryKey
+import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utilities.JsonUtils
+import java.io.File
+import java.io.FileWriter
+import java.io.IOException
 
 open class RealmStepExam : RealmObject() {
     @JvmField
@@ -40,13 +45,15 @@ open class RealmStepExam : RealmObject() {
     var isFromNation = false
 
     companion object {
+        val examDataList: MutableList<Array<String>> = mutableListOf()
+
         @JvmStatic
-        fun insertCourseStepsExams(myCoursesID: String?, step_id: String?, exam: JsonObject, mRealm: Realm) {
-            insertCourseStepsExams(myCoursesID, step_id, exam, "", mRealm)
+        fun insertCourseStepsExams(myCoursesID: String?, stepId: String?, exam: JsonObject, mRealm: Realm) {
+            insertCourseStepsExams(myCoursesID, stepId, exam, "", mRealm)
         }
 
         @JvmStatic
-        fun insertCourseStepsExams(myCoursesID: String?, step_id: String?, exam: JsonObject, parentId: String?, mRealm: Realm) {
+        fun insertCourseStepsExams(myCoursesID: String?, stepId: String?, exam: JsonObject, parentId: String?, mRealm: Realm) {
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
             }
@@ -61,7 +68,7 @@ open class RealmStepExam : RealmObject() {
                     }
                 )
             }
-            checkIdsAndInsert(myCoursesID, step_id, myExam)
+            checkIdsAndInsert(myCoursesID, stepId, myExam)
             myExam?.type = if (exam.has("type")) JsonUtils.getString("type", exam) else "exam"
             myExam?.name = JsonUtils.getString("name", exam)
             myExam?.passingPercentage = JsonUtils.getString("passingPercentage", exam)
@@ -81,14 +88,49 @@ open class RealmStepExam : RealmObject() {
                 )
             }
             mRealm.commitTransaction()
+
+            val csvRow = arrayOf(
+                JsonUtils.getString("_id", exam),
+                JsonUtils.getString("_rev", exam),
+                JsonUtils.getString("name", exam),
+                JsonUtils.getString("passingPercentage", exam),
+                JsonUtils.getString("type", exam),
+                JsonUtils.getString("createdBy", exam),
+                JsonUtils.getString("sourcePlanet", exam),
+                JsonUtils.getString("createdDate", exam),
+                JsonUtils.getString("updatedDate", exam),
+                JsonUtils.getString("totalMarks", exam),
+                JsonUtils.getString("noOfQuestions", exam),
+                JsonUtils.getString("isFromNation", exam)
+            )
+            examDataList.add(csvRow)
         }
 
-        private fun checkIdsAndInsert(myCoursesID: String?, step_id: String?, myExam: RealmStepExam?) {
+        fun writeCsv(filePath: String, data: List<Array<String>>) {
+            try {
+                val file = File(filePath)
+                file.parentFile?.mkdirs()
+                val writer = CSVWriter(FileWriter(file))
+                writer.writeNext(arrayOf("_id", "_rev", "name", "passingPercentage", "type", "createdBy", "sourcePlanet", "createdDate", "updatedDate", "totalMarks", "noOfQuestions", "isFromNation"))
+                for (row in data) {
+                    writer.writeNext(row)
+                }
+                writer.close()
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        }
+
+        fun stepExamWriteCsv() {
+            writeCsv("${context.getExternalFilesDir(null)}/ole/stepExam.csv", examDataList)
+        }
+
+        private fun checkIdsAndInsert(myCoursesID: String?, stepId: String?, myExam: RealmStepExam?) {
             if (!TextUtils.isEmpty(myCoursesID)) {
                 myExam?.courseId = myCoursesID
             }
-            if (!TextUtils.isEmpty(step_id)) {
-                myExam?.stepId = step_id
+            if (!TextUtils.isEmpty(stepId)) {
+                myExam?.stepId = stepId
             }
         }
 

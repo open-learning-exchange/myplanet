@@ -6,10 +6,15 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.gson.stream.JsonReader
+import com.opencsv.CSVWriter
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
+import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utilities.JsonUtils
+import java.io.File
+import java.io.FileWriter
+import java.io.IOException
 import java.io.StringReader
 
 open class RealmFeedback : RealmObject() {
@@ -96,6 +101,7 @@ open class RealmFeedback : RealmObject() {
     }
 
     companion object {
+        val feedbacksDataList: MutableList<Array<String>> = mutableListOf()
         @JvmStatic
         fun serializeFeedback(feedback: RealmFeedback): JsonObject {
             val `object` = JsonObject()
@@ -120,7 +126,6 @@ open class RealmFeedback : RealmObject() {
             }
             return `object`
         }
-
 
         @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject?) {
@@ -147,6 +152,42 @@ open class RealmFeedback : RealmObject() {
             feedback?.state = JsonUtils.getString("state", act)
             feedback?._rev = JsonUtils.getString("_rev", act)
             mRealm.commitTransaction()
+
+            val csvRow = arrayOf(
+                JsonUtils.getString("_id", act),
+                JsonUtils.getString("title", act),
+                JsonUtils.getString("source", act),
+                JsonUtils.getString("status", act),
+                JsonUtils.getString("priority", act),
+                JsonUtils.getString("owner", act),
+                JsonUtils.getLong("openTime", act).toString(),
+                JsonUtils.getString("type", act),
+                JsonUtils.getString("url", act),
+                JsonUtils.getString("parentCode", act),
+                JsonUtils.getString("state", act),
+                JsonUtils.getString("item", act),
+                JsonUtils.getJsonArray("messages", act).toString()
+            )
+            feedbacksDataList.add(csvRow)
+        }
+
+        fun writeCsv(filePath: String, data: List<Array<String>>) {
+            try {
+                val file = File(filePath)
+                file.parentFile?.mkdirs()
+                val writer = CSVWriter(FileWriter(file))
+                writer.writeNext(arrayOf("feedbackId", "title", "source", "status", "priority", "owner", "openTime", "type", "url", "parentCode", "state", "item", "messages"))
+                for (row in data) {
+                    writer.writeNext(row)
+                }
+                writer.close()
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        }
+
+        fun feedbackWriteCsv() {
+            writeCsv("${context.getExternalFilesDir(null)}/ole/feedback.csv", feedbacksDataList)
         }
     }
 }

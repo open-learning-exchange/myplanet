@@ -3,11 +3,16 @@ package org.ole.planet.myplanet.model
 import android.content.Context
 import android.text.TextUtils
 import com.google.gson.JsonObject
+import com.opencsv.CSVWriter
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
+import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
+import java.io.File
+import java.io.FileWriter
+import java.io.IOException
 import java.util.Calendar
 
 open class RealmTeamLog : RealmObject() {
@@ -34,18 +39,18 @@ open class RealmTeamLog : RealmObject() {
     @JvmField
     var uploaded = false
     companion object {
+        private val teamLogDataList: MutableList<Array<String>> = mutableListOf()
+
         @JvmStatic
         fun getVisitCount(realm: Realm, userName: String?, teamId: String?): Long {
-            return realm.where(RealmTeamLog::class.java).equalTo("type", "teamVisit")
-                .equalTo("user", userName).equalTo("teamId", teamId).count()
+            return realm.where(RealmTeamLog::class.java).equalTo("type", "teamVisit").equalTo("user", userName).equalTo("teamId", teamId).count()
         }
 
         @JvmStatic
         fun getVisitByTeam(realm: Realm, teamId: String?): Long {
             val calendar = Calendar.getInstance()
             calendar.add(Calendar.DAY_OF_YEAR, -30)
-            return realm.where(RealmTeamLog::class.java).equalTo("type", "teamVisit")
-                .equalTo("teamId", teamId).greaterThan("time", calendar.timeInMillis).count()
+            return realm.where(RealmTeamLog::class.java).equalTo("type", "teamVisit").equalTo("teamId", teamId).greaterThan("time", calendar.timeInMillis).count()
         }
 
         @JvmStatic
@@ -89,6 +94,39 @@ open class RealmTeamLog : RealmObject() {
                 tag.teamType = JsonUtils.getString("teamType", act)
             }
             mRealm.commitTransaction()
+
+            val csvRow = arrayOf(
+                JsonUtils.getString("_id", act),
+                JsonUtils.getString("_rev", act),
+                JsonUtils.getString("user", act),
+                JsonUtils.getString("type", act),
+                JsonUtils.getString("createdOn", act),
+                JsonUtils.getString("parentCode", act),
+                JsonUtils.getLong("time", act).toString(),
+                JsonUtils.getString("teamId", act),
+                JsonUtils.getString("teamType", act)
+            )
+            teamLogDataList.add(csvRow)
         }
+
+        fun writeCsv(filePath: String, data: List<Array<String>>) {
+            try {
+                val file = File(filePath)
+                file.parentFile?.mkdirs()
+                val writer = CSVWriter(FileWriter(file))
+                writer.writeNext(arrayOf("_id", "_rev", "user", "type", "createdOn", "parentCode", "time", "teamId", "teamType"))
+                for (row in data) {
+                    writer.writeNext(row)
+                }
+                writer.close()
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        }
+
+        fun teamLogWriteCsv() {
+            writeCsv("${context.getExternalFilesDir(null)}/ole/teamLog.csv", teamLogDataList)
+        }
+
     }
 }

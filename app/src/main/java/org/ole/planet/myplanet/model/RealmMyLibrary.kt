@@ -7,17 +7,20 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import com.opencsv.CSVWriter
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.RealmResults
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.ui.sync.SyncActivity
+import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
+import java.io.File
+import java.io.FileWriter
+import java.io.IOException
 import java.util.Calendar
 import java.util.Date
 
@@ -42,7 +45,7 @@ open class RealmMyLibrary : RealmObject() {
     @JvmField
     var downloadedRev: String? = null
     @JvmField
-    var isNeed_optimization = false
+    var needsOptimization = false
     @JvmField
     var publisher: String? = null
     @JvmField
@@ -80,8 +83,6 @@ open class RealmMyLibrary : RealmObject() {
     @JvmField
     var description: String? = null
     @JvmField
-    var sendOnAccept: String? = null
-    @JvmField
     var translationAudioPath: String? = null
     @JvmField
     var sum = 0
@@ -102,8 +103,6 @@ open class RealmMyLibrary : RealmObject() {
     @JvmField
     var stepId: String? = null
     @JvmField
-    var downloaded: String? = null
-    @JvmField
     var isPrivate = false
 
     fun serializeResource(): JsonObject {
@@ -111,7 +110,7 @@ open class RealmMyLibrary : RealmObject() {
         `object`.addProperty("_id", _id)
         `object`.addProperty("_rev", _rev)
         `object`.addProperty("_rev", _rev)
-        `object`.addProperty("need_optimization", isNeed_optimization)
+        `object`.addProperty("need_optimization", needsOptimization)
         `object`.add("resourceFor", getArray(resourceFor))
         `object`.addProperty("publisher", publisher)
         `object`.addProperty("linkToLicense", linkToLicense)
@@ -141,7 +140,7 @@ open class RealmMyLibrary : RealmObject() {
         return `object`
     }
 
-    fun getArray(ar: RealmList<String>?): JsonArray {
+    private fun getArray(ar: RealmList<String>?): JsonArray {
         val sub = JsonArray()
         if (ar != null) {
             for (s in ar) {
@@ -233,6 +232,8 @@ open class RealmMyLibrary : RealmObject() {
     }
 
     companion object {
+        val libraryDataList: MutableList<Array<String>> = mutableListOf()
+
         fun getMyLibraryByUserId(mRealm: Realm, settings: SharedPreferences?): List<RealmMyLibrary> {
             val libs = mRealm.where(RealmMyLibrary::class.java).findAll()
             return getMyLibraryByUserId(settings?.getString("userId", "--"), libs, mRealm)
@@ -271,7 +272,7 @@ open class RealmMyLibrary : RealmObject() {
             return libraries
         }
 
-        fun getIds(mRealm: Realm): Array<String?> {
+        private fun getIds(mRealm: Realm): Array<String?> {
             val list: List<RealmMyLibrary> = mRealm.where(RealmMyLibrary::class.java).findAll()
             val ids = arrayOfNulls<String>(list.size)
             for ((i, library) in list.withIndex()) {
@@ -319,11 +320,11 @@ open class RealmMyLibrary : RealmObject() {
             `object`.addProperty("createdDate", personal.createdDate)
             `object`.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
             `object`.addProperty("deviceName", NetworkUtils.getDeviceName())
-            `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
+            `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
             return `object`
         }
 
-        fun insertResources(doc: JsonObject, mRealm: Realm) {
+        private fun insertResources(doc: JsonObject, mRealm: Realm) {
             insertMyLibrary("", doc, mRealm)
         }
 
@@ -352,7 +353,7 @@ open class RealmMyLibrary : RealmObject() {
                 mRealm.beginTransaction()
             }
             val resourceId = JsonUtils.getString("_id", doc)
-            val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             var resource = mRealm.where(RealmMyLibrary::class.java).equalTo("id", resourceId).findFirst()
             if (resource == null) {
                 resource = mRealm.createObject(RealmMyLibrary::class.java, resourceId)
@@ -406,15 +407,62 @@ open class RealmMyLibrary : RealmObject() {
             resource?.isPrivate = JsonUtils.getBoolean("private", doc)
             resource?.setLanguages(JsonUtils.getJsonArray("languages", doc), resource)
             mRealm.commitTransaction()
+
+            val csvRow = arrayOf(
+                JsonUtils.getString("_id", doc),
+                JsonUtils.getString("_rev", doc),
+                JsonUtils.getString("title", doc),
+                JsonUtils.getString("description", doc),
+                JsonUtils.getString("resourceRemoteAddress", doc),
+                JsonUtils.getString("resourceLocalAddress", doc),
+                JsonUtils.getBoolean("resourceOffline", doc).toString(),
+                JsonUtils.getString("resourceId", doc),
+                JsonUtils.getString("addedBy", doc),
+                JsonUtils.getString("uploadDate", doc),
+                JsonUtils.getLong("createdDate", doc).toString(),
+                JsonUtils.getString("openWith", doc),
+                JsonUtils.getString("articleDate", doc),
+                JsonUtils.getString("kind", doc),
+                JsonUtils.getString("language", doc),
+                JsonUtils.getString("author", doc),
+                JsonUtils.getString("year", doc),
+                JsonUtils.getString("medium", doc),
+                JsonUtils.getString("filename", doc),
+                JsonUtils.getString("mediaType", doc),
+                JsonUtils.getString("resourceType", doc),
+                JsonUtils.getInt("timesRated", doc).toString(),
+                JsonUtils.getString("averageRating", doc),
+                JsonUtils.getString("publisher", doc),
+                JsonUtils.getString("linkToLicense", doc),
+                JsonUtils.getString("subject", doc),
+                JsonUtils.getString("level", doc),
+                JsonUtils.getString("tags", doc),
+                JsonUtils.getString("languages", doc),
+                JsonUtils.getString("courseId", doc),
+                JsonUtils.getString("stepId", doc),
+                JsonUtils.getString("downloaded", doc),
+                JsonUtils.getBoolean("private", doc).toString(),
+            )
+            libraryDataList.add(csvRow)
         }
 
-        @JvmStatic
-        fun getListAsArray(db_myLibrary: RealmResults<RealmMyLibrary>): Array<CharSequence?> {
-            val array = arrayOfNulls<CharSequence>(db_myLibrary.size)
-            for (i in db_myLibrary.indices) {
-                array[i] = db_myLibrary[i]?.title
+        fun writeCsv(filePath: String, data: List<Array<String>>) {
+            try {
+                val file = File(filePath)
+                file.parentFile?.mkdirs()
+                val writer = CSVWriter(FileWriter(file))
+                writer.writeNext(arrayOf("libraryId", "library_rev", "title", "description", "resourceRemoteAddress", "resourceLocalAddress", "resourceOffline", "resourceId", "addedBy", "uploadDate", "createdDate", "openWith", "articleDate", "kind", "language", "author", "year", "medium", "filename", "mediaType", "resourceType", "timesRated", "averageRating", "publisher", "linkToLicense", "subject", "level", "tags", "languages", "courseId", "stepId", "downloaded", "private"))
+                for (row in data) {
+                    writer.writeNext(row)
+                }
+                writer.close()
+            } catch (e: IOException) {
+                e.printStackTrace()
             }
-            return array
+        }
+
+        fun libraryWriteCsv() {
+            writeCsv("${context.getExternalFilesDir(null)}/ole/library.csv", libraryDataList)
         }
 
         @JvmStatic

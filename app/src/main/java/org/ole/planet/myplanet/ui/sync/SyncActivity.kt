@@ -32,7 +32,7 @@ import org.ole.planet.myplanet.model.*
 import org.ole.planet.myplanet.service.*
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.team.AdapterTeam.OnUserSelectedListener
-import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.AndroidDecrypter
+import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.androidDecrypter
 import org.ole.planet.myplanet.utilities.*
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Constants.autoSynFeature
@@ -41,7 +41,7 @@ import org.ole.planet.myplanet.utilities.DialogUtils.showAlert
 import org.ole.planet.myplanet.utilities.DialogUtils.showSnack
 import org.ole.planet.myplanet.utilities.DialogUtils.showWifiSettingDialog
 import org.ole.planet.myplanet.utilities.NetworkUtils.getCustomDeviceName
-import org.ole.planet.myplanet.utilities.NotificationUtil.cancellAll
+import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
 import org.ole.planet.myplanet.utilities.Utilities.getRelativeTime
 import org.ole.planet.myplanet.utilities.Utilities.openDownloadService
 import retrofit2.Call
@@ -267,7 +267,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                         return true
                     }
                 } else {
-                    if (AndroidDecrypter(username, password, it.derived_key, it.salt)) {
+                    if (androidDecrypter(username, password, it.derived_key, it.salt)) {
                         if (isManagerMode && !it.isManager()) return false
                         saveUserInfoPref(settings, password, it)
                         return true
@@ -327,7 +327,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 createLog("synced successfully")
                 showSnack(findViewById(android.R.id.content), getString(R.string.sync_completed))
                 downloadAdditionalResources()
-                cancellAll(this)
+                cancelAll(this)
             }
         }
     }
@@ -441,7 +441,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
         dialogServerUrlBinding.manualConfiguration.setOnCheckedChangeListener { _: CompoundButton?, isChecked: Boolean ->
             if (isChecked) {
-                prefData.setMANUALCONFIG(true)
+                prefData.setManualConfig(true)
                 editor.putString("serverURL", "").apply()
                 editor.putString("serverPin", "").apply()
                 dialogServerUrlBinding.radioHttp.isChecked = true
@@ -504,7 +504,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 }
             }
             dialogServerUrlBinding.team.adapter = teamAdapter
-            val lastSelection = prefData.getSELECTEDTEAMID()
+            val lastSelection = prefData.getSelectedTeamId()
             if (!lastSelection.isNullOrEmpty()) {
                 for (i in teams.indices) {
                     val team = teams[i]
@@ -520,9 +520,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 override fun onItemSelected(parentView: AdapterView<*>?, selectedItemView: View, position: Int, id: Long) {
                     if (position > 0) {
                         val selectedTeam = teams[position - 1]
-                        val currentTeamId = prefData.getSELECTEDTEAMID()
+                        val currentTeamId = prefData.getSelectedTeamId()
                         if (currentTeamId != selectedTeam._id) {
-                            prefData.setSELECTEDTEAMID(selectedTeam._id)
+                            prefData.setSelectedTeamId(selectedTeam._id)
                             if (this@SyncActivity is LoginActivity) {
                                 this@SyncActivity.getTeamMembers()
                             }
@@ -838,7 +838,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         fun clearSharedPref() {
             val settings = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             val editor = settings.edit()
-            val keysToKeep = setOf(SharedPrefManager(context).FIRSTLAUNCH)
+            val keysToKeep = setOf(SharedPrefManager(context).firstLaunch)
             val tempStorage = HashMap<String, Boolean>()
             for (key in keysToKeep) {
                 tempStorage[key] = settings.getBoolean(key, false)
