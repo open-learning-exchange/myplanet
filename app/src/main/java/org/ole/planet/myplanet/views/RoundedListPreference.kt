@@ -5,11 +5,12 @@ import android.content.Context
 import android.content.DialogInterface
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
+import android.util.AttributeSet
 import android.view.ContextThemeWrapper
 import androidx.preference.ListPreference
 import org.ole.planet.myplanet.R
 
-class RoundedListPreference(context: Context) : ListPreference(context) {
+class RoundedListPreference(context: Context, attrs: AttributeSet) : ListPreference(context, attrs) {
 
     override fun onClick() {
         val currentIndex = findIndexOfValue(value)
@@ -23,8 +24,6 @@ class RoundedListPreference(context: Context) : ListPreference(context) {
             }
             .setNegativeButton(R.string.cancel) { dialog: DialogInterface, _: Int -> dialog.dismiss() }.create()
         dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-
         dialog.show()
     }
-
 }
