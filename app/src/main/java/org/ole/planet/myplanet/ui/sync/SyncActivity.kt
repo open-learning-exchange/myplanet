@@ -378,7 +378,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     fun onLogin() {
         val handler = UserProfileDbHandler(this)
         handler.onLogin()
-        handler.onDestory()
+        handler.onDestroy()
         editor.putBoolean(Constants.KEY_LOGIN, true).commit()
         openDashboard()
     }

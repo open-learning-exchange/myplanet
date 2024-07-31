@@ -19,7 +19,6 @@ import androidx.preference.Preference
 import androidx.preference.Preference.OnPreferenceChangeListener
 import androidx.preference.Preference.OnPreferenceClickListener
 import androidx.preference.PreferenceFragmentCompat
-import androidx.preference.PreferenceManager
 import androidx.preference.SwitchPreference
 import io.realm.Realm
 import org.ole.planet.myplanet.R
@@ -217,7 +216,7 @@ class SettingActivity : AppCompatActivity() {
         override fun onDestroy() {
             super.onDestroy()
             if (this::profileDbHandler.isInitialized) {
-                profileDbHandler.onDestory()
+                profileDbHandler.onDestroy()
             }
         }
 
