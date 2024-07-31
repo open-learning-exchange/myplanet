@@ -104,13 +104,10 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
                     name.isEmpty() -> {
                         Utilities.toast(activity, getString(R.string.name_is_required))
                         alertCreateTeamBinding.etName.error = getString(R.string.please_enter_a_name)
-                    }
-
-                    else -> {
+                    } else -> {
                         if (team == null) {
                             createTeam(name,
-                                if (alertCreateTeamBinding.spnTeamType.selectedItemPosition == 0) "local" else "sync",
-                                map,
+                                if (alertCreateTeamBinding.spnTeamType.selectedItemPosition == 0) "local" else "sync", map,
                                 alertCreateTeamBinding.switchPublic.isChecked
                             )
                         } else {
@@ -126,6 +123,8 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
                             team.updated = true
                             team.realm.commitTransaction()
                         }
+                        fragmentTeamBinding.etSearch.visibility = View.VISIBLE
+                        fragmentTeamBinding.tableTitle.visibility = View.VISIBLE
                         Utilities.toast(activity, getString(R.string.team_created))
                         setTeamList()
                         // dialog won't close by default
@@ -225,7 +224,6 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
 
         return Pair(queried.findAll(), conditionApplied)
     }
-
 
     private fun setTeamList() {
         val query = mRealm.where(RealmMyTeam::class.java)
