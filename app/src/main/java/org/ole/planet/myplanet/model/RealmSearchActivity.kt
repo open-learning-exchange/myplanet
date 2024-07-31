@@ -21,7 +21,7 @@ open class RealmSearchActivity(
     var parentCode: String = ""
 ) : RealmObject() {
     fun serialize(): JsonObject {
-        var obj = JsonObject();
+        val obj = JsonObject()
         obj.addProperty("text", text)
         obj.addProperty("type", type)
         obj.addProperty("time", time)

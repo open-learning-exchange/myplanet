@@ -8,9 +8,9 @@ open class RealmDictionary(
     var word: String = "",
     var meaning: String = "",
     var synonym: String = "",
-    var advance_code: String = "",
+    var advanceCode: String = "",
     var code: String = "",
     var definition: String = "",
     var language: String = "",
-    var antonoym: String = ""
+    var antonym: String = ""
 ) : RealmObject()

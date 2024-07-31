@@ -12,7 +12,6 @@ import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import org.apache.commons.lang3.StringUtils
 import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.model.RealmTeamTask.Companion.taskDataList
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.Utilities
@@ -128,7 +127,7 @@ open class RealmUserModel : RealmObject() {
         return `object`
     }
 
-    fun getRoles(): JsonArray {
+    private fun getRoles(): JsonArray {
         val ar = JsonArray()
         for (s in rolesList ?: emptyList())    {
             ar.add(s)
@@ -180,7 +179,7 @@ open class RealmUserModel : RealmObject() {
     }
 
     companion object {
-        val userDataList: MutableList<Array<String>> = mutableListOf()
+        private val userDataList: MutableList<Array<String>> = mutableListOf()
 
         @JvmStatic
         fun createGuestUser(username: String?, mRealm: Realm, settings: SharedPreferences): RealmUserModel? {
@@ -198,11 +197,11 @@ open class RealmUserModel : RealmObject() {
         @JvmStatic
         fun populateUsersTable(jsonDoc: JsonObject?, mRealm: Realm?, settings: SharedPreferences): RealmUserModel? {
             try {
-                var _id = JsonUtils.getString("_id", jsonDoc)
-                if (_id.isEmpty()) _id = UUID.randomUUID().toString()
-                var user = mRealm?.where(RealmUserModel::class.java)?.equalTo("_id", _id)?.findFirst()
+                var id = JsonUtils.getString("_id", jsonDoc)
+                if (id.isEmpty()) id = UUID.randomUUID().toString()
+                var user = mRealm?.where(RealmUserModel::class.java)?.equalTo("_id", id)?.findFirst()
                 if (user == null) {
-                    user = mRealm?.createObject(RealmUserModel::class.java, _id)
+                    user = mRealm?.createObject(RealmUserModel::class.java, id)
                 }
                 insertIntoUsers(jsonDoc, user, settings)
                 return user

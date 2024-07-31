@@ -13,10 +13,7 @@ import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.RealmResults
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.model.RealmMyHealthPojo.Companion.healthDataList
-import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
@@ -48,7 +45,7 @@ open class RealmMyLibrary : RealmObject() {
     @JvmField
     var downloadedRev: String? = null
     @JvmField
-    var isNeed_optimization = false
+    var needsOptimization = false
     @JvmField
     var publisher: String? = null
     @JvmField
@@ -86,8 +83,6 @@ open class RealmMyLibrary : RealmObject() {
     @JvmField
     var description: String? = null
     @JvmField
-    var sendOnAccept: String? = null
-    @JvmField
     var translationAudioPath: String? = null
     @JvmField
     var sum = 0
@@ -108,8 +103,6 @@ open class RealmMyLibrary : RealmObject() {
     @JvmField
     var stepId: String? = null
     @JvmField
-    var downloaded: String? = null
-    @JvmField
     var isPrivate = false
 
     fun serializeResource(): JsonObject {
@@ -117,7 +110,7 @@ open class RealmMyLibrary : RealmObject() {
         `object`.addProperty("_id", _id)
         `object`.addProperty("_rev", _rev)
         `object`.addProperty("_rev", _rev)
-        `object`.addProperty("need_optimization", isNeed_optimization)
+        `object`.addProperty("need_optimization", needsOptimization)
         `object`.add("resourceFor", getArray(resourceFor))
         `object`.addProperty("publisher", publisher)
         `object`.addProperty("linkToLicense", linkToLicense)
@@ -147,7 +140,7 @@ open class RealmMyLibrary : RealmObject() {
         return `object`
     }
 
-    fun getArray(ar: RealmList<String>?): JsonArray {
+    private fun getArray(ar: RealmList<String>?): JsonArray {
         val sub = JsonArray()
         if (ar != null) {
             for (s in ar) {
@@ -279,7 +272,7 @@ open class RealmMyLibrary : RealmObject() {
             return libraries
         }
 
-        fun getIds(mRealm: Realm): Array<String?> {
+        private fun getIds(mRealm: Realm): Array<String?> {
             val list: List<RealmMyLibrary> = mRealm.where(RealmMyLibrary::class.java).findAll()
             val ids = arrayOfNulls<String>(list.size)
             for ((i, library) in list.withIndex()) {
@@ -327,11 +320,11 @@ open class RealmMyLibrary : RealmObject() {
             `object`.addProperty("createdDate", personal.createdDate)
             `object`.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
             `object`.addProperty("deviceName", NetworkUtils.getDeviceName())
-            `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
+            `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
             return `object`
         }
 
-        fun insertResources(doc: JsonObject, mRealm: Realm) {
+        private fun insertResources(doc: JsonObject, mRealm: Realm) {
             insertMyLibrary("", doc, mRealm)
         }
 
@@ -360,7 +353,7 @@ open class RealmMyLibrary : RealmObject() {
                 mRealm.beginTransaction()
             }
             val resourceId = JsonUtils.getString("_id", doc)
-            val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             var resource = mRealm.where(RealmMyLibrary::class.java).equalTo("id", resourceId).findFirst()
             if (resource == null) {
                 resource = mRealm.createObject(RealmMyLibrary::class.java, resourceId)
@@ -470,15 +463,6 @@ open class RealmMyLibrary : RealmObject() {
 
         fun libraryWriteCsv() {
             writeCsv("${context.getExternalFilesDir(null)}/ole/library.csv", libraryDataList)
-        }
-
-        @JvmStatic
-        fun getListAsArray(db_myLibrary: RealmResults<RealmMyLibrary>): Array<CharSequence?> {
-            val array = arrayOfNulls<CharSequence>(db_myLibrary.size)
-            for (i in db_myLibrary.indices) {
-                array[i] = db_myLibrary[i]?.title
-            }
-            return array
         }
 
         @JvmStatic

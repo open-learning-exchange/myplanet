@@ -11,7 +11,6 @@ import io.realm.RealmObject
 import io.realm.RealmResults
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.libraryDataList
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.JsonUtils
 import java.io.File
@@ -97,7 +96,7 @@ open class RealmMyTeam : RealmObject() {
     var updatedDate: Long = 0
 
     companion object {
-        val teamDataList: MutableList<Array<String>> = mutableListOf()
+        private val teamDataList: MutableList<Array<String>> = mutableListOf()
         val reportsDataList: MutableList<Array<String>> = mutableListOf()
 
         @JvmStatic
@@ -255,25 +254,6 @@ open class RealmMyTeam : RealmObject() {
                 JsonUtils.getBoolean("updated", doc).toString()
             )
             reportsDataList.add(csvRow)
-        }
-
-        fun reportWriteCsv(filePath: String, data: List<Array<String>>) {
-            try {
-                val file = File(filePath)
-                file.parentFile?.mkdirs()
-                val writer = CSVWriter(FileWriter(file))
-                writer.writeNext(arrayOf("teamId", "description", "teamPlanetCode", "createdDate", "teamType", "docType", "beginningBalance", "sales", "otherIncome", "wages", "otherExpenses", "startDate", "endDate", "updatedDate", "updated"))
-                for (row in data) {
-                    writer.writeNext(row)
-                }
-                writer.close()
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
-        }
-
-        fun reportsWriteCsv() {
-            reportWriteCsv("${context.getExternalFilesDir(null)}/ole/reports.csv", reportsDataList)
         }
 
         @JvmStatic

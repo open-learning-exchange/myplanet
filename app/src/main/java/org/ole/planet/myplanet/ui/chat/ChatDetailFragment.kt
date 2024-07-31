@@ -143,15 +143,17 @@ class ChatDetailFragment : Fragment() {
                     }
                 }
             }
-            sharedViewModel.getSelected_id().observe(viewLifecycleOwner) { selectedId ->
-                _id = selectedId
-            }
-            sharedViewModel.getSelected_rev().observe(viewLifecycleOwner) { selectedRev ->
-                _rev = selectedRev
-            }
-            view.post {
-                clearChatDetail()
-            }
+        }
+
+        sharedViewModel.getSelectedId().observe(viewLifecycleOwner) { selectedId ->
+            _id = selectedId
+        }
+
+        sharedViewModel.getSelectedRev().observe(viewLifecycleOwner) { selectedRev ->
+            _rev = selectedRev
+        }
+        view.post {
+            clearChatDetail()
         }
     }
 
