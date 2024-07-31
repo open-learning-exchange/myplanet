@@ -66,10 +66,10 @@ class MyDownloadService(context: Context, params: WorkerParameters) : Worker(con
 
         notificationBuilder = NotificationCompat.Builder(applicationContext, "11")
         NotificationUtil.setChannel(notificationManager)
-        val noti = notificationBuilder?.setSmallIcon(R.mipmap.ic_launcher)
+        val notification = notificationBuilder?.setSmallIcon(R.mipmap.ic_launcher)
             ?.setContentTitle("OLE Download")?.setContentText("Downloading File...")
             ?.setAutoCancel(true)?.build()
-        notificationManager?.notify(0, noti)
+        notificationManager?.notify(0, notification)
 
         for (i in urls.indices) {
             url = urls[i]

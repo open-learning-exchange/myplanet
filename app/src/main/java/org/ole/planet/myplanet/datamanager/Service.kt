@@ -5,7 +5,9 @@ import android.content.Context
 import android.content.DialogInterface
 import android.content.SharedPreferences
 import android.net.Uri
+import android.os.Build
 import android.text.TextUtils
+import androidx.annotation.RequiresApi
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.realm.Realm
@@ -91,6 +93,7 @@ class Service(private val context: Context) {
             return
         }
         retrofitInterface?.checkVersion(Utilities.getUpdateUrl(settings))?.enqueue(object : Callback<MyPlanet?> {
+            @RequiresApi(Build.VERSION_CODES.M)
             override fun onResponse(call: Call<MyPlanet?>, response: Response<MyPlanet?>) {
                 preferences.edit().putInt("LastWifiID", NetworkUtils.getCurrentNetworkId(context)).apply()
                 if (response.body() != null) {
@@ -305,9 +308,8 @@ class Service(private val context: Context) {
                                 getUserInfo(uri)
                                 couchdbURL = url
                             } else {
-                                val url_user = "satellite"
-                                val url_pwd = pin
-                                couchdbURL = "${uri.scheme}://$url_user:$url_pwd@${uri.host}:${if (uri.port == -1) if (uri.scheme == "http") 80 else 443 else uri.port}"
+                                val urlUser = "satellite"
+                                couchdbURL = "${uri.scheme}://$urlUser:$pin@${uri.host}:${if (uri.port == -1) if (uri.scheme == "http") 80 else 443 else uri.port}"
                             }
                             retrofitInterface.getConfiguration("${getUrl(couchdbURL)}/configurations/_all_docs?include_docs=true").enqueue(object : Callback<JsonObject?> {
                                 override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
