@@ -20,6 +20,17 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context,
     private val viewTypeQuery = 1
     private val viewTypeResponse = 2
 
+    interface OnChatItemClickListener {
+        fun onChatItemClick(position: Int, chatItem: String)
+    }
+
+    private var chatItemClickListener: OnChatItemClickListener? = null
+
+    fun setOnChatItemClickListener(listener: OnChatItemClickListener) {
+        this.chatItemClickListener = listener
+    }
+
+
     class QueryViewHolder(private val textUserMessageBinding: ItemUserMessageBinding) : RecyclerView.ViewHolder(textUserMessageBinding.root) {
         fun bind(query: String) {
             textUserMessageBinding.textGchatMessageMe.text = query
@@ -114,6 +125,9 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context,
                 responseViewHolder.bind(chatItem, responseSource)
             }
             else -> throw IllegalArgumentException("Invalid view type")
+        }
+        holder.itemView.setOnClickListener {
+            chatItemClickListener?.onChatItemClick(position, chatItem)
         }
     }
 
