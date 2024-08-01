@@ -13,7 +13,7 @@
         android:title="@string/save_username_and_password" />
 
     <org.ole.planet.myplanet.views.RoundedListPreference
-        android:defaultValue="OFF"
+        android:defaultValue="@string/dark_mode_off"
         android:entries="@array/dark_mode_options"
         android:entryValues="@array/dark_mode_options"
         android:key="dark_mode"
