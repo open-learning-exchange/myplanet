@@ -724,16 +724,17 @@
 </string>
 
     <string name="observations_notes_colon">
-        अनुसंधान र नोटहरू: %s\n
-        %s\n
-        %s\n
-        %s\n
-        %s\n
-        एलर्जीहरू: %s\n
-        एक्स-रे: %s\n
-        प्रयोगशाला परीक्षणहरू: %s\n
-        रेफरलहरू: %s\n
-    </string>
+    अवलोकन र विश्लेषण: %1$s\n
+    %2$s\n
+    %3$s\n
+    %4$s\n
+    %5$s\n
+    एलर्जी: %6$s\n
+    एक्स-रे: %7$s\n
+    प्रयोगशाला परीक्षण: %8$s\n
+    अध्ययनहरू: %9$s\n
+</string>
+
     <string name="diagnosis_colon">"निदान : "</string>
     <string name="treatments_colon">"उपचारहरू: "</string>
     <string name="medications_colon">"औषधि: "</string>

@@ -724,16 +724,17 @@
 </string>
 
     <string name="observations_notes_colon">
-        Xogaha iyo falanqeynaha: %s\n
-        %s\n
-        %s\n
-        %s\n
-        %s\n
-        Allergies: %s\n
-        X-ray: %s\n
-        Baaritaan Lab: %s\n
-        Diraasado: %s\n
-    </string>
+    Xogaha iyo falanqaynta: %1$s\n
+    %2$s\n
+    %3$s\n
+    %4$s\n
+    %5$s\n
+    Xasaasiyadaha: %6$s\n
+    Raajada: %7$s\n
+    Baaritaanka Laboratooriga: %8$s\n
+    Daraasaadka: %9$s\n
+</string>
+
     <string name="diagnosis_colon">"Dib u dhigaasho: "</string>
     <string name="treatments_colon">"Dib-u-helidda: "</string>
     <string name="medications_colon">"Ciidammada: "</string>

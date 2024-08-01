@@ -492,7 +492,7 @@
     <string name="archive">الأرشيف</string>
     <string name="Q1">السؤال: 1/%d</string>
     <string name="no_questions">لا تتوفر أسئلة</string>
-    <string name="Q">السؤال: %d / %d</string>
+    <string name="Q">السؤال: %1$d / %2$d</string>
     <string name="finish">إنهاء</string>
     <string name="submit">إرسال</string>
     <string name="our_courses">دوراتنا</string>
@@ -724,16 +724,17 @@
 </string>
 
     <string name="observations_notes_colon">
-        الملاحظات والملاحظات: %s\n
-        %s\n
-        %s\n
-        %s\n
-        %s\n
-        الحساسية: %s\n
-        أشعة الأشعة: %s\n
-        اختبارات المختبر: %s\n
-        الإحالات: %s\n
-    </string>
+    الملاحظات والتحليلات: %1$s\n
+    %2$s\n
+    %3$s\n
+    %4$s\n
+    %5$s\n
+    الحساسية: %6$s\n
+    الأشعة السينية: %7$s\n
+    اختبارات مختبرية: %8$s\n
+    الدراسات: %9$s\n
+</string>
+
     <string name="diagnosis_colon">"التشخيص: "</string>
     <string name="treatments_colon">"العلاجات: "</string>
     <string name="medications_colon">"الأدوية: "</string>

@@ -724,16 +724,17 @@
 </string>
 
     <string name="observations_notes_colon">
-        Observations et notes : %s\n
-        %s\n
-        %s\n
-        %s\n
-        %s\n
-        Allergies : %s\n
-        Radiographies : %s\n
-        Tests de laboratoire : %s\n
-        Références : %s\n
-    </string>
+    Observations et analyses : %1$s\n
+    %2$s\n
+    %3$s\n
+    %4$s\n
+    %5$s\n
+    Allergies : %6$s\n
+    Radiographie : %7$s\n
+    Tests de laboratoire : %8$s\n
+    Études : %9$s\n
+</string>
+
     <string name="diagnosis_colon">"Diagnostic: "</string>
     <string name="treatments_colon">"Traitements: "</string>
     <string name="medications_colon">"Médicaments: "</string>

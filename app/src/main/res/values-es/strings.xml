@@ -724,16 +724,17 @@
 </string>
 
     <string name="observations_notes_colon">
-        Observaciones y notas: %s\n
-        %s\n
-        %s\n
-        %s\n
-        %s\n
-        Alergias: %s\n
-        Radiografías: %s\n
-        Pruebas de laboratorio: %s\n
-        Referencias: %s\n
-    </string>
+    Observaciones y análisis: %1$s\n
+    %2$s\n
+    %3$s\n
+    %4$s\n
+    %5$s\n
+    Alergias: %6$s\n
+    Radiografía: %7$s\n
+    Pruebas de laboratorio: %8$s\n
+    Estudios: %9$s\n
+</string>
+
     <string name="diagnosis_colon">"Diagnóstico: "</string>
     <string name="treatments_colon">"Tratamientos: "</string>
     <string name="medications_colon">"Medicamentos: "</string>
@@ -1059,7 +1060,7 @@
     <string name="message_placeholder">%s</string>
     <string name="reports">informes</string>
     <string name="number_placeholder">%d</string>
-    <string name="date_range">%1$s a %2s</string>
+    <string name="date_range">%1$s a %2$s</string>
     <string name="string_range">%1$s - %2$s</string>
     <string name="team_financial_report">Informe financiero de %s</string>
     <string name="report_date_details">Informe creado el: %1$s | Actualizado el: %2$s</string>

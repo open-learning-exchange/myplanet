@@ -724,16 +724,16 @@
     </string>
 
     <string name="observations_notes_colon">
-        Xogaha iyo falanqeynaha: %1$s\n
-        %2$s\n
-        %3$s\n
-        %4$s\n
-        %5$s\n
-        Allergies: %6$s\n
-        X-ray: %7$s\n
-        Baaritaan Lab: %8$s\n
-        Diraasado: %9$s\n
-    </string>
+    Observations and analysis: %1$s\n
+    %2$s\n
+    %3$s\n
+    %4$s\n
+    %5$s\n
+    Allergies: %6$s\n
+    X-ray: %7$s\n
+    Lab Tests: %8$s\n
+    Studies: %9$s\n
+</string>
     <string name="diagnosis_colon">"Diagnosis : "</string>
     <string name="treatments_colon">"Treatments: "</string>
     <string name="medications_colon">"Medications: "</string>
