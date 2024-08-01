@@ -10,7 +10,7 @@
     tools:context=".ui.resources.ResourcesFilterFragment">
 
     <LinearLayout
-        android:layout_width="match_parent"
+        android:layout_width="400dp"
         android:layout_height="match_parent"
         android:orientation="vertical">
 
@@ -44,8 +44,8 @@
                 android:text="@string/subjects" />
             <ImageView
                 android:id="@+id/subjectsDropdownIcon"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
                 android:src="@drawable/down_arrow" />
         </LinearLayout>
 
@@ -80,8 +80,8 @@
                 android:text="@string/languages" />
             <ImageView
                 android:id="@+id/languagesDropdownIcon"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
                 android:src="@drawable/down_arrow" />
         </LinearLayout>
 
@@ -116,8 +116,8 @@
                 android:text="@string/mediums" />
             <ImageView
                 android:id="@+id/mediumsDropdownIcon"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
                 android:src="@drawable/down_arrow" />
         </LinearLayout>
 
@@ -152,8 +152,8 @@
                 android:text="@string/levels" />
             <ImageView
                 android:id="@+id/levelsDropdownIcon"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
                 android:src="@drawable/down_arrow" />
         </LinearLayout>
 
