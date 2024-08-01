@@ -1093,6 +1093,5 @@
     <string name="sync_san_pablo">🇬🇹 Planet San Pablo</string>
     <string name="sync_xela">🇬🇹 Planet Xela</string>
     <string name="Q">Question: %1$d / %2$d</string>
-    <string name="emergency_contact_details">Name: %1$s Type: %2$s Contact: %3$s</string>
 
 </resources>
