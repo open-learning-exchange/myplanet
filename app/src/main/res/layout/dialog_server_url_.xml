@@ -107,13 +107,13 @@
             android:layout_height="wrap_content"
             android:text="@string/sync_xela" />
 
-<!--        <com.google.android.material.button.MaterialButton-->
-<!--            android:id="@+id/toggle_planet_san_pablo"-->
-<!--            style="@style/Widget.MaterialComponents.Button.OutlinedButton"-->
-<!--            android:layout_width="match_parent"-->
-<!--            android:gravity="start|center_vertical"-->
-<!--            android:layout_height="wrap_content"-->
-<!--            android:text="@string/sync_san_pablo" />-->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/toggle_planet_san_pablo"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:gravity="start|center_vertical"
+            android:layout_height="wrap_content"
+            android:text="@string/sync_san_pablo" />
 
     </com.google.android.material.button.MaterialButtonToggleGroup>
 

@@ -77,8 +77,8 @@ android {
     def planetGuatemalaPin = project.findProperty('PLANET_GUATEMALA_PIN') ?: ""
     def planetXelaUrl = project.findProperty('PLANET_XELA_URL') ?: ""
     def planetXelaPin = project.findProperty('PLANET_XELA_PIN') ?: ""
-//    def planetSanPabloUrl = project.findProperty('PLANET_SANPABLO_URL') ?: ""
-//    def planetSanPabloPin = project.findProperty('PLANET_SANPABLO_PIN') ?: ""
+    def planetSanPabloUrl = project.findProperty('PLANET_SANPABLO_URL') ?: ""
+    def planetSanPabloPin = project.findProperty('PLANET_SANPABLO_PIN') ?: ""
 
     buildTypes.each {
         it.buildConfigField 'String', 'PLANET_LEARNING_URL', "\"$planetLearningUrl\""
@@ -87,8 +87,8 @@ android {
         it.buildConfigField 'String', 'PLANET_GUATEMALA_PIN', "\"${planetGuatemalaPin}\""
         it.buildConfigField 'String', 'PLANET_XELA_URL', "\"${planetXelaUrl}\""
         it.buildConfigField 'String', 'PLANET_XELA_PIN', "\"${planetXelaPin}\""
-//        it.buildConfigField 'String', 'PLANET_SANPABLO_URL', "\"${planetSanPabloUrl}\""
-//        it.buildConfigField 'String', 'PLANET_SANPABLO_PIN', "\"${planetSanPabloPin}\""
+        it.buildConfigField 'String', 'PLANET_SANPABLO_URL', "\"${planetSanPabloUrl}\""
+        it.buildConfigField 'String', 'PLANET_SANPABLO_PIN', "\"${planetSanPabloPin}\""
     }
 }
 
