@@ -90,6 +90,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private var currentDialog: MaterialDialog? = null
     private var serverConfigAction = ""
     private var previousCheckedId: Int? = null
+    private var serverCheck = true
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -138,7 +139,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 success = true
             }
             .setNegativeButton(getString(R.string.cancel)) { _, _ ->
-                previousCheckedId?.let { serverAddresses.check(it) }
+                serverCheck = false
+                previousCheckedId?.let {
+                    serverAddresses.check(it)
+                }
             }
             .show()
         return success
@@ -608,7 +612,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
                         val protocol = if (actualUrl == BuildConfig.PLANET_SANPABLO_URL) "http://" else "https://"
                         editor.putString("serverProtocol", protocol).apply()
-                        performSync(dialog)
+                        if (serverCheck) {
+                            performSync(dialog)
+                        }
                     }
                 }
             }
