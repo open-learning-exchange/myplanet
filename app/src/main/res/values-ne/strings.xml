@@ -1088,8 +1088,9 @@
     <string name="are_you_sure_you_want_to_archive_this_course">के तपाइँ निश्चित हुनुहुन्छ कि तपाइँ यो पाठ्यक्रम संग्रह गर्न चाहनुहुन्छ?</string>
     <string name="manual">हस्तपुस्तिका</string>
     <string name="sync_to_server">सर्भरमा समक्रमण गर्नुहोस्:</string>
-    <string name="sync_planet_learning">🌎 प्लानेट लर्निंग</string>
-    <string name="sync_guatemala">🇬🇹 प्लानेट ग्वाटेमाला</string>
-    <string name="sync_san_pablo">🇬🇹 प्लानेट सान पाब्लो</string>
+    <string name="sync_planet_learning">🌎 Planet Learning</string>
+    <string name="sync_guatemala">🇬🇹 Planet Guatemala</string>
+    <string name="sync_san_pablo">🇬🇹 Planet San Pablo</string>
+    <string name="sync_xela">🇬🇹 Planet Xela</string>
 
 </resources>

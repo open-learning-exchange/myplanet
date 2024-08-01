@@ -572,7 +572,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             val toggleButtonMap = mapOf(
                 R.id.toggle_planet_learning to BuildConfig.PLANET_LEARNING_URL,
                 R.id.toggle_planet_guatemala to BuildConfig.PLANET_GUATEMALA_URL,
-                R.id.toggle_planet_san_pablo to BuildConfig.PLANET_SANPABLO_URL
+                R.id.toggle_planet_xela to BuildConfig.PLANET_XELA_URL,
+//                R.id.toggle_planet_san_pablo to BuildConfig.PLANET_SANPABLO_URL
             )
 
             val storedUrl = settings.getString("serverURL", null)
@@ -611,7 +612,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                         serverUrl.setText(actualUrl)
                         serverPassword.setText(getPinForUrl(actualUrl))
 
-                        val protocol = if (actualUrl == BuildConfig.PLANET_SANPABLO_URL) "http://" else "https://"
+                        val protocol = if (actualUrl == BuildConfig.PLANET_XELA_URL) "http://" else "https://"
+//                        val protocol = if (actualUrl == BuildConfig.PLANET_SANPABLO_URL) "http://" else "https://"
                         editor.putString("serverProtocol", protocol).apply()
                         if (serverCheck) {
                             performSync(dialog)
@@ -643,7 +645,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         val pinMap = mapOf(
             BuildConfig.PLANET_LEARNING_URL to BuildConfig.PLANET_LEARNING_PIN,
             BuildConfig.PLANET_GUATEMALA_URL to BuildConfig.PLANET_GUATEMALA_PIN,
-            BuildConfig.PLANET_SANPABLO_URL to BuildConfig.PLANET_SANPABLO_PIN
+            BuildConfig.PLANET_XELA_URL to BuildConfig.PLANET_XELA_PIN
+//            BuildConfig.PLANET_SANPABLO_URL to BuildConfig.PLANET_SANPABLO_PIN
         )
         return pinMap[url] ?: ""
     }
