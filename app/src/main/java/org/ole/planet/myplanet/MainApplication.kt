@@ -120,7 +120,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     }
 
     private fun nightMode() {
-        val preference = PreferenceManager.getDefaultSharedPreferences(this).getString("dark_mode", getString(R.string.dark_mode_off))
+        val preference = PreferenceManager.getDefaultSharedPreferences(this).getString("dark_mode", getString(R.string.dark_mode_follow_system))
         val options = listOf(*resources.getStringArray(R.array.dark_mode_options))
         when (options.indexOf(preference)) {
             0 -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
