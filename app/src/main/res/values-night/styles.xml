@@ -88,11 +88,6 @@
         <item name="colorControlHighlight">@color/colorAccent</item>
     </style>
 
-    <style name="PrimaryButton" parent="Theme.AppCompat">
-        <item name="colorButtonNormal">@color/colorPrimary</item>
-        <item name="colorControlHighlight">@color/colorAccent</item>
-    </style>
-
     <style name="AccentButton" parent="Theme.AppCompat">
         <item name="android:textColor">@color/md_white_1000</item>
         <item name="colorButtonNormal">@color/colorPrimaryDark</item>

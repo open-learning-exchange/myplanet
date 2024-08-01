@@ -89,7 +89,7 @@
     </style>
 
     <style name="PrimaryButton" parent="Theme.AppCompat">
-        <item name="colorButtonNormal">@color/colorPrimary</item>
+        <item name="colorButtonNormal">@color/mainColor</item>
         <item name="colorControlHighlight">@color/colorAccent</item>
     </style>
 

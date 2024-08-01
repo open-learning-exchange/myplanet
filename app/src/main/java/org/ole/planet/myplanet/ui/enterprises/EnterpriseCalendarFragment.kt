@@ -48,7 +48,7 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
         setTimePicker(addMeetupBinding.tvStartTime)
         setTimePicker(addMeetupBinding.tvEndTime)
 
-        AlertDialog.Builder(requireActivity()).setView(addMeetupBinding.root)
+        val alertDialog = AlertDialog.Builder(requireActivity()).setView(addMeetupBinding.root)
             .setPositiveButton("Save") { _, _ ->
                 val ttl = "${addMeetupBinding.etTitle.text}"
                 val desc = "${addMeetupBinding.etDescription.text}"
@@ -83,6 +83,7 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
                     refreshCalendarView()
                 }
             }.setNegativeButton("Cancel", null).show()
+        alertDialog.window?.setBackgroundDrawableResource(R.color.card_bg)
     }
 
     private fun setDatePickerListener(view: TextView, date: Calendar?) {

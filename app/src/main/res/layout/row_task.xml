@@ -3,6 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:backgroundTint="@color/card_bg"
     app:cardCornerRadius="@dimen/padding_small"
     app:cardUseCompatPadding="true"
     app:contentPadding="@dimen/padding_normal">
@@ -22,7 +23,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:padding="@dimen/padding_normal"
-                android:textColor="@color/md_black_1000"
+                android:textColor="@color/daynight_textColor"
                 android:textSize="18sp"
                 android:textStyle="bold" />
 
@@ -30,14 +31,16 @@
                 android:id="@+id/deadline"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:padding="@dimen/padding_normal" />
+                android:padding="@dimen/padding_normal"
+                android:textColor="@color/hint_color" />
 
             <TextView
                 android:id="@+id/assignee"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:paddingLeft="@dimen/padding_normal"
-                android:paddingRight="@dimen/padding_normal" />
+                android:paddingRight="@dimen/padding_normal"
+                android:textColor="@color/hint_color" />
         </LinearLayout>
 
         <ImageView

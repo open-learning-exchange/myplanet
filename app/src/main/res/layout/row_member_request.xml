@@ -4,6 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_gravity="top"
+    android:backgroundTint="@color/card_bg"
     app:cardElevation="4dp"
     app:cardUseCompatPadding="true"
     app:contentPadding="@dimen/padding_normal">
@@ -17,7 +18,7 @@
             android:id="@+id/tv_name"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="@color/md_black_1000"
+            android:textColor="@color/daynight_textColor"
             android:textSize="18sp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
