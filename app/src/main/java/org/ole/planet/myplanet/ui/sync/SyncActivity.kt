@@ -15,6 +15,7 @@ import androidx.appcompat.widget.SwitchCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.preference.PreferenceManager
 import com.afollestad.materialdialogs.*
+import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.textfield.TextInputLayout
 import kotlinx.serialization.json.Json
 import io.realm.*
@@ -74,7 +75,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private lateinit var protocolCheckIn: RadioGroup
     private lateinit var serverUrl: EditText
     private lateinit var serverPassword: EditText
-    private lateinit var serverAddresses: CustomButtonToggleGroup
+    private lateinit var serverAddresses: MaterialButtonToggleGroup
     private lateinit var syncToServerText: TextView
     private var teamList = ArrayList<String?>()
     private var teamAdapter: ArrayAdapter<String?>? = null
