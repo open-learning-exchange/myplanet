@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.model.RealmCommunity
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.isUserExists
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.populateUsersTable
 import org.ole.planet.myplanet.service.UploadToShelfService
+import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateIv
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateKey
 import org.ole.planet.myplanet.utilities.Constants.KEY_UPGRADE_MAX
@@ -288,7 +289,7 @@ class Service(private val context: Context) {
         })
     }
 
-    fun getMinApk(listener: ConfigurationIdListener?, url: String, pin: String) {
+    fun getMinApk(listener: ConfigurationIdListener?, url: String, pin: String, activity: SyncActivity) {
         val customProgressDialog = CustomProgressDialog(context).apply {
             setText(context.getString(R.string.check_apk_version))
             show()
@@ -322,32 +323,39 @@ class Service(private val context: Context) {
                                             val doc = firstRow.getAsJsonObject("doc")
                                             val code = doc.getAsJsonPrimitive("code").asString
                                             listener?.onConfigurationIdReceived(id, code)
+                                            activity.setSyncFailed(false)
                                         } else {
+                                            activity.setSyncFailed(true)
                                             showAlertDialog(context.getString(R.string.failed_to_get_configuration_id), false)
                                         }
                                     } else {
+                                        activity.setSyncFailed(true)
                                         showAlertDialog(context.getString(R.string.failed_to_get_configuration_id), false)
                                     }
                                     customProgressDialog.dismiss()
                                 }
 
                                 override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
+                                    activity.setSyncFailed(true)
                                     customProgressDialog.dismiss()
                                     showAlertDialog(context.getString(R.string.device_couldn_t_reach_server_check_and_try_again), false)
                                 }
                             })
                         } else {
+                            activity.setSyncFailed(true)
                             customProgressDialog.dismiss()
                             showAlertDialog(context.getString(R.string.below_min_apk), true)
                         }
                     }
                 } else {
+                    activity.setSyncFailed(true)
                     customProgressDialog.dismiss()
                     showAlertDialog(context.getString(R.string.device_couldn_t_reach_server_check_and_try_again), false)
                 }
             }
 
             override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
+                activity.setSyncFailed(true)
                 customProgressDialog.dismiss()
                 showAlertDialog(context.getString(R.string.device_couldn_t_reach_server_check_and_try_again), false)
             }

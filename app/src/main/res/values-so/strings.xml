@@ -3,7 +3,7 @@
     <string name="app_name">My Planet</string>
     <string name="planet">Meerah</string>
     <string name="app_project_name">myPlanet</string>
-    <string name="action_settings">goobooyinka</string>
+    <string name="action_settings">Goobooyinka</string>
     <string name="hint_name">Magaca isticmaalaha</string>
     <string name="hint_password">Furaha</string>
     <string name="btn_back">Dib</string>
@@ -1036,7 +1036,7 @@
     <string name="recurring_colon">ku dhaqan:</string>
     <string name="created_by_colon">lagu sameeyay:</string>
     <string name="failed_to_get_configuration_id">Ma jirin ID-ka qaababka. Fadlan la xiriir maamulaha</string>
-    <string name="you_want_to_connect_to_a_different_server">Ma rabtaa inaad iska baarisaan adeegga kale ee adeegyada? Tirtir xogta app-ka si aad ugu sii daawato</string>
+    <string name="you_want_to_connect_to_a_different_server">Waxaad rabtaa inaad ku xirto server kale. Tirtir xogta barnaamijka si aad u sii wadato</string>
     <string name="are_you_sure_you_want_to_clear_data">Ma hubtaa inaad diiwaangelisid dhammaan xogta?</string>
     <string name="feedback_list">liiska raadinta</string>
     <string name="enterprise_list">liiska ganacsiyada</string>
@@ -1086,5 +1086,11 @@
     </string-array>
     <string name="are_you_sure_you_want_to_archive_these_courses">Ma hubtaa inaad rabto inaad kaydiso koorsooyinkan?</string>
     <string name="are_you_sure_you_want_to_archive_this_course">Ma hubtaa inaad rabto inaad kaydiso koorsadan?</string>
+    <string name="manual">buug</string>
+    <string name="sync_to_server">Isku xidh adeegga:</string>
+    <string name="sync_planet_learning">🌎 Planet Learning</string>
+    <string name="sync_guatemala">🇬🇹 Planet Guatemala</string>
+    <string name="sync_san_pablo">🇬🇹 Planet San Pablo</string>
+    <string name="sync_xela">🇬🇹 Planet Xela</string>
 
 </resources>
