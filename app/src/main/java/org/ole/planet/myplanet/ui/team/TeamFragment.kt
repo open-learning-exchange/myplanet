@@ -88,7 +88,6 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         val builder = AlertDialog.Builder(requireActivity())
             .setTitle(String.format(getString(R.string.enter) + "%s " + getString(R.string.detail), if (type == null) getString(R.string.team) else type))
             .setView(alertCreateTeamBinding.root).setPositiveButton(getString(R.string.save), null).setNegativeButton(getString(R.string.cancel), null)
-
         val dialog = builder.create()
 
         dialog.setOnShowListener {
@@ -133,7 +132,6 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
                 }
             }
         }
-
         dialog.show()
     }
 
