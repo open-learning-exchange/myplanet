@@ -3,7 +3,7 @@
     <string name="app_name">My Planet</string>
     <string name="planet">planète</string>
     <string name="app_project_name">myPlanet</string>
-    <string name="action_settings">Paramètres</string>
+    <string name="action_settings">paramètres</string>
     <string name="hint_name">Nom d\'utilisateur</string>
     <string name="hint_password">Mot de passe</string>
     <string name="btn_back">Retourner</string>
