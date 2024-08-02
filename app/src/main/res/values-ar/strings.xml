@@ -336,7 +336,7 @@
     <string name="filter_by_date">تصفية حسب التاريخ</string>
     <string name="date_reset">إعادة تعيين التاريخ</string>
     <string name="emergency_contact">جهة الاتصال في حالات الطوارئ</string>
-    <string name="emergency_contact_details">الاسم: %s النوع: %s الاتصال: %s</string>
+    <string name="emergency_contact_details">الاسم: %1$s النوع: %2$s الاتصال: %3$s</string>
     <string name="contact">اتصال</string>
     <string name="special_needs">احتياجات خاصة</string>
     <string name="other_need">احتياجات أخرى</string>
@@ -492,7 +492,7 @@
     <string name="archive">الأرشيف</string>
     <string name="Q1">السؤال: 1/%d</string>
     <string name="no_questions">لا تتوفر أسئلة</string>
-    <string name="Q">"السؤال: %d / %d"</string>
+    <string name="Q">السؤال: %1$d / %2$d</string>
     <string name="finish">إنهاء</string>
     <string name="submit">إرسال</string>
     <string name="our_courses">دوراتنا</string>
@@ -714,25 +714,27 @@
     <string name="note_you_may_still_need_to_download_the_newly_added_resources">\nملاحظة: قد تحتاج لاستكمال تنزيل الموارد المضافة حديثًا.</string>
     <string name="self_examination">%s\nالفحص الذاتي</string>
     <string name="vitals_format">
-        الحرارة: %s\n
-        نبض القلب: %s\n
-        ضغط الدم: %s\n
-        الطول: %s\n
-        الوزن: %s\n
-        الرؤية: %s\n
-        السمع: %s\n
-    </string>
+    درجة الحرارة: %1$s\n
+    النبض: %2$s\n
+    ضغط الدم: %3$s\n
+    الطول: %4$s\n
+    الوزن: %5$s\n
+    الرؤية: %6$s\n
+    السمع: %7$s\n
+</string>
+
     <string name="observations_notes_colon">
-        الملاحظات والملاحظات: %s\n
-        %s\n
-        %s\n
-        %s\n
-        %s\n
-        الحساسية: %s\n
-        أشعة الأشعة: %s\n
-        اختبارات المختبر: %s\n
-        الإحالات: %s\n
-    </string>
+    الملاحظات والتحليلات: %1$s\n
+    %2$s\n
+    %3$s\n
+    %4$s\n
+    %5$s\n
+    الحساسية: %6$s\n
+    الأشعة السينية: %7$s\n
+    اختبارات مختبرية: %8$s\n
+    الدراسات: %9$s\n
+</string>
+
     <string name="diagnosis_colon">"التشخيص: "</string>
     <string name="treatments_colon">"العلاجات: "</string>
     <string name="medications_colon">"الأدوية: "</string>
@@ -1058,24 +1060,24 @@
     <string name="message_placeholder">%s</string>
     <string name="reports">التقارير</string>
     <string name="number_placeholder">%d</string>
-    <string name="date_range">%s إلى %s</string>
-    <string name="string_range">%s - %s</string>
+    <string name="date_range">%1$s إلى %2$s</string>
+    <string name="string_range">%1$s - %2$s</string>
     <string name="team_financial_report">%s تقرير مالي لـ</string>
-    <string name="report_date_details">%s في: تم إنشاء التقرير | %s في: تم التحديث</string>
-    <string name="formatted_date">%d/%d/%d</string>
-    <string name="prefix_content">%s%s</string>
+    <string name="report_date_details">"تم إنشاء التقرير في: %1$s | تم تحديثه في: %2$s "</string>
+    <string name="formatted_date">%1$d/%2$d/%3$d</string>
+    <string name="prefix_content">%1$s%2$s</string>
     <string name="rating_count_format">%d الإجمالي</string>
-    <string name="step_progress">الخطوة الحالية: %d من %d</string>
+    <string name="step_progress">الخطوة الحالية: %1$d من %2$d</string>
     <string name="percentage">%s%%</string>
     <string name="test_size">هذا الاختبار يحتوي على %d أسئلة</string>
-    <string name="course_progress">التقدم %s من %s</string>
+    <string name="course_progress">التقدم %1$s من %2$s</string>
     <string name="tag_selected">تم اختيار: %s</string>
     <string name="resources_size">الموارد [%d]</string>
     <string name="user_role">- %s</string>
     <string name="offline_visits">%d زيارة</string>
     <string name="visit_count">%1$s (%2$d %3$s)</string>
-    <string name="two_strings">%s %s</string>
-    <string name="three_strings">%s %s %s</string>
+    <string name="two_strings">%1$s %2$s</string>
+    <string name="three_strings">%1$s %2$s %3$s</string>
     <string name="download_sync_files">تنزيل ملفات المزامنة</string>
     <string name="member_description"><![CDATA[(\u200E%2$d زيارة) \u200E%1$s]]></string>
     <string name="dark_mode">الوضع الداكن</string>
