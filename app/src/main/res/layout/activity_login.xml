@@ -352,6 +352,17 @@
                         tools:text="@string/available_space_colon" />
                 </LinearLayout>
 
+                <Spinner
+                    android:id="@+id/team"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:textColor="@color/daynight_textColor"
+                    android:textSize="16sp"
+                    android:visibility="gone"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/ltAvailablaSpace" />
+
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/recyclerView"
                     android:layout_width="match_parent"
@@ -360,7 +371,7 @@
                     android:layout_marginTop="@dimen/_10dp"
                     android:layout_marginEnd="3dp"
                     android:layout_marginBottom="5dp"
-                    app:layout_constraintTop_toBottomOf="@+id/ltAvailablaSpace"
+                    app:layout_constraintTop_toBottomOf="@+id/team"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintEnd_toEndOf="parent" />
             </androidx.constraintlayout.widget.ConstraintLayout>
