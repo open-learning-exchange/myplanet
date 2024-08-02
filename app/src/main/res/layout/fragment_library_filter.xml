@@ -15,7 +15,7 @@
         android:orientation="vertical">
 
         <LinearLayout
-            android:layout_width="match_parent"
+            android:layout_width="400dp"
             android:layout_height="wrap_content"
             android:layout_gravity="right"
             android:gravity="right">
@@ -30,11 +30,11 @@
 
         <LinearLayout
             android:id="@+id/subjects_layout"
-            android:layout_width="match_parent"
+            android:layout_width="370dp"
             android:layout_height="wrap_content"
+            android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:padding="16dp"
-            android:gravity="center_vertical">
+            android:padding="16dp">
 
             <TextView
                 style="@style/HeaderText"
@@ -42,6 +42,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="@string/subjects" />
+
             <ImageView
                 android:id="@+id/subjectsDropdownIcon"
                 android:layout_width="20dp"
@@ -51,7 +52,7 @@
 
         <LinearLayout
             android:id="@+id/expandable_layout_subjects"
-            android:layout_width="match_parent"
+            android:layout_width="370dp"
             android:layout_height="wrap_content"
             android:visibility="gone"
             android:orientation="vertical"
@@ -66,7 +67,7 @@
         </LinearLayout>
         <LinearLayout
             android:id="@+id/languages_layout"
-            android:layout_width="match_parent"
+            android:layout_width="370dp"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:padding="16dp"
@@ -87,7 +88,7 @@
 
     <LinearLayout
         android:id="@+id/expandable_layout_languages"
-        android:layout_width="match_parent"
+        android:layout_width="370dp"
         android:layout_height="wrap_content"
         android:visibility="gone"
         android:orientation="vertical"
@@ -102,7 +103,7 @@
 
         <LinearLayout
             android:id="@+id/mediums_layout"
-            android:layout_width="match_parent"
+            android:layout_width="370dp"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:padding="16dp"
@@ -123,7 +124,7 @@
 
     <LinearLayout
         android:id="@+id/expandable_layout_mediums"
-        android:layout_width="match_parent"
+        android:layout_width="370dp"
         android:layout_height="wrap_content"
         android:visibility="gone"
         android:orientation="vertical"
@@ -138,7 +139,7 @@
 
         <LinearLayout
             android:id="@+id/levels_layout"
-            android:layout_width="match_parent"
+            android:layout_width="370dp"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:padding="16dp"
@@ -159,7 +160,7 @@
 
         <LinearLayout
             android:id="@+id/expandable_layout_levels"
-            android:layout_width="match_parent"
+            android:layout_width="370dp"
             android:layout_height="wrap_content"
             android:visibility="gone"
             android:orientation="vertical"
