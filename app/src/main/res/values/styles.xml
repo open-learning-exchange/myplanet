@@ -15,7 +15,6 @@
         <item name="colorAccent">@color/md_blue_500</item>
     </style>
 
-
     <style name="RatingBar" parent="Theme.AppCompat">
         <item name="colorControlNormal">@color/md_grey_500</item>
         <item name="colorControlActivated">@color/md_yellow_700</item>
@@ -89,7 +88,7 @@
     </style>
 
     <style name="PrimaryButton" parent="Theme.AppCompat">
-        <item name="colorButtonNormal">@color/colorPrimary</item>
+        <item name="colorButtonNormal">@color/mainColor</item>
         <item name="colorControlHighlight">@color/colorAccent</item>
     </style>
 
@@ -190,5 +189,4 @@
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
     </style>
-
 </resources>

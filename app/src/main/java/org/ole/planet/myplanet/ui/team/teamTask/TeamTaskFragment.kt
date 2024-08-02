@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.team.teamTask
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.DialogInterface
+import android.graphics.Typeface
 import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -104,7 +105,14 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
             datePickerDialog.datePicker.minDate = myCalendar.timeInMillis
             datePickerDialog.show()
         }
-        AlertDialog.Builder(requireActivity()).setTitle(R.string.add_task)
+        val titleView = TextView(requireActivity()).apply {
+            text = getString(R.string.add_task)
+            setTextColor(context.getColor(R.color.daynight_textColor))
+            setPadding(75, 50, 0, 0)
+            textSize = 24f
+            typeface = Typeface.DEFAULT_BOLD
+        }
+        val alertDialog = AlertDialog.Builder(requireActivity()).setCustomTitle(titleView)
             .setView(alertTaskBinding.root)
             .setPositiveButton(R.string.save) { _: DialogInterface?, _: Int ->
                 val task = alertTaskBinding.etTask.text.toString()
@@ -118,6 +126,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
                     setAdapter()
                 }
             }.setNegativeButton(getString(R.string.cancel), null).show()
+        alertDialog.window?.setBackgroundDrawableResource(R.color.card_bg)
     }
 
     private fun createOrUpdateTask(task: String, desc: String, teamTask: RealmTeamTask?) {
