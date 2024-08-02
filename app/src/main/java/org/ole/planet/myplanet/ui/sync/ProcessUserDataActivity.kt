@@ -180,7 +180,7 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         UploadManager.instance?.uploadResource(this)
         UploadManager.instance?.uploadRating()
         UploadManager.instance?.uploadTeamTask()
-        UploadManager.instance?.uploadCrashLog(this)
+        UploadManager.instance?.uploadCrashLog()
         UploadManager.instance?.uploadSubmitPhotos(this)
         UploadManager.instance?.uploadActivities(this)
         Toast.makeText(this, getString(R.string.uploading_activities_to_server_please_wait), Toast.LENGTH_SHORT).show()
