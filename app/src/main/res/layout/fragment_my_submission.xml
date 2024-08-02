@@ -35,7 +35,6 @@
                     android:padding="@dimen/padding_normal"
                     android:text="@string/exams"
                     android:textSize="20sp" />
-
                 <RadioButton
                     android:id="@+id/rb_survey"
                     android:layout_width="wrap_content"
@@ -45,7 +44,6 @@
                     android:padding="@dimen/padding_normal"
                     android:text="@string/survey"
                     android:textSize="20sp" />
-
             </RadioGroup>
 
             <com.google.android.material.textfield.TextInputLayout
@@ -71,7 +69,6 @@
             </com.google.android.material.textfield.TextInputLayout>
         </LinearLayout>
 
-
         <LinearLayout
             android:id="@+id/title"
             android:layout_width="match_parent"
@@ -86,7 +83,6 @@
                 android:text="@string/name"
                 android:textColor="@color/daynight_textColor"
                 android:textSize="18sp" />
-
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -94,8 +90,6 @@
                 android:text="@string/status"
                 android:textColor="@color/daynight_textColor"
                 android:textSize="18sp" />
-
-
             <TextView
                 android:id="@+id/submitted_by"
                 android:layout_width="0dp"
@@ -104,7 +98,6 @@
                 android:text="@string/submitted_by"
                 android:textColor="@color/daynight_textColor"
                 android:textSize="18sp" />
-
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -112,7 +105,6 @@
                 android:text="@string/updated_on"
                 android:textColor="@color/daynight_textColor"
                 android:textSize="18sp" />
-
         </LinearLayout>
 
         <androidx.recyclerview.widget.RecyclerView
