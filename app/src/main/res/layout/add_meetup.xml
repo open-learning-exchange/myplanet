@@ -23,7 +23,6 @@
                 android:hint="@string/title_asterisk"
                 android:textColor="@color/daynight_textColor"
                 android:backgroundTint="@color/hint_color" />
-
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -40,11 +39,8 @@
                 android:hint="@string/location"
                 android:textColor="@color/daynight_textColor"
                 android:backgroundTint="@color/hint_color" />
-
         </com.google.android.material.textfield.TextInputLayout>
-
     </LinearLayout>
-
 
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
@@ -60,9 +56,7 @@
             android:lines="2"
             android:textColor="@color/daynight_textColor"
             android:backgroundTint="@color/hint_color" />
-
     </com.google.android.material.textfield.TextInputLayout>
-
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -73,7 +67,6 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:orientation="vertical">
-
 
             <TextView
                 android:layout_width="match_parent"
@@ -82,8 +75,6 @@
                 android:paddingRight="@dimen/padding_normal"
                 android:text="@string/start_date"
                 android:textColor="@color/daynight_textColor" />
-
-
             <TextView
                 android:id="@+id/tv_start_date"
                 android:layout_width="match_parent"
@@ -91,7 +82,6 @@
                 android:padding="@dimen/padding_normal"
                 android:text="@string/click_here_to_pick_date"
                 android:textColor="@color/hint_color" />
-
         </LinearLayout>
 
         <LinearLayout
@@ -100,7 +90,6 @@
             android:layout_weight="1"
             android:orientation="vertical">
 
-
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -108,8 +97,6 @@
                 android:paddingRight="@dimen/padding_normal"
                 android:text="@string/start_time"
                 android:textColor="@color/daynight_textColor" />
-
-
             <TextView
                 android:id="@+id/tv_start_time"
                 android:layout_width="match_parent"
@@ -117,9 +104,7 @@
                 android:padding="@dimen/padding_normal"
                 android:text="@string/click_here_to_pick_time"
                 android:textColor="@color/hint_color" />
-
         </LinearLayout>
-
     </LinearLayout>
 
     <LinearLayout
@@ -132,7 +117,6 @@
             android:layout_weight="1"
             android:orientation="vertical">
 
-
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -140,8 +124,6 @@
                 android:paddingRight="@dimen/padding_normal"
                 android:text="@string/end_date"
                 android:textColor="@color/daynight_textColor" />
-
-
             <TextView
                 android:id="@+id/tv_end_date"
                 android:layout_width="match_parent"
@@ -149,7 +131,6 @@
                 android:padding="@dimen/padding_normal"
                 android:text="@string/click_here_to_pick_date"
                 android:textColor="@color/hint_color" />
-
         </LinearLayout>
 
         <LinearLayout
@@ -158,7 +139,6 @@
             android:layout_weight="1"
             android:orientation="vertical">
 
-
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -166,8 +146,6 @@
                 android:paddingRight="@dimen/padding_normal"
                 android:text="@string/end_time"
                 android:textColor="@color/daynight_textColor" />
-
-
             <TextView
                 android:id="@+id/tv_end_time"
                 android:layout_width="match_parent"
@@ -175,12 +153,8 @@
                 android:padding="@dimen/padding_normal"
                 android:text="@string/click_here_to_pick_time"
                 android:textColor="@color/hint_color" />
-
         </LinearLayout>
-
-
     </LinearLayout>
-
 
     <TextView
         android:layout_width="match_parent"
@@ -188,8 +162,6 @@
         android:padding="@dimen/padding_normal"
         android:text="@string/recurring_frequency"
         android:textColor="@color/daynight_textColor" />
-
-
     <RadioGroup
         android:id="@+id/rg_recuring"
         android:layout_width="match_parent"
@@ -203,7 +175,6 @@
             android:text="@string/daily"
             android:textColor="@color/daynight_textColor"
             android:buttonTint="@color/daynight_textColor" />
-
         <RadioButton
             android:id="@+id/rb_weekly"
             android:layout_width="wrap_content"
@@ -211,7 +182,6 @@
             android:text="@string/weekly"
             android:textColor="@color/daynight_textColor"
             android:buttonTint="@color/daynight_textColor" />
-
         <RadioButton
             android:id="@+id/rb_none"
             android:layout_width="wrap_content"
@@ -219,7 +189,5 @@
             android:text="@string/daily"
             android:textColor="@color/daynight_textColor"
             android:buttonTint="@color/daynight_textColor" />
-
     </RadioGroup>
-
 </LinearLayout>
