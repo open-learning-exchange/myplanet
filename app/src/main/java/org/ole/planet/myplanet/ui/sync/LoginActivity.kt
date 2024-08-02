@@ -194,7 +194,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             if (NetworkUtils.isNetworkConnected) {
                 service.syncPlanetServers(mRealm) { success: String? ->
                     toast(this, success)
-//                    updateTeamDropdown()
                 }
             }
             activityLoginBinding.inputName.addTextChangedListener(object : TextWatcher {
