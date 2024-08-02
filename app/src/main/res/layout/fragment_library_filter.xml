@@ -42,7 +42,6 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="@string/subjects" />
-
             <ImageView
                 android:id="@+id/subjectsDropdownIcon"
                 android:layout_width="20dp"
@@ -63,8 +62,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:choiceMode="multipleChoice" />
-
         </LinearLayout>
+
         <LinearLayout
             android:id="@+id/languages_layout"
             android:layout_width="370dp"
@@ -86,20 +85,20 @@
                 android:src="@drawable/down_arrow" />
         </LinearLayout>
 
-    <LinearLayout
-        android:id="@+id/expandable_layout_languages"
-        android:layout_width="370dp"
-        android:layout_height="wrap_content"
-        android:visibility="gone"
-        android:orientation="vertical"
-        android:padding="16dp">
-
-        <ListView
-            android:id="@+id/list_lang"
-            android:layout_width="match_parent"
+        <LinearLayout
+            android:id="@+id/expandable_layout_languages"
+            android:layout_width="370dp"
             android:layout_height="wrap_content"
-            android:choiceMode="multipleChoice" />
-    </LinearLayout>
+            android:visibility="gone"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <ListView
+                android:id="@+id/list_lang"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:choiceMode="multipleChoice" />
+        </LinearLayout>
 
         <LinearLayout
             android:id="@+id/mediums_layout"
@@ -122,20 +121,20 @@
                 android:src="@drawable/down_arrow" />
         </LinearLayout>
 
-    <LinearLayout
-        android:id="@+id/expandable_layout_mediums"
-        android:layout_width="370dp"
-        android:layout_height="wrap_content"
-        android:visibility="gone"
-        android:orientation="vertical"
-        android:padding="16dp">
-
-        <ListView
-            android:id="@+id/list_medium"
-            android:layout_width="match_parent"
+        <LinearLayout
+            android:id="@+id/expandable_layout_mediums"
+            android:layout_width="370dp"
             android:layout_height="wrap_content"
-            android:choiceMode="multipleChoice" />
-    </LinearLayout>
+            android:visibility="gone"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <ListView
+                android:id="@+id/list_medium"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:choiceMode="multipleChoice" />
+        </LinearLayout>
 
         <LinearLayout
             android:id="@+id/levels_layout"
