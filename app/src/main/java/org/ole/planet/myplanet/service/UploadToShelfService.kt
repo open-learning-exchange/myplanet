@@ -94,7 +94,7 @@ class UploadToShelfService(context: Context) {
                     e.printStackTrace()
                 }
             }
-        }, { uploadToshelf(listener) }) { uploadToshelf(listener) }
+        }, { uploadToShelf(listener) }) { uploadToShelf(listener) }
     }
 
     private fun replacedUrl(model: RealmUserModel): String {
@@ -163,7 +163,7 @@ class UploadToShelfService(context: Context) {
         }
     }
 
-    private fun uploadToshelf(listener: SuccessListener) {
+    private fun uploadToShelf(listener: SuccessListener) {
         val apiInterface = client?.create(ApiInterface::class.java)
         mRealm = dbService.realmInstance
         mRealm.executeTransactionAsync({ realm: Realm ->
@@ -194,12 +194,12 @@ class UploadToShelfService(context: Context) {
         val removedResources = listOf(*removedIds(realm, "resources", userId))
         val removedCourses = listOf(*removedIds(realm, "courses", userId))
         val mergedResourceIds = mergeJsonArray(myLibs, getJsonArray("resourceIds", jsonDoc), removedResources)
-        val mergedCoueseIds = mergeJsonArray(myCourses, getJsonArray("courseIds", jsonDoc), removedCourses)
+        val mergedCourseIds = mergeJsonArray(myCourses, getJsonArray("courseIds", jsonDoc), removedCourses)
         val `object` = JsonObject()
         `object`.addProperty("_id", sharedPreferences.getString("userId", ""))
         `object`.add("meetupIds", mergeJsonArray(myMeetups, getJsonArray("meetupIds", jsonDoc), removedResources))
         `object`.add("resourceIds", mergedResourceIds)
-        `object`.add("courseIds", mergedCoueseIds)
+        `object`.add("courseIds", mergedCourseIds)
         return `object`
     }
 
