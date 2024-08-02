@@ -19,7 +19,6 @@
             android:hint="@string/task"
             android:textColor="@color/daynight_textColor"
             android:backgroundTint="@color/hint_color" />
-
     </com.google.android.material.textfield.TextInputLayout>
 
     <TextView
@@ -30,7 +29,6 @@
         android:text="@string/deadline_required"
         android:textColor="@color/daynight_textColor" />
 
-
     <TextView
         android:id="@+id/tv_pick"
         android:layout_width="match_parent"
@@ -38,7 +36,6 @@
         android:padding="@dimen/padding_normal"
         android:text="@string/click_here_to_pick_date"
         android:textColor="@color/hint_color" />
-
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -52,8 +49,6 @@
             android:hint="@string/description"
             android:textColor="@color/daynight_textColor"
             android:backgroundTint="@color/hint_color" />
-
     </com.google.android.material.textfield.TextInputLayout>
-
 
 </LinearLayout>
