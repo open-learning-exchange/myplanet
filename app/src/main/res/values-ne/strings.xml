@@ -1097,5 +1097,6 @@
     <string name="sync_guatemala">🇬🇹 Planet Guatemala</string>
     <string name="sync_san_pablo">🇬🇹 Planet San Pablo</string>
     <string name="sync_xela">🇬🇹 Planet Xela</string>
+    <string name="surveys_to_complete">तपाईंको %d %s पूरा गर्न बाँकी छ</string>
 
 </resources>
