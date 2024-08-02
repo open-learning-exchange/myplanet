@@ -355,7 +355,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     override fun onDestroy() {
         super.onDestroy()
-        profileDbHandler.onDestory()
+        profileDbHandler.onDestroy()
     }
 
     override fun openCallFragment(f: Fragment) {

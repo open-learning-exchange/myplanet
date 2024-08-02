@@ -154,6 +154,13 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                 if (news.newsId?.isNotEmpty() == true) {
                     val conversations = Gson().fromJson(news.conversations, Array<Conversation>::class.java).toList()
                     val chatAdapter = ChatAdapter(ArrayList(), context, holder.rowNewsBinding.recyclerGchat)
+
+                    chatAdapter.setOnChatItemClickListener(object : ChatAdapter.OnChatItemClickListener {
+                        override fun onChatItemClick(position: Int, chatItem: String) {
+                            listener?.onNewsItemClick(news)
+                        }
+                    })
+
                     for (conversation in conversations) {
                         val query = conversation.query
                         val response = conversation.response
@@ -170,10 +177,6 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                     holder.rowNewsBinding.recyclerGchat.layoutManager = LinearLayoutManager(context)
                     holder.rowNewsBinding.recyclerGchat.visibility = View.VISIBLE
                     holder.rowNewsBinding.sharedChat.visibility = View.VISIBLE
-
-                    holder.rowNewsBinding.linearLayout5.setOnClickListener {
-                        listener?.onNewsItemClick(news)
-                    }
                 } else {
                     holder.rowNewsBinding.recyclerGchat.visibility = View.GONE
                     holder.rowNewsBinding.sharedChat.visibility = View.GONE

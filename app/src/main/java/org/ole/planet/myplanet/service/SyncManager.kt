@@ -88,7 +88,7 @@ class SyncManager private constructor(private val context: Context) {
 
     private fun startSync() {
         try {
-            val wifiManager = context.getSystemService(Context.WIFI_SERVICE) as WifiManager
+            val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
             val wifiInfo = wifiManager.connectionInfo
             if (wifiInfo.supplicantState == SupplicantState.COMPLETED) {
                 settings.edit().putString("LastWifiSSID", wifiInfo.ssid).apply()
@@ -135,7 +135,7 @@ class SyncManager private constructor(private val context: Context) {
         }
     }
 
-    fun resourceTransactionSync() {
+    private fun resourceTransactionSync() {
         val apiInterface = client?.create(ApiInterface::class.java)
         try {
             syncResource(apiInterface)
@@ -201,25 +201,25 @@ class SyncManager private constructor(private val context: Context) {
         }
     }
 
-    private fun triggerInsert(categroryId: String, categoryDBName: String) {
+    private fun triggerInsert(categoryId: String, categoryDBName: String) {
         stringArray[0] = shelfDoc?.id
-        stringArray[1] = categroryId
+        stringArray[1] = categoryId
         stringArray[2] = categoryDBName
     }
 
-    private fun check(array_categoryIds: JsonArray) {
-        for (x in 0 until array_categoryIds.size()) {
-            if (array_categoryIds[x] is JsonNull) {
+    private fun check(arrayCategoryIds: JsonArray) {
+        for (x in 0 until arrayCategoryIds.size()) {
+            if (arrayCategoryIds[x] is JsonNull) {
                 continue
             }
-            validateDocument(array_categoryIds, x)
+            validateDocument(arrayCategoryIds, x)
         }
     }
 
-    private fun validateDocument(array_categoryIds: JsonArray, x: Int) {
+    private fun validateDocument(arrayCategoryIds: JsonArray, x: Int) {
         val apiInterface = client!!.create(ApiInterface::class.java)
         try {
-            val resourceDoc = apiInterface.getJsonObject(Utilities.header, Utilities.getUrl() + "/" + stringArray[2] + "/" + array_categoryIds[x].asString).execute().body()
+            val resourceDoc = apiInterface.getJsonObject(Utilities.header, Utilities.getUrl() + "/" + stringArray[2] + "/" + arrayCategoryIds[x].asString).execute().body()
             resourceDoc?.let { triggerInsert(stringArray, it) }
         } catch (e: IOException) {
             e.printStackTrace()

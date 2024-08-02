@@ -1,9 +1,9 @@
 package org.ole.planet.myplanet.service
 
 import android.media.MediaRecorder
-import android.net.Uri
+import android.os.Build
 import android.os.Environment
-import android.provider.MediaStore
+import androidx.annotation.RequiresApi
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import java.io.File
 import java.util.UUID
@@ -27,6 +27,7 @@ class AudioRecorderService {
         return this
     }
 
+    @RequiresApi(Build.VERSION_CODES.S)
     fun startRecording() {
         outputFile = createAudioFile()
         myAudioRecorder = MediaRecorder(context).apply {
