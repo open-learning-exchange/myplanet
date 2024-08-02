@@ -27,7 +27,6 @@
                 android:textColor="@color/daynight_textColor"
                 android:textSize="@dimen/text_size_large"
                 android:textStyle="bold" />
-
             <TextView
                 android:id="@+id/tv_date_completed"
                 android:layout_width="wrap_content"
@@ -35,7 +34,6 @@
                 android:layout_gravity="center"
                 android:padding="@dimen/padding_small"
                 android:textColor="@color/hint_color" />
-
         </LinearLayout>
 
         <TextView
@@ -46,7 +44,6 @@
             android:maxLines="2"
             android:textColor="@color/hint_color"
             android:visibility="gone" />
-
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -68,14 +65,12 @@
                     android:textColor="@color/text_highlight_color"
                     android:textSize="@dimen/text_size_mid"
                     android:textStyle="bold" />
-
                 <TextView
                     android:id="@+id/tv_date"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:padding="@dimen/padding_normal"
                     android:textColor="@color/text_highlight_color" />
-
             </LinearLayout>
 
             <Button
@@ -85,16 +80,12 @@
                 android:layout_marginEnd="10dp"
                 android:text="@string/send_survey"
                 android:theme="@style/AccentButton" />
-
             <Button
                 android:id="@+id/start_survey"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/take_survey"
                 android:theme="@style/AccentButton" />
-
         </LinearLayout>
-
     </LinearLayout>
-
 </androidx.cardview.widget.CardView>
