@@ -15,7 +15,6 @@
         <item name="colorAccent">@color/colorPrimary</item>
     </style>
 
-
     <style name="RatingBar" parent="Theme.AppCompat">
         <item name="colorControlNormal">@color/md_grey_500</item>
         <item name="colorControlActivated">@color/md_yellow_700</item>
@@ -158,5 +157,4 @@
         <item name="android:textColorPrimary">@color/daynight_textColor</item>
         <item name="android:textColor">@color/daynight_textColor</item>
     </style>
-
 </resources>
