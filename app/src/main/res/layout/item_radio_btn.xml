@@ -4,5 +4,4 @@
     android:layout_height="wrap_content"
     android:buttonTint="@color/daynight_textColor"
     android:textColor="@color/daynight_textColor">
-
 </RadioButton>
