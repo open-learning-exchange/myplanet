@@ -1107,5 +1107,7 @@
     <string name="sync_egdirbmac">🇺🇸planet egdirbmac</string>
     <string name="sync_palmbay">🇺🇸planet palmbay</string>
     <string name="surveys_to_complete">Vous avez %d %s à compléter</string>
+    <string name="show_less">montrer moins</string>
+    <string name="show_more">montrer plus</string>
 
 </resources>

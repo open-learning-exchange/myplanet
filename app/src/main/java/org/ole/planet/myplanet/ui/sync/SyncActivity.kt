@@ -531,7 +531,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             if (!prefData.getManualConfig()) {
                 showAdditionalServers = !showAdditionalServers
                 serverAddressAdapter?.updateList(getFilteredServerList())
-                dialog.getActionButton(DialogAction.NEUTRAL).text = if (showAdditionalServers) "Show Less" else "Show More"
+                dialog.getActionButton(DialogAction.NEUTRAL).text = if (showAdditionalServers) getString(R.string.show_less) else getString(R.string.show_more)
             } else {
                 serverConfigAction = "save"
                 val protocol = "${settings.getString("serverProtocol", "")}"
@@ -552,7 +552,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         serverAddresses.visibility = if (manualSelected) View.GONE else View.VISIBLE
         syncToServerText.visibility = if (manualSelected) View.GONE else View.VISIBLE
         positiveAction.visibility = if (manualSelected) View.VISIBLE else View.GONE
-        dialog.getActionButton(DialogAction.NEUTRAL).text = if (manualSelected) getString(R.string.btn_sync_save) else "more"
+        dialog.getActionButton(DialogAction.NEUTRAL).text = if (manualSelected) getString(R.string.btn_sync_save) else {
+            if (showAdditionalServers) getString(R.string.show_less) else getString(R.string.show_more)
+        }
         binding.ltAdvanced.visibility = if (manualSelected) View.VISIBLE else View.GONE
         binding.switchServerUrl.visibility = if (manualSelected) View.VISIBLE else View.GONE
 
