@@ -223,7 +223,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         val teams: List<RealmMyTeam> = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId").equalTo("status", "active").findAll()
         if (teams.isNotEmpty()) {
             activityLoginBinding.team!!.visibility = View.VISIBLE
-            teamAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, teamList)
+            teamAdapter = ArrayAdapter(this, R.layout.spinner_item_white, teamList)
             teamAdapter?.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             teamList.clear()
             teamList.add("select team")
