@@ -82,6 +82,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private var teamAdapter: ArrayAdapter<String?>? = null
     var selectedTeamId: String? = null
     lateinit var positiveAction: View
+    lateinit var neutralAction: View
     lateinit var processedUrl: String
     var isSync = false
     var forceSync = false
@@ -93,6 +94,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private var serverConfigAction = ""
     private var previousCheckedId: Int? = null
     private var serverCheck = true
+    private var showAdditionalServers = false
+    private var serverAddressAdapter : ServerAddressAdapter? = null
+    private lateinit var serverListAddresses: List<ServerAddressesModel>
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -419,19 +423,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             .onPositive { dialog: MaterialDialog, _: DialogAction? ->
                 performSync(dialog)
             }
-            .onNeutral { dialog: MaterialDialog, _: DialogAction? ->
-                serverConfigAction = "save"
-                val protocol = "${settings.getString("serverProtocol", "")}"
-                var url = "${serverUrl.text}"
-                val pin = "${serverPassword.text}"
-                url = protocol + url
-                if (isUrlValid(url)) {
-                    currentDialog = dialog
-                    service.getMinApk(this, url, pin, this)
-                }
-            }
         val dialog = builder.build()
         positiveAction = dialog.getActionButton(DialogAction.POSITIVE)
+        neutralAction = dialog.getActionButton(DialogAction.NEUTRAL)
         if (!prefData.getManualConfig()) {
             dialogServerUrlBinding.manualConfiguration.isChecked = false
             showConfigurationUIElements(dialogServerUrlBinding, false, dialog)
@@ -538,6 +532,24 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         } else {
             dialogServerUrlBinding.team.visibility = View.GONE
         }
+
+        neutralAction.setOnClickListener {
+            if (!prefData.getManualConfig()) {
+                showAdditionalServers = !showAdditionalServers
+                serverAddressAdapter?.updateList(getFilteredServerList())
+                dialog.getActionButton(DialogAction.NEUTRAL).text = if (showAdditionalServers) "Show Less" else "Show More"
+            } else {
+                serverConfigAction = "save"
+                val protocol = "${settings.getString("serverProtocol", "")}"
+                var url = "${serverUrl.text}"
+                val pin = "${serverPassword.text}"
+                url = protocol + url
+                if (isUrlValid(url)) {
+                    currentDialog = dialog
+                    service.getMinApk(this, url, pin, this)
+                }
+            }
+        }
         dialog.show()
         sync(dialog)
     }
@@ -546,6 +558,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         serverAddresses.visibility = if (manualSelected) View.GONE else View.VISIBLE
         syncToServerText.visibility = if (manualSelected) View.GONE else View.VISIBLE
         positiveAction.visibility = if (manualSelected) View.VISIBLE else View.GONE
+        dialog.getActionButton(DialogAction.NEUTRAL).text = if (manualSelected) getString(R.string.btn_sync_save) else "more"
         binding.ltAdvanced.visibility = if (manualSelected) View.VISIBLE else View.GONE
         binding.switchServerUrl.visibility = if (manualSelected) View.VISIBLE else View.GONE
 
@@ -571,7 +584,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             serverPassword.isEnabled = true
         } else {
             serverAddresses.layoutManager = LinearLayoutManager(this)
-            val serverListAddresses = listOf(
+            serverListAddresses = listOf(
                 ServerAddressesModel(getString(R.string.sync_planet_learning), BuildConfig.PLANET_LEARNING_URL),
                 ServerAddressesModel(getString(R.string.sync_guatemala), BuildConfig.PLANET_GUATEMALA_URL),
                 ServerAddressesModel(getString(R.string.sync_san_pablo), BuildConfig.PLANET_SANPABLO_URL),
@@ -587,18 +600,18 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 ServerAddressesModel(getString(R.string.sync_palmbay), BuildConfig.PLANET_PALMBAY_URL)
             )
 
-            val serverAddressAdapter = ServerAddressAdapter(serverListAddresses) { serverListAddress ->
+            serverAddressAdapter = ServerAddressAdapter(getFilteredServerList()) { serverListAddress ->
                 val actualUrl = serverListAddress.url.replace(Regex("^https?://"), "")
 //                if (binding.inputServerUrl.text.toString() != actualUrl) {
 //                    clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server))
 //                } else {
-                    binding.inputServerUrl.setText(actualUrl)
-                    binding.inputServerPassword.setText(getPinForUrl(actualUrl))
-                    val protocol = if (actualUrl == BuildConfig.PLANET_XELA_URL || actualUrl == BuildConfig.PLANET_SANPABLO_URL) "http://" else "https://"
-                    editor.putString("serverProtocol", protocol).apply()
-                    if (serverCheck) {
-                        performSync(dialog)
-                    }
+                binding.inputServerUrl.setText(actualUrl)
+                binding.inputServerPassword.setText(getPinForUrl(actualUrl))
+                val protocol = if (actualUrl == BuildConfig.PLANET_XELA_URL || actualUrl == BuildConfig.PLANET_SANPABLO_URL) "http://" else "https://"
+                editor.putString("serverProtocol", protocol).apply()
+                if (serverCheck) {
+                    performSync(dialog)
+                }
 //                }
             }
             serverAddresses.adapter = serverAddressAdapter
@@ -612,17 +625,17 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 if (storedUrl != null && !syncFailed) {
                     val position = serverListAddresses.indexOfFirst { it.url.replace(Regex("^https?://"), "") == urlWithoutProtocol }
                     if (position != -1) {
-                        serverAddressAdapter.setSelectedPosition(position)
+                        serverAddressAdapter?.setSelectedPosition(position)
                         binding.inputServerUrl.setText(urlWithoutProtocol)
                         binding.inputServerPassword.setText(storedPin)
                     }
                 } else if (syncFailed) {
-                    serverAddressAdapter.clearSelection()
+                    serverAddressAdapter?.clearSelection()
                 }
             } else if (storedUrl != null) {
                 val position = serverListAddresses.indexOfFirst { it.url.replace(Regex("^https?://"), "") == urlWithoutProtocol }
                 if (position != -1) {
-                    serverAddressAdapter.setSelectedPosition(position)
+                    serverAddressAdapter?.setSelectedPosition(position)
                     binding.inputServerUrl.setText(urlWithoutProtocol)
                     binding.inputServerPassword.setText(storedPin)
                 }
@@ -650,6 +663,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             serverUrl.isEnabled = false
             serverPassword.isEnabled = false
             editor.putString("serverProtocol", getString(R.string.https_protocol)).apply()
+        }
+    }
+
+    private fun getFilteredServerList(): List<ServerAddressesModel> {
+        return if (showAdditionalServers) {
+            serverListAddresses
+        } else {
+            serverListAddresses.take(3)
         }
     }
 
