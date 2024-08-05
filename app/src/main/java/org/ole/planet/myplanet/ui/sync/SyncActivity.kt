@@ -82,7 +82,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private var teamAdapter: ArrayAdapter<String?>? = null
     var selectedTeamId: String? = null
     lateinit var positiveAction: View
-    lateinit var neutralAction: View
+    private lateinit var neutralAction: View
     lateinit var processedUrl: String
     var isSync = false
     var forceSync = false
@@ -134,24 +134,18 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
     }
 
-    private fun clearDataDialog(message: String): Boolean {
-        var success = false
+    private fun clearDataDialog(message: String, onCancel: () -> Unit = {}) {
         AlertDialog.Builder(this)
             .setMessage(message)
             .setPositiveButton(getString(R.string.clear_data)) { _, _ ->
                 clearRealmDb()
                 clearSharedPref()
                 restartApp()
-                success = true
             }
             .setNegativeButton(getString(R.string.cancel)) { _, _ ->
-                serverCheck = false
-//                previousCheckedId?.let {
-//                    serverAddresses.check(it)
-//                }
+                onCancel()
             }
             .show()
-        return success
     }
 
     private fun clearInternalStorage() {
@@ -600,11 +594,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 ServerAddressesModel(getString(R.string.sync_palmbay), BuildConfig.PLANET_PALMBAY_URL)
             )
 
-            serverAddressAdapter = ServerAddressAdapter(getFilteredServerList()) { serverListAddress ->
+            serverAddressAdapter = ServerAddressAdapter(getFilteredServerList(), { serverListAddress ->
                 val actualUrl = serverListAddress.url.replace(Regex("^https?://"), "")
-//                if (binding.inputServerUrl.text.toString() != actualUrl) {
-//                    clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server))
-//                } else {
                 binding.inputServerUrl.setText(actualUrl)
                 binding.inputServerPassword.setText(getPinForUrl(actualUrl))
                 val protocol = if (actualUrl == BuildConfig.PLANET_XELA_URL || actualUrl == BuildConfig.PLANET_SANPABLO_URL) "http://" else "https://"
@@ -612,8 +603,12 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 if (serverCheck) {
                     performSync(dialog)
                 }
-//                }
-            }
+            }, { _, _ ->
+                clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server)) {
+                    serverAddressAdapter?.revertSelection()
+                }
+            })
+
             serverAddresses.adapter = serverAddressAdapter
 
             val storedUrl = settings.getString("serverURL", null)
