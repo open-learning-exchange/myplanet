@@ -14,8 +14,9 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SwitchCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.preference.PreferenceManager
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.afollestad.materialdialogs.*
-import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.textfield.TextInputLayout
 import kotlinx.serialization.json.Json
 import io.realm.*
@@ -75,7 +76,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private lateinit var protocolCheckIn: RadioGroup
     private lateinit var serverUrl: EditText
     private lateinit var serverPassword: EditText
-    private lateinit var serverAddresses: MaterialButtonToggleGroup
+    private lateinit var serverAddresses: RecyclerView
     private lateinit var syncToServerText: TextView
     private var teamList = ArrayList<String?>()
     private var teamAdapter: ArrayAdapter<String?>? = null
@@ -141,9 +142,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             }
             .setNegativeButton(getString(R.string.cancel)) { _, _ ->
                 serverCheck = false
-                previousCheckedId?.let {
-                    serverAddresses.check(it)
-                }
+//                previousCheckedId?.let {
+//                    serverAddresses.check(it)
+//                }
             }
             .show()
         return success
@@ -569,56 +570,80 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             serverUrl.isEnabled = true
             serverPassword.isEnabled = true
         } else {
-            val toggleButtonMap = mapOf(
-                R.id.toggle_planet_learning to BuildConfig.PLANET_LEARNING_URL,
-                R.id.toggle_planet_guatemala to BuildConfig.PLANET_GUATEMALA_URL,
-                R.id.toggle_planet_xela to BuildConfig.PLANET_XELA_URL,
-                R.id.toggle_planet_san_pablo to BuildConfig.PLANET_SANPABLO_URL
+            serverAddresses.layoutManager = LinearLayoutManager(this)
+            val serverListAddresses = listOf(
+                ServerAddressesModel(getString(R.string.sync_planet_learning), BuildConfig.PLANET_LEARNING_URL),
+                ServerAddressesModel(getString(R.string.sync_guatemala), BuildConfig.PLANET_GUATEMALA_URL),
+                ServerAddressesModel(getString(R.string.sync_san_pablo), BuildConfig.PLANET_SANPABLO_URL),
+                ServerAddressesModel(getString(R.string.sync_planet_earth), BuildConfig.PLANET_EARTH_URL),
+                ServerAddressesModel(getString(R.string.sync_somalia), BuildConfig.PLANET_SOMALIA_URL),
+                ServerAddressesModel(getString(R.string.sync_vi), BuildConfig.PLANET_VI_URL),
+                ServerAddressesModel(getString(R.string.sync_xela), BuildConfig.PLANET_XELA_URL),
+                ServerAddressesModel(getString(R.string.sync_uriur), BuildConfig.PLANET_URIUR_URL),
+                ServerAddressesModel(getString(R.string.sync_ruiru), BuildConfig.PLANET_RUIRU_URL),
+                ServerAddressesModel(getString(R.string.sync_embakasi), BuildConfig.PLANET_EMBAKASI_URL),
+                ServerAddressesModel(getString(R.string.sync_cambridge), BuildConfig.PLANET_CAMBRIDGE_URL),
+                ServerAddressesModel(getString(R.string.sync_egdirbmac), BuildConfig.PLANET_EGDIRBMAC_URL),
+                ServerAddressesModel(getString(R.string.sync_palmbay), BuildConfig.PLANET_PALMBAY_URL)
             )
+
+            val serverAddressAdapter = ServerAddressAdapter(serverListAddresses) { serverListAddress ->
+                val actualUrl = serverListAddress.url.replace(Regex("^https?://"), "")
+//                if (binding.inputServerUrl.text.toString() != actualUrl) {
+//                    clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server))
+//                } else {
+                    binding.inputServerUrl.setText(actualUrl)
+                    binding.inputServerPassword.setText(getPinForUrl(actualUrl))
+                    val protocol = if (actualUrl == BuildConfig.PLANET_XELA_URL || actualUrl == BuildConfig.PLANET_SANPABLO_URL) "http://" else "https://"
+                    editor.putString("serverProtocol", protocol).apply()
+                    if (serverCheck) {
+                        performSync(dialog)
+                    }
+//                }
+            }
+            serverAddresses.adapter = serverAddressAdapter
 
             val storedUrl = settings.getString("serverURL", null)
             val storedPin = settings.getString("serverPin", null)
             val urlWithoutProtocol = storedUrl?.replace(Regex("^https?://"), "")
 
             if (!prefData.getManualConfig()) {
+                serverAddresses.visibility = View.VISIBLE
                 if (storedUrl != null && !syncFailed) {
-                    val toggleButtonId = toggleButtonMap.filterValues { it == urlWithoutProtocol }.keys.firstOrNull()
-                    if (toggleButtonId != null) {
-                        serverAddresses.check(toggleButtonId)
-                        previousCheckedId = toggleButtonId
+                    val position = serverListAddresses.indexOfFirst { it.url.replace(Regex("^https?://"), "") == urlWithoutProtocol }
+                    if (position != -1) {
+                        serverAddressAdapter.setSelectedPosition(position)
+                        binding.inputServerUrl.setText(urlWithoutProtocol)
+                        binding.inputServerPassword.setText(storedPin)
                     }
-                    serverUrl.setText(urlWithoutProtocol)
-                    serverPassword.setText(storedPin)
                 } else if (syncFailed) {
-                    serverAddresses.clearChecked()
+                    serverAddressAdapter.clearSelection()
                 }
             } else if (storedUrl != null) {
-                val toggleButtonId = toggleButtonMap.filterValues { it == urlWithoutProtocol }.keys.firstOrNull()
-                if (toggleButtonId != null) {
-                    serverAddresses.check(toggleButtonId)
-                    previousCheckedId = toggleButtonId
+                val position = serverListAddresses.indexOfFirst { it.url.replace(Regex("^https?://"), "") == urlWithoutProtocol }
+                if (position != -1) {
+                    serverAddressAdapter.setSelectedPosition(position)
+                    binding.inputServerUrl.setText(urlWithoutProtocol)
+                    binding.inputServerPassword.setText(storedPin)
                 }
-                serverUrl.setText(urlWithoutProtocol)
-                serverPassword.setText(storedPin)
             }
 
-            serverAddresses.addOnButtonCheckedListener { _, checkedId, isChecked ->
-                val actualUrl = toggleButtonMap[checkedId] ?: ""
+            binding.manualConfiguration.setOnCheckedChangeListener { _: CompoundButton?, isChecked: Boolean ->
                 if (isChecked) {
-                    if (urlWithoutProtocol != null && urlWithoutProtocol != actualUrl) {
-                        previousCheckedId = previousCheckedId ?: serverAddresses.checkedButtonId
-                        clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server))
-                    } else {
-                        serverUrl.setText(actualUrl)
-                        serverPassword.setText(getPinForUrl(actualUrl))
-
-                        val protocol = if (actualUrl == BuildConfig.PLANET_XELA_URL || actualUrl == BuildConfig.PLANET_SANPABLO_URL) "http://" else "https://"
-//                        val protocol = if (actualUrl == BuildConfig.PLANET_SANPABLO_URL) "http://" else "https://"
-                        editor.putString("serverProtocol", protocol).apply()
-                        if (serverCheck) {
-                            performSync(dialog)
-                        }
-                    }
+                    prefData.setManualConfig(true)
+                    editor.putString("serverURL", "").apply()
+                    editor.putString("serverPin", "").apply()
+                    binding.radioHttp.isChecked = true
+                    editor.putString("serverProtocol", getString(R.string.http_protocol)).apply()
+                    showConfigurationUIElements(binding, true, dialog)
+                    serverUrl.addTextChangedListener(MyTextWatcher(serverUrl))
+                    binding.switchServerUrl.isChecked = settings.getBoolean("switchCloudUrl", false)
+                    setUrlAndPin(settings.getBoolean("switchCloudUrl", false))
+                    protocolSemantics()
+                } else {
+                    prefData.setManualConfig(false)
+                    showConfigurationUIElements(binding, false, dialog)
+                    editor.putBoolean("switchCloudUrl", false).apply()
                 }
             }
 
