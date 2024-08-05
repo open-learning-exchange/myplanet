@@ -4,6 +4,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
 import org.ole.planet.myplanet.R
@@ -14,13 +15,14 @@ class ServerAddressAdapter(private var serverList: List<ServerAddressesModel>, p
 
     inner class ServerViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val serverName: TextView = itemView.findViewById(R.id.btn_server_address)
-
-        fun bind(serverModel: ServerAddressesModel) {
+        fun bind(serverModel: ServerAddressesModel, isSelected: Boolean) {
             serverName.text = serverModel.name
-            itemView.setOnClickListener {
-                onItemClick(serverModel)
+            serverName.isSelected = isSelected
+            if (isSelected) {
+                serverName.setBackgroundColor(ContextCompat.getColor(serverName.context, R.color.selected_color))
+            } else {
+                serverName.setBackgroundColor(ContextCompat.getColor(serverName.context, android.R.color.transparent))
             }
-            itemView.isSelected = adapterPosition == selectedPosition
         }
     }
 
@@ -35,7 +37,12 @@ class ServerAddressAdapter(private var serverList: List<ServerAddressesModel>, p
     }
 
     override fun onBindViewHolder(holder: ServerViewHolder, position: Int) {
-        holder.bind(serverList[position])
+        val serverAddress = serverList[position]
+        holder.bind(serverAddress, position == selectedPosition)
+        holder.itemView.setOnClickListener {
+            onItemClick(serverAddress)
+            setSelectedPosition(position)
+        }
     }
 
     override fun getItemCount(): Int = serverList.size

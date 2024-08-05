@@ -620,6 +620,15 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             val storedPin = settings.getString("serverPin", null)
             val urlWithoutProtocol = storedUrl?.replace(Regex("^https?://"), "")
 
+            if (urlWithoutProtocol != null) {
+                val position = serverListAddresses.indexOfFirst { it.url.replace(Regex("^https?://"), "") == urlWithoutProtocol }
+                if (position != -1) {
+                    serverAddressAdapter?.setSelectedPosition(position)
+                    binding.inputServerUrl.setText(urlWithoutProtocol)
+                    binding.inputServerPassword.setText(settings.getString("serverPin", ""))
+                }
+            }
+
             if (!prefData.getManualConfig()) {
                 serverAddresses.visibility = View.VISIBLE
                 if (storedUrl != null && !syncFailed) {
