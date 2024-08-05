@@ -11,7 +11,6 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
@@ -23,7 +22,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:orientation="vertical">
-
 
                 <TextView
                     android:id="@+id/tv_question_count"
@@ -44,7 +42,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="0dp"
                     android:layout_margin="@dimen/padding_large"
-                    android:layout_weight="1">
+                    android:layout_weight="1"
+                    android:background="@color/card_bg">
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -63,19 +62,16 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:layout_gravity="center"
-                                android:textColor="@color/md_black_1000"
+                                android:textColor="@color/daynight_textColor"
                                 android:textSize="18sp" />
-
                             <TextView
                                 android:id="@+id/tv_body"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:padding="@dimen/padding_normal"
-                                android:textColor="@color/md_black_1000"
+                                android:textColor="@color/daynight_textColor"
                                 android:textSize="16sp" />
-
                         </LinearLayout>
-
 
                         <RadioGroup
                             android:id="@+id/group_choices"
@@ -84,8 +80,6 @@
                             android:layout_gravity="center_vertical"
                             android:orientation="vertical"
                             android:visibility="gone" />
-
-
                         <LinearLayout
                             android:id="@+id/ll_checkbox"
                             android:layout_width="match_parent"
@@ -95,15 +89,13 @@
                             android:orientation="vertical"
                             android:visibility="gone" />
                     </LinearLayout>
-
                 </androidx.core.widget.NestedScrollView>
-
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:padding="@dimen/padding_small">
-
+                    android:padding="@dimen/padding_small"
+                    android:background="@color/card_bg">
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/tl_answer"
@@ -111,14 +103,17 @@
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
                         android:layout_weight="1"
-                        android:padding="@dimen/padding_normal">
+                        android:padding="@dimen/padding_normal"
+                        android:textColorHint="@color/hint_color">
 
                         <EditText
                             android:id="@+id/et_answer"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_gravity="center_vertical"
-                            android:hint="@string/your_ans" />
+                            android:hint="@string/your_ans"
+                            android:textColor="@color/daynight_textColor"
+                            android:backgroundTint="@color/hint_color" />
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <Button
@@ -130,16 +125,8 @@
                         android:background="@drawable/buttonyellow"
                         android:padding="@dimen/padding_normal"
                         android:text="@string/submit_answer" />
-
                 </LinearLayout>
-
-
             </LinearLayout>
-
-
         </androidx.cardview.widget.CardView>
-
     </LinearLayout>
-
-
 </FrameLayout>

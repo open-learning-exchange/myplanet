@@ -2,6 +2,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/secondary_bg"
     tools:context=".ui.submission.MySubmissionFragment">
 
     <LinearLayout
@@ -34,7 +35,6 @@
                     android:padding="@dimen/padding_normal"
                     android:text="@string/exams"
                     android:textSize="20sp" />
-
                 <RadioButton
                     android:id="@+id/rb_survey"
                     android:layout_width="wrap_content"
@@ -44,7 +44,6 @@
                     android:padding="@dimen/padding_normal"
                     android:text="@string/survey"
                     android:textSize="20sp" />
-
             </RadioGroup>
 
             <com.google.android.material.textfield.TextInputLayout
@@ -52,7 +51,8 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:layout_weight="1">
+                android:layout_weight="1"
+                android:textColorHint="@color/hint_color">
 
                 <EditText
                     android:id="@+id/et_search"
@@ -60,18 +60,20 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:drawableLeft="@drawable/ic_search"
+                    android:drawableTint="@color/daynight_textColor"
                     android:hint="@string/search"
                     android:inputType="text"
-                    android:maxLines="1" />
+                    android:maxLines="1"
+                    android:backgroundTint="@color/hint_color"
+                    android:textColor="@color/daynight_textColor" />
             </com.google.android.material.textfield.TextInputLayout>
         </LinearLayout>
-
 
         <LinearLayout
             android:id="@+id/title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@color/md_blue_grey_50"
+            android:background="@color/daynight_grey"
             android:padding="@dimen/padding_normal">
 
             <TextView
@@ -79,35 +81,30 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="@string/name"
-                android:textColor="@color/md_black_1000"
+                android:textColor="@color/daynight_textColor"
                 android:textSize="18sp" />
-
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="@string/status"
-                android:textColor="@color/md_black_1000"
+                android:textColor="@color/daynight_textColor"
                 android:textSize="18sp" />
-
-
             <TextView
                 android:id="@+id/submitted_by"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="@string/submitted_by"
-                android:textColor="@color/md_black_1000"
+                android:textColor="@color/daynight_textColor"
                 android:textSize="18sp" />
-
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="@string/updated_on"
-                android:textColor="@color/md_black_1000"
+                android:textColor="@color/daynight_textColor"
                 android:textSize="18sp" />
-
         </LinearLayout>
 
         <androidx.recyclerview.widget.RecyclerView
