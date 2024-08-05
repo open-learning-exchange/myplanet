@@ -116,7 +116,11 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
     private fun updateOfflineVisitsUI() {
         val offlineVisits = profileDbHandler.offlineVisits
-        view?.findViewById<TextView>(R.id.txtVisits)?.text = getString(R.string.offline_visits, offlineVisits)
+
+        if(offlineVisits in 3..10)
+            view?.findViewById<TextView>(R.id.txtVisits)?.text = getString(R.string.offline_visits, offlineVisits)
+        else
+            view?.findViewById<TextView>(R.id.txtVisits)?.text = getString(R.string.offline_visit, offlineVisits)
     }
 
     override fun forceDownloadNewsImages() {
