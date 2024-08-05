@@ -62,7 +62,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="@dimen/_10dp"
                 android:layout_marginEnd="@dimen/_10dp"
-                android:textColor="@color/hint_color" />
+                android:textColor="@color/daynight_textColor" />
         </LinearLayout>
     </LinearLayout>
 
