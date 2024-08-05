@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.team.teamResource
 
 import android.content.DialogInterface
+import android.graphics.Typeface
 import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -8,6 +9,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.ListView
+import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.GridLayoutManager
@@ -55,10 +57,16 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener {
         if (!isAdded) {
             return
         }
-
+        val titleView = TextView(requireActivity()).apply {
+            text = getString(R.string.select_resource)
+            setTextColor(context.getColor(R.color.daynight_textColor))
+            setPadding(75, 50, 0, 0)
+            textSize = 24f
+            typeface = Typeface.DEFAULT_BOLD
+        }
         val myLibraryAlertdialogBinding = MyLibraryAlertdialogBinding.inflate(layoutInflater)
         val alertDialogBuilder = AlertDialog.Builder(requireActivity())
-        alertDialogBuilder.setTitle(R.string.select_resource)
+        alertDialogBuilder.setCustomTitle(titleView)
         val libraries: List<RealmMyLibrary> = mRealm.where(RealmMyLibrary::class.java)
             .not().`in`("_id", getResourceIds(teamId, mRealm).toTypedArray())
             .findAll()
@@ -83,6 +91,7 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener {
                 showLibraryList()
             }.setNegativeButton(R.string.cancel, null)
         val alertDialog = alertDialogBuilder.create()
+        alertDialog.window?.setBackgroundDrawableResource(R.color.card_bg)
         listSetting(alertDialog, libraries, myLibraryAlertdialogBinding.alertDialogListView)
     }
 

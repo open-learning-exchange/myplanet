@@ -3,7 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="@color/secondary_bg">
+    android:background="@color/card_bg">
 
     <org.ole.planet.myplanet.utilities.CheckboxListView
         android:id="@+id/alertDialog_listView"
