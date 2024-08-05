@@ -594,26 +594,31 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 ServerAddressesModel(getString(R.string.sync_palmbay), BuildConfig.PLANET_PALMBAY_URL)
             )
 
-            serverAddressAdapter = ServerAddressAdapter(getFilteredServerList(), { serverListAddress ->
-                val actualUrl = serverListAddress.url.replace(Regex("^https?://"), "")
-                binding.inputServerUrl.setText(actualUrl)
-                binding.inputServerPassword.setText(getPinForUrl(actualUrl))
-                val protocol = if (actualUrl == BuildConfig.PLANET_XELA_URL || actualUrl == BuildConfig.PLANET_SANPABLO_URL) "http://" else "https://"
-                editor.putString("serverProtocol", protocol).apply()
-                if (serverCheck) {
-                    performSync(dialog)
-                }
-            }, { _, _ ->
-                clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server)) {
-                    serverAddressAdapter?.revertSelection()
-                }
-            })
-
-            serverAddresses.adapter = serverAddressAdapter
-
             val storedUrl = settings.getString("serverURL", null)
             val storedPin = settings.getString("serverPin", null)
             val urlWithoutProtocol = storedUrl?.replace(Regex("^https?://"), "")
+
+            serverAddressAdapter = ServerAddressAdapter(
+                getFilteredServerList(),
+                { serverListAddress ->
+                    val actualUrl = serverListAddress.url.replace(Regex("^https?://"), "")
+                    binding.inputServerUrl.setText(actualUrl)
+                    binding.inputServerPassword.setText(getPinForUrl(actualUrl))
+                    val protocol = if (actualUrl == BuildConfig.PLANET_XELA_URL || actualUrl == BuildConfig.PLANET_SANPABLO_URL) "http://" else "https://"
+                    editor.putString("serverProtocol", protocol).apply()
+                    if (serverCheck) {
+                        performSync(dialog)
+                    }
+                },
+                { _, _ ->
+                    clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server)) {
+                        serverAddressAdapter?.revertSelection()
+                    }
+                },
+                urlWithoutProtocol
+            )
+
+            serverAddresses.adapter = serverAddressAdapter
 
             if (urlWithoutProtocol != null) {
                 val position = serverListAddresses.indexOfFirst { it.url.replace(Regex("^https?://"), "") == urlWithoutProtocol }

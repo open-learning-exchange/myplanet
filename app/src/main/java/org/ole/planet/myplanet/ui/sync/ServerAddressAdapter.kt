@@ -9,7 +9,12 @@ import com.google.android.material.button.MaterialButton
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.ServerAddressesModel
 
-class ServerAddressAdapter(private var serverList: List<ServerAddressesModel>, private val onItemClick: (ServerAddressesModel) -> Unit, private val onClearDataDialog: (ServerAddressesModel, Int) -> Unit) : RecyclerView.Adapter<ServerAddressAdapter.ViewHolder>() {
+class ServerAddressAdapter(
+    private var serverList: List<ServerAddressesModel>,
+    private val onItemClick: (ServerAddressesModel) -> Unit,
+    private val onClearDataDialog: (ServerAddressesModel, Int) -> Unit, // Add callback for clear data dialog
+    private val urlWithoutProtocol: String? // Pass the urlWithoutProtocol to the adapter
+) : RecyclerView.Adapter<ServerAddressAdapter.ViewHolder>() {
     private var selectedPosition: Int = -1
     private var lastSelectedPosition: Int = -1
 
@@ -43,7 +48,7 @@ class ServerAddressAdapter(private var serverList: List<ServerAddressesModel>, p
         val serverAddress = serverList[position]
         holder.bind(serverAddress, position == selectedPosition)
         holder.itemView.setOnClickListener {
-            if (position != selectedPosition) {
+            if (!urlWithoutProtocol.isNullOrEmpty() && serverAddress.url.replace(Regex("^https?://"), "") != urlWithoutProtocol) {
                 onClearDataDialog(serverAddress, position)
             } else {
                 onItemClick(serverAddress)
