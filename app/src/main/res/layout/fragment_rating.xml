@@ -6,6 +6,7 @@
     android:layout_gravity="center"
     android:foregroundGravity="center"
     android:orientation="vertical"
+    android:background="@color/card_bg"
     tools:context=".ui.rating.RatingFragment">
 
     <TextView
@@ -13,7 +14,8 @@
         android:layout_height="wrap_content"
         android:padding="@dimen/padding_normal"
         android:text="@string/your_rating"
-        android:textSize="@dimen/text_size_large" />
+        android:textSize="@dimen/text_size_large"
+        android:textColor="@color/hint_color" />
 
     <androidx.appcompat.widget.AppCompatRatingBar
         android:id="@+id/rating_bar"
@@ -35,13 +37,16 @@
 
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:textColorHint="@color/hint_color">
 
         <EditText
             android:id="@+id/et_comment"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="@string/your_comment" />
+            android:hint="@string/your_comment"
+            android:textColor="@color/daynight_textColor"
+            android:backgroundTint="@color/hint_color" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <LinearLayout

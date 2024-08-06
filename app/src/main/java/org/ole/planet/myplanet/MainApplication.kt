@@ -96,8 +96,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         context = this
         preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         nightMode()
-        // UNCOMMENT BELOW TO FORCE DARK MODE FOR DARK MODE DEVELOPMENT
-//        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
         val builder = VmPolicy.Builder()
         StrictMode.setVmPolicy(builder.build())
         builder.detectFileUriExposure()

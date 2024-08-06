@@ -335,6 +335,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 showSnack(findViewById(android.R.id.content), getString(R.string.sync_completed))
                 downloadAdditionalResources()
                 cancelAll(this)
+                if (this is LoginActivity) {
+                    this.updateTeamDropdown()
+                }
             }
         }
     }
