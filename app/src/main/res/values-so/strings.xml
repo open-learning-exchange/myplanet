@@ -1074,6 +1074,7 @@
     <string name="tag_selected">Xulo: %s</string>
     <string name="resources_size">Xogta [%d]</string>
     <string name="user_role">- %s</string>
+    <string name="offline_visit">%d booqasho</string>
     <string name="offline_visits">%d booqasho</string>
     <string name="visit_count">%1$s (%2$d %3$s)</string>
     <string name="two_strings">%1$s %2$s</string>
