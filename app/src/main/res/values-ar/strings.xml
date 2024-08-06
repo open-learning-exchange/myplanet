@@ -1094,10 +1094,21 @@
     <string name="are_you_sure_you_want_to_archive_this_course">هل أنت متأكد أنك تريد أرشفة هذه الدورة؟</string>
     <string name="manual">دليل</string>
     <string name="sync_to_server">:المزامنة إلى الخادم</string>
-    <string name="sync_planet_learning">🌎 Planet Learning</string>
-    <string name="sync_guatemala">🇬🇹 Planet Guatemala</string>
-    <string name="sync_san_pablo">🇬🇹 Planet San Pablo</string>
-    <string name="sync_xela">🇬🇹 Planet Xela</string>
+    <string name="sync_planet_learning">🌎planet learning</string>
+    <string name="sync_guatemala">🇬🇹planet guatemala</string>
+    <string name="sync_san_pablo">🇬🇹planet san sablo</string>
+    <string name="sync_planet_earth">🌎planet earth</string>
+    <string name="sync_somalia">🇸🇴planet somalia</string>
+    <string name="sync_vi">🌎planet vi</string>
+    <string name="sync_xela">🇬🇹planet xela</string>
+    <string name="sync_uriur">🇰🇪planet uriur</string>
+    <string name="sync_ruiru">🇰🇪planet ruiru</string>
+    <string name="sync_embakasi">🇰🇪planet embakasi</string>
+    <string name="sync_cambridge">🇺🇸planet cambridge</string>
+    <string name="sync_egdirbmac">🇺🇸planet egdirbmac</string>
+    <string name="sync_palmbay">🇺🇸planet palmbay</string>
     <string name="surveys_to_complete">لديك %d %s لإكمالها</string>
+    <string name="show_less">عرض أقل</string>
+    <string name="show_more">عرض المزيد</string>
 
 </resources>
