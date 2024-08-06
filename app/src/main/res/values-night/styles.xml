@@ -15,7 +15,6 @@
         <item name="colorAccent">@color/colorPrimary</item>
     </style>
 
-
     <style name="RatingBar" parent="Theme.AppCompat">
         <item name="colorControlNormal">@color/md_grey_500</item>
         <item name="colorControlActivated">@color/md_yellow_700</item>
@@ -69,13 +68,6 @@
         <item name="windowActionModeOverlay">false</item>
     </style>
 
-    <style name="HeaderText">
-        <item name="android:textStyle">bold</item>
-        <item name="android:padding">@dimen/padding_normal</item>
-        <item name="android:textColor">@color/md_black_1000</item>
-        <item name="android:textSize">@dimen/text_size_mid</item>
-    </style>
-
     <!--    Button Themes   -->
     <style name="RejectButton" parent="Theme.AppCompat">
         <item name="colorButtonNormal">@color/colorAccent</item>
@@ -85,11 +77,6 @@
     <!--  Button that uses accent color, primarily as the most important button on the screen  -->
     <style name="FocusButton" parent="Theme.AppCompat">
         <item name="colorButtonNormal">@color/colorAccent</item>
-        <item name="colorControlHighlight">@color/colorAccent</item>
-    </style>
-
-    <style name="PrimaryButton" parent="Theme.AppCompat">
-        <item name="colorButtonNormal">@color/colorPrimary</item>
         <item name="colorControlHighlight">@color/colorAccent</item>
     </style>
 
@@ -163,5 +150,4 @@
         <item name="android:textColorPrimary">@color/daynight_textColor</item>
         <item name="android:textColor">@color/daynight_textColor</item>
     </style>
-
 </resources>

@@ -3,7 +3,7 @@
     <string name="app_name">My Planet</string>
     <string name="planet">Meerah</string>
     <string name="app_project_name">myPlanet</string>
-    <string name="action_settings">Goobooyinka</string>
+    <string name="action_settings">goobooyinka</string>
     <string name="hint_name">Magaca isticmaalaha</string>
     <string name="hint_password">Furaha</string>
     <string name="btn_back">Dib</string>
@@ -336,7 +336,7 @@
     <string name="filter_by_date">Filtiirka Tariikhda</string>
     <string name="date_reset">Dib-u-eegis Taariikhda</string>
     <string name="emergency_contact">Xiriirka Degdegga ah</string>
-    <string name="emergency_contact_details">Magaca: %s Nooca: %s Xiriir: %s</string>
+    <string name="emergency_contact_details">Magaca: %1$s Nooca: %2$s Xiriir: %3$s</string>
     <string name="contact">Xiriir</string>
     <string name="special_needs">Dib-u-xuso</string>
     <string name="other_need">Dib-u-heshiisi kale</string>
@@ -492,7 +492,7 @@
     <string name="archive">Arsiif</string>
     <string name="Q1">Su\'aal: 1/%d</string>
     <string name="no_questions">Suaaladaan ma jiro</string>
-    <string name="Q">"Su\'aal: %d / %d"</string>
+    <string name="Q">Su\'aal: %1$d / %2$d</string>
     <string name="finish">Dhammaad</string>
     <string name="submit">Ku Dir</string>
     <string name="our_courses">Koorsadayaashay</string>
@@ -714,25 +714,27 @@
     <string name="note_you_may_still_need_to_download_the_newly_added_resources">\nNote: Amaan waxaad u baahan tahay inaad ku diyaariyey khadkaan cusub ee la soo kiciyey.</string>
     <string name="self_examination">%s\nIs-imtixaanid</string>
     <string name="vitals_format">
-        Darajada harar: %s\n
-        Dhaka kudhaca: %s\n
-        Basaboor: %s\n
-        Dugsiga: %s\n
-        Caddaan: %s\n
-        Garaad: %s\n
-        Cabsi: %s\n
-    </string>
+    Heerkulka: %1$s\n
+    Garaaca wadnaha: %2$s\n
+    Cadaadiska dhiigga: %3$s\n
+    Dhererka: %4$s\n
+    Miisaanka: %5$s\n
+    Aragga: %6$s\n
+    Maqalka: %7$s\n
+</string>
+
     <string name="observations_notes_colon">
-        Xogaha iyo falanqeynaha: %s\n
-        %s\n
-        %s\n
-        %s\n
-        %s\n
-        Allergies: %s\n
-        X-ray: %s\n
-        Baaritaan Lab: %s\n
-        Diraasado: %s\n
-    </string>
+    Xogaha iyo falanqaynta: %1$s\n
+    %2$s\n
+    %3$s\n
+    %4$s\n
+    %5$s\n
+    Xasaasiyadaha: %6$s\n
+    Raajada: %7$s\n
+    Baaritaanka Laboratooriga: %8$s\n
+    Daraasaadka: %9$s\n
+</string>
+
     <string name="diagnosis_colon">"Dib u dhigaasho: "</string>
     <string name="treatments_colon">"Dib-u-helidda: "</string>
     <string name="medications_colon">"Ciidammada: "</string>
@@ -1058,24 +1060,25 @@
     <string name="message_placeholder">%s</string>
     <string name="reports">warbixino</string>
     <string name="number_placeholder">%d</string>
-    <string name="date_range">%s ilaa %s</string>
-    <string name="string_range">%s - %s</string>
+    <string name="date_range">%1$s ilaa %2$s</string>
+    <string name="string_range">%1$s - %2$s</string>
     <string name="team_financial_report">Warbixin lacagta ee %s</string>
-    <string name="report_date_details">Warbixin lagu sameeyay: %s | La cusbooneysiiyay: %s</string>
-    <string name="formatted_date">%d/%d/%d</string>
-    <string name="prefix_content">%s%s</string>
+    <string name="report_date_details">Warbixin lagu sameeyay: %1$s | La cusbooneysiiyay: %2$s</string>
+    <string name="formatted_date">%1$d/%2$d/%3$d</string>
+    <string name="prefix_content">%1$s%2$s</string>
     <string name="rating_count_format">%d guud</string>
-    <string name="step_progress">Gaadhi hadda: %d ka %d</string>
+    <string name="step_progress">Gaadhi hadda: %1$d ka %2$d</string>
     <string name="percentage">%s%%</string>
     <string name="test_size">Imtihan kan waxa uu ku jira %d su\'aalood</string>
-    <string name="course_progress">Habka %s ee %s</string>
+    <string name="course_progress">Habka %1$s ee %2$s</string>
     <string name="tag_selected">Xulo: %s</string>
     <string name="resources_size">Xogta [%d]</string>
     <string name="user_role">- %s</string>
+    <string name="offline_visit">%d booqasho</string>
     <string name="offline_visits">%d booqasho</string>
     <string name="visit_count">%1$s (%2$d %3$s)</string>
-    <string name="two_strings">%s %s</string>
-    <string name="three_strings">%s %s %s</string>
+    <string name="two_strings">%1$s %2$s</string>
+    <string name="three_strings">%1$s %2$s %3$s</string>
     <string name="download_sync_files">soo dejiso faylalka is-waafajinta</string>
     <string name="member_description">%1$s (%2$d booqasho)</string>
     <string name="dark_mode">Habka Hodan</string>
@@ -1095,5 +1098,6 @@
     <string name="sync_guatemala">🇬🇹 Planet Guatemala</string>
     <string name="sync_san_pablo">🇬🇹 Planet San Pablo</string>
     <string name="sync_xela">🇬🇹 Planet Xela</string>
+    <string name="surveys_to_complete">Waxaad haysataa %d %s oo ay tahay inaad dhammaystirto</string>
 
 </resources>

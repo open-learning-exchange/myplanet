@@ -3,6 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:backgroundTint="@color/card_bg"
     app:cardCornerRadius="@dimen/padding_small"
     app:cardUseCompatPadding="true"
     app:contentPadding="@dimen/padding_normal">
@@ -22,22 +23,22 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:padding="@dimen/padding_normal"
-                android:textColor="@color/md_black_1000"
+                android:textColor="@color/daynight_textColor"
                 android:textSize="18sp"
                 android:textStyle="bold" />
-
             <TextView
                 android:id="@+id/deadline"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:padding="@dimen/padding_normal" />
-
+                android:padding="@dimen/padding_normal"
+                android:textColor="@color/hint_color" />
             <TextView
                 android:id="@+id/assignee"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:paddingLeft="@dimen/padding_normal"
-                android:paddingRight="@dimen/padding_normal" />
+                android:paddingRight="@dimen/padding_normal"
+                android:textColor="@color/hint_color" />
         </LinearLayout>
 
         <ImageView
@@ -46,20 +47,18 @@
             android:layout_height="wrap_content"
             android:layout_margin="@dimen/padding_small"
             app:srcCompat="@drawable/ic_edit" />
-
         <ImageView
             android:id="@+id/delete_task"
-            android:layout_width="@dimen/_30dp"
-            android:layout_height="wrap_content"
+            android:layout_width="28dp"
+            android:layout_height="25dp"
             android:layout_margin="@dimen/padding_small"
             app:srcCompat="@drawable/ic_delete" />
-
         <ImageView
             android:id="@+id/ic_more"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_margin="@dimen/padding_small"
+            android:translationY="1dp"
             app:srcCompat="@drawable/ic_more" />
-
     </LinearLayout>
 </androidx.cardview.widget.CardView>
