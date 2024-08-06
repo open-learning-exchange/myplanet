@@ -147,6 +147,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:text="@string/show_reply"
+                android:textColor="@color/daynight_textColor"
                 android:theme="@style/PrimaryFlatButton"
                 app:layout_constraintEnd_toStartOf="@+id/btn_add_label"
                 app:layout_constraintStart_toEndOf="@+id/btn_reply"
@@ -157,6 +158,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:text="@string/add_label"
+                android:textColor="@color/daynight_textColor"
                 android:theme="@style/PrimaryFlatButton"
                 app:layout_constraintEnd_toStartOf="@+id/btn_share"
                 app:layout_constraintStart_toEndOf="@+id/btn_show_reply"
@@ -167,6 +169,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:text="@string/share_with_community"
+                android:textColor="@color/daynight_textColor"
                 android:theme="@style/PrimaryFlatButton"
                 app:layout_constraintEnd_toStartOf="@+id/ll_edit_delete"
                 app:layout_constraintStart_toEndOf="@+id/btn_add_label"
@@ -190,6 +193,7 @@
                     android:layout_marginStart="8dp"
                     android:background="?attr/selectableItemBackground"
                     android:visibility="visible"
+                    app:tint="@color/daynight_textColor"
                     app:srcCompat="@drawable/ic_edit" />
 
                 <ImageView
@@ -198,6 +202,7 @@
                     android:layout_height="24dp"
                     android:layout_marginStart="8dp"
                     android:background="?attr/selectableItemBackground"
+                    app:tint="@color/daynight_textColor"
                     app:srcCompat="@drawable/ic_delete" />
             </LinearLayout>
         </androidx.constraintlayout.widget.ConstraintLayout>
