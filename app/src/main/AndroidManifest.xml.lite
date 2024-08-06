@@ -122,6 +122,9 @@
             <meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
+              <meta-data
+                 android:name="android.support.LANGUAGE"
+                 android:value="en,fr,es,ne,so" />
         </provider>
         <service android:name=".datamanager.MyDownloadService" />
     </application>
