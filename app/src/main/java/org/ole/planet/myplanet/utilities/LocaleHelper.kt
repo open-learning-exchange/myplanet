@@ -32,6 +32,11 @@ object LocaleHelper {
         )
     }
 
+    fun getLocale(context: Context): Locale {
+        val language = getLanguage(context) ?: Locale.getDefault().language
+        return Locale(language)
+    }
+
     private fun getPersistedData(context: Context, defaultLanguage: String): String? {
         val preferences = PreferenceManager.getDefaultSharedPreferences(context)
         return preferences.getString(SELECTED_LANGUAGE, defaultLanguage)

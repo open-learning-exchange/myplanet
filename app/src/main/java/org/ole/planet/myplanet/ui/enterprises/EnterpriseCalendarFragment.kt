@@ -1,23 +1,32 @@
 package org.ole.planet.myplanet.ui.enterprises
 
-import android.app.*
-import android.os.*
-import android.view.*
-import android.widget.*
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
+import android.os.Build
+import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.RadioButton
+import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.applandeo.materialcalendarview.CalendarDay
 import com.applandeo.materialcalendarview.CalendarView
 import com.applandeo.materialcalendarview.listeners.OnCalendarDayClickListener
-import com.google.gson.*
+import com.google.gson.Gson
+import com.google.gson.JsonObject
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.databinding.*
+import org.ole.planet.myplanet.databinding.AddMeetupBinding
+import org.ole.planet.myplanet.databinding.FragmentEnterpriseCalendarBinding
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.mymeetup.AdapterMeetup
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
-import org.ole.planet.myplanet.utilities.*
+import org.ole.planet.myplanet.utilities.LocaleHelper
+import org.ole.planet.myplanet.utilities.TimeUtils
+import org.ole.planet.myplanet.utilities.Utilities
 import java.util.*
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -43,8 +52,9 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
 
     private fun showMeetupAlert() {
         val addMeetupBinding = AddMeetupBinding.inflate(layoutInflater)
-        setDatePickerListener(addMeetupBinding.tvStartDate, start)
-        setDatePickerListener(addMeetupBinding.tvEndDate, end)
+        val locale = LocaleHelper.getLocale(requireContext())
+        setDatePickerListener(addMeetupBinding.tvStartDate, start, locale)
+        setDatePickerListener(addMeetupBinding.tvEndDate, end, locale)
         setTimePicker(addMeetupBinding.tvStartTime)
         setTimePicker(addMeetupBinding.tvEndTime)
 
@@ -86,14 +96,14 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
         alertDialog.window?.setBackgroundDrawableResource(R.color.card_bg)
     }
 
-    private fun setDatePickerListener(view: TextView, date: Calendar?) {
+    private fun setDatePickerListener(view: TextView, date: Calendar?, locale: Locale) {
         val c = Calendar.getInstance()
         view.setOnClickListener {
             DatePickerDialog(requireActivity(), { _, year, monthOfYear, dayOfMonth ->
                 date?.set(Calendar.YEAR, year)
                 date?.set(Calendar.MONTH, monthOfYear)
                 date?.set(Calendar.DAY_OF_MONTH, dayOfMonth)
-                view.text = date?.timeInMillis?.let { it1 -> TimeUtils.formatDate(it1, "yyyy-MM-dd") }
+                view.text = date?.timeInMillis?.let { it1 -> TimeUtils.formatDate(it1, "yyyy-MM-dd", locale) }
             }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show()
         }
     }
