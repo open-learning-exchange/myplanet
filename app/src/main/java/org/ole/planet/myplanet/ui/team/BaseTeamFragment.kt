@@ -18,7 +18,7 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
     lateinit var dbService: DatabaseService
     var user: RealmUserModel? = null
     lateinit var teamId: String
-    lateinit var team: RealmMyTeam
+    var team: RealmMyTeam? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

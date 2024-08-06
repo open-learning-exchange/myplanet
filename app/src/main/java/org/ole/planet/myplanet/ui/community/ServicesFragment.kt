@@ -50,10 +50,10 @@ class ServicesFragment : BaseTeamFragment() {
         }
 
         if (links?.size == 0) {
-            val description = team.description
+            val description = team?.description ?: ""
             fragmentServicesBinding.llServices.visibility = View.GONE
             fragmentServicesBinding.tvDescription.visibility = View.VISIBLE
-            setMarkdownText(fragmentServicesBinding.tvDescription, "$description")
+            setMarkdownText(fragmentServicesBinding.tvDescription, description)
         } else {
             setRecyclerView(links)
         }
