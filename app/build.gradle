@@ -148,7 +148,6 @@ dependencies {
     implementation 'com.github.kizitonwose:CalendarView:1.0.4'
     implementation 'com.applandeo:material-calendar-view:1.9.2'
     implementation 'com.afollestad.material-dialogs:commons:0.9.6.0'
-    implementation 'com.firebase:firebase-jobdispatcher:0.8.6'
     implementation 'com.borax12.materialdaterangepicker:library:2.0'
     implementation 'com.nex3z:toggle-button-group:1.2.3'
     implementation 'com.sa90.materialarcmenu:library:2.0.0'
