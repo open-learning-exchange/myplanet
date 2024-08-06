@@ -1,11 +1,13 @@
 package org.ole.planet.myplanet.ui.dashboard
 
+import android.graphics.Typeface
 import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
@@ -57,6 +59,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         return fragmentHomeBellBinding.root
     }
 
+    @RequiresApi(Build.VERSION_CODES.M)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         fragmentHomeBellBinding.cardProfileBell.txtDate.text = TimeUtils.formatDate(Date().time)
@@ -105,9 +108,15 @@ class BellDashboardFragment : BaseDashboardFragment() {
                     e.printStackTrace()
                 }
             }
-
+            val titleView = TextView(requireActivity()).apply {
+                text = getString(R.string.surveys_to_complete, noOfSurvey, title)
+                setTextColor(context.getColor(R.color.daynight_textColor))
+                setPadding(90, 70, 0, 0)
+                textSize = 20f
+                typeface = Typeface.DEFAULT_BOLD
+            }
             val alertDialog: AlertDialog.Builder = AlertDialog.Builder(requireActivity())
-            alertDialog.setTitle("You have $noOfSurvey $title to complete")
+            alertDialog.setCustomTitle(titleView)
             val surveyNamesArray = surveyNames.filterNotNull().map { it as CharSequence }.toTypedArray()
             alertDialog.setItems(surveyNamesArray) { _, which ->
                 val selectedSurvey = itemsQuery[which]?.id
@@ -117,7 +126,9 @@ class BellDashboardFragment : BaseDashboardFragment() {
                 homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("survey"))
                 dialog.dismiss()
             }
-            alertDialog.show()
+            val dialog = alertDialog.create()
+            dialog.show()
+            dialog.window?.setBackgroundDrawableResource(R.color.card_bg)
         }
     }
 

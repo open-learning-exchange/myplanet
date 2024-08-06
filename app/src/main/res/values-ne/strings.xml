@@ -336,7 +336,7 @@
     <string name="filter_by_date">मिति फिल्टर</string>
     <string name="date_reset">मिति रिसेट गर्नुहोस्</string>
     <string name="emergency_contact">आपतकालीन सम्पर्क</string>
-    <string name="emergency_contact_details">नाम: %s प्रकार: %s सम्पर्क: %s</string>
+    <string name="emergency_contact_details">नाम: %1$s प्रकार: %2$s सम्पर्क: %3$s</string>
     <string name="contact">सम्पर्क</string>
     <string name="special_needs">विशेष आवश्यकता</string>
     <string name="other_need">अन्य आवश्यकता</string>
@@ -492,7 +492,7 @@
     <string name="archive">आर्काइभ</string>
     <string name="Q1">प्रश्न: 1/%d</string>
     <string name="no_questions">कुनै प्रश्न उपलब्ध छैन</string>
-    <string name="Q">"%d / %d प्रश्न"</string>
+    <string name="Q">%1$d / %2$d प्रश्न</string>
     <string name="finish">समाप्त</string>
     <string name="submit">पेश गर्नुहोस्</string>
     <string name="our_courses">हाम्रा कोर्सहरू</string>
@@ -714,25 +714,27 @@
     <string name="note_you_may_still_need_to_download_the_newly_added_resources">\nनोट: तपाईंले अहिले थपिएका स्रोतहरू डाउनलोड गर्न अझै सक्छ।</string>
     <string name="self_examination">%s\nस्व-परिक्षण</string>
     <string name="vitals_format">
-        तापमात्रा: %s\n
-        न्यूनतम नाडी: %s\n
-        रक्तचाप: %s\n
-        उचाइ: %s\n
-        तौल: %s\n
-        दृष्टि: %s\n
-        श्रवण: %s\n
-    </string>
+    तापमान: %1$s\n
+    नाडी: %2$s\n
+    रक्तचाप: %3$s\n
+    उचाइ: %4$s\n
+    वजन: %5$s\n
+    दृष्टि: %6$s\n
+    सुन्ने क्षमता: %7$s\n
+</string>
+
     <string name="observations_notes_colon">
-        अनुसंधान र नोटहरू: %s\n
-        %s\n
-        %s\n
-        %s\n
-        %s\n
-        एलर्जीहरू: %s\n
-        एक्स-रे: %s\n
-        प्रयोगशाला परीक्षणहरू: %s\n
-        रेफरलहरू: %s\n
-    </string>
+    अवलोकन र विश्लेषण: %1$s\n
+    %2$s\n
+    %3$s\n
+    %4$s\n
+    %5$s\n
+    एलर्जी: %6$s\n
+    एक्स-रे: %7$s\n
+    प्रयोगशाला परीक्षण: %8$s\n
+    अध्ययनहरू: %9$s\n
+</string>
+
     <string name="diagnosis_colon">"निदान : "</string>
     <string name="treatments_colon">"उपचारहरू: "</string>
     <string name="medications_colon">"औषधि: "</string>
@@ -1036,7 +1038,7 @@
     <string name="recurring_colon">आवर्तमान:</string>
     <string name="created_by_colon">बनाएको:</string>
     <string name="failed_to_get_configuration_id">बनावट आईडी प्राप्त गर्न असफल भयो। कृपया व्यवस्थापकसँग सम्पर्क गर्नुहोस्।</string>
-    <string name="you_want_to_connect_to_a_different_server">के तपाईं विभिन्न सर्भरमा जडान गर्न चाहानुहुन्छ? जारी गर्न डाटा मेटाउनको लागि एप्लिकेशन डाटा हटाउनुहोस्</string>
+    <string name="you_want_to_connect_to_a_different_server">तपाईं अर्को सर्भरमा जडान गर्न चाहनुहुन्छ। अगाडि बढ्नका लागि एपको डेटा मेटाउनुहोस्</string>
     <string name="are_you_sure_you_want_to_clear_data">के तपाईं सबै डाटा हटाउन निश्चित हुनुहुन्छ?</string>
     <string name="feedback_list">प्रतिक्रिया सूची</string>
     <string name="enterprise_list">उद्यम सूची</string>
@@ -1058,33 +1060,43 @@
     <string name="message_placeholder">%s</string>
     <string name="reports">रिपोर्टहरू</string>
     <string name="number_placeholder">%d</string>
-    <string name="date_range">%s देखि %s</string>
-    <string name="string_range">%s - %s</string>
+    <string name="date_range">%1$s देखि %2$s</string>
+    <string name="string_range">%1$s - %2$s</string>
     <string name="team_financial_report">%s वित्तीय रिपोर्ट</string>
-    <string name="report_date_details">%s मा बनाइएको रिपोर्ट | %s मा अद्यावधिक गरिएको</string>
-    <string name="formatted_date">%d/%d/%d</string>
-    <string name="prefix_content">%s%s</string>
+    <string name="report_date_details">%1$s मा बनाइएको रिपोर्ट | %2$s मा अद्यावधिक गरिएको</string>
+    <string name="formatted_date">%1$d/%2$d/%3$d</string>
+    <string name="prefix_content">%1$s%2$s</string>
     <string name="rating_count_format">%d कुल</string>
-    <string name="step_progress">वर्तमान कदम: %d को %d</string>
+    <string name="step_progress">वर्तमान कदम: %1$d को %2$d</string>
     <string name="percentage">%s%%</string>
     <string name="test_size">यो परिक्षामा %d प्रश्नहरू छन्</string>
-    <string name="course_progress">%s को %s प्रगति</string>
+    <string name="course_progress">%1$s को %2$s प्रगति</string>
     <string name="tag_selected">%s छनोट गरिएको</string>
     <string name="resources_size">स्रोतहरू [%d]</string>
     <string name="user_role">- %s</string>
     <string name="offline_visits">%d भ्रमणहरू</string>
     <string name="visit_count">%1$s (%2$d %3$s)</string>
-    <string name="two_strings">%s %s</string>
-    <string name="three_strings">%s %s %s</string>
+    <string name="two_strings">%1$s %2$s</string>
+    <string name="three_strings">%1$s %2$s %3$s</string>
     <string name="download_sync_files">समक्रमण फाइलहरू डाउनलोड गर्नुहोस्</string>
     <string name="member_description">%1$s (%2$d भ्रमण)</string>
     <string name="dark_mode">अँध्यारो मोड</string>
+    <string name="dark_mode_off">बन्द</string>
+    <string name="dark_mode_on">खुला</string>
+    <string name="dark_mode_follow_system">प्रणालीको पालना गर्नुहोस्</string>
     <string-array name="dark_mode_options">
-        <item>बन्द</item>
-        <item>खुला</item>
-        <item>प्रणालीको पालना गर्नुहोस्</item>
+        <item>@string/dark_mode_off</item>
+        <item>@string/dark_mode_on</item>
+        <item>@string/dark_mode_follow_system</item>
     </string-array>
     <string name="are_you_sure_you_want_to_archive_these_courses">के तपाइँ यी पाठ्यक्रमहरू संग्रह गर्न निश्चित हुनुहुन्छ?</string>
     <string name="are_you_sure_you_want_to_archive_this_course">के तपाइँ निश्चित हुनुहुन्छ कि तपाइँ यो पाठ्यक्रम संग्रह गर्न चाहनुहुन्छ?</string>
+    <string name="manual">हस्तपुस्तिका</string>
+    <string name="sync_to_server">सर्भरमा समक्रमण गर्नुहोस्:</string>
+    <string name="sync_planet_learning">🌎 Planet Learning</string>
+    <string name="sync_guatemala">🇬🇹 Planet Guatemala</string>
+    <string name="sync_san_pablo">🇬🇹 Planet San Pablo</string>
+    <string name="sync_xela">🇬🇹 Planet Xela</string>
+    <string name="surveys_to_complete">तपाईंको %d %s पूरा गर्न बाँकी छ</string>
 
 </resources>

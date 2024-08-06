@@ -18,23 +18,22 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:padding="@dimen/padding_normal"
-            android:text="@string/all_task" />
-
+            android:text="@string/all_task"
+            android:textColor="@color/daynight_textColor" />
         <com.nex3z.togglebuttongroup.button.LabelToggle
             android:id="@+id/btn_my"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:padding="@dimen/padding_normal"
-            android:text="@string/my_task" />
-
+            android:text="@string/my_task"
+            android:textColor="@color/daynight_textColor" />
         <com.nex3z.togglebuttongroup.button.LabelToggle
             android:id="@+id/btn_completed"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:padding="@dimen/padding_normal"
-            android:text="@string/completed" />
-
-
+            android:text="@string/completed"
+            android:textColor="@color/daynight_textColor" />
     </com.nex3z.togglebuttongroup.SingleSelectToggleGroup>
 
     <FrameLayout
@@ -45,13 +44,11 @@
             android:id="@+id/rv_task"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
-
         <TextView
             android:id="@+id/tv_nodata"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center" />
-
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab"
             android:layout_width="wrap_content"
@@ -59,7 +56,5 @@
             android:layout_gravity="right|bottom"
             android:layout_margin="@dimen/padding_normal"
             android:src="@drawable/ic_add" />
-
     </FrameLayout>
-
 </LinearLayout>

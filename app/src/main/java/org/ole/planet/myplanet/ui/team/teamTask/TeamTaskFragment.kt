@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.team.teamTask
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.DialogInterface
+import android.graphics.Typeface
 import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -26,6 +27,7 @@ import org.ole.planet.myplanet.databinding.AlertTaskBinding
 import org.ole.planet.myplanet.databinding.AlertUsersSpinnerBinding
 import org.ole.planet.myplanet.databinding.FragmentTeamTaskBinding
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMember
+import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.myhealth.UserListArrayAdapter
@@ -73,6 +75,9 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentTeamTaskBinding = FragmentTeamTaskBinding.inflate(inflater, container, false)
+        if (!isMember()) {
+            fragmentTeamTaskBinding.fab.visibility = View.GONE
+        }
         fragmentTeamTaskBinding.fab.setOnClickListener { showTaskAlert(null) }
         teamTaskList = mRealm.where(RealmTeamTask::class.java).equalTo("teamId", teamId)
             .notEqualTo("status", "archived").findAllAsync()
@@ -100,7 +105,14 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
             datePickerDialog.datePicker.minDate = myCalendar.timeInMillis
             datePickerDialog.show()
         }
-        AlertDialog.Builder(requireActivity()).setTitle(R.string.add_task)
+        val titleView = TextView(requireActivity()).apply {
+            text = getString(R.string.add_task)
+            setTextColor(context.getColor(R.color.daynight_textColor))
+            setPadding(75, 50, 0, 0)
+            textSize = 24f
+            typeface = Typeface.DEFAULT_BOLD
+        }
+        val alertDialog = AlertDialog.Builder(requireActivity()).setCustomTitle(titleView)
             .setView(alertTaskBinding.root)
             .setPositiveButton(R.string.save) { _: DialogInterface?, _: Int ->
                 val task = alertTaskBinding.etTask.text.toString()
@@ -114,6 +126,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
                     setAdapter()
                 }
             }.setNegativeButton(getString(R.string.cancel), null).show()
+        alertDialog.window?.setBackgroundDrawableResource(R.color.card_bg)
     }
 
     private fun createOrUpdateTask(task: String, desc: String, teamTask: RealmTeamTask?) {
@@ -172,9 +185,11 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
         }
     }
 
+    override fun onNewsItemClick(news: RealmNews?) {}
+
     private fun setAdapter() {
         if(isAdded) {
-            adapterTask = AdapterTask(requireContext(), mRealm, list)
+            adapterTask = AdapterTask(requireContext(), mRealm, list, !isMember())
             adapterTask.setListener(this)
             fragmentTeamTaskBinding.rvTask.adapter = adapterTask
         }
@@ -232,7 +247,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
 
     private fun updatedTeamTaskList(updatedList: RealmResults<RealmTeamTask>) {
         activity?.runOnUiThread {
-            adapterTask = AdapterTask(requireContext(), mRealm, updatedList)
+            adapterTask = AdapterTask(requireContext(), mRealm, updatedList, !isMember())
             adapterTask.setListener(this)
             fragmentTeamTaskBinding.rvTask.adapter = adapterTask
             adapterTask.notifyDataSetChanged()

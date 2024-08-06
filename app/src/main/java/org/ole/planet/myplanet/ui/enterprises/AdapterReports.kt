@@ -25,6 +25,7 @@ class AdapterReports(private val context: Context, private var list: RealmResult
     private var endTimeStamp: String? = null
     lateinit var prefData: SharedPrefManager
     private var mRealm: Realm = Realm.getDefaultInstance()
+    private var nonTeamMember = false
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderReports {
         reportListItemBinding = ReportListItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
@@ -33,6 +34,10 @@ class AdapterReports(private val context: Context, private var list: RealmResult
     }
 
     override fun onBindViewHolder(holder: ViewHolderReports, position: Int) {
+        if (nonTeamMember) {
+            reportListItemBinding.edit.visibility = View.GONE
+            reportListItemBinding.delete.visibility = View.GONE
+        }
         val report = list[position]
         reportListItemBinding.tvReportTitle.text = context.getString(R.string.team_financial_report, prefData.getTeamName())
         report?.let {
@@ -174,6 +179,10 @@ class AdapterReports(private val context: Context, private var list: RealmResult
 
     override fun getItemCount(): Int {
         return list.size
+    }
+
+    fun setNonTeamMember(nonTeamMember: Boolean) {
+        this.nonTeamMember = nonTeamMember
     }
 
     class ViewHolderReports(reportListItemBinding: ReportListItemBinding) : RecyclerView.ViewHolder(reportListItemBinding.root)

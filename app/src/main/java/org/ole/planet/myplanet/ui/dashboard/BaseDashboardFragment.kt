@@ -297,7 +297,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
     override fun onDestroy() {
         super.onDestroy()
-        profileDbHandler.onDestory()
+        profileDbHandler.onDestroy()
         if (::myCoursesResults.isInitialized) {
             myCoursesResults.removeChangeListener(myCoursesChangeListener)
         }

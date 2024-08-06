@@ -3,27 +3,34 @@ package org.ole.planet.myplanet.ui.chat
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
+import io.realm.RealmList
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemAiResponseMessageBinding
 import org.ole.planet.myplanet.databinding.ItemUserMessageBinding
+import org.ole.planet.myplanet.model.Conversation
 
 class ChatAdapter(private val chatList: ArrayList<String>, val context: Context, private val recyclerView: RecyclerView) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private lateinit var textUserMessageBinding: ItemUserMessageBinding
     private lateinit var textAiMessageBinding: ItemAiResponseMessageBinding
     var responseSource: Int = RESPONSE_SOURCE_UNKNOWN
-
     private val viewTypeQuery = 1
     private val viewTypeResponse = 2
-    companion object {
-        const val RESPONSE_SOURCE_SHARED_VIEW_MODEL = 1
-        const val RESPONSE_SOURCE_NETWORK = 2
-        const val RESPONSE_SOURCE_UNKNOWN = 0
+
+    interface OnChatItemClickListener {
+        fun onChatItemClick(position: Int, chatItem: String)
     }
+
+    private var chatItemClickListener: OnChatItemClickListener? = null
+
+    fun setOnChatItemClickListener(listener: OnChatItemClickListener) {
+        this.chatItemClickListener = listener
+    }
+
+
     class QueryViewHolder(private val textUserMessageBinding: ItemUserMessageBinding) : RecyclerView.ViewHolder(textUserMessageBinding.root) {
         fun bind(query: String) {
             textUserMessageBinding.textGchatMessageMe.text = query
@@ -64,14 +71,12 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context,
     }
 
     fun addQuery(query: String) {
-        Log.d("ChatAdapter", "addQuery: $query")
         chatList.add(query)
         notifyItemInserted(chatList.size - 1)
         scrollToLastItem()
     }
 
     fun addResponse(response: String) {
-        Log.d("ChatAdapter", "addResponse: $response")
         chatList.add(response)
         notifyItemInserted(chatList.size - 1)
         scrollToLastItem()
@@ -110,7 +115,6 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context,
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val chatItem = chatList[position]
-        Log.d("ChatAdapter", "chatList: $chatList")
         when (holder.itemViewType) {
             viewTypeQuery -> {
                 val queryViewHolder = holder as QueryViewHolder
@@ -122,9 +126,24 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context,
             }
             else -> throw IllegalArgumentException("Invalid view type")
         }
+        holder.itemView.setOnClickListener {
+            chatItemClickListener?.onChatItemClick(position, chatItem)
+        }
     }
 
     override fun getItemCount(): Int {
         return chatList.size
+    }
+
+    companion object {
+        const val RESPONSE_SOURCE_SHARED_VIEW_MODEL = 1
+        const val RESPONSE_SOURCE_NETWORK = 2
+        const val RESPONSE_SOURCE_UNKNOWN = 0
+
+        private var chatHistoryItemClickListener: ChatHistoryListAdapter.ChatHistoryItemClickListener? = null
+
+        fun clickListener(conversations: String?, newsId: String?, newsRev: String?) {
+            chatHistoryItemClickListener?.onChatHistoryItemClicked(conversations as RealmList<Conversation>?, newsId ?: "", newsRev ?: "")
+        }
     }
 }

@@ -12,11 +12,9 @@ import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.Sort
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.datamanager.ApiInterface
-import org.ole.planet.myplanet.model.RealmStepExam.Companion.examDataList
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.TimeUtils
@@ -65,7 +63,7 @@ open class RealmSubmission : RealmObject() {
     var parent: String? = null
 
     companion object {
-        val submissionDataList: MutableList<Array<String>> = mutableListOf()
+        private val submissionDataList: MutableList<Array<String>> = mutableListOf()
 
         @JvmStatic
         fun insert(mRealm: Realm, submission: JsonObject) {
@@ -227,11 +225,11 @@ open class RealmSubmission : RealmObject() {
         fun getNoOfSubmissionByUser(id: String?, userId: String?, mRealm: Realm): String {
             val submissionCount = mRealm.where(RealmSubmission::class.java).equalTo("parentId", id).equalTo("userId", userId).equalTo("status", "complete").findAll().size
             val pluralizedString: String = if (submissionCount == 1) {
-                MainApplication.context.getString(R.string.time)
+                context.getString(R.string.time)
             } else {
-                MainApplication.context.getString(R.string.times)
+                context.getString(R.string.times)
             }
-            return MainApplication.context.getString(R.string.survey_taken) + " " + submissionCount + " " + pluralizedString
+            return context.getString(R.string.survey_taken) + " " + submissionCount + " " + pluralizedString
         }
 
         @JvmStatic

@@ -35,6 +35,7 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
+import org.ole.planet.myplanet.ui.chat.ChatAdapter.Companion.clickListener
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
@@ -51,7 +52,10 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     private var imageList: RealmList<String>? = null
     lateinit var mRealm: Realm
     private var fromLogin = false
+    private var nonTeamMember = false
     private var sharedPreferences: SharedPrefManager? = null
+    private var recyclerView: RecyclerView? = null
+
     fun setImageList(imageList: RealmList<String>?) {
         this.imageList = imageList
     }
@@ -63,6 +67,10 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
 
     fun setFromLogin(fromLogin: Boolean) {
         this.fromLogin = fromLogin
+    }
+
+    fun setNonTeamMember(nonTeamMember: Boolean) {
+        this.nonTeamMember = nonTeamMember
     }
 
     fun setListener(listener: OnNewsItemClickListener?) {
@@ -130,14 +138,14 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                     holder.rowNewsBinding.imgEdit.setOnClickListener {
                         showEditAlert(news.id, true)
                     }
-                    holder.rowNewsBinding.btnAddLabel.visibility = if (fromLogin) View.GONE else View.VISIBLE
+                    holder.rowNewsBinding.btnAddLabel.visibility = if (fromLogin || nonTeamMember) View.GONE else View.VISIBLE
                 } else {
                     holder.rowNewsBinding.imgEdit.visibility = View.GONE
                     holder.rowNewsBinding.imgDelete.visibility = View.GONE
                     holder.rowNewsBinding.btnAddLabel.visibility = View.GONE
                 }
-                holder.rowNewsBinding.llEditDelete.visibility = if (fromLogin) View.GONE else View.VISIBLE
-                holder.rowNewsBinding.btnReply.visibility = if (fromLogin) View.GONE else View.VISIBLE
+                holder.rowNewsBinding.llEditDelete.visibility = if (fromLogin || nonTeamMember) View.GONE else View.VISIBLE
+                holder.rowNewsBinding.btnReply.visibility = if (fromLogin || nonTeamMember) View.GONE else View.VISIBLE
                 loadImage(holder, news)
                 showReplyButton(holder, news, position)
                 addLabels(holder, news)
@@ -146,6 +154,13 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                 if (news.newsId?.isNotEmpty() == true) {
                     val conversations = Gson().fromJson(news.conversations, Array<Conversation>::class.java).toList()
                     val chatAdapter = ChatAdapter(ArrayList(), context, holder.rowNewsBinding.recyclerGchat)
+
+                    chatAdapter.setOnChatItemClickListener(object : ChatAdapter.OnChatItemClickListener {
+                        override fun onChatItemClick(position: Int, chatItem: String) {
+                            listener?.onNewsItemClick(news)
+                        }
+                    })
+
                     for (conversation in conversations) {
                         val query = conversation.query
                         val response = conversation.response
@@ -269,7 +284,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         }
         viewHolder.rowNewsBinding.btnShowReply.setOnClickListener {
             sharedPreferences?.setRepliedNewsId(finalNews?.id)
-            listener?.showReply(finalNews, fromLogin)
+            listener?.showReply(finalNews, fromLogin, nonTeamMember)
         }
     }
 
@@ -372,8 +387,9 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     }
 
     interface OnNewsItemClickListener {
-        fun showReply(news: RealmNews?, fromLogin: Boolean)
+        fun showReply(news: RealmNews?, fromLogin: Boolean, nonTeamMember: Boolean)
         fun addImage(llImage: LinearLayout?)
+        fun onNewsItemClick(news: RealmNews?)
     }
 
     private fun getLabel(s: String): String {
@@ -387,7 +403,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
 
     private fun showShareButton(holder: RecyclerView.ViewHolder, news: RealmNews?) {
         val viewHolder = holder as ViewHolderNews
-        viewHolder.rowNewsBinding.btnShare.visibility = if (news?.isCommunityNews == true || fromLogin) View.GONE else View.VISIBLE
+        viewHolder.rowNewsBinding.btnShare.visibility = if (news?.isCommunityNews == true || fromLogin || nonTeamMember) View.GONE else View.VISIBLE
         viewHolder.rowNewsBinding.btnShare.setOnClickListener {
             val array = Gson().fromJson(news?.viewIn, JsonArray::class.java)
             val ob = JsonObject()
@@ -403,6 +419,16 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
             Utilities.toast(context, context.getString(R.string.shared_to_community))
             viewHolder.rowNewsBinding.btnShare.visibility = View.GONE
         }
+    }
+
+    override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
+        super.onAttachedToRecyclerView(recyclerView)
+        this.recyclerView = recyclerView
+    }
+
+    override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
+        super.onDetachedFromRecyclerView(recyclerView)
+        this.recyclerView = null
     }
 
     internal inner class ViewHolderNews(val rowNewsBinding: RowNewsBinding) : RecyclerView.ViewHolder(rowNewsBinding.root) {

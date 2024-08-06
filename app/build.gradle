@@ -10,14 +10,14 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdkVersion 21
         targetSdkVersion 34
-        versionCode 1726
-        versionName "0.17.26"
+        versionCode 1751
+        versionName "0.17.51"
         ndkVersion '21.3.6528147'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
         multiDexEnabled true
     }
-    configurations.all {
+    configurations.configureEach {
         resolutionStrategy.force 'com.google.android.material:material:1.12.0'
     }
     buildTypes {
@@ -70,9 +70,29 @@ android {
             enableSplit = false
         }
     }
+
+    def planetLearningUrl = project.findProperty('PLANET_LEARNING_URL') ?: ""
+    def planetLearningPin = project.findProperty('PLANET_LEARNING_PIN') ?: ""
+    def planetGuatemalaUrl = project.findProperty('PLANET_GUATEMALA_URL') ?: ""
+    def planetGuatemalaPin = project.findProperty('PLANET_GUATEMALA_PIN') ?: ""
+    def planetXelaUrl = project.findProperty('PLANET_XELA_URL') ?: ""
+    def planetXelaPin = project.findProperty('PLANET_XELA_PIN') ?: ""
+    def planetSanPabloUrl = project.findProperty('PLANET_SANPABLO_URL') ?: ""
+    def planetSanPabloPin = project.findProperty('PLANET_SANPABLO_PIN') ?: ""
+
+    buildTypes.each {
+        it.buildConfigField 'String', 'PLANET_LEARNING_URL', "\"$planetLearningUrl\""
+        it.buildConfigField 'String', 'PLANET_LEARNING_PIN', "\"${planetLearningPin}\""
+        it.buildConfigField 'String', 'PLANET_GUATEMALA_URL', "\"${planetGuatemalaUrl}\""
+        it.buildConfigField 'String', 'PLANET_GUATEMALA_PIN', "\"${planetGuatemalaPin}\""
+        it.buildConfigField 'String', 'PLANET_XELA_URL', "\"${planetXelaUrl}\""
+        it.buildConfigField 'String', 'PLANET_XELA_PIN', "\"${planetXelaPin}\""
+        it.buildConfigField 'String', 'PLANET_SANPABLO_URL', "\"${planetSanPabloUrl}\""
+        it.buildConfigField 'String', 'PLANET_SANPABLO_PIN', "\"${planetSanPabloPin}\""
+    }
 }
 
-task generateVersionsXml {
+tasks.register('generateVersionsXml') {
     def versionName = android.defaultConfig.versionName
     doLast {
         def versionsXmlFile = file('src/main/res/values/versions.xml')

@@ -21,6 +21,7 @@ import org.ole.planet.myplanet.databinding.FragmentReportsBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.insertReports
+import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
@@ -44,6 +45,9 @@ class ReportsFragment : BaseTeamFragment() {
         fragmentReportsBinding = FragmentReportsBinding.inflate(inflater, container, false)
         mRealm = DatabaseService(requireActivity()).realmInstance
         prefData = SharedPrefManager(requireContext())
+        if (!isMember()) {
+            fragmentReportsBinding.addReports.visibility = View.GONE
+        }
         fragmentReportsBinding.addReports.setOnClickListener{
             val dialogAddReportBinding = DialogAddReportBinding.inflate(LayoutInflater.from(requireContext()))
             val v: View = dialogAddReportBinding.root
@@ -179,9 +183,12 @@ class ReportsFragment : BaseTeamFragment() {
         updatedReportsList(list as RealmResults<RealmMyTeam>)
     }
 
+    override fun onNewsItemClick(news: RealmNews?) {}
+
     private fun updatedReportsList(results: RealmResults<RealmMyTeam>) {
         activity?.runOnUiThread {
             adapterReports = AdapterReports(requireContext(), results)
+            adapterReports.setNonTeamMember(!isMember())
             fragmentReportsBinding.rvReports.layoutManager = LinearLayoutManager(activity)
             fragmentReportsBinding.rvReports.adapter = adapterReports
             adapterReports.notifyDataSetChanged()

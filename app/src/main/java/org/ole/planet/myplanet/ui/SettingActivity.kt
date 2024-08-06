@@ -5,17 +5,20 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.view.LayoutInflater
 import android.view.MenuItem
+import android.view.View
+import android.view.ViewGroup
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.content.ContextCompat
 import androidx.preference.ListPreference
 import androidx.preference.Preference
 import androidx.preference.Preference.OnPreferenceChangeListener
 import androidx.preference.Preference.OnPreferenceClickListener
 import androidx.preference.PreferenceFragmentCompat
-import androidx.preference.PreferenceManager
 import androidx.preference.SwitchPreference
 import io.realm.Realm
 import org.ole.planet.myplanet.R
@@ -69,6 +72,16 @@ class SettingActivity : AppCompatActivity() {
         lateinit var profileDbHandler: UserProfileDbHandler
         var user: RealmUserModel? = null
         private lateinit var dialog: DialogUtils.CustomProgressDialog
+
+        override fun onCreateView(
+            inflater: LayoutInflater,
+            container: ViewGroup?,
+            savedInstanceState: Bundle?
+        ): View {
+            val view = super.onCreateView(inflater, container, savedInstanceState)
+            view.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.secondary_bg))
+            return view
+        }
 
         @RequiresApi(Build.VERSION_CODES.O)
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
@@ -203,15 +216,15 @@ class SettingActivity : AppCompatActivity() {
         override fun onDestroy() {
             super.onDestroy()
             if (this::profileDbHandler.isInitialized) {
-                profileDbHandler.onDestory()
+                profileDbHandler.onDestroy()
             }
         }
 
         private fun darkMode(key: String) {
             when (key) {
-                "ON" ->  AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-                "OFF" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
-                "Follow System" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+                getString(R.string.dark_mode_on) ->  AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+                getString(R.string.dark_mode_off) -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+                getString(R.string.dark_mode_follow_system) -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
             }
         }
     }

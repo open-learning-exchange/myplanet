@@ -18,28 +18,24 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.news.AdapterNews
 import org.ole.planet.myplanet.ui.news.ReplyActivity
+import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 
 class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickListener {
     private lateinit var fragmentCommunityBinding: FragmentCommunityBinding
     private var newList: RealmResults<RealmNews>? = null
     override fun addImage(llImage: LinearLayout?) {}
+    override fun onNewsItemClick(news: RealmNews?) {}
 
-    override fun showReply(news: RealmNews?, fromLogin: Boolean) {
+    override fun showReply(news: RealmNews?, fromLogin: Boolean, nonTeamMember: Boolean) {
         if (news != null) {
-            startActivity(
-                Intent(activity, ReplyActivity::class.java).putExtra("id", news.id)
-                    .putExtra("fromLogin", fromLogin)
-            )
+            startActivity(Intent(activity, ReplyActivity::class.java).putExtra("id", news.id).putExtra("fromLogin", fromLogin))
         }
     }
 
     var user: RealmUserModel? = null
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
-    ): View {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentCommunityBinding = FragmentCommunityBinding.inflate(inflater, container, false)
         newList = mRealm.where(RealmNews::class.java).equalTo("docType", "message", Case.INSENSITIVE)
             .equalTo("viewableBy", "community", Case.INSENSITIVE)
@@ -60,9 +56,9 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
             homeItemClickListener?.openCallFragment(ResourcesFragment())
         }
         newList = mRealm.where(RealmNews::class.java).equalTo("docType", "message", Case.INSENSITIVE)
-                .equalTo("viewableBy", "community", Case.INSENSITIVE)
-                .equalTo("createdOn", user?.planetCode, Case.INSENSITIVE).isEmpty("replyTo")
-                .sort("time", Sort.DESCENDING).findAll()
+            .equalTo("viewableBy", "community", Case.INSENSITIVE)
+            .equalTo("createdOn", user?.planetCode, Case.INSENSITIVE).isEmpty("replyTo")
+            .sort("time", Sort.DESCENDING).findAll()
         val orientation = resources.configuration.orientation
         changeLayoutManager(orientation)
         updatedNewsList(newList)
