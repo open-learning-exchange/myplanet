@@ -1074,6 +1074,7 @@
     <string name="tag_selected">Seleccionado: %s</string>
     <string name="resources_size">Recursos [%d]</string>
     <string name="user_role">- %s</string>
+    <string name="offline_visit">%d visita</string>
     <string name="offline_visits">%d visitas</string>
     <string name="visit_count">%1$s (%2$d %3$s)</string>
     <string name="two_strings">%1$s %2$s</string>
