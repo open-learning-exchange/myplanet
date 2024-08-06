@@ -82,15 +82,8 @@ object TimeUtils {
     }
 
     @JvmStatic
-    fun formatDate(date: Long): String {
-        val dateFormat = SimpleDateFormat("EEE dd, MMMM yyyy")
-        return dateFormat.format(date)
+    fun formatDate(timestamp: Long, format: String = "yyyy-MM-dd"): String {
+        val sdf = SimpleDateFormat(format, Locale.getDefault())
+        return sdf.format(Date(timestamp))
     }
-
-    @JvmStatic
-    fun formatDate(date: Long, format: String?): String {
-        val dateFormat = SimpleDateFormat(format)
-        return dateFormat.format(date)
-    }
-
 }
