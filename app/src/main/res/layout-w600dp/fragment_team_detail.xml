@@ -46,7 +46,8 @@
                         android:id="@+id/subtitle"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:paddingStart="8dp" />
+                        android:paddingStart="8dp"
+                        android:textColor="@color/md_white_1000" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -81,8 +82,8 @@
             android:orientation="vertical">
 
             <com.google.android.material.tabs.TabLayout
-                app:tabTextColor="@color/daynight_textColor"
                 android:id="@+id/tab_layout"
+                app:tabTextColor="@color/daynight_textColor"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:tabGravity="fill"
