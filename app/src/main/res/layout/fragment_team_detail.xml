@@ -39,7 +39,6 @@
                         android:textColor="@color/md_white_1000"
                         android:textSize="18sp"
                         android:textStyle="bold" />
-
                     <TextView
                         android:id="@+id/subtitle"
                         android:layout_width="match_parent"
@@ -61,7 +60,6 @@
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
                         android:text="@string/add_documents" />
-
                     <Button
                         android:id="@+id/btn_leave"
                         style="@style/YellowButtons"
@@ -71,7 +69,6 @@
                         android:text="@string/leave" />
                 </LinearLayout>
             </LinearLayout>
-
         </com.google.android.material.appbar.AppBarLayout>
 
         <LinearLayout
@@ -87,14 +84,11 @@
                 android:background="@color/secondary_bg"
                 app:tabTextColor="@color/daynight_textColor"
                 app:tabMode="scrollable" />
-
             <androidx.viewpager2.widget.ViewPager2
                 android:id="@+id/viewPager2"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:background="@color/secondary_bg" />
-
         </LinearLayout>
-
     </LinearLayout>
 </FrameLayout>
