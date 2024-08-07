@@ -71,51 +71,14 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/linearLayout2" />
 
-    <com.google.android.material.button.MaterialButtonToggleGroup
+    <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/serverUrls"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:visibility="gone"
         android:layout_marginTop="3dp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/syncToServerText"
-        app:singleSelection="true">
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/toggle_planet_learning"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:elevation="0dp"
-            android:gravity="start|center_vertical"
-            android:text="@string/sync_planet_learning" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/toggle_planet_guatemala"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            android:layout_width="match_parent"
-            android:gravity="start|center_vertical"
-            android:layout_height="wrap_content"
-            android:text="@string/sync_guatemala" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/toggle_planet_xela"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            android:layout_width="match_parent"
-            android:gravity="start|center_vertical"
-            android:layout_height="wrap_content"
-            android:text="@string/sync_xela" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/toggle_planet_san_pablo"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            android:layout_width="match_parent"
-            android:gravity="start|center_vertical"
-            android:layout_height="wrap_content"
-            android:text="@string/sync_san_pablo" />
-
-    </com.google.android.material.button.MaterialButtonToggleGroup>
+        app:layout_constraintTop_toBottomOf="@+id/syncToServerText" />
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/ltAdvanced"
