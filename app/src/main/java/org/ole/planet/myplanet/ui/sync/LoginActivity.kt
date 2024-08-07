@@ -511,9 +511,9 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                         }
                     } else {
                         val model = RealmUserModel.createGuestUser(username, mRealm, settings)
-                            ?.let { it1 ->
-                                mRealm.copyFromRealm(it1)
-                            }
+                        ?.let { it1 ->
+                            mRealm.copyFromRealm(it1)
+                        }
                         if (model == null) {
                             toast(this, getString(R.string.unable_to_login))
                         } else {
