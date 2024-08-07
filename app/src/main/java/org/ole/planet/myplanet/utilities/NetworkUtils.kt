@@ -174,5 +174,4 @@ object NetworkUtils {
         val scheme = uri.scheme
         return if (scheme != null) "$scheme://" else null
     }
-
 }
