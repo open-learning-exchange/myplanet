@@ -799,7 +799,8 @@
     <string name="uploading_activities_to_server_please_wait">सर्भरमा गतिविधिहरू अपलोड गर्दै, कृपया प्रतीक्षा गर्नुहोस्…</string>
     <string name="connecting_to_server">सर्भरसँग कनेक्ट गर्दै…</string>
     <string name="check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server">कृपया पुन: सर्भर ठेगाना जाँच गर्नुहोस्। म जुन सर्भरसँग कनेक्ट गरें भनेर थिएन त्यो प्लानेट सर्भर थिएन</string>
-    <string name="device_couldn_t_reach_server_check_and_try_again">डिभाइसले सर्भरसँग सम्पर्क गर्न सकिएन। जाँच गर्नुहोस् र पुन: प्रयास गर्नुहोस्</string>
+    <string name="device_couldn_t_reach_local_server">डिभाइसले सर्भरसम्म पुग्न सकेन। स्थानीय सर्भर (समुदाय) को लागि तपाईं सही Wi-Fi नेटवर्कमा जडित हुनुहुन्छ कि छैन जाँच गर्नुहोस्।</string>
+    <string name="device_couldn_t_reach_nation_server">डिभाइसले सर्भरसम्म पुग्न सकेन। इन्टरनेटमा जडित हुनुहुन्छ कि छैन जाँच गर्नुहोस् र पुन: प्रयास गर्नुहोस्।</string>
     <string name="server_not_configured_properly_connect_this_device_with_planet_server">सर्भर सही ढंगले कन्फिगर गरिएको छैन। यो डिभाइसलाई प्लानेट सर्भरसँग कनेक्ट गर्नुहोस्</string>
     <string name="syncing_data_please_wait">डाटा सिंक गरिंदै, कृपया प्रतीक्षा गर्नुहोस्…</string>
     <string name="sync_failed">सिंक असफल भयो</string>
