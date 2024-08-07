@@ -800,7 +800,8 @@
     <string name="uploading_activities_to_server_please_wait">Cargando actividades al servidor, por favor espera…</string>
     <string name="connecting_to_server">Conectando al servidor....</string>
     <string name="check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server">Verifica nuevamente la dirección del servidor. A lo que me conecté no fue el servidor de Planet</string>
-    <string name="device_couldn_t_reach_server_check_and_try_again">El dispositivo no pudo alcanzar el servidor. Verifica e intenta nuevamente</string>
+    <string name="device_couldn_t_reach_local_server">el dispositivo no pudo alcanzar el servidor. verifique si está conectado a la red Wi-Fi correcta para el servidor local (comunidad).</string>
+    <string name="device_couldn_t_reach_nation_server">el dispositivo no pudo alcanzar el servidor. verifique si está conectado a Internet e inténtelo de nuevo.</string>
     <string name="server_not_configured_properly_connect_this_device_with_planet_server">El servidor no está configurado correctamente. Conecta este dispositivo con el servidor de Planet</string>
     <string name="syncing_data_please_wait">Sincronizando datos, por favor espera…</string>
     <string name="sync_failed">Sincronización fallida</string>

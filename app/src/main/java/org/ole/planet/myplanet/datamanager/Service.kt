@@ -30,6 +30,7 @@ import org.ole.planet.myplanet.utilities.DialogUtils.CustomProgressDialog
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
+import org.ole.planet.myplanet.utilities.NetworkUtils.extractProtocol
 import org.ole.planet.myplanet.utilities.Sha256Utils
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils
@@ -338,7 +339,11 @@ class Service(private val context: Context) {
                                 override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
                                     activity.setSyncFailed(true)
                                     customProgressDialog.dismiss()
-                                    showAlertDialog(context.getString(R.string.device_couldn_t_reach_server_check_and_try_again), false)
+                                    if (getUrl(couchdbURL) == context.getString(R.string.http_protocol)) {
+                                        showAlertDialog(context.getString(R.string.device_couldn_t_reach_local_server), false)
+                                    } else if (getUrl(couchdbURL) == context.getString(R.string.https_protocol)) {
+                                        showAlertDialog(context.getString(R.string.device_couldn_t_reach_nation_server), false)
+                                    }
                                 }
                             })
                         } else {
@@ -350,14 +355,18 @@ class Service(private val context: Context) {
                 } else {
                     activity.setSyncFailed(true)
                     customProgressDialog.dismiss()
-                    showAlertDialog(context.getString(R.string.device_couldn_t_reach_server_check_and_try_again), false)
+                    showAlertDialog(context.getString(R.string.device_couldn_t_reach_local_server), false)
                 }
             }
 
             override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
                 activity.setSyncFailed(true)
                 customProgressDialog.dismiss()
-                showAlertDialog(context.getString(R.string.device_couldn_t_reach_server_check_and_try_again), false)
+                if (extractProtocol(url) == context.getString(R.string.http_protocol)) {
+                    showAlertDialog(context.getString(R.string.device_couldn_t_reach_local_server), false)
+                } else if (extractProtocol(url) == context.getString(R.string.https_protocol)) {
+                    showAlertDialog(context.getString(R.string.device_couldn_t_reach_nation_server), false)
+                }
             }
         })
     }
