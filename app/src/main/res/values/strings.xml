@@ -492,6 +492,7 @@
     <string name="archive">Archive</string>
     <string name="Q1">Question: 1/%d</string>
     <string name="no_questions">No questions available</string>
+    <string name="Q">Question: %1$d / %2$d</string>
     <string name="finish">Finish</string>
     <string name="submit">Submit</string>
     <string name="our_courses">Our Courses</string>
@@ -734,6 +735,7 @@
     Lab Tests: %8$s\n
     Studies: %9$s\n
 </string>
+
     <string name="diagnosis_colon">"Diagnosis : "</string>
     <string name="treatments_colon">"Treatments: "</string>
     <string name="medications_colon">"Medications: "</string>
@@ -1072,6 +1074,7 @@
     <string name="tag_selected">Selected: %s</string>
     <string name="resources_size">Resources [%d]</string>
     <string name="user_role">- %s</string>
+    <string name="offline_visit">%d visit</string>
     <string name="offline_visits">%d visits</string>
     <string name="visit_count">%1$s (%2$d %3$s)</string>
     <string name="two_strings">%1$s %2$s</string>
@@ -1091,11 +1094,21 @@
     <string name="are_you_sure_you_want_to_archive_this_course">Are you sure you want to archive this course?</string>
     <string name="manual">manual</string>
     <string name="sync_to_server">Sync to server:</string>
-    <string name="sync_planet_learning">🌎 Planet Learning</string>
-    <string name="sync_guatemala">🇬🇹 Planet Guatemala</string>
-    <string name="sync_san_pablo">🇬🇹 Planet San Pablo</string>
-    <string name="sync_xela">🇬🇹 Planet Xela</string>
+    <string name="sync_planet_learning">🌎planet learning</string>
+    <string name="sync_guatemala">🇬🇹planet guatemala</string>
+    <string name="sync_san_pablo">🇬🇹planet san sablo</string>
+    <string name="sync_planet_earth">🌎planet earth</string>
+    <string name="sync_somalia">🇸🇴planet somalia</string>
+    <string name="sync_vi">🌎planet vi</string>
+    <string name="sync_xela">🇬🇹planet xela</string>
+    <string name="sync_uriur">🇰🇪planet uriur</string>
+    <string name="sync_ruiru">🇰🇪planet ruiru</string>
+    <string name="sync_embakasi">🇰🇪planet embakasi</string>
+    <string name="sync_cambridge">🇺🇸planet cambridge</string>
+    <string name="sync_egdirbmac">🇺🇸planet egdirbmac</string>
+    <string name="sync_palmbay">🇺🇸planet palmbay</string>
     <string name="surveys_to_complete">You have %d %s to complete</string>
-    <string name="Q">Question: %1$d / %2$d</string>
+    <string name="show_less">show less</string>
+    <string name="show_more">show more</string>
 
 </resources>

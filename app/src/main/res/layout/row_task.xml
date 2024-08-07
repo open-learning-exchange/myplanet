@@ -49,8 +49,8 @@
             app:srcCompat="@drawable/ic_edit" />
         <ImageView
             android:id="@+id/delete_task"
-            android:layout_width="@dimen/_30dp"
-            android:layout_height="wrap_content"
+            android:layout_width="28dp"
+            android:layout_height="25dp"
             android:layout_margin="@dimen/padding_small"
             app:srcCompat="@drawable/ic_delete" />
         <ImageView
@@ -58,6 +58,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_margin="@dimen/padding_small"
+            android:translationY="1dp"
             app:srcCompat="@drawable/ic_more" />
     </LinearLayout>
 </androidx.cardview.widget.CardView>
