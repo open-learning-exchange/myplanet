@@ -89,14 +89,14 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
                         if (canReachServer) {
                             serverReachable = true
-                            Log.d(TAG, "Server reachable: $serverUrl")
+                            Log.d("bellDashboard", "Server reachable: $serverUrl")
                             fragmentHomeBellBinding.cardProfileBell.imageView.borderColor = ContextCompat.getColor(requireActivity(), R.color.green)
                             break
                         }
                     }
 
                     if (!serverReachable) {
-                        Log.d(TAG, "No server reachable")
+                        Log.d("bellDashboard", "No server reachable")
                         fragmentHomeBellBinding.cardProfileBell.imageView.borderColor = ContextCompat.getColor(requireActivity(), R.color.md_yellow_600)
                     }
                 }
