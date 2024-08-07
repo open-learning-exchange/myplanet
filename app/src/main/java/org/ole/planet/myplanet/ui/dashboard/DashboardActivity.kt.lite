@@ -292,25 +292,42 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private val accountHeader: AccountHeader
-        get() {
-            val header = AccountHeaderBuilder()
-                .withActivity(this@DashboardActivity)
-                .withTextColor(ContextCompat.getColor(this, R.color.bg_white))
-                .withHeaderBackground(R.drawable.ole_logo)
-                .withDividerBelowHeader(false)
-                .build()
-            val headerBackground = header.headerBackgroundView
-            headerBackground.setPadding(30, 60, 30, 60)
-            val currentNightMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
-            if (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_NO ||
-                (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM && currentNightMode == Configuration.UI_MODE_NIGHT_NO)) {
-                headerBackground.setColorFilter(
-                    ContextCompat.getColor(this, R.color.md_white_1000),
-                    PorterDuff.Mode.SRC_IN
-                )
+            get() {
+                val displayMetrics = resources.displayMetrics
+                val screenWidth = displayMetrics.widthPixels
+                val screenHeight = displayMetrics.heightPixels
+                val density = displayMetrics.density
+
+                var paddingVerticalPx = screenHeight * 0.15
+                var paddingHorizontalPx = screenWidth * 0.15
+                if(screenWidth > screenHeight){ //sizing for tablets
+                    paddingVerticalPx = screenHeight * 0.05
+                    paddingHorizontalPx = screenWidth * 0.05
+                }
+
+                val paddingVerticalDp = (paddingVerticalPx / density).toInt()
+                val paddingHorizontalDp = (paddingHorizontalPx / density).toInt()
+
+                val header = AccountHeaderBuilder()
+                    .withActivity(this@DashboardActivity)
+                    .withTextColor(ContextCompat.getColor(this, R.color.bg_white))
+                    .withHeaderBackground(R.drawable.ole_logo)
+                    .withDividerBelowHeader(false)
+                    .build()
+
+                val headerBackground = header.headerBackgroundView
+                headerBackground.setPadding(paddingHorizontalDp, paddingVerticalDp, paddingHorizontalDp, paddingVerticalDp)
+
+                val currentNightMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+                if (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_NO ||
+                    (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM && currentNightMode == Configuration.UI_MODE_NIGHT_NO)) {
+                    headerBackground.setColorFilter(
+                        ContextCompat.getColor(this, R.color.md_white_1000),
+                        PorterDuff.Mode.SRC_IN
+                    )
+                }
+                return header
             }
-            return header
-        }
 
     private fun createDrawer() {
         val dimenHolder = DimenHolder.fromDp(160)
