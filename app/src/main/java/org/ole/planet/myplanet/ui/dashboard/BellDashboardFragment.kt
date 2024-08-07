@@ -94,8 +94,9 @@ class BellDashboardFragment : BaseDashboardFragment() {
             serverUrl,
             "https://example.com/server8",
             "https://example.com/server9"
-        ).filterNotNull() // Filter out null values if serverUrl is null
+        ).filterNotNull() // Filter out null values
 
+        // Reorder servers to check last reachable server first
         val serverUrls = listOfNotNull(lastReachableServer) + defaultServerUrls.filter { it != lastReachableServer }
 
         if (!isAdded) return@coroutineScope
@@ -107,14 +108,17 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
         val reachableServerFound = serverUrls.map { url ->
             async {
+                Log.d("NetworkIndicator", "Checking connection to: $url")
                 viewModel.checkServerConnection(url).also { canReachServer ->
                     if (canReachServer) {
+                        Log.d("NetworkIndicator", "Server is reachable: $url")
                         editor?.putString("last_reachable_server", url)?.apply()
                     }
                 }
             }
         }.awaitAll().any { it }
 
+        // Update UI based on the result of the reachability checks
         if (isAdded && view?.isAttachedToWindow == true) {
             val colorRes = when {
                 reachableServerFound -> R.color.green
