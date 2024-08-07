@@ -5,6 +5,7 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
+import android.net.Uri
 import android.net.wifi.WifiInfo
 import android.net.wifi.WifiManager
 import android.os.Build
@@ -167,4 +168,11 @@ object NetworkUtils {
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .getString("customDeviceName", "") ?: ""
     }
+
+    fun extractProtocol(url: String): String? {
+        val uri = Uri.parse(url)
+        val scheme = uri.scheme
+        return if (scheme != null) "$scheme://" else null
+    }
+
 }
