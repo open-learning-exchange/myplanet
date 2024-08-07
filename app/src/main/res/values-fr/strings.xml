@@ -799,7 +799,8 @@
     <string name="uploading_activities_to_server_please_wait">Téléchargement des activités vers le serveur, veuillez patienter…</string>
     <string name="connecting_to_server">Connexion au serveur....</string>
     <string name="check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server">Vérifiez à nouveau l\'adresse du serveur. Ce à quoi je me suis connecté n\'était pas le serveur Planet.</string>
-    <string name="device_couldn_t_reach_server_check_and_try_again">L\'appareil n\'a pas pu atteindre le serveur. Vérifiez et réessayez.</string>
+    <string name="device_couldn_t_reach_local_server">l\'appareil n\'a pas pu atteindre le serveur. vérifiez si vous êtes connecté au réseau Wi-Fi correct pour le serveur local (communauté).</string>
+    <string name="device_couldn_t_reach_nation_server">l\'appareil n\'a pas pu atteindre le serveur. vérifiez si vous êtes connecté à Internet et réessayez.</string>
     <string name="server_not_configured_properly_connect_this_device_with_planet_server">Le serveur n\'est pas configuré correctement. Connectez cet appareil au serveur Planet.</string>
     <string name="syncing_data_please_wait">Synchronisation des données, veuillez patienter…</string>
     <string name="sync_failed">Échec de la synchronisation</string>

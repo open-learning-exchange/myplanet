@@ -42,6 +42,7 @@ import org.ole.planet.myplanet.utilities.DialogUtils.getUpdateDialog
 import org.ole.planet.myplanet.utilities.DialogUtils.showAlert
 import org.ole.planet.myplanet.utilities.DialogUtils.showSnack
 import org.ole.planet.myplanet.utilities.DialogUtils.showWifiSettingDialog
+import org.ole.planet.myplanet.utilities.NetworkUtils.extractProtocol
 import org.ole.planet.myplanet.utilities.NetworkUtils.getCustomDeviceName
 import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
 import org.ole.planet.myplanet.utilities.Utilities.getRelativeTime
@@ -187,8 +188,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         customProgressDialog?.setText(getString(R.string.connecting_to_server))
         customProgressDialog?.show()
         val apiInterface = client?.create(ApiInterface::class.java)
-        apiInterface?.isPlanetAvailable("$processedUrl/_all_dbs")?.enqueue(
-            object : Callback<ResponseBody?> { override fun onResponse(call: Call<ResponseBody?>, response: Response<ResponseBody?>) {
+        apiInterface?.isPlanetAvailable("$processedUrl/_all_dbs")?.enqueue(object : Callback<ResponseBody?> {
+            override fun onResponse(call: Call<ResponseBody?>, response: Response<ResponseBody?>) {
                 try {
                     customProgressDialog?.dismiss()
                     val ss = response.body()?.string()
@@ -200,14 +201,22 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     }
                 } catch (e: Exception) {
                     syncFailed = true
-                    alertDialogOkay(getString(R.string.device_couldn_t_reach_server_check_and_try_again))
+                    if (extractProtocol("$processedUrl") == context.getString(R.string.http_protocol)) {
+                        alertDialogOkay(getString(R.string.device_couldn_t_reach_local_server))
+                    } else if (extractProtocol("$processedUrl") == context.getString(R.string.https_protocol)) {
+                        alertDialogOkay(getString(R.string.device_couldn_t_reach_nation_server))
+                    }
                     customProgressDialog?.dismiss()
                 }
             }
 
                 override fun onFailure(call: Call<ResponseBody?>, t: Throwable) {
                     syncFailed = true
-                    alertDialogOkay(getString(R.string.device_couldn_t_reach_server_check_and_try_again))
+                    if (extractProtocol("$processedUrl") == context.getString(R.string.http_protocol)) {
+                        alertDialogOkay(getString(R.string.device_couldn_t_reach_local_server))
+                    } else if (extractProtocol("$processedUrl") == context.getString(R.string.https_protocol)) {
+                        alertDialogOkay(getString(R.string.device_couldn_t_reach_nation_server))
+                    }
                     customProgressDialog?.dismiss()
                 }
             })
