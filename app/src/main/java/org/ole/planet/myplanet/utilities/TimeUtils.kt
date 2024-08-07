@@ -1,53 +1,52 @@
 package org.ole.planet.myplanet.utilities
 
-import java.text.ParseException
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 object TimeUtils {
-    private val defaultLocale: Locale
-        get() = Locale.getDefault()
-
     @JvmStatic
-    fun getFormatedDate(date: Long?, locale: Locale = defaultLocale): String {
-        return try {
+    fun getFormatedDate(date: Long?): String {
+        try {
             val d = date?.let { Date(it) } ?: Date()
-            val f = SimpleDateFormat("EEEE, MMM dd, yyyy", locale)
+            val f = SimpleDateFormat("EEEE, MMM dd, yyyy")
             f.timeZone = TimeZone.getTimeZone("UTC")
-            f.format(d)
+            return f.format(d)
         } catch (e: Exception) {
             e.printStackTrace()
-            "N/A"
         }
+        return "N/A"
     }
 
     @JvmStatic
-    fun getFormatedDateWithTime(date: Long, locale: Locale = defaultLocale): String {
+    fun getFormatedDateWithTime(date: Long): String {
         val d = Date(date)
-        val dateFormat = SimpleDateFormat("EEE dd, MMMM yyyy , hh:mm aa", locale)
+        val dateFormat = SimpleDateFormat("EEE dd, MMMM yyyy , hh:mm aa")
         return dateFormat.format(d)
     }
 
     @JvmStatic
-    fun formatDateTZ(data: Long, locale: Locale = defaultLocale): String {
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", locale)
+    fun formatDateTZ(data: Long): String {
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
         return dateFormat.format(data)
     }
 
     @JvmStatic
-    fun getAge(date: String, locale: Locale = defaultLocale): Int {
-        val dateFormat1 = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", locale)
-        val dateFormat2 = SimpleDateFormat("yyyy-MM-dd", locale)
+    fun getAge(date: String): Int {
+        val dateFormatTimeIncluded = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd")
         val dob = Calendar.getInstance()
         val today = Calendar.getInstance()
         try {
             if (date.contains("T")) {
-                val dt = dateFormat1.parse(date.replace("T", " ").replace(".000Z", ""))
+                val dt = dateFormatTimeIncluded.parse(date.replace("T".toRegex(), " ").replace(".000Z".toRegex(), ""))
                 if (dt != null) {
                     dob.time = dt
                 }
             } else {
-                val dt2 = dateFormat2.parse(date)
+                val dt2 = dateFormat.parse(date)
                 if (dt2 != null) {
                     dob.time = dt2
                 }
@@ -63,12 +62,12 @@ object TimeUtils {
     }
 
     @JvmStatic
-    fun getFormatedDate(stringDate: String?, pattern: String?, locale: Locale = defaultLocale): String {
+    fun getFormatedDate(stringDate: String?, pattern: String?): String {
         return try {
-            val sf = SimpleDateFormat(pattern, locale)
+            val sf = SimpleDateFormat(pattern, Locale.getDefault())
             sf.timeZone = TimeZone.getTimeZone("UTC")
             val date = stringDate?.let { sf.parse(it) }
-            getFormatedDate(date?.time, locale)
+            getFormatedDate(date?.time)
         } catch (e: Exception) {
             e.printStackTrace()
             "N/A"
@@ -76,43 +75,22 @@ object TimeUtils {
     }
 
     @JvmStatic
-    fun currentDate(locale: Locale = defaultLocale): String {
+    fun currentDate(): String {
         val c = Calendar.getInstance()
-        val dateFormat = SimpleDateFormat("EEE dd, MMMM yyyy", locale)
+        val dateFormat = SimpleDateFormat("EEE dd, MMMM yyyy")
         return dateFormat.format(c.time)
     }
 
-    fun currentDateLong(locale: Locale = defaultLocale): Long {
-        val c = Calendar.getInstance()
-        val dateFormat = SimpleDateFormat("EEE dd, MMMM yyyy", locale)
-        return try {
-            c.time = dateFormat.parse(currentDate(locale))!!
-            c.timeInMillis
-        } catch (e: ParseException) {
-            e.printStackTrace()
-            0
-        }
-    }
-
     @JvmStatic
-    fun formatDate(date: Long, locale: Locale = defaultLocale): String {
-        val dateFormat = SimpleDateFormat("EEE dd, MMMM yyyy", locale)
+    fun formatDate(date: Long): String {
+        val dateFormat = SimpleDateFormat("EEE dd, MMMM yyyy")
         return dateFormat.format(date)
     }
 
     @JvmStatic
-    fun formatDate(date: Long, format: String?, locale: Locale = defaultLocale): String {
-        val dateFormat = SimpleDateFormat(format, locale)
+    fun formatDate(date: Long, format: String?): String {
+        val dateFormat = SimpleDateFormat(format)
         return dateFormat.format(date)
     }
 
-    fun dateToLong(date: String?, locale: Locale = defaultLocale): Any {
-        return try {
-            val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", locale)
-            date?.let { dateFormat.parse(it) }?.time ?: 0
-        } catch (e: Exception) {
-            e.printStackTrace()
-            0
-        }
-    }
 }
