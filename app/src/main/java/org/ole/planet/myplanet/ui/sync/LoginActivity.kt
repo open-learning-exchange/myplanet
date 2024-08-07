@@ -73,7 +73,8 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         if (versionInfo != null) {
             onUpdateAvailable(versionInfo, intent.getBooleanExtra("cancelable", false))
         } else {
-            service.checkVersion(this, settings) }
+            service.checkVersion(this, settings) 
+        }
         checkUsagesPermission()
         forceSyncTrigger()
 
