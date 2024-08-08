@@ -120,12 +120,12 @@ jobs:
           firebase --version
           #firebase projects:list
           if [ -f output/myPlanet.apk ]; then
-            gcloud config set project ***
+            gcloud config set project linux
             #gcloud firebase test android models list
             gcloud firebase test android run \
               --type robo \
               --app output/myPlanet.apk \
-              --results-bucket ***-results \
+              --results-bucket myplanet-results \
               --results-dir test-results/myPlanet/$(date +%Y%m%d_%H%M%S) \
               --timeout 900s \
               --device model=MediumPhone.arm,version=34,locale=es,orientation=portrait
