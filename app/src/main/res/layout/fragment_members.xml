@@ -3,18 +3,17 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/secondary_bg"
     android:padding="@dimen/padding_normal">
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv_member"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
-
     <TextView
         android:id="@+id/tv_nodata"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:gravity="center" />
-
 </FrameLayout>

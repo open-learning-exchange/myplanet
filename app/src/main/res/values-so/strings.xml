@@ -1108,7 +1108,7 @@
     <string name="sync_cambridge">🇺🇸planet cambridge</string>
     <string name="sync_egdirbmac">🇺🇸planet egdirbmac</string>
     <string name="sync_palmbay">🇺🇸planet palmbay</string>
-    <string name="surveys_to_complete">Waxaad haysataa %d %s oo ay tahay inaad dhammaystirto</string>
+    <string name="surveys_to_complete">Waxaad haysataa %1$d %2$s oo ay tahay inaad dhammaystirto</string>
     <string name="show_less">tus wax yar</string>
     <string name="show_more">tus wax badan</string>
     <string name="server_address_content_description">cinwaanka serverka: %1$s</string>
