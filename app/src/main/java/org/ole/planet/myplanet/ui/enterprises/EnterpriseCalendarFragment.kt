@@ -14,6 +14,7 @@ import com.google.gson.*
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.*
 import org.ole.planet.myplanet.model.RealmMeetup
+import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.mymeetup.AdapterMeetup
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.*
@@ -33,6 +34,9 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
         fragmentEnterpriseCalendarBinding = FragmentEnterpriseCalendarBinding.inflate(inflater, container, false)
         start = Calendar.getInstance()
         end = Calendar.getInstance()
+        if (!isMember()) {
+            fragmentEnterpriseCalendarBinding.addEvent.visibility = View.GONE
+        }
         fragmentEnterpriseCalendarBinding.addEvent.setOnClickListener { showMeetupAlert() }
         return fragmentEnterpriseCalendarBinding.root
     }
@@ -44,7 +48,7 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
         setTimePicker(addMeetupBinding.tvStartTime)
         setTimePicker(addMeetupBinding.tvEndTime)
 
-        AlertDialog.Builder(requireActivity()).setView(addMeetupBinding.root)
+        val alertDialog = AlertDialog.Builder(requireActivity()).setView(addMeetupBinding.root)
             .setPositiveButton("Save") { _, _ ->
                 val ttl = "${addMeetupBinding.etTitle.text}"
                 val desc = "${addMeetupBinding.etDescription.text}"
@@ -79,6 +83,7 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
                     refreshCalendarView()
                 }
             }.setNegativeButton("Cancel", null).show()
+        alertDialog.window?.setBackgroundDrawableResource(R.color.card_bg)
     }
 
     private fun setDatePickerListener(view: TextView, date: Calendar?) {
@@ -98,7 +103,7 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
         time.setOnClickListener {
             val timePickerDialog = TimePickerDialog(
                 activity, { _, hourOfDay, minute ->
-                    time.text = String.format("%02d:%02d", hourOfDay, minute) },
+                    time.text = String.format(Locale.getDefault(), "%02d:%02d", hourOfDay, minute) },
                 c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), true)
             timePickerDialog.show()
         }
@@ -137,6 +142,8 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
 
         refreshCalendarView()
     }
+
+    override fun onNewsItemClick(news: RealmNews?) {}
 
     private fun showMeetupDetails(dateInMillis: Long) {
         fragmentEnterpriseCalendarBinding.meetup.visibility = View.VISIBLE

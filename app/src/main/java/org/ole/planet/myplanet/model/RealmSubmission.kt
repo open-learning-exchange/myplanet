@@ -5,19 +5,22 @@ import android.text.TextUtils
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import com.opencsv.CSVWriter
 import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.Sort
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities
+import java.io.File
+import java.io.FileWriter
 import java.io.IOException
 import java.util.Date
 import java.util.UUID
@@ -60,6 +63,8 @@ open class RealmSubmission : RealmObject() {
     var parent: String? = null
 
     companion object {
+        private val submissionDataList: MutableList<Array<String>> = mutableListOf()
+
         @JvmStatic
         fun insert(mRealm: Realm, submission: JsonObject) {
             if (!mRealm.isInTransaction) {
@@ -89,12 +94,23 @@ open class RealmSubmission : RealmObject() {
                         sub.user = Gson().toJson(JsonUtils.getJsonObject("user", submission))
                     }
 
-                    RealmStepExam.insertCourseStepsExams(
-                        "", "", JsonUtils.getJsonObject("parent", submission),
-                        JsonUtils.getString("parentId", submission), realm
+                    val csvRow = arrayOf(
+                        JsonUtils.getString("_id", submission),
+                        JsonUtils.getString("parentId", submission),
+                        JsonUtils.getString("type", submission),
+                        JsonUtils.getString("status", submission),
+                        JsonUtils.getString("grade", submission),
+                        JsonUtils.getString("startTime", submission),
+                        JsonUtils.getString("lastUpdateTime", submission),
+                        JsonUtils.getString("sender", submission),
+                        JsonUtils.getString("source", submission),
+                        JsonUtils.getString("parentCode", submission),
+                        JsonUtils.getString("user", submission)
                     )
-                    val userId =
-                        JsonUtils.getString("_id", JsonUtils.getJsonObject("user", submission))
+                    submissionDataList.add(csvRow)
+
+                    RealmStepExam.insertCourseStepsExams("", "", JsonUtils.getJsonObject("parent", submission), JsonUtils.getString("parentId", submission), realm)
+                    val userId = JsonUtils.getString("_id", JsonUtils.getJsonObject("user", submission))
                     if (userId.contains("@")) {
                         val us = userId.split("@".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
                         if (us[0].startsWith("org.couchdb.user:")) {
@@ -115,7 +131,26 @@ open class RealmSubmission : RealmObject() {
             }
         }
 
-        fun serializeExamResult(mRealm: Realm, sub: RealmSubmission, context: Context): JsonObject {
+        fun writeCsv(filePath: String, data: List<Array<String>>) {
+            try {
+                val file = File(filePath)
+                file.parentFile?.mkdirs()
+                val writer = CSVWriter(FileWriter(file))
+                writer.writeNext(arrayOf("_id", "parentId", "type", "status", "grade", "startTime", "lastUpdateTime", "sender", "source", "parentCode", "user"))
+                for (row in data) {
+                    writer.writeNext(row)
+                }
+                writer.close()
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        }
+
+        fun submissionWriteCsv() {
+            writeCsv("${context.getExternalFilesDir(null)}/ole/submission.csv", submissionDataList)
+        }
+
+        private fun serializeExamResult(mRealm: Realm, sub: RealmSubmission, context: Context): JsonObject {
             val `object` = JsonObject()
             val user = mRealm.where(RealmUserModel::class.java).equalTo("id", sub.userId).findFirst()
             var examId = sub.parentId
@@ -164,11 +199,11 @@ open class RealmSubmission : RealmObject() {
 
         @JvmStatic
         fun createSubmission(sub: RealmSubmission?, mRealm: Realm): RealmSubmission {
-            var sub = sub
-            if (sub == null || sub.status == "complete" && sub.type == "exam") sub =
-                mRealm.createObject(RealmSubmission::class.java, UUID.randomUUID().toString())
-            sub!!.lastUpdateTime = Date().time
-            return sub
+            var submission = sub
+            if (submission == null || submission.status == "complete" && (submission.type == "exam" || submission.type == "survey"))
+                submission = mRealm.createObject(RealmSubmission::class.java, UUID.randomUUID().toString())
+            submission!!.lastUpdateTime = Date().time
+            return submission
         }
 
         @JvmStatic
@@ -188,14 +223,13 @@ open class RealmSubmission : RealmObject() {
 
         @JvmStatic
         fun getNoOfSubmissionByUser(id: String?, userId: String?, mRealm: Realm): String {
-            val submissionCount = mRealm.where(RealmSubmission::class.java).equalTo("parentId", id).equalTo("userId", userId).findAll().size
-            var pluralizedString: String? = null
-            if (submissionCount <= 1) {
-                pluralizedString = MainApplication.context.getString(R.string.time)
-            } else if (submissionCount > 1) {
-                pluralizedString = MainApplication.context.getString(R.string.times)
+            val submissionCount = mRealm.where(RealmSubmission::class.java).equalTo("parentId", id).equalTo("userId", userId).equalTo("status", "complete").findAll().size
+            val pluralizedString: String = if (submissionCount == 1) {
+                context.getString(R.string.time)
+            } else {
+                context.getString(R.string.times)
             }
-            return MainApplication.context.getString(R.string.survey_taken) + " " + submissionCount + " " + pluralizedString
+            return context.getString(R.string.survey_taken) + " " + submissionCount + " " + pluralizedString
         }
 
         @JvmStatic

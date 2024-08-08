@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.net.wifi.WifiManager
+import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
 import android.view.LayoutInflater
@@ -31,6 +32,7 @@ import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onRemove
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.getExamMap
@@ -77,7 +79,12 @@ abstract class BaseResourceFragment : Fragment() {
     private val broadcastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action == DashboardActivity.MESSAGE_PROGRESS) {
-                val download = intent.getParcelableExtra<Download>("download")
+                val download: Download? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    intent.getParcelableExtra("download", Download::class.java)
+                } else {
+                    @Suppress("DEPRECATION")
+                    intent.getParcelableExtra("download")
+                }
                 if (!download?.failed!!) {
                     setProgress(download)
                 } else {
@@ -87,28 +94,32 @@ abstract class BaseResourceFragment : Fragment() {
         }
     }
 
-    protected fun showDownloadDialog(db_myLibrary: List<RealmMyLibrary?>) {
+    protected fun showDownloadDialog(dbMyLibrary: List<RealmMyLibrary?>) {
         if (isAdded) {
             Service(MainApplication.context).isPlanetAvailable(object : PlanetAvailableListener {
                 override fun isAvailable() {
-                    if (db_myLibrary.isNotEmpty()) {
+                    if (dbMyLibrary.isNotEmpty()) {
                         if (!isAdded) {
                             return
                         }
                         val inflater = activity?.layoutInflater
                         convertView = inflater?.inflate(R.layout.my_library_alertdialog, null)
-                        val alertDialogBuilder = AlertDialog.Builder(requireContext())
+                        val alertDialogBuilder = AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
                         alertDialogBuilder.setView(convertView)
                             .setTitle(R.string.download_suggestion)
                         alertDialogBuilder.setPositiveButton(R.string.download_selected) { _: DialogInterface?, _: Int ->
                             lv?.selectedItemsList?.let {
-                                downloadFiles(db_myLibrary, it)
+                                addToLibrary(dbMyLibrary, it)
+                                downloadFiles(dbMyLibrary, it)
                             }?.let { startDownload(it) }
                         }.setNeutralButton(R.string.download_all) { _: DialogInterface?, _: Int ->
-                            startDownload(downloadAllFiles(db_myLibrary))
+                            lv?.selectedItemsList?.let {
+                                addAllToLibrary(dbMyLibrary)
+                            }
+                            startDownload(downloadAllFiles(dbMyLibrary))
                         }.setNegativeButton(R.string.txt_cancel, null)
                         val alertDialog = alertDialogBuilder.create()
-                        createListView(db_myLibrary, alertDialog)
+                        createListView(dbMyLibrary, alertDialog)
                         alertDialog.show()
                         alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = (lv?.selectedItemsList?.size ?: 0) > 0
                     } else {
@@ -138,16 +149,16 @@ abstract class BaseResourceFragment : Fragment() {
         val exams = getExamMap(mRealm, list)
         val arrayAdapter: ArrayAdapter<*> = object : ArrayAdapter<Any?>(requireActivity(), android.R.layout.simple_list_item_1, list) {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-                var convertView = convertView
-                if (convertView == null) convertView = LayoutInflater.from(activity)
+                var convertedView = convertView
+                if (convertedView == null) convertedView = LayoutInflater.from(activity)
                     .inflate(android.R.layout.simple_list_item_1, null)
                 if (exams.containsKey((getItem(position) as RealmSubmission?)?.parentId)) {
-                    (convertView as TextView?)?.text = exams[list[position].parentId]?.name
+                    (convertedView as TextView?)?.text = exams[list[position].parentId]?.name
                 }
                 else {
-                    (convertView as TextView?)?.setText(R.string.n_a)
+                    (convertedView as TextView?)?.setText(R.string.n_a)
                 }
-                return convertView!!
+                return convertedView!!
             }
         }
         AlertDialog.Builder(requireActivity()).setTitle("Pending Surveys")
@@ -188,11 +199,11 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     open fun onDownloadComplete() {}
-    fun createListView(db_myLibrary: List<RealmMyLibrary?>, alertDialog: AlertDialog) {
+    fun createListView(dbMyLibrary: List<RealmMyLibrary?>, alertDialog: AlertDialog) {
         lv = convertView?.findViewById(R.id.alertDialog_listView)
         val names = ArrayList<String?>()
-        for (i in db_myLibrary.indices) {
-            names.add(db_myLibrary[i]?.title)
+        for (i in dbMyLibrary.indices) {
+            names.add(dbMyLibrary[i]?.title)
         }
         val adapter = ArrayAdapter(requireActivity().baseContext, R.layout.rowlayout, R.id.checkBoxRowLayout, names)
         lv?.choiceMode = ListView.CHOICE_MODE_MULTIPLE
@@ -265,6 +276,38 @@ abstract class BaseResourceFragment : Fragment() {
         tvSelected?.text = selected.subSequence(0, selected.length - 1)
     }
 
+    fun addToLibrary(libraryItems: List<RealmMyLibrary?>, selectedItems: ArrayList<Int>) {
+        for (i in selectedItems.indices) {
+            if (!libraryItems[selectedItems[i]]?.userId?.contains(profileDbHandler.userModel?.id)!!) {
+                if (!mRealm.isInTransaction) mRealm.beginTransaction()
+                libraryItems[selectedItems[i]]?.setUserId(profileDbHandler.userModel?.id)
+                RealmRemovedLog.onAdd(
+                    mRealm,
+                    "resources",
+                    profileDbHandler.userModel?.id,
+                    libraryItems[selectedItems[i]]?.resourceId
+                )
+            }
+        }
+        Utilities.toast(activity, getString(R.string.added_to_my_library))
+    }
+
+    fun addAllToLibrary(libraryItems: List<RealmMyLibrary?>) {
+        for (libraryItem in libraryItems) {
+            if (!libraryItem?.userId?.contains(profileDbHandler.userModel?.id)!!) {
+                if (!mRealm.isInTransaction) mRealm.beginTransaction()
+                libraryItem.setUserId(profileDbHandler.userModel?.id)
+                RealmRemovedLog.onAdd(
+                    mRealm,
+                    "resources",
+                    profileDbHandler.userModel?.id,
+                    libraryItem.resourceId
+                )
+            }
+        }
+        Utilities.toast(activity, getString(R.string.added_to_my_library))
+    }
+
     companion object {
         var settings: SharedPreferences? = null
         var auth = ""
@@ -281,7 +324,7 @@ abstract class BaseResourceFragment : Fragment() {
             return libList
         }
 
-        fun getLibraries(l: RealmResults<RealmMyLibrary>): List<RealmMyLibrary> {
+        private fun getLibraries(l: RealmResults<RealmMyLibrary>): List<RealmMyLibrary> {
             val libraries: MutableList<RealmMyLibrary> = ArrayList()
             for (lib in l) {
                 if (lib.needToUpdate()) {

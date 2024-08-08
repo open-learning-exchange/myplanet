@@ -3,21 +3,25 @@ package org.ole.planet.myplanet.ui.enterprises
 import android.app.Activity
 import android.app.DatePickerDialog
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.gson.JsonObject
 import io.realm.RealmResults
 import io.realm.Sort
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.DialogAddReportBinding
 import org.ole.planet.myplanet.databinding.FragmentReportsBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.insertReports
+import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
@@ -28,6 +32,7 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
+@RequiresApi(Build.VERSION_CODES.O)
 class ReportsFragment : BaseTeamFragment() {
     private lateinit var fragmentReportsBinding: FragmentReportsBinding
     var list: RealmResults<RealmMyTeam>? = null
@@ -40,6 +45,9 @@ class ReportsFragment : BaseTeamFragment() {
         fragmentReportsBinding = FragmentReportsBinding.inflate(inflater, container, false)
         mRealm = DatabaseService(requireActivity()).realmInstance
         prefData = SharedPrefManager(requireContext())
+        if (!isMember()) {
+            fragmentReportsBinding.addReports.visibility = View.GONE
+        }
         fragmentReportsBinding.addReports.setOnClickListener{
             val dialogAddReportBinding = DialogAddReportBinding.inflate(LayoutInflater.from(requireContext()))
             val v: View = dialogAddReportBinding.root
@@ -71,7 +79,7 @@ class ReportsFragment : BaseTeamFragment() {
                 val day = calendar.get(Calendar.DAY_OF_MONTH)
 
                 val dpd = DatePickerDialog(requireContext(), { _, selectedYear, selectedMonth, selectedDay ->
-                    dialogAddReportBinding.startDate.text = "$selectedDay/${selectedMonth + 1}/$selectedYear"
+                    dialogAddReportBinding.startDate.text = getString(R.string.formatted_date, selectedDay, selectedMonth + 1, selectedYear)
                     calendar.set(Calendar.YEAR, selectedYear)
                     calendar.set(Calendar.MONTH, selectedMonth)
                     calendar.set(Calendar.DAY_OF_MONTH, selectedDay)
@@ -88,7 +96,7 @@ class ReportsFragment : BaseTeamFragment() {
                 val day = calendar.get(Calendar.DAY_OF_MONTH)
 
                 val dpd = DatePickerDialog(requireContext(), { _, selectedYear, selectedMonth, selectedDay ->
-                    dialogAddReportBinding.endDate.text = "$selectedDay/${selectedMonth + 1}/$selectedYear"
+                    dialogAddReportBinding.endDate.text = getString(R.string.formatted_date, selectedDay, selectedMonth + 1, selectedYear)
                     calendar.set(Calendar.YEAR, selectedYear)
                     calendar.set(Calendar.MONTH, selectedMonth)
                     calendar.set(Calendar.DAY_OF_MONTH, selectedDay)
@@ -146,7 +154,7 @@ class ReportsFragment : BaseTeamFragment() {
             val currentDate = Date()
             val dateFormat = SimpleDateFormat("EEE_MMM_dd_yyyy", Locale.US)
             val formattedDate = dateFormat.format(currentDate)
-            val teamName = prefData.getTEAMNAME()?.replace(" ", "_")
+            val teamName = prefData.getTeamName()?.replace(" ", "_")
 
             val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
                 addCategory(Intent.CATEGORY_OPENABLE)
@@ -175,9 +183,12 @@ class ReportsFragment : BaseTeamFragment() {
         updatedReportsList(list as RealmResults<RealmMyTeam>)
     }
 
+    override fun onNewsItemClick(news: RealmNews?) {}
+
     private fun updatedReportsList(results: RealmResults<RealmMyTeam>) {
         activity?.runOnUiThread {
             adapterReports = AdapterReports(requireContext(), results)
+            adapterReports.setNonTeamMember(!isMember())
             fragmentReportsBinding.rvReports.layoutManager = LinearLayoutManager(activity)
             fragmentReportsBinding.rvReports.adapter = adapterReports
             adapterReports.notifyDataSetChanged()
@@ -196,7 +207,7 @@ class ReportsFragment : BaseTeamFragment() {
                             .equalTo("docType", "report")
                             .sort("date", Sort.DESCENDING).findAll()
                         val csvBuilder = StringBuilder()
-                        csvBuilder.append("${prefData.getTEAMNAME()} Financial Report Summary\n\n")
+                        csvBuilder.append("${prefData.getTeamName()} Financial Report Summary\n\n")
                         csvBuilder.append("Start Date, End Date, Created Date, Updated Date, Beginning Balance, Sales, Other Income, Wages, Other Expenses, Profit/Loss, Ending Balance\n")
                         for (report in reports) {
                             val dateFormat = SimpleDateFormat("EEE MMM dd yyyy HH:mm:ss 'GMT'Z (z)", Locale.US)

@@ -11,6 +11,7 @@ import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
+import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmQuery
@@ -87,7 +88,6 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         val builder = AlertDialog.Builder(requireActivity())
             .setTitle(String.format(getString(R.string.enter) + "%s " + getString(R.string.detail), if (type == null) getString(R.string.team) else type))
             .setView(alertCreateTeamBinding.root).setPositiveButton(getString(R.string.save), null).setNegativeButton(getString(R.string.cancel), null)
-
         val dialog = builder.create()
 
         dialog.setOnShowListener {
@@ -103,13 +103,10 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
                     name.isEmpty() -> {
                         Utilities.toast(activity, getString(R.string.name_is_required))
                         alertCreateTeamBinding.etName.error = getString(R.string.please_enter_a_name)
-                    }
-
-                    else -> {
+                    } else -> {
                         if (team == null) {
                             createTeam(name,
-                                if (alertCreateTeamBinding.spnTeamType.selectedItemPosition == 0) "local" else "sync",
-                                map,
+                                if (alertCreateTeamBinding.spnTeamType.selectedItemPosition == 0) "local" else "sync", map,
                                 alertCreateTeamBinding.switchPublic.isChecked
                             )
                         } else {
@@ -125,6 +122,8 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
                             team.updated = true
                             team.realm.commitTransaction()
                         }
+                        fragmentTeamBinding.etSearch.visibility = View.VISIBLE
+                        fragmentTeamBinding.tableTitle.visibility = View.VISIBLE
                         Utilities.toast(activity, getString(R.string.team_created))
                         setTeamList()
                         // dialog won't close by default
@@ -133,7 +132,6 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
                 }
             }
         }
-
         dialog.show()
     }
 
@@ -225,7 +223,6 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         return Pair(queried.findAll(), conditionApplied)
     }
 
-
     private fun setTeamList() {
         val query = mRealm.where(RealmMyTeam::class.java)
             .isEmpty("teamId")
@@ -242,6 +239,12 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
             }
         fragmentTeamBinding.rvTeamList.adapter = adapterTeamList
         listContentDescription(conditionApplied)
+        val itemCount = adapterTeamList?.itemCount
+        showNoData(fragmentTeamBinding.tvMessage, itemCount, "teams")
+        if (itemCount == 0) {
+            fragmentTeamBinding.etSearch.visibility = View.GONE
+            fragmentTeamBinding.tableTitle.visibility = View.GONE
+        }
     }
 
     override fun onEditTeam(team: RealmMyTeam?) {

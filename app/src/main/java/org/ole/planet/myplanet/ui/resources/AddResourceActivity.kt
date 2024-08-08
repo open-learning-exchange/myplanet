@@ -53,7 +53,7 @@ class AddResourceActivity : AppCompatActivity() {
     }
 
     private fun initializeViews() {
-        activityAddResourceBinding.fileUrl.text = "${getString(R.string.file)} $resourceUrl"
+        activityAddResourceBinding.fileUrl.text = getString(R.string.file, resourceUrl)
         activityAddResourceBinding.tvAddedBy.text = userModel?.name
         activityAddResourceBinding.tvLevels.setOnClickListener { view: View ->
             showMultiSelectList(resources.getStringArray(R.array.array_levels), levels, view)

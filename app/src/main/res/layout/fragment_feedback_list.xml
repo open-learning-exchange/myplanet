@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/card_bg"
     tools:context=".ui.feedback.FeedbackListFragment">
 
     <LinearLayout
@@ -14,6 +15,7 @@
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:backgroundTint="@color/secondary_bg"
             app:cardElevation="0dp"
             app:cardUseCompatPadding="true"
             app:contentPadding="@dimen/padding_small">
@@ -22,14 +24,13 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
 
-
                 <TextView
                     android:id="@+id/tv_title"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="2"
                     android:text="@string/title_not_compulsary"
-                    android:textColor="@color/md_black_1000"
+                    android:textColor="@color/daynight_textColor"
                     android:textSize="@dimen/text_size_mid" />
 
                 <TextView
@@ -38,9 +39,8 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="@string/type"
-                    android:textColor="@color/md_black_1000"
+                    android:textColor="@color/daynight_textColor"
                     android:textSize="@dimen/text_size_mid" />
-
 
                 <LinearLayout
                     android:layout_width="0dp"
@@ -55,10 +55,9 @@
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
                         android:text="@string/priority"
-                        android:textColor="@color/md_black_1000"
+                        android:textColor="@color/daynight_textColor"
                         android:textSize="@dimen/text_size_mid" />
                 </LinearLayout>
-
 
                 <LinearLayout
                     android:layout_width="0dp"
@@ -73,7 +72,7 @@
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
                         android:text="@string/status"
-                        android:textColor="@color/md_black_1000"
+                        android:textColor="@color/daynight_textColor"
                         android:textSize="@dimen/text_size_mid" />
                 </LinearLayout>
 
@@ -83,7 +82,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="@string/open_date"
-                    android:textColor="@color/md_black_1000"
+                    android:textColor="@color/daynight_textColor"
                     android:textSize="@dimen/text_size_mid" />
 
             </LinearLayout>
@@ -112,4 +111,10 @@
         android:src="@drawable/ic_add"
         android:contentDescription="@string/add" />
 
+    <TextView
+        android:visibility="gone"
+        android:id="@+id/tvMessage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center" />
 </FrameLayout>

@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.resources
 
+import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
 import android.view.LayoutInflater
@@ -7,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import io.realm.Realm
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
@@ -42,6 +44,13 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
 
     override fun onDownloadComplete() {
         fragmentLibraryDetailBinding.btnDownload.setImageResource(R.drawable.ic_play)
+        if (!library.userId?.contains(profileDbHandler.userModel?.id)!!) {
+            if (!lRealm.isInTransaction) lRealm.beginTransaction()
+            library.setUserId(profileDbHandler.userModel?.id)
+            onAdd(lRealm, "resources", profileDbHandler.userModel?.id, libraryId)
+            Utilities.toast(activity, getString(R.string.added_to_my_library))
+            fragmentLibraryDetailBinding.btnRemove.setImageResource(R.drawable.close_x)
+        }
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -54,16 +63,18 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         return fragmentLibraryDetailBinding.root
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         initRatingView("resource", library.resourceId, library.title, this@ResourceDetailFragment)
         setLibraryData()
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun setLibraryData() {
         with(fragmentLibraryDetailBinding) {
             tvTitle.text = if (openFrom.isNullOrEmpty()) library.title else "$openFrom-${library.title}"
-            timesRated.text = "${library.timesRated} ${requireContext().getString(R.string.total)}"
+            timesRated.text = requireContext().getString(R.string.num_total, library.timesRated)
             setTextViewVisibility(tvAuthor, llAuthor, library.author)
             setTextViewVisibility(tvPublished, llPublisher, library.publisher)
             setTextViewVisibility(tvMedia, llMedia, library.mediaType)
@@ -107,6 +118,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun setClickListeners() {
         fragmentLibraryDetailBinding.btnDownload.setOnClickListener {
             if (TextUtils.isEmpty(library.resourceLocalAddress)) {

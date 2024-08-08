@@ -93,7 +93,7 @@ abstract class PermissionActivity : AppCompatActivity() {
         }
     }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) { 
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == PERMISSION_REQUEST_CODE_FILE) {
             if (grantResults.isNotEmpty() && grantResults[0] != PackageManager.PERMISSION_GRANTED) {
@@ -103,7 +103,7 @@ abstract class PermissionActivity : AppCompatActivity() {
     }
 
     companion object {
-        private const val PERMISSION_REQUEST_CODE_FILE = 111
+        const val PERMISSION_REQUEST_CODE_FILE = 111
 //        @JvmStatic
 //        fun hasInstallPermission(context: Context): Boolean {
 //            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

@@ -14,13 +14,15 @@ import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import android.view.WindowManager
 import androidx.activity.OnBackPressedCallback
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
-import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.android.material.navigation.NavigationBarView
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayout.OnTabSelectedListener
 import com.mikepenz.materialdrawer.AccountHeader
@@ -31,7 +33,7 @@ import com.mikepenz.materialdrawer.holder.DimenHolder
 import com.mikepenz.materialdrawer.model.PrimaryDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.Nameable
-import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
@@ -61,7 +63,7 @@ import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
-class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, BottomNavigationView.OnNavigationItemSelectedListener {
+class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, NavigationBarView.OnItemSelectedListener {
     private lateinit var activityDashboardBinding: ActivityDashboardBinding
     private var headerResult: AccountHeader? = null
     var user: RealmUserModel? = null
@@ -97,10 +99,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
             val userProfileModel = profileDbHandler.userModel
             if (userProfileModel != null) {
                 var name: String? = userProfileModel.getFullName()
-                if (name?.trim { it <= ' ' }?.isEmpty() == true) {
+                if (name.isNullOrBlank()) {
                     name = profileDbHandler.userModel?.name
                 }
-                activityDashboardBinding.appBarBell.appTitleName.text = "$name's Planet"
+                activityDashboardBinding.appBarBell.appTitleName.text = getString(R.string.planet_name, name)
             } else {
                 activityDashboardBinding.appBarBell.appTitleName.text = getString(R.string.app_project_name)
             }
@@ -115,7 +117,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
             openCallFragment(InactiveDashboardFragment(), "Dashboard")
             return
         }
-        navigationView.setOnNavigationItemSelectedListener(this)
+        navigationView.setOnItemSelectedListener(this)
         navigationView.visibility = if (UserProfileDbHandler(this).userModel?.isShowTopbar == true) {
             View.VISIBLE
         } else {
@@ -129,7 +131,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
         result?.stickyFooter?.setPadding(0, 0, 0, 0) // moves logout button to the very bottom of the drawer. Without it, the "logout" button suspends a little.
         result?.actionBarDrawerToggle?.isDrawerIndicatorEnabled = true
         dl = result?.drawerLayout
-        window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN)
+        WindowInsetsControllerCompat(window, window.decorView).hide(WindowInsetsCompat.Type.statusBars())
         result?.drawerLayout?.fitsSystemWindows = false
         topbarSetting()
         if (intent != null && intent.hasExtra("fragmentToOpen")) {
@@ -187,7 +189,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
                     } else {
                         if (!doubleBackToExitPressedOnce) {
                             doubleBackToExitPressedOnce = true
-                            Utilities.toast(MainApplication.context, getString(R.string.press_back_again_to_exit))
+                            toast(context, getString(R.string.press_back_again_to_exit))
                             Handler(Looper.getMainLooper()).postDelayed({ doubleBackToExitPressedOnce = false }, 2000)
                         } else {
                             finish()
@@ -203,16 +205,23 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
         })
     }
 
+    fun refreshChatHistoryList() {
+        val fragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
+        if (fragment is ChatHistoryListFragment) {
+            fragment.refreshChatHistoryList()
+        }
+    }
+
     private fun hideWifi() {
-        val nav_Menu = activityDashboardBinding.appBarBell.bellToolbar.menu
-        nav_Menu.findItem(R.id.menu_goOnline)
+        val navMenu = activityDashboardBinding.appBarBell.bellToolbar.menu
+        navMenu.findItem(R.id.menu_goOnline)
             .setVisible((showBetaFeature(Constants.KEY_SYNC, this)))
     }
 
     private fun checkUser() {
         user = UserProfileDbHandler(this).userModel
         if (user == null) {
-            Utilities.toast(this, getString(R.string.session_expired))
+            toast(this, getString(R.string.session_expired))
             logout()
             return
         }
@@ -284,31 +293,57 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
 
     private val accountHeader: AccountHeader
         get() {
+            val displayMetrics = resources.displayMetrics
+            val screenWidth = displayMetrics.widthPixels
+            val screenHeight = displayMetrics.heightPixels
+            val density = displayMetrics.density
+
+            var paddingVerticalPx = screenHeight * 0.15
+            var paddingHorizontalPx = screenWidth * 0.15
+            if(screenWidth > screenHeight){ //sizing for tablets
+                paddingVerticalPx = screenHeight * 0.05
+                paddingHorizontalPx = screenWidth * 0.05
+            }
+
+            val paddingVerticalDp = (paddingVerticalPx / density).toInt()
+            val paddingHorizontalDp = (paddingHorizontalPx / density).toInt()
+
             val header = AccountHeaderBuilder()
                 .withActivity(this@DashboardActivity)
                 .withTextColor(ContextCompat.getColor(this, R.color.bg_white))
                 .withHeaderBackground(R.drawable.ole_logo)
                 .withDividerBelowHeader(false)
                 .build()
+
             val headerBackground = header.headerBackgroundView
-            headerBackground.setPadding(30, 60, 30, 60)
-            headerBackground.setColorFilter(ContextCompat.getColor(this, R.color.md_white_1000), PorterDuff.Mode.SRC_IN)
+            headerBackground.setPadding(paddingHorizontalDp, paddingVerticalDp, paddingHorizontalDp, paddingVerticalDp)
+
+            val currentNightMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+            if (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_NO ||
+                (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM && currentNightMode == Configuration.UI_MODE_NIGHT_NO)) {
+                headerBackground.setColorFilter(
+                    ContextCompat.getColor(this, R.color.md_white_1000),
+                    PorterDuff.Mode.SRC_IN
+                )
+            }
             return header
         }
 
     private fun createDrawer() {
         val dimenHolder = DimenHolder.fromDp(160)
-        result = DrawerBuilder().withActivity(this).withFullscreen(true)
-            .withSliderBackgroundColor(ContextCompat.getColor(this, R.color.colorPrimary))
-            .withToolbar(activityDashboardBinding.myToolbar)
-            .withAccountHeader((headerResult!!)).withHeaderHeight(dimenHolder)
-            .addDrawerItems(*drawerItems).addStickyDrawerItems(*drawerItemsFooter)
-            .withOnDrawerItemClickListener { _: View?, _: Int, drawerItem: IDrawerItem<*, *>? ->
-                if (drawerItem != null) {
-                    menuAction((drawerItem as Nameable<*>).name.textRes)
-                }
-                false
-            }.withDrawerWidthDp(200).build()
+        result = headerResult?.let {
+            DrawerBuilder().withActivity(this).withFullscreen(true)
+                .withSliderBackgroundColor(ContextCompat.getColor(this, R.color.colorPrimary))
+                .withToolbar(activityDashboardBinding.myToolbar)
+                .withAccountHeader(it).withHeaderHeight(dimenHolder)
+                .addDrawerItems(*drawerItems).addStickyDrawerItems(*drawerItemsFooter)
+                .withOnDrawerItemClickListener { _: View?, _: Int, drawerItem: IDrawerItem<*, *>? ->
+                    if (drawerItem != null) {
+                        menuAction((drawerItem as Nameable<*>).name.textRes)
+                    }
+                    false
+                }.withDrawerWidthDp(200).build()
+        }
     }
 
     private fun menuAction(selectedMenuId: Int) {
@@ -337,7 +372,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
 
     override fun onDestroy() {
         super.onDestroy()
-        profileDbHandler.onDestory()
+        profileDbHandler.onDestroy()
     }
 
     override fun openCallFragment(f: Fragment) {
@@ -392,14 +427,14 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, B
         }
 
     private fun changeUX(iconText: Int, drawable: Drawable?): PrimaryDrawerItem {
-            return PrimaryDrawerItem().withName(iconText)
-                .withIcon(drawable)
-                .withTextColor(ContextCompat.getColor(this, R.color.textColorPrimary))
-                .withSelectedTextColor(ContextCompat.getColor(this, R.color.primary_dark))
-                .withIconColor(ContextCompat.getColor(this, R.color.textColorPrimary))
-                .withSelectedIconColor(ContextCompat.getColor(this, R.color.primary_dark))
-                .withSelectedColor(ContextCompat.getColor(this, R.color.textColorPrimary))
-                .withIconTintingEnabled(true)
+        return PrimaryDrawerItem().withName(iconText)
+            .withIcon(drawable)
+            .withTextColor(ContextCompat.getColor(this, R.color.textColorPrimary))
+            .withSelectedTextColor(ContextCompat.getColor(this, R.color.primary_dark))
+            .withIconColor(ContextCompat.getColor(this, R.color.textColorPrimary))
+            .withSelectedIconColor(ContextCompat.getColor(this, R.color.primary_dark))
+            .withSelectedColor(ContextCompat.getColor(this, R.color.textColorPrimary))
+            .withIconTintingEnabled(true)
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {

@@ -1,11 +1,14 @@
 package org.ole.planet.myplanet.ui.dashboard
 
-import android.content.ContentValues.TAG
+import android.graphics.Typeface
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.TextView
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
@@ -17,6 +20,7 @@ import kotlinx.coroutines.*
 import org.json.JSONException
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseRecyclerParentFragment
 import org.ole.planet.myplanet.databinding.FragmentHomeBellBinding
 import org.ole.planet.myplanet.model.RealmCertification
 import org.ole.planet.myplanet.model.RealmCourseProgress
@@ -44,6 +48,7 @@ import java.util.Date
 class BellDashboardFragment : BaseDashboardFragment() {
     private lateinit var fragmentHomeBellBinding: FragmentHomeBellBinding
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentHomeBellBinding = FragmentHomeBellBinding.inflate(inflater, container, false)
 
@@ -54,6 +59,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         return fragmentHomeBellBinding.root
     }
 
+    @RequiresApi(Build.VERSION_CODES.M)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         fragmentHomeBellBinding.cardProfileBell.txtDate.text = TimeUtils.formatDate(Date().time)
@@ -102,9 +108,15 @@ class BellDashboardFragment : BaseDashboardFragment() {
                     e.printStackTrace()
                 }
             }
-
+            val titleView = TextView(requireActivity()).apply {
+                text = getString(R.string.surveys_to_complete, noOfSurvey, title)
+                setTextColor(context.getColor(R.color.daynight_textColor))
+                setPadding(90, 70, 0, 0)
+                textSize = 20f
+                typeface = Typeface.DEFAULT_BOLD
+            }
             val alertDialog: AlertDialog.Builder = AlertDialog.Builder(requireActivity())
-            alertDialog.setTitle("You have $noOfSurvey $title to complete")
+            alertDialog.setCustomTitle(titleView)
             val surveyNamesArray = surveyNames.filterNotNull().map { it as CharSequence }.toTypedArray()
             alertDialog.setItems(surveyNamesArray) { _, which ->
                 val selectedSurvey = itemsQuery[which]?.id
@@ -114,7 +126,9 @@ class BellDashboardFragment : BaseDashboardFragment() {
                 homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("survey"))
                 dialog.dismiss()
             }
-            alertDialog.show()
+            val dialog = alertDialog.create()
+            dialog.show()
+            dialog.window?.setBackgroundDrawableResource(R.color.card_bg)
         }
     }
 
@@ -200,7 +214,10 @@ class BellDashboardFragment : BaseDashboardFragment() {
         fragmentHomeBellBinding.homeCardCourses.myCoursesImageButton.setOnClickListener { openHelperFragment(CoursesFragment()) }
         fragmentHomeBellBinding.fabMyProgress.setOnClickListener { openHelperFragment(MyProgressFragment()) }
         fragmentHomeBellBinding.fabMyActivity.setOnClickListener { openHelperFragment(MyActivityFragment()) }
-        fragmentHomeBellBinding.fabSurvey.setOnClickListener { openHelperFragment(SurveyFragment()) }
+        fragmentHomeBellBinding.fabSurvey.setOnClickListener {
+            BaseRecyclerParentFragment.isSurvey = true
+            openHelperFragment(SurveyFragment())
+        }
         fragmentHomeBellBinding.cardProfileBell.fabFeedback.setOnClickListener { openHelperFragment(FeedbackListFragment()) }
         fragmentHomeBellBinding.homeCardMyLife.myLifeImageButton.setOnClickListener { homeItemClickListener?.openCallFragment(LifeFragment()) }
         fragmentHomeBellBinding.fabNotification.setOnClickListener { showNotificationFragment() }

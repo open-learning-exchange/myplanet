@@ -3,6 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:backgroundTint="@color/card_bg"
     app:cardElevation="2dp"
     app:cardUseCompatPadding="true"
     app:contentPadding="8dp">
@@ -22,14 +23,15 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:gravity="center"
-                android:padding="@dimen/padding_large" />
+                android:padding="@dimen/padding_large"
+                android:buttonTint="@color/daynight_textColor" />
 
             <TextView
                 android:id="@+id/title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:padding="4dp"
-                android:textColor="@color/md_black_1000"
+                android:textColor="@color/daynight_textColor"
                 android:textSize="@dimen/text_size_mid"
                 android:textStyle="bold" />
 
@@ -46,7 +48,8 @@
                 android:layout_height="wrap_content"
                 android:ellipsize="end"
                 android:maxLines="4"
-                android:padding="4dp" />
+                android:padding="4dp"
+                android:textColor="@color/hint_color" />
 
             <com.google.android.flexbox.FlexboxLayout
                 android:id="@+id/flexbox_drawable"
@@ -74,12 +77,14 @@
                 <TextView
                     android:id="@+id/grad_level"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" />
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/hint_color" />
 
                 <TextView
                     android:id="@+id/subject_level"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" />
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/hint_color" />
 
                 <TextView
                     android:id="@+id/holder"
@@ -114,7 +119,7 @@
                     android:gravity="center"
                     android:padding="4dp"
                     android:text="@string/zero_total"
-                    android:textColor="@color/md_black_1000" />
+                    android:textColor="@color/daynight_textColor" />
 
                 <androidx.appcompat.widget.AppCompatRatingBar
                     android:id="@+id/rating_bar"
@@ -144,7 +149,7 @@
                     android:gravity="center"
                     android:padding="4dp"
                     android:text="@string/zero_point_zero"
-                    android:textColor="@color/md_black_1000"
+                    android:textColor="@color/daynight_textColor"
                     android:textSize="@dimen/text_size_large"
                     android:textStyle="bold" />
 
@@ -164,7 +169,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:padding="@dimen/padding_normal"
-            android:textColor="@color/colorPrimary"
+            android:textColor="@color/text_highlight_color"
             android:visibility="gone" />
 
         <androidx.appcompat.widget.AppCompatSeekBar

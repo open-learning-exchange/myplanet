@@ -15,6 +15,7 @@ import org.ole.planet.myplanet.model.RealmSubmission.Companion.getNoOfSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.getRecentSubmissionDate
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.ui.survey.AdapterSurvey.ViewHolderSurvey
+import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
 class AdapterSurvey(private val context: Context, private val examList: List<RealmStepExam>, private val mRealm: Realm, private val userId: String) : RecyclerView.Adapter<ViewHolderSurvey>() {
     private lateinit var rowSurveyBinding: RowSurveyBinding
@@ -46,8 +47,10 @@ class AdapterSurvey(private val context: Context, private val examList: List<Rea
             )
         val noOfSubmission = getNoOfSubmissionByUser(examList[position].id, userId, mRealm)
         val subDate = getRecentSubmissionDate(examList[position].id, userId, mRealm)
+        val createdDate = RealmStepExam.getSurveyCreationTime(examList[position].id!!, mRealm)
         rowSurveyBinding.tvNoSubmissions.text = noOfSubmission
-        rowSurveyBinding.tvDate.text = subDate
+        rowSurveyBinding.tvDateCompleted.text = subDate
+        rowSurveyBinding.tvDate.text = formatDate(createdDate!!, "MMM dd, yyyy")
     }
 
     override fun getItemCount(): Int {

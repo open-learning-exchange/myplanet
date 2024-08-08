@@ -3,6 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
+    android:background="@color/secondary_bg"
     android:layout_height="match_parent"
     tools:context=".ui.enterprises.EnterpriseCalendarFragment">
 
@@ -15,18 +16,17 @@
             android:id="@+id/calendarView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:abbreviationsBarColor="@color/bg_white"
+            app:abbreviationsBarColor="@color/secondary_bg"
             app:abbreviationsLabelsColor="@color/disable_color"
             app:anotherMonthsDaysLabelsColor="@color/disable_color"
-            app:daysLabelsColor="@color/md_black_1000"
+            app:daysLabelsColor="@color/daynight_textColor"
             app:eventsEnabled="false"
             app:headerColor="@color/colorPrimary"
-            app:pagesColor="@color/md_white_1000"
+            app:pagesColor="@color/card_bg"
             app:selectionColor="@color/colorAccent"
             app:selectionLabelColor="@color/md_white_1000"
-            app:todayLabelColor="@color/colorPrimary"
+            app:todayLabelColor="@color/mainColor"
             app:type="many_days_picker" />
-
         <TextView
             android:id="@+id/meetup"
             android:layout_width="wrap_content"
@@ -38,12 +38,10 @@
             android:text="@string/txt_myMeetups"
             android:textColor="@color/md_black_1000"
             android:textStyle="bold" />
-
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvMeetups"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
-
     </LinearLayout>
 
     <com.github.clans.fab.FloatingActionButton
@@ -53,5 +51,4 @@
         android:layout_gravity="bottom|end"
         android:layout_margin="@dimen/padding_large"
         android:src="@drawable/ic_add" />
-
 </FrameLayout>

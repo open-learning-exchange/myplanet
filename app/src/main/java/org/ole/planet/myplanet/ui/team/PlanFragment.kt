@@ -1,15 +1,19 @@
 package org.ole.planet.myplanet.ui.team
 
+import android.os.Build
 import android.os.Bundle
 import android.text.Html
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.annotation.RequiresApi
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentPlanBinding
+import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
+@RequiresApi(Build.VERSION_CODES.O)
 class PlanFragment : BaseTeamFragment() {
     private lateinit var fragmentPlanBinding: FragmentPlanBinding
     private var missionText: String? = null
@@ -38,13 +42,15 @@ class PlanFragment : BaseTeamFragment() {
             } else {
                 "<b>" + getString(R.string.entRules) + "</b><br/>" + team.rules
             }
-            fragmentPlanBinding.tvDescription.text = Html.fromHtml(missionText + servicesText + rulesText)
+            fragmentPlanBinding.tvDescription.text = Html.fromHtml(missionText + servicesText + rulesText, Html.FROM_HTML_MODE_LEGACY)
             if (fragmentPlanBinding.tvDescription.text.toString().isEmpty()) {
-                fragmentPlanBinding.tvDescription.text = Html.fromHtml("<br/>" + getString(R.string.entEmptyDescription) + "<br/>")
+                fragmentPlanBinding.tvDescription.text = Html.fromHtml("<br/>" + getString(R.string.entEmptyDescription) + "<br/>", Html.FROM_HTML_MODE_LEGACY)
             }
         } else {
             fragmentPlanBinding.tvDescription.text = team.description
         }
-        fragmentPlanBinding.tvDate.text = "${getString(R.string.created_on)} ${formatDate(team.createdDate)}"
+        fragmentPlanBinding.tvDate.text = getString(R.string.two_strings, getString(R.string.created_on), formatDate(team.createdDate))
     }
+
+    override fun onNewsItemClick(news: RealmNews?) {}
 }

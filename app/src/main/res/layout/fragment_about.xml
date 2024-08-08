@@ -4,6 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="@dimen/padding_normal"
+    android:background="@color/secondary_bg"
     tools:context=".ui.dashboard.AboutFragment">
 
     <LinearLayout
@@ -25,6 +26,6 @@
             android:layout_weight="1"
             android:gravity="center"
             android:textAlignment="textStart"
-            android:textColor="@color/md_black_1000" />
+            android:textColor="@color/daynight_textColor" />
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

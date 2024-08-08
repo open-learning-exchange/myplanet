@@ -13,11 +13,30 @@ import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.model.DocumentResponse
+import org.ole.planet.myplanet.model.RealmAchievement.Companion.achievementWriteCsv
+import org.ole.planet.myplanet.model.RealmCertification.Companion.certificationWriteCsv
+import org.ole.planet.myplanet.model.RealmChatHistory.Companion.chatWriteCsv
 import org.ole.planet.myplanet.model.RealmChatHistory.Companion.insert
+import org.ole.planet.myplanet.model.RealmCourseProgress.Companion.progressWriteCsv
+import org.ole.planet.myplanet.model.RealmFeedback.Companion.feedbackWriteCsv
+import org.ole.planet.myplanet.model.RealmMeetup.Companion.meetupWriteCsv
+import org.ole.planet.myplanet.model.RealmMyCourse.Companion.courseWriteCsv
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
+import org.ole.planet.myplanet.model.RealmMyHealthPojo.Companion.healthWriteCsv
+import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.libraryWriteCsv
+import org.ole.planet.myplanet.model.RealmMyTeam.Companion.teamWriteCsv
+import org.ole.planet.myplanet.model.RealmNews.Companion.newsWriteCsv
+import org.ole.planet.myplanet.model.RealmOfflineActivity.Companion.offlineWriteCsv
+import org.ole.planet.myplanet.model.RealmRating.Companion.ratingWriteCsv
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
+import org.ole.planet.myplanet.model.RealmStepExam.Companion.stepExamWriteCsv
+import org.ole.planet.myplanet.model.RealmSubmission.Companion.submissionWriteCsv
+import org.ole.planet.myplanet.model.RealmTag.Companion.tagWriteCsv
+import org.ole.planet.myplanet.model.RealmTeamLog.Companion.teamLogWriteCsv
+import org.ole.planet.myplanet.model.RealmTeamTask.Companion.teamTaskWriteCsv
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.populateUsersTable
+import org.ole.planet.myplanet.model.RealmUserModel.Companion.userWriteCsv
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.JsonUtils.getJsonArray
@@ -168,6 +187,30 @@ object TransactionSyncManager {
             }
         }
         saveConcatenatedLinksToPrefs()
+
+        val syncFiles = settings.getBoolean("download_sync_files", false)
+
+        if (syncFiles) {
+            meetupWriteCsv()
+            achievementWriteCsv()
+            certificationWriteCsv()
+            chatWriteCsv()
+            progressWriteCsv()
+            feedbackWriteCsv()
+            courseWriteCsv()
+            healthWriteCsv()
+            libraryWriteCsv()
+            teamLogWriteCsv()
+            teamWriteCsv()
+            newsWriteCsv()
+            offlineWriteCsv()
+            ratingWriteCsv()
+            stepExamWriteCsv()
+            submissionWriteCsv()
+            tagWriteCsv()
+            teamTaskWriteCsv()
+            userWriteCsv()
+        }
     }
 
     private fun callMethod(mRealm: Realm, jsonDoc: JsonObject, type: String) {

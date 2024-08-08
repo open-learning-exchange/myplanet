@@ -49,10 +49,6 @@ open class RealmExamQuestion : RealmObject() {
             return array
         }
 
-    fun setCorrectChoice(correctChoice: RealmList<String>?) {
-        this.correctChoice = correctChoice
-    }
-
     companion object {
         @JvmStatic
         fun insertExamQuestions(questions: JsonArray, examId: String?, mRealm: Realm) {

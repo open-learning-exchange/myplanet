@@ -6,7 +6,6 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.core.content.res.ResourcesCompat
 import androidx.recyclerview.widget.RecyclerView
-import io.realm.RealmResults
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowFeedbackBinding
 import org.ole.planet.myplanet.model.RealmFeedback
@@ -15,11 +14,6 @@ import org.ole.planet.myplanet.utilities.TimeUtils.getFormatedDate
 
 class AdapterFeedback(private val context: Context, private var list: List<RealmFeedback>?) : RecyclerView.Adapter<ViewHolderFeedback>() {
     private lateinit var rowFeedbackBinding: RowFeedbackBinding
-
-    fun updateData(newData: RealmResults<RealmFeedback>) {
-        list = newData
-        notifyDataSetChanged()
-    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderFeedback {
         rowFeedbackBinding = RowFeedbackBinding.inflate(LayoutInflater.from(context), parent, false)

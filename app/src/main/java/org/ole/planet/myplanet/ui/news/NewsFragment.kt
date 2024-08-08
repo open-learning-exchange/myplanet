@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.news
 
-import android.content.Context
 import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
@@ -24,9 +23,8 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.ui.sync.SyncActivity
+import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.utilities.Constants
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.FileUtils.openOleFolder
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
@@ -38,6 +36,7 @@ class NewsFragment : BaseNewsFragment() {
     var user: RealmUserModel? = null
     private var updatedNewsList: RealmResults<RealmNews>? = null
     private var filteredNewsList: List<RealmNews?> = listOf()
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentNewsBinding = FragmentNewsBinding.inflate(inflater, container, false)
         llImage = fragmentNewsBinding.llImages
@@ -103,8 +102,8 @@ class NewsFragment : BaseNewsFragment() {
                 fragmentNewsBinding.tlMessage.error = getString(R.string.please_enter_message)
                 return@setOnClickListener
             }
-            fragmentNewsBinding.etMessage.setText("")
-            val map = HashMap<String?, String>() // Changed to String, String
+            fragmentNewsBinding.etMessage.setText(R.string.empty_text)
+            val map = HashMap<String?, String>()
             map["message"] = message
             map["viewInId"] = "${user?.planetCode ?: ""}@${user?.parentCode ?: ""}"
             map["viewInSection"] = "community"
@@ -163,19 +162,13 @@ class NewsFragment : BaseNewsFragment() {
                 }
             }
             val urls = ArrayList<String>()
-            val settings = requireActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             val stringArray: Array<String?> = resourceIds.toTypedArray()
             val lib: List<RealmMyLibrary?> = mRealm.where(RealmMyLibrary::class.java)
                 .`in`("_id", stringArray)
                 .findAll()
-            getUrlsAndStartDownload(lib, settings, urls)
+            getUrlsAndStartDownload(lib, urls)
             adapterNews = activity?.let {
-                AdapterNews(
-                    it,
-                    list?.toMutableList() ?: mutableListOf(),
-                    user,
-                    null
-                )
+                AdapterNews(it, list?.toMutableList() ?: mutableListOf(), user, null)
             }
             adapterNews?.setmRealm(mRealm)
             adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
@@ -186,6 +179,24 @@ class NewsFragment : BaseNewsFragment() {
             fragmentNewsBinding.llAddNews.visibility = View.GONE
             fragmentNewsBinding.btnAddStory.text = getString(R.string.add_story)
             adapterNews?.notifyDataSetChanged()
+        }
+    }
+
+    override fun onNewsItemClick(news: RealmNews?) {
+        val fromLogin = arguments?.getBoolean("fromLogin")
+        if (fromLogin == false) {
+            val bundle = Bundle()
+            bundle.putString("newsId", news?.newsId)
+            bundle.putString("newsRev", news?.newsRev)
+            bundle.putString("conversations", news?.conversations)
+
+            val chatDetailFragment = ChatDetailFragment()
+            chatDetailFragment.arguments = bundle
+
+            parentFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, chatDetailFragment)
+                .addToBackStack(null)
+                .commit()
         }
     }
 

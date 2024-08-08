@@ -1,13 +1,16 @@
 package org.ole.planet.myplanet.ui.courses
 
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.annotation.RequiresApi
 import androidx.recyclerview.widget.LinearLayoutManager
 import io.realm.Realm
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.FragmentCourseDetailBinding
@@ -44,12 +47,14 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         return fragmentCourseDetailBinding.root
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         initRatingView("course", courses?.courseId, courses?.courseTitle, this)
         setCourseData()
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun setCourseData() {
         setTextViewVisibility(fragmentCourseDetailBinding.subjectLevel, courses?.subjectLevel, fragmentCourseDetailBinding.ltSubjectLevel)
         setTextViewVisibility(fragmentCourseDetailBinding.method, courses?.method, fragmentCourseDetailBinding.ltMethod)
@@ -57,7 +62,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         setTextViewVisibility(fragmentCourseDetailBinding.language, courses?.languageOfInstruction, fragmentCourseDetailBinding.ltLanguage)
         val markdownContentWithLocalPaths = CourseStepFragment.prependBaseUrlToImages(courses?.description, "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/")
         setMarkdownText(fragmentCourseDetailBinding.description, markdownContentWithLocalPaths)
-        fragmentCourseDetailBinding.noOfExams.text = "${getNoOfExam(cRealm, id)}"
+        fragmentCourseDetailBinding.noOfExams.text = context?.getString(R.string.number_placeholder, getNoOfExam(cRealm, id))
         val resources: List<RealmMyLibrary> = cRealm.where(RealmMyLibrary::class.java).equalTo("courseId", id).equalTo("resourceOffline", false).isNotNull("resourceLocalAddress").findAll()
         setResourceButton(resources, fragmentCourseDetailBinding.btnResources)
         val downloadedResources: List<RealmMyLibrary> = cRealm.where(RealmMyLibrary::class.java).equalTo("resourceOffline", true).equalTo("courseId", id).isNotNull("resourceLocalAddress").findAll()
@@ -85,6 +90,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         setRatings(`object`)
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onDownloadComplete() {
         super.onDownloadComplete()
         setCourseData()

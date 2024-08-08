@@ -5,7 +5,9 @@ import android.content.Context
 import android.content.DialogInterface
 import android.content.SharedPreferences
 import android.net.Uri
+import android.os.Build
 import android.text.TextUtils
+import androidx.annotation.RequiresApi
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.realm.Realm
@@ -18,6 +20,7 @@ import org.ole.planet.myplanet.model.RealmCommunity
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.isUserExists
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.populateUsersTable
 import org.ole.planet.myplanet.service.UploadToShelfService
+import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateIv
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateKey
 import org.ole.planet.myplanet.utilities.Constants.KEY_UPGRADE_MAX
@@ -27,6 +30,7 @@ import org.ole.planet.myplanet.utilities.DialogUtils.CustomProgressDialog
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
+import org.ole.planet.myplanet.utilities.NetworkUtils.extractProtocol
 import org.ole.planet.myplanet.utilities.Sha256Utils
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils
@@ -34,6 +38,7 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import java.io.IOException
+import kotlin.math.min
 
 class Service(private val context: Context) {
     private val preferences: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -90,6 +95,7 @@ class Service(private val context: Context) {
             return
         }
         retrofitInterface?.checkVersion(Utilities.getUpdateUrl(settings))?.enqueue(object : Callback<MyPlanet?> {
+            @RequiresApi(Build.VERSION_CODES.M)
             override fun onResponse(call: Call<MyPlanet?>, response: Response<MyPlanet?>) {
                 preferences.edit().putInt("LastWifiID", NetworkUtils.getCurrentNetworkId(context)).apply()
                 if (response.body() != null) {
@@ -284,55 +290,114 @@ class Service(private val context: Context) {
         })
     }
 
-    fun getConfig(listener: ConfigurationIdListener?, url: String, pin: String) {
+    fun getMinApk(listener: ConfigurationIdListener?, url: String, pin: String, activity: SyncActivity) {
         val customProgressDialog = CustomProgressDialog(context).apply {
-            setText("Checking Server")
+            setText(context.getString(R.string.check_apk_version))
             show()
         }
-        val uri = Uri.parse(url)
-        val url_user: String
-        val url_pwd: String
-        val couchdbURL: String
-        if (url.contains("@")) {
-            getUserInfo(uri)
-            couchdbURL = url
-        } else {
-            url_user = "satellite"
-            url_pwd = pin
-            couchdbURL = uri.scheme + "://" + url_user + ":" + url_pwd + "@" + uri.host + ":" + if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port
-        }
 
-        retrofitInterface?.getConfiguration("${getUrl(couchdbURL)}/configurations/_all_docs?include_docs=true")?.enqueue(object : Callback<JsonObject?> {
+        retrofitInterface?.getConfiguration("$url/versions")?.enqueue(object : Callback<JsonObject?> {
             override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
                 if (response.isSuccessful) {
-                    val jsonObject = response.body()
-                    val rows = jsonObject?.getAsJsonArray("rows")
-                    if (rows != null && rows.size() > 0) {
-                        val firstRow = rows.get(0).asJsonObject
-                        val id = firstRow.getAsJsonPrimitive("id").asString
-                        val doc = firstRow.getAsJsonObject("doc")
-                        val code = doc.getAsJsonPrimitive("code").asString
-                        listener?.onConfigurationIdReceived(id, code)
-                        customProgressDialog.dismiss()
+                    response.body()?.let { jsonObject ->
+                        val currentVersion = "${context.resources.getText(R.string.app_version)}"
+                        val minApkVersion = jsonObject.get("minapk").asString
+                        if (isVersionAllowed(currentVersion, minApkVersion)) {
+                            customProgressDialog.setText(context.getString(R.string.checking_server))
+                            val uri = Uri.parse(url)
+                            val couchdbURL: String
+                            if (url.contains("@")) {
+                                getUserInfo(uri)
+                                couchdbURL = url
+                            } else {
+                                val urlUser = "satellite"
+                                couchdbURL = "${uri.scheme}://$urlUser:$pin@${uri.host}:${if (uri.port == -1) if (uri.scheme == "http") 80 else 443 else uri.port}"
+                            }
+                            retrofitInterface.getConfiguration("${getUrl(couchdbURL)}/configurations/_all_docs?include_docs=true").enqueue(object : Callback<JsonObject?> {
+                                override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
+                                    if (response.isSuccessful) {
+                                        val jsonObjectResponse = response.body()
+                                        val rows = jsonObjectResponse?.getAsJsonArray("rows")
+                                        if (rows != null && rows.size() > 0) {
+                                            val firstRow = rows.get(0).asJsonObject
+                                            val id = firstRow.getAsJsonPrimitive("id").asString
+                                            val doc = firstRow.getAsJsonObject("doc")
+                                            val code = doc.getAsJsonPrimitive("code").asString
+                                            listener?.onConfigurationIdReceived(id, code)
+                                            activity.setSyncFailed(false)
+                                        } else {
+                                            activity.setSyncFailed(true)
+                                            showAlertDialog(context.getString(R.string.failed_to_get_configuration_id), false)
+                                        }
+                                    } else {
+                                        activity.setSyncFailed(true)
+                                        showAlertDialog(context.getString(R.string.failed_to_get_configuration_id), false)
+                                    }
+                                    customProgressDialog.dismiss()
+                                }
+
+                                override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
+                                    activity.setSyncFailed(true)
+                                    customProgressDialog.dismiss()
+                                    if (getUrl(couchdbURL) == context.getString(R.string.http_protocol)) {
+                                        showAlertDialog(context.getString(R.string.device_couldn_t_reach_local_server), false)
+                                    } else if (getUrl(couchdbURL) == context.getString(R.string.https_protocol)) {
+                                        showAlertDialog(context.getString(R.string.device_couldn_t_reach_nation_server), false)
+                                    }
+                                }
+                            })
+                        } else {
+                            activity.setSyncFailed(true)
+                            customProgressDialog.dismiss()
+                            showAlertDialog(context.getString(R.string.below_min_apk), true)
+                        }
                     }
                 } else {
+                    activity.setSyncFailed(true)
                     customProgressDialog.dismiss()
-                    showAlertDialog(context.getString(R.string.failed_to_get_configuration_id))
+                    showAlertDialog(context.getString(R.string.device_couldn_t_reach_local_server), false)
                 }
             }
 
             override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
+                activity.setSyncFailed(true)
                 customProgressDialog.dismiss()
-                showAlertDialog(context.getString(R.string.device_couldn_t_reach_server_check_and_try_again))
+                if (extractProtocol(url) == context.getString(R.string.http_protocol)) {
+                    showAlertDialog(context.getString(R.string.device_couldn_t_reach_local_server), false)
+                } else if (extractProtocol(url) == context.getString(R.string.https_protocol)) {
+                    showAlertDialog(context.getString(R.string.device_couldn_t_reach_nation_server), false)
+                }
             }
         })
     }
 
-    fun showAlertDialog(message: String?) {
+    private fun isVersionAllowed(currentVersion: String, minApkVersion: String): Boolean {
+        return compareVersions(currentVersion, minApkVersion) >= 0
+    }
+
+    private fun compareVersions(version1: String, version2: String): Int {
+        val parts1 = version1.removeSuffix("-lite").removePrefix("v").split(".").map { it.toInt() }
+        val parts2 = version2.removePrefix("v").split(".").map { it.toInt() }
+
+        for (i in 0 until min(parts1.size, parts2.size)) {
+            if (parts1[i] != parts2[i]) {
+                return parts1[i].compareTo(parts2[i])
+            }
+        }
+        return parts1.size.compareTo(parts2.size)
+    }
+
+    fun showAlertDialog(message: String?, playStoreRedirect: Boolean) {
         val builder = AlertDialog.Builder(context)
         builder.setMessage(message)
         builder.setCancelable(true)
-        builder.setNegativeButton(R.string.okay) { dialog: DialogInterface, _: Int -> dialog.cancel() }
+        builder.setNegativeButton(R.string.okay) {
+            dialog: DialogInterface, _: Int ->
+            if (playStoreRedirect) {
+                Utilities.openPlayStore()
+            }
+            dialog.cancel()
+        }
         val alert = builder.create()
         alert.show()
     }

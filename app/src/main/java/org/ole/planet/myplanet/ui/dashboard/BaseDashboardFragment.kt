@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.dashboard
 import android.app.DatePickerDialog
 import android.content.Intent
 import android.graphics.Typeface
+import android.os.Build
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
@@ -12,6 +13,7 @@ import android.widget.DatePicker
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import com.bumptech.glide.Glide
@@ -57,18 +59,17 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     private var params = LinearLayout.LayoutParams(250, 100)
     private var di: DialogUtils.CustomProgressDialog? = null
     private lateinit var myCoursesResults: RealmResults<RealmMyCourse>
-    private val myCoursesChangeListener = RealmChangeListener<RealmResults<RealmMyCourse>> { results ->
+    private val myCoursesChangeListener = RealmChangeListener<RealmResults<RealmMyCourse>> { _ ->
         updateMyCoursesUI()
     }
     private lateinit var myTeamsResults: RealmResults<RealmMyTeam>
-    private val myTeamsChangeListener = RealmChangeListener<RealmResults<RealmMyTeam>> { results ->
+    private val myTeamsChangeListener = RealmChangeListener<RealmResults<RealmMyTeam>> { _ ->
         updateMyTeamsUI()
     }
     private lateinit var offlineActivitiesResults: RealmResults<RealmOfflineActivity>
-    private val offlineActivitiesChangeListener = RealmChangeListener<RealmResults<RealmOfflineActivity>> { results ->
+    private val offlineActivitiesChangeListener = RealmChangeListener<RealmResults<RealmOfflineActivity>> { _ ->
         updateOfflineVisitsUI()
     }
-
 
     fun onLoaded(v: View) {
         profileDbHandler = UserProfileDbHandler(requireContext())
@@ -78,7 +79,9 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             fullName = profileDbHandler.userModel?.name
             v.findViewById<LinearLayout>(R.id.ll_prompt).visibility = View.VISIBLE
             v.findViewById<LinearLayout>(R.id.ll_prompt).setOnClickListener {
-                UserInformationFragment.getInstance("").show(childFragmentManager, "")
+                if (!childFragmentManager.isStateSaved) {
+                    UserInformationFragment.getInstance("").show(childFragmentManager, "")
+                }
             }
         } else {
             v.findViewById<LinearLayout>(R.id.ll_prompt).visibility = View.GONE
@@ -107,13 +110,17 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             .findAllAsync()
         offlineActivitiesResults.addChangeListener(offlineActivitiesChangeListener)
         updateOfflineVisitsUI()
-        v.findViewById<TextView>(R.id.txtRole).text = "- ${model?.getRoleAsString()}"
+        v.findViewById<TextView>(R.id.txtRole).text = getString(R.string.user_role, model?.getRoleAsString())
         v.findViewById<TextView>(R.id.txtFullName).text = fullName
     }
 
     private fun updateOfflineVisitsUI() {
         val offlineVisits = profileDbHandler.offlineVisits
-        view?.findViewById<TextView>(R.id.txtVisits)?.text = "$offlineVisits ${getString(R.string.visits)}"
+        if (offlineVisits in 3..10) {
+            view?.findViewById<TextView>(R.id.txtVisits)?.text = getString(R.string.offline_visits, offlineVisits)
+        } else {
+            view?.findViewById<TextView>(R.id.txtVisits)?.text = getString(R.string.offline_visit, offlineVisits)
+        }
     }
 
     override fun forceDownloadNewsImages() {
@@ -128,7 +135,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
                 .greaterThan("createdDate", now.timeInMillis).equalTo("mediaType", "image")
                 .findAll()
             val urls = ArrayList<String>()
-            getUrlsAndStartDownload(imageList, settings, urls) },
+            getUrlsAndStartDownload(imageList, urls) },
             now[Calendar.YEAR], now[Calendar.MONTH], now[Calendar.DAY_OF_MONTH]
         )
         dpd.setTitle(getString(R.string.read_offline_news_from))
@@ -146,19 +153,20 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun myLibraryDiv(view: View) {
         view.findViewById<FlexboxLayout>(R.id.flexboxLayout).flexDirection = FlexDirection.ROW
         val dbMylibrary = RealmMyLibrary.getMyLibraryByUserId(mRealm, settings)
         if (dbMylibrary.isEmpty()) {
             view.findViewById<TextView>(R.id.count_library).visibility = View.GONE
         } else {
-            view.findViewById<TextView>(R.id.count_library).text = "${dbMylibrary.size}"
+            view.findViewById<TextView>(R.id.count_library).text = getString(R.string.number_placeholder, dbMylibrary.size)
         }
         for ((itemCnt, items) in dbMylibrary.withIndex()) {
             val itemLibraryHomeBinding = ItemLibraryHomeBinding.inflate(LayoutInflater.from(activity))
             val v = itemLibraryHomeBinding.root
             setTextColor(itemLibraryHomeBinding.title, itemCnt)
-            val colorResId = if (itemCnt % 2 == 0) R.color.md_white_1000 else R.color.md_grey_300
+            val colorResId = if (itemCnt % 2 == 0) R.color.dashboard_item else R.color.dashboard_item_alternative
             val color = context?.let { ContextCompat.getColor(it, colorResId) }
             if (color != null) {
                 v.setBackgroundColor(color)
@@ -282,6 +290,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun myLibraryItemClickAction(textView: TextView, items: RealmMyLibrary?) {
         textView.setOnClickListener {
             items?.let {
@@ -292,7 +301,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
     override fun onDestroy() {
         super.onDestroy()
-        profileDbHandler.onDestory()
+        profileDbHandler.onDestroy()
         if (::myCoursesResults.isInitialized) {
             myCoursesResults.removeChangeListener(myCoursesChangeListener)
         }
@@ -320,7 +329,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     private fun updateCountText(countText: Int, tv: TextView) {
-        tv.text = "$countText"
+        tv.text = getString(R.string.number_placeholder, countText)
         hideCountIfZero(tv, countText)
     }
 
@@ -328,6 +337,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         v.visibility = if (count == 0) View.GONE else View.VISIBLE
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     fun initView(view: View) {
         view.findViewById<View>(R.id.imageView).setOnClickListener {
             homeItemClickListener?.openCallFragment(UserProfileFragment())

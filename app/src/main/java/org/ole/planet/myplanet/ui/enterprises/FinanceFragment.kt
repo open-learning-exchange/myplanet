@@ -1,11 +1,13 @@
 package org.ole.planet.myplanet.ui.enterprises
 
 import android.content.DialogInterface
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.DatePicker
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.borax12.materialdaterangepicker.date.DatePickerDialog
@@ -17,6 +19,7 @@ import org.ole.planet.myplanet.databinding.AddTransactionBinding
 import org.ole.planet.myplanet.databinding.FragmentFinanceBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDateTZ
 import org.ole.planet.myplanet.utilities.Utilities
@@ -24,6 +27,7 @@ import java.util.Calendar
 import java.util.Locale
 import java.util.UUID
 
+@RequiresApi(Build.VERSION_CODES.O)
 class FinanceFragment : BaseTeamFragment() {
     private lateinit var fragmentFinanceBinding: FragmentFinanceBinding
     private lateinit var addTransactionBinding: AddTransactionBinding
@@ -76,21 +80,29 @@ class FinanceFragment : BaseTeamFragment() {
 
     private fun showDatePickerDialog() {
         val now = Calendar.getInstance()
-        DatePickerDialog.newInstance({ _: DatePickerDialog?, year: Int, monthOfYear: Int, dayOfMonth: Int, yearEnd: Int, monthOfYearEnd: Int, dayOfMonthEnd: Int ->
-            val start = Calendar.getInstance()
-            val end = Calendar.getInstance()
-            start[year, monthOfYear] = dayOfMonth
-            end[yearEnd, monthOfYearEnd] = dayOfMonthEnd
-            list = fRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId)
-                .equalTo("docType", "transaction")
-                .between("date", start.timeInMillis, end.timeInMillis).sort("date", Sort.DESCENDING)
-                .findAll()
-            updatedFinanceList(list as RealmResults<RealmMyTeam>)
-        }, now[Calendar.YEAR], now[Calendar.MONTH], now[Calendar.DAY_OF_MONTH]).show(
-            requireActivity().fragmentManager, ""
+
+        val dpd = DatePickerDialog.newInstance(
+            { _: DatePickerDialog?, year: Int, monthOfYear: Int, dayOfMonth: Int, yearEnd: Int, monthOfYearEnd: Int, dayOfMonthEnd: Int ->
+                val start = Calendar.getInstance()
+                val end = Calendar.getInstance()
+                start[year, monthOfYear] = dayOfMonth
+                end[yearEnd, monthOfYearEnd] = dayOfMonthEnd
+                val list = fRealm.where(RealmMyTeam::class.java)
+                    .equalTo("teamId", teamId)
+                    .equalTo("docType", "transaction")
+                    .between("date", start.timeInMillis, end.timeInMillis)
+                    .sort("date", Sort.DESCENDING)
+                    .findAll()
+                updatedFinanceList(list)
+            },
+            now[Calendar.YEAR],
+            now[Calendar.MONTH],
+            now[Calendar.DAY_OF_MONTH]
         )
+        dpd.show(requireActivity().fragmentManager, "DATE_PICKER")
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         if (user?.isManager() == true || user?.isLeader() == true) {
@@ -106,6 +118,8 @@ class FinanceFragment : BaseTeamFragment() {
         showNoData(fragmentFinanceBinding.tvNodata, list?.size, "finances")
     }
 
+    override fun onNewsItemClick(news: RealmNews?) {}
+
     private fun calculateTotal(list: List<RealmMyTeam>?) {
         var debit = 0
         var credit = 0
@@ -117,12 +131,13 @@ class FinanceFragment : BaseTeamFragment() {
             }
         }
         val total = credit - debit
-        fragmentFinanceBinding.tvDebit.text = "$debit"
-        fragmentFinanceBinding.tvCredit.text = "$credit"
-        fragmentFinanceBinding.tvBalance.text = "$total"
+        fragmentFinanceBinding.tvDebit.text = getString(R.string.number_placeholder, debit)
+        fragmentFinanceBinding.tvCredit.text = getString(R.string.number_placeholder, credit)
+        fragmentFinanceBinding.tvBalance.text = getString(R.string.number_placeholder, total)
         if (total >= 0) fragmentFinanceBinding.balanceCaution.visibility = View.GONE
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun addTransaction() {
         AlertDialog.Builder(requireActivity()).setView(setUpAlertUi()).setTitle(R.string.add_transaction)
             .setPositiveButton("Submit") { _: DialogInterface?, _: Int ->

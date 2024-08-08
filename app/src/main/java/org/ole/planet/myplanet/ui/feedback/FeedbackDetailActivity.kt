@@ -76,7 +76,7 @@ class FeedbackDetailActivity : AppCompatActivity() {
                 addReply(`object`, id)
                 mAdapter = RvFeedbackAdapter(feedback.messageList, applicationContext)
                 activityFeedbackDetailBinding.rvFeedbackReply.adapter = mAdapter
-                activityFeedbackDetailBinding.feedbackReplyEditText.setText("")
+                activityFeedbackDetailBinding.feedbackReplyEditText.setText(R.string.empty_text)
                 activityFeedbackDetailBinding.feedbackReplyEditText.clearFocus()
             }
         }

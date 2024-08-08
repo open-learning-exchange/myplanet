@@ -52,17 +52,9 @@ open class RealmApkLog : RealmObject() {
     }
 
     companion object {
-        @JvmField
         @Ignore
-        val ERROR_TYPE_EXCEPTION = "exception"
+        const val ERROR_TYPE_CRASH = "crash"
 
-        @JvmField
-        @Ignore
-        val ERROR_TYPE_CRASH = "crash"
-
-        @JvmField
-        @Ignore
-        val ERROR_TYPE_ANR = "AnR"
         @JvmStatic
         fun serialize(log: RealmApkLog, context: Context): JsonObject {
             val `object` = JsonObject()

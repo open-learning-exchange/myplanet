@@ -39,8 +39,8 @@ open class RealmAnswer : RealmObject() {
             return array
         }
 
-    fun setValueChoices(map: HashMap<String, String>?, isLastAnsvalid: Boolean) {
-        if (!isLastAnsvalid) {
+    fun setValueChoices(map: HashMap<String, String>?, isLastAnsValid: Boolean) {
+        if (!isLastAnsValid) {
             valueChoices?.clear()
         }
         if (map != null) {

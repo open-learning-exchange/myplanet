@@ -9,9 +9,10 @@ import org.ole.planet.myplanet.databinding.RowMemberRequestBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUserModel
 
-class AdapterMemberRequest(private val context: Context, private val list: MutableList<RealmUserModel>, private val mRealm: Realm) : RecyclerView.Adapter<AdapterMemberRequest.ViewHolderUser>() {
+class AdapterMemberRequest(private val context: Context, private val list: MutableList<RealmUserModel>, private val mRealm: Realm, private val isTeamLeader: Boolean) : RecyclerView.Adapter<AdapterMemberRequest.ViewHolderUser>() {
     private lateinit var rowMemberRequestBinding: RowMemberRequestBinding
     private var teamId: String? = null
+
     fun setTeamId(teamId: String?) {
         this.teamId = teamId
     }
@@ -22,16 +23,20 @@ class AdapterMemberRequest(private val context: Context, private val list: Mutab
     }
 
     override fun onBindViewHolder(holder: ViewHolderUser, position: Int) {
-        if (list[position].toString() == " ") {
-            rowMemberRequestBinding.tvName.text = list[position].name
+        rowMemberRequestBinding.tvName.text = list[position].name ?: list[position].toString()
+
+        if (isTeamLeader) {
+            rowMemberRequestBinding.btnAccept.isEnabled = true
+            rowMemberRequestBinding.btnReject.isEnabled = true
+            rowMemberRequestBinding.btnAccept.setOnClickListener {
+                acceptReject(list[position], true, position)
+            }
+            rowMemberRequestBinding.btnReject.setOnClickListener {
+                acceptReject(list[position], false, position)
+            }
         } else {
-            rowMemberRequestBinding.tvName.text = list[position].toString()
-        }
-        rowMemberRequestBinding.btnAccept.setOnClickListener {
-            acceptReject(list[position], true, position)
-        }
-        rowMemberRequestBinding.btnReject.setOnClickListener {
-            acceptReject(list[position], false, position)
+            rowMemberRequestBinding.btnAccept.isEnabled = false
+            rowMemberRequestBinding.btnReject.isEnabled = false
         }
     }
 
@@ -53,7 +58,7 @@ class AdapterMemberRequest(private val context: Context, private val list: Mutab
         notifyItemRemoved(position)
         notifyItemRangeChanged(position, list.size)
     }
-    
+
     override fun getItemCount(): Int {
         return list.size
     }

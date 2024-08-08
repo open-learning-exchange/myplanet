@@ -2,10 +2,15 @@ package org.ole.planet.myplanet.model
 
 import android.text.TextUtils
 import com.google.gson.*
+import com.opencsv.CSVWriter
 import io.realm.*
 import io.realm.annotations.PrimaryKey
 import org.json.JSONArray
+import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utilities.*
+import java.io.File
+import java.io.FileWriter
+import java.io.IOException
 
 open class RealmMeetup : RealmObject() {
     @PrimaryKey
@@ -15,7 +20,7 @@ open class RealmMeetup : RealmObject() {
     @JvmField
     var meetupId: String? = null
     @JvmField
-    var meetupId_rev: String? = null
+    var meetupIdRev: String? = null
     @JvmField
     var title: String? = null
     @JvmField
@@ -44,6 +49,8 @@ open class RealmMeetup : RealmObject() {
     var teamId: String? = null
 
     companion object {
+        private val meetupDataList: MutableList<Array<String>> = mutableListOf()
+
         @JvmStatic
         fun insert(mRealm: Realm, meetupDoc: JsonObject) {
             insert("", meetupDoc, mRealm)
@@ -60,7 +67,7 @@ open class RealmMeetup : RealmObject() {
             }
             myMeetupsDB?.meetupId = JsonUtils.getString("_id", meetupDoc)
             myMeetupsDB?.userId = userId
-            myMeetupsDB?.meetupId_rev = JsonUtils.getString("_rev", meetupDoc)
+            myMeetupsDB?.meetupIdRev = JsonUtils.getString("_rev", meetupDoc)
             myMeetupsDB?.title = JsonUtils.getString("title", meetupDoc)
             myMeetupsDB?.description = JsonUtils.getString("description", meetupDoc)
             myMeetupsDB?.startDate = JsonUtils.getLong("startDate", meetupDoc)
@@ -75,7 +82,44 @@ open class RealmMeetup : RealmObject() {
             myMeetupsDB?.links = JsonUtils.getJsonObject("link", meetupDoc).toString()
             myMeetupsDB?.teamId = JsonUtils.getString("teams", JsonUtils.getJsonObject("link", meetupDoc))
             mRealm.commitTransaction()
+
+            val csvRow = arrayOf(
+                JsonUtils.getString("_id", meetupDoc),
+                userId ?: "",
+                JsonUtils.getString("_rev", meetupDoc),
+                JsonUtils.getString("title", meetupDoc),
+                JsonUtils.getString("description", meetupDoc),
+                JsonUtils.getLong("startDate", meetupDoc).toString(),
+                JsonUtils.getLong("endDate", meetupDoc).toString(),
+                JsonUtils.getString("recurring", meetupDoc),
+                JsonUtils.getString("startTime", meetupDoc),
+                JsonUtils.getString("endTime", meetupDoc),
+                JsonUtils.getString("category", meetupDoc),
+                JsonUtils.getString("meetupLocation", meetupDoc),
+                JsonUtils.getString("createdBy", meetupDoc),
+                JsonUtils.getJsonArray("day", meetupDoc).toString(),
+                JsonUtils.getJsonObject("link", meetupDoc).toString(),
+                JsonUtils.getString("teams", JsonUtils.getJsonObject("link", meetupDoc))
+            )
+            meetupDataList.add(csvRow)
         }
+
+        @JvmStatic
+        fun writeCsv(filePath: String, data: List<Array<String>>) {
+            try {
+                val file = File(filePath)
+                file.parentFile?.mkdirs()
+                val writer = CSVWriter(FileWriter(file))
+                writer.writeNext(arrayOf("meetupId", "userId", "meetupId_rev", "title", "description", "startDate", "endDate", "recurring", "startTime", "endTime", "category", "meetupLocation", "creator", "day", "links", "teamId"))
+                for (row in data) {
+                    writer.writeNext(row)
+                }
+                writer.close()
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        }
+
 
         @JvmStatic
         fun getMyMeetUpIds(realm: Realm?, userId: String?): JsonArray {
@@ -127,8 +171,13 @@ open class RealmMeetup : RealmObject() {
             return myIds
         }
 
-        fun checkNull(s: String?): String {
+        private fun checkNull(s: String?): String {
             return if (TextUtils.isEmpty(s)) "" else s!!
+        }
+
+        @JvmStatic
+        fun meetupWriteCsv() {
+            writeCsv("${context.getExternalFilesDir(null)}/ole/meetups.csv", meetupDataList)
         }
     }
 }

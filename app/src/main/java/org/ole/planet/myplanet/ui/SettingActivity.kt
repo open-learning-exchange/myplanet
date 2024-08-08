@@ -5,10 +5,15 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.view.LayoutInflater
 import android.view.MenuItem
+import android.view.View
+import android.view.ViewGroup
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.content.ContextCompat
 import androidx.preference.ListPreference
 import androidx.preference.Preference
 import androidx.preference.Preference.OnPreferenceChangeListener
@@ -17,14 +22,14 @@ import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.SwitchPreference
 import io.realm.Realm
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.base.BaseResourceFragment
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
-import org.ole.planet.myplanet.ui.dashboard.DashboardFragment
-import org.ole.planet.myplanet.ui.sync.LoginActivity
+import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.clearRealmDb
+import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.clearSharedPref
+import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.restartApp
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryFormattedString
@@ -40,7 +45,7 @@ class SettingActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        supportActionBar!!.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportFragmentManager.beginTransaction().replace(android.R.id.content, SettingFragment()).commit()
         title = getString(R.string.action_settings)
     }
@@ -68,20 +73,43 @@ class SettingActivity : AppCompatActivity() {
         var user: RealmUserModel? = null
         private lateinit var dialog: DialogUtils.CustomProgressDialog
 
+        override fun onCreateView(
+            inflater: LayoutInflater,
+            container: ViewGroup?,
+            savedInstanceState: Bundle?
+        ): View {
+            val view = super.onCreateView(inflater, container, savedInstanceState)
+            view.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.secondary_bg))
+            return view
+        }
+
         @RequiresApi(Build.VERSION_CODES.O)
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
+            requireContext().setTheme(R.style.PreferencesTheme)
             setPreferencesFromResource(R.xml.pref, rootKey)
             profileDbHandler = UserProfileDbHandler(requireActivity())
             user = profileDbHandler.userModel
             dialog = DialogUtils.getCustomProgressDialog(requireActivity())
             setBetaToggleOn()
             setAutoSyncToggleOn()
+            setDownloadSyncFilesToggle()
             val lp = findPreference<ListPreference>("app_language")
             if (lp != null) {
                 lp.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, o: Any ->
                     LocaleHelper.setLocale(requireActivity(), o.toString())
                     requireActivity().recreate()
                     true
+                }
+            }
+
+            val darkMode = findPreference<Preference>("dark_mode")
+            if (darkMode != null) {
+                darkMode.onPreferenceChangeListener = OnPreferenceChangeListener { preference: Preference?, newValue: Any? ->
+                    if (preference?.key == "dark_mode") {
+                        darkMode(newValue.toString())
+                        return@OnPreferenceChangeListener true
+                    }
+                    false
                 }
             }
 
@@ -100,15 +128,9 @@ class SettingActivity : AppCompatActivity() {
                 preference.onPreferenceClickListener = OnPreferenceClickListener {
                     AlertDialog.Builder(requireActivity()).setTitle(R.string.are_you_sure)
                         .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                            BaseResourceFragment.settings?.edit()?.clear()?.apply()
-                            mRealm.executeTransactionAsync(
-                                Realm.Transaction { realm: Realm -> realm.deleteAll() },
-                                Realm.Transaction.OnSuccess {
-                                    Utilities.toast(requireActivity(), R.string.data_cleared.toString())
-                                    startActivity(Intent(requireActivity(), LoginActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK))
-                                    openDashboard = false
-                                    requireActivity().finish()
-                                })
+                            clearRealmDb()
+                            clearSharedPref()
+                            restartApp()
                         }.setNegativeButton(R.string.no, null).show()
                     false
                 }
@@ -140,7 +162,6 @@ class SettingActivity : AppCompatActivity() {
         private fun setBetaToggleOn() {
             val beta = findPreference<SwitchPreference>("beta_function")
             val course = findPreference<SwitchPreference>("beta_course")
-            val achievement = findPreference<SwitchPreference>("beta_achievement")
 //            val rating = findPreference<SwitchPreference>("beta_rating")
 //            val myHealth = findPreference<SwitchPreference>("beta_myHealth")
 //            val healthWorker = findPreference<SwitchPreference>("beta_healthWorker")
@@ -151,9 +172,6 @@ class SettingActivity : AppCompatActivity() {
                     if (beta.isChecked) {
                         if (course != null) {
                             course.isChecked = true
-                        }
-                        if (achievement != null) {
-                            achievement.isChecked = true
                         }
                     }
                     true
@@ -185,10 +203,28 @@ class SettingActivity : AppCompatActivity() {
             }
         }
 
+        private fun setDownloadSyncFilesToggle() {
+            val downloadSyncFiles = findPreference<SwitchPreference>("download_sync_files")
+            downloadSyncFiles?.onPreferenceChangeListener = OnPreferenceChangeListener { _, newValue ->
+                val isEnabled = newValue as Boolean
+                val sharedPreferences = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                sharedPreferences.edit().putBoolean("download_sync_files", isEnabled).apply()
+                true
+            }
+        }
+
         override fun onDestroy() {
             super.onDestroy()
             if (this::profileDbHandler.isInitialized) {
-                profileDbHandler.onDestory()
+                profileDbHandler.onDestroy()
+            }
+        }
+
+        private fun darkMode(key: String) {
+            when (key) {
+                getString(R.string.dark_mode_on) ->  AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+                getString(R.string.dark_mode_off) -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+                getString(R.string.dark_mode_follow_system) -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
             }
         }
     }

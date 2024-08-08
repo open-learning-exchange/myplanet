@@ -42,7 +42,8 @@
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1">
+            android:layout_weight="1"
+            android:textColorHint="@color/hint_color">
 
             <EditText
                 android:id="@+id/et_search"
@@ -52,7 +53,8 @@
                 android:hint="@string/search_dots"
                 android:inputType="text"
                 android:maxLines="1"
-                android:padding="@dimen/padding_normal" />
+                android:padding="@dimen/padding_normal"
+                android:backgroundTint="@color/hint_color" />
         </com.google.android.material.textfield.TextInputLayout>
     </LinearLayout>
 </LinearLayout>

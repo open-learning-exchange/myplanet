@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/secondary_bg"
     tools:context=".ui.news.ReplyActivity">
 
 
@@ -17,7 +18,7 @@
             android:layout_height="wrap_content"
             android:padding="@dimen/padding_normal"
             android:text="@string/showing_reply_of"
-            android:textColor="@color/md_black_1000"
+            android:textColor="@color/daynight_textColor"
             android:textSize="@dimen/text_size_large" />
 
         <androidx.recyclerview.widget.RecyclerView

@@ -37,11 +37,5 @@ class AdapterNotification(var context: Context, var list: List<Notifications>, v
         }
     }
 
-    class ViewHolderNotification(rowNotificationBinding: RowNotificationBinding) : RecyclerView.ViewHolder(rowNotificationBinding.root) {
-        private var rowNotificationBinding: RowNotificationBinding
-
-        init {
-            this.rowNotificationBinding = rowNotificationBinding
-        }
-    }
+    class ViewHolderNotification(rowNotificationBinding: RowNotificationBinding) : RecyclerView.ViewHolder(rowNotificationBinding.root)
 }

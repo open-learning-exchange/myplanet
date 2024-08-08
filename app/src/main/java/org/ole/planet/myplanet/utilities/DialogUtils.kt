@@ -132,8 +132,7 @@ object DialogUtils {
             }
 
             override fun onFail() {
-                val url = ArrayList<String>()
-                url.add(path)
+                val url = arrayListOf(path)
                 if (progressDialog != null) {
                     progressDialog.setText(context.getString(R.string.downloading_file))
                     progressDialog.setCancelable(false)
@@ -196,8 +195,8 @@ object DialogUtils {
             dialog?.setCancelable(state)
         }
 
-        fun setIndeterminate(isIndeterminate: Boolean) {
-            progressBar.isIndeterminate = isIndeterminate
+        private fun setIndeterminate() {
+            progressBar.isIndeterminate = false
         }
 
         fun setMax(maxValue: Int) {
@@ -205,7 +204,7 @@ object DialogUtils {
         }
 
         fun setProgress(value: Int) {
-            setIndeterminate(false)
+            setIndeterminate()
             progressBar.progress = value
         }
 

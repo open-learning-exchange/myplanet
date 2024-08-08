@@ -19,7 +19,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 import java.util.UUID
 
 class DictionaryActivity : BaseActivity() {
-    lateinit var fragmentDictionaryBinding: FragmentDictionaryBinding
+    private lateinit var fragmentDictionaryBinding: FragmentDictionaryBinding
     lateinit var mRealm: Realm
     var list: RealmResults<RealmDictionary>? = null
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -30,7 +30,7 @@ class DictionaryActivity : BaseActivity() {
         title = getString(R.string.dictionary)
         mRealm = DatabaseService(this).realmInstance
         list = mRealm.where(RealmDictionary::class.java)?.findAll()
-        fragmentDictionaryBinding.tvResult.text = "${getString(R.string.list_size)} ${list?.size}"
+        fragmentDictionaryBinding.tvResult.text = getString(R.string.list_size, list?.size)
         if (FileUtils.checkFileExist(Constants.DICTIONARY_URL)) {
             insertDictionary()
         } else {
@@ -57,12 +57,12 @@ class DictionaryActivity : BaseActivity() {
                     }
                     dict?.code = JsonUtils.getString("code", doc)
                     dict?.language = JsonUtils.getString("language", doc)
-                    dict?.advance_code = JsonUtils.getString("advance_code", doc)
+                    dict?.advanceCode = JsonUtils.getString("advance_code", doc)
                     dict?.word = JsonUtils.getString("word", doc)
                     dict?.meaning = JsonUtils.getString("meaning", doc)
                     dict?.definition = JsonUtils.getString("definition", doc)
                     dict?.synonym = JsonUtils.getString("synonym", doc)
-                    dict?.antonoym = JsonUtils.getString("antonoym", doc)
+                    dict?.antonym = JsonUtils.getString("antonoym", doc)
                 }
             }
         } else {
@@ -75,7 +75,7 @@ class DictionaryActivity : BaseActivity() {
             val dict = mRealm.where(RealmDictionary::class.java)?.equalTo("word", fragmentDictionaryBinding.etSearch.text.toString(), Case.INSENSITIVE)?.findFirst()
             if (dict != null) {
                 fragmentDictionaryBinding.tvResult.text = HtmlCompat.fromHtml(
-                    "Definition of '<b>" + dict.word + "</b>'<br/><br/>\n " + "<b>" + dict.definition + "\n</b><br/><br/><br/>" + "<b>Synonym : </b>" + dict.synonym + "\n<br/><br/>" + "<b>Antonoym : </b>" + dict.antonoym + "\n<br/>",
+                    "Definition of '<b>" + dict.word + "</b>'<br/><br/>\n " + "<b>" + dict.definition + "\n</b><br/><br/><br/>" + "<b>Synonym : </b>" + dict.synonym + "\n<br/><br/>" + "<b>Antonoym : </b>" + dict.antonym + "\n<br/>",
                     HtmlCompat.FROM_HTML_MODE_LEGACY
                 )
             } else {

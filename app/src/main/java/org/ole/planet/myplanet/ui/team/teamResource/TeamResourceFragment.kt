@@ -1,12 +1,16 @@
 package org.ole.planet.myplanet.ui.team.teamResource
 
 import android.content.DialogInterface
+import android.graphics.Typeface
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.ListView
+import android.widget.TextView
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.GridLayoutManager
 import org.ole.planet.myplanet.R
@@ -16,10 +20,12 @@ import org.ole.planet.myplanet.databinding.MyLibraryAlertdialogBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getResourceIds
+import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.CheckboxListView
 import java.util.UUID
 
+@RequiresApi(Build.VERSION_CODES.O)
 class TeamResourceFragment : BaseTeamFragment(), TeamPageListener {
     private lateinit var fragmentTeamResourceBinding: FragmentTeamResourceBinding
     private lateinit var adapterLibrary: AdapterTeamResource
@@ -31,8 +37,13 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         showLibraryList()
+        if (!isMember()) {
+            fragmentTeamResourceBinding.fabAddResource.visibility = View.GONE
+        }
         fragmentTeamResourceBinding.fabAddResource.setOnClickListener { showResourceListDialog() }
     }
+
+    override fun onNewsItemClick(news: RealmNews?) {}
 
     private fun showLibraryList() {
         val libraries: List<RealmMyLibrary> = mRealm.where(RealmMyLibrary::class.java).`in`("id", getResourceIds(teamId, mRealm).toTypedArray<String>()).findAll()
@@ -43,10 +54,22 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener {
     }
 
     private fun showResourceListDialog() {
+        if (!isAdded) {
+            return
+        }
+        val titleView = TextView(requireActivity()).apply {
+            text = getString(R.string.select_resource)
+            setTextColor(context.getColor(R.color.daynight_textColor))
+            setPadding(75, 50, 0, 0)
+            textSize = 24f
+            typeface = Typeface.DEFAULT_BOLD
+        }
         val myLibraryAlertdialogBinding = MyLibraryAlertdialogBinding.inflate(layoutInflater)
         val alertDialogBuilder = AlertDialog.Builder(requireActivity())
-        alertDialogBuilder.setTitle(R.string.select_resource)
-        val libraries: List<RealmMyLibrary> = mRealm.where(RealmMyLibrary::class.java).not().`in`("_id", getResourceIds(teamId, mRealm).toTypedArray<String>()).findAll()
+        alertDialogBuilder.setCustomTitle(titleView)
+        val libraries: List<RealmMyLibrary> = mRealm.where(RealmMyLibrary::class.java)
+            .not().`in`("_id", getResourceIds(teamId, mRealm).toTypedArray())
+            .findAll()
         alertDialogBuilder.setView(myLibraryAlertdialogBinding.root)
             .setPositiveButton(R.string.add) { _: DialogInterface?, _: Int ->
                 val selected = myLibraryAlertdialogBinding.alertDialogListView.selectedItemsList
@@ -68,6 +91,7 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener {
                 showLibraryList()
             }.setNegativeButton(R.string.cancel, null)
         val alertDialog = alertDialogBuilder.create()
+        alertDialog.window?.setBackgroundDrawableResource(R.color.card_bg)
         listSetting(alertDialog, libraries, myLibraryAlertdialogBinding.alertDialogListView)
     }
 

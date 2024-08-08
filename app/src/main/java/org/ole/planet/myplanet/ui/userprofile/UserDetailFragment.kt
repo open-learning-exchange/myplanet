@@ -30,7 +30,7 @@ class UserDetailFragment : Fragment() {
         }
     }
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentUserDetailBinding = FragmentUserDetailBinding.inflate(inflater, container, false)
         fragmentUserDetailBinding.rvUserDetail.layoutManager = GridLayoutManager(activity, 2)
         val mRealm = DatabaseService(requireActivity()).realmInstance
@@ -73,7 +73,7 @@ class UserDetailFragment : Fragment() {
         list.add(Detail("Language", user.language!!))
         list.add(Detail("Level", user.level!!))
         list.add(Detail("Number of Visits", db!!.offlineVisits.toString() + ""))
-        list.add(Detail("Last Login", "${Utilities.getRelativeTime(db.lastVisit!!)}" ))
+        list.add(Detail("Last Login", Utilities.getRelativeTime(db.lastVisit!!)))
         return list
     }
 

@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.viewer
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityTextfileViewerBinding
 import org.ole.planet.myplanet.utilities.FileUtils
 import java.io.BufferedReader
@@ -10,12 +11,12 @@ import java.io.File
 import java.io.FileReader
 
 class TextFileViewerActivity : AppCompatActivity() {
-    private lateinit var activityTextfileViewerBinding: ActivityTextfileViewerBinding
+    private lateinit var activityTextFileViewerBinding: ActivityTextfileViewerBinding
     private var fileName: String? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        activityTextfileViewerBinding = ActivityTextfileViewerBinding.inflate(layoutInflater)
-        setContentView(activityTextfileViewerBinding.root)
+        activityTextFileViewerBinding = ActivityTextfileViewerBinding.inflate(layoutInflater)
+        setContentView(activityTextFileViewerBinding.root)
         renderTextFile()
     }
 
@@ -23,11 +24,11 @@ class TextFileViewerActivity : AppCompatActivity() {
         val textFileOpenIntent = intent
         fileName = textFileOpenIntent.getStringExtra("TOUCHED_FILE")
         if (!fileName.isNullOrEmpty()) {
-            activityTextfileViewerBinding.textFileName.text = FileUtils.nameWithoutExtension(fileName)
-            activityTextfileViewerBinding.textFileName.visibility = View.VISIBLE
+            activityTextFileViewerBinding.textFileName.text = FileUtils.nameWithoutExtension(fileName)
+            activityTextFileViewerBinding.textFileName.visibility = View.VISIBLE
         } else {
-            activityTextfileViewerBinding.textFileName.text = "No file selected"
-            activityTextfileViewerBinding.textFileName.visibility = View.VISIBLE
+            activityTextFileViewerBinding.textFileName.text = getString(R.string.message_placeholder, "No file selected")
+            activityTextFileViewerBinding.textFileName.visibility = View.VISIBLE
         }
         renderTextFileThread()
     }
@@ -45,7 +46,7 @@ class TextFileViewerActivity : AppCompatActivity() {
                         text.append('\n')
                     }
                     reader.close()
-                    activityTextfileViewerBinding.textFileContent.text = text.toString()
+                    activityTextFileViewerBinding.textFileContent.text = text.toString()
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }

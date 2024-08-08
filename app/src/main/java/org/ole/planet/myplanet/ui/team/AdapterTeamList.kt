@@ -2,10 +2,12 @@ package org.ole.planet.myplanet.ui.team
 
 import android.content.Context
 import android.content.DialogInterface
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.FragmentManager
 import androidx.recyclerview.widget.RecyclerView
@@ -21,11 +23,12 @@ import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils
 
-class AdapterTeamList(private val context: Context, private val list: List<RealmMyTeam>, private val mRealm: Realm, fragmentManager: FragmentManager) : RecyclerView.Adapter<AdapterTeamList.ViewHolderTeam>() {
+class AdapterTeamList(private val context: Context, private val list: List<RealmMyTeam>, private val mRealm: Realm,
+                      private val fragmentManager: FragmentManager
+) : RecyclerView.Adapter<AdapterTeamList.ViewHolderTeam>() {
     private lateinit var itemTeamListBinding: ItemTeamListBinding
     private val user: RealmUserModel? = UserProfileDbHandler(context).userModel
     private var type: String? = ""
-    private val fragmentManager: FragmentManager
     private var teamListener: OnClickTeamItem? = null
     private var filteredList: List<RealmMyTeam> = list.filter { it.status!!.isNotEmpty() }
     private lateinit var prefData: SharedPrefManager
@@ -44,6 +47,7 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
         return ViewHolderTeam(itemTeamListBinding)
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onBindViewHolder(holder: ViewHolderTeam, position: Int) {
         itemTeamListBinding.created.text = TimeUtils.getFormatedDate(filteredList[position].createdDate)
         itemTeamListBinding.type.text = filteredList[position].teamType
@@ -60,7 +64,7 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
                 View.GONE
             }
         itemTeamListBinding.name.text = filteredList[position].name
-        itemTeamListBinding.noOfVisits.text = "${RealmTeamLog.getVisitByTeam(mRealm, filteredList[position]._id)}"
+        itemTeamListBinding.noOfVisits.text = context.getString(R.string.number_placeholder, RealmTeamLog.getVisitByTeam(mRealm, filteredList[position]._id))
         val isMyTeam = filteredList[position].isMyTeam(user?.id, mRealm)
         showActionButton(isMyTeam, position)
         holder.itemView.setOnClickListener {
@@ -71,7 +75,7 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
                 b.putBoolean("isMyTeam", isMyTeam)
                 f.arguments = b
                 (context as OnHomeItemClickListener).openCallFragment(f)
-                prefData.setTEAMNAME(filteredList[position].name)
+                prefData.setTeamName(filteredList[position].name)
             }
         }
         itemTeamListBinding.btnFeedback.setOnClickListener {
@@ -143,8 +147,4 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
     }
 
     class ViewHolderTeam(itemTeamListBinding: ItemTeamListBinding) : RecyclerView.ViewHolder(itemTeamListBinding.root)
-
-    init {
-        this.fragmentManager = fragmentManager
-    }
 }

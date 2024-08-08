@@ -22,7 +22,7 @@ data class Data(
     @SerializedName("user") var user: String,
     @SerializedName("content") var content: String,
     @SerializedName("aiProvider") val aiProvider: AiProvider,
-    @SerializedName("_id") var Id: String,
+    @SerializedName("_id") var id: String,
     @SerializedName("_rev") var rev: String
 )
 

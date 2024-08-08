@@ -5,6 +5,7 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
+import android.net.Uri
 import android.net.wifi.WifiInfo
 import android.net.wifi.WifiManager
 import android.os.Build
@@ -15,8 +16,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.*
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import java.net.NetworkInterface
-import java.util.Collections
 import java.util.Locale
 
 object NetworkUtils {
@@ -54,18 +53,6 @@ object NetworkUtils {
         }
 
         connectivityManager.registerDefaultNetworkCallback(networkCallback)
-    }
-
-    fun stopListenNetworkState() {
-        if (!_currentNetwork.value.isListening) {
-            return
-        }
-
-        _currentNetwork.update {
-            it.copy(isListening = false)
-        }
-
-        connectivityManager.unregisterNetworkCallback(networkCallback)
     }
 
     private class NetworkCallback : ConnectivityManager.NetworkCallback() {
@@ -166,32 +153,6 @@ object NetworkUtils {
     }
 
     @JvmStatic
-    fun getMacAddr(): String {
-        try {
-            val all = Collections.list(NetworkInterface.getNetworkInterfaces())
-            for (nif in all) {
-                if (!nif.name.equals("wlan0", ignoreCase = true)) continue
-                return getAddress(nif)
-            }
-        } catch (ex: Exception) {
-            ex.printStackTrace()
-        }
-        return ""
-    }
-
-    private fun getAddress(nif: NetworkInterface): String {
-        val macBytes = nif.hardwareAddress ?: return ""
-        val res1 = StringBuilder()
-        for (b in macBytes) {
-            res1.append(String.format("%02X:", b))
-        }
-        if (res1.isNotEmpty()) {
-            res1.deleteCharAt(res1.length - 1)
-        }
-        return res1.toString()
-    }
-
-    @JvmStatic
     fun getDeviceName(): String {
         val manufacturer = Build.MANUFACTURER
         val model = Build.MODEL
@@ -206,5 +167,11 @@ object NetworkUtils {
     fun getCustomDeviceName(context: Context): String {
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .getString("customDeviceName", "") ?: ""
+    }
+
+    fun extractProtocol(url: String): String? {
+        val uri = Uri.parse(url)
+        val scheme = uri.scheme
+        return if (scheme != null) "$scheme://" else null
     }
 }

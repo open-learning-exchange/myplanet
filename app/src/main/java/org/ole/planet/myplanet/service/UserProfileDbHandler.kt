@@ -11,9 +11,10 @@ import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Utilities
+import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.Locale
 import java.util.UUID
-
 class UserProfileDbHandler(context: Context) {
     private val settings: SharedPreferences
     var mRealm: Realm
@@ -34,7 +35,7 @@ class UserProfileDbHandler(context: Context) {
 
     val userModel: RealmUserModel?
         get() {
-            if (mRealm.isClosed){
+            if (mRealm.isClosed) {
                 mRealm = realmService.realmInstance
             }
             return mRealm.where(RealmUserModel::class.java)
@@ -64,7 +65,7 @@ class UserProfileDbHandler(context: Context) {
         mRealm.commitTransaction()
     }
 
-    fun onDestory() {
+    fun onDestroy() {
         if (!mRealm.isClosed) {
             mRealm.close()
         }
@@ -85,15 +86,27 @@ class UserProfileDbHandler(context: Context) {
     val offlineVisits: Int
         get() = getOfflineVisits(userModel)
 
-    fun getOfflineVisits(m: RealmUserModel?): Int {
-        val db_users = mRealm.where(RealmOfflineActivity::class.java).equalTo("userName", m?.name).equalTo("type", KEY_LOGIN).findAll()
-        return if (!db_users.isEmpty()) {
-            db_users.size
+    fun getOfflineVisits(m: RealmUserModel?): Int { val dbUsers = mRealm.where(RealmOfflineActivity::class.java).equalTo("userName", m?.name).equalTo("type", KEY_LOGIN).findAll()
+        return if (!dbUsers.isEmpty()) {
+            dbUsers.size
         } else {
             0
         }
     }
-
+    fun getLastVisit(m: RealmUserModel): String {
+        val realm = Realm.getDefaultInstance()
+        realm.beginTransaction()
+        val lastLogoutTimestamp = realm.where(RealmOfflineActivity::class.java)
+            .equalTo("userName", m.name)
+            .max("loginTime") as Long?
+        realm.commitTransaction()
+        return if (lastLogoutTimestamp != null) {
+            val date = Date(lastLogoutTimestamp)
+            SimpleDateFormat("MMMM dd, yyyy hh:mm a", Locale.getDefault()).format(date)
+        } else {
+            "No logout record found"
+        }
+    }
     fun setResourceOpenCount(item: RealmMyLibrary) {
         setResourceOpenCount(item, KEY_RESOURCE_OPEN)
     }
@@ -136,24 +149,18 @@ class UserProfileDbHandler(context: Context) {
                 .distinct("resourceId").findAll()
             var maxCount = 0L
             var maxOpenedResource = ""
-            for (realm_resourceActivities in result) {
+            for (realmResourceActivities in result) {
                 val count =
                     mRealm.where(RealmResourceActivity::class.java).equalTo("user", fullName)
                         .equalTo("type", KEY_RESOURCE_OPEN)
-                        .equalTo("resourceId", realm_resourceActivities.resourceId).count()
+                        .equalTo("resourceId", realmResourceActivities.resourceId).count()
                 if (count > maxCount) {
                     maxCount = count
-                    maxOpenedResource = "${realm_resourceActivities.title}"
+                    maxOpenedResource = "${realmResourceActivities.title}"
                 }
             }
             return if (maxCount == 0L) "" else "$maxOpenedResource opened $maxCount times"
         }
-
-    fun changeTopbarSetting(o: Boolean) {
-        if (!mRealm.isInTransaction) mRealm.beginTransaction()
-        userModel?.isShowTopbar = o
-        mRealm.commitTransaction()
-    }
 
     companion object {
         const val KEY_LOGIN = "login"

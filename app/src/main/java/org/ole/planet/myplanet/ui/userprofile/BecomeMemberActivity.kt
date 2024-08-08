@@ -11,6 +11,7 @@ import android.text.TextUtils
 import android.text.TextWatcher
 import android.view.View
 import android.widget.ArrayAdapter
+import androidx.annotation.RequiresApi
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Realm
@@ -22,7 +23,6 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.sync.LoginActivity
-import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.Utilities
@@ -50,6 +50,7 @@ class BecomeMemberActivity : BaseActivity() {
         dpd.show()
     }
 
+    @RequiresApi(Build.VERSION_CODES.N)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         activityBecomeMemberBinding = ActivityBecomeMemberBinding.inflate(layoutInflater)
@@ -131,10 +132,10 @@ class BecomeMemberActivity : BaseActivity() {
         activityBecomeMemberBinding.btnSubmit.setOnClickListener {
             val userName: String = activityBecomeMemberBinding.etUsername.text.toString()
             var password: String? = activityBecomeMemberBinding.etPassword.text.toString()
-            val repassword: String = activityBecomeMemberBinding.etRePassword.text.toString()
-            val fname: String = activityBecomeMemberBinding.etFname.text.toString()
-            val lname: String = activityBecomeMemberBinding.etLname.text.toString()
-            val mname: String = activityBecomeMemberBinding.etMname.text.toString()
+            val rePassword: String = activityBecomeMemberBinding.etRePassword.text.toString()
+            val fName: String = activityBecomeMemberBinding.etFname.text.toString()
+            val lName: String = activityBecomeMemberBinding.etLname.text.toString()
+            val mName: String = activityBecomeMemberBinding.etMname.text.toString()
             val email: String = activityBecomeMemberBinding.etEmail.text.toString()
             val language: String = activityBecomeMemberBinding.spnLang.selectedItem.toString()
             val phoneNumber: String = activityBecomeMemberBinding.etPhone.text.toString()
@@ -172,7 +173,7 @@ class BecomeMemberActivity : BaseActivity() {
                activityBecomeMemberBinding.etUsername.error = getString(R.string.only_letters_numbers_and_are_allowed)
             } else if (TextUtils.isEmpty(password)) {
                 activityBecomeMemberBinding.etPassword.error = getString(R.string.please_enter_a_password)
-            } else if (password != repassword) {
+            } else if (password != rePassword) {
                 activityBecomeMemberBinding.etRePassword.error = getString(R.string.password_doesn_t_match)
             } else if (!TextUtils.isEmpty(email) && !Utilities.isValidEmail(email)) {
                 activityBecomeMemberBinding.etEmail.error = getString(R.string.invalid_email)
@@ -192,7 +193,7 @@ class BecomeMemberActivity : BaseActivity() {
                 }
 
                 checkMandatoryFieldsAndAddMember(
-                    userName, password, repassword, fname, lname, mname, email, language, level,
+                    userName, password, rePassword, fName, lName, mName, email, language, level,
                     phoneNumber, birthDate, gender, mRealm
                 )
             }
@@ -200,20 +201,20 @@ class BecomeMemberActivity : BaseActivity() {
     }
 
     private fun checkMandatoryFieldsAndAddMember(
-        username: String, password: String, repassword: String?, fname: String?, lname: String?,
-        mname: String?, email: String?, language: String?, level: String?, phoneNumber: String?,
+        username: String, password: String, rePassword: String?, fName: String?, lName: String?,
+        mName: String?, email: String?, language: String?, level: String?, phoneNumber: String?,
         birthDate: String?, gender: String?, mRealm: Realm
     ) {
         /**
          * Creates and adds a new member if the username and password
-         * are not empty and password matches repassword.
+         * are not empty and password matches rePassword.
          */
-        if (username.isNotEmpty() && password.isNotEmpty() && repassword == password) {
+        if (username.isNotEmpty() && password.isNotEmpty() && rePassword == password) {
             val obj = JsonObject()
             obj.addProperty("name", username)
-            obj.addProperty("firstName", fname)
-            obj.addProperty("lastName", lname)
-            obj.addProperty("middleName", mname)
+            obj.addProperty("firstName", fName)
+            obj.addProperty("lastName", lName)
+            obj.addProperty("middleName", mName)
             obj.addProperty("password", password)
             obj.addProperty("isUserAdmin", false)
             obj.addProperty("joinDate", Calendar.getInstance().timeInMillis)

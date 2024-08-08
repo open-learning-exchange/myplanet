@@ -49,7 +49,7 @@ class AudioPlayerActivity : AppCompatActivity(), JcPlayerManagerListener {
             File(basePath, "ole/$filePath").absolutePath
         }
         fullPath?.let {
-            JcAudio.createFromFilePath(resourceTitle,it)
+            JcAudio.createFromFilePath(resourceTitle, it)
         }?.let { jcAudios.add(it) }
         initializeJCPlayer()
     }
@@ -64,7 +64,7 @@ class AudioPlayerActivity : AppCompatActivity(), JcPlayerManagerListener {
             }
         }
         filePath?.let {
-            JcAudio.createFromFilePath(resourceTitle,it)
+            JcAudio.createFromFilePath(resourceTitle, it)
         }?.let { jcAudios.add(it) }
         initializeJCPlayer()
     }
@@ -93,6 +93,11 @@ class AudioPlayerActivity : AppCompatActivity(), JcPlayerManagerListener {
 
     override fun onStop() {
         super.onStop()
+        activityAudioPlayerBinding.jcplayer.kill()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
         activityAudioPlayerBinding.jcplayer.kill()
     }
 

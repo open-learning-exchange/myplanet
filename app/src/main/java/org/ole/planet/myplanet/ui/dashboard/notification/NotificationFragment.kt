@@ -25,7 +25,6 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.FileUtils
-import java.util.Calendar
 
 class NotificationFragment : BottomSheetDialogFragment() {
     private lateinit var fragmentNotificationBinding: FragmentNotificationBinding

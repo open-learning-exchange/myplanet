@@ -3,6 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:backgroundTint="@color/card_bg"
     app:cardElevation="2dp"
     app:cardUseCompatPadding="true"
     app:contentPadding="@dimen/eight_dp">
@@ -56,7 +57,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:padding="1dp"
-                                android:textColor="@color/md_black_1000"
+                                android:textColor="@color/daynight_textColor"
                                 android:textSize="@dimen/text_size_large"
                                 android:textStyle="bold" />
 
@@ -66,7 +67,7 @@
                                 android:layout_height="wrap_content"
                                 android:layout_gravity="center_vertical"
                                 android:padding="1dp"
-                                android:textColor="@color/md_black_1000"
+                                android:textColor="@color/daynight_textColor"
                                 android:textSize="16sp"
                                 android:textStyle="bold" />
 
@@ -75,7 +76,7 @@
                         <View
                             android:layout_width="@dimen/_1dp"
                             android:layout_height="wrap_content"
-                            android:background="@color/colorPrimaryDark"
+                            android:background="@color/daynight_textColor"
                             android:visibility="gone" />
 
                         <TextView
@@ -85,7 +86,7 @@
                             android:layout_gravity="center_vertical"
                             android:gravity="center"
                             android:padding="@dimen/padding_normal"
-                            android:textColor="@color/md_black_1000"
+                            android:textColor="@color/daynight_textColor"
                             android:textSize="18sp"
                             android:textStyle="bold" />
 
@@ -101,7 +102,7 @@
                             android:layout_gravity="center_vertical"
                             android:gravity="center"
                             android:padding="@dimen/padding_normal"
-                            android:textColor="@color/md_black_1000"
+                            android:textColor="@color/daynight_textColor"
                             android:textSize="16sp"
                             android:textStyle="bold"
                             android:visibility="gone" />
@@ -119,7 +120,7 @@
                             android:layout_gravity="center_vertical"
                             android:gravity="center"
                             android:padding="@dimen/padding_normal"
-                            android:textColor="@color/md_black_1000"
+                            android:textColor="@color/daynight_textColor"
                             android:textSize="16sp"
                             android:textStyle="bold" />
                     </LinearLayout>

@@ -20,6 +20,7 @@ import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
 import io.realm.Realm
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnCourseItemSelected
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
@@ -27,11 +28,14 @@ import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.RowCourseBinding
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.JsonUtils.getInt
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Collections
+import java.util.Locale
 import java.util.regex.Pattern
 
 class AdapterCourses(private val context: Context, private var courseList: List<RealmMyCourse?>, private val map: HashMap<String?, JsonObject>) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
@@ -44,8 +48,9 @@ class AdapterCourses(private val context: Context, private var courseList: List<
     private var mRealm: Realm? = null
     private val config: ChipCloudConfig
     private var isAscending = true
-    private var isTitleAscending = true
+    private var isTitleAscending = false
     private var areAllSelected = true
+    var userModel: RealmUserModel?= null
 
     init {
         if (context is OnHomeItemClickListener) {
@@ -150,19 +155,29 @@ class AdapterCourses(private val context: Context, private var courseList: List<
                 }
                 setTextViewContent(holder.rowCourseBinding.gradLevel, course.gradeLevel, holder.rowCourseBinding.gradLevel, context.getString(R.string.grade_level_colon))
                 setTextViewContent(holder.rowCourseBinding.subjectLevel, course.subjectLevel, holder.rowCourseBinding.subjectLevel, context.getString(R.string.subject_level_colon))
-                holder.rowCourseBinding.checkbox.isChecked = selectedItems.contains(course)
-                holder.rowCourseBinding.courseProgress.max = course.getnumberOfSteps()
+                holder.rowCourseBinding.courseProgress.max = course.getNumberOfSteps()
                 displayTagCloud(holder.rowCourseBinding.flexboxDrawable, position)
-
-
-                holder.rowCourseBinding.ratingBar.setOnTouchListener { _: View?, event: MotionEvent ->
-                    if (event.action == MotionEvent.ACTION_UP) homeItemClickListener?.showRatingDialog("course", course.courseId, course.courseTitle, ratingChangeListener)
-                    true
+                userModel = UserProfileDbHandler(context).userModel
+                if (!userModel?.isGuest()!!) {
+                    holder.rowCourseBinding.ratingBar.setOnTouchListener { _: View?, event: MotionEvent ->
+                        if (event.action == MotionEvent.ACTION_UP) homeItemClickListener?.showRatingDialog(
+                            "course",
+                            course.courseId,
+                            course.courseTitle,
+                            ratingChangeListener
+                        )
+                        true
+                    }
                 }
-                holder.rowCourseBinding.checkbox.setOnClickListener { view: View ->
-                    holder.rowCourseBinding.checkbox.contentDescription = context.getString(R.string.select_res_course, course.courseTitle)
-                    Utilities.handleCheck((view as CheckBox).isChecked, position, selectedItems, courseList)
-                    if (listener != null) listener!!.onSelectedListChange(selectedItems)
+                if (!userModel?.isGuest()!!) {
+                    holder.rowCourseBinding.checkbox.isChecked = selectedItems.contains(course)
+                    holder.rowCourseBinding.checkbox.setOnClickListener { view: View ->
+                        holder.rowCourseBinding.checkbox.contentDescription = context.getString(R.string.select_res_course, course.courseTitle)
+                        Utilities.handleCheck((view as CheckBox).isChecked, position, selectedItems, courseList)
+                        if (listener != null) listener!!.onSelectedListChange(selectedItems)
+                    }
+                } else {
+                    holder.rowCourseBinding.checkbox.visibility = View.GONE
                 }
                 showProgressAndRating(position, holder)
             }
@@ -174,7 +189,7 @@ class AdapterCourses(private val context: Context, private var courseList: List<
             layout?.visibility = View.GONE
         } else {
             layout?.visibility = View.VISIBLE
-            textView?.text = "$prefix$content"
+            textView?.text = context.getString(R.string.prefix_content, prefix, content)
         }
     }
 
@@ -243,11 +258,11 @@ class AdapterCourses(private val context: Context, private var courseList: List<
         }
     }
 
-    private fun openCourse(realm_myCourses: RealmMyCourse?, i: Int) {
+    private fun openCourse(realmMyCourses: RealmMyCourse?, i: Int) {
         if (homeItemClickListener != null) {
             val f: Fragment = TakeCourseFragment()
             val b = Bundle()
-            b.putString("id", realm_myCourses?.courseId)
+            b.putString("id", realmMyCourses?.courseId)
             b.putInt("position", i)
             f.arguments = b
             homeItemClickListener?.openCallFragment(f)
@@ -299,10 +314,10 @@ class AdapterCourses(private val context: Context, private var courseList: List<
         @JvmStatic
         fun showRating(`object`: JsonObject?, average: TextView?, ratingCount: TextView?, ratingBar: AppCompatRatingBar?) {
             if (average != null) {
-                average.text = String.format("%.2f", `object`?.get("averageRating")?.asFloat)
+                average.text = String.format(Locale.getDefault(), "%.2f", `object`?.get("averageRating")?.asFloat)
             }
             if (ratingCount != null) {
-                ratingCount.text = "${`object`?.get("total")?.asInt} total"
+                ratingCount.text = context.getString(R.string.rating_count_format, `object`?.get("total")?.asInt)
             }
             if (`object` != null) {
                 if (`object`.has("ratingByUser"))

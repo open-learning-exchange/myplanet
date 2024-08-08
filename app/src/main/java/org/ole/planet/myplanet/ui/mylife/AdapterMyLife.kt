@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.mylife
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Color
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.view.LayoutInflater
@@ -13,6 +14,7 @@ import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
@@ -21,8 +23,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyLife.Companion.updateVisibility
 import org.ole.planet.myplanet.model.RealmMyLife.Companion.updateWeight
-import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment
 import org.ole.planet.myplanet.ui.helpwanted.HelpWantedFragment
 import org.ole.planet.myplanet.ui.myPersonals.MyPersonalsFragment
@@ -38,22 +38,22 @@ import org.ole.planet.myplanet.ui.userprofile.AchievementFragment
 import org.ole.planet.myplanet.utilities.Utilities
 
 class AdapterMyLife(private val context: Context, private val myLifeList: List<RealmMyLife>, private var mRealm: Realm, private val mDragStartListener: OnStartDragListener) : RecyclerView.Adapter<RecyclerView.ViewHolder>(), ItemTouchHelperAdapter {
-    private val HIDE = 0.5f
-    private val SHOW = 1f
-    private val user: RealmUserModel? = UserProfileDbHandler(context).userModel
+    private val hide = 0.5f
+    private val show = 1f
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val v = LayoutInflater.from(context).inflate(R.layout.row_life, parent, false)
         return ViewHolderMyLife(v)
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     @SuppressLint("ClickableViewAccessibility")
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         if (holder is ViewHolderMyLife) {
             holder.title.text = myLifeList[position].title
             holder.imageView.setImageResource(context.resources.getIdentifier(myLifeList[position].imageId, "drawable", context.packageName))
             holder.imageView.contentDescription = context.getString(R.string.icon, myLifeList[position].title)
-            val fragment = find_fragment(myLifeList[position].imageId)
+            val fragment = findFragment(myLifeList[position].imageId)
             if (fragment != null) {
                 holder.imageView.setOnClickListener { view: View ->
                     transactionFragment(fragment, view)
@@ -71,14 +71,14 @@ class AdapterMyLife(private val context: Context, private val myLifeList: List<R
                 updateVisibility(holder, holder.bindingAdapterPosition, myLifeList[holder.bindingAdapterPosition].isVisible)
             }
             if (!myLifeList[position].isVisible) {
-                changeVisibility(holder, R.drawable.ic_visibility, HIDE)
+                changeVisibility(holder, R.drawable.ic_visibility, hide)
             } else {
-                changeVisibility(holder, R.drawable.ic_visibility_off, SHOW)
+                changeVisibility(holder, R.drawable.ic_visibility_off, show)
             }
         }
     }
 
-    fun updateVisibility(holder: RecyclerView.ViewHolder, position: Int, isVisible: Boolean) {
+    private fun updateVisibility(holder: RecyclerView.ViewHolder, position: Int, isVisible: Boolean) {
         mRealm.executeTransactionAsync({ realm: Realm? ->
             realm?.let {
                 updateVisibility(!isVisible, myLifeList[position]._id,
@@ -87,10 +87,10 @@ class AdapterMyLife(private val context: Context, private val myLifeList: List<R
         }, {
                 Handler(Looper.getMainLooper()).post {
                     if (isVisible) {
-                        changeVisibility(holder, R.drawable.ic_visibility, HIDE)
+                        changeVisibility(holder, R.drawable.ic_visibility, hide)
                         Utilities.toast(context, myLifeList[position].title + context.getString(R.string.is_now_hidden))
                 } else {
-                    changeVisibility(holder, R.drawable.ic_visibility_off, SHOW)
+                    changeVisibility(holder, R.drawable.ic_visibility_off, show)
                     Utilities.toast(context, myLifeList[position].title + context.getString(R.string.is_now_shown))
                 }
             } }) { }
@@ -98,7 +98,7 @@ class AdapterMyLife(private val context: Context, private val myLifeList: List<R
 
     private fun changeVisibility(holder: RecyclerView.ViewHolder, imageId: Int, alpha: Float) {
         (holder as ViewHolderMyLife).visibility.setImageResource(imageId)
-        holder.rv_item_container.alpha = alpha
+        holder.rvItemContainer.alpha = alpha
     }
 
     fun setmRealm(mRealm: Realm) {
@@ -117,21 +117,11 @@ class AdapterMyLife(private val context: Context, private val myLifeList: List<R
 
     internal inner class ViewHolderMyLife(itemView: View) : RecyclerView.ViewHolder(itemView),
         ItemTouchHelperViewHolder {
-        var title: TextView
-        var imageView: ImageView
-        private var editImageButton: ImageButton
-        var dragImageButton: ImageButton
-        var visibility: ImageButton
-        var rv_item_container: LinearLayout
-
-        init {
-            title = itemView.findViewById(R.id.titleTextView)
-            imageView = itemView.findViewById(R.id.itemImageView)
-            dragImageButton = itemView.findViewById(R.id.drag_image_button)
-            editImageButton = itemView.findViewById(R.id.edit_image_button)
-            visibility = itemView.findViewById(R.id.visibility_image_button)
-            rv_item_container = itemView.findViewById(R.id.rv_item_parent_layout)
-        }
+        var title: TextView = itemView.findViewById(R.id.titleTextView)
+        var imageView: ImageView = itemView.findViewById(R.id.itemImageView)
+        var dragImageButton: ImageButton = itemView.findViewById(R.id.drag_image_button)
+        var visibility: ImageButton = itemView.findViewById(R.id.visibility_image_button)
+        var rvItemContainer: LinearLayout = itemView.findViewById(R.id.rv_item_parent_layout)
 
         override fun onItemSelected() {
             itemView.setBackgroundColor(Color.LTGRAY)
@@ -141,14 +131,15 @@ class AdapterMyLife(private val context: Context, private val myLifeList: List<R
             itemView.setBackgroundColor(0)
             if (viewHolder != null) {
                 if (!myLifeList[viewHolder.bindingAdapterPosition].isVisible) {
-                    (viewHolder as ViewHolderMyLife?)?.rv_item_container?.alpha = HIDE
+                    (viewHolder as ViewHolderMyLife?)?.rvItemContainer?.alpha = hide
                 }
             }
         }
     }
 
     companion object {
-        fun find_fragment(frag: String?): Fragment? {
+        @RequiresApi(Build.VERSION_CODES.O)
+        fun findFragment(frag: String?): Fragment? {
             when (frag) {
                 "ic_mypersonals" -> return MyPersonalsFragment()
                 "ic_news" -> return NewsFragment()

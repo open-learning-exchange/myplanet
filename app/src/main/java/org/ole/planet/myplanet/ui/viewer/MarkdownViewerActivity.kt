@@ -31,7 +31,7 @@ class MarkdownViewerActivity : AppCompatActivity() {
             activityMarkdownViewerBinding.markdownFileName.text = FileUtils.nameWithoutExtension(fileName)
             activityMarkdownViewerBinding.markdownFileName.visibility = View.VISIBLE
         } else {
-            activityMarkdownViewerBinding.markdownFileName.text = "No file selected"
+            activityMarkdownViewerBinding.markdownFileName.text = getString(R.string.message_placeholder, "No file selected")
             activityMarkdownViewerBinding.markdownFileName.visibility = View.VISIBLE
         }
         try {

@@ -4,11 +4,17 @@ import android.text.TextUtils
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import com.google.gson.JsonSyntaxException
+import com.opencsv.CSVWriter
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
+import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utilities.JsonUtils
+import java.io.File
+import java.io.FileWriter
+import java.io.IOException
 import java.util.Date
 import java.util.UUID
 
@@ -58,8 +64,19 @@ open class RealmNews : RealmObject() {
     var labels: RealmList<String>? = null
     @JvmField
     var viewIn: String? = null
+    var newsId: String? = null
+    var newsRev: String? = null
+    var newsUser: String? = null
+    var aiProvider: String? = null
+    var newsTitle: String? = null
+    var conversations: String? = null
+    var newsCreatedDate: Long = 0
+    var newsUpdatedDate: Long = 0
+    var chat: Boolean = false
+
     val imagesArray: JsonArray
         get() = if (images == null) JsonArray() else Gson().fromJson(images, JsonArray::class.java)
+
     val labelsArray: JsonArray
         get() {
             val array = JsonArray()
@@ -90,17 +107,14 @@ open class RealmNews : RealmObject() {
             }
             return ms
         }
+
     val isCommunityNews: Boolean
         get() {
             val array = Gson().fromJson(viewIn, JsonArray::class.java)
             var isCommunity = false
             for (e in array) {
                 val `object` = e.asJsonObject
-                if (`object`.has("section") && `object`["section"].asString.equals(
-                        "community",
-                        ignoreCase = true
-                    )
-                ) {
+                if (`object`.has("section") && `object`["section"].asString.equals("community", ignoreCase = true)) {
                     isCommunity = true
                     break
                 }
@@ -109,11 +123,11 @@ open class RealmNews : RealmObject() {
         }
 
     companion object {
+        val newsDataList: MutableList<Array<String>> = mutableListOf()
+
         @JvmStatic
         fun insert(mRealm: Realm, doc: JsonObject?) {
-            if (!mRealm.isInTransaction) {
-                mRealm.beginTransaction()
-            }
+            if (!mRealm.isInTransaction) mRealm.beginTransaction()
             var news = mRealm.where(RealmNews::class.java)
                 .equalTo("_id", JsonUtils.getString("_id", doc))
                 .findFirst()
@@ -144,12 +158,67 @@ open class RealmNews : RealmObject() {
             val labels = JsonUtils.getJsonArray("labels", doc)
             news?.viewIn = Gson().toJson(JsonUtils.getJsonArray("viewIn", doc))
             news?.setLabels(labels)
+            news?.chat = JsonUtils.getBoolean("chat", doc)
+
+            val newsObj = JsonUtils.getJsonObject("news", doc)
+            news?.newsId = JsonUtils.getString("_id", newsObj)
+            news?.newsRev = JsonUtils.getString("_rev", newsObj)
+            news?.newsUser = JsonUtils.getString("user", newsObj)
+            news?.aiProvider = JsonUtils.getString("aiProvider", newsObj)
+            news?.newsTitle = JsonUtils.getString("title", newsObj)
+            news?.conversations = Gson().toJson(JsonUtils.getJsonArray("conversations", newsObj))
+            news?.newsCreatedDate = JsonUtils.getLong("createdDate", newsObj)
+            news?.newsUpdatedDate = JsonUtils.getLong("updatedDate", newsObj)
             mRealm.commitTransaction()
+
+            val csvRow = arrayOf(
+                JsonUtils.getString("_id", doc),
+                JsonUtils.getString("_rev", doc),
+                JsonUtils.getString("viewableBy", doc),
+                JsonUtils.getString("docType", doc),
+                JsonUtils.getString("avatar", doc),
+                JsonUtils.getLong("updatedDate", doc).toString(),
+                JsonUtils.getString("viewableId", doc),
+                JsonUtils.getString("createdOn", doc),
+                JsonUtils.getString("messageType", doc),
+                JsonUtils.getString("messagePlanetCode", doc),
+                JsonUtils.getString("replyTo", doc),
+                JsonUtils.getString("parentCode", doc),
+                JsonUtils.getString("user", doc),
+                JsonUtils.getString("time", doc),
+                JsonUtils.getString("message", doc),
+                JsonUtils.getString("images", doc),
+                JsonUtils.getString("labels", doc),
+                JsonUtils.getString("viewIn", doc),
+                JsonUtils.getBoolean("chat", doc).toString(),
+                JsonUtils.getString("news", doc)
+            )
+            newsDataList.add(csvRow)
+        }
+
+        fun writeCsv(filePath: String, data: List<Array<String>>) {
+            try {
+                val file = File(filePath)
+                file.parentFile?.mkdirs()
+                val writer = CSVWriter(FileWriter(file))
+                writer.writeNext(arrayOf("_id", "_rev", "viewableBy", "docType", "avatar", "updatedDate", "viewableId", "createdOn", "messageType", "messagePlanetCode", "replyTo", "parentCode", "user", "time", "message", "images", "labels", "viewIn", "chat", "news"))
+                for (row in data) {
+                    writer.writeNext(row)
+                }
+                writer.close()
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        }
+
+        fun newsWriteCsv() {
+            writeCsv("${context.getExternalFilesDir(null)}/ole/news.csv", newsDataList)
         }
 
         @JvmStatic
         fun serializeNews(news: RealmNews): JsonObject {
             val `object` = JsonObject()
+            `object`.addProperty("chat", news.chat)
             `object`.addProperty("message", news.message)
             if (news._id != null) `object`.addProperty("_id", news._id)
             if (news._rev != null) `object`.addProperty("_rev", news._rev)
@@ -166,6 +235,16 @@ open class RealmNews : RealmObject() {
             `object`.add("images", news.imagesArray)
             `object`.add("labels", news.labelsArray)
             `object`.add("user", Gson().fromJson(news.user, JsonObject::class.java))
+            val newsObject = JsonObject()
+            newsObject.addProperty("_id", news.newsId)
+            newsObject.addProperty("_rev", news.newsRev)
+            newsObject.addProperty("user", news.newsUser)
+            newsObject.addProperty("aiProvider", news.aiProvider)
+            newsObject.addProperty("title", news.newsTitle)
+            newsObject.add("conversations", Gson().fromJson(news.conversations, JsonArray::class.java))
+            newsObject.addProperty("createdDate", news.newsCreatedDate)
+            newsObject.addProperty("updatedDate", news.newsUpdatedDate)
+            `object`.add("news", newsObject)
             return `object`
         }
 
@@ -182,8 +261,11 @@ open class RealmNews : RealmObject() {
 
         @JvmStatic
         fun createNews(map: HashMap<String?, String>, mRealm: Realm, user: RealmUserModel?, imageUrls: RealmList<String>?): RealmNews {
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
-            val news = mRealm.createObject(RealmNews::class.java, UUID.randomUUID().toString())
+            if (!mRealm.isInTransaction) {
+                mRealm.beginTransaction()
+            }
+
+            val news = mRealm.createObject(RealmNews::class.java, "${UUID.randomUUID()}")
             news.message = map["message"]
             news.time = Date().time
             news.createdOn = user?.planetCode
@@ -194,19 +276,59 @@ open class RealmNews : RealmObject() {
             news.messagePlanetCode = map["messagePlanetCode"]
             news.messageType = map["messageType"]
             news.viewIn = getViewInJson(map)
+            news.chat = map["chat"]?.toBoolean() ?: false
+
             try {
-                news.updatedDate = map["updatedDate"]?.toLong()!!
+                news.updatedDate = map["updatedDate"]?.toLong() ?: 0
             } catch (e: Exception) {
                 e.printStackTrace()
             }
+
             news.userId = user?.id
-            news.replyTo = if (map.containsKey("replyTo")) {
-                map["replyTo"]
-            } else {
-                ""
-            }
+            news.replyTo = map["replyTo"] ?: ""
             news.user = Gson().toJson(user?.serialize())
             news.imageUrls = imageUrls
+
+            if (map.containsKey("news")) {
+                val newsObj = map["news"]
+                val gson = Gson()
+                try {
+                    val newsJsonString = newsObj?.replace("=", ":")
+                    val newsJson = gson.fromJson(newsJsonString, JsonObject::class.java)
+                    news.newsId = JsonUtils.getString("_id", newsJson)
+                    news.newsRev = JsonUtils.getString("_rev", newsJson)
+                    news.newsUser = JsonUtils.getString("user", newsJson)
+                    news.aiProvider = JsonUtils.getString("aiProvider", newsJson)
+                    news.newsTitle = JsonUtils.getString("title", newsJson)
+                    if (newsJson.has("conversations")) {
+                        val conversationsElement = newsJson.get("conversations")
+                        if (conversationsElement.isJsonPrimitive && conversationsElement.asJsonPrimitive.isString) {
+                            val conversationsString = conversationsElement.asString
+                            try {
+                                val conversationsArray = gson.fromJson(conversationsString, JsonArray::class.java)
+                                if (conversationsArray.size() > 0) {
+                                    val conversationsList = ArrayList<HashMap<String, String>>()
+                                    conversationsArray.forEach { conversationElement ->
+                                        val conversationObj = conversationElement.asJsonObject
+                                        val conversationMap = HashMap<String, String>()
+                                        conversationMap["query"] = conversationObj.get("query").asString
+                                        conversationMap["response"] = conversationObj.get("response").asString
+                                        conversationsList.add(conversationMap)
+                                    }
+                                    news.conversations = Gson().toJson(conversationsList)
+                                }
+                            } catch (e: JsonSyntaxException) {
+                                e.printStackTrace()
+                            }
+                        }
+                    }
+                    news.newsCreatedDate = JsonUtils.getLong("createdDate", newsJson)
+                    news.newsUpdatedDate = JsonUtils.getLong("updatedDate", newsJson)
+                } catch (e: JsonSyntaxException) {
+                    e.printStackTrace()
+                }
+            }
+
             mRealm.commitTransaction()
             return news
         }

@@ -1,8 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           xmlns:tools="http://schemas.android.com/tools">
-
-    <!--<uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>-->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:mimeType="application/vnd.android.package-archive" />
+        </intent>
+    </queries>
+<!--    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>-->
     <uses-permission
         android:name="android.permission.BLUETOOTH"
         android:required="false" />
@@ -52,12 +57,14 @@
         </activity>
         <activity
             android:name=".ui.sync.LoginActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:configChanges="screenSize|screenLayout|orientation|keyboardHidden|keyboard"/>
+
         <activity
             android:name=".ui.userprofile.BecomeMemberActivity"
             android:theme="@style/AppTheme" />
         <activity
-            android:name=".ui.course.CourseProgressActivity"
+            android:name=".ui.courses.CourseProgressActivity"
             android:theme="@style/AppTheme" />
         <activity
             android:name=".ui.news.NewsDetailActivity"
@@ -74,9 +81,10 @@
             android:name=".ui.news.ReplyActivity"
             android:theme="@style/AppTheme" />
         <activity
-            android:name=".ui.library.AddResourceActivity"
+            android:name=".ui.resources.AddResourceActivity"
             android:theme="@style/AppTheme" />
-        <activity android:name=".ui.viewer.AudioPlayerActivity" />
+        <activity android:name=".ui.viewer.AudioPlayerActivity"
+            android:configChanges="orientation|screenSize" />
         <activity
             android:name=".ui.feedback.FeedbackDetailActivity"
             android:theme="@style/AppTheme" />
@@ -84,14 +92,22 @@
             android:name=".ui.dashboard.DashboardActivity"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:label="@string/title_activity_dashboard"
+            android:windowSoftInputMode="adjustPan"
             android:theme="@style/FullscreenTheme" />
-        <activity android:name=".ui.viewer.PDFReaderActivity" />
-        <activity android:name=".ui.viewer.WebViewActivity" />
-        <activity android:name=".ui.viewer.VideoPlayerActivity" />
-        <activity android:name=".ui.viewer.ImageViewerActivity" />
-        <activity android:name=".ui.viewer.TextFileViewerActivity" />
-        <activity android:name=".ui.viewer.MarkdownViewerActivity" />
-        <activity android:name=".ui.viewer.CSVViewerActivity" />
+        <activity android:name=".ui.viewer.PDFReaderActivity"
+            android:configChanges="orientation|screenSize" />
+        <activity android:name=".ui.viewer.WebViewActivity"
+            android:configChanges="orientation|screenSize" />
+        <activity android:name=".ui.viewer.VideoPlayerActivity"
+            android:configChanges="orientation|screenSize" />
+        <activity android:name=".ui.viewer.ImageViewerActivity"
+            android:configChanges="orientation|screenSize" />
+        <activity android:name=".ui.viewer.TextFileViewerActivity"
+            android:configChanges="orientation|screenSize" />
+        <activity android:name=".ui.viewer.MarkdownViewerActivity"
+            android:configChanges="orientation|screenSize" />
+        <activity android:name=".ui.viewer.CSVViewerActivity"
+            android:configChanges="orientation|screenSize" />
         <activity
             android:name=".ui.dictionary.DictionaryActivity"
             android:theme="@style/AppTheme" />
