@@ -52,9 +52,10 @@
                     android:drawablePadding="4dp"
                     android:gravity="center"
                     android:text="@string/add_to_mylib"
-                    android:textColor="@drawable/tv_color"
+                    android:textColor="@color/daynight_textColor"
                     android:textSize="@dimen/text_size_mid"
-                    app:drawableLeftCompat="@drawable/ic_add_library" />
+                    app:drawableLeftCompat="@drawable/ic_add_library"
+                    app:drawableTint="@color/daynight_textColor"/>
 
                 <TextView
                     android:id="@+id/tv_selected"
@@ -73,11 +74,11 @@
                     android:background="?attr/selectableItemBackground"
                     android:gravity="start|center_vertical"
                     android:text="@string/remove_selected"
-                    android:textColor="@drawable/tv_color"
+                    android:textColor="@color/daynight_textColor"
                     android:textSize="@dimen/text_size_mid"
                     android:visibility="gone"
                     app:drawableLeftCompat="@drawable/ic_delete"
-                    app:tint="@color/textColorPrimary" />
+                    app:drawableTint="@color/daynight_textColor"/>
 
                 <ImageButton
                     android:id="@+id/filter"
