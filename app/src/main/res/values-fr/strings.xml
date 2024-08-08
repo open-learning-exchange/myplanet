@@ -1111,5 +1111,6 @@
     <string name="surveys_to_complete">Vous avez %1$d %2$s à compléter</string>
     <string name="show_less">montrer moins</string>
     <string name="show_more">montrer plus</string>
+    <string name="server_address_content_description">adresse du serveur : %1$s</string>
 
 </resources>

@@ -1111,5 +1111,6 @@
     <string name="surveys_to_complete">तपाईंको %1$d %2$s पूरा गर्न बाँकी छ</string>
     <string name="show_less">कम देखाउनुहोस्</string>
     <string name="show_more">थप देखाउनुहोस्</string>
+    <string name="server_address_content_description">सर्भर ठेगाना: %1$s</string>
 
 </resources>
