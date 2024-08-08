@@ -492,6 +492,7 @@
     <string name="archive">Archive</string>
     <string name="Q1">Question: 1/%d</string>
     <string name="no_questions">No questions available</string>
+    <string name="Q">Question: %1$d / %2$d</string>
     <string name="finish">Finish</string>
     <string name="submit">Submit</string>
     <string name="our_courses">Our Courses</string>
@@ -734,6 +735,7 @@
     Lab Tests: %8$s\n
     Studies: %9$s\n
 </string>
+
     <string name="diagnosis_colon">"Diagnosis : "</string>
     <string name="treatments_colon">"Treatments: "</string>
     <string name="medications_colon">"Medications: "</string>
@@ -798,7 +800,8 @@
     <string name="uploading_activities_to_server_please_wait">Uploading activities to server, please wait…</string>
     <string name="connecting_to_server">Connecting to server....</string>
     <string name="check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server">Check the server address again. What i connected to wasn\'t the Planet Server</string>
-    <string name="device_couldn_t_reach_server_check_and_try_again">Device couldn\'t reach server. Check and try again</string>
+    <string name="device_couldn_t_reach_local_server">device couldn\'t reach the server. check if you are connected to the correct Wi-Fi network for the local server (community).</string>
+    <string name="device_couldn_t_reach_nation_server">device couldn’t reach the server. check if you are connected to the internet and try again</string>
     <string name="server_not_configured_properly_connect_this_device_with_planet_server">Server not configured properly. Connect this device with Planet server</string>
     <string name="syncing_data_please_wait">Syncing data, Please wait…</string>
     <string name="sync_failed">Sync Failed</string>
@@ -1072,6 +1075,7 @@
     <string name="tag_selected">Selected: %s</string>
     <string name="resources_size">Resources [%d]</string>
     <string name="user_role">- %s</string>
+    <string name="offline_visit">%d visit</string>
     <string name="offline_visits">%d visits</string>
     <string name="visit_count">%1$s (%2$d %3$s)</string>
     <string name="two_strings">%1$s %2$s</string>
@@ -1091,11 +1095,22 @@
     <string name="are_you_sure_you_want_to_archive_this_course">Are you sure you want to archive this course?</string>
     <string name="manual">manual</string>
     <string name="sync_to_server">Sync to server:</string>
-    <string name="sync_planet_learning">🌎 Planet Learning</string>
-    <string name="sync_guatemala">🇬🇹 Planet Guatemala</string>
-    <string name="sync_san_pablo">🇬🇹 Planet San Pablo</string>
-    <string name="sync_xela">🇬🇹 Planet Xela</string>
-    <string name="surveys_to_complete">You have %d %s to complete</string>
-    <string name="Q">Question: %1$d / %2$d</string>
+    <string name="sync_planet_learning">🌎planet learning</string>
+    <string name="sync_guatemala">🇬🇹planet guatemala</string>
+    <string name="sync_san_pablo">🇬🇹planet san sablo</string>
+    <string name="sync_planet_earth">🌎planet earth</string>
+    <string name="sync_somalia">🇸🇴planet somalia</string>
+    <string name="sync_vi">🌎planet vi</string>
+    <string name="sync_xela">🇬🇹planet xela</string>
+    <string name="sync_uriur">🇰🇪planet uriur</string>
+    <string name="sync_ruiru">🇰🇪planet ruiru</string>
+    <string name="sync_embakasi">🇰🇪planet embakasi</string>
+    <string name="sync_cambridge">🇺🇸planet cambridge</string>
+    <string name="sync_egdirbmac">🇺🇸planet egdirbmac</string>
+    <string name="sync_palmbay">🇺🇸planet palmbay</string>
+    <string name="surveys_to_complete">You have %1$d %2$s to complete</string>
+    <string name="show_less">show less</string>
+    <string name="show_more">show more</string>
+    <string name="server_address_content_description">server address: %1$s</string>
 
 </resources>

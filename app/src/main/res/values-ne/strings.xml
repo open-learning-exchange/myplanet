@@ -799,7 +799,8 @@
     <string name="uploading_activities_to_server_please_wait">सर्भरमा गतिविधिहरू अपलोड गर्दै, कृपया प्रतीक्षा गर्नुहोस्…</string>
     <string name="connecting_to_server">सर्भरसँग कनेक्ट गर्दै…</string>
     <string name="check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server">कृपया पुन: सर्भर ठेगाना जाँच गर्नुहोस्। म जुन सर्भरसँग कनेक्ट गरें भनेर थिएन त्यो प्लानेट सर्भर थिएन</string>
-    <string name="device_couldn_t_reach_server_check_and_try_again">डिभाइसले सर्भरसँग सम्पर्क गर्न सकिएन। जाँच गर्नुहोस् र पुन: प्रयास गर्नुहोस्</string>
+    <string name="device_couldn_t_reach_local_server">डिभाइसले सर्भरसम्म पुग्न सकेन। स्थानीय सर्भर (समुदाय) को लागि तपाईं सही Wi-Fi नेटवर्कमा जडित हुनुहुन्छ कि छैन जाँच गर्नुहोस्।</string>
+    <string name="device_couldn_t_reach_nation_server">डिभाइसले सर्भरसम्म पुग्न सकेन। इन्टरनेटमा जडित हुनुहुन्छ कि छैन जाँच गर्नुहोस् र पुन: प्रयास गर्नुहोस्।</string>
     <string name="server_not_configured_properly_connect_this_device_with_planet_server">सर्भर सही ढंगले कन्फिगर गरिएको छैन। यो डिभाइसलाई प्लानेट सर्भरसँग कनेक्ट गर्नुहोस्</string>
     <string name="syncing_data_please_wait">डाटा सिंक गरिंदै, कृपया प्रतीक्षा गर्नुहोस्…</string>
     <string name="sync_failed">सिंक असफल भयो</string>
@@ -1074,6 +1075,7 @@
     <string name="tag_selected">%s छनोट गरिएको</string>
     <string name="resources_size">स्रोतहरू [%d]</string>
     <string name="user_role">- %s</string>
+    <string name="offline_visit">%d भ्रमण</string>
     <string name="offline_visits">%d भ्रमणहरू</string>
     <string name="visit_count">%1$s (%2$d %3$s)</string>
     <string name="two_strings">%1$s %2$s</string>
@@ -1093,10 +1095,22 @@
     <string name="are_you_sure_you_want_to_archive_this_course">के तपाइँ निश्चित हुनुहुन्छ कि तपाइँ यो पाठ्यक्रम संग्रह गर्न चाहनुहुन्छ?</string>
     <string name="manual">हस्तपुस्तिका</string>
     <string name="sync_to_server">सर्भरमा समक्रमण गर्नुहोस्:</string>
-    <string name="sync_planet_learning">🌎 Planet Learning</string>
-    <string name="sync_guatemala">🇬🇹 Planet Guatemala</string>
-    <string name="sync_san_pablo">🇬🇹 Planet San Pablo</string>
-    <string name="sync_xela">🇬🇹 Planet Xela</string>
-    <string name="surveys_to_complete">तपाईंको %d %s पूरा गर्न बाँकी छ</string>
+    <string name="sync_planet_learning">🌎planet learning</string>
+    <string name="sync_guatemala">🇬🇹planet guatemala</string>
+    <string name="sync_san_pablo">🇬🇹planet san sablo</string>
+    <string name="sync_planet_earth">🌎planet earth</string>
+    <string name="sync_somalia">🇸🇴planet somalia</string>
+    <string name="sync_vi">🌎planet vi</string>
+    <string name="sync_xela">🇬🇹planet xela</string>
+    <string name="sync_uriur">🇰🇪planet uriur</string>
+    <string name="sync_ruiru">🇰🇪planet ruiru</string>
+    <string name="sync_embakasi">🇰🇪planet embakasi</string>
+    <string name="sync_cambridge">🇺🇸planet cambridge</string>
+    <string name="sync_egdirbmac">🇺🇸planet egdirbmac</string>
+    <string name="sync_palmbay">🇺🇸planet palmbay</string>
+    <string name="surveys_to_complete">तपाईंको %1$d %2$s पूरा गर्न बाँकी छ</string>
+    <string name="show_less">कम देखाउनुहोस्</string>
+    <string name="show_more">थप देखाउनुहोस्</string>
+    <string name="server_address_content_description">सर्भर ठेगाना: %1$s</string>
 
 </resources>

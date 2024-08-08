@@ -799,7 +799,8 @@
     <string name="uploading_activities_to_server_please_wait">Téléchargement des activités vers le serveur, veuillez patienter…</string>
     <string name="connecting_to_server">Connexion au serveur....</string>
     <string name="check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server">Vérifiez à nouveau l\'adresse du serveur. Ce à quoi je me suis connecté n\'était pas le serveur Planet.</string>
-    <string name="device_couldn_t_reach_server_check_and_try_again">L\'appareil n\'a pas pu atteindre le serveur. Vérifiez et réessayez.</string>
+    <string name="device_couldn_t_reach_local_server">l\'appareil n\'a pas pu atteindre le serveur. vérifiez si vous êtes connecté au réseau Wi-Fi correct pour le serveur local (communauté).</string>
+    <string name="device_couldn_t_reach_nation_server">l\'appareil n\'a pas pu atteindre le serveur. vérifiez si vous êtes connecté à Internet et réessayez.</string>
     <string name="server_not_configured_properly_connect_this_device_with_planet_server">Le serveur n\'est pas configuré correctement. Connectez cet appareil au serveur Planet.</string>
     <string name="syncing_data_please_wait">Synchronisation des données, veuillez patienter…</string>
     <string name="sync_failed">Échec de la synchronisation</string>
@@ -1074,6 +1075,7 @@
     <string name="tag_selected">Sélectionné : %s</string>
     <string name="resources_size">Ressources [%d]</string>
     <string name="user_role">- %s</string>
+    <string name="offline_visit">%d visite</string>
     <string name="offline_visits">%d visites</string>
     <string name="visit_count">%1$s (%2$d %3$s)</string>
     <string name="two_strings">%1$s %2$s</string>
@@ -1093,10 +1095,22 @@
     <string name="are_you_sure_you_want_to_archive_this_course">Êtes-vous sûr de vouloir archiver ce cours ?</string>
     <string name="manual">manuel</string>
     <string name="sync_to_server">Synchroniser avec le serveur :</string>
-    <string name="sync_planet_learning">🌎 Planet Learning</string>
-    <string name="sync_guatemala">🇬🇹 Planet Guatemala</string>
-    <string name="sync_san_pablo">🇬🇹 Planet San Pablo</string>
-    <string name="sync_xela">🇬🇹 Planet Xela</string>
-    <string name="surveys_to_complete">Vous avez %d %s à compléter</string>
+    <string name="sync_planet_learning">🌎planet learning</string>
+    <string name="sync_guatemala">🇬🇹planet guatemala</string>
+    <string name="sync_san_pablo">🇬🇹planet san sablo</string>
+    <string name="sync_planet_earth">🌎planet earth</string>
+    <string name="sync_somalia">🇸🇴planet somalia</string>
+    <string name="sync_vi">🌎planet vi</string>
+    <string name="sync_xela">🇬🇹planet xela</string>
+    <string name="sync_uriur">🇰🇪planet uriur</string>
+    <string name="sync_ruiru">🇰🇪planet ruiru</string>
+    <string name="sync_embakasi">🇰🇪planet embakasi</string>
+    <string name="sync_cambridge">🇺🇸planet cambridge</string>
+    <string name="sync_egdirbmac">🇺🇸planet egdirbmac</string>
+    <string name="sync_palmbay">🇺🇸planet palmbay</string>
+    <string name="surveys_to_complete">Vous avez %1$d %2$s à compléter</string>
+    <string name="show_less">montrer moins</string>
+    <string name="show_more">montrer plus</string>
+    <string name="server_address_content_description">adresse du serveur : %1$s</string>
 
 </resources>

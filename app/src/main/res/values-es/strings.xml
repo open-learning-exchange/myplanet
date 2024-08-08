@@ -626,6 +626,7 @@
     <string name="title_is_required">Se requiere un título.</string>
     <string name="no_data_available">No hay datos disponibles.</string>
     <string name="are_you_sure_you_want_to_delete_these_courses">¿Estás seguro de que deseas eliminar estos cursos?</string>
+    <string name="are_you_sure_you_want_to_delete_this_course">¿Estás seguro de que quieres eliminar este curso?</string>
     <string name="success_you_have_added_the_following_courses">¡Éxito! Has añadido los siguientes cursos:\n\n</string>
     <string name="return_to_the_home_tab_to_access_mycourses">\n\nVuelve a la pestaña de inicio para acceder a misCursos.\n</string>
     <string name="and">"Y "</string>
@@ -799,7 +800,8 @@
     <string name="uploading_activities_to_server_please_wait">Cargando actividades al servidor, por favor espera…</string>
     <string name="connecting_to_server">Conectando al servidor....</string>
     <string name="check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server">Verifica nuevamente la dirección del servidor. A lo que me conecté no fue el servidor de Planet</string>
-    <string name="device_couldn_t_reach_server_check_and_try_again">El dispositivo no pudo alcanzar el servidor. Verifica e intenta nuevamente</string>
+    <string name="device_couldn_t_reach_local_server">el dispositivo no pudo alcanzar el servidor. verifique si está conectado a la red Wi-Fi correcta para el servidor local (comunidad).</string>
+    <string name="device_couldn_t_reach_nation_server">el dispositivo no pudo alcanzar el servidor. verifique si está conectado a Internet e inténtelo de nuevo.</string>
     <string name="server_not_configured_properly_connect_this_device_with_planet_server">El servidor no está configurado correctamente. Conecta este dispositivo con el servidor de Planet</string>
     <string name="syncing_data_please_wait">Sincronizando datos, por favor espera…</string>
     <string name="sync_failed">Sincronización fallida</string>
@@ -1044,7 +1046,6 @@
     <string name="enterprise_list">lista de empresas</string>
     <string name="list_of_teams">lista de equipos</string>
     <string name="sign_up_to_chat">Por favor regístrate para acceder al chat de IA</string>
-    <string name="are_you_sure_you_want_to_delete_this_course">¿Estás seguro de que quieres eliminar este curso?</string>
     <string name="share_chat">compartir chat</string>
     <string name="shared_chat">chat compartido</string>
     <string name="check_apk_version">verificando versión de la aplicación</string>
@@ -1074,6 +1075,7 @@
     <string name="tag_selected">Seleccionado: %s</string>
     <string name="resources_size">Recursos [%d]</string>
     <string name="user_role">- %s</string>
+    <string name="offline_visit">%d visita</string>
     <string name="offline_visits">%d visitas</string>
     <string name="visit_count">%1$s (%2$d %3$s)</string>
     <string name="two_strings">%1$s %2$s</string>
@@ -1093,10 +1095,22 @@
     <string name="are_you_sure_you_want_to_archive_this_course">¿Estás seguro de que deseas archivar este curso?</string>
     <string name="manual">manual</string>
     <string name="sync_to_server">Sincronizar con el servidor:</string>
-    <string name="sync_planet_learning">🌎 Planet Learning</string>
-    <string name="sync_guatemala">🇬🇹 Planet Guatemala</string>
-    <string name="sync_san_pablo">🇬🇹 Planet San Pablo</string>
-    <string name="sync_xela">🇬🇹 Planet Xela</string>
-    <string name="surveys_to_complete">Tienes %d %s para completar</string>
+    <string name="sync_planet_learning">🌎planet learning</string>
+    <string name="sync_guatemala">🇬🇹planet guatemala</string>
+    <string name="sync_san_pablo">🇬🇹planet san sablo</string>
+    <string name="sync_planet_earth">🌎planet earth</string>
+    <string name="sync_somalia">🇸🇴planet somalia</string>
+    <string name="sync_vi">🌎planet vi</string>
+    <string name="sync_xela">🇬🇹planet xela</string>
+    <string name="sync_uriur">🇰🇪planet uriur</string>
+    <string name="sync_ruiru">🇰🇪planet ruiru</string>
+    <string name="sync_embakasi">🇰🇪planet embakasi</string>
+    <string name="sync_cambridge">🇺🇸planet cambridge</string>
+    <string name="sync_egdirbmac">🇺🇸planet egdirbmac</string>
+    <string name="sync_palmbay">🇺🇸planet palmbay</string>
+    <string name="surveys_to_complete">Tienes %1$d %2$s para completar</string>
+    <string name="show_less">mostrar menos</string>
+    <string name="show_more">mostrar más</string>
+    <string name="server_address_content_description">dirección del servidor: %1$s</string>
 
 </resources>

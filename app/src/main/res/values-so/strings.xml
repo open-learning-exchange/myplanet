@@ -799,7 +799,8 @@
     <string name="uploading_activities_to_server_please_wait">Qiimeynta waxqabadkiisa ee serverka, fadlan sug…</string>
     <string name="connecting_to_server">Ku xiran serverka....</string>
     <string name="check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server">Xaqiij marka hore cinwaankaga serverka ah, waxaana aan la xiriirnay seriver Geed ah.</string>
-    <string name="device_couldn_t_reach_server_check_and_try_again">Qalabku ma fikiri karin serverka, fadlan eeg iyo isku day</string>
+    <string name="device_couldn_t_reach_local_server">qalabku ma uusan gaari karin server-ka. hubi inaad ku xiran tahay shabakadda Wi-Fi-ga saxda ah ee server-ka maxalliga ah (bulshada).</string>
+    <string name="device_couldn_t_reach_nation_server">qalabku ma uusan gaari karin server-ka. hubi inaad ku xiran tahay internetka oo dib isku day.</string>
     <string name="server_not_configured_properly_connect_this_device_with_planet_server">Serverka lama aha inuu horaynayo sida hore, ku xiran qalabkan Geedka si aad uga fikiri karto serverka.</string>
     <string name="syncing_data_please_wait">Dib-u-hagreeska macluumaadka, fadlan sug…</string>
     <string name="sync_failed">Dib-u-hagreeska khaatimay</string>
@@ -1074,6 +1075,7 @@
     <string name="tag_selected">Xulo: %s</string>
     <string name="resources_size">Xogta [%d]</string>
     <string name="user_role">- %s</string>
+    <string name="offline_visit">%d booqasho</string>
     <string name="offline_visits">%d booqasho</string>
     <string name="visit_count">%1$s (%2$d %3$s)</string>
     <string name="two_strings">%1$s %2$s</string>
@@ -1093,10 +1095,22 @@
     <string name="are_you_sure_you_want_to_archive_this_course">Ma hubtaa inaad rabto inaad kaydiso koorsadan?</string>
     <string name="manual">buug</string>
     <string name="sync_to_server">Isku xidh adeegga:</string>
-    <string name="sync_planet_learning">🌎 Planet Learning</string>
-    <string name="sync_guatemala">🇬🇹 Planet Guatemala</string>
-    <string name="sync_san_pablo">🇬🇹 Planet San Pablo</string>
-    <string name="sync_xela">🇬🇹 Planet Xela</string>
-    <string name="surveys_to_complete">Waxaad haysataa %d %s oo ay tahay inaad dhammaystirto</string>
+    <string name="sync_planet_learning">🌎planet learning</string>
+    <string name="sync_guatemala">🇬🇹planet guatemala</string>
+    <string name="sync_san_pablo">🇬🇹planet san sablo</string>
+    <string name="sync_planet_earth">🌎planet earth</string>
+    <string name="sync_somalia">🇸🇴planet somalia</string>
+    <string name="sync_vi">🌎planet vi</string>
+    <string name="sync_xela">🇬🇹planet xela</string>
+    <string name="sync_uriur">🇰🇪planet uriur</string>
+    <string name="sync_ruiru">🇰🇪planet ruiru</string>
+    <string name="sync_embakasi">🇰🇪planet embakasi</string>
+    <string name="sync_cambridge">🇺🇸planet cambridge</string>
+    <string name="sync_egdirbmac">🇺🇸planet egdirbmac</string>
+    <string name="sync_palmbay">🇺🇸planet palmbay</string>
+    <string name="surveys_to_complete">Waxaad haysataa %1$d %2$s oo ay tahay inaad dhammaystirto</string>
+    <string name="show_less">tus wax yar</string>
+    <string name="show_more">tus wax badan</string>
+    <string name="server_address_content_description">cinwaanka serverka: %1$s</string>
 
 </resources>

@@ -75,20 +75,57 @@ android {
     def planetLearningPin = project.findProperty('PLANET_LEARNING_PIN') ?: ""
     def planetGuatemalaUrl = project.findProperty('PLANET_GUATEMALA_URL') ?: ""
     def planetGuatemalaPin = project.findProperty('PLANET_GUATEMALA_PIN') ?: ""
-    def planetXelaUrl = project.findProperty('PLANET_XELA_URL') ?: ""
-    def planetXelaPin = project.findProperty('PLANET_XELA_PIN') ?: ""
     def planetSanPabloUrl = project.findProperty('PLANET_SANPABLO_URL') ?: ""
     def planetSanPabloPin = project.findProperty('PLANET_SANPABLO_PIN') ?: ""
+    def planetEarthUrl = project.findProperty('PLANET_EARTH_URL') ?: ""
+    def planetEarthPin = project.findProperty('PLANET_EARTH_PIN') ?: ""
+    def planetSomaliaUrl = project.findProperty('PLANET_SOMALIA_URL') ?: ""
+    def planetSomaliaPin = project.findProperty('PLANET_SOMALIA_PIN') ?: ""
+    def planetViUrl = project.findProperty('PLANET_VI_URL') ?: ""
+    def planetViPin = project.findProperty('PLANET_VI_PIN') ?: ""
+    def planetXelaUrl = project.findProperty('PLANET_XELA_URL') ?: ""
+    def planetXelaPin = project.findProperty('PLANET_XELA_PIN') ?: ""
+    //def planetUriurUrl = project.findProperty('PLANET_URIUR_URL') ?: ""
+    //def planetUriurPin = project.findProperty('PLANET_URIUR_PIN') ?: ""
+    def planetRuiruUrl = project.findProperty('PLANET_RUIRU_URL') ?: ""
+    def planetRuiruPin = project.findProperty('PLANET_RUIRU_PIN') ?: ""
+    def planetEmbakasiUrl = project.findProperty('PLANET_EMBAKASI_URL') ?: ""
+    def planetEmbakasiPin = project.findProperty('PLANET_EMBAKASI_PIN') ?: ""
+    def planetCambridgeUrl = project.findProperty('PLANET_CAMBRIDGE_URL') ?: ""
+    def planetCambridgePin = project.findProperty('PLANET_CAMBRIDGE_PIN') ?: ""
+    //def planetEgdirbmacUrl = project.findProperty('PLANET_EGDIRBMAC_URL') ?: ""
+    //def planetEgdirbmacPin = project.findProperty('PLANET_EGDIRBMAC_PIN') ?: ""
+    def planetPalmBayUrl = project.findProperty('PLANET_PALMBAY_URL') ?: ""
+    def planetPalmBayPin = project.findProperty('PLANET_PALMBAY_PIN') ?: ""
+
 
     buildTypes.each {
         it.buildConfigField 'String', 'PLANET_LEARNING_URL', "\"$planetLearningUrl\""
         it.buildConfigField 'String', 'PLANET_LEARNING_PIN', "\"${planetLearningPin}\""
         it.buildConfigField 'String', 'PLANET_GUATEMALA_URL', "\"${planetGuatemalaUrl}\""
         it.buildConfigField 'String', 'PLANET_GUATEMALA_PIN', "\"${planetGuatemalaPin}\""
-        it.buildConfigField 'String', 'PLANET_XELA_URL', "\"${planetXelaUrl}\""
-        it.buildConfigField 'String', 'PLANET_XELA_PIN', "\"${planetXelaPin}\""
         it.buildConfigField 'String', 'PLANET_SANPABLO_URL', "\"${planetSanPabloUrl}\""
         it.buildConfigField 'String', 'PLANET_SANPABLO_PIN', "\"${planetSanPabloPin}\""
+        it.buildConfigField 'String', 'PLANET_EARTH_URL', "\"${planetEarthUrl}\""
+        it.buildConfigField 'String', 'PLANET_EARTH_PIN', "\"${planetEarthPin}\""
+        it.buildConfigField 'String', 'PLANET_SOMALIA_URL', "\"${planetSomaliaUrl}\""
+        it.buildConfigField 'String', 'PLANET_SOMALIA_PIN', "\"${planetSomaliaPin}\""
+        it.buildConfigField 'String', 'PLANET_VI_URL', "\"${planetViUrl}\""
+        it.buildConfigField 'String', 'PLANET_VI_PIN', "\"${planetViPin}\""
+        it.buildConfigField 'String', 'PLANET_XELA_URL', "\"${planetXelaUrl}\""
+        it.buildConfigField 'String', 'PLANET_XELA_PIN', "\"${planetXelaPin}\""
+        //it.buildConfigField('String', 'PLANET_URIUR_URL', "\"${planetUriurUrl}\"")
+        //it.buildConfigField('String', 'PLANET_URIUR_PIN', "\"${planetUriurPin}\"")
+        it.buildConfigField('String', 'PLANET_RUIRU_URL', "\"${planetRuiruUrl}\"")
+        it.buildConfigField('String', 'PLANET_RUIRU_PIN', "\"${planetRuiruPin}\"")
+        it.buildConfigField('String', 'PLANET_EMBAKASI_URL', "\"${planetEmbakasiUrl}\"")
+        it.buildConfigField('String', 'PLANET_EMBAKASI_PIN', "\"${planetEmbakasiPin}\"")
+        it.buildConfigField('String', 'PLANET_CAMBRIDGE_URL', "\"${planetCambridgeUrl}\"")
+        it.buildConfigField('String', 'PLANET_CAMBRIDGE_PIN', "\"${planetCambridgePin}\"")
+        //it.buildConfigField('String', 'PLANET_EGDIRBMAC_URL', "\"${planetEgdirbmacUrl}\"")
+        //it.buildConfigField('String', 'PLANET_EGDIRBMAC_PIN', "\"${planetEgdirbmacPin}\"")
+        it.buildConfigField('String', 'PLANET_PALMBAY_URL', "\"${planetPalmBayUrl}\"")
+        it.buildConfigField('String', 'PLANET_PALMBAY_PIN', "\"${planetPalmBayPin}\"")
     }
 }
 
@@ -109,7 +146,6 @@ tasks.named('generateVersionsXml').configure {
 }
 
 repositories {
-    jcenter()
     mavenCentral()
     maven { url "https://jitpack.io" }
     maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
@@ -127,31 +163,26 @@ dependencies {
     implementation 'androidx.multidex:multidex:2.0.1'
     implementation 'androidx.appcompat:appcompat:1.7.0'
     implementation 'androidx.recyclerview:recyclerview:1.3.2'
-    implementation 'androidx.annotation:annotation:1.8.1'
+    implementation 'androidx.annotation:annotation:1.8.2'
     implementation 'androidx.exifinterface:exifinterface:1.3.7'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     implementation 'androidx.cardview:cardview:1.0.0'
     implementation "androidx.core:core-ktx:1.13.1"
-    implementation "androidx.work:work-runtime:2.9.0"
+    implementation "androidx.work:work-runtime:2.9.1"
     implementation "androidx.slidingpanelayout:slidingpanelayout:1.2.0"
     implementation 'androidx.preference:preference-ktx:1.2.1'
 
     implementation 'com.google.code.gson:gson:2.11.0'
     implementation 'com.google.android.material:material:1.12.0'
-    implementation 'com.google.android:flexbox:1.0.0'
 
     implementation "com.github.VaibhavLakhera:Circular-Progress-View:0.1.2"
     implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
-    implementation 'com.github.barteksc:android-pdf-viewer:3.2.0-beta.1'
     implementation 'com.github.jeancsanchez:jcplayer:2.7.2'
     implementation 'com.github.clans:fab:1.6.4'
-    implementation 'com.github.kizitonwose:CalendarView:1.0.4'
     implementation 'com.applandeo:material-calendar-view:1.9.2'
     implementation 'com.afollestad.material-dialogs:commons:0.9.6.0'
-    implementation 'com.firebase:firebase-jobdispatcher:0.8.6'
     implementation 'com.borax12.materialdaterangepicker:library:2.0'
     implementation 'com.nex3z:toggle-button-group:1.2.3'
-    implementation 'com.sa90.materialarcmenu:library:2.0.0'
     implementation 'com.caverock:androidsvg-aar:1.4'
     implementation('com.opencsv:opencsv:5.9') {
         exclude group: 'commons-logging', module: 'commons-logging'
@@ -179,7 +210,7 @@ dependencies {
     implementation "androidx.camera:camera-lifecycle:$camera_version"
     implementation "androidx.camera:camera-view:$camera_version"
 
-    def dagger_hilt_version = "2.51.1"
+    def dagger_hilt_version = "2.52"
     implementation "com.google.dagger:hilt-android:$dagger_hilt_version"
     kapt "com.google.dagger:hilt-android-compiler:$dagger_hilt_version"
 
@@ -201,7 +232,7 @@ dependencies {
     implementation "io.noties.markwon:image:$markwon_version"
     implementation "io.noties.markwon:html:$markwon_version"
     implementation "io.noties.markwon:ext-tables:$markwon_version"
-    implementation(platform("org.jetbrains.kotlin:kotlin-bom:2.0.0"))
+    implementation(platform("org.jetbrains.kotlin:kotlin-bom:2.0.10"))
 }
 realm {
     syncEnabled = true

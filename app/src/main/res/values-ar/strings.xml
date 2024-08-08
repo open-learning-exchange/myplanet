@@ -799,7 +799,8 @@
     <string name="uploading_activities_to_server_please_wait">جارٍ تحميل الأنشطة إلى الخادم، يرجى الانتظار…</string>
     <string name="connecting_to_server">جارٍ الاتصال بالخادم…</string>
     <string name="check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server">تحقق مرة أخرى من عنوان الخادم. ما قمت بالاتصال به ليس خادم بلانت</string>
-    <string name="device_couldn_t_reach_server_check_and_try_again">الجهاز لم يتمكن من الوصول إلى الخادم. تحقق وحاول مرة أخرى</string>
+    <string name="device_couldn_t_reach_local_server">لم يتمكن الجهاز من الوصول إلى الخادم. تحقق مما إذا كنت متصلاً بشبكة Wi-Fi الصحيحة للخادم المحلي (المجتمع).</string>
+    <string name="device_couldn_t_reach_nation_server">لم يتمكن الجهاز من الوصول إلى الخادم. تحقق مما إذا كنت متصلاً بالإنترنت وحاول مرة أخرى.</string>
     <string name="server_not_configured_properly_connect_this_device_with_planet_server">الخادم لم يتم تكوينه بشكل صحيح. اتصل بهذا الجهاز بخادم بلانت</string>
     <string name="syncing_data_please_wait">جارٍ مزامنة البيانات، يرجى الانتظار…</string>
     <string name="sync_failed">فشلت المزامنة</string>
@@ -1074,7 +1075,8 @@
     <string name="tag_selected">تم اختيار: %s</string>
     <string name="resources_size">الموارد [%d]</string>
     <string name="user_role">- %s</string>
-    <string name="offline_visits">%d زيارة</string>
+    <string name="offline_visit">%d زيارة</string>
+    <string name="offline_visits">%d زيارات</string>
     <string name="visit_count">%1$s (%2$d %3$s)</string>
     <string name="two_strings">%1$s %2$s</string>
     <string name="three_strings">%1$s %2$s %3$s</string>
@@ -1093,10 +1095,22 @@
     <string name="are_you_sure_you_want_to_archive_this_course">هل أنت متأكد أنك تريد أرشفة هذه الدورة؟</string>
     <string name="manual">دليل</string>
     <string name="sync_to_server">:المزامنة إلى الخادم</string>
-    <string name="sync_planet_learning">🌎 Planet Learning</string>
-    <string name="sync_guatemala">🇬🇹 Planet Guatemala</string>
-    <string name="sync_san_pablo">🇬🇹 Planet San Pablo</string>
-    <string name="sync_xela">🇬🇹 Planet Xela</string>
-    <string name="surveys_to_complete">لديك %d %s لإكمالها</string>
+    <string name="sync_planet_learning">🌎planet learning</string>
+    <string name="sync_guatemala">🇬🇹planet guatemala</string>
+    <string name="sync_san_pablo">🇬🇹planet san sablo</string>
+    <string name="sync_planet_earth">🌎planet earth</string>
+    <string name="sync_somalia">🇸🇴planet somalia</string>
+    <string name="sync_vi">🌎planet vi</string>
+    <string name="sync_xela">🇬🇹planet xela</string>
+    <string name="sync_uriur">🇰🇪planet uriur</string>
+    <string name="sync_ruiru">🇰🇪planet ruiru</string>
+    <string name="sync_embakasi">🇰🇪planet embakasi</string>
+    <string name="sync_cambridge">🇺🇸planet cambridge</string>
+    <string name="sync_egdirbmac">🇺🇸planet egdirbmac</string>
+    <string name="sync_palmbay">🇺🇸planet palmbay</string>
+    <string name="surveys_to_complete">لديك %1$d %2$s لإكماله</string>
+    <string name="show_less">عرض أقل</string>
+    <string name="show_more">عرض المزيد</string>
+    <string name="server_address_content_description">عنوان الخادم: %1$s</string>
 
 </resources>
