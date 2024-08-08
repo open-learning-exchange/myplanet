@@ -1,13 +1,15 @@
 package org.ole.planet.myplanet.model
 
-import android.content.Context
+import android.content.Context.MODE_PRIVATE
 import android.content.SharedPreferences
 import android.text.TextUtils
+import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.opencsv.CSVWriter
+import com.google.gson.reflect.TypeToken
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
@@ -233,6 +235,9 @@ open class RealmMyLibrary : RealmObject() {
 
     companion object {
         val libraryDataList: MutableList<Array<String>> = mutableListOf()
+        private val gson = Gson()
+        private val newResources = mutableListOf<JsonObject?>()
+        val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
 
         fun getMyLibraryByUserId(mRealm: Realm, settings: SharedPreferences?): List<RealmMyLibrary> {
             val libs = mRealm.where(RealmMyLibrary::class.java).findAll()
@@ -353,10 +358,11 @@ open class RealmMyLibrary : RealmObject() {
                 mRealm.beginTransaction()
             }
             val resourceId = JsonUtils.getString("_id", doc)
-            val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val settings = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             var resource = mRealm.where(RealmMyLibrary::class.java).equalTo("id", resourceId).findFirst()
             if (resource == null) {
                 resource = mRealm.createObject(RealmMyLibrary::class.java, resourceId)
+                newResources.add(doc)
             }
             resource?.setUserId(userId)
             resource?._id = resourceId
@@ -451,13 +457,54 @@ open class RealmMyLibrary : RealmObject() {
                 val file = File(filePath)
                 file.parentFile?.mkdirs()
                 val writer = CSVWriter(FileWriter(file))
-                writer.writeNext(arrayOf("libraryId", "library_rev", "title", "description", "resourceRemoteAddress", "resourceLocalAddress", "resourceOffline", "resourceId", "addedBy", "uploadDate", "createdDate", "openWith", "articleDate", "kind", "language", "author", "year", "medium", "filename", "mediaType", "resourceType", "timesRated", "averageRating", "publisher", "linkToLicense", "subject", "level", "tags", "languages", "courseId", "stepId", "downloaded", "private"))
+                writer.writeNext(
+                    arrayOf("libraryId", "library_rev", "title", "description", "resourceRemoteAddress",
+                        "resourceLocalAddress", "resourceOffline", "resourceId", "addedBy", "uploadDate",
+                        "createdDate", "openWith", "articleDate", "kind", "language", "author", "year",
+                        "medium", "filename", "mediaType", "resourceType", "timesRated", "averageRating",
+                        "publisher", "linkToLicense", "subject", "level", "tags", "languages", "courseId",
+                        "stepId", "downloaded", "private"
+                    )
+                )
                 for (row in data) {
                     writer.writeNext(row)
                 }
                 writer.close()
             } catch (e: IOException) {
                 e.printStackTrace()
+            }
+        }
+
+        fun saveNewResourceData() {
+            val existingSavedData = settings.getString("new_data", null)
+            val existingData: MutableList<JsonObject> = if (existingSavedData != null) {
+                val type = TypeToken.getParameterized(List::class.java, JsonObject::class.java).type
+                gson.fromJson(existingSavedData, type)
+            } else {
+                mutableListOf()
+            }
+
+            synchronized(newResources) {
+                for (newResource in newResources) {
+                    if (newResource != null) {
+                        newResource.addProperty("source", "resource")
+                        newResource.addProperty("read", "false")
+                        if (!existingData.contains(newResource)) {
+                            existingData.add(newResource)
+                        }
+                    }
+                }
+            }
+
+            val jsonNewResources = gson.toJson(existingData)
+            settings.edit().putString("new_data", jsonNewResources).apply()
+        }
+
+        @JvmStatic
+        fun getListAsArray(db_myLibrary: RealmResults<RealmMyLibrary>) {
+            val array = arrayOfNulls<CharSequence>(db_myLibrary.size)
+            for (i in db_myLibrary.indices) {
+                array[i] = db_myLibrary[i]?.title
             }
         }
 

@@ -1056,7 +1056,7 @@
     <string name="planet_name">%s\'s Planet</string>
     <string name="no_submissions">submissions not available</string>
     <string name="no_chats">no previous chats</string>
-    <string name ="no_feedback">no feedback available</string>
+    <string name="no_feedback">no feedback available</string>
     <string name="empty_text" />
     <string name="message_placeholder">%s</string>
     <string name="reports">Reports</string>
@@ -1111,5 +1111,6 @@
     <string name="surveys_to_complete">You have %1$d %2$s to complete</string>
     <string name="show_less">show less</string>
     <string name="show_more">show more</string>
+    <string name="bell" >Notifications</string>
 
 </resources>

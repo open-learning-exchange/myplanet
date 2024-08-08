@@ -26,7 +26,6 @@
                 app:tint="@color/md_black_1000"
                 android:contentDescription="@string/btn_back" />
 
-
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -43,7 +42,6 @@
             android:id="@+id/rv_notifications"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
-
 
     </LinearLayout>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
