@@ -111,6 +111,18 @@ jobs:
           status: completed
           changesNotSentForReview: true
 
+      - name: authenticate with google cloud
+        if: github.ref != 'refs/heads/master' && (matrix.build == 'lite')
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCLOUD_AUTH }}
+
+      - name: setup gcloud cli
+        if: github.ref != 'refs/heads/master' && (matrix.build == 'lite')
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          version: 'latest'
+
       - name: upload APK to Firebase Test Lab
         if: github.ref != 'refs/heads/master' && (matrix.build == 'lite')
         env:
