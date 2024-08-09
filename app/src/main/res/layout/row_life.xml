@@ -5,6 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="@dimen/_80dp"
     android:orientation="horizontal"
+    android:background="@color/daynight_grey"
     android:padding="@dimen/padding_normal">
 
     <RelativeLayout
@@ -16,7 +17,8 @@
             android:layout_width="100dp"
             android:layout_height="match_parent"
             android:layout_alignParentStart="true"
-            app:srcCompat="@drawable/ic_messages" />
+            app:srcCompat="@drawable/ic_messages"
+            app:tint="@color/daynight_textColor" />
 
         <TextView
             android:id="@+id/titleTextView"
@@ -26,7 +28,8 @@
             android:layout_marginTop="@dimen/_20dp"
             android:layout_toRightOf="@id/itemImageView"
             android:hint="@string/messeges"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            android:textColor="@color/daynight_textColor"/>
 
         <ImageButton
             android:id="@+id/visibility_image_button"
@@ -63,7 +66,8 @@
             android:enabled="false"
             android:padding="@dimen/padding_normal"
             android:scaleType="fitCenter"
-            android:src="@drawable/ic_round_drag" />
+            android:src="@drawable/ic_round_drag"
+            app:tint="@color/daynight_textColor"/>
 
     </RelativeLayout>
 </LinearLayout>
