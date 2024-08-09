@@ -19,7 +19,6 @@
             android:layout_alignParentStart="true"
             app:srcCompat="@drawable/ic_messages"
             app:tint="@color/daynight_textColor" />
-
         <TextView
             android:id="@+id/titleTextView"
             android:layout_width="wrap_content"
@@ -29,8 +28,7 @@
             android:layout_toRightOf="@id/itemImageView"
             android:hint="@string/messeges"
             android:textStyle="bold"
-            android:textColor="@color/daynight_textColor"/>
-
+            android:textColor="@color/daynight_textColor" />
         <ImageButton
             android:id="@+id/visibility_image_button"
             android:layout_width="40dp"
@@ -42,7 +40,6 @@
             android:background="@drawable/roundcorner"
             android:padding="@dimen/padding_normal"
             app:srcCompat="@drawable/ic_visibility" />
-
         <ImageButton
             android:id="@+id/edit_image_button"
             android:layout_width="wrap_content"
@@ -53,7 +50,6 @@
             android:background="@drawable/roundcorner"
             android:padding="@dimen/padding_normal"
             app:srcCompat="@drawable/ic_edit" />
-
         <ImageButton
             android:id="@+id/drag_image_button"
             android:layout_width="wrap_content"
@@ -67,7 +63,6 @@
             android:padding="@dimen/padding_normal"
             android:scaleType="fitCenter"
             android:src="@drawable/ic_round_drag"
-            app:tint="@color/daynight_textColor"/>
-
+            app:tint="@color/daynight_textColor" />
     </RelativeLayout>
 </LinearLayout>
