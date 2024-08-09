@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.model
 import android.content.Context
 import android.content.SharedPreferences
 import android.text.TextUtils
+import android.util.Log
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
@@ -335,7 +336,11 @@ open class RealmMyLibrary : RealmObject() {
 
         @JvmStatic
         fun insertMyLibrary(userId: String?, doc: JsonObject, mRealm: Realm) {
+            if (!mRealm.isInTransaction) {
+                mRealm.beginTransaction()
+            }
             insertMyLibrary(userId, "", "", doc, mRealm)
+            mRealm.commitTransaction()
         }
 
         @JvmStatic
@@ -347,11 +352,42 @@ open class RealmMyLibrary : RealmObject() {
             mRealm.commitTransaction()
         }
 
-        @JvmStatic
         fun insertMyLibrary(userId: String?, stepId: String?, courseId: String?, doc: JsonObject, mRealm: Realm) {
-            if (!mRealm.isInTransaction) {
-                mRealm.beginTransaction()
+            try {
+                if (!mRealm.isInTransaction) {
+                    mRealm.executeTransaction { realm ->
+                        insertOrUpdateLibrary(userId, stepId, courseId, doc, realm)
+                    }
+                } else {
+                    insertOrUpdateLibrary(userId, stepId, courseId, doc, mRealm)
+                }
+            } catch (e: Exception) {
+                Log.e("RealmMyLibrary", "Error during insertion into library: ${e.message}")
+                throw e
             }
+        }
+
+        fun writeCsv(filePath: String, data: List<Array<String>>) {
+            try {
+                val file = File(filePath)
+                file.parentFile?.mkdirs()
+                val writer = CSVWriter(FileWriter(file))
+                writer.writeNext(arrayOf("libraryId", "library_rev", "title", "description", "resourceRemoteAddress", "resourceLocalAddress", "resourceOffline", "resourceId", "addedBy", "uploadDate", "createdDate", "openWith", "articleDate", "kind", "language", "author", "year", "medium", "filename", "mediaType", "resourceType", "timesRated", "averageRating", "publisher", "linkToLicense", "subject", "level", "tags", "languages", "courseId", "stepId", "downloaded", "private"))
+                for (row in data) {
+                    writer.writeNext(row)
+                }
+                writer.close()
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        }
+
+        fun libraryWriteCsv() {
+            writeCsv("${context.getExternalFilesDir(null)}/ole/library.csv", libraryDataList)
+        }
+
+        @JvmStatic
+        fun insertOrUpdateLibrary(userId: String?, stepId: String?, courseId: String?, doc: JsonObject, mRealm: Realm) {
             val resourceId = JsonUtils.getString("_id", doc)
             val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             var resource = mRealm.where(RealmMyLibrary::class.java).equalTo("id", resourceId).findFirst()
@@ -406,7 +442,6 @@ open class RealmMyLibrary : RealmObject() {
             resource?.setTag(JsonUtils.getJsonArray("tags", doc), resource)
             resource?.isPrivate = JsonUtils.getBoolean("private", doc)
             resource?.setLanguages(JsonUtils.getJsonArray("languages", doc), resource)
-            mRealm.commitTransaction()
 
             val csvRow = arrayOf(
                 JsonUtils.getString("_id", doc),
@@ -444,25 +479,6 @@ open class RealmMyLibrary : RealmObject() {
                 JsonUtils.getBoolean("private", doc).toString(),
             )
             libraryDataList.add(csvRow)
-        }
-
-        fun writeCsv(filePath: String, data: List<Array<String>>) {
-            try {
-                val file = File(filePath)
-                file.parentFile?.mkdirs()
-                val writer = CSVWriter(FileWriter(file))
-                writer.writeNext(arrayOf("libraryId", "library_rev", "title", "description", "resourceRemoteAddress", "resourceLocalAddress", "resourceOffline", "resourceId", "addedBy", "uploadDate", "createdDate", "openWith", "articleDate", "kind", "language", "author", "year", "medium", "filename", "mediaType", "resourceType", "timesRated", "averageRating", "publisher", "linkToLicense", "subject", "level", "tags", "languages", "courseId", "stepId", "downloaded", "private"))
-                for (row in data) {
-                    writer.writeNext(row)
-                }
-                writer.close()
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
-        }
-
-        fun libraryWriteCsv() {
-            writeCsv("${context.getExternalFilesDir(null)}/ole/library.csv", libraryDataList)
         }
 
         @JvmStatic
