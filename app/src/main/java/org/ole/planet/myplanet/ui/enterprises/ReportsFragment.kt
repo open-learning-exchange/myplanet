@@ -137,8 +137,8 @@ class ReportsFragment : BaseTeamFragment() {
                         addProperty("endDate", endTimeStamp)
                         addProperty("updatedDate", System.currentTimeMillis())
                         addProperty("teamId", teamId)
-                        addProperty("teamType", team.teamType)
-                        addProperty("teamPlanetCode", team.teamPlanetCode)
+                        addProperty("teamType", team?.teamType)
+                        addProperty("teamPlanetCode", team?.teamPlanetCode)
                         addProperty("docType", "report")
                         addProperty("updated", true)
                     }
