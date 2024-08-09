@@ -563,7 +563,7 @@
     <string name="level_colon">Level: %s</string>
     <string name="method">Method:</string>
     <string name="number_of_exams">Number of exams:</string>
-    <string name="description_colon">description:</string>
+    <string name="description_colon">Description:</string>
     <string name="download_resources">Download Resources</string>
     <string name="take_test">Take Test [%d]</string>
     <string name="search">search</string>
