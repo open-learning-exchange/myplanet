@@ -55,7 +55,7 @@
                 android:ellipsize="end"
                 android:maxLines="2"
                 android:padding="4dp"
-                android:textColor="@color/hint_color" />
+                android:textColor="@color/daynight_textColor" />
 
             <com.google.android.flexbox.FlexboxLayout
                 android:id="@+id/flexbox_drawable"
@@ -71,7 +71,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:padding="@dimen/padding_normal"
-                android:textColor="@color/text_highlight_color" />
+                android:textColor="@color/daynight_textColor" />
 
         </LinearLayout>
 
