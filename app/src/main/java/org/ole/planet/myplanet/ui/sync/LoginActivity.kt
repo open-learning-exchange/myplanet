@@ -452,7 +452,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
 
                 override fun afterTextChanged(s: Editable) {}
             })
-            val builder = AlertDialog.Builder(this)
+            val builder = AlertDialog.Builder(this, R.style.AlertDialogTheme)
             builder.setTitle(R.string.btn_guest_login)
                 .setView(v)
                 .setPositiveButton(R.string.login, null)

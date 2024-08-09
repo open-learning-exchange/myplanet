@@ -10,11 +10,13 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:labelFor="@+id/et_user_name"
-        android:hint="@string/enter_username">
+        android:hint="@string/enter_username"
+        android:textColorHint="@color/hint_color">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/et_user_name"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:textColor="@color/daynight_textColor"/>
     </com.google.android.material.textfield.TextInputLayout>
 </LinearLayout>
