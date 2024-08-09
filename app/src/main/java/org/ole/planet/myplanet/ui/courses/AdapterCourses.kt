@@ -239,7 +239,7 @@ class AdapterCourses(private val context: Context, private var courseList: List<
         showProgress(position)
         if (map.containsKey(courseList[position]!!.courseId)) {
             val `object` = map[courseList[position]!!.courseId]
-            showRating(`object`, viewHolder.rowCourseBinding.average, viewHolder.rowCourseBinding.timesRated, viewHolder.rowCourseBinding.ratingBar)
+            showRating(`object`, viewHolder.rowCourseBinding.rating, viewHolder.rowCourseBinding.timesRated, viewHolder.rowCourseBinding.ratingBar)
         } else {
             viewHolder.rowCourseBinding.ratingBar.rating = 0f
         }
