@@ -6,6 +6,7 @@ import android.graphics.drawable.AnimationDrawable
 import android.os.Build
 import android.os.Bundle
 import android.text.*
+import android.util.Log
 import android.view.*
 import android.webkit.URLUtil
 import android.widget.*
@@ -188,12 +189,17 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         customProgressDialog?.setText(getString(R.string.connecting_to_server))
         customProgressDialog?.show()
         val apiInterface = client?.create(ApiInterface::class.java)
+
         apiInterface?.isPlanetAvailable("$processedUrl/_all_dbs")?.enqueue(object : Callback<ResponseBody?> {
             override fun onResponse(call: Call<ResponseBody?>, response: Response<ResponseBody?>) {
                 try {
                     customProgressDialog?.dismiss()
+                    Log.d("TAG", "onResponse: $response")
+                    Log.d("TAG", "onResponse: $processedUrl/_all_dbs")
                     val ss = response.body()?.string()
+                    Log.d("TAG", "onResponse: $ss")
                     val myList = ss?.split(",".toRegex())?.dropLastWhile { it.isEmpty() }?.let { listOf(*it.toTypedArray()) }
+                    Log.d("TAG", "onResponse: $myList")
                     if ((myList?.size ?: 0) < 8) {
                         alertDialogOkay(getString(R.string.check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server))
                     } else {
