@@ -60,7 +60,7 @@
                             android:layout_height="30dp"
                             android:layout_alignParentLeft="true"
                             android:layout_marginLeft="10dp"
-                            android:layout_marginTop="6dp"
+                            android:layout_marginTop="5dp"
                             android:background="@drawable/file_upload_animation_login"
                             android:contentDescription="@string/sync"
                             android:scaleType="fitCenter" />
@@ -69,7 +69,7 @@
                             android:id="@+id/lblLastSyncDate"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="15dp"
+                            android:layout_marginTop="25dp"
                             android:padding="@dimen/padding_normal"
                             android:text="@string/dash_4"
                             android:textAlignment="center"
