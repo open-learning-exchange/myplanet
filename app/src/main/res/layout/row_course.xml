@@ -49,7 +49,7 @@
                 android:ellipsize="end"
                 android:maxLines="4"
                 android:padding="4dp"
-                android:textColor="@color/hint_color" />
+                android:textColor="@color/daynight_textColor" />
 
             <com.google.android.flexbox.FlexboxLayout
                 android:id="@+id/flexbox_drawable"
@@ -78,13 +78,13 @@
                     android:id="@+id/grad_level"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/hint_color" />
+                    android:textColor="@color/daynight_textColor" />
 
                 <TextView
                     android:id="@+id/subject_level"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/hint_color" />
+                    android:textColor="@color/daynight_textColor" />
 
                 <TextView
                     android:id="@+id/holder"
@@ -159,7 +159,8 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
-                    android:text="@string/average" />
+                    android:text="@string/average"
+                    android:textColor="@color/daynight_textColor"/>
 
             </LinearLayout>
         </LinearLayout>
@@ -169,7 +170,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:padding="@dimen/padding_normal"
-            android:textColor="@color/text_highlight_color"
+            android:textColor="@color/daynight_textColor"
             android:visibility="gone" />
 
         <androidx.appcompat.widget.AppCompatSeekBar
