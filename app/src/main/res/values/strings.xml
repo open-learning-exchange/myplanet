@@ -563,7 +563,7 @@
     <string name="level_colon">Level: %s</string>
     <string name="method">Method:</string>
     <string name="number_of_exams">Number of exams:</string>
-    <string name="description_colon">description:</string>
+    <string name="description_colon">Description:</string>
     <string name="download_resources">Download Resources</string>
     <string name="take_test">Take Test [%d]</string>
     <string name="search">search</string>
@@ -1108,8 +1108,9 @@
     <string name="sync_cambridge">🇺🇸planet cambridge</string>
     <string name="sync_egdirbmac">🇺🇸planet egdirbmac</string>
     <string name="sync_palmbay">🇺🇸planet palmbay</string>
-    <string name="surveys_to_complete">You have %d %s to complete</string>
+    <string name="surveys_to_complete">You have %1$d %2$s to complete</string>
     <string name="show_less">show less</string>
     <string name="show_more">show more</string>
+    <string name="server_address_content_description">server address: %1$s</string>
 
 </resources>

@@ -491,54 +491,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             clearDataDialog(getString(R.string.are_you_sure_you_want_to_clear_data))
         }
 
-        val teams: List<RealmMyTeam> = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId").equalTo("status", "active").findAll()
-        if (teams.isNotEmpty() && "${dialogServerUrlBinding.inputServerUrl.text}" != "") {
-            dialogServerUrlBinding.team.visibility = View.VISIBLE
-            teamAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, teamList)
-            teamAdapter?.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-            teamList.clear()
-            teamList.add("select team")
-            for (team in teams) {
-                if (team.isValid) {
-                    teamList.add(team.name)
-                }
-            }
-            dialogServerUrlBinding.team.adapter = teamAdapter
-            val lastSelection = prefData.getSelectedTeamId()
-            if (!lastSelection.isNullOrEmpty()) {
-                for (i in teams.indices) {
-                    val team = teams[i]
-                    if (team._id != null && team._id == lastSelection && team.isValid) {
-                        val lastSelectedPosition = i + 1
-                        dialogServerUrlBinding.team.setSelection(lastSelectedPosition)
-                        break
-                    }
-                }
-            }
-
-            dialogServerUrlBinding.team.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-                override fun onItemSelected(parentView: AdapterView<*>?, selectedItemView: View, position: Int, id: Long) {
-                    if (position > 0) {
-                        val selectedTeam = teams[position - 1]
-                        val currentTeamId = prefData.getSelectedTeamId()
-                        if (currentTeamId != selectedTeam._id) {
-                            prefData.setSelectedTeamId(selectedTeam._id)
-                            if (this@SyncActivity is LoginActivity) {
-                                this@SyncActivity.getTeamMembers()
-                            }
-                            dialog.dismiss()
-                        }
-                    }
-                }
-
-                override fun onNothingSelected(parentView: AdapterView<*>?) { }
-            }
-        } else if (teams.isNotEmpty() && "${dialogServerUrlBinding.inputServerUrl.text}" == "") {
-            dialogServerUrlBinding.team.visibility = View.GONE
-        } else {
-            dialogServerUrlBinding.team.visibility = View.GONE
-        }
-
         neutralAction.setOnClickListener {
             if (!prefData.getManualConfig()) {
                 showAdditionalServers = !showAdditionalServers
@@ -612,19 +564,15 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             val storedPin = settings.getString("serverPin", null)
             val urlWithoutProtocol = storedUrl?.replace(Regex("^https?://"), "")
 
-            serverAddressAdapter = ServerAddressAdapter(
-                getFilteredServerList(),
-                { serverListAddress ->
-                    val actualUrl = serverListAddress.url.replace(Regex("^https?://"), "")
-                    binding.inputServerUrl.setText(actualUrl)
-                    binding.inputServerPassword.setText(getPinForUrl(actualUrl))
-                    val protocol = if (actualUrl == BuildConfig.PLANET_XELA_URL || actualUrl == BuildConfig.PLANET_SANPABLO_URL) "http://" else "https://"
-                    editor.putString("serverProtocol", protocol).apply()
-                    if (serverCheck) {
-                        performSync(dialog)
-                    }
-                },
-                { _, _ ->
+            serverAddressAdapter = ServerAddressAdapter(getFilteredServerList(), { serverListAddress ->
+                val actualUrl = serverListAddress.url.replace(Regex("^https?://"), "")
+                binding.inputServerUrl.setText(actualUrl)
+                binding.inputServerPassword.setText(getPinForUrl(actualUrl))
+                val protocol = if (actualUrl == BuildConfig.PLANET_XELA_URL || actualUrl == BuildConfig.PLANET_SANPABLO_URL) "http://" else "https://"
+                editor.putString("serverProtocol", protocol).apply()
+                if (serverCheck) {
+                    performSync(dialog)
+                } }, { _, _ ->
                     clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server)) {
                         serverAddressAdapter?.revertSelection()
                     }

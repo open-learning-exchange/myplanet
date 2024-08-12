@@ -1108,8 +1108,9 @@
     <string name="sync_cambridge">🇺🇸planet cambridge</string>
     <string name="sync_egdirbmac">🇺🇸planet egdirbmac</string>
     <string name="sync_palmbay">🇺🇸planet palmbay</string>
-    <string name="surveys_to_complete">لديك %d %s لإكمالها</string>
+    <string name="surveys_to_complete">لديك %1$d %2$s لإكماله</string>
     <string name="show_less">عرض أقل</string>
     <string name="show_more">عرض المزيد</string>
+    <string name="server_address_content_description">عنوان الخادم: %1$s</string>
 
 </resources>
