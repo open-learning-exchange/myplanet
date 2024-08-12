@@ -34,7 +34,7 @@
                 android:layout_weight="5"
                 android:gravity="center"
                 android:orientation="horizontal"
-                android:background="@color/primary">
+                android:background="@color/light_dark">
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="0dp"
@@ -334,7 +334,6 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    app:layout_constraintBottom_toTopOf="@+id/recyclerView"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/customDeviceName">
@@ -356,6 +355,17 @@
                         tools:text="@string/available_space_colon" />
                 </LinearLayout>
 
+                <Spinner
+                    android:id="@+id/team"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:textColor="@color/md_white_1000"
+                    android:textSize="16sp"
+                    android:visibility="gone"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/ltAvailablaSpace" />
+
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/recyclerView"
                     android:layout_width="match_parent"
@@ -364,10 +374,9 @@
                     android:layout_marginTop="@dimen/_10dp"
                     android:layout_marginEnd="3dp"
                     android:layout_marginBottom="5dp"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/team"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/ltAvailablaSpace" />
+                    app:layout_constraintEnd_toEndOf="parent" />
 
             </androidx.constraintlayout.widget.ConstraintLayout>
         </LinearLayout>
