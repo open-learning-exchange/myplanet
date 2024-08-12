@@ -4,16 +4,19 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".ui.myhealth.MyHealthFragment">
+    tools:context=".ui.myhealth.MyHealthFragment"
+    android:background="@color/secondary_bg">
 
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:background="@color/secondary_bg">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:background="@color/secondary_bg">
 
 
             <LinearLayout
@@ -48,7 +51,8 @@
                 android:id="@+id/layout_user_detail"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                android:background="@color/secondary_bg">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -72,7 +76,8 @@
                         android:textAlignment="center"
                         android:textAppearance="@style/TextAppearance.AppCompat.Body2"
                         android:textSize="18sp"
-                        android:textStyle="bold" />
+                        android:textStyle="bold"
+                        android:textColor="@color/daynight_textColor" />
 
                     <ImageView
                         android:id="@+id/imageView2"
@@ -86,7 +91,8 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:padding="@dimen/padding_normal">
+                    android:padding="@dimen/padding_normal"
+                    android:background="@color/secondary_bg">
 
                     <ImageView
                         android:id="@+id/user_image"
@@ -98,7 +104,8 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical">
+                        android:orientation="vertical"
+                        android:background="@color/secondary_bg">
 
 
                         <LinearLayout
@@ -116,7 +123,7 @@
                                     android:layout_height="wrap_content"
                                     android:padding="@dimen/padding_small"
                                     android:text="@string/full_name"
-                                    android:textColor="@color/colorPrimaryDark"
+                                    android:textColor="@color/daynight_textColor"
                                     android:textStyle="bold" />
 
                                 <TextView
@@ -124,7 +131,8 @@
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
                                     android:padding="@dimen/padding_small"
-                                    android:text="@string/n_a" />
+                                    android:text="@string/n_a"
+                                    android:textColor="@color/daynight_textColor" />
 
                             </LinearLayout>
 
@@ -139,7 +147,7 @@
                                     android:layout_height="wrap_content"
                                     android:padding="@dimen/padding_small"
                                     android:text="@string/email"
-                                    android:textColor="@color/colorPrimaryDark"
+                                    android:textColor="@color/daynight_textColor"
                                     android:textStyle="bold" />
 
                                 <TextView
@@ -147,7 +155,8 @@
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
                                     android:padding="@dimen/padding_small"
-                                    android:text="@string/n_a" />
+                                    android:text="@string/n_a"
+                                    android:textColor="@color/daynight_textColor" />
                             </LinearLayout>
                         </LinearLayout>
 
@@ -166,7 +175,7 @@
                                     android:layout_height="wrap_content"
                                     android:padding="@dimen/padding_small"
                                     android:text="@string/language"
-                                    android:textColor="@color/colorPrimaryDark"
+                                    android:textColor="@color/daynight_textColor"
                                     android:textStyle="bold" />
 
                                 <TextView
@@ -174,7 +183,8 @@
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
                                     android:padding="@dimen/padding_small"
-                                    android:text="@string/n_a" />
+                                    android:text="@string/n_a"
+                                    android:textColor="@color/daynight_textColor" />
                             </LinearLayout>
 
                             <LinearLayout
@@ -188,7 +198,7 @@
                                     android:layout_height="wrap_content"
                                     android:padding="@dimen/padding_small"
                                     android:text="@string/birth_date"
-                                    android:textColor="@color/colorPrimaryDark"
+                                    android:textColor="@color/daynight_textColor"
                                     android:textStyle="bold" />
 
                                 <TextView
@@ -196,7 +206,8 @@
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
                                     android:padding="@dimen/padding_small"
-                                    android:text="@string/n_a" />
+                                    android:text="@string/n_a"
+                                    android:textColor="@color/daynight_textColor" />
                             </LinearLayout>
 
 
@@ -205,7 +216,8 @@
                         <View
                             android:layout_width="match_parent"
                             android:layout_height="1dp"
-                            android:background="@drawable/bg_grey" />
+                            android:background="@color/daynight_textColor" />
+
 
                         <LinearLayout
                             android:layout_width="match_parent"
@@ -222,7 +234,7 @@
                                     android:layout_height="wrap_content"
                                     android:padding="@dimen/padding_small"
                                     android:text="@string/birth_place"
-                                    android:textColor="@color/colorPrimaryDark"
+                                    android:textColor="@color/daynight_textColor"
                                     android:textStyle="bold" />
 
                                 <TextView
@@ -230,7 +242,8 @@
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
                                     android:padding="@dimen/padding_small"
-                                    android:text="@string/n_a" />
+                                    android:text="@string/n_a"
+                                    android:textColor="@color/daynight_textColor" />
 
                             </LinearLayout>
 
@@ -245,7 +258,7 @@
                                     android:layout_height="wrap_content"
                                     android:padding="@dimen/padding_small"
                                     android:text="@string/emergency_contact"
-                                    android:textColor="@color/colorPrimaryDark"
+                                    android:textColor="@color/daynight_textColor"
                                     android:textStyle="bold" />
 
                                 <TextView
@@ -253,7 +266,8 @@
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
                                     android:padding="@dimen/padding_small"
-                                    android:text="@string/n_a" />
+                                    android:text="@string/n_a"
+                                    android:textColor="@color/daynight_textColor" />
                             </LinearLayout>
 
 
@@ -262,7 +276,8 @@
                         <View
                             android:layout_width="match_parent"
                             android:layout_height="1dp"
-                            android:background="@drawable/bg_grey" />
+                            android:background="@color/daynight_textColor" />
+
 
                         <LinearLayout
                             android:layout_width="match_parent"
@@ -274,7 +289,7 @@
                                 android:layout_height="wrap_content"
                                 android:padding="@dimen/padding_small"
                                 android:text="@string/special_needs"
-                                android:textColor="@color/colorPrimaryDark"
+                                android:textColor="@color/daynight_textColor"
                                 android:textStyle="bold" />
 
 
@@ -283,13 +298,15 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:padding="@dimen/padding_small"
-                                android:text="@string/n_a" />
+                                android:text="@string/n_a"
+                                android:textColor="@color/daynight_textColor" />
                         </LinearLayout>
 
                         <View
                             android:layout_width="match_parent"
                             android:layout_height="1dp"
-                            android:background="@drawable/bg_grey" />
+                            android:background="@color/daynight_textColor" />
+
 
                         <LinearLayout
                             android:layout_width="match_parent"
@@ -301,7 +318,7 @@
                                 android:layout_height="wrap_content"
                                 android:padding="@dimen/padding_small"
                                 android:text="@string/other_need"
-                                android:textColor="@color/colorPrimaryDark"
+                                android:textColor="@color/daynight_textColor"
                                 android:textStyle="bold" />
 
                             <TextView
@@ -309,7 +326,8 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:padding="@dimen/padding_small"
-                                android:text="@string/n_a" />
+                                android:text="@string/n_a"
+                                android:textColor="@color/daynight_textColor" />
                         </LinearLayout>
 
 
@@ -341,10 +359,10 @@
                 android:layout_gravity="center"
                 android:gravity="center"
                 android:padding="@dimen/padding_large"
-                android:visibility="gone" />
+                android:visibility="gone"
+                android:textColor="@color/daynight_textColor" />
 
         </LinearLayout>
-
 
     </androidx.core.widget.NestedScrollView>
 
