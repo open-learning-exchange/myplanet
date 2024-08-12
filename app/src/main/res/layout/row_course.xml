@@ -49,7 +49,7 @@
                 android:ellipsize="end"
                 android:maxLines="4"
                 android:padding="4dp"
-                android:textColor="@color/hint_color" />
+                android:textColor="@color/daynight_textColor" />
 
             <com.google.android.flexbox.FlexboxLayout
                 android:id="@+id/flexbox_drawable"
@@ -78,18 +78,19 @@
                     android:id="@+id/grad_level"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/hint_color" />
+                    android:textColor="@color/daynight_textColor" />
 
                 <TextView
                     android:id="@+id/subject_level"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/hint_color" />
+                    android:textColor="@color/daynight_textColor" />
 
                 <TextView
                     android:id="@+id/holder"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:textColor="@color/daynight_textColor"
                     android:visibility="gone" />
 
                 <TextView
@@ -97,7 +98,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:padding="@dimen/padding_normal"
-                    android:textColor="@color/colorPrimary"
+                    android:textColor="@color/daynight_textColor"
                     android:visibility="gone" />
 
             </LinearLayout>
@@ -129,7 +130,8 @@
                     android:focusable="false"
                     android:isIndicator="true"
                     android:numStars="5"
-                    android:stepSize="1" />
+                    android:stepSize="1"
+                    android:progressTint="@color/daynight_textColor" />
 
             </LinearLayout>
 
@@ -159,6 +161,7 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:gravity="center"
+                    android:textColor="@color/daynight_textColor"
                     android:text="@string/average" />
 
             </LinearLayout>
@@ -169,7 +172,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:padding="@dimen/padding_normal"
-            android:textColor="@color/text_highlight_color"
+            android:textColor="@color/daynight_textColor"
             android:visibility="gone" />
 
         <androidx.appcompat.widget.AppCompatSeekBar

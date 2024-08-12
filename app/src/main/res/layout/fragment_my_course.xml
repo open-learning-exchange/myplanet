@@ -38,7 +38,7 @@
                     android:layout_weight="1"
                     android:gravity="center_vertical"
                     android:padding="@dimen/padding_normal"
-                    android:text="@string/my_courses"
+                    android:text="@string/txt_myCourses"
                     android:textColor="@color/md_white_1000"
                     android:textSize="@dimen/text_size_large"
                     android:textStyle="bold" />
@@ -66,7 +66,8 @@
                     android:drawablePadding="4dp"
                     android:gravity="center"
                     android:text="@string/join_selected"
-                    android:textColor="@drawable/tv_color"
+                    android:textColor="@color/daynight_textColor"
+                    app:drawableTint="@color/daynight_textColor"
                     android:textSize="@dimen/text_size_mid"
                     app:drawableLeftCompat="@drawable/ic_add_library" />
 
@@ -156,6 +157,7 @@
                 android:id="@+id/tv_message"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:textColor="@color/daynight_textColor"
                 android:layout_gravity="center" />
         </FrameLayout>
 
@@ -174,9 +176,9 @@
             android:id="@+id/ll_filter"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="right"
+            android:layout_gravity="end"
             android:background="@drawable/custom_border"
-            android:gravity="right"
+            android:gravity="end"
             android:orientation="vertical"
             android:padding="@dimen/padding_normal"
             app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
@@ -186,7 +188,7 @@
                 android:layout_height="wrap_content"
                 android:padding="@dimen/padding_normal"
                 android:text="@string/filter"
-                android:textColor="@color/colorPrimaryDark"
+                android:textColor="@color/daynight_textColor"
                 android:textSize="18sp"
                 android:textStyle="bold" />
 
@@ -207,6 +209,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:padding="4dp"
+                        android:textColor="@color/daynight_textColor"
                         android:text="@string/grade_level" />
 
                     <Spinner
@@ -227,12 +230,13 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:padding="4dp"
+                        android:textColor="@color/daynight_textColor"
                         android:text="@string/subject_level" />
 
                     <Spinner
                         android:id="@+id/spn_subject"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
+                        android:layout_height="0dp"
                         android:layout_weight="1"
                         android:entries="@array/subject_level" />
                 </LinearLayout>
