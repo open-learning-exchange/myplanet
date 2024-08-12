@@ -545,9 +545,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         } else {
             serverAddresses.layoutManager = LinearLayoutManager(this)
             serverListAddresses = listOf(
+                ServerAddressesModel(getString(R.string.sync_san_pablo), BuildConfig.PLANET_SANPABLO_URL),
                 ServerAddressesModel(getString(R.string.sync_planet_learning), BuildConfig.PLANET_LEARNING_URL),
                 ServerAddressesModel(getString(R.string.sync_guatemala), BuildConfig.PLANET_GUATEMALA_URL),
-                ServerAddressesModel(getString(R.string.sync_san_pablo), BuildConfig.PLANET_SANPABLO_URL),
                 ServerAddressesModel(getString(R.string.sync_planet_earth), BuildConfig.PLANET_EARTH_URL),
                 ServerAddressesModel(getString(R.string.sync_somalia), BuildConfig.PLANET_SOMALIA_URL),
                 ServerAddressesModel(getString(R.string.sync_vi), BuildConfig.PLANET_VI_URL),
@@ -641,7 +641,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         return if (showAdditionalServers) {
             serverListAddresses
         } else {
-            serverListAddresses.take(3)
+            serverListAddresses.take(1)
         }
     }
 
@@ -660,10 +660,19 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     private fun getPinForUrl(url: String): String {
         val pinMap = mapOf(
+            BuildConfig.PLANET_SANPABLO_URL to BuildConfig.PLANET_SANPABLO_PIN,
             BuildConfig.PLANET_LEARNING_URL to BuildConfig.PLANET_LEARNING_PIN,
             BuildConfig.PLANET_GUATEMALA_URL to BuildConfig.PLANET_GUATEMALA_PIN,
+            BuildConfig.PLANET_EARTH_URL to BuildConfig.PLANET_EARTH_PIN,
+            BuildConfig.PLANET_SOMALIA_URL to BuildConfig.PLANET_SOMALIA_PIN,
+            BuildConfig.PLANET_VI_URL to BuildConfig.PLANET_VI_PIN,
             BuildConfig.PLANET_XELA_URL to BuildConfig.PLANET_XELA_PIN,
-            BuildConfig.PLANET_SANPABLO_URL to BuildConfig.PLANET_SANPABLO_PIN
+//            BuildConfig.PLANET_URIUR_URL to BuildConfig.PLANET_URIUR_PIN,
+            BuildConfig.PLANET_RUIRU_URL to BuildConfig.PLANET_RUIRU_PIN,
+            BuildConfig.PLANET_EMBAKASI_URL to BuildConfig.PLANET_EMBAKASI_PIN,
+            BuildConfig.PLANET_CAMBRIDGE_URL to BuildConfig.PLANET_CAMBRIDGE_PIN,
+//            BuildConfig.PLANET_EGDIRBMAC_URL to BuildConfig.PLANET_EGDIRBMAC_PIN,
+            BuildConfig.PLANET_PALMBAY_URL to BuildConfig.PLANET_PALMBAY_PIN
         )
         return pinMap[url] ?: ""
     }
