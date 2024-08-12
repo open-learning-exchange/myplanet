@@ -5,12 +5,11 @@
     android:layout_height="match_parent"
     tools:context=".ui.resources.CollectionsFragment">
 
-
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:background="@color/card_bg">
+        android:background="@color/card_bg"
+        android:orientation="vertical">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -31,8 +30,6 @@
                     android:hint="@string/filter_collections"
                     android:textColorHint="@color/hint_color"
                     android:textColor="@color/daynight_textColor" />
-
-
             </com.google.android.material.textfield.TextInputLayout>
 
             <androidx.appcompat.widget.SwitchCompat
@@ -44,7 +41,6 @@
                 android:padding="@dimen/padding_normal"
                 android:text="@string/select_many_collections"
                 android:visibility="gone" />
-
         </LinearLayout>
 
         <ExpandableListView
@@ -53,8 +49,6 @@
             android:layout_height="0dp"
             android:layout_weight="1"
             android:padding="@dimen/padding_normal" />
-
-
         <Button
             android:id="@+id/btn_ok"
             android:layout_width="wrap_content"
