@@ -3,6 +3,7 @@
     <color name="colorPrimary">#18191a</color>
     <color name="colorPrimaryDark">#242526</color>
     <color name="colorPrimaryLight">#3a3b3c</color>
+    <color name="colorPrimaryWhite">@color/textColorPrimary</color>
     <color name="colorAccent">@color/md_red_500</color>
     <color name="textColorPrimary">#e4e6eb</color>
     <color name="disable_color">#BDBDBD</color>
