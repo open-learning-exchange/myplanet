@@ -42,7 +42,6 @@
                     android:textColor="@color/md_white_1000"
                     android:textSize="@dimen/text_size_large"
                     android:textStyle="bold" />
-
                 <Button
                     android:id="@+id/btn_remove"
                     android:layout_width="wrap_content"
@@ -55,7 +54,6 @@
                     android:textColor="@color/md_white_1000"
                     android:textSize="@dimen/text_size_mid"
                     android:visibility="gone" />
-
                 <TextView
                     android:id="@+id/tv_add"
                     style="@style/Widget.AppCompat.Button.Borderless.Colored"
@@ -70,7 +68,6 @@
                     app:drawableTint="@color/daynight_textColor"
                     android:textSize="@dimen/text_size_mid"
                     app:drawableLeftCompat="@drawable/ic_add_library" />
-
                 <TextView
                     android:id="@+id/tv_selected"
                     android:layout_width="wrap_content"
@@ -84,7 +81,6 @@
                     android:textSize="@dimen/text_size_mid"
                     android:visibility="gone"
                     app:drawableLeftCompat="@drawable/ic_delete" />
-
                 <Button
                     android:id="@+id/btn_archive"
                     android:layout_width="wrap_content"
@@ -98,7 +94,6 @@
                     android:textSize="@dimen/text_size_mid"
                     android:visibility="gone"
                     app:drawableLeftCompat="@drawable/ic_delete" />
-
                 <ImageButton
                     android:id="@+id/filter"
                     style="@style/YellowButtons"
@@ -111,9 +106,7 @@
                     android:textColor="@color/md_white_1000"
                     app:srcCompat="@drawable/ic_filter"
                     android:contentDescription="@string/more_action" />
-
             </LinearLayout>
-
         </LinearLayout>
 
         <LinearLayout
@@ -134,7 +127,6 @@
                 android:textColor="@color/daynight_textColor"
                 android:textSize="@dimen/text_size_mid"
                 android:buttonTint="@color/daynight_textColor" />
-
             <include
                 layout="@layout/layout_search"
                 android:layout_width="0dp"
@@ -152,7 +144,6 @@
                 android:id="@+id/recycler"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent" />
-
             <TextView
                 android:id="@+id/tv_message"
                 android:layout_width="wrap_content"
@@ -160,7 +151,6 @@
                 android:textColor="@color/daynight_textColor"
                 android:layout_gravity="center" />
         </FrameLayout>
-
     </LinearLayout>
 
     <androidx.cardview.widget.CardView
@@ -191,8 +181,6 @@
                 android:textColor="@color/daynight_textColor"
                 android:textSize="18sp"
                 android:textStyle="bold" />
-
-
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -211,13 +199,11 @@
                         android:padding="4dp"
                         android:textColor="@color/daynight_textColor"
                         android:text="@string/grade_level" />
-
                     <Spinner
                         android:id="@+id/spn_grade"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:entries="@array/grade_level" />
-
                 </LinearLayout>
 
                 <LinearLayout
@@ -232,7 +218,6 @@
                         android:padding="4dp"
                         android:textColor="@color/daynight_textColor"
                         android:text="@string/subject_level" />
-
                     <Spinner
                         android:id="@+id/spn_subject"
                         android:layout_width="match_parent"
@@ -256,7 +241,6 @@
                     android:background="@drawable/buttonblue"
                     android:text="@string/order_by_date"
                     android:textColor="@color/md_white_1000" />
-
                 <Button
                     android:id="@+id/order_by_title_button"
                     android:layout_width="0dp"
@@ -282,7 +266,6 @@
                     android:background="@drawable/buttonblue"
                     android:text="@string/collections"
                     android:textColor="@color/md_white_1000" />
-
                 <Button
                     android:id="@+id/btn_clear_tags"
                     android:layout_width="0dp"
@@ -293,8 +276,6 @@
                     android:text="@string/clear_tags"
                     android:textColor="@color/md_white_1000" />
             </LinearLayout>
-
         </LinearLayout>
     </androidx.cardview.widget.CardView>
-
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
