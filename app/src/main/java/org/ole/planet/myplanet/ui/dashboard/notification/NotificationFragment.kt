@@ -67,30 +67,15 @@ class NotificationFragment : BottomSheetDialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val model = UserProfileDbHandler(requireContext()).userModel!!
-        val surveyList = mRealm.where(RealmSubmission::class.java)
-            .equalTo("userId", model.id)
-            .equalTo("status", "pending")
-            .equalTo("type", "survey")
-            .findAll()
+        val surveyList = mRealm.where(RealmSubmission::class.java).equalTo("userId", model.id).equalTo("status", "pending").equalTo("type", "survey").findAll()
 
-        val tasks = mRealm.where(RealmTeamTask::class.java)
-            .notEqualTo("status", "archived")
-            .equalTo("completed", false)
-            .equalTo("assignee", model.id)
-            .findAll()
+        val tasks = mRealm.where(RealmTeamTask::class.java).notEqualTo("status", "archived").equalTo("completed", false).equalTo("assignee", model.id).findAll()
 
         val notificationList: MutableList<Notifications> = ArrayList()
 
         val resourceCount = getLibraryList(mRealm, model.id).size
-        notificationList.add(Notifications(
-            R.drawable.mylibrary,
-            "$resourceCount ${getString(R.string.resource_not_downloaded)}. ${getString(R.string.bulk_resource_download)}"
-        ))
-
-        notificationList.add(Notifications(
-            R.drawable.survey,
-            "${surveyList.size} ${getString(R.string.pending_survey)} / ${tasks.size} ${getString(R.string.tasks_due)}"
-        ))
+        notificationList.add(Notifications(R.drawable.mylibrary, "$resourceCount ${getString(R.string.resource_not_downloaded)}. ${getString(R.string.bulk_resource_download)}"))
+        notificationList.add(Notifications(R.drawable.survey, "${surveyList.size} ${getString(R.string.pending_survey)} / ${tasks.size} ${getString(R.string.tasks_due)}"))
 
         val storageRatio = FileUtils.totalAvailableMemoryRatio
         val storageNotiText: String = if (storageRatio <= 10) {
@@ -103,10 +88,7 @@ class NotificationFragment : BottomSheetDialogFragment() {
         notificationList.add(Notifications(R.drawable.baseline_storage_24, storageNotiText))
 
         if (!TextUtils.isEmpty(model.key) && model.getRoleAsString().contains("health") && !model.id?.startsWith("guest")!!) {
-            notificationList.add(Notifications(
-                R.drawable.ic_myhealth,
-                getString(R.string.health_record_not_available_click_to_sync)
-            ))
+            notificationList.add(Notifications(R.drawable.ic_myhealth, getString(R.string.health_record_not_available_click_to_sync)))
         }
 
         fragmentNotificationBinding.rvNotifications.layoutManager = LinearLayoutManager(requireActivity())
