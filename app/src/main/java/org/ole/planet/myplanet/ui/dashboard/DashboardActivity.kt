@@ -10,11 +10,13 @@ import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.PopupMenu
+import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
@@ -294,7 +296,26 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         if (user?.rolesList?.isEmpty() == true) {
             menu.findItem(R.id.action_setting).setEnabled(false)
         }
+
+        val menuItem = menu.findItem(R.id.action_bell)
+        val actionView = menuItem?.actionView
+        actionView?.post {
+            val badge = actionView.findViewById<TextView>(R.id.cart_badge)
+            if (badge != null) {
+                updateBadge(badge, 5)
+            }
+        }
         return super.onPrepareOptionsMenu(menu)
+    }
+
+    private fun updateBadge(badge: TextView, count: Int) {
+        Log.d("Badge", count.toString())
+        if (count > 0) {
+            badge.text = count.toString()
+            badge.visibility = View.VISIBLE
+        } else {
+            badge.visibility = View.GONE
+        }
     }
 
     private val accountHeader: AccountHeader
