@@ -156,5 +156,4 @@
         <item name="android:textColorPrimary">@color/daynight_textColor</item>
         <item name="android:textColor">@color/daynight_textColor</item>
     </style>
-
 </resources>
