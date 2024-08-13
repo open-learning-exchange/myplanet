@@ -58,10 +58,8 @@
                 android:layout_height="wrap_content"
                 android:text="@string/request_to_join"
                 android:textSize="10sp"
-                app:layout_constraintEnd_toStartOf="@id/edit_team"
-                app:layout_constraintHorizontal_chainStyle="packed"
-                app:layout_constraintHorizontal_weight="1"
                 app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
             <Button
@@ -71,10 +69,9 @@
                 android:text="@string/edit"
                 android:textSize="10sp"
                 android:visibility="gone"
-                app:layout_constraintEnd_toStartOf="@id/btn_feedback"
-                app:layout_constraintHorizontal_weight="1"
-                app:layout_constraintStart_toEndOf="@id/join_leave"
-                app:layout_constraintTop_toTopOf="parent" />
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/join_leave" />
 
             <Button
                 android:id="@+id/btn_feedback"
@@ -83,10 +80,9 @@
                 android:text="@string/menu_feedback"
                 android:contentDescription="@string/menu_feedback"
                 android:textSize="10sp"
+                app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintHorizontal_weight="1"
-                app:layout_constraintStart_toEndOf="@id/edit_team"
-                app:layout_constraintTop_toTopOf="parent" />
+                app:layout_constraintTop_toBottomOf="@id/edit_team" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
