@@ -17,7 +17,7 @@
             android:id="@+id/et_input"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="@color/daynight_textColor"/>
+            android:textColor="@color/daynight_textColor" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <LinearLayout
@@ -33,7 +33,6 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="vertical" />
-
         <Button
             android:id="@+id/add_news_image"
             android:layout_width="wrap_content"
