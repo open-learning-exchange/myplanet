@@ -136,7 +136,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     private fun clearDataDialog(message: String, onCancel: () -> Unit = {}) {
-        AlertDialog.Builder(this)
+        AlertDialog.Builder(this, R.style.AlertDialogTheme)
             .setMessage(message)
             .setPositiveButton(getString(R.string.clear_data)) { _, _ ->
                 clearRealmDb()
@@ -387,7 +387,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         val msDiff = Calendar.getInstance().timeInMillis - cal_last_Sync.timeInMillis
         val daysDiff = TimeUnit.MILLISECONDS.toDays(msDiff)
         return if (daysDiff >= maxDays) {
-            val alertDialogBuilder = AlertDialog.Builder(this)
+            val alertDialogBuilder = AlertDialog.Builder(this, R.style.AlertDialogTheme)
             alertDialogBuilder.setMessage(
                 getString(R.string.it_has_been_more_than) + (daysDiff - 1) + getString(
                     R.string.days_since_you_last_synced_this_device
@@ -421,7 +421,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         syncToServerText = dialogServerUrlBinding.syncToServerText
 
         dialogServerUrlBinding.deviceName.setText(NetworkUtils.getDeviceName())
-        val builder = MaterialDialog.Builder(this)
+        val contextWrapper = ContextThemeWrapper(this, R.style.AlertDialogTheme)
+        val builder = MaterialDialog.Builder(contextWrapper)
         builder.customView(dialogServerUrlBinding.root, true)
             .positiveText(R.string.btn_sync)
             .negativeText(R.string.btn_sync_cancel)
@@ -662,8 +663,17 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         val pinMap = mapOf(
             BuildConfig.PLANET_LEARNING_URL to BuildConfig.PLANET_LEARNING_PIN,
             BuildConfig.PLANET_GUATEMALA_URL to BuildConfig.PLANET_GUATEMALA_PIN,
+            BuildConfig.PLANET_SANPABLO_URL to BuildConfig.PLANET_SANPABLO_PIN,
+            BuildConfig.PLANET_EARTH_URL to BuildConfig.PLANET_EARTH_PIN,
+            BuildConfig.PLANET_SOMALIA_URL to BuildConfig.PLANET_SOMALIA_PIN,
+            BuildConfig.PLANET_VI_URL to BuildConfig.PLANET_VI_PIN,
             BuildConfig.PLANET_XELA_URL to BuildConfig.PLANET_XELA_PIN,
-            BuildConfig.PLANET_SANPABLO_URL to BuildConfig.PLANET_SANPABLO_PIN
+//            BuildConfig.PLANET_URIUR_URL to BuildConfig.PLANET_URIUR_PIN,
+            BuildConfig.PLANET_RUIRU_URL to BuildConfig.PLANET_RUIRU_PIN,
+            BuildConfig.PLANET_EMBAKASI_URL to BuildConfig.PLANET_EMBAKASI_PIN,
+            BuildConfig.PLANET_CAMBRIDGE_URL to BuildConfig.PLANET_CAMBRIDGE_PIN,
+//            BuildConfig.PLANET_EGDIRBMAC_URL to BuildConfig.PLANET_EGDIRBMAC_PIN,
+            BuildConfig.PLANET_PALMBAY_URL to BuildConfig.PLANET_PALMBAY_PIN
         )
         return pinMap[url] ?: ""
     }

@@ -36,14 +36,14 @@
                     android:layout_height="wrap_content"
                     android:text="@string/yes"
                     android:textColor="@color/daynight_textColor"
-                    android:buttonTint="@color/daynight_textColor"/>
+                    android:buttonTint="@color/daynight_textColor" />
                 <RadioButton
                     android:id="@+id/urgent_no"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/no"
                     android:textColor="@color/daynight_textColor"
-                    android:buttonTint="@color/daynight_textColor"/>
+                    android:buttonTint="@color/daynight_textColor" />
             </RadioGroup>
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -95,7 +95,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:labelFor="@+id/et_message"
-            android:paddingBottom="@dimen/padding_normal">
+            android:paddingBottom="@dimen/padding_normal"
+            android:textColorHint="@color/hint_color">
 
             <EditText
                 android:id="@+id/et_message"
@@ -117,7 +118,7 @@
                 android:layout_height="wrap_content"
                 android:text="@string/button_cancel"
                 android:textSize="@dimen/text_size_mid"
-                android:textColor="@color/colorPrimaryWhite" />
+                android:textColor="@color/daynight_textColor" />
             <Button
                 android:id="@+id/btn_submit"
                 style="@style/Widget.MaterialComponents.Button.TextButton"
@@ -125,7 +126,7 @@
                 android:layout_height="wrap_content"
                 android:text="@string/button_submit"
                 android:textSize="@dimen/text_size_mid"
-                android:textColor="@color/colorPrimaryWhite" />
+                android:textColor="@color/daynight_textColor" />
         </LinearLayout>
     </LinearLayout>
 </FrameLayout>
