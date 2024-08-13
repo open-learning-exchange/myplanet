@@ -16,7 +16,8 @@
         android:id="@+id/tv_nodata"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="center" />
+        android:layout_gravity="center"
+        android:textColor="@color/daynight_textColor"/>
     <com.github.clans.fab.FloatingActionButton
         android:id="@+id/fab_add_resource"
         android:layout_width="match_parent"
