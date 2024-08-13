@@ -59,11 +59,14 @@ class BecomeMemberActivity : BaseActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         val mRealm: Realm = DatabaseService(this).realmInstance
         val languages = resources.getStringArray(R.array.language)
-        val adapter = ArrayAdapter(this, R.layout.become_a_member_spinner_layout, languages)
-        activityBecomeMemberBinding.spnLang.adapter = adapter
+        val lnAadapter = ArrayAdapter(this, R.layout.become_a_member_spinner_layout, languages)
+        activityBecomeMemberBinding.spnLang.adapter = lnAadapter
         activityBecomeMemberBinding.txtDob.setOnClickListener {
             showDatePickerDialog()
         }
+        val levels = resources.getStringArray(R.array.level)
+        val lvAdapter  = ArrayAdapter(this, R.layout.become_a_member_spinner_layout, levels)
+        activityBecomeMemberBinding.spnLevel.adapter = lvAdapter
 
         val username = intent.getStringExtra("username") ?: ""
         guest = intent.getBooleanExtra("guest", false)
