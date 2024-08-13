@@ -24,12 +24,10 @@
             android:lines="2"
             android:padding="@dimen/padding_normal"
             android:textColor="@color/daynight_textColor" />
-
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:background="@color/daynight_textColor" />
-
         <TextView
             android:id="@+id/txt_temp"
             android:layout_width="wrap_content"
@@ -37,12 +35,10 @@
             android:padding="@dimen/padding_normal"
             android:text="@string/body_temperature"
             android:textColor="@color/daynight_textColor" />
-
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:background="@color/daynight_textColor" />
-
         <TextView
             android:id="@+id/txt_pulse"
             android:layout_width="wrap_content"
@@ -50,12 +46,10 @@
             android:padding="@dimen/padding_normal"
             android:text="@string/pulse_rate"
             android:textColor="@color/daynight_textColor" />
-
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:background="@color/daynight_textColor" />
-
         <TextView
             android:id="@+id/txt_bp"
             android:layout_width="wrap_content"
@@ -63,12 +57,10 @@
             android:padding="@dimen/padding_normal"
             android:text="@string/blood_pressure"
             android:textColor="@color/daynight_textColor" />
-
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:background="@color/daynight_textColor" />
-
         <TextView
             android:id="@+id/txt_height"
             android:layout_width="wrap_content"
@@ -76,12 +68,10 @@
             android:padding="@dimen/padding_normal"
             android:text="@string/height"
             android:textColor="@color/daynight_textColor" />
-
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:background="@color/daynight_textColor" />
-
         <TextView
             android:id="@+id/txt_weight"
             android:layout_width="wrap_content"
@@ -89,12 +79,10 @@
             android:padding="@dimen/padding_normal"
             android:text="@string/weight"
             android:textColor="@color/daynight_textColor" />
-
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:background="@color/daynight_textColor" />
-
         <TextView
             android:id="@+id/txt_vision"
             android:layout_width="wrap_content"
@@ -102,12 +90,10 @@
             android:padding="@dimen/padding_normal"
             android:text="@string/vision"
             android:textColor="@color/daynight_textColor" />
-
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:background="@color/daynight_textColor" />
-
         <TextView
             android:id="@+id/txt_hearing"
             android:layout_width="wrap_content"
@@ -115,7 +101,5 @@
             android:padding="@dimen/padding_normal"
             android:text="@string/hearing"
             android:textColor="@color/daynight_textColor" />
-
     </LinearLayout>
-
 </androidx.cardview.widget.CardView>
