@@ -12,13 +12,9 @@
         android:key="saveUsernameAndPassword"
         android:title="@string/save_username_and_password" />
 
-    <org.ole.planet.myplanet.views.RoundedListPreference
-        android:defaultValue="@string/dark_mode_follow_system"
-        android:entries="@array/dark_mode_options"
-        android:entryValues="@array/dark_mode_options"
+    <Preference
         android:key="dark_mode"
-        android:title="@string/dark_mode"
-        android:summary="set the app theme to dark mode or back to normal" />
+        android:title="@string/dark_mode" />
 
     <Preference
         android:key="reset_app"
