@@ -8,7 +8,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@color/daynight_grey"
+        android:background="@color/card_bg"
         android:orientation="vertical">
 
         <LinearLayout
@@ -28,6 +28,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="@string/filter_collections"
+                    android:textColorHint="@color/hint_color"
                     android:textColor="@color/daynight_textColor" />
             </com.google.android.material.textfield.TextInputLayout>
 
