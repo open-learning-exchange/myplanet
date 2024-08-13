@@ -171,7 +171,5 @@
                 android:layout_height="wrap_content"
                 android:choiceMode="multipleChoice" />
         </LinearLayout>
-
     </LinearLayout>
-
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
