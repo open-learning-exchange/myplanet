@@ -18,7 +18,6 @@
             android:orientation="vertical"
             android:background="@color/secondary_bg">
 
-
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -35,7 +34,6 @@
                     android:text="@string/change_member"
                     android:theme="@style/BlueButton"
                     android:visibility="visible" />
-
                 <Button
                     android:id="@+id/add_new_record"
                     android:layout_width="wrap_content"
@@ -44,7 +42,6 @@
                     android:gravity="center"
                     android:text="@string/add_examination"
                     android:theme="@style/PrimaryButton" />
-
             </LinearLayout>
 
             <LinearLayout
@@ -66,7 +63,6 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         app:srcCompat="@drawable/health" />
-
                     <TextView
                         android:id="@+id/lblHealthName"
                         android:layout_width="wrap_content"
@@ -78,14 +74,12 @@
                         android:textSize="18sp"
                         android:textStyle="bold"
                         android:textColor="@color/daynight_textColor" />
-
                     <ImageView
                         android:id="@+id/imageView2"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         app:srcCompat="@drawable/health" />
-
                 </LinearLayout>
 
                 <LinearLayout
@@ -100,13 +94,11 @@
                         android:layout_height="@dimen/user_image_size"
                         android:padding="@dimen/padding_normal"
                         android:src="@drawable/profile" />
-
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
                         android:background="@color/secondary_bg">
-
 
                         <LinearLayout
                             android:layout_width="match_parent"
@@ -125,7 +117,6 @@
                                     android:text="@string/full_name"
                                     android:textColor="@color/daynight_textColor"
                                     android:textStyle="bold" />
-
                                 <TextView
                                     android:id="@+id/txt_full_name"
                                     android:layout_width="match_parent"
@@ -133,7 +124,6 @@
                                     android:padding="@dimen/padding_small"
                                     android:text="@string/n_a"
                                     android:textColor="@color/daynight_textColor" />
-
                             </LinearLayout>
 
                             <LinearLayout
@@ -149,7 +139,6 @@
                                     android:text="@string/email"
                                     android:textColor="@color/daynight_textColor"
                                     android:textStyle="bold" />
-
                                 <TextView
                                     android:id="@+id/txt_email"
                                     android:layout_width="match_parent"
@@ -177,7 +166,6 @@
                                     android:text="@string/language"
                                     android:textColor="@color/daynight_textColor"
                                     android:textStyle="bold" />
-
                                 <TextView
                                     android:id="@+id/txt_language"
                                     android:layout_width="match_parent"
@@ -200,7 +188,6 @@
                                     android:text="@string/birth_date"
                                     android:textColor="@color/daynight_textColor"
                                     android:textStyle="bold" />
-
                                 <TextView
                                     android:id="@+id/txt_dob"
                                     android:layout_width="match_parent"
@@ -209,16 +196,12 @@
                                     android:text="@string/n_a"
                                     android:textColor="@color/daynight_textColor" />
                             </LinearLayout>
-
-
                         </LinearLayout>
 
                         <View
                             android:layout_width="match_parent"
                             android:layout_height="1dp"
                             android:background="@color/daynight_textColor" />
-
-
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content">
@@ -236,7 +219,6 @@
                                     android:text="@string/birth_place"
                                     android:textColor="@color/daynight_textColor"
                                     android:textStyle="bold" />
-
                                 <TextView
                                     android:id="@+id/txt_birth_place"
                                     android:layout_width="match_parent"
@@ -244,7 +226,6 @@
                                     android:padding="@dimen/padding_small"
                                     android:text="@string/n_a"
                                     android:textColor="@color/daynight_textColor" />
-
                             </LinearLayout>
 
                             <LinearLayout
@@ -260,7 +241,6 @@
                                     android:text="@string/emergency_contact"
                                     android:textColor="@color/daynight_textColor"
                                     android:textStyle="bold" />
-
                                 <TextView
                                     android:id="@+id/txt_emergency_contact"
                                     android:layout_width="match_parent"
@@ -269,16 +249,12 @@
                                     android:text="@string/n_a"
                                     android:textColor="@color/daynight_textColor" />
                             </LinearLayout>
-
-
                         </LinearLayout>
 
                         <View
                             android:layout_width="match_parent"
                             android:layout_height="1dp"
                             android:background="@color/daynight_textColor" />
-
-
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
@@ -291,8 +267,6 @@
                                 android:text="@string/special_needs"
                                 android:textColor="@color/daynight_textColor"
                                 android:textStyle="bold" />
-
-
                             <TextView
                                 android:id="@+id/txt_special_needs"
                                 android:layout_width="match_parent"
@@ -306,8 +280,6 @@
                             android:layout_width="match_parent"
                             android:layout_height="1dp"
                             android:background="@color/daynight_textColor" />
-
-
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
@@ -320,7 +292,6 @@
                                 android:text="@string/other_need"
                                 android:textColor="@color/daynight_textColor"
                                 android:textStyle="bold" />
-
                             <TextView
                                 android:id="@+id/txt_other_need"
                                 android:layout_width="match_parent"
@@ -329,10 +300,7 @@
                                 android:text="@string/n_a"
                                 android:textColor="@color/daynight_textColor" />
                         </LinearLayout>
-
-
                     </LinearLayout>
-
                 </LinearLayout>
 
                 <LinearLayout
@@ -340,16 +308,12 @@
                     android:layout_height="wrap_content">
 
                     <include layout="@layout/row_examination" />
-
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/rv_records"
                         android:layout_width="0dp"
                         android:layout_height="match_parent"
                         android:layout_weight="1" />
-
-
                 </LinearLayout>
-
             </LinearLayout>
 
             <TextView
@@ -361,9 +325,7 @@
                 android:padding="@dimen/padding_large"
                 android:visibility="gone"
                 android:textColor="@color/daynight_textColor" />
-
         </LinearLayout>
-
     </androidx.core.widget.NestedScrollView>
 
     <com.github.clans.fab.FloatingActionMenu
@@ -376,7 +338,6 @@
         app:menu_open="arc_left"
         app:menu_scr="@drawable/ic_add">
 
-
         <com.github.clans.fab.FloatingActionButton
             android:id="@+id/update_health"
             android:layout_width="wrap_content"
@@ -387,7 +348,6 @@
             android:text="@string/update_health_record"
             android:tint="@color/md_white_1000"
             app:fab_label="@string/update_health_record" />
-
         <com.github.clans.fab.FloatingActionButton
             android:id="@+id/fab_add_member"
             android:layout_width="wrap_content"
@@ -397,7 +357,5 @@
             android:src="@drawable/ic_add_member"
             android:tint="@color/md_white_1000"
             app:fab_label="@string/add_member" />
-
     </com.github.clans.fab.FloatingActionMenu>
-
 </FrameLayout>
