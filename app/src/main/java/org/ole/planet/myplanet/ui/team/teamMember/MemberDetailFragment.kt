@@ -10,14 +10,10 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentMemberDetailBinding
 
 class MemberDetailFragment : Fragment() {
-    private var _binding: FragmentMemberDetailBinding? = null
-    private val binding get() = _binding!!
+    private lateinit var binding: FragmentMemberDetailBinding
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        _binding = FragmentMemberDetailBinding.inflate(inflater, container, false)
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+        binding = FragmentMemberDetailBinding.inflate(inflater, container, false)
         return binding.root
     }
 
@@ -45,25 +41,10 @@ class MemberDetailFragment : Fragment() {
             activity?.supportFragmentManager?.popBackStack()
         }
     }
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
-    }
 
     companion object {
         @JvmStatic
-        fun newInstance(
-            name: String,
-            email: String,
-            dob: String,
-            language: String,
-            phone: String,
-            visits: String,
-            lastLogin: String,
-            username: String,
-            memberLevel: String,
-            imageUrl: String?
-        ) = MemberDetailFragment().apply {
+        fun newInstance(name: String, email: String, dob: String, language: String, phone: String, visits: String, lastLogin: String, username: String, memberLevel: String, imageUrl: String?) = MemberDetailFragment().apply {
             arguments = Bundle().apply {
                 putString("member_name", name)
                 putString("profile_email", email)

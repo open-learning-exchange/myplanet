@@ -7,6 +7,7 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
 import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
@@ -27,12 +28,12 @@ import org.ole.planet.myplanet.model.RealmRating.Companion.getRatings
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmTag.Companion.getTagsArray
+import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.resources.CollectionsFragment
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import java.util.Calendar
 import java.util.UUID
-import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 
 class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelected, TagClickListener {
     private lateinit var tvAddToLib: TextView
@@ -176,6 +177,14 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         tvMessage = requireView().findViewById(R.id.tv_message)
         requireView().findViewById<View>(R.id.tl_tags).visibility = View.GONE
         tvFragmentInfo = requireView().findViewById(R.id.tv_fragment_info)
+        val gradeAdapter = ArrayAdapter.createFromResource(requireContext(), R.array.grade_level, R.layout.spinner_item)
+        gradeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spnGrade.adapter = gradeAdapter
+
+        val subjectAdapter = ArrayAdapter.createFromResource(requireContext(), R.array.subject_level, R.layout.spinner_item)
+        subjectAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spnSubject.adapter = subjectAdapter
+
         spnGrade.onItemSelectedListener = itemSelectedListener
         spnSubject.onItemSelectedListener = itemSelectedListener
         selectAll = requireView().findViewById(R.id.selectAll)

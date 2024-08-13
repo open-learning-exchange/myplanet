@@ -3,6 +3,7 @@
     <color name="colorPrimary">@color/md_blue_700</color>
     <color name="colorPrimaryDark">@color/md_blue_900</color>
     <color name="colorPrimaryLight">@color/md_blue_500</color>
+    <color name="colorPrimaryWhite">@color/md_blue_700</color>
     <color name="colorAccent">@color/md_red_500</color>
     <color name="textColorPrimary">#ffffff</color>
     <color name="disable_color">#BDBDBD</color>
@@ -34,6 +35,5 @@
     <!-- changes logout button area background from white to whatever the background color for the drawer is.
     Without it, the drawer and logout button area are different colors -->
     <color name="material_drawer_background">@color/colorPrimary</color>
-
     <color name="selected_color">#80B0E0E6</color>
 </resources>
