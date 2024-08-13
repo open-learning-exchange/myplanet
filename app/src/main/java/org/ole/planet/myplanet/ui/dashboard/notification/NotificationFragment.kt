@@ -67,21 +67,15 @@ class NotificationFragment : BottomSheetDialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val model = UserProfileDbHandler(requireContext()).userModel!!
-        val surveyList = mRealm.where(RealmSubmission::class.java).equalTo("userId", model.id)
-            .equalTo("status", "pending").equalTo("type", "survey").findAll()
-        fragmentNotificationBinding.icBack.setOnClickListener {
-            dismiss()
-        }
-        val tasks = mRealm.where(RealmTeamTask::class.java).notEqualTo("status", "archived")
-            .equalTo("completed", false)
-            .equalTo("assignee", model.id).findAll()
+        val surveyList = mRealm.where(RealmSubmission::class.java).equalTo("userId", model.id).equalTo("status", "pending").equalTo("type", "survey").findAll()
+
+        val tasks = mRealm.where(RealmTeamTask::class.java).notEqualTo("status", "archived").equalTo("completed", false).equalTo("assignee", model.id).findAll()
+
         val notificationList: MutableList<Notifications> = ArrayList()
-        notificationList.add(Notifications(R.drawable.mylibrary, "${getLibraryList(mRealm, model.id).size} ${getString(R.string.resource_not_downloaded)}"))
-        notificationList.add(Notifications(R.drawable.mylibrary, getString(R.string.bulk_resource_download)))
-        notificationList.add(Notifications(R.drawable.survey, "${surveyList.size} ${getString(R.string.pending_survey)}"))
-        notificationList.add(Notifications(R.drawable.ic_news, getString(R.string.download_news_images)))
-        notificationList.add(Notifications(R.drawable.ic_dictionary, getString(R.string.download_dictionary)))
-        notificationList.add(Notifications(R.drawable.task_pending, "${tasks.size} ${getString(R.string.tasks_due)}"))
+
+        val resourceCount = getLibraryList(mRealm, model.id).size
+        notificationList.add(Notifications(R.drawable.mylibrary, "$resourceCount ${getString(R.string.resource_not_downloaded)}. ${getString(R.string.bulk_resource_download)}"))
+        notificationList.add(Notifications(R.drawable.survey, "${surveyList.size} ${getString(R.string.pending_survey)} / ${tasks.size} ${getString(R.string.tasks_due)}"))
 
         val storageRatio = FileUtils.totalAvailableMemoryRatio
         val storageNotiText: String = if (storageRatio <= 10) {
@@ -93,13 +87,14 @@ class NotificationFragment : BottomSheetDialogFragment() {
         }
         notificationList.add(Notifications(R.drawable.baseline_storage_24, storageNotiText))
 
-        if (TextUtils.isEmpty(model.key) || model.getRoleAsString().contains("health")) {
-            if (model.id?.startsWith("guest") != true) {
-                notificationList.add(Notifications(R.drawable.ic_myhealth, getString(R.string.health_record_not_available_click_to_sync)))
-            }
+        if (!TextUtils.isEmpty(model.key) && model.getRoleAsString().contains("health") && !model.id?.startsWith("guest")!!) {
+            notificationList.add(Notifications(R.drawable.ic_myhealth, getString(R.string.health_record_not_available_click_to_sync)))
         }
 
         fragmentNotificationBinding.rvNotifications.layoutManager = LinearLayoutManager(requireActivity())
         fragmentNotificationBinding.rvNotifications.adapter = AdapterNotification(requireActivity(), notificationList, callback)
+        fragmentNotificationBinding.icBack.setOnClickListener {
+            dismiss()
+        }
     }
 }

@@ -11,6 +11,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContextCompat
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import io.realm.Realm
@@ -153,7 +154,8 @@ class DiscussionListFragment : BaseTeamFragment() {
         }
         binding.llImage.visibility = if (showBetaFeature(Constants.KEY_NEWSADDIMAGE, requireContext())) View.VISIBLE else View.GONE
         layout.hint = getString(R.string.enter_message)
-        AlertDialog.Builder(requireActivity())
+        layout.editText?.setHintTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
+        val dialog = AlertDialog.Builder(requireActivity(), R.style.CustomAlertDialog)
             .setView(binding.root)
             .setTitle(getString(R.string.add_message))
             .setPositiveButton(getString(R.string.save)) { _: DialogInterface?, _: Int ->
@@ -173,7 +175,11 @@ class DiscussionListFragment : BaseTeamFragment() {
                 setData(news)
             }
             .setNegativeButton(getString(R.string.cancel), null)
-            .show()
+            .create()
+
+        dialog.show()
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(ContextCompat.getColor(requireContext(), R.color.colorPrimaryWhite))
+        dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(ContextCompat.getColor(requireContext(), R.color.colorPrimaryWhite))
     }
 
     override fun setData(list: List<RealmNews?>?) {
