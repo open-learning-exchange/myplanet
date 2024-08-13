@@ -10,6 +10,7 @@
         android:id="@+id/tl_input"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:textColorHint="@color/hint_color"
         android:hint="@string/what_would">
 
         <com.google.android.material.textfield.TextInputEditText
