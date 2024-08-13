@@ -1,29 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
-
     <ListPreference
         android:entries="@array/language"
         android:entryValues="@array/language_keys"
         android:key="app_language"
         android:title="@string/language" />
-
     <SwitchPreference
         android:defaultValue="false"
         android:key="saveUsernameAndPassword"
         android:title="@string/save_username_and_password" />
-
     <Preference
         android:key="dark_mode"
         android:title="@string/dark_mode" />
-
     <Preference
         android:key="reset_app"
         android:title="@string/reset_app" />
-
     <Preference
         android:key="freeup_space"
         android:title="@string/freeup_space" />
-
     <PreferenceCategory
         android:dependency="auto_sync_with_server"
         android:title="@string/auto_sync">
@@ -41,7 +35,6 @@
             android:key="lastSyncDate"
             android:selectable="false"
             android:title="@string/last_synced_colon" />
-
     </PreferenceCategory>
 
     <PreferenceCategory
@@ -64,6 +57,7 @@
 <!--            android:key="beta_healthWorker"-->
 <!--            android:title="Beta Function for Health Care Provider" />-->
     </PreferenceCategory>
+
     <PreferenceCategory
         android:dependency="beta_function"
         android:title="@string/upgrade_application">
@@ -73,24 +67,22 @@
             android:visibility="gone"
             android:key="beta_auto_upgrade"
             android:title="@string/auto_upgrade" />
-
         <SwitchPreference
             android:key="beta_upgrade_max"
             android:title="@string/always_move_to_maximum_version" />
-
     </PreferenceCategory>
+
     <PreferenceCategory
         android:dependency=""
         android:title="@string/main_controls">
+
         <SwitchPreference
             android:defaultValue="true"
             android:key="beta_function"
             android:title="@string/all_beta_functions" />
-
         <SwitchPreference
             android:defaultValue="true"
             android:key="auto_sync_with_server"
             android:title="@string/auto_sync_device" />
     </PreferenceCategory>
-
 </PreferenceScreen>
