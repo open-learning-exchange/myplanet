@@ -16,7 +16,6 @@
             android:layout_height="match_parent"
             android:orientation="vertical">
 
-
             <LinearLayout
                 android:id="@+id/ll_actions"
                 android:layout_width="match_parent"
@@ -36,7 +35,6 @@
                     android:textColor="@color/md_white_1000"
                     android:textSize="24sp"
                     android:textStyle="bold" />
-
                 <Button
                     android:id="@+id/btn_edit"
                     style="@style/YellowButtons"
@@ -48,8 +46,6 @@
                     android:padding="@dimen/padding_normal"
                     android:contentDescription="@string/edit_achievement"
                     android:text="@string/edit_achievement" />
-
-
             </LinearLayout>
 
             <LinearLayout
@@ -72,12 +68,10 @@
                         android:layout_marginRight="16dp"
                         app:srcCompat="@drawable/my_achievement"
                         app:tint="@color/hint_color" />
-
                     <TextView
                         android:id="@+id/tv_name"
                         style="@style/Header"
-                        android:textColor="@color/daynight_textColor"/>
-
+                        android:textColor="@color/daynight_textColor" />
                     <ImageView
                         android:layout_width="@dimen/image_size_home_card"
                         android:layout_height="@dimen/image_size_home_card"
@@ -86,39 +80,32 @@
                         android:layout_marginRight="16dp"
                         app:srcCompat="@drawable/my_achievement"
                         app:tint="@color/hint_color" />
-
                 </LinearLayout>
 
                 <TextView
                     style="@style/Header"
                     android:text="My Purpose"
-                    android:textColor="@color/daynight_textColor"/>
-
+                    android:textColor="@color/daynight_textColor" />
                 <TextView
                     android:id="@+id/tv_purpose"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:textSize="20sp" />
-
                 <TextView
                     style="@style/Header"
                     android:text="My Goals"
-                    android:textColor="@color/daynight_textColor"/>
-
+                    android:textColor="@color/daynight_textColor" />
                 <TextView
                     android:id="@+id/tv_goals"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:textSize="20sp" />
-
-
                 <TextView
                     style="@style/Header"
                     android:text="@string/my_achievements"
-                    android:textColor="@color/daynight_textColor"/>
-
+                    android:textColor="@color/daynight_textColor" />
                 <TextView
                     android:id="@+id/tv_achievement_header"
                     android:layout_width="wrap_content"
@@ -127,7 +114,6 @@
                     android:gravity="center"
                     android:padding="8dp"
                     android:textSize="20sp" />
-
                 <LinearLayout
                     android:id="@+id/ll_achievement"
                     android:layout_width="match_parent"
@@ -137,25 +123,17 @@
                     android:orientation="vertical"
                     android:paddingLeft="@dimen/padding_normal"
                     android:paddingRight="@dimen/padding_normal" />
-
                 <TextView
                     style="@style/Header"
                     android:text="@string/references"
-                    android:textColor="@color/daynight_textColor"/>
-
+                    android:textColor="@color/daynight_textColor" />
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/rv_other_info"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:padding="@dimen/padding_normal" />
-
-
             </LinearLayout>
-
-
         </LinearLayout>
-
     </androidx.core.widget.NestedScrollView>
-
 </FrameLayout>
