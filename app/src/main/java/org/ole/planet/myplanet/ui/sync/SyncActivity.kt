@@ -136,7 +136,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     private fun clearDataDialog(message: String, onCancel: () -> Unit = {}) {
-        AlertDialog.Builder(this)
+        AlertDialog.Builder(this, R.style.AlertDialogTheme)
             .setMessage(message)
             .setPositiveButton(getString(R.string.clear_data)) { _, _ ->
                 clearRealmDb()
@@ -387,7 +387,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         val msDiff = Calendar.getInstance().timeInMillis - cal_last_Sync.timeInMillis
         val daysDiff = TimeUnit.MILLISECONDS.toDays(msDiff)
         return if (daysDiff >= maxDays) {
-            val alertDialogBuilder = AlertDialog.Builder(this)
+            val alertDialogBuilder = AlertDialog.Builder(this, R.style.AlertDialogTheme)
             alertDialogBuilder.setMessage(
                 getString(R.string.it_has_been_more_than) + (daysDiff - 1) + getString(
                     R.string.days_since_you_last_synced_this_device
@@ -421,7 +421,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         syncToServerText = dialogServerUrlBinding.syncToServerText
 
         dialogServerUrlBinding.deviceName.setText(NetworkUtils.getDeviceName())
-        val builder = MaterialDialog.Builder(this)
+        val contextWrapper = ContextThemeWrapper(this, R.style.AlertDialogTheme)
+        val builder = MaterialDialog.Builder(contextWrapper)
         builder.customView(dialogServerUrlBinding.root, true)
             .positiveText(R.string.btn_sync)
             .negativeText(R.string.btn_sync_cancel)
