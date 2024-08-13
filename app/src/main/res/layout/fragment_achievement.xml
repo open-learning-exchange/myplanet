@@ -4,7 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".ui.userprofile.AchievementFragment">
+    tools:context=".ui.userprofile.AchievementFragment"
+    android:background="@color/secondary_bg">
 
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
@@ -70,11 +71,12 @@
                         android:layout_marginLeft="16dp"
                         android:layout_marginRight="16dp"
                         app:srcCompat="@drawable/my_achievement"
-                        app:tint="@color/md_black_1000" />
+                        app:tint="@color/hint_color" />
 
                     <TextView
                         android:id="@+id/tv_name"
-                        style="@style/Header" />
+                        style="@style/Header"
+                        android:textColor="@color/daynight_textColor"/>
 
                     <ImageView
                         android:layout_width="@dimen/image_size_home_card"
@@ -83,13 +85,14 @@
                         android:layout_marginLeft="16dp"
                         android:layout_marginRight="16dp"
                         app:srcCompat="@drawable/my_achievement"
-                        app:tint="@color/md_black_1000" />
+                        app:tint="@color/hint_color" />
 
                 </LinearLayout>
 
                 <TextView
                     style="@style/Header"
-                    android:text="My Purpose" />
+                    android:text="My Purpose"
+                    android:textColor="@color/daynight_textColor"/>
 
                 <TextView
                     android:id="@+id/tv_purpose"
@@ -100,7 +103,8 @@
 
                 <TextView
                     style="@style/Header"
-                    android:text="My Goals" />
+                    android:text="My Goals"
+                    android:textColor="@color/daynight_textColor"/>
 
                 <TextView
                     android:id="@+id/tv_goals"
@@ -112,7 +116,8 @@
 
                 <TextView
                     style="@style/Header"
-                    android:text="@string/my_achievements" />
+                    android:text="@string/my_achievements"
+                    android:textColor="@color/daynight_textColor"/>
 
                 <TextView
                     android:id="@+id/tv_achievement_header"
@@ -135,7 +140,8 @@
 
                 <TextView
                     style="@style/Header"
-                    android:text="@string/references" />
+                    android:text="@string/references"
+                    android:textColor="@color/daynight_textColor"/>
 
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/rv_other_info"
