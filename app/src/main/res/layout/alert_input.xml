@@ -3,6 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
+    android:background="@color/daynight_grey"
     android:padding="@dimen/padding_normal">
 
     <com.google.android.material.textfield.TextInputLayout
@@ -14,7 +15,8 @@
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/et_input"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:textColor="@color/daynight_textColor"/>
     </com.google.android.material.textfield.TextInputLayout>
 
     <LinearLayout
