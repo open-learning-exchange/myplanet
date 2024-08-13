@@ -9,6 +9,7 @@ import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ArrayAdapter
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -21,6 +22,7 @@ import androidx.preference.Preference.OnPreferenceClickListener
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.SwitchPreference
 import io.realm.Realm
+import org.ole.planet.myplanet.MainApplication.Companion.setThemeMode
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -34,6 +36,7 @@ import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryFormattedString
 import org.ole.planet.myplanet.utilities.LocaleHelper
+import org.ole.planet.myplanet.utilities.ThemeMode
 import org.ole.planet.myplanet.utilities.Utilities
 import java.io.File
 
@@ -103,14 +106,9 @@ class SettingActivity : AppCompatActivity() {
             }
 
             val darkMode = findPreference<Preference>("dark_mode")
-            if (darkMode != null) {
-                darkMode.onPreferenceChangeListener = OnPreferenceChangeListener { preference: Preference?, newValue: Any? ->
-                    if (preference?.key == "dark_mode") {
-                        darkMode(newValue.toString())
-                        return@OnPreferenceChangeListener true
-                    }
-                    false
-                }
+            darkMode?.setOnPreferenceClickListener {
+                darkMode()
+                true
             }
 
             // Show Available space under the "Freeup Space" preference.
@@ -220,12 +218,36 @@ class SettingActivity : AppCompatActivity() {
             }
         }
 
-        private fun darkMode(key: String) {
-            when (key) {
-                getString(R.string.dark_mode_on) ->  AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-                getString(R.string.dark_mode_off) -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
-                getString(R.string.dark_mode_follow_system) -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+        private fun darkMode() {
+            val options = arrayOf(getString(R.string.dark_mode_off), getString(R.string.dark_mode_on), getString(R.string.dark_mode_follow_system))
+            val currentMode = getCurrentThemeMode()
+            val checkedItem = when (currentMode) {
+                ThemeMode.LIGHT -> 0
+                ThemeMode.DARK -> 1
+                else -> 2
             }
+
+            val builder = AlertDialog.Builder(requireContext())
+                .setTitle("select theme mode")
+                .setSingleChoiceItems(ArrayAdapter(requireContext(), R.layout.checked_list_item, options), checkedItem) { dialog, which ->
+                    val selectedMode = when (which) {
+                        0 -> ThemeMode.LIGHT
+                        1 -> ThemeMode.DARK
+                        2 -> ThemeMode.FOLLOW_SYSTEM
+                        else -> ThemeMode.FOLLOW_SYSTEM
+                    }
+                    setThemeMode(selectedMode)
+                    dialog.dismiss()
+                }
+                .setNegativeButton("Cancel", null)
+
+            val dialog = builder.create()
+            dialog.show()
+        }
+
+        private fun getCurrentThemeMode(): String {
+            val sharedPreferences = requireContext().getSharedPreferences("app_preferences", Context.MODE_PRIVATE)
+            return sharedPreferences.getString("theme_mode", ThemeMode.FOLLOW_SYSTEM) ?: ThemeMode.FOLLOW_SYSTEM
         }
     }
 
