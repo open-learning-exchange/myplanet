@@ -29,8 +29,7 @@
                     android:layout_height="wrap_content"
                     android:hint="@string/enter_username"
                     android:textColor="@color/daynight_textColor"
-                    android:backgroundTint="@color/daynight_textColor"/>
-
+                    android:backgroundTint="@color/daynight_textColor" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <androidx.appcompat.widget.AppCompatCheckBox
@@ -40,7 +39,6 @@
                 android:padding="8dp"
                 android:text="@string/use_phone_number_as_password"
                 android:visibility="gone" />
-
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -59,7 +57,6 @@
                     android:inputType="textPassword"
                     android:textColor="@color/daynight_textColor"
                     android:backgroundTint="@color/daynight_textColor" />
-
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
@@ -72,15 +69,14 @@
                 app:passwordToggleContentDescription="@string/password_toggle_description"
                 app:passwordToggleTint="@color/daynight_textColor">
 
-            <EditText
-                android:id="@+id/et_re_password"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="@string/retype_password"
-                android:inputType="textPassword"
-                android:textColor="@color/daynight_textColor"
-                android:backgroundTint="@color/daynight_textColor"/>
-
+                <EditText
+                    android:id="@+id/et_re_password"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/retype_password"
+                    android:inputType="textPassword"
+                    android:textColor="@color/daynight_textColor"
+                    android:backgroundTint="@color/daynight_textColor" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <LinearLayout
@@ -102,7 +98,6 @@
                         android:hint="@string/first_name"
                         android:textColor="@color/daynight_textColor"
                         android:backgroundTint="@color/daynight_textColor"  />
-
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
@@ -120,7 +115,6 @@
                         android:hint="@string/middle_name"
                         android:textColor="@color/daynight_textColor"
                         android:backgroundTint="@color/daynight_textColor" />
-
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
@@ -138,11 +132,8 @@
                         android:hint="@string/last_name"
                         android:textColor="@color/daynight_textColor"
                         android:backgroundTint="@color/daynight_textColor" />
-
                 </com.google.android.material.textfield.TextInputLayout>
-
             </LinearLayout>
-
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -162,8 +153,7 @@
                         android:layout_height="wrap_content"
                         android:hint="@string/email"
                         android:textColor="@color/daynight_textColor"
-                        android:backgroundTint="@color/daynight_textColor"/>
-
+                        android:backgroundTint="@color/daynight_textColor" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <LinearLayout
@@ -172,7 +162,6 @@
                     android:layout_weight="1"
                     android:background="@color/secondary_bg"
                     android:orientation="vertical"
-
                     android:padding="@dimen/padding_normal">
 
                     <TextView
@@ -182,7 +171,6 @@
                         android:padding="@dimen/padding_small"
                         android:text="@string/language"
                         android:textColor="@color/daynight_textColor" />
-
                     <Spinner
                         android:id="@+id/spn_lang"
                         android:layout_width="match_parent"
@@ -192,7 +180,6 @@
                         android:contentDescription="@string/select_language"
                         android:padding="@dimen/padding_normal"
                         android:popupBackground="@color/secondary_bg"/>
-
                 </LinearLayout>
             </LinearLayout>
 
@@ -215,7 +202,6 @@
                         android:hint="@string/phone_number"
                         android:textColor="@color/daynight_textColor"
                         android:backgroundTint="@color/daynight_textColor" />
-
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <TextView
@@ -231,15 +217,12 @@
                     android:textSize="@dimen/text_size_mid"
                     android:textColor="@color/daynight_textColor"
                     app:drawableRightCompat="@drawable/ic_date"
-                    app:drawableTint="@color/daynight_textColor"/>
-
+                    app:drawableTint="@color/daynight_textColor" />
             </LinearLayout>
-
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
-
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -250,14 +233,12 @@
                     android:textColor="@color/daynight_textColor"
                     android:textSize="16sp"
                     android:textStyle="bold" />
-
                 <RadioGroup
                     android:id="@+id/rb_gender"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:padding="@dimen/padding_normal">
-
 
                     <RadioButton
                         android:id="@+id/male"
@@ -267,7 +248,6 @@
                         android:text="@string/male"
                         android:textColor="@color/daynight_textColor"
                         android:buttonTint="@color/daynight_textColor" />
-
                     <RadioButton
                         android:id="@+id/female"
                         android:layout_width="wrap_content"
@@ -276,10 +256,7 @@
                         android:text="@string/female"
                         android:textColor="@color/daynight_textColor"
                         android:buttonTint="@color/daynight_textColor" />
-
-
                 </RadioGroup>
-
             </LinearLayout>
 
             <LinearLayout
@@ -295,7 +272,6 @@
                     android:padding="@dimen/padding_small"
                     android:text="@string/level"
                     android:textColor="@color/daynight_textColor" />
-
                 <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -314,7 +290,6 @@
                 </RelativeLayout>
             </LinearLayout>
 
-
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -330,7 +305,6 @@
                     android:textSize="@dimen/text_size_mid"
                     android:textStyle="bold"
                     android:textColor="@color/daynight_textColor" />
-
                 <Button
                     android:id="@+id/btn_submit"
                     android:layout_width="wrap_content"
@@ -339,14 +313,9 @@
                     android:textSize="@dimen/text_size_mid"
                     android:contentDescription="@string/become_a_member"
                     android:theme="@style/FocusButton" />
-
-
             </LinearLayout>
-
-
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
-
 
     <ProgressBar
         android:id="@+id/pbar"
@@ -354,5 +323,4 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:visibility="gone" />
-
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
