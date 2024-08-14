@@ -157,9 +157,6 @@ repositories {
 
 dependencies {
     testImplementation 'junit:junit:4.13.2'
-//    implementation(project(':library'))  {
-//        exclude group: 'commons-logging', module: 'commons-logging'
-//    }
     implementation fileTree(include: ['*.jar', '*.aar'], dir: 'libs')
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
