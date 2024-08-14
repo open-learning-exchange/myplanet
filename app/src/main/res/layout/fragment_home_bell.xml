@@ -69,8 +69,7 @@
             android:id="@+id/fab_my_activity"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@drawable/ic_progress"
-            android:tint="@color/md_white_1000"
+            android:src="@drawable/ic_activity"
             android:contentDescription="@string/my_activity"
             app:fab_label="@string/my_activity" />
 
@@ -78,8 +77,7 @@
             android:id="@+id/fab_my_progress"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@drawable/ic_progress"
-            android:tint="@color/md_white_1000"
+            android:src="@drawable/ic_my_progress"
             android:contentDescription="@string/my_progress"
             app:fab_label="@string/my_progress" />
 
@@ -109,6 +107,7 @@
             android:layout_margin="@dimen/padding_large"
             android:contentDescription="@string/add_res"
             android:src="@drawable/ic_add"
+            android:tint="@color/md_white_1000"
             app:fab_label="@string/add_res" />
 
     </com.github.clans.fab.FloatingActionMenu>
