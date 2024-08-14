@@ -60,21 +60,19 @@
                             android:layout_height="30dp"
                             android:layout_alignParentLeft="true"
                             android:layout_marginLeft="10dp"
-                            android:layout_marginTop="6dp"
+                            android:layout_marginTop="5dp"
                             android:background="@drawable/file_upload_animation_login"
                             android:contentDescription="@string/sync"
                             android:scaleType="fitCenter" />
-
                         <TextView
                             android:id="@+id/lblLastSyncDate"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="15dp"
+                            android:layout_marginTop="25dp"
                             android:padding="@dimen/padding_normal"
                             android:text="@string/dash_4"
                             android:textAlignment="center"
                             android:textColor="@color/daynight_textColor" />
-
                         <ImageButton
                             android:id="@+id/imgBtnSetting"
                             android:layout_width="wrap_content"
@@ -107,7 +105,6 @@
                             app:layout_constraintEnd_toEndOf="parent"
                             app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintTop_toTopOf="parent" />
-
                         <com.google.android.material.textfield.TextInputLayout
                             android:id="@+id/ltInputName"
                             android:layout_width="200dp"
@@ -132,7 +129,6 @@
                                 android:layout_centerVertical="true"
                                 android:autofillHints=""
                                 android:drawablePadding="12dp"
-
                                 android:inputType="text"
                                 android:paddingStart="10dp"
                                 android:paddingEnd="8dp"
@@ -186,7 +182,6 @@
                             app:layout_constraintEnd_toEndOf="parent"
                             app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintTop_toBottomOf="@+id/edtPassword" />
-
                         <LinearLayout
                             android:id="@+id/linearLayout3"
                             android:layout_width="wrap_content"
@@ -209,7 +204,6 @@
                                 android:textSize="14sp"
                                 android:theme="@style/PrimaryFlatButton"
                                 android:textColor="@color/daynight_textColor" />
-
                             <Button
                                 android:id="@+id/become_member"
                                 android:layout_width="wrap_content"
@@ -220,7 +214,6 @@
                                 android:text="@string/become_a_member"
                                 android:theme="@style/PrimaryFlatButton"
                                 android:textColor="@color/daynight_textColor" />
-
                             <Button
                                 android:id="@+id/btn_feedback"
                                 android:layout_width="wrap_content"
@@ -231,7 +224,6 @@
                                 android:text="@string/feedback"
                                 android:theme="@style/PrimaryFlatButton"
                                 android:textColor="@color/daynight_textColor" />
-
                             <Button
                                 android:id="@+id/open_community"
                                 android:layout_width="wrap_content"
@@ -245,7 +237,6 @@
                                 android:textColor="@color/daynight_textColor" />
                         </LinearLayout>
                     </androidx.constraintlayout.widget.ConstraintLayout>
-
                 </androidx.constraintlayout.widget.ConstraintLayout>
             </LinearLayout>
         </LinearLayout>
@@ -274,7 +265,6 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent"
                     app:srcCompat="@drawable/ole_logo" />
-
                 <TextView
                     android:id="@+id/textView"
                     android:layout_width="wrap_content"
@@ -289,7 +279,6 @@
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/logoImageView" />
-
                 <TextView
                     android:id="@+id/lblVersion"
                     android:layout_width="wrap_content"
@@ -303,7 +292,6 @@
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/textView" />
-
                 <Button
                     android:id="@+id/btn_lang"
                     android:layout_width="wrap_content"
@@ -318,7 +306,6 @@
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/lblVersion" />
-
                 <TextView
                     android:id="@+id/customDeviceName"
                     android:layout_width="wrap_content"
@@ -328,7 +315,6 @@
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/btn_lang" />
-
                 <LinearLayout
                     android:id="@+id/ltAvailablaSpace"
                     android:layout_width="match_parent"
@@ -365,7 +351,6 @@
                     app:backgroundTint="@color/daynight_textColor"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/ltAvailablaSpace" />
-
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/recyclerView"
                     android:layout_width="match_parent"
