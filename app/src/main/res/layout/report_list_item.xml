@@ -16,8 +16,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
-
-
     <TextView
         android:id="@+id/date"
         android:layout_width="wrap_content"
@@ -29,8 +27,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/tvReportTitle" />
-
-
     <TableLayout
         android:id="@+id/tbReport"
         android:layout_width="match_parent"
@@ -51,7 +47,6 @@
                 android:textColor="@color/daynight_textColor"
                 android:textSize="16sp"
                 android:textStyle="bold" />
-
             <TextView
                 android:id="@+id/beginningBalanceValue"
                 android:layout_width="wrap_content"
@@ -65,7 +60,6 @@
             android:layout_width="match_parent"
             android:layout_height="@dimen/_1dp"
             android:background="@color/md_grey_500" />
-
         <TableRow
             android:id="@+id/rowSales"
             android:layout_width="fill_parent"
@@ -78,7 +72,6 @@
                 android:text="Sales"
                 android:textColor="@color/daynight_textColor"
                 android:textSize="16sp" />
-
             <TextView
                 android:id="@+id/salesValue"
                 android:layout_width="wrap_content"
@@ -100,7 +93,6 @@
                 android:text="Other"
                 android:textColor="@color/daynight_textColor"
                 android:textSize="16sp" />
-
             <TextView
                 android:id="@+id/otherValue"
                 android:layout_width="wrap_content"
@@ -123,7 +115,6 @@
                 android:textColor="@color/daynight_textColor"
                 android:textSize="16sp"
                 android:textStyle="bold" />
-
             <TextView
                 android:id="@+id/totalIncomeValue"
                 android:layout_width="wrap_content"
@@ -137,7 +128,6 @@
             android:layout_width="match_parent"
             android:layout_height="@dimen/_1dp"
             android:background="@color/md_grey_500" />
-
         <TableRow
             android:id="@+id/rowPersonnel"
             android:layout_width="fill_parent"
@@ -150,7 +140,6 @@
                 android:text="Personnel"
                 android:textColor="@color/daynight_textColor"
                 android:textSize="16sp" />
-
             <TextView
                 android:id="@+id/personnelValue"
                 android:layout_width="wrap_content"
@@ -172,7 +161,6 @@
                 android:text="Non-Personnel"
                 android:textColor="@color/daynight_textColor"
                 android:textSize="16sp" />
-
             <TextView
                 android:id="@+id/nonPersonnelValue"
                 android:layout_width="wrap_content"
@@ -195,7 +183,6 @@
                 android:textColor="@color/daynight_textColor"
                 android:textSize="16sp"
                 android:textStyle="bold" />
-
             <TextView
                 android:id="@+id/totalExpensesValue"
                 android:layout_width="wrap_content"
@@ -209,7 +196,6 @@
             android:layout_width="match_parent"
             android:layout_height="@dimen/_1dp"
             android:background="@color/md_grey_500" />
-
         <TableRow
             android:id="@+id/rowProfitLoss"
             android:layout_width="fill_parent"
@@ -223,7 +209,6 @@
                 android:textColor="@color/daynight_textColor"
                 android:textSize="16sp"
                 android:textStyle="bold" />
-
             <TextView
                 android:id="@+id/profitLossValue"
                 android:layout_width="wrap_content"
@@ -246,7 +231,6 @@
                 android:textColor="@color/daynight_textColor"
                 android:textSize="16sp"
                 android:textStyle="bold" />
-
             <TextView
                 android:id="@+id/endingBalanceValue"
                 android:layout_width="wrap_content"
@@ -276,12 +260,10 @@
             android:textStyle="bold"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/tbReport" />
-
         <View
             android:layout_width="match_parent"
             android:layout_height="@dimen/_1dp"
             android:background="@color/md_grey_500" />
-
         <TextView
             android:id="@+id/tvReportDetails"
             android:layout_width="wrap_content"
@@ -301,7 +283,6 @@
         android:textSize="16sp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/ltReportSummary" />
-
     <LinearLayout
         android:id="@+id/llEditDelete"
         android:layout_width="wrap_content"
@@ -318,7 +299,6 @@
             android:background="?attr/selectableItemBackground"
             android:visibility="visible"
             app:srcCompat="@drawable/ic_edit" />
-
         <ImageView
             android:id="@+id/delete"
             android:layout_width="35dp"
@@ -327,5 +307,4 @@
             android:background="?attr/selectableItemBackground"
             app:srcCompat="@drawable/ic_delete" />
     </LinearLayout>
-
 </androidx.constraintlayout.widget.ConstraintLayout>
