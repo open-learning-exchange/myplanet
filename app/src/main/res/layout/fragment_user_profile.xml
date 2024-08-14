@@ -3,7 +3,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".ui.userprofile.UserProfileFragment">
+    tools:context=".ui.userprofile.UserProfileFragment"
+    android:background="@color/secondary_bg">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
@@ -50,7 +51,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:textColor="@color/colorPrimary"
+            android:textColor="@color/daynight_textColor"
             android:textSize="@dimen/text_size_large"
             android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"
@@ -63,6 +64,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:textSize="@dimen/text_size_mid"
+            android:textColor="@color/daynight_textColor"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/txt_name" />
@@ -73,6 +75,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:textSize="@dimen/text_size_mid"
+            android:textColor="@color/daynight_textColor"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/txtGender" />
@@ -82,6 +85,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
+            android:textColor="@color/daynight_textColor"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/txt_email" />
@@ -91,6 +95,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
+            android:textColor="@color/daynight_textColor"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/txt_dob" />
@@ -100,6 +105,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
+            android:textColor="@color/daynight_textColor"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/txtLanguage" />
