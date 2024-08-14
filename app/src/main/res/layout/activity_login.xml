@@ -84,7 +84,6 @@
                             android:paddingRight="10dp"
                             app:srcCompat="@drawable/ic_settings_black_24dp"
                             app:tint="@color/daynight_textColor" />
-
                     </RelativeLayout>
 
                     <androidx.constraintlayout.widget.ConstraintLayout
@@ -331,7 +330,6 @@
                         android:paddingHorizontal="@dimen/padding_small"
                         app:srcCompat="@drawable/baseline_storage_24"
                         app:tint="@color/daynight_textColor" />
-
                     <TextView
                         android:id="@+id/tv_available_space"
                         android:layout_width="wrap_content"
