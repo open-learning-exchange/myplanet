@@ -12,6 +12,7 @@ import android.os.StrictMode.VmPolicy
 import android.provider.Settings
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.app.ActivityCompat.recreate
 import androidx.preference.PreferenceManager
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequest
@@ -25,11 +26,13 @@ import org.ole.planet.myplanet.service.AutoSyncWorker
 import org.ole.planet.myplanet.service.StayOnlineWorker
 import org.ole.planet.myplanet.service.TaskNotificationWorker
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.NetworkUtils.initialize
 import org.ole.planet.myplanet.utilities.NetworkUtils.startListenNetworkState
 import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
+import org.ole.planet.myplanet.utilities.ThemeMode
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils.getVersionName
 import java.util.Date
@@ -82,6 +85,23 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             log.type = type
             mRealm.commitTransaction()
         }
+
+        private fun applyThemeMode(themeMode: String?) {
+            when (themeMode) {
+                ThemeMode.LIGHT -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+                ThemeMode.DARK -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+                ThemeMode.FOLLOW_SYSTEM -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+            }
+        }
+
+        fun setThemeMode(themeMode: String) {
+            val sharedPreferences = context.getSharedPreferences("app_preferences", Context.MODE_PRIVATE)
+            with(sharedPreferences.edit()) {
+                putString("theme_mode", themeMode)
+                apply()
+            }
+            applyThemeMode(themeMode)
+        }
     }
 
     private var activityReferences = 0
@@ -95,9 +115,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
         context = this
         preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        nightMode()
 
-        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
         val builder = VmPolicy.Builder()
         StrictMode.setVmPolicy(builder.build())
         builder.detectFileUriExposure()
@@ -117,16 +135,11 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         registerActivityLifecycleCallbacks(this)
         startListenNetworkState()
         onAppStarted()
-    }
 
-    private fun nightMode() {
-        val preference = PreferenceManager.getDefaultSharedPreferences(this).getString("dark_mode", getString(R.string.dark_mode_follow_system))
-        val options = listOf(*resources.getStringArray(R.array.dark_mode_options))
-        when (options.indexOf(preference)) {
-            0 -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
-            1 -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-            2 -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
-        }
+        val sharedPreferences = getSharedPreferences("app_preferences", Context.MODE_PRIVATE)
+        val themeMode = sharedPreferences.getString("theme_mode", ThemeMode.FOLLOW_SYSTEM)
+
+        applyThemeMode(themeMode)
     }
 
     private fun scheduleAutoSyncWork(syncInterval: Int?) {
