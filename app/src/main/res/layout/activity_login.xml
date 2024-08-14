@@ -82,7 +82,8 @@
                             android:contentDescription="@string/settings"
                             android:paddingTop="6dp"
                             android:paddingRight="10dp"
-                            app:srcCompat="@drawable/ic_settings_black_24dp" />
+                            app:srcCompat="@drawable/ic_settings_black_24dp"
+                            app:tint="@color/daynight_textColor" />
                     </RelativeLayout>
 
                     <androidx.constraintlayout.widget.ConstraintLayout
@@ -149,7 +150,8 @@
                             app:layout_constraintEnd_toEndOf="parent"
                             app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintTop_toBottomOf="@+id/ltInputName"
-                            app:passwordToggleEnabled="true">
+                            app:passwordToggleEnabled="true"
+                            app:passwordToggleTint="@color/daynight_textColor">
 
                             <EditText
                                 android:id="@+id/input_password"
@@ -326,7 +328,8 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="6dp"
                         android:paddingHorizontal="@dimen/padding_small"
-                        app:srcCompat="@drawable/baseline_storage_24" />
+                        app:srcCompat="@drawable/baseline_storage_24"
+                        app:tint="@color/daynight_textColor" />
                     <TextView
                         android:id="@+id/tv_available_space"
                         android:layout_width="wrap_content"
@@ -341,9 +344,9 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="10dp"
-                    android:textColor="@color/md_white_1000"
                     android:textSize="16sp"
                     android:visibility="gone"
+                    app:backgroundTint="@color/daynight_textColor"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/ltAvailablaSpace" />
                 <androidx.recyclerview.widget.RecyclerView
