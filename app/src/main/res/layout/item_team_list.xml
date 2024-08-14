@@ -21,7 +21,6 @@
             android:padding="@dimen/padding_small"
             android:textColor="@color/daynight_textColor"
             android:textStyle="bold" />
-
         <TextView
             android:id="@+id/created"
             android:layout_width="0dp"
@@ -29,7 +28,6 @@
             android:layout_weight="1"
             android:padding="@dimen/padding_small"
             android:textColor="@color/daynight_textColor" />
-
         <TextView
             android:id="@+id/type"
             android:layout_width="0dp"
@@ -37,7 +35,6 @@
             android:layout_weight="1"
             android:padding="@dimen/padding_small"
             android:textColor="@color/daynight_textColor" />
-
         <TextView
             android:id="@+id/no_of_visits"
             android:layout_width="0dp"
@@ -45,7 +42,6 @@
             android:layout_weight="1"
             android:padding="@dimen/padding_small"
             android:textColor="@color/daynight_textColor" />
-
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/ltButtons"
             android:layout_width="0dp"
@@ -69,8 +65,7 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_goneMarginEnd="0dp"
-                app:tint="@color/daynight_textColor"/>
-
+                app:tint="@color/daynight_textColor" />
             <ImageButton
                 android:id="@+id/edit_team"
                 android:layout_width="0dp"
@@ -89,8 +84,7 @@
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_goneMarginStart="0dp"
                 app:layout_goneMarginEnd="0dp"
-                app:tint="@color/daynight_textColor"/>
-
+                app:tint="@color/daynight_textColor" />
             <ImageButton
                 android:id="@+id/btn_feedback"
                 android:layout_width="0dp"
@@ -108,8 +102,6 @@
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_goneMarginStart="0dp"
                 app:tint="@color/daynight_textColor" />
-
         </androidx.constraintlayout.widget.ConstraintLayout>
-
     </TableRow>
 </TableLayout>
