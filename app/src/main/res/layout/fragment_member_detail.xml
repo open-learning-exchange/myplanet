@@ -4,7 +4,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:background="@color/secondary_bg">
 
     <RelativeLayout
         android:layout_width="match_parent"
@@ -22,7 +23,6 @@
             android:textStyle="bold"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
-
         <de.hdodenhof.circleimageview.CircleImageView
             android:id="@+id/memberImage"
             android:layout_width="48dp"
@@ -37,131 +37,131 @@
         android:layout_marginTop="16dp">
 
         <TableRow>
-
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Full Name"
+                android:textColor="@color/daynight_textColor"
                 android:textStyle="bold" />
-
             <TextView
                 android:id="@+id/tvFullName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="16dp"
-                android:text="" />
+                android:text=""
+                android:textColor="@color/daynight_textColor" />
         </TableRow>
 
         <TableRow>
-
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="DOB"
+                android:textColor="@color/daynight_textColor"
                 android:textStyle="bold" />
-
             <TextView
                 android:id="@+id/tvDetailDob"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="16dp"
-                android:text="" />
+                android:text=""
+                android:textColor="@color/daynight_textColor" />
         </TableRow>
 
         <TableRow>
-
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Email"
+                android:textColor="@color/daynight_textColor"
                 android:textStyle="bold" />
-
             <TextView
                 android:id="@+id/tvProfileEmail"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="16dp"
-                android:text="" />
+                android:text=""
+                android:textColor="@color/daynight_textColor" />
         </TableRow>
 
         <TableRow>
-
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Phone"
+                android:textColor="@color/daynight_textColor"
                 android:textStyle="bold" />
-
             <TextView
                 android:id="@+id/tvProfilePhone"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="16dp"
-                android:text="" />
+                android:text=""
+                android:textColor="@color/daynight_textColor" />
         </TableRow>
 
         <TableRow>
-
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Language"
+                android:textColor="@color/daynight_textColor"
                 android:textStyle="bold" />
-
             <TextView
                 android:id="@+id/tvDetailLanguage"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="16dp"
-                android:text="" />
+                android:text=""
+                android:textColor="@color/daynight_textColor" />
         </TableRow>
 
         <TableRow>
-
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Number of Visits"
+                android:textColor="@color/daynight_textColor"
                 android:textStyle="bold" />
-
             <TextView
                 android:id="@+id/tvNumberOfVisits"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="16dp"
-                android:text="" />
+                android:text=""
+                android:textColor="@color/daynight_textColor" />
         </TableRow>
 
         <TableRow>
-
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Last Login"
+                android:textColor="@color/daynight_textColor"
                 android:textStyle="bold" />
-
             <TextView
                 android:id="@+id/tvLastLogin"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="16dp"
-                android:text="" />
+                android:text=""
+                android:textColor="@color/daynight_textColor" />
         </TableRow>
 
         <TableRow>
-
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Level"
+                android:textColor="@color/daynight_textColor"
                 android:textStyle="bold" />
-
             <TextView
                 android:id="@+id/tvLevel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="16dp"
-                android:text="" />
+                android:text=""
+                android:textColor="@color/daynight_textColor" />
         </TableRow>
     </TableLayout>
 
@@ -172,5 +172,4 @@
         android:layout_gravity="end"
         android:layout_marginTop="16dp"
         android:text="Close" />
-
 </LinearLayout>
