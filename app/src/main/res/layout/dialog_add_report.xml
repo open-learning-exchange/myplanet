@@ -2,7 +2,8 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/secondary_bg">
 
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/ltStartDate"
@@ -27,6 +28,8 @@
             android:layout_marginTop="2dp"
             android:gravity="center_vertical"
             android:hint="Start Date"
+            android:textColorHint="@color/hint_color"
+            android:textColor="@color/daynight_textColor"
             android:textSize="16sp" />
 
         <View
@@ -58,6 +61,8 @@
             android:layout_marginTop="2dp"
             android:gravity="center_vertical"
             android:hint="End Date"
+            android:textColorHint="@color/hint_color"
+            android:textColor="@color/daynight_textColor"
             android:textSize="16sp" />
 
         <View
@@ -73,6 +78,7 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="10dp"
         android:layout_marginEnd="10dp"
+        android:textColorHint="@color/hint_color"
         app:boxBackgroundColor="@color/md_white_1000"
         app:boxStrokeColor="@color/md_white_1000"
         app:boxStrokeWidth="0dp"
@@ -86,6 +92,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Summary"
+            android:textColor="@color/daynight_textColor"
             android:inputType="textMultiLine" />
     </com.google.android.material.textfield.TextInputLayout>
 
@@ -95,6 +102,7 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="10dp"
         android:layout_marginEnd="10dp"
+        android:textColorHint="@color/hint_color"
         app:boxBackgroundColor="@color/md_white_1000"
         app:boxStrokeColor="@color/md_white_1000"
         app:boxStrokeWidth="0dp"
@@ -109,6 +117,7 @@
             android:layout_height="wrap_content"
             android:hint="Beginning Balance"
             android:inputType="numberDecimal"
+            android:textColor="@color/daynight_textColor"
             android:text="0" />
     </com.google.android.material.textfield.TextInputLayout>
 
@@ -118,6 +127,7 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="10dp"
         android:layout_marginEnd="10dp"
+        android:textColorHint="@color/hint_color"
         app:boxBackgroundColor="@color/md_white_1000"
         app:boxStrokeColor="@color/md_white_1000"
         app:boxStrokeWidth="0dp"
@@ -132,6 +142,7 @@
             android:layout_height="wrap_content"
             android:hint="Sales"
             android:inputType="numberDecimal"
+            android:textColor="@color/daynight_textColor"
             android:text="0" />
     </com.google.android.material.textfield.TextInputLayout>
 
@@ -141,6 +152,7 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="10dp"
         android:layout_marginEnd="10dp"
+        android:textColorHint="@color/hint_color"
         app:boxBackgroundColor="@color/md_white_1000"
         app:boxStrokeColor="@color/md_white_1000"
         app:boxStrokeWidth="0dp"
@@ -155,6 +167,7 @@
             android:layout_height="wrap_content"
             android:hint="Other Income"
             android:inputType="numberDecimal"
+            android:textColor="@color/daynight_textColor"
             android:text="0" />
     </com.google.android.material.textfield.TextInputLayout>
 
@@ -164,10 +177,10 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="10dp"
         android:layout_marginEnd="10dp"
+        android:textColorHint="@color/hint_color"
         app:boxBackgroundColor="@color/md_white_1000"
         app:boxStrokeColor="@color/md_white_1000"
         app:boxStrokeWidth="0dp"
-
         app:boxStrokeWidthFocused="0dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -179,6 +192,7 @@
             android:layout_height="wrap_content"
             android:hint="Personnel"
             android:inputType="numberDecimal"
+            android:textColor="@color/daynight_textColor"
             android:text="0" />
     </com.google.android.material.textfield.TextInputLayout>
 
@@ -188,6 +202,7 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="10dp"
         android:layout_marginEnd="10dp"
+        android:textColorHint="@color/hint_color"
         app:boxBackgroundColor="@color/md_white_1000"
         app:boxStrokeColor="@color/md_white_1000"
         app:boxStrokeWidth="0dp"
@@ -202,6 +217,7 @@
             android:layout_height="wrap_content"
             android:hint="Non Personnel"
             android:inputType="numberDecimal"
+            android:textColor="@color/daynight_textColor"
             android:text="0" />
     </com.google.android.material.textfield.TextInputLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

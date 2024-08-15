@@ -64,8 +64,8 @@ class AdapterReports(private val context: Context, private var list: RealmResult
         reportListItemBinding.edit.setOnClickListener {
             val dialogAddReportBinding = DialogAddReportBinding.inflate(LayoutInflater.from(context))
             val v: View = dialogAddReportBinding.root
-            val builder = AlertDialog.Builder(context)
-            builder.setTitle("edit report")
+            val builder = AlertDialog.Builder(context, R.style.AlertDialogTheme)
+            builder.setTitle("Edit Report")
                 .setView(v)
                 .setPositiveButton("submit", null)
                 .setNegativeButton("cancel", null)
