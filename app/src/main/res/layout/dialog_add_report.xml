@@ -31,12 +31,10 @@
             android:textColorHint="@color/hint_color"
             android:textColor="@color/daynight_textColor"
             android:textSize="16sp" />
-
         <View
             android:layout_width="match_parent"
             android:layout_height="@dimen/_1dp"
             android:background="@color/md_grey_500" />
-
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
@@ -64,12 +62,10 @@
             android:textColorHint="@color/hint_color"
             android:textColor="@color/daynight_textColor"
             android:textSize="16sp" />
-
         <View
             android:layout_width="match_parent"
             android:layout_height="@dimen/_1dp"
             android:background="@color/md_grey_500" />
-
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
