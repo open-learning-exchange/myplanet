@@ -150,14 +150,12 @@ repositories {
     maven { url "https://jitpack.io" }
     maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
     maven { url "https://maven.google.com" }
+    flatDir { dirs 'libs' }
 }
 
 dependencies {
     testImplementation 'junit:junit:4.13.2'
-    implementation(project(':library'))  {
-        exclude group: 'commons-logging', module: 'commons-logging'
-    }
-    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation fileTree(include: ['*.jar', '*.aar'], dir: 'libs')
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     implementation 'androidx.multidex:multidex:2.0.1'
@@ -179,6 +177,7 @@ dependencies {
     implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
     implementation 'com.github.jeancsanchez:jcplayer:2.7.2'
     implementation 'com.github.clans:fab:1.6.4'
+    implementation 'com.github.barteksc:pdfium-android:1.9.0'
     implementation 'com.applandeo:material-calendar-view:1.9.2'
     implementation 'com.afollestad.material-dialogs:commons:0.9.6.0'
     implementation 'com.borax12.materialdaterangepicker:library:2.0'
