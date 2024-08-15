@@ -92,7 +92,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
                 adapterCourses.setCourseList(filterCourseByTag(etSearch.text.toString(), searchTags))
                 showNoData(tvMessage, adapterCourses.itemCount, "courses")
-                checkList()
             }
 
             override fun afterTextChanged(s: Editable) {}
