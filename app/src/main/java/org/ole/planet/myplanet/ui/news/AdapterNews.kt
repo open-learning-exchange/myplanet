@@ -13,6 +13,7 @@ import android.widget.LinearLayout
 import android.widget.PopupMenu
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.view.ContextThemeWrapper
 import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -187,7 +188,8 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     private fun addLabels(holder: RecyclerView.ViewHolder, news: RealmNews?) {
         val viewHolder = holder as ViewHolderNews
         viewHolder.rowNewsBinding.btnAddLabel.setOnClickListener {
-            val menu = PopupMenu(context, viewHolder.rowNewsBinding.btnAddLabel)
+            val wrapper = ContextThemeWrapper(context, R.style.CustomPopupMenu)
+            val menu = PopupMenu(wrapper, viewHolder.rowNewsBinding.btnAddLabel)
             val inflater = menu.menuInflater
             inflater.inflate(R.menu.menu_add_label, menu.menu)
             menu.setOnMenuItemClickListener { menuItem: MenuItem ->
