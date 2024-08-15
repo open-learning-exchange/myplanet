@@ -1,4 +1,5 @@
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -16,28 +17,24 @@
             layout="@layout/card_profile_bell"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
-
         <include
             android:id="@+id/homeCardLibrary"
             layout="@layout/home_card_library"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1" />
-
         <include
             android:id="@+id/homeCardCourses"
             layout="@layout/home_card_courses"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1" />
-
         <include
             android:id="@+id/homeCardTeams"
             layout="@layout/home_card_teams"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1" />
-
         <include
             android:id="@+id/homeCardMeetups"
             layout="@layout/home_card_meetups"
@@ -45,14 +42,12 @@
             android:layout_height="0dp"
             android:layout_weight="1"
             android:visibility="gone" />
-
         <include
             android:id="@+id/homeCardMyLife"
             layout="@layout/home_card_mylife"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1" />
-
     </LinearLayout>
 
     <com.github.clans.fab.FloatingActionMenu
@@ -72,7 +67,6 @@
             android:src="@drawable/ic_activity"
             android:contentDescription="@string/my_activity"
             app:fab_label="@string/my_activity" />
-
         <com.github.clans.fab.FloatingActionButton
             android:id="@+id/fab_my_progress"
             android:layout_width="wrap_content"
@@ -80,7 +74,6 @@
             android:src="@drawable/ic_my_progress"
             android:contentDescription="@string/my_progress"
             app:fab_label="@string/my_progress" />
-
         <com.github.clans.fab.FloatingActionButton
             android:id="@+id/fab_notification"
             android:layout_width="wrap_content"
@@ -89,7 +82,6 @@
             android:tint="@color/md_white_1000"
             android:contentDescription="@string/notifications"
             app:fab_label="@string/notifications" />
-
         <com.github.clans.fab.FloatingActionButton
             android:id="@+id/fab_survey"
             android:layout_width="wrap_content"
@@ -98,7 +90,6 @@
             android:contentDescription="@string/menu_surveys"
             android:tint="@color/md_white_1000"
             app:fab_label="@string/menu_surveys" />
-
         <com.github.clans.fab.FloatingActionButton
             android:id="@+id/add_resource"
             android:layout_width="wrap_content"
@@ -109,7 +100,6 @@
             android:src="@drawable/ic_add"
             android:tint="@color/md_white_1000"
             app:fab_label="@string/add_res" />
-
     </com.github.clans.fab.FloatingActionMenu>
 
     <LinearLayout
@@ -127,7 +117,6 @@
             android:padding="@dimen/padding_normal"
             android:text="@string/update_profile_alert"
             android:textColor="@color/md_black_1000" />
-
         <ImageView
             android:id="@+id/ic_close"
             android:layout_width="@dimen/_30dp"
