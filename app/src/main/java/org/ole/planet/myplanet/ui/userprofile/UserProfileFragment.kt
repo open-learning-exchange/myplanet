@@ -273,7 +273,14 @@ class UserProfileFragment : Fragment() {
                 rowStatBinding.tvTitle.visibility = View.VISIBLE
                 rowStatBinding.tvDescription.text = map[keys[position]]
                 if (position % 2 == 0) {
-                    rowStatBinding.root.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.bg_white))
+                    rowStatBinding.root.setBackgroundColor(
+                        ContextCompat.getColor(
+                            requireContext(),
+                            R.color.bg_white
+                        )
+                    )
+                }
+                else {
                     rowStatBinding.root.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.md_grey_300))
                 }
             }
