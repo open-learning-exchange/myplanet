@@ -63,8 +63,8 @@
     <string name="your_feedback">Your Feedback *</string>
     <string name="button_update">Update</string>
     <string name="level">level</string>
-    <string name="male">Male</string>
-    <string name="female">Female</string>
+    <string name="male">male</string>
+    <string name="female">female</string>
     <string name="gender">Gender</string>
     <string name="birth_date">Birth Date</string>
     <string name="phone_number">Phone Number</string>

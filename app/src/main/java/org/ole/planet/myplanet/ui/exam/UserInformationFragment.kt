@@ -67,10 +67,36 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         }
         fragmentUserInformationBinding.etEmail.setText(getString(R.string.message_placeholder, userModel?.email))
         fragmentUserInformationBinding.etFname.setText(getString(R.string.message_placeholder, userModel?.firstName))
+        fragmentUserInformationBinding.etMname.setText(getString(R.string.message_placeholder, userModel?.middleName))
         fragmentUserInformationBinding.etLname.setText(getString(R.string.message_placeholder, userModel?.lastName))
         fragmentUserInformationBinding.etPhone.setText(getString(R.string.message_placeholder, userModel?.phoneNumber))
         fragmentUserInformationBinding.txtDob.text = getString(R.string.message_placeholder, userModel?.dob)
         dob = userModel?.dob
+
+        val languages = resources.getStringArray(R.array.language)
+        val userLanguage = userModel?.language
+        val languagePosition = languages.indexOf(userLanguage)
+        if (languagePosition >= 0) {
+            fragmentUserInformationBinding.spnLang.setSelection(languagePosition)
+        }
+
+        val level = resources.getStringArray(R.array.level)
+        val userLevel = userModel?.level
+        val levelPosition = level.indexOf(userLevel)
+        if (levelPosition >= 0) {
+            fragmentUserInformationBinding.spnLevel.setSelection(levelPosition)
+        }
+
+        val userGender = userModel?.gender
+        when (userGender) {
+            getString(R.string.male) -> {
+                fragmentUserInformationBinding.rbGender.check(fragmentUserInformationBinding.rbGender.getChildAt(0).id)
+            }
+            getString(R.string.female) -> {
+                fragmentUserInformationBinding.rbGender.check(fragmentUserInformationBinding.rbGender.getChildAt(1).id)
+            }
+        }
+
         fragmentUserInformationBinding.btnCancel.setOnClickListener(this)
         fragmentUserInformationBinding.btnSubmit.setOnClickListener(this)
         fragmentUserInformationBinding.txtDob.setOnClickListener(this)
