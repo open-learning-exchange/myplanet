@@ -7,7 +7,10 @@ import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ArrayAdapter
 import android.widget.RadioButton
+import android.widget.TextView
+import androidx.core.content.ContextCompat
 import com.google.gson.JsonObject
 import io.realm.Realm
 import org.ole.planet.myplanet.MainApplication
@@ -40,6 +43,28 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     }
 
     private fun initViews() {
+        val adapterLang = ArrayAdapter.createFromResource(
+            requireContext(),
+            R.array.language,
+            R.layout.spinner_item
+        )
+        val adapterLevel = ArrayAdapter.createFromResource(
+            requireContext(),
+            R.array.language,
+            R.layout.spinner_item
+        )
+        adapterLang.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        adapterLevel.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        fragmentUserInformationBinding.spnLang.adapter = adapterLang
+        fragmentUserInformationBinding.spnLevel.adapter = adapterLevel
+        fragmentUserInformationBinding.spnLang.post {
+            val selectedView = fragmentUserInformationBinding.spnLang.selectedView as? TextView
+            selectedView?.setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
+        }
+        fragmentUserInformationBinding.spnLevel.post {
+            val selectedView = fragmentUserInformationBinding.spnLang.selectedView as? TextView
+            selectedView?.setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
+        }
         fragmentUserInformationBinding.etEmail.setText(getString(R.string.message_placeholder, userModel?.email))
         fragmentUserInformationBinding.etFname.setText(getString(R.string.message_placeholder, userModel?.firstName))
         fragmentUserInformationBinding.etLname.setText(getString(R.string.message_placeholder, userModel?.lastName))
