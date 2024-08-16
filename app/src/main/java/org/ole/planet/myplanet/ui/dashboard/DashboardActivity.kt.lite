@@ -383,7 +383,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         val f: Fragment = ResourceDetailFragment()
         val b = Bundle()
         b.putString("libraryId", library?.resourceId)
-        b.putString("openFrom", "Dashboard")
         f.arguments = b
         openCallFragment(f)
     }
