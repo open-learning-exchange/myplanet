@@ -9,6 +9,7 @@
     <color name="disable_color">#BDBDBD</color>
     <color name="daynight_textColor">@color/textColorPrimary</color>
     <color name="daynight_grey">@color/card_bg</color>
+    <color name="daynight_white_grey">@color/card_bg</color>
     <color name="card_bg">@color/colorPrimaryLight</color>
     <color name="secondary_bg">@color/colorPrimaryDark</color>
     <color name="hint_color">#808080</color>
