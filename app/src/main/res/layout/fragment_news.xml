@@ -18,7 +18,6 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/add_story" />
-
         <LinearLayout
             android:id="@+id/ll_add_news"
             android:layout_width="match_parent"
@@ -43,8 +42,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:minHeight="@dimen/profile_card_bell"
-                        android:textColor="@color/daynight_textColor"/>
-
+                        android:textColor="@color/daynight_textColor" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <LinearLayout
@@ -62,8 +60,6 @@
                         android:minWidth="@dimen/user_image_size"
                         android:text="@string/button_submit"
                         android:theme="@style/PrimaryButton" />
-
-
                     <Button
                         android:id="@+id/add_news_image"
                         android:layout_width="wrap_content"
@@ -71,7 +67,6 @@
                         android:layout_gravity="center"
                         android:text="@string/add_image"
                         android:theme="@style/PrimaryButton" />
-
                     <HorizontalScrollView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content">
@@ -82,11 +77,8 @@
                             android:layout_height="wrap_content"
                             android:layout_gravity="center" />
                     </HorizontalScrollView>
-
                 </LinearLayout>
             </LinearLayout>
-
-
         </LinearLayout>
 
         <Button
@@ -97,7 +89,6 @@
             android:text="@string/show_main_conversation"
             android:theme="@style/PrimaryFlatButton"
             android:visibility="gone" />
-
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
@@ -108,7 +99,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:padding="@dimen/padding_normal" />
-
             <TextView
                 android:id="@+id/tv_message"
                 android:layout_width="wrap_content"
@@ -116,5 +106,4 @@
                 android:layout_gravity="center" />
         </FrameLayout>
     </LinearLayout>
-
 </FrameLayout>
