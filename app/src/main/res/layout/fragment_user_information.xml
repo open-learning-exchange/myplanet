@@ -112,7 +112,6 @@
                     android:layout_height="wrap_content"
                     android:entries="@array/language"
                     android:contentDescription="@string/select_language"
-                    android:textColor="@color/daynight_textColor"
                     android:padding="4dp" />
 
             </LinearLayout>
@@ -151,6 +150,7 @@
                 android:padding="@dimen/padding_normal"
                 android:text="@string/birth_date"
                 android:textSize="@dimen/text_size_mid"
+                android:textColor="@color/daynight_textColor"
                 app:drawableRightCompat="@drawable/ic_date" />
 
         </LinearLayout>
