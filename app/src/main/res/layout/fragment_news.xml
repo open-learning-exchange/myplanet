@@ -35,13 +35,15 @@
                     android:id="@+id/tl_message"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="@string/what_would">
+                    android:hint="@string/what_would"
+                    android:textColorHint="@color/daynight_textColor">
 
                     <EditText
                         android:id="@+id/et_message"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:minHeight="@dimen/profile_card_bell" />
+                        android:minHeight="@dimen/profile_card_bell"
+                        android:textColor="@color/daynight_textColor"/>
 
                 </com.google.android.material.textfield.TextInputLayout>
 
