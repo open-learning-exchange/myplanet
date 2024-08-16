@@ -210,7 +210,6 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
                 val f = ResourceDetailFragment()
                 val b = Bundle()
                 b.putString("libraryId", libraries!![i]?.id)
-                b.putString("openFrom", team?.teamType + "-" + team?.title)
                 f.arguments = b
                 homeItemClickListener?.openCallFragment(f)
             }
