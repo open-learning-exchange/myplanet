@@ -30,7 +30,6 @@
                     android:hint="@string/first_name"
                     android:textColor="@color/daynight_textColor"
                     android:backgroundTint="@color/hint_color"/>
-
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
@@ -47,7 +46,6 @@
                     android:hint="@string/middle_name"
                     android:textColor="@color/daynight_textColor"
                     android:backgroundTint="@color/hint_color"/>
-
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
@@ -64,7 +62,6 @@
                     android:hint="@string/last_name"
                     android:textColor="@color/daynight_textColor"
                     android:backgroundTint="@color/hint_color"/>
-
             </com.google.android.material.textfield.TextInputLayout>
 
         </LinearLayout>
@@ -88,7 +85,6 @@
                     android:hint="@string/email"
                     android:textColor="@color/daynight_textColor"
                     android:backgroundTint="@color/hint_color"/>
-
             </com.google.android.material.textfield.TextInputLayout>
 
             <LinearLayout
@@ -105,7 +101,6 @@
                     android:padding="@dimen/padding_small"
                     android:text="@string/language"
                     android:textColor="@color/hint_color"/>
-
                 <Spinner
                     android:id="@+id/spn_lang"
                     android:layout_width="match_parent"
@@ -113,7 +108,6 @@
                     android:entries="@array/language"
                     android:contentDescription="@string/select_language"
                     android:padding="4dp" />
-
             </LinearLayout>
         </LinearLayout>
 
@@ -135,7 +129,6 @@
                     android:hint="@string/phone_number"
                     android:textColor="@color/daynight_textColor"
                     android:backgroundTint="@color/hint_color"/>
-
             </com.google.android.material.textfield.TextInputLayout>
 
 
@@ -152,7 +145,6 @@
                 android:textSize="@dimen/text_size_mid"
                 android:textColor="@color/daynight_textColor"
                 app:drawableRightCompat="@drawable/ic_date" />
-
         </LinearLayout>
 
 
@@ -170,7 +162,6 @@
                 android:textColor="@color/daynight_textColor"
                 android:textSize="16sp"
                 android:textStyle="bold" />
-
             <RadioGroup
                 android:id="@+id/rb_gender"
                 android:layout_width="match_parent"
@@ -178,24 +169,19 @@
                 android:orientation="horizontal"
                 android:padding="@dimen/padding_normal">
 
-
                 <RadioButton
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/male"
                     android:textColor="@color/daynight_textColor"
                     android:buttonTint="@color/daynight_textColor"/>
-
                 <RadioButton
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/female"
                     android:textColor="@color/daynight_textColor"
                     android:buttonTint="@color/daynight_textColor"/>
-
-
             </RadioGroup>
-
         </LinearLayout>
 
         <LinearLayout
@@ -211,7 +197,6 @@
                 android:padding="@dimen/padding_small"
                 android:text="@string/level"
                 android:textColor="@color/hint_color" />
-
             <Spinner
                 android:id="@+id/spn_level"
                 android:layout_width="match_parent"
@@ -219,9 +204,7 @@
                 android:entries="@array/level"
                 android:contentDescription="@string/skill_level"
                 android:padding="@dimen/padding_small" />
-
         </LinearLayout>
-
 
         <LinearLayout
             android:layout_width="wrap_content"
@@ -236,7 +219,6 @@
                 android:layout_marginRight="10dp"
                 android:background="@drawable/buttongrey"
                 android:text="@string/button_update" />
-
             <Button
                 android:id="@+id/btn_cancel"
                 style="@style/GreyButtons"
@@ -244,11 +226,6 @@
                 android:layout_height="wrap_content"
                 android:background="@drawable/buttongrey"
                 android:text="@string/button_cancel" />
-
         </LinearLayout>
-
-
     </LinearLayout>
-
-
 </FrameLayout>
