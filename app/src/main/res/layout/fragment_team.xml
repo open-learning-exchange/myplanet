@@ -51,7 +51,6 @@
                     android:text="@string/name_normal"
                     android:textColor="@color/daynight_textColor"
                     android:textStyle="bold" />
-
                 <TextView
                     android:id="@+id/created"
                     android:layout_width="0dp"
@@ -61,7 +60,6 @@
                     android:text="@string/created_on"
                     android:textColor="@color/daynight_textColor"
                     android:textStyle="bold" />
-
                 <TextView
                     android:id="@+id/type"
                     android:layout_width="0dp"
@@ -71,7 +69,6 @@
                     android:text="@string/type"
                     android:textColor="@color/daynight_textColor"
                     android:textStyle="bold" />
-
                 <TextView
                     android:id="@+id/no_of_visits"
                     android:layout_width="0dp"
@@ -82,7 +79,6 @@
                     android:text="@string/total_visits"
                     android:textColor="@color/daynight_textColor"
                     android:textStyle="bold" />
-
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -93,14 +89,14 @@
                     android:textStyle="bold" />
             </TableRow>
         </TableLayout>
-
+        
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_team_list"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1" />
-
     </LinearLayout>
+    
     <TextView
         android:visibility="gone"
         android:id="@+id/tvMessage"
