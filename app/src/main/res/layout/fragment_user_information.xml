@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="@dimen/padding_normal"
-    android:background="@color/daynight_grey"
+    android:background="@color/secondary_bg"
     tools:context=".ui.exam.UserInformationFragment">
 
     <LinearLayout
@@ -113,7 +113,8 @@
                     android:entries="@array/language"
                     android:contentDescription="@string/select_language"
                     android:textColor="@color/daynight_textColor"
-                    android:padding="4dp" />
+                    android:padding="4dp"
+                    app:backgroundTint="@color/daynight_textColor" />
 
             </LinearLayout>
         </LinearLayout>
@@ -151,7 +152,8 @@
                 android:padding="@dimen/padding_normal"
                 android:text="@string/birth_date"
                 android:textSize="@dimen/text_size_mid"
-                app:drawableRightCompat="@drawable/ic_date" />
+                app:drawableRightCompat="@drawable/ic_date"
+                app:drawableTint="@color/daynight_textColor" />
 
         </LinearLayout>
 
@@ -218,7 +220,8 @@
                 android:layout_height="wrap_content"
                 android:entries="@array/level"
                 android:contentDescription="@string/skill_level"
-                android:padding="@dimen/padding_small" />
+                android:padding="@dimen/padding_small"
+                app:backgroundTint="@color/daynight_textColor" />
 
         </LinearLayout>
 

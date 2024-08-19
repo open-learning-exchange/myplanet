@@ -3,4 +3,4 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:textColor="@color/daynight_textColor"
-    android:background="@color/daynight_grey" />
+    android:background="@color/secondary_bg" />
