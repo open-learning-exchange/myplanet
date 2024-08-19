@@ -17,7 +17,6 @@
         android:textStyle="bold"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
-
     <LinearLayout
         android:id="@+id/lt1"
         android:layout_width="match_parent"
@@ -220,7 +219,6 @@
                 app:drawableRightCompat="@drawable/ic_date"
                 app:drawableTint="@color/daynight_textColor" />
         </com.google.android.material.textfield.TextInputLayout>
-
     </LinearLayout>
 
     <RadioGroup
@@ -241,7 +239,6 @@
             android:text="@string/male"
             android:textColor="@color/daynight_textColor"
             android:buttonTint="@color/daynight_textColor" />
-
         <RadioButton
             android:id="@+id/rbFemale"
             android:layout_width="wrap_content"
@@ -269,7 +266,6 @@
             android:layout_weight="1"
             android:popupBackground="@color/secondary_bg"
             app:backgroundTint="@color/daynight_textColor" />
-
         <Spinner
             android:id="@+id/level"
             android:layout_width="wrap_content"
@@ -304,7 +300,6 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/lt3" />
-
         <Button
             android:id="@+id/btnCancel"
             android:layout_width="wrap_content"
@@ -316,8 +311,5 @@
             android:textAllCaps="false"
             android:textColor="@color/md_black_1000"
             android:textSize="12sp" />
-
     </LinearLayout>
-
-
 </androidx.constraintlayout.widget.ConstraintLayout>
