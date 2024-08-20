@@ -22,7 +22,6 @@
             android:layout_height="wrap_content"
             android:hint="@string/filter_labels"
             android:visibility="gone" />
-
         <com.google.android.flexbox.FlexboxLayout
             android:id="@+id/flexbox_tags"
             android:layout_width="match_parent"
@@ -30,7 +29,6 @@
             android:layout_gravity="center"
             android:padding="@dimen/padding_normal"
             app:flexWrap="wrap" />
-
     </com.google.android.material.textfield.TextInputLayout>
 
     <LinearLayout
@@ -54,7 +52,8 @@
                 android:inputType="text"
                 android:maxLines="1"
                 android:padding="@dimen/padding_normal"
-                android:backgroundTint="@color/hint_color" />
+                android:backgroundTint="@color/hint_color"
+                android:textColor="@color/daynight_textColor"/>
         </com.google.android.material.textfield.TextInputLayout>
     </LinearLayout>
 </LinearLayout>
