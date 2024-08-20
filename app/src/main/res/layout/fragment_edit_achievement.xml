@@ -9,7 +9,8 @@
 
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:background="@color/secondary_bg">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -67,14 +68,15 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:padding="@dimen/padding_normal">
+                        android:padding="@dimen/padding_normal"
+                        android:textColorHint="@color/hint_color">
 
                         <EditText
                             android:id="@+id/et_fname"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-
-                            android:hint="@string/first_name" />
+                            android:hint="@string/first_name"
+                            android:textColor="@color/daynight_textColor" />
 
                     </com.google.android.material.textfield.TextInputLayout>
 
@@ -82,14 +84,15 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:padding="@dimen/padding_normal">
+                        android:padding="@dimen/padding_normal"
+                        android:textColorHint="@color/hint_color">
 
                         <EditText
                             android:id="@+id/et_mname"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-
-                            android:hint="@string/middle_name" />
+                            android:hint="@string/middle_name"
+                            android:textColor="@color/daynight_textColor" />
 
                     </com.google.android.material.textfield.TextInputLayout>
 
@@ -97,13 +100,15 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:padding="@dimen/padding_normal">
+                        android:padding="@dimen/padding_normal"
+                        android:textColorHint="@color/hint_color">
 
                         <EditText
                             android:id="@+id/et_lname"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:hint="@string/last_name" />
+                            android:hint="@string/last_name"
+                            android:textColor="@color/daynight_textColor"/>
 
                     </com.google.android.material.textfield.TextInputLayout>
 
@@ -128,19 +133,23 @@
                         android:padding="@dimen/padding_normal"
                         android:text="@string/birth_date"
                         android:textSize="@dimen/text_size_mid"
-                        app:drawableRightCompat="@drawable/ic_date" />
+                        android:textColor="@color/daynight_textColor"
+                        app:drawableRightCompat="@drawable/ic_date"
+                        app:drawableTint="@color/daynight_textColor" />
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:padding="@dimen/padding_normal">
+                        android:padding="@dimen/padding_normal"
+                        android:textColorHint="@color/hint_color">
 
                         <EditText
                             android:id="@+id/et_birthplace"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:hint="@string/birth_place" />
+                            android:hint="@string/birth_place"
+                            android:textColor="@color/daynight_textColor" />
 
                     </com.google.android.material.textfield.TextInputLayout>
 
@@ -150,7 +159,8 @@
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:padding="@dimen/padding_normal">
+                    android:padding="@dimen/padding_normal"
+                    android:textColorHint="@color/hint_color">
 
                     <EditText
                         android:id="@+id/et_purpose"
@@ -158,14 +168,16 @@
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
                         android:hint="My Purpose - What are your educational and professional ambitions?"
-                        android:textSize="20sp" />
+                        android:textSize="20sp"
+                        android:textColor="@color/daynight_textColor" />
 
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:padding="@dimen/padding_normal">
+                    android:padding="@dimen/padding_normal"
+                    android:textColorHint="@color/hint_color">
 
                     <EditText
                         android:id="@+id/et_goals"
@@ -173,14 +185,16 @@
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
                         android:hint="My Goals - What are your goals for next 10 years?"
-                        android:textSize="20sp" />
+                        android:textSize="20sp"
+                        android:textColor="@color/daynight_textColor" />
 
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:padding="@dimen/padding_normal">
+                    android:padding="@dimen/padding_normal"
+                    android:textColorHint="@color/hint_color">
 
                     <EditText
                         android:id="@+id/et_achievement"
@@ -188,7 +202,8 @@
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
                         android:hint="Summery of achievements - Briefly summarize your achievement and add related materials below"
-                        android:textSize="20sp" />
+                        android:textSize="20sp"
+                        android:textColor="@color/daynight_textColor" />
 
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -197,7 +212,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:padding="@dimen/padding_small"
-                    android:text="Add any materials demonstrating your achievements below" />
+                    android:text="Add any materials demonstrating your achievements below"
+                    android:textColor="@color/daynight_textColor" />
 
                 <LinearLayout
                     android:id="@+id/ll_attachment"
@@ -218,7 +234,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:padding="@dimen/padding_small"
-                    android:text="Add any references below" />
+                    android:text="Add any references below"
+                    android:textColor="@color/daynight_textColor"/>
 
                 <LinearLayout
                     android:id="@+id/ll_other_info"
@@ -243,7 +260,9 @@
                     android:layout_gravity="center"
                     android:padding="@dimen/padding_normal"
                     android:text="@string/send_to_nation"
-                    android:textSize="@dimen/text_size_large" />
+                    android:textSize="@dimen/text_size_large"
+                    android:textColor="@color/daynight_textColor"
+                    app:buttonTint="@color/daynight_textColor"/>
 
                 <LinearLayout
                     android:layout_width="wrap_content"
