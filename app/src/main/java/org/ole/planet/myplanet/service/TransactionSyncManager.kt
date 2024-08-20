@@ -24,6 +24,7 @@ import org.ole.planet.myplanet.model.RealmMyCourse.Companion.courseWriteCsv
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
 import org.ole.planet.myplanet.model.RealmMyHealthPojo.Companion.healthWriteCsv
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.libraryWriteCsv
+import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.saveLibraryDownloadListToPrefs
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.teamWriteCsv
 import org.ole.planet.myplanet.model.RealmNews.Companion.newsWriteCsv
 import org.ole.planet.myplanet.model.RealmOfflineActivity.Companion.offlineWriteCsv
@@ -187,6 +188,7 @@ object TransactionSyncManager {
             }
         }
         saveConcatenatedLinksToPrefs()
+        saveLibraryDownloadListToPrefs()
 
         val syncFiles = settings.getBoolean("download_sync_files", false)
 

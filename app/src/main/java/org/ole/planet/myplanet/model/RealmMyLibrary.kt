@@ -1,8 +1,10 @@
 package org.ole.planet.myplanet.model
 
 import android.content.Context
+import android.content.Context.MODE_PRIVATE
 import android.content.SharedPreferences
 import android.text.TextUtils
+import android.util.Log
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
@@ -14,6 +16,7 @@ import io.realm.RealmObject
 import io.realm.RealmResults
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.model.RealmMyCourse.Companion.gson
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
@@ -233,6 +236,7 @@ open class RealmMyLibrary : RealmObject() {
 
     companion object {
         val libraryDataList: MutableList<Array<String>> = mutableListOf()
+        val libraryDownloadList = ArrayList<String>()
 
         fun getMyLibraryByUserId(mRealm: Realm, settings: SharedPreferences?): List<RealmMyLibrary> {
             val libs = mRealm.where(RealmMyLibrary::class.java).findAll()
@@ -408,6 +412,11 @@ open class RealmMyLibrary : RealmObject() {
             resource?.setLanguages(JsonUtils.getJsonArray("languages", doc), resource)
             mRealm.commitTransaction()
 
+            if (resource?.resourceRemoteAddress != null) {
+                libraryDownloadList.add(resource.resourceRemoteAddress ?: "")
+                Log.d("Okuro", "resourceRemoteAddress: ${resource.resourceRemoteAddress}")
+            }
+
             val csvRow = arrayOf(
                 JsonUtils.getString("_id", doc),
                 JsonUtils.getString("_rev", doc),
@@ -463,6 +472,27 @@ open class RealmMyLibrary : RealmObject() {
 
         fun libraryWriteCsv() {
             writeCsv("${context.getExternalFilesDir(null)}/ole/library.csv", libraryDataList)
+        }
+
+        fun saveLibraryDownloadListToPrefs() {
+            val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            val existingSavedLibraryDownloadList = settings.getString("library_download_list", null)
+            val existingLibraryDownloadList = if (existingSavedLibraryDownloadList != null) {
+                gson.fromJson(existingSavedLibraryDownloadList, Array<String>::class.java).toMutableList()
+            } else {
+                mutableListOf()
+            }
+
+            synchronized(libraryDownloadList) {
+                for (link in libraryDownloadList) {
+                    if (!existingLibraryDownloadList.contains(link)) {
+                        existingLibraryDownloadList.add(link)
+                    }
+                }
+            }
+
+            val jsonLibraryDownloadList = gson.toJson(existingLibraryDownloadList)
+            settings.edit().putString("library_download_list", jsonLibraryDownloadList).apply()
         }
 
         @JvmStatic

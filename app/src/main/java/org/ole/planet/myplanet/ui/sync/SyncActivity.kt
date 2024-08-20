@@ -6,6 +6,7 @@ import android.graphics.drawable.AnimationDrawable
 import android.os.Build
 import android.os.Bundle
 import android.text.*
+import android.util.Log
 import android.view.*
 import android.webkit.URLUtil
 import android.widget.*
@@ -356,6 +357,16 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         if (storedJsonConcatenatedLinks != null) {
             val storedConcatenatedLinks: ArrayList<String> = Json.decodeFromString(storedJsonConcatenatedLinks)
             openDownloadService(context, storedConcatenatedLinks, true)
+        }
+
+        val resourceDownloadList = settings.getString("library_download_list", null)
+        if (resourceDownloadList != null) {
+            Log.d("SyncActivity", "resourceDownloadList: $resourceDownloadList")
+            val urls = ArrayList(resourceDownloadList.split(","))
+            openDownloadService(context, urls, true)
+//            val downloadList: ArrayList<String> = Json.decodeFromString(resourceDownloadList)
+//            val downloadLinks = downloadList.map { it.resourceId }
+//            openDownloadService(context, downloadLinks, false)
         }
     }
 
