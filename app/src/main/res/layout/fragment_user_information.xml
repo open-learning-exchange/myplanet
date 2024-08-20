@@ -143,6 +143,7 @@
                 android:text="@string/birth_date"
                 android:textSize="@dimen/text_size_mid"
                 app:drawableRightCompat="@drawable/ic_date"
+                android:textColor="@color/daynight_textColor"
                 app:drawableTint="@color/daynight_textColor" />
         </LinearLayout>
 
