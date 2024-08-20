@@ -19,7 +19,6 @@
             android:textColor="@color/daynight_textColor" />
     </com.google.android.material.textfield.TextInputLayout>
 
-
     <TextView
         android:id="@+id/tv_date"
         android:layout_width="match_parent"
@@ -34,7 +33,6 @@
         android:textColor="@color/daynight_textColor"
         app:drawableRightCompat="@drawable/ic_date"
         app:drawableTint="@color/daynight_textColor" />
-
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
