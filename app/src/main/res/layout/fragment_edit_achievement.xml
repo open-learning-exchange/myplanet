@@ -100,7 +100,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:hint="@string/last_name"
-                            android:textColor="@color/daynight_textColor"/>
+                            android:textColor="@color/daynight_textColor" />
                     </com.google.android.material.textfield.TextInputLayout>
                 </LinearLayout>
 
@@ -211,7 +211,7 @@
                     android:layout_height="wrap_content"
                     android:padding="@dimen/padding_small"
                     android:text="Add any references below"
-                    android:textColor="@color/daynight_textColor"/>
+                    android:textColor="@color/daynight_textColor" />
                 <LinearLayout
                     android:id="@+id/ll_other_info"
                     android:layout_width="match_parent"
@@ -234,7 +234,7 @@
                     android:text="@string/send_to_nation"
                     android:textSize="@dimen/text_size_large"
                     android:textColor="@color/daynight_textColor"
-                    app:buttonTint="@color/daynight_textColor"/>
+                    app:buttonTint="@color/daynight_textColor" />
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
