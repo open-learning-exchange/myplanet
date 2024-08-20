@@ -25,6 +25,7 @@
                 android:layout_height="wrap_content"
                 android:hint="@string/search"
                 android:backgroundTint="@color/hint_color"
+                android:textColor="@color/daynight_textColor"
                 android:padding="@dimen/padding_normal" />
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -50,7 +51,6 @@
                     android:text="@string/name_normal"
                     android:textColor="@color/daynight_textColor"
                     android:textStyle="bold" />
-
                 <TextView
                     android:id="@+id/created"
                     android:layout_width="0dp"
@@ -60,7 +60,6 @@
                     android:text="@string/created_on"
                     android:textColor="@color/daynight_textColor"
                     android:textStyle="bold" />
-
                 <TextView
                     android:id="@+id/type"
                     android:layout_width="0dp"
@@ -70,7 +69,6 @@
                     android:text="@string/type"
                     android:textColor="@color/daynight_textColor"
                     android:textStyle="bold" />
-
                 <TextView
                     android:id="@+id/no_of_visits"
                     android:layout_width="0dp"
@@ -81,7 +79,6 @@
                     android:text="@string/total_visits"
                     android:textColor="@color/daynight_textColor"
                     android:textStyle="bold" />
-
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -98,8 +95,8 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1" />
-
     </LinearLayout>
+
     <TextView
         android:visibility="gone"
         android:id="@+id/tvMessage"

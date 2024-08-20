@@ -142,6 +142,7 @@
                 android:padding="@dimen/padding_normal"
                 android:text="@string/birth_date"
                 android:textSize="@dimen/text_size_mid"
+                android:textColor="@color/daynight_textColor"
                 app:drawableRightCompat="@drawable/ic_date" />
         </LinearLayout>
 
