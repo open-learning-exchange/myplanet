@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="@dimen/padding_normal"
-    android:background="@color/daynight_grey"
+    android:background="@color/secondary_bg"
     tools:context=".ui.exam.UserInformationFragment">
 
     <LinearLayout
@@ -142,8 +142,9 @@
                 android:padding="@dimen/padding_normal"
                 android:text="@string/birth_date"
                 android:textSize="@dimen/text_size_mid"
+                app:drawableRightCompat="@drawable/ic_date"
                 android:textColor="@color/daynight_textColor"
-                app:drawableRightCompat="@drawable/ic_date" />
+                app:drawableTint="@color/daynight_textColor" />
         </LinearLayout>
 
         <LinearLayout

@@ -53,8 +53,8 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             R.array.level,
             R.layout.spinner_item
         )
-        adapterLang.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        adapterLevel.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        adapterLang.setDropDownViewResource(R.layout.spinner_item)
+        adapterLevel.setDropDownViewResource(R.layout.spinner_item)
         fragmentUserInformationBinding.spnLang.adapter = adapterLang
         fragmentUserInformationBinding.spnLevel.adapter = adapterLevel
         fragmentUserInformationBinding.spnLang.post {
