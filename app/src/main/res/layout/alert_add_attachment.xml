@@ -8,13 +8,15 @@
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="@dimen/padding_normal">
+        android:padding="@dimen/padding_normal"
+        android:textColorHint="@color/hint_color">
 
         <EditText
             android:id="@+id/et_title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="@string/title_asterisk" />
+            android:hint="@string/title_asterisk"
+            android:textColor="@color/daynight_textColor" />
     </com.google.android.material.textfield.TextInputLayout>
 
 
@@ -29,18 +31,22 @@
         android:padding="@dimen/padding_normal"
         android:text="@string/date"
         android:textSize="@dimen/text_size_mid"
-        app:drawableRightCompat="@drawable/ic_date" />
+        android:textColor="@color/daynight_textColor"
+        app:drawableRightCompat="@drawable/ic_date"
+        app:drawableTint="@color/daynight_textColor" />
 
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="@dimen/padding_normal">
+        android:padding="@dimen/padding_normal"
+        android:textColorHint="@color/hint_color">
 
         <EditText
             android:id="@+id/et_desc"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="@string/description" />
+            android:hint="@string/description"
+            android:textColor="@color/daynight_textColor"/>
     </com.google.android.material.textfield.TextInputLayout>
 
     <Button
