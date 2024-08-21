@@ -149,8 +149,8 @@ class UserProfileFragment : Fragment() {
             val languages = resources.getStringArray(language)
             val languageList: MutableList<String?> = ArrayList(listOf(*languages))
             languageList.add(0, "Language")
-            val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, languageList)
-            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            val adapter = ArrayAdapter(requireContext(), R.layout.spinner_item, languageList)
+            adapter.setDropDownViewResource(R.layout.spinner_item)
             editProfileDialogBinding.language.adapter = adapter
             if (model?.language != null) {
                 val language = resources.getStringArray(language)
@@ -174,8 +174,8 @@ class UserProfileFragment : Fragment() {
             val levelList: MutableList<String?> = ArrayList(listOf(*levels))
             levelList.remove("All")
             levelList.add(0, "Level")
-            val levelAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, levelList)
-            levelAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            val levelAdapter = ArrayAdapter(requireContext(), R.layout.spinner_item, levelList)
+            levelAdapter.setDropDownViewResource(R.layout.spinner_item)
             editProfileDialogBinding.level.adapter = levelAdapter
             if (model?.level != null) {
                 val level = resources.getStringArray(subject_level)

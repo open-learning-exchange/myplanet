@@ -2,7 +2,8 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/secondary_bg">
 
     <TextView
         android:id="@+id/tvEdit"
@@ -11,12 +12,11 @@
         android:layout_marginStart="10dp"
         android:layout_marginTop="10dp"
         android:text="@string/edit_profile"
-        android:textColor="@color/md_black_1000"
+        android:textColor="@color/daynight_textColor"
         android:textSize="16sp"
         android:textStyle="bold"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
-
     <LinearLayout
         android:id="@+id/lt1"
         android:layout_width="match_parent"
@@ -33,6 +33,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
             android:layout_weight="1"
+            android:textColorHint="@color/hint_color"
             app:boxBackgroundColor="@color/md_white_1000"
             app:boxStrokeColor="@color/md_white_1000"
             app:boxStrokeWidth="0dp"
@@ -53,7 +54,8 @@
                 android:inputType="text"
                 android:paddingStart="10dp"
                 android:paddingEnd="8dp"
-                android:textColor="@color/md_black_1000" />
+                android:textColor="@color/daynight_textColor"
+                android:backgroundTint="@color/daynight_textColor" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -62,6 +64,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
             android:layout_weight="1"
+            android:textColorHint="@color/hint_color"
             app:boxBackgroundColor="@color/md_white_1000"
             app:boxStrokeColor="@color/md_white_1000"
             app:boxStrokeWidth="0dp"
@@ -82,7 +85,8 @@
                 android:inputType="text"
                 android:paddingStart="10dp"
                 android:paddingEnd="8dp"
-                android:textColor="@color/md_black_1000" />
+                android:textColor="@color/daynight_textColor"
+                android:backgroundTint="@color/daynight_textColor" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -91,6 +95,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
             android:layout_weight="1"
+            android:textColorHint="@color/hint_color"
             app:boxBackgroundColor="@color/md_white_1000"
             app:boxStrokeColor="@color/md_white_1000"
             app:boxStrokeWidth="0dp"
@@ -111,7 +116,8 @@
                 android:inputType="text"
                 android:paddingStart="10dp"
                 android:paddingEnd="8dp"
-                android:textColor="@color/md_black_1000" />
+                android:textColor="@color/daynight_textColor"
+                android:backgroundTint="@color/daynight_textColor" />
         </com.google.android.material.textfield.TextInputLayout>
     </LinearLayout>
 
@@ -131,6 +137,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
             android:layout_weight="1"
+            android:textColorHint="@color/hint_color"
             app:boxBackgroundColor="@color/md_white_1000"
             app:boxStrokeColor="@color/md_white_1000"
             app:boxStrokeWidth="0dp"
@@ -151,7 +158,8 @@
                 android:inputType="textEmailAddress"
                 android:paddingStart="10dp"
                 android:paddingEnd="8dp"
-                android:textColor="@color/md_black_1000" />
+                android:textColor="@color/daynight_textColor"
+                android:backgroundTint="@color/daynight_textColor" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -160,6 +168,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
             android:layout_weight="1"
+            android:textColorHint="@color/hint_color"
             app:boxBackgroundColor="@color/md_white_1000"
             app:boxStrokeColor="@color/md_white_1000"
             app:boxStrokeWidth="0dp"
@@ -180,7 +189,8 @@
                 android:inputType="phone"
                 android:paddingStart="10dp"
                 android:paddingEnd="8dp"
-                android:textColor="@color/md_black_1000" />
+                android:textColor="@color/daynight_textColor"
+                android:backgroundTint="@color/daynight_textColor" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -202,11 +212,13 @@
                 android:id="@+id/dateOfBirth"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center"
+                android:layout_gravity="right"
                 android:hint="@string/birth_date"
-                android:textSize="16sp" />
+                android:textColor="@color/daynight_textColor"
+                android:textSize="16sp"
+                app:drawableRightCompat="@drawable/ic_date"
+                app:drawableTint="@color/daynight_textColor" />
         </com.google.android.material.textfield.TextInputLayout>
-
     </LinearLayout>
 
     <RadioGroup
@@ -224,14 +236,17 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="@string/male" />
-
+            android:text="@string/male"
+            android:textColor="@color/daynight_textColor"
+            android:buttonTint="@color/daynight_textColor" />
         <RadioButton
             android:id="@+id/rbFemale"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="@string/female" />
+            android:text="@string/female"
+            android:textColor="@color/daynight_textColor"
+            android:buttonTint="@color/daynight_textColor" />
     </RadioGroup>
 
     <LinearLayout
@@ -248,13 +263,16 @@
             android:id="@+id/language"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1" />
-
+            android:layout_weight="1"
+            android:popupBackground="@color/secondary_bg"
+            app:backgroundTint="@color/daynight_textColor" />
         <Spinner
             android:id="@+id/level"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1" />
+            android:layout_weight="1"
+            android:popupBackground="@color/secondary_bg"
+            app:backgroundTint="@color/daynight_textColor" />
     </LinearLayout>
 
     <LinearLayout
@@ -282,7 +300,6 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/lt3" />
-
         <Button
             android:id="@+id/btnCancel"
             android:layout_width="wrap_content"
@@ -294,8 +311,5 @@
             android:textAllCaps="false"
             android:textColor="@color/md_black_1000"
             android:textSize="12sp" />
-
     </LinearLayout>
-
-
 </androidx.constraintlayout.widget.ConstraintLayout>
