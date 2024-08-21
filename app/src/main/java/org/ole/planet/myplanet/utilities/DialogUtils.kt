@@ -102,7 +102,7 @@ object DialogUtils {
 
     @JvmStatic
     fun getAlertDialog(context: Context, title: String, v: View): AlertDialog {
-        return AlertDialog.Builder(context)
+        return AlertDialog.Builder(ContextThemeWrapper(context, R.style.AlertDialogTheme))
             .setTitle(title)
             .setIcon(R.drawable.ic_edit)
             .setView(v)
