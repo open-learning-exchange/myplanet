@@ -7,11 +7,9 @@
     android:background="@color/secondary_bg"
     tools:context=".ui.myhealth.AddExaminationActivity">
 
-
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent">
-
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -26,7 +24,6 @@
                 android:text="@string/vitals"
                 android:textColor="@color/colorPrimaryWhite"
                 android:textStyle="bold" />
-
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -46,9 +43,7 @@
                         android:hint="@string/body_temperature"
                         android:inputType="numberDecimal"
                         android:textColor="@color/daynight_textColor" />
-
                 </com.google.android.material.textfield.TextInputLayout>
-
 
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="0dp"
@@ -64,9 +59,7 @@
                         android:hint="@string/pulse_rate"
                         android:inputType="number"
                         android:textColor="@color/daynight_textColor" />
-
                 </com.google.android.material.textfield.TextInputLayout>
-
 
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="0dp"
@@ -81,12 +74,8 @@
                         android:layout_height="wrap_content"
                         android:hint="@string/blood_pressure"
                         android:textColor="@color/daynight_textColor" />
-
                 </com.google.android.material.textfield.TextInputLayout>
-
-
             </LinearLayout>
-
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -107,9 +96,7 @@
                         android:hint="@string/height"
                         android:inputType="numberDecimal"
                         android:textColor="@color/daynight_textColor" />
-
                 </com.google.android.material.textfield.TextInputLayout>
-
 
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="0dp"
@@ -125,9 +112,7 @@
                         android:hint="@string/weight"
                         android:inputType="numberDecimal"
                         android:textColor="@color/daynight_textColor" />
-
                 </com.google.android.material.textfield.TextInputLayout>
-
 
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="0dp"
@@ -142,7 +127,6 @@
                         android:layout_height="wrap_content"
                         android:hint="@string/vision"
                         android:textColor="@color/daynight_textColor" />
-
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
@@ -158,10 +142,7 @@
                         android:layout_height="wrap_content"
                         android:hint="@string/hearing"
                         android:textColor="@color/daynight_textColor" />
-
                 </com.google.android.material.textfield.TextInputLayout>
-
-
             </LinearLayout>
 
             <TextView
@@ -172,7 +153,6 @@
                 android:text="@string/condition_and_treatment"
                 android:textColor="@color/colorPrimaryWhite"
                 android:textStyle="bold" />
-
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -185,9 +165,7 @@
                     android:layout_height="wrap_content"
                     android:hint="@string/observation"
                     android:textColor="@color/daynight_textColor" />
-
             </com.google.android.material.textfield.TextInputLayout>
-
 
             <TextView
                 android:layout_width="match_parent"
@@ -196,7 +174,6 @@
                 android:text="@string/diagnosis"
                 android:textColor="@color/colorPrimaryWhite"
                 android:textSize="@dimen/text_size_small" />
-
             <com.google.android.flexbox.FlexboxLayout
                 android:id="@+id/container_checkbox"
                 android:layout_width="match_parent"
@@ -207,7 +184,6 @@
                 android:backgroundTint="@color/secondary_bg"
                 android:padding="@dimen/padding_normal"
                 app:flexWrap="wrap" />
-
             <com.google.android.flexbox.FlexboxLayout
                 android:id="@+id/container_other_diagnosis"
                 android:layout_width="match_parent"
@@ -216,7 +192,6 @@
                 android:layout_marginRight="@dimen/padding_normal"
                 android:padding="@dimen/padding_normal"
                 app:flexWrap="wrap" />
-
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
@@ -228,7 +203,6 @@
                     android:padding="@dimen/padding_small"
                     android:textColorHint="@color/hint_color">
 
-
                     <EditText
                         android:id="@+id/et_other_diag"
                         android:layout_width="match_parent"
@@ -236,7 +210,6 @@
                         android:hint="@string/other_diagnosis"
                         android:imeOptions="actionSend"
                         android:textColor="@color/daynight_textColor" />
-
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <ImageButton
@@ -258,7 +231,6 @@
                     android:layout_height="wrap_content"
                     android:hint="@string/diagnosis_note"
                     android:textColor="@color/daynight_textColor" />
-
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
@@ -273,7 +245,6 @@
                     android:layout_height="wrap_content"
                     android:hint="@string/treatments"
                     android:textColor="@color/daynight_textColor" />
-
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
@@ -288,7 +259,6 @@
                     android:layout_height="wrap_content"
                     android:hint="@string/medications"
                     android:textColor="@color/daynight_textColor" />
-
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
@@ -303,7 +273,6 @@
                     android:layout_height="wrap_content"
                     android:hint="@string/immunization"
                     android:textColor="@color/daynight_textColor" />
-
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
@@ -318,7 +287,6 @@
                     android:layout_height="wrap_content"
                     android:hint="@string/allergies"
                     android:textColor="@color/daynight_textColor" />
-
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
@@ -333,7 +301,6 @@
                     android:layout_height="wrap_content"
                     android:hint="@string/xray"
                     android:textColor="@color/daynight_textColor" />
-
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
@@ -348,7 +315,6 @@
                     android:layout_height="wrap_content"
                     android:hint="@string/labtest"
                     android:textColor="@color/daynight_textColor" />
-
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
@@ -363,9 +329,7 @@
                     android:layout_height="wrap_content"
                     android:hint="@string/referrals"
                     android:textColor="@color/daynight_textColor" />
-
             </com.google.android.material.textfield.TextInputLayout>
-
 
             <Button
                 android:id="@+id/btn_save"
@@ -375,7 +339,5 @@
                 android:text="@string/button_submit"
                 android:theme="@style/PrimaryButton" />
         </LinearLayout>
-
     </androidx.core.widget.NestedScrollView>
-
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
