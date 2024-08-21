@@ -32,9 +32,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="5"
+                android:background="@color/light_dark"
                 android:gravity="center"
-                android:orientation="horizontal"
-                android:background="@color/light_dark">
+                android:orientation="horizontal">
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="0dp"
@@ -64,6 +64,7 @@
                             android:background="@drawable/file_upload_animation_login"
                             android:contentDescription="@string/sync"
                             android:scaleType="fitCenter" />
+
                         <TextView
                             android:id="@+id/lblLastSyncDate"
                             android:layout_width="match_parent"
@@ -73,6 +74,7 @@
                             android:text="@string/dash_4"
                             android:textAlignment="center"
                             android:textColor="@color/daynight_textColor" />
+
                         <ImageButton
                             android:id="@+id/imgBtnSetting"
                             android:layout_width="wrap_content"
@@ -83,7 +85,7 @@
                             android:paddingTop="6dp"
                             android:paddingRight="10dp"
                             app:srcCompat="@drawable/ic_settings_black_24dp"
-                            app:tint="@color/daynight_textColor"/>
+                            app:tint="@color/daynight_textColor" />
                     </RelativeLayout>
 
                     <androidx.constraintlayout.widget.ConstraintLayout
@@ -104,14 +106,15 @@
                             app:layout_constraintEnd_toEndOf="parent"
                             app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintTop_toTopOf="parent" />
+
                         <com.google.android.material.textfield.TextInputLayout
                             android:id="@+id/ltInputName"
                             android:layout_width="200dp"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="10dp"
                             android:hint="@string/hint_name"
-                            android:textColorHint="@color/daynight_textColor"
                             android:labelFor="@+id/inputName"
+                            android:textColorHint="@color/daynight_textColor"
                             app:boxBackgroundColor="@color/md_white_1000"
                             app:boxStrokeColor="@color/md_white_1000"
                             app:boxStrokeWidth="0dp"
@@ -127,12 +130,12 @@
                                 android:layout_centerHorizontal="true"
                                 android:layout_centerVertical="true"
                                 android:autofillHints=""
+                                android:backgroundTint="@color/daynight_textColor"
                                 android:drawablePadding="12dp"
                                 android:inputType="text"
                                 android:paddingStart="10dp"
                                 android:paddingEnd="8dp"
-                                android:textColor="@color/daynight_textColor"
-                                android:backgroundTint="@color/daynight_textColor" />
+                                android:textColor="@color/daynight_textColor" />
                         </com.google.android.material.textfield.TextInputLayout>
 
                         <com.google.android.material.textfield.TextInputLayout
@@ -141,8 +144,8 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="10dp"
                             android:hint="@string/password"
-                            android:textColorHint="@color/daynight_textColor"
                             android:labelFor="@+id/input_password"
+                            android:textColorHint="@color/daynight_textColor"
                             app:boxBackgroundColor="@color/md_white_1000"
                             app:boxStrokeColor="@color/md_white_1000"
                             app:boxStrokeWidth="0dp"
@@ -160,12 +163,12 @@
                                 android:layout_centerHorizontal="true"
                                 android:layout_centerVertical="true"
                                 android:autofillHints=""
+                                android:backgroundTint="@color/daynight_textColor"
                                 android:drawablePadding="12dp"
                                 android:inputType="textPassword"
                                 android:paddingStart="10dp"
                                 android:paddingEnd="8dp"
-                                android:textColor="@color/daynight_textColor"
-                                android:backgroundTint="@color/daynight_textColor" />
+                                android:textColor="@color/daynight_textColor" />
                         </com.google.android.material.textfield.TextInputLayout>
 
                         <Button
@@ -181,6 +184,7 @@
                             app:layout_constraintEnd_toEndOf="parent"
                             app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintTop_toBottomOf="@+id/edtPassword" />
+
                         <LinearLayout
                             android:id="@+id/linearLayout3"
                             android:layout_width="wrap_content"
@@ -200,9 +204,10 @@
                                 android:layout_marginTop="@dimen/padding_normal"
                                 android:contentDescription="@string/btn_guest_login"
                                 android:text="@string/btn_guest_login"
+                                android:textColor="@color/daynight_textColor"
                                 android:textSize="14sp"
-                                android:theme="@style/PrimaryFlatButton"
-                                android:textColor="@color/daynight_textColor" />
+                                android:theme="@style/PrimaryFlatButton" />
+
                             <Button
                                 android:id="@+id/become_member"
                                 android:layout_width="wrap_content"
@@ -211,8 +216,9 @@
                                 android:layout_marginTop="@dimen/padding_normal"
                                 android:contentDescription="@string/become_a_member"
                                 android:text="@string/become_a_member"
-                                android:theme="@style/PrimaryFlatButton"
-                                android:textColor="@color/daynight_textColor" />
+                                android:textColor="@color/daynight_textColor"
+                                android:theme="@style/PrimaryFlatButton" />
+
                             <Button
                                 android:id="@+id/btn_feedback"
                                 android:layout_width="wrap_content"
@@ -221,8 +227,9 @@
                                 android:layout_marginTop="@dimen/padding_normal"
                                 android:contentDescription="@string/feedback"
                                 android:text="@string/feedback"
-                                android:theme="@style/PrimaryFlatButton"
-                                android:textColor="@color/daynight_textColor" />
+                                android:textColor="@color/daynight_textColor"
+                                android:theme="@style/PrimaryFlatButton" />
+
                             <Button
                                 android:id="@+id/open_community"
                                 android:layout_width="wrap_content"
@@ -231,9 +238,9 @@
                                 android:layout_marginTop="@dimen/padding_normal"
                                 android:contentDescription="@string/open_community"
                                 android:text="@string/open_community"
+                                android:textColor="@color/daynight_textColor"
                                 android:textSize="14sp"
-                                android:theme="@style/PrimaryFlatButton"
-                                android:textColor="@color/daynight_textColor" />
+                                android:theme="@style/PrimaryFlatButton" />
                         </LinearLayout>
                     </androidx.constraintlayout.widget.ConstraintLayout>
                 </androidx.constraintlayout.widget.ConstraintLayout>
@@ -264,6 +271,7 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent"
                     app:srcCompat="@drawable/ole_logo" />
+
                 <TextView
                     android:id="@+id/textView"
                     android:layout_width="wrap_content"
@@ -278,6 +286,7 @@
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/logoImageView" />
+
                 <TextView
                     android:id="@+id/lblVersion"
                     android:layout_width="wrap_content"
@@ -291,6 +300,7 @@
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/textView" />
+
                 <Button
                     android:id="@+id/btn_lang"
                     android:layout_width="wrap_content"
@@ -305,6 +315,7 @@
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/lblVersion" />
+
                 <TextView
                     android:id="@+id/customDeviceName"
                     android:layout_width="wrap_content"
@@ -314,6 +325,7 @@
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/btn_lang" />
+
                 <LinearLayout
                     android:id="@+id/ltAvailablaSpace"
                     android:layout_width="wrap_content"
@@ -330,6 +342,7 @@
                         android:paddingHorizontal="@dimen/padding_small"
                         app:srcCompat="@drawable/baseline_storage_24"
                         app:tint="@color/daynight_textColor" />
+
                     <TextView
                         android:id="@+id/tv_available_space"
                         android:layout_width="wrap_content"
@@ -359,8 +372,8 @@
                     android:layout_marginEnd="3dp"
                     android:layout_marginBottom="5dp"
                     app:layout_constraintTop_toBottomOf="@+id/team"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent" />
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent" />
             </androidx.constraintlayout.widget.ConstraintLayout>
         </LinearLayout>
     </LinearLayout>
