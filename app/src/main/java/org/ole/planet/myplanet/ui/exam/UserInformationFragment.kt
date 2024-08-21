@@ -50,11 +50,11 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         )
         val adapterLevel = ArrayAdapter.createFromResource(
             requireContext(),
-            R.array.language,
+            R.array.level,
             R.layout.spinner_item
         )
-        adapterLang.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        adapterLevel.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        adapterLang.setDropDownViewResource(R.layout.spinner_item)
+        adapterLevel.setDropDownViewResource(R.layout.spinner_item)
         fragmentUserInformationBinding.spnLang.adapter = adapterLang
         fragmentUserInformationBinding.spnLevel.adapter = adapterLevel
         fragmentUserInformationBinding.spnLang.post {
@@ -62,7 +62,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             selectedView?.setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
         }
         fragmentUserInformationBinding.spnLevel.post {
-            val selectedView = fragmentUserInformationBinding.spnLang.selectedView as? TextView
+            val selectedView = fragmentUserInformationBinding.spnLevel.selectedView as? TextView
             selectedView?.setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
         }
         fragmentUserInformationBinding.etEmail.setText(getString(R.string.message_placeholder, userModel?.email))
