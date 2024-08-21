@@ -10,6 +10,7 @@ import android.view.View
 import androidx.appcompat.app.AlertDialog
 import com.google.android.material.snackbar.Snackbar
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.DialogProgressBinding
 import org.ole.planet.myplanet.datamanager.MyDownloadService
@@ -184,7 +185,14 @@ object DialogUtils {
             if (dialog == null) {
                 dialog = dialogBuilder.create()
             }
-            dialog?.show()
+            if (context is Activity) {
+                val activity = context as Activity
+                if (!activity.isFinishing && !activity.isDestroyed) {
+                    activity.runOnUiThread {
+                        dialog?.show()
+                    }
+                }
+            }
         }
 
         fun dismiss() {
