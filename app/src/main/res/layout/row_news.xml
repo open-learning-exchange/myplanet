@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:backgroundTint="@color/card_bg"
@@ -69,7 +68,7 @@
                 android:id="@+id/sharedChat"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:background="@color/colorPrimary"
+                android:background="@color/mainColor"
                 android:padding="4dp"
                 android:text="@string/shared_chat"
                 android:textColor="@color/md_white_1000" />
@@ -193,8 +192,8 @@
                     android:layout_marginStart="8dp"
                     android:background="?attr/selectableItemBackground"
                     android:visibility="visible"
-                    app:tint="@color/daynight_textColor"
-                    app:srcCompat="@drawable/ic_edit" />
+                    app:srcCompat="@drawable/ic_edit"
+                    app:tint="@color/daynight_textColor" />
 
                 <ImageView
                     android:id="@+id/img_delete"
@@ -202,8 +201,8 @@
                     android:layout_height="24dp"
                     android:layout_marginStart="8dp"
                     android:background="?attr/selectableItemBackground"
-                    app:tint="@color/daynight_textColor"
-                    app:srcCompat="@drawable/ic_delete" />
+                    app:srcCompat="@drawable/ic_delete"
+                    app:tint="@color/daynight_textColor" />
             </LinearLayout>
         </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
