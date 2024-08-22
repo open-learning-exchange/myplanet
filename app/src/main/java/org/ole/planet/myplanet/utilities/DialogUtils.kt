@@ -5,11 +5,13 @@ import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.provider.Settings
+import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import android.view.View
 import androidx.appcompat.app.AlertDialog
 import com.google.android.material.snackbar.Snackbar
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.DialogProgressBinding
 import org.ole.planet.myplanet.datamanager.MyDownloadService
@@ -82,7 +84,7 @@ object DialogUtils {
 
     @JvmStatic
     fun getAlertDialog(context: Context, message: String, pos: String, listener: DialogInterface.OnClickListener?): AlertDialog {
-        return AlertDialog.Builder(context)
+        return AlertDialog.Builder(ContextThemeWrapper(context, R.style.AlertDialogTheme))
             .setMessage(message)
             .setIcon(R.drawable.courses)
             .setPositiveButton(pos, listener)
@@ -101,7 +103,7 @@ object DialogUtils {
 
     @JvmStatic
     fun getAlertDialog(context: Context, title: String, v: View): AlertDialog {
-        return AlertDialog.Builder(context)
+        return AlertDialog.Builder(ContextThemeWrapper(context, R.style.AlertDialogTheme))
             .setTitle(title)
             .setIcon(R.drawable.ic_edit)
             .setView(v)
@@ -184,7 +186,14 @@ object DialogUtils {
             if (dialog == null) {
                 dialog = dialogBuilder.create()
             }
-            dialog?.show()
+            if (context is Activity) {
+                val activity = context as Activity
+                if (!activity.isFinishing && !activity.isDestroyed) {
+                    activity.runOnUiThread {
+                        dialog?.show()
+                    }
+                }
+            }
         }
 
         fun dismiss() {
