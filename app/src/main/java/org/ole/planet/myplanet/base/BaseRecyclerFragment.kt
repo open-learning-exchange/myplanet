@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -94,8 +95,12 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         val adapter = getAdapter()
         recyclerView.adapter = adapter
         if (isMyCourseLib && adapter.itemCount != 0 && courseLib == "courses") {
-            resources?.let { showDownloadDialog(it) }
+            resources?.let {
+                showDownloadDialog(it)
+            }
         } else if (isMyCourseLib && courseLib == null && !isSurvey) {
+            Log.d("okuro", "onCreateView2: $resources")
+            Log.d("okuro", "onCreateView2: ${getLibraryList(mRealm)}")
             showDownloadDialog(getLibraryList(mRealm))
         }
         return v

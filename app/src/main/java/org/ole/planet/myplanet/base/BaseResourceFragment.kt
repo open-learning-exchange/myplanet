@@ -10,6 +10,7 @@ import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -18,11 +19,13 @@ import android.widget.ListView
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentActivity
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.RealmResults
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -76,6 +79,7 @@ abstract class BaseResourceFragment : Fragment() {
                 }.show()
         }
     }
+
     private val broadcastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action == DashboardActivity.MESSAGE_PROGRESS) {
@@ -95,6 +99,8 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     protected fun showDownloadDialog(dbMyLibrary: List<RealmMyLibrary?>) {
+//        addAllToLibrary(getAllLibraryList(mRealm))
+//        backgroundDownload(downloadAllFiles(getAllLibraryList(mRealm)))
         if (isAdded) {
             Service(MainApplication.context).isPlanetAvailable(object : PlanetAvailableListener {
                 override fun isAvailable() {
@@ -105,14 +111,16 @@ abstract class BaseResourceFragment : Fragment() {
                         val inflater = activity?.layoutInflater
                         convertView = inflater?.inflate(R.layout.my_library_alertdialog, null)
                         val alertDialogBuilder = AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
-                        alertDialogBuilder.setView(convertView)
-                            .setTitle(R.string.download_suggestion)
+                        alertDialogBuilder.setView(convertView).setTitle(R.string.download_suggestion)
                         alertDialogBuilder.setPositiveButton(R.string.download_selected) { _: DialogInterface?, _: Int ->
                             lv?.selectedItemsList?.let {
                                 addToLibrary(dbMyLibrary, it)
                                 downloadFiles(dbMyLibrary, it)
                             }?.let { startDownload(it) }
                         }.setNeutralButton(R.string.download_all) { _: DialogInterface?, _: Int ->
+                            Log.d("downloadAll", "downloadAll: ${dbMyLibrary.size}")
+                            Log.d("downloadAll", "downloadAll2: $dbMyLibrary")
+
                             lv?.selectedItemsList?.let {
                                 addAllToLibrary(dbMyLibrary)
                             }
@@ -150,12 +158,12 @@ abstract class BaseResourceFragment : Fragment() {
         val arrayAdapter: ArrayAdapter<*> = object : ArrayAdapter<Any?>(requireActivity(), android.R.layout.simple_list_item_1, list) {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
                 var convertedView = convertView
-                if (convertedView == null) convertedView = LayoutInflater.from(activity)
-                    .inflate(android.R.layout.simple_list_item_1, null)
+                if (convertedView == null) {
+                    convertedView = LayoutInflater.from(activity).inflate(android.R.layout.simple_list_item_1, null)
+                }
                 if (exams.containsKey((getItem(position) as RealmSubmission?)?.parentId)) {
                     (convertedView as TextView?)?.text = exams[list[position].parentId]?.name
-                }
-                else {
+                } else {
                     (convertedView as TextView?)?.setText(R.string.n_a)
                 }
                 return convertedView!!
@@ -164,9 +172,22 @@ abstract class BaseResourceFragment : Fragment() {
         AlertDialog.Builder(requireActivity()).setTitle("Pending Surveys")
             .setAdapter(arrayAdapter) { _: DialogInterface?, i: Int ->
                 AdapterMySubmission.openSurvey(homeItemClickListener, list[i].id, true)
-            }
-            .setPositiveButton(R.string.dismiss, null).show()
+            }.setPositiveButton(R.string.dismiss, null).show()
     }
+
+//    fun backgroundDownload(urls: ArrayList<String>) {
+//        if (isAdded) {
+//            Service(requireActivity()).isPlanetAvailable(object : PlanetAvailableListener {
+//                override fun isAvailable() {
+//                    if (urls.isNotEmpty()) {
+//                        Utilities.openDownloadService(activity, urls, false)
+//                    }
+//                }
+//
+//                override fun notAvailable() {}
+//            })
+//        }
+//    }
 
     fun startDownload(urls: ArrayList<String>) {
         if (isAdded) {
@@ -199,6 +220,7 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     open fun onDownloadComplete() {}
+
     fun createListView(dbMyLibrary: List<RealmMyLibrary?>, alertDialog: AlertDialog) {
         lv = convertView?.findViewById(R.id.alertDialog_listView)
         val names = ArrayList<String?>()
@@ -281,12 +303,7 @@ abstract class BaseResourceFragment : Fragment() {
             if (!libraryItems[selectedItems[i]]?.userId?.contains(profileDbHandler.userModel?.id)!!) {
                 if (!mRealm.isInTransaction) mRealm.beginTransaction()
                 libraryItems[selectedItems[i]]?.setUserId(profileDbHandler.userModel?.id)
-                RealmRemovedLog.onAdd(
-                    mRealm,
-                    "resources",
-                    profileDbHandler.userModel?.id,
-                    libraryItems[selectedItems[i]]?.resourceId
-                )
+                RealmRemovedLog.onAdd(mRealm, "resources", profileDbHandler.userModel?.id, libraryItems[selectedItems[i]]?.resourceId)
             }
         }
         Utilities.toast(activity, getString(R.string.added_to_my_library))
@@ -295,14 +312,11 @@ abstract class BaseResourceFragment : Fragment() {
     fun addAllToLibrary(libraryItems: List<RealmMyLibrary?>) {
         for (libraryItem in libraryItems) {
             if (!libraryItem?.userId?.contains(profileDbHandler.userModel?.id)!!) {
-                if (!mRealm.isInTransaction) mRealm.beginTransaction()
+                if (!mRealm.isInTransaction) {
+                    mRealm.beginTransaction()
+                }
                 libraryItem.setUserId(profileDbHandler.userModel?.id)
-                RealmRemovedLog.onAdd(
-                    mRealm,
-                    "resources",
-                    profileDbHandler.userModel?.id,
-                    libraryItem.resourceId
-                )
+                RealmRemovedLog.onAdd(mRealm, "resources", profileDbHandler.userModel?.id, libraryItem.resourceId)
             }
         }
         Utilities.toast(activity, getString(R.string.added_to_my_library))
@@ -311,6 +325,27 @@ abstract class BaseResourceFragment : Fragment() {
     companion object {
         var settings: SharedPreferences? = null
         var auth = ""
+
+        fun getAllLibraryList(mRealm: Realm): List<RealmMyLibrary> {
+            val l = mRealm.where(RealmMyLibrary::class.java).equalTo("resourceOffline", false).findAll()
+            val libList: MutableList<RealmMyLibrary> = ArrayList()
+            val libraries = getLibraries(l)
+            libList.addAll(libraries)
+            Log.d("okuro", "getAllLibraryList: ${libList.size}")
+            return libList
+        }
+
+        fun backgroundDownload(urls: ArrayList<String>) {
+            Service(context).isPlanetAvailable(object : PlanetAvailableListener {
+                override fun isAvailable() {
+                    if (urls.isNotEmpty()) {
+                        Utilities.openDownloadService(context, urls, false)
+                    }
+                }
+
+                override fun notAvailable() {}
+            })
+        }
 
         fun getLibraryList(mRealm: Realm, userId: String?): List<RealmMyLibrary> {
             val l = mRealm.where(RealmMyLibrary::class.java).equalTo("isPrivate", false).findAll()

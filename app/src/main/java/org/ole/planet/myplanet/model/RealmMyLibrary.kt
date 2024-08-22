@@ -210,17 +210,16 @@ open class RealmMyLibrary : RealmObject() {
         this.userId = userId
     }
 
-    val subjectsAsString: String
-        get() {
-            if (subject?.isEmpty() == true) {
-                return ""
-            }
-            var str = ""
-            for (s in subject ?: emptyList()) {
-                str += "$s, "
-            }
-            return str.substring(0, str.length - 1)
+    val subjectsAsString: String get() {
+        if (subject?.isEmpty() == true) {
+            return ""
         }
+        var str = ""
+        for (s in subject ?: emptyList()) {
+            str += "$s, "
+        }
+        return str.substring(0, str.length - 1)
+    }
 
     override fun toString(): String {
         return title ?: ""

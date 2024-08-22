@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.chat
 
 import android.os.Bundle
 import android.text.*
+import android.util.Log
 import android.view.*
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
@@ -11,6 +12,7 @@ import com.google.gson.*
 import io.realm.Realm
 import okhttp3.*
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
 import org.ole.planet.myplanet.databinding.FragmentChatDetailBinding
 import org.ole.planet.myplanet.datamanager.*
 import org.ole.planet.myplanet.model.*
@@ -155,6 +157,10 @@ class ChatDetailFragment : Fragment() {
         view.post {
             clearChatDetail()
         }
+
+        Log.d("ChatDetailFragment", "onViewCreated: ${getAllLibraryList(mRealm)}")
+
+
     }
 
     private fun checkAiProviders() {
