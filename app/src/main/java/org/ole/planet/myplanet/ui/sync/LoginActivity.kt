@@ -221,13 +221,14 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     }
 
     fun updateTeamDropdown() {
-        if (mRealm == null || mRealm.isClosed) {
+        if (mRealm.isClosed) {
             mRealm = Realm.getDefaultInstance()
         }
-        val teams: List<RealmMyTeam>? = mRealm?.where(RealmMyTeam::class.java)?.isEmpty("teamId")?.equalTo("status", "active")?.findAll()
+        val teams: List<RealmMyTeam>? = mRealm.where(RealmMyTeam::class.java)
+            ?.isEmpty("teamId")?.equalTo("status", "active")?.findAll()
 
-        if (teams != null && teams.isNotEmpty()) {
-            activityLoginBinding.team?.visibility = View.VISIBLE
+        if (!teams.isNullOrEmpty()) {
+            activityLoginBinding.team.visibility = View.VISIBLE
             teamAdapter = ArrayAdapter(this, R.layout.spinner_item_white, teamList)
             teamAdapter?.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             teamList.clear()
@@ -237,20 +238,20 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                     teamList.add(team.name)
                 }
             }
-            activityLoginBinding.team?.adapter = teamAdapter
+            activityLoginBinding.team.adapter = teamAdapter
             val lastSelection = prefData.getSelectedTeamId()
             if (!lastSelection.isNullOrEmpty()) {
                 for (i in teams.indices) {
                     val team = teams[i]
                     if (team._id != null && team._id == lastSelection && team.isValid) {
                         val lastSelectedPosition = i + 1
-                        activityLoginBinding.team?.setSelection(lastSelectedPosition)
+                        activityLoginBinding.team.setSelection(lastSelectedPosition)
                         break
                     }
                 }
             }
 
-            activityLoginBinding.team?.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            activityLoginBinding.team.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
                 override fun onItemSelected(parentView: AdapterView<*>?, selectedItemView: View?, position: Int, id: Long) {
                     if (position > 0) {
                         val selectedTeam = teams[position - 1]
@@ -265,7 +266,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                 override fun onNothingSelected(parentView: AdapterView<*>?) {}
             }
         } else {
-            activityLoginBinding.team?.visibility = View.GONE
+            activityLoginBinding.team.visibility = View.GONE
         }
     }
 
@@ -303,9 +304,19 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     }
 
     private fun declareHideKeyboardElements() {
-        findViewById<View>(R.id.constraintLayout).setOnTouchListener { view: View?, _: MotionEvent? ->
-            hideKeyboard(view)
-            false
+        val constraintLayout = findViewById<View>(R.id.constraintLayout)
+        constraintLayout.setOnTouchListener { view: View?, event: MotionEvent? ->
+            when (event?.action) {
+                MotionEvent.ACTION_DOWN -> {
+                }
+                MotionEvent.ACTION_UP -> {
+                    view?.let {
+                        hideKeyboard(it)
+                        it.performClick()
+                    }
+                }
+            }
+            true
         }
     }
 
@@ -585,7 +596,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             }
         } else if (source === "member") {
             var userProfile = profileDbHandler.userModel?.userImage
-            var userName: String? = profileDbHandler.userModel?.name
+            val userName: String? = profileDbHandler.userModel?.name
             if (userProfile == null) {
                 userProfile = ""
             }
