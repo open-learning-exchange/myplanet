@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.*
 import org.json.JSONException
 import org.json.JSONObject
+import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerParentFragment
 import org.ole.planet.myplanet.databinding.FragmentHomeBellBinding
@@ -129,27 +130,6 @@ class BellDashboardFragment : BaseDashboardFragment() {
             val dialog = alertDialog.create()
             dialog.show()
             dialog.window?.setBackgroundDrawableResource(R.color.card_bg)
-        }
-    }
-
-    private suspend fun isServerReachable(urlString: String): Boolean {
-        return try {
-            val url = URL(urlString)
-            val connection = withContext(Dispatchers.IO) {
-                url.openConnection()
-            } as HttpURLConnection
-            connection.requestMethod = "GET"
-            connection.connectTimeout = 5000
-            connection.readTimeout = 5000
-            withContext(Dispatchers.IO) {
-                connection.connect()
-            }
-            val responseCode = connection.responseCode
-            connection.disconnect()
-            responseCode in 200..299
-
-        } catch (e: Exception) {
-            false
         }
     }
 

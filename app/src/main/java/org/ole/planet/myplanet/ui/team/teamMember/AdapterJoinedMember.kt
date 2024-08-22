@@ -39,15 +39,15 @@ class AdapterJoinedMember(private val context: Context, private val list: List<R
             .placeholder(R.drawable.profile)
             .error(R.drawable.profile)
             .into(rowJoinedUserBinding.memberImage)
-        if (teamLeaderId == currentUser.id) {
+        if (teamLeaderId == member.id) {
             rowJoinedUserBinding.tvIsLeader.visibility = View.VISIBLE
             rowJoinedUserBinding.tvIsLeader.text = context.getString(R.string.team_leader)
         } else {
             rowJoinedUserBinding.tvIsLeader.visibility = View.GONE
-            val isLoggedInUserTeamLeader = teamLeaderId != null && teamLeaderId == currentUser.id
-            val overflowMenuOptions = arrayOf(context.getString(R.string.remove), context.getString(R.string.make_leader))
-            checkUserAndShowOverflowMenu(position, overflowMenuOptions, isLoggedInUserTeamLeader)
         }
+        val isLoggedInUserTeamLeader = teamLeaderId != null && teamLeaderId == currentUser.id
+        val overflowMenuOptions = arrayOf(context.getString(R.string.remove), context.getString(R.string.make_leader))
+        checkUserAndShowOverflowMenu(position, overflowMenuOptions, isLoggedInUserTeamLeader)
         holder.itemView.setOnClickListener {
             val activity = it.context as AppCompatActivity
             val fragment = MemberDetailFragment.newInstance(

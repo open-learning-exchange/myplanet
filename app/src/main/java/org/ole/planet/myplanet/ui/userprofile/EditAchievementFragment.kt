@@ -193,8 +193,11 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             showResourceListDialog(prevList)
         }
         val alertAddAttachmentView: View = alertAddAttachmentBinding.root
-        AlertDialog.Builder(requireActivity()).setTitle(R.string.add_achievement)
-            .setIcon(R.drawable.ic_edit).setView(alertAddAttachmentView).setCancelable(false)
+        AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
+            .setTitle(R.string.add_achievement)
+            .setIcon(R.drawable.ic_edit)
+            .setView(alertAddAttachmentView)
+            .setCancelable(false)
             .setPositiveButton("Submit") { _: DialogInterface?, _: Int ->
                 val desc = alertAddAttachmentBinding.etDesc.text.toString().trim { it <= ' ' }
                 val title = alertAddAttachmentBinding.etTitle.text.toString().trim { it <= ' ' }

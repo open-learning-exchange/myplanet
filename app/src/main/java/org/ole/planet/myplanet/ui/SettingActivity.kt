@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -13,17 +14,20 @@ import android.widget.ArrayAdapter
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.preference.ListPreference
 import androidx.preference.Preference
 import androidx.preference.Preference.OnPreferenceChangeListener
 import androidx.preference.Preference.OnPreferenceClickListener
 import androidx.preference.PreferenceFragmentCompat
+import androidx.preference.PreferenceManager
 import androidx.preference.SwitchPreference
 import io.realm.Realm
+import org.ole.planet.myplanet.MainApplication.Companion.mRealm
 import org.ole.planet.myplanet.MainApplication.Companion.setThemeMode
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
+import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -34,6 +38,7 @@ import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.clearSharedPref
 import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.restartApp
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
+import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryFormattedString
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.ThemeMode
@@ -75,12 +80,9 @@ class SettingActivity : AppCompatActivity() {
         lateinit var profileDbHandler: UserProfileDbHandler
         var user: RealmUserModel? = null
         private lateinit var dialog: DialogUtils.CustomProgressDialog
+        private lateinit var defaultPref: SharedPreferences
 
-        override fun onCreateView(
-            inflater: LayoutInflater,
-            container: ViewGroup?,
-            savedInstanceState: Bundle?
-        ): View {
+        override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
             val view = super.onCreateView(inflater, container, savedInstanceState)
             view.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.secondary_bg))
             return view
@@ -93,6 +95,8 @@ class SettingActivity : AppCompatActivity() {
             profileDbHandler = UserProfileDbHandler(requireActivity())
             user = profileDbHandler.userModel
             dialog = DialogUtils.getCustomProgressDialog(requireActivity())
+            defaultPref = PreferenceManager.getDefaultSharedPreferences(requireActivity())
+
             setBetaToggleOn()
             setAutoSyncToggleOn()
             setDownloadSyncFilesToggle()
@@ -116,6 +120,18 @@ class SettingActivity : AppCompatActivity() {
             if (spacePreference != null) {
                 spacePreference.summary = availableOverTotalMemoryFormattedString
             }
+
+            val autoDownload = findPreference<SwitchPreference>("beta_auto_download")
+            autoDownload?.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, _: Any? ->
+                if (autoDownload?.isChecked == true) {
+                    defaultPref.edit().putBoolean("beta_auto_download", true).apply()
+                    backgroundDownload(downloadAllFiles(getAllLibraryList(mRealm)))
+                } else {
+                    defaultPref.edit().putBoolean("beta_auto_download", false).apply()
+                }
+                true
+            }
+
             clearDataButtonInit()
         }
 

@@ -6,16 +6,15 @@
     android:layout_height="match_parent"
     tools:context=".ui.userprofile.EditAchievementFragment">
 
-
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:background="@color/secondary_bg">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical">
-
 
             <LinearLayout
                 android:id="@+id/ll_actions"
@@ -36,7 +35,6 @@
                     android:textColor="@color/md_white_1000"
                     android:textSize="24sp"
                     android:textStyle="bold" />
-
                 <Button
                     android:id="@+id/btn_edit"
                     style="@style/YellowButtons"
@@ -47,10 +45,7 @@
                     android:contentDescription="@string/edit_achievement"
                     android:padding="@dimen/padding_normal"
                     android:text="@string/edit_achievement" />
-
-
             </LinearLayout>
-
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -67,54 +62,51 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:padding="@dimen/padding_normal">
+                        android:padding="@dimen/padding_normal"
+                        android:textColorHint="@color/hint_color">
 
                         <EditText
                             android:id="@+id/et_fname"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-
-                            android:hint="@string/first_name" />
-
+                            android:hint="@string/first_name"
+                            android:textColor="@color/daynight_textColor" />
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:padding="@dimen/padding_normal">
+                        android:padding="@dimen/padding_normal"
+                        android:textColorHint="@color/hint_color">
 
                         <EditText
                             android:id="@+id/et_mname"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-
-                            android:hint="@string/middle_name" />
-
+                            android:hint="@string/middle_name"
+                            android:textColor="@color/daynight_textColor" />
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:padding="@dimen/padding_normal">
+                        android:padding="@dimen/padding_normal"
+                        android:textColorHint="@color/hint_color">
 
                         <EditText
                             android:id="@+id/et_lname"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:hint="@string/last_name" />
-
+                            android:hint="@string/last_name"
+                            android:textColor="@color/daynight_textColor" />
                     </com.google.android.material.textfield.TextInputLayout>
-
-
                 </LinearLayout>
-
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content">
-
 
                     <TextView
                         android:id="@+id/txt_dob"
@@ -128,29 +120,30 @@
                         android:padding="@dimen/padding_normal"
                         android:text="@string/birth_date"
                         android:textSize="@dimen/text_size_mid"
-                        app:drawableRightCompat="@drawable/ic_date" />
-
+                        android:textColor="@color/daynight_textColor"
+                        app:drawableRightCompat="@drawable/ic_date"
+                        app:drawableTint="@color/daynight_textColor" />
                     <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:padding="@dimen/padding_normal">
+                        android:padding="@dimen/padding_normal"
+                        android:textColorHint="@color/hint_color">
 
                         <EditText
                             android:id="@+id/et_birthplace"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:hint="@string/birth_place" />
-
+                            android:hint="@string/birth_place"
+                            android:textColor="@color/daynight_textColor" />
                     </com.google.android.material.textfield.TextInputLayout>
-
-
                 </LinearLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:padding="@dimen/padding_normal">
+                    android:padding="@dimen/padding_normal"
+                    android:textColorHint="@color/hint_color">
 
                     <EditText
                         android:id="@+id/et_purpose"
@@ -158,14 +151,15 @@
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
                         android:hint="My Purpose - What are your educational and professional ambitions?"
-                        android:textSize="20sp" />
-
+                        android:textSize="20sp"
+                        android:textColor="@color/daynight_textColor" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:padding="@dimen/padding_normal">
+                    android:padding="@dimen/padding_normal"
+                    android:textColorHint="@color/hint_color">
 
                     <EditText
                         android:id="@+id/et_goals"
@@ -173,14 +167,15 @@
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
                         android:hint="My Goals - What are your goals for next 10 years?"
-                        android:textSize="20sp" />
-
+                        android:textSize="20sp"
+                        android:textColor="@color/daynight_textColor" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:padding="@dimen/padding_normal">
+                    android:padding="@dimen/padding_normal"
+                    android:textColorHint="@color/hint_color">
 
                     <EditText
                         android:id="@+id/et_achievement"
@@ -188,23 +183,21 @@
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
                         android:hint="Summery of achievements - Briefly summarize your achievement and add related materials below"
-                        android:textSize="20sp" />
-
+                        android:textSize="20sp"
+                        android:textColor="@color/daynight_textColor" />
                 </com.google.android.material.textfield.TextInputLayout>
-
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:padding="@dimen/padding_small"
-                    android:text="Add any materials demonstrating your achievements below" />
-
+                    android:text="Add any materials demonstrating your achievements below"
+                    android:textColor="@color/daynight_textColor" />
                 <LinearLayout
                     android:id="@+id/ll_attachment"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical" />
-
                 <Button
                     android:id="@+id/btn_achievement"
                     android:layout_width="wrap_content"
@@ -213,20 +206,17 @@
                     android:contentDescription="@string/add_an_achievement"
                     android:text="@string/add_an_achievement"
                     android:theme="@style/PrimaryButton" />
-
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:padding="@dimen/padding_small"
-                    android:text="Add any references below" />
-
+                    android:text="Add any references below"
+                    android:textColor="@color/daynight_textColor" />
                 <LinearLayout
                     android:id="@+id/ll_other_info"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical" />
-
-
                 <Button
                     android:id="@+id/btn_other"
                     android:layout_width="wrap_content"
@@ -235,7 +225,6 @@
                     android:contentDescription="@string/add_a_reference"
                     android:text="@string/add_a_reference"
                     android:theme="@style/PrimaryButton" />
-
                 <CheckBox
                     android:id="@+id/cb_send_to_nation"
                     android:layout_width="match_parent"
@@ -243,8 +232,9 @@
                     android:layout_gravity="center"
                     android:padding="@dimen/padding_normal"
                     android:text="@string/send_to_nation"
-                    android:textSize="@dimen/text_size_large" />
-
+                    android:textSize="@dimen/text_size_large"
+                    android:textColor="@color/daynight_textColor"
+                    app:buttonTint="@color/daynight_textColor" />
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -257,7 +247,6 @@
                         android:contentDescription="@string/button_update"
                         android:text="@string/button_update"
                         android:theme="@style/PrimaryButton" />
-
                     <Button
                         android:id="@+id/btn_cancel"
                         android:layout_width="wrap_content"
@@ -265,15 +254,8 @@
                         android:contentDescription="@string/button_cancel"
                         android:text="@string/button_cancel"
                         android:theme="@style/AccentButton" />
-
                 </LinearLayout>
-
             </LinearLayout>
-
-
         </LinearLayout>
-
     </androidx.core.widget.NestedScrollView>
-
-
 </FrameLayout>

@@ -12,13 +12,22 @@ import android.os.StrictMode.VmPolicy
 import android.provider.Settings
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatDelegate
-import androidx.core.app.ActivityCompat.recreate
 import androidx.preference.PreferenceManager
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
+import io.realm.Realm
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
+import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
+import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.settings
 import org.ole.planet.myplanet.callback.TeamPageListener
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmApkLog
@@ -26,15 +35,18 @@ import org.ole.planet.myplanet.service.AutoSyncWorker
 import org.ole.planet.myplanet.service.StayOnlineWorker
 import org.ole.planet.myplanet.service.TaskNotificationWorker
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.NetworkUtils.initialize
+import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utilities.NetworkUtils.startListenNetworkState
 import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
 import org.ole.planet.myplanet.utilities.ThemeMode
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils.getVersionName
+import java.net.HttpURLConnection
+import java.net.URL
 import java.util.Date
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -45,6 +57,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         private const val STAY_ONLINE_WORK_TAG = "stayOnlineWork"
         private const val TASK_NOTIFICATION_WORK_TAG = "taskNotificationWork"
         lateinit var context: Context
+        lateinit var mRealm: Realm
+        lateinit var service: DatabaseService
         var preferences: SharedPreferences? = null
         @JvmField
         var syncFailedCount = 0
@@ -66,9 +80,11 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                 }
                 return "0"
             }
+        val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+        lateinit var defaultPref: SharedPreferences
 
         fun createLog(type: String) {
-            val service = DatabaseService(context)
+            service = DatabaseService(context)
             val mRealm = service.realmInstance
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
@@ -102,6 +118,27 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             }
             applyThemeMode(themeMode)
         }
+
+        suspend fun isServerReachable(urlString: String): Boolean {
+            return try {
+                val url = URL(urlString)
+                val connection = withContext(Dispatchers.IO) {
+                    url.openConnection()
+                } as HttpURLConnection
+                connection.requestMethod = "GET"
+                connection.connectTimeout = 5000
+                connection.readTimeout = 5000
+                withContext(Dispatchers.IO) {
+                    connection.connect()
+                }
+                val responseCode = connection.responseCode
+                connection.disconnect()
+                responseCode in 200..299
+
+            } catch (e: Exception) {
+                false
+            }
+        }
     }
 
     private var activityReferences = 0
@@ -115,6 +152,9 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
         context = this
         preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        service = DatabaseService(context)
+        mRealm = service.realmInstance
+        defaultPref = PreferenceManager.getDefaultSharedPreferences(this)
 
         val builder = VmPolicy.Builder()
         StrictMode.setVmPolicy(builder.build())
@@ -140,6 +180,24 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         val themeMode = sharedPreferences.getString("theme_mode", ThemeMode.FOLLOW_SYSTEM)
 
         applyThemeMode(themeMode)
+
+        isNetworkConnectedFlow.onEach { isConnected ->
+            if (isConnected) {
+                val serverUrl = settings?.getString("serverURL", "")
+                if (!serverUrl.isNullOrEmpty()) {
+                    applicationScope.launch {
+                        val canReachServer = withContext(Dispatchers.IO) {
+                            isServerReachable(serverUrl)
+                        }
+                        if (canReachServer) {
+                            if (defaultPref.getBoolean("beta_auto_download", false)) {
+                                backgroundDownload(downloadAllFiles(getAllLibraryList(mRealm)))
+                            }
+                        }
+                    }
+                }
+            }
+        }.launchIn(applicationScope)
     }
 
     private fun scheduleAutoSyncWork(syncInterval: Int?) {
@@ -222,8 +280,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
     private fun handleUncaughtException(e: Throwable) {
         e.printStackTrace()
-        val service = DatabaseService(this)
-        val mRealm = service.realmInstance
         if (!mRealm.isInTransaction) {
             mRealm.beginTransaction()
         }
@@ -248,5 +304,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     override fun onTerminate() {
         super.onTerminate()
         onAppClosed()
+        applicationScope.cancel()
     }
 }
