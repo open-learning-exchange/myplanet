@@ -349,7 +349,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 createLog("synced successfully")
                 showSnack(findViewById(android.R.id.content), getString(R.string.sync_completed))
                 downloadAdditionalResources()
-                backgroundDownload(downloadAllFiles(getAllLibraryList(MainApplication.mRealm)))
+                if (defaultPref.getBoolean("beta_auto_download", false)) {
+                    backgroundDownload(downloadAllFiles(getAllLibraryList(mRealm)))
+                }
                 cancelAll(this)
                 if (this is LoginActivity) {
                     this.updateTeamDropdown()

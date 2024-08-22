@@ -10,8 +10,10 @@ import android.os.Bundle
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
 import android.provider.Settings
+import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.preference.PreferenceManager
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
@@ -34,6 +36,7 @@ import org.ole.planet.myplanet.service.AutoSyncWorker
 import org.ole.planet.myplanet.service.StayOnlineWorker
 import org.ole.planet.myplanet.service.TaskNotificationWorker
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.utilities.Constants.KEY_AUTO_DOWNLOAD
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utilities.LocaleHelper
@@ -79,6 +82,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             return "0"
         }
         val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+        lateinit var defaultPref: SharedPreferences
 
         fun createLog(type: String) {
             service = DatabaseService(context)
@@ -151,6 +155,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         service = DatabaseService(context)
         mRealm = service.realmInstance
+        defaultPref = PreferenceManager.getDefaultSharedPreferences(this)
 
         val builder = VmPolicy.Builder()
         StrictMode.setVmPolicy(builder.build())
@@ -176,6 +181,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         val themeMode = sharedPreferences.getString("theme_mode", ThemeMode.FOLLOW_SYSTEM)
 
         applyThemeMode(themeMode)
+        Log.d("MainApplication", "onCreate: themeMode: ${settings?.getBoolean("beta_auto_download", false)}")
 
         isNetworkConnectedFlow.onEach { isConnected ->
             if (isConnected) {
@@ -186,7 +192,9 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                             isServerReachable(serverUrl)
                         }
                         if (canReachServer) {
-                            backgroundDownload(downloadAllFiles(getAllLibraryList(mRealm)))
+                            if (defaultPref.getBoolean("beta_auto_download", false)) {
+                                backgroundDownload(downloadAllFiles(getAllLibraryList(mRealm)))
+                            }
                         }
                     }
                 }
