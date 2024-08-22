@@ -322,7 +322,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             if (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_NO ||
                 (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM && currentNightMode == Configuration.UI_MODE_NIGHT_NO)) {
                 headerBackground.setColorFilter(
-                    ContextCompat.getColor(this, R.color.md_white_1000), PorterDuff.Mode.SRC_IN
+                    ContextCompat.getColor(this, R.color.md_white_1000),
+                    PorterDuff.Mode.SRC_IN
                 )
             }
             return header
