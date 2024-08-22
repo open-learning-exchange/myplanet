@@ -23,7 +23,6 @@
                 android:padding="@dimen/padding_normal"
                 android:textColor="@color/daynight_textColor"
                 android:textSize="@dimen/text_size_mid" />
-
             <TextView
                 android:id="@+id/tv_email"
                 android:layout_width="match_parent"
@@ -31,7 +30,6 @@
                 android:padding="@dimen/padding_normal"
                 android:textColor="@color/daynight_textColor"
                 android:textSize="@dimen/text_size_mid" />
-
             <TextView
                 android:id="@+id/tv_phone"
                 android:layout_width="match_parent"
@@ -39,8 +37,6 @@
                 android:padding="@dimen/padding_normal"
                 android:textColor="@color/daynight_textColor"
                 android:textSize="@dimen/text_size_mid" />
-
-
             <TextView
                 android:id="@+id/tv_ambulance"
                 android:layout_width="match_parent"
@@ -49,7 +45,6 @@
                 android:text="@string/for_ambulance"
                 android:textColor="@color/daynight_textColor"
                 android:textSize="@dimen/text_size_mid" />
-
             <TextView
                 android:id="@+id/tv_police"
                 android:layout_width="match_parent"
@@ -58,7 +53,6 @@
                 android:text="@string/for_police"
                 android:textColor="@color/daynight_textColor"
                 android:textSize="@dimen/text_size_mid" />
-
             <TextView
                 android:id="@+id/tv_emerg"
                 android:layout_width="match_parent"
@@ -67,8 +61,6 @@
                 android:text="@string/for_emergency"
                 android:textColor="@color/daynight_textColor"
                 android:textSize="@dimen/text_size_mid" />
-
-
         </LinearLayout>
 
         <TextView
@@ -79,7 +71,5 @@
             android:gravity="center"
             android:visibility="gone"
             android:textColor="@color/daynight_textColor" />
-
     </FrameLayout>
-
 </androidx.core.widget.NestedScrollView>
