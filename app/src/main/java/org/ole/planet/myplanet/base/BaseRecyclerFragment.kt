@@ -66,11 +66,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         arguments?.let {
             isMyCourseLib = it.getBoolean("isMyCourseLib")
             courseLib = it.getString("courseLib")
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                resources = it.getSerializable("resources", ArrayList::class.java) as? List<RealmMyLibrary>
-            } else {
-                resources = it.getSerializable("resources") as? List<RealmMyLibrary>
-            }
+            resources = it.getParcelableArrayList("resources")
         }
     }
 
