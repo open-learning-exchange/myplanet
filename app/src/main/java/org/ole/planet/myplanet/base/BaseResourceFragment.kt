@@ -23,6 +23,7 @@ import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.RealmResults
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -105,8 +106,7 @@ abstract class BaseResourceFragment : Fragment() {
                         val inflater = activity?.layoutInflater
                         convertView = inflater?.inflate(R.layout.my_library_alertdialog, null)
                         val alertDialogBuilder = AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
-                        alertDialogBuilder.setView(convertView)
-                            .setTitle(R.string.download_suggestion)
+                        alertDialogBuilder.setView(convertView).setTitle(R.string.download_suggestion)
                         alertDialogBuilder.setPositiveButton(R.string.download_selected) { _: DialogInterface?, _: Int ->
                             lv?.selectedItemsList?.let {
                                 addToLibrary(dbMyLibrary, it)
@@ -150,12 +150,12 @@ abstract class BaseResourceFragment : Fragment() {
         val arrayAdapter: ArrayAdapter<*> = object : ArrayAdapter<Any?>(requireActivity(), android.R.layout.simple_list_item_1, list) {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
                 var convertedView = convertView
-                if (convertedView == null) convertedView = LayoutInflater.from(activity)
-                    .inflate(android.R.layout.simple_list_item_1, null)
+                if (convertedView == null) {
+                    convertedView = LayoutInflater.from(activity).inflate(android.R.layout.simple_list_item_1, null)
+                }
                 if (exams.containsKey((getItem(position) as RealmSubmission?)?.parentId)) {
                     (convertedView as TextView?)?.text = exams[list[position].parentId]?.name
-                }
-                else {
+                } else {
                     (convertedView as TextView?)?.setText(R.string.n_a)
                 }
                 return convertedView!!
@@ -164,8 +164,7 @@ abstract class BaseResourceFragment : Fragment() {
         AlertDialog.Builder(requireActivity()).setTitle("Pending Surveys")
             .setAdapter(arrayAdapter) { _: DialogInterface?, i: Int ->
                 AdapterMySubmission.openSurvey(homeItemClickListener, list[i].id, true)
-            }
-            .setPositiveButton(R.string.dismiss, null).show()
+            }.setPositiveButton(R.string.dismiss, null).show()
     }
 
     fun startDownload(urls: ArrayList<String>) {
@@ -281,12 +280,7 @@ abstract class BaseResourceFragment : Fragment() {
             if (!libraryItems[selectedItems[i]]?.userId?.contains(profileDbHandler.userModel?.id)!!) {
                 if (!mRealm.isInTransaction) mRealm.beginTransaction()
                 libraryItems[selectedItems[i]]?.setUserId(profileDbHandler.userModel?.id)
-                RealmRemovedLog.onAdd(
-                    mRealm,
-                    "resources",
-                    profileDbHandler.userModel?.id,
-                    libraryItems[selectedItems[i]]?.resourceId
-                )
+                RealmRemovedLog.onAdd(mRealm, "resources", profileDbHandler.userModel?.id, libraryItems[selectedItems[i]]?.resourceId)
             }
         }
         Utilities.toast(activity, getString(R.string.added_to_my_library))
@@ -295,14 +289,11 @@ abstract class BaseResourceFragment : Fragment() {
     fun addAllToLibrary(libraryItems: List<RealmMyLibrary?>) {
         for (libraryItem in libraryItems) {
             if (!libraryItem?.userId?.contains(profileDbHandler.userModel?.id)!!) {
-                if (!mRealm.isInTransaction) mRealm.beginTransaction()
+                if (!mRealm.isInTransaction) {
+                    mRealm.beginTransaction()
+                }
                 libraryItem.setUserId(profileDbHandler.userModel?.id)
-                RealmRemovedLog.onAdd(
-                    mRealm,
-                    "resources",
-                    profileDbHandler.userModel?.id,
-                    libraryItem.resourceId
-                )
+                RealmRemovedLog.onAdd(mRealm, "resources", profileDbHandler.userModel?.id, libraryItem.resourceId)
             }
         }
         Utilities.toast(activity, getString(R.string.added_to_my_library))
@@ -311,6 +302,26 @@ abstract class BaseResourceFragment : Fragment() {
     companion object {
         var settings: SharedPreferences? = null
         var auth = ""
+
+        fun getAllLibraryList(mRealm: Realm): List<RealmMyLibrary> {
+            val l = mRealm.where(RealmMyLibrary::class.java).equalTo("resourceOffline", false).findAll()
+            val libList: MutableList<RealmMyLibrary> = ArrayList()
+            val libraries = getLibraries(l)
+            libList.addAll(libraries)
+            return libList
+        }
+
+        fun backgroundDownload(urls: ArrayList<String>) {
+            Service(context).isPlanetAvailable(object : PlanetAvailableListener {
+                override fun isAvailable() {
+                    if (urls.isNotEmpty()) {
+                        Utilities.openDownloadService(context, urls, false)
+                    }
+                }
+
+                override fun notAvailable() {}
+            })
+        }
 
         fun getLibraryList(mRealm: Realm, userId: String?): List<RealmMyLibrary> {
             val l = mRealm.where(RealmMyLibrary::class.java).equalTo("isPrivate", false).findAll()
