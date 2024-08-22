@@ -10,7 +10,6 @@ import android.os.Bundle
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
 import android.provider.Settings
-import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.preference.PreferenceManager
@@ -36,7 +35,6 @@ import org.ole.planet.myplanet.service.AutoSyncWorker
 import org.ole.planet.myplanet.service.StayOnlineWorker
 import org.ole.planet.myplanet.service.TaskNotificationWorker
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.utilities.Constants.KEY_AUTO_DOWNLOAD
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utilities.LocaleHelper
@@ -73,14 +71,15 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         var showHealthDialog = true
         @JvmField
         var listener: TeamPageListener? = null
-        val androidId: String get() {
-            try {
-                return Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
-            } catch (e: Exception) {
-                e.printStackTrace()
+        val androidId: String
+            get() {
+                try {
+                    return Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+                return "0"
             }
-            return "0"
-        }
         val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
         lateinit var defaultPref: SharedPreferences
 
@@ -181,7 +180,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         val themeMode = sharedPreferences.getString("theme_mode", ThemeMode.FOLLOW_SYSTEM)
 
         applyThemeMode(themeMode)
-        Log.d("MainApplication", "onCreate: themeMode: ${settings?.getBoolean("beta_auto_download", false)}")
 
         isNetworkConnectedFlow.onEach { isConnected ->
             if (isConnected) {

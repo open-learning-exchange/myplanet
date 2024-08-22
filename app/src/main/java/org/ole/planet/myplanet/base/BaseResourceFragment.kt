@@ -10,7 +10,6 @@ import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -19,7 +18,6 @@ import android.widget.ListView
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentActivity
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import io.realm.Realm
 import io.realm.RealmObject
@@ -79,7 +77,6 @@ abstract class BaseResourceFragment : Fragment() {
                 }.show()
         }
     }
-
     private val broadcastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action == DashboardActivity.MESSAGE_PROGRESS) {
@@ -99,8 +96,6 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     protected fun showDownloadDialog(dbMyLibrary: List<RealmMyLibrary?>) {
-//        addAllToLibrary(getAllLibraryList(mRealm))
-//        backgroundDownload(downloadAllFiles(getAllLibraryList(mRealm)))
         if (isAdded) {
             Service(MainApplication.context).isPlanetAvailable(object : PlanetAvailableListener {
                 override fun isAvailable() {
@@ -118,9 +113,6 @@ abstract class BaseResourceFragment : Fragment() {
                                 downloadFiles(dbMyLibrary, it)
                             }?.let { startDownload(it) }
                         }.setNeutralButton(R.string.download_all) { _: DialogInterface?, _: Int ->
-                            Log.d("downloadAll", "downloadAll: ${dbMyLibrary.size}")
-                            Log.d("downloadAll", "downloadAll2: $dbMyLibrary")
-
                             lv?.selectedItemsList?.let {
                                 addAllToLibrary(dbMyLibrary)
                             }
@@ -175,20 +167,6 @@ abstract class BaseResourceFragment : Fragment() {
             }.setPositiveButton(R.string.dismiss, null).show()
     }
 
-//    fun backgroundDownload(urls: ArrayList<String>) {
-//        if (isAdded) {
-//            Service(requireActivity()).isPlanetAvailable(object : PlanetAvailableListener {
-//                override fun isAvailable() {
-//                    if (urls.isNotEmpty()) {
-//                        Utilities.openDownloadService(activity, urls, false)
-//                    }
-//                }
-//
-//                override fun notAvailable() {}
-//            })
-//        }
-//    }
-
     fun startDownload(urls: ArrayList<String>) {
         if (isAdded) {
             Service(requireActivity()).isPlanetAvailable(object : PlanetAvailableListener {
@@ -220,7 +198,6 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     open fun onDownloadComplete() {}
-
     fun createListView(dbMyLibrary: List<RealmMyLibrary?>, alertDialog: AlertDialog) {
         lv = convertView?.findViewById(R.id.alertDialog_listView)
         val names = ArrayList<String?>()
@@ -331,7 +308,6 @@ abstract class BaseResourceFragment : Fragment() {
             val libList: MutableList<RealmMyLibrary> = ArrayList()
             val libraries = getLibraries(l)
             libList.addAll(libraries)
-            Log.d("okuro", "getAllLibraryList: ${libList.size}")
             return libList
         }
 

@@ -79,7 +79,7 @@ open class RealmMyCourse : RealmObject() {
     }
 
     companion object {
-        val gson = Gson()
+        private val gson = Gson()
         private val concatenatedLinks = ArrayList<String>()
         val courseDataList: MutableList<Array<String>> = mutableListOf()
 

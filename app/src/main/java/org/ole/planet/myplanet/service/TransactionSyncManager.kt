@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.text.TextUtils
 import android.util.Base64
-import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -25,7 +24,6 @@ import org.ole.planet.myplanet.model.RealmMyCourse.Companion.courseWriteCsv
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
 import org.ole.planet.myplanet.model.RealmMyHealthPojo.Companion.healthWriteCsv
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.libraryWriteCsv
-import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.saveLibraryDownloadListToPrefs
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.teamWriteCsv
 import org.ole.planet.myplanet.model.RealmNews.Companion.newsWriteCsv
 import org.ole.planet.myplanet.model.RealmOfflineActivity.Companion.offlineWriteCsv
@@ -189,10 +187,6 @@ object TransactionSyncManager {
             }
         }
         saveConcatenatedLinksToPrefs()
-        saveLibraryDownloadListToPrefs()
-
-        val existingSavedLibraryDownloadList = settings.getString("library_download_list", null)
-        Log.d("TransactionSyncManager", "existingSavedLibraryDownloadList: $existingSavedLibraryDownloadList")
 
         val syncFiles = settings.getBoolean("download_sync_files", false)
 

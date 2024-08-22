@@ -23,7 +23,6 @@ import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLin
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.insertMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.removeDeletedResource
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.save
-import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.saveLibraryDownloadListToPrefs
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.insertMyTeams
 import org.ole.planet.myplanet.model.RealmResourceActivity.Companion.onSynced
 import org.ole.planet.myplanet.model.Rows
@@ -243,7 +242,6 @@ class SyncManager private constructor(private val context: Context) {
             "teams" -> insertMyTeams(resourceDoc, mRealm)
         }
         saveConcatenatedLinksToPrefs()
-        saveLibraryDownloadListToPrefs()
     }
 
     companion object {

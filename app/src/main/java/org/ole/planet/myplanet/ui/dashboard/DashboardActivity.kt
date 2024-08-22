@@ -291,41 +291,42 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         return super.onPrepareOptionsMenu(menu)
     }
 
-    private val accountHeader: AccountHeader get() {
-        val displayMetrics = resources.displayMetrics
-        val screenWidth = displayMetrics.widthPixels
-        val screenHeight = displayMetrics.heightPixels
-        val density = displayMetrics.density
+    private val accountHeader: AccountHeader
+        get() {
+            val displayMetrics = resources.displayMetrics
+            val screenWidth = displayMetrics.widthPixels
+            val screenHeight = displayMetrics.heightPixels
+            val density = displayMetrics.density
 
-        var paddingVerticalPx = screenHeight * 0.15
-        var paddingHorizontalPx = screenWidth * 0.15
-        if (screenWidth > screenHeight) { //sizing for tablets
-            paddingVerticalPx = screenHeight * 0.05
-            paddingHorizontalPx = screenWidth * 0.05
+            var paddingVerticalPx = screenHeight * 0.15
+            var paddingHorizontalPx = screenWidth * 0.15
+            if(screenWidth > screenHeight){ //sizing for tablets
+                paddingVerticalPx = screenHeight * 0.05
+                paddingHorizontalPx = screenWidth * 0.05
+            }
+
+            val paddingVerticalDp = (paddingVerticalPx / density).toInt()
+            val paddingHorizontalDp = (paddingHorizontalPx / density).toInt()
+
+            val header = AccountHeaderBuilder()
+                .withActivity(this@DashboardActivity)
+                .withTextColor(ContextCompat.getColor(this, R.color.bg_white))
+                .withHeaderBackground(R.drawable.ole_logo)
+                .withDividerBelowHeader(false)
+                .build()
+
+            val headerBackground = header.headerBackgroundView
+            headerBackground.setPadding(paddingHorizontalDp, paddingVerticalDp, paddingHorizontalDp, paddingVerticalDp)
+
+            val currentNightMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+            if (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_NO ||
+                (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM && currentNightMode == Configuration.UI_MODE_NIGHT_NO)) {
+                headerBackground.setColorFilter(
+                    ContextCompat.getColor(this, R.color.md_white_1000), PorterDuff.Mode.SRC_IN
+                )
+            }
+            return header
         }
-
-        val paddingVerticalDp = (paddingVerticalPx / density).toInt()
-        val paddingHorizontalDp = (paddingHorizontalPx / density).toInt()
-
-        val header = AccountHeaderBuilder()
-            .withActivity(this@DashboardActivity)
-            .withTextColor(ContextCompat.getColor(this, R.color.bg_white))
-            .withHeaderBackground(R.drawable.ole_logo)
-            .withDividerBelowHeader(false)
-            .build()
-
-        val headerBackground = header.headerBackgroundView
-        headerBackground.setPadding(paddingHorizontalDp, paddingVerticalDp, paddingHorizontalDp, paddingVerticalDp)
-
-        val currentNightMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
-        if (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_NO ||
-            (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM && currentNightMode == Configuration.UI_MODE_NIGHT_NO)) {
-            headerBackground.setColorFilter(
-                ContextCompat.getColor(this, R.color.md_white_1000), PorterDuff.Mode.SRC_IN
-            )
-        }
-        return header
-    }
 
     private fun createDrawer() {
         val dimenHolder = DimenHolder.fromDp(160)
@@ -393,34 +394,35 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         f.show(supportFragmentManager, "")
     }
 
-    private val drawerItems: Array<IDrawerItem<*, *>> get() {
-        val menuImageList = ArrayList<Drawable>()
-        ResourcesCompat.getDrawable(resources, R.drawable.myplanet, null)?.let { menuImageList.add(it) }
-        ResourcesCompat.getDrawable(resources, R.drawable.mylibrary, null)?.let { menuImageList.add(it) }
-        ResourcesCompat.getDrawable(resources, R.drawable.ourcourses, null)?.let { menuImageList.add(it) }
-        ResourcesCompat.getDrawable(resources, R.drawable.ourlibrary, null)?.let { menuImageList.add(it) }
-        ResourcesCompat.getDrawable(resources, R.drawable.mycourses, null)?.let { menuImageList.add(it) }
-        ResourcesCompat.getDrawable(resources, R.drawable.team, null)?.let { menuImageList.add(it) }
-        ResourcesCompat.getDrawable(resources, R.drawable.business, null)?.let { menuImageList.add(it) }
-        ResourcesCompat.getDrawable(resources, R.drawable.survey, null)?.let { menuImageList.add(it) }
-        return arrayOf(
-            changeUX(R.string.menu_myplanet, menuImageList[0]).withIdentifier(0),
-            changeUX(R.string.txt_myLibrary, menuImageList[1]).withIdentifier(1),
-            changeUX(R.string.txt_myCourses, menuImageList[2]).withIdentifier(2),
-            changeUX(R.string.menu_library, menuImageList[3]),
-            changeUX(R.string.menu_courses, menuImageList[4]),
-            changeUX(R.string.team, menuImageList[5]),
-            changeUX(R.string.menu_community, menuImageList[7]),
-            changeUX(R.string.enterprises, menuImageList[6]),
-            changeUX(R.string.menu_surveys, menuImageList[7])
-        )
-    }
-
-    private val drawerItemsFooter: Array<IDrawerItem<*, *>> get() {
-        val menuImageListFooter = ArrayList<Drawable>()
-        ResourcesCompat.getDrawable(resources, R.drawable.logout, null)?.let { menuImageListFooter.add(it) }
-        return arrayOf(changeUX(R.string.menu_logout, menuImageListFooter[0]))
-    }
+    private val drawerItems: Array<IDrawerItem<*, *>>
+        get() {
+            val menuImageList = ArrayList<Drawable>()
+            ResourcesCompat.getDrawable(resources, R.drawable.myplanet, null)?.let { menuImageList.add(it) }
+            ResourcesCompat.getDrawable(resources, R.drawable.mylibrary, null)?.let { menuImageList.add(it) }
+            ResourcesCompat.getDrawable(resources, R.drawable.ourcourses, null)?.let { menuImageList.add(it) }
+            ResourcesCompat.getDrawable(resources, R.drawable.ourlibrary, null)?.let { menuImageList.add(it) }
+            ResourcesCompat.getDrawable(resources, R.drawable.mycourses, null)?.let { menuImageList.add(it) }
+            ResourcesCompat.getDrawable(resources, R.drawable.team, null)?.let { menuImageList.add(it) }
+            ResourcesCompat.getDrawable(resources, R.drawable.business, null)?.let { menuImageList.add(it) }
+            ResourcesCompat.getDrawable(resources, R.drawable.survey, null)?.let { menuImageList.add(it) }
+            return arrayOf(
+                changeUX(R.string.menu_myplanet, menuImageList[0]).withIdentifier(0),
+                changeUX(R.string.txt_myLibrary, menuImageList[1]).withIdentifier(1),
+                changeUX(R.string.txt_myCourses, menuImageList[2]).withIdentifier(2),
+                changeUX(R.string.menu_library, menuImageList[3]),
+                changeUX(R.string.menu_courses, menuImageList[4]),
+                changeUX(R.string.team, menuImageList[5]),
+                changeUX(R.string.menu_community, menuImageList[7]),
+                changeUX(R.string.enterprises, menuImageList[6]),
+                changeUX(R.string.menu_surveys, menuImageList[7])
+            )
+        }
+    private val drawerItemsFooter: Array<IDrawerItem<*, *>>
+        get() {
+            val menuImageListFooter = ArrayList<Drawable>()
+            ResourcesCompat.getDrawable(resources, R.drawable.logout, null)?.let { menuImageListFooter.add(it) }
+            return arrayOf(changeUX(R.string.menu_logout, menuImageListFooter[0]))
+        }
 
     private fun changeUX(iconText: Int, drawable: Drawable?): PrimaryDrawerItem {
         return PrimaryDrawerItem().withName(iconText)

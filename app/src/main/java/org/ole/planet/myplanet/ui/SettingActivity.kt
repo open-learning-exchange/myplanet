@@ -14,7 +14,6 @@ import android.widget.ArrayAdapter
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.preference.ListPreference
 import androidx.preference.Preference
@@ -29,7 +28,6 @@ import org.ole.planet.myplanet.MainApplication.Companion.setThemeMode
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
-import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.settings
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -82,13 +80,9 @@ class SettingActivity : AppCompatActivity() {
         lateinit var profileDbHandler: UserProfileDbHandler
         var user: RealmUserModel? = null
         private lateinit var dialog: DialogUtils.CustomProgressDialog
-        lateinit var defaultPref: SharedPreferences
+        private lateinit var defaultPref: SharedPreferences
 
-        override fun onCreateView(
-            inflater: LayoutInflater,
-            container: ViewGroup?,
-            savedInstanceState: Bundle?
-        ): View {
+        override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
             val view = super.onCreateView(inflater, container, savedInstanceState)
             view.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.secondary_bg))
             return view
@@ -102,7 +96,6 @@ class SettingActivity : AppCompatActivity() {
             user = profileDbHandler.userModel
             dialog = DialogUtils.getCustomProgressDialog(requireActivity())
             defaultPref = PreferenceManager.getDefaultSharedPreferences(requireActivity())
-
 
             setBetaToggleOn()
             setAutoSyncToggleOn()

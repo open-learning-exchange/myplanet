@@ -26,7 +26,6 @@ object Constants {
     @JvmField
     var shelfDataList = mutableListOf<ShelfData>()
     const val KEY_SYNC = "beta_wifi_switch"
-    const val KEY_AUTO_DOWNLOAD = "beta_auto_download"
     const val KEY_MEETUPS = "key_meetup"
     const val KEY_AUTOSYNC_ = "auto_sync_with_server"
     const val KEY_AUTOSYNC_WEEKLY = "force_weekly_sync"
