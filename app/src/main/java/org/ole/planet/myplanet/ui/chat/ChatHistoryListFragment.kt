@@ -19,6 +19,7 @@ class ChatHistoryListFragment : Fragment() {
     private lateinit var fragmentChatHistoryListBinding: FragmentChatHistoryListBinding
     private lateinit var sharedViewModel: ChatViewModel
     var user: RealmUserModel? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         sharedViewModel = ViewModelProvider(requireActivity())[ChatViewModel::class.java]

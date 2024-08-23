@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/secondary_bg"
     tools:context=".ui.references.ReferenceFragment">
 
     <androidx.recyclerview.widget.RecyclerView
@@ -10,5 +11,4 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:padding="@dimen/padding_normal" />
-
 </FrameLayout>

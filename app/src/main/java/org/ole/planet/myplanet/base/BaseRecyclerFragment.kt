@@ -12,6 +12,8 @@ import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.common.reflect.TypeToken
+import com.google.gson.Gson
 import io.realm.Case
 import io.realm.RealmList
 import io.realm.RealmModel
@@ -66,11 +68,11 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         arguments?.let {
             isMyCourseLib = it.getBoolean("isMyCourseLib")
             courseLib = it.getString("courseLib")
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                resources = it.getSerializable("resources", ArrayList::class.java) as? List<RealmMyLibrary>
-            } else {
-                resources = it.getSerializable("resources") as? List<RealmMyLibrary>
-            }
+            val json = it.getString("resources")
+            resources = (json?.let {
+                val type = object : TypeToken<ArrayList<RealmMyLibrary>>() {}.type
+                Gson().fromJson<ArrayList<RealmMyLibrary>>(json, type)
+            } ?: arrayListOf())
         }
     }
 
