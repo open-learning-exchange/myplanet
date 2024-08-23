@@ -21,7 +21,6 @@
             android:textColor="@color/daynight_textColor"
             android:textSize="@dimen/text_size_mid"
             android:textStyle="bold" />
-
         <TextView
             android:id="@+id/date"
             android:layout_width="match_parent"
@@ -30,7 +29,6 @@
             android:maxLines="2"
             android:padding="4dp"
             android:textColor="@color/colorPrimaryWhite" />
-
         <TextView
             android:id="@+id/description"
             android:layout_width="match_parent"
@@ -39,7 +37,6 @@
             android:maxLines="2"
             android:padding="4dp"
             android:textColor="@color/daynight_textColor" />
-
         <LinearLayout
             android:id="@+id/ll_edit_delete"
             android:layout_width="wrap_content"
@@ -56,7 +53,6 @@
                 android:visibility="visible"
                 app:tint="@color/daynight_textColor"
                 app:srcCompat="@drawable/ic_file_upload" />
-
             <ImageView
                 android:id="@+id/img_edit"
                 android:layout_width="30dp"
@@ -67,7 +63,6 @@
                 android:visibility="visible"
                 app:tint="@color/daynight_textColor"
                 app:srcCompat="@drawable/ic_edit" />
-
             <ImageView
                 android:id="@+id/img_delete"
                 android:layout_width="30dp"
@@ -79,7 +74,5 @@
                 app:tint="@color/daynight_textColor"
                 app:srcCompat="@drawable/ic_delete" />
         </LinearLayout>
-
     </LinearLayout>
-
 </androidx.cardview.widget.CardView>
