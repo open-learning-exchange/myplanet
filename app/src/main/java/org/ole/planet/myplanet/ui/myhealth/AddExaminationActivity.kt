@@ -11,6 +11,7 @@ import android.widget.CheckBox
 import android.widget.CompoundButton
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import fisk.chipcloud.ChipCloud
@@ -187,6 +188,9 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         activityAddExaminationBinding.containerCheckbox.removeAllViews()
         for (s in arr) {
             val c = CheckBox(this)
+            c.buttonTintList = ContextCompat.getColorStateList(this, R.color.daynight_textColor)
+            c.setTextColor(ContextCompat.getColor(this, R.color.daynight_textColor))
+
             if (examination != null) {
                 val conditions = Gson().fromJson(examination.conditions, JsonObject::class.java)
                 c.isChecked = getBoolean(s, conditions)
@@ -340,7 +344,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
     }
 
     override fun finish() {
-        val alertDialogBuilder = AlertDialog.Builder(this)
+        val alertDialogBuilder = AlertDialog.Builder(this, R.style.AlertDialogTheme)
         alertDialogBuilder.setMessage(R.string.are_you_sure_you_want_to_exit_your_data_will_be_lost)
         alertDialogBuilder.setPositiveButton(getString(R.string.yes_i_want_to_exit)) { _: DialogInterface?, _: Int -> super.finish() }
             .setNegativeButton(getString(R.string.cancel), null)
