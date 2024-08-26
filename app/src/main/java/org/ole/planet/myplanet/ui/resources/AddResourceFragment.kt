@@ -271,7 +271,9 @@ class AddResourceFragment : BottomSheetDialogFragment() {
             val realmUserModel = UserProfileDbHandler(MainApplication.context).userModel!!
             val userId = realmUserModel.id
             val userName = realmUserModel.name
-            AlertDialog.Builder(context).setTitle(R.string.enter_resource_detail).setView(v)
+            AlertDialog.Builder(context, R.style.AlertDialogTheme)
+                .setTitle(R.string.enter_resource_detail)
+                .setView(v)
                 .setPositiveButton("Save") { _: DialogInterface?, _: Int ->
                     val title = etTitle.text.toString().trim { it <= ' ' }
                     if (title.isEmpty()) {
