@@ -186,14 +186,7 @@ object DialogUtils {
             if (dialog == null) {
                 dialog = dialogBuilder.create()
             }
-            if (context is Activity) {
-                val activity = context as Activity
-                if (!activity.isFinishing && !activity.isDestroyed) {
-                    activity.runOnUiThread {
-                        dialog?.show()
-                    }
-                }
-            }
+            dialog?.show()
         }
 
         fun dismiss() {
