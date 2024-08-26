@@ -79,17 +79,6 @@
                             android:background="@color/daynight_textColor"
                             android:visibility="gone" />
 
-                        <TextView
-                            android:id="@+id/txtVisits"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_gravity="center_vertical"
-                            android:gravity="center"
-                            android:padding="@dimen/padding_normal"
-                            android:textColor="@color/daynight_textColor"
-                            android:textSize="18sp"
-                            android:textStyle="bold" />
-
                         <View
                             android:layout_width="@dimen/_1dp"
                             android:layout_height="wrap_content"
