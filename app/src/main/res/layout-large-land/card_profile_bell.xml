@@ -19,7 +19,6 @@
             android:src="@drawable/profile"
             app:civ_border_color="@color/colorPrimaryDark"
             app:civ_border_width="2dp" />
-
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -58,7 +57,6 @@
                                 android:textColor="@color/md_black_1000"
                                 android:textSize="@dimen/text_size_large"
                                 android:textStyle="bold" />
-
                             <TextView
                                 android:id="@+id/txtRole"
                                 android:layout_width="wrap_content"
@@ -68,7 +66,6 @@
                                 android:textColor="@color/md_black_1000"
                                 android:textSize="16sp"
                                 android:textStyle="bold" />
-
                         </LinearLayout>
 
                         <View
@@ -76,12 +73,10 @@
                             android:layout_height="wrap_content"
                             android:background="@color/colorPrimaryDark"
                             android:visibility="gone" />
-
                         <View
                             android:layout_width="@dimen/_1dp"
                             android:layout_height="wrap_content"
                             android:background="@color/colorPrimaryDark" />
-
                         <TextView
                             android:id="@+id/txt_date"
                             android:layout_width="wrap_content"
@@ -93,13 +88,11 @@
                             android:textSize="16sp"
                             android:textStyle="bold"
                             android:visibility="gone" />
-
                         <View
                             android:layout_width="@dimen/_1dp"
                             android:layout_height="wrap_content"
                             android:background="@color/colorPrimaryDark"
                             android:visibility="gone" />
-
                         <TextView
                             android:id="@+id/txt_community_name"
                             android:layout_width="wrap_content"
@@ -126,7 +119,6 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:orientation="horizontal" />
-
                 <Button
                     android:id="@+id/fab_feedback"
                     android:layout_width="wrap_content"
