@@ -67,10 +67,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         updateMyTeamsUI()
     }
     private lateinit var offlineActivitiesResults: RealmResults<RealmOfflineActivity>
-    private val offlineActivitiesChangeListener = RealmChangeListener<RealmResults<RealmOfflineActivity>> { _ ->
-        updateOfflineVisitsUI()
-    }
-
     fun onLoaded(v: View) {
         profileDbHandler = UserProfileDbHandler(requireContext())
         model = profileDbHandler.userModel
@@ -108,19 +104,8 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             .equalTo("userName", profileDbHandler.userModel?.name)
             .equalTo("type", KEY_LOGIN)
             .findAllAsync()
-        offlineActivitiesResults.addChangeListener(offlineActivitiesChangeListener)
-        updateOfflineVisitsUI()
         v.findViewById<TextView>(R.id.txtRole).text = getString(R.string.user_role, model?.getRoleAsString())
-        v.findViewById<TextView>(R.id.txtFullName).text = fullName
-    }
-
-    private fun updateOfflineVisitsUI() {
-        val offlineVisits = profileDbHandler.offlineVisits
-        if (offlineVisits in 3..10) {
-            view?.findViewById<TextView>(R.id.txtVisits)?.text = getString(R.string.offline_visits, offlineVisits)
-        } else {
-            view?.findViewById<TextView>(R.id.txtVisits)?.text = getString(R.string.offline_visit, offlineVisits)
-        }
+        v.findViewById<TextView>(R.id.txtFullName).text =getString(R.string.user_name, fullName, profileDbHandler.offlineVisits)
     }
 
     override fun forceDownloadNewsImages() {
@@ -307,9 +292,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         }
         if (::myTeamsResults.isInitialized) {
             myTeamsResults.removeChangeListener(myTeamsChangeListener)
-        }
-        if (::offlineActivitiesResults.isInitialized) {
-            offlineActivitiesResults.removeChangeListener(offlineActivitiesChangeListener)
         }
         mRealm.close()
     }
