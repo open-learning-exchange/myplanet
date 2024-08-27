@@ -13,134 +13,127 @@
         android:orientation="vertical"
         android:layout_height="wrap_content">
 
-
-
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:orientation="horizontal"
-        android:layout_height="wrap_content">
-
-        <CheckBox
-            android:id="@+id/checkbox"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:gravity="center"
-            android:padding="@dimen/padding_large"
-            android:buttonTint="@color/daynight_textColor" />
-        <TextView
-            android:id="@+id/title"
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:padding="4dp"
-            android:textColor="@color/daynight_textColor"
-            android:textSize="@dimen/text_size_mid"
-            android:textStyle="bold" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content">
-
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical">
-
-            <TextView
-                android:id="@+id/description"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:maxLines="2"
-                android:padding="4dp"
-                android:textColor="@color/daynight_textColor" />
-            <com.google.android.flexbox.FlexboxLayout
-                android:id="@+id/flexbox_drawable"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:alignContent="space_around"
-                app:alignItems="flex_start"
-                app:flexWrap="wrap"
-                app:showDivider="middle" />
-            <TextView
-                android:id="@+id/tv_date"
+            android:orientation="horizontal"
+            android:layout_height="wrap_content">
+    
+            <CheckBox
+                android:id="@+id/checkbox"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:padding="@dimen/padding_normal"
-                android:textColor="@color/daynight_textColor" />
-        </LinearLayout>
-
-        <ImageView
-            android:id="@+id/iv_downloaded"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:layout_margin="@dimen/padding_small" />
-        <LinearLayout
-            android:id="@+id/ll_rating"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:gravity="center"
-            android:orientation="vertical"
-            android:padding="8dp">
-
-            <TextView
-                android:id="@+id/times_rated"
-                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:gravity="center"
-                android:padding="4dp"
-                android:text="@string/zero_total"
-                android:textColor="@color/daynight_textColor" />
-            <androidx.appcompat.widget.AppCompatRatingBar
-                android:id="@+id/rating_bar"
-                style="@style/Base.Widget.AppCompat.RatingBar.Small"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:focusable="false"
-                android:isIndicator="true"
-                android:numStars="5"
-                android:stepSize="1"
-                android:progressTint="@color/daynight_textColor"
-                android:progressBackgroundTint="@color/empty_rating"/>
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:gravity="center"
-            android:orientation="vertical"
-            android:padding="4dp">
-
+                android:padding="@dimen/padding_large"
+                android:buttonTint="@color/daynight_textColor" />
             <TextView
-                android:id="@+id/rating"
+                android:id="@+id/title"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:gravity="center"
                 android:padding="4dp"
-                android:text="@string/zero_point_zero"
                 android:textColor="@color/daynight_textColor"
-                android:textSize="@dimen/text_size_large"
+                android:textSize="@dimen/text_size_mid"
                 android:textStyle="bold" />
-            <TextView
-                android:id="@+id/average"
-                android:layout_width="match_parent"
+        </LinearLayout>
+    
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+    
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+    
+                <TextView
+                    android:id="@+id/description"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:maxLines="2"
+                    android:padding="4dp"
+                    android:textColor="@color/daynight_textColor" />
+                <com.google.android.flexbox.FlexboxLayout
+                    android:id="@+id/flexbox_drawable"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:alignContent="space_around"
+                    app:alignItems="flex_start"
+                    app:flexWrap="wrap"
+                    app:showDivider="middle" />
+                <TextView
+                    android:id="@+id/tv_date"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="@dimen/padding_normal"
+                    android:textColor="@color/daynight_textColor" />
+            </LinearLayout>
+    
+            <ImageView
+                android:id="@+id/iv_downloaded"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:text="@string/average"
-                android:textColor="@color/daynight_textColor" />
+                android:layout_margin="@dimen/padding_small" />
+            <LinearLayout
+                android:id="@+id/ll_rating"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="8dp">
+    
+                <TextView
+                    android:id="@+id/times_rated"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:gravity="center"
+                    android:padding="4dp"
+                    android:text="@string/zero_total"
+                    android:textColor="@color/daynight_textColor" />
+                <androidx.appcompat.widget.AppCompatRatingBar
+                    android:id="@+id/rating_bar"
+                    style="@style/Base.Widget.AppCompat.RatingBar.Small"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:focusable="false"
+                    android:isIndicator="true"
+                    android:numStars="5"
+                    android:stepSize="1"
+                    android:progressTint="@color/daynight_textColor"
+                    android:progressBackgroundTint="@color/empty_rating"/>
+            </LinearLayout>
+    
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="4dp">
+    
+                <TextView
+                    android:id="@+id/rating"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:gravity="center"
+                    android:padding="4dp"
+                    android:text="@string/zero_point_zero"
+                    android:textColor="@color/daynight_textColor"
+                    android:textSize="@dimen/text_size_large"
+                    android:textStyle="bold" />
+                <TextView
+                    android:id="@+id/average"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:text="@string/average"
+                    android:textColor="@color/daynight_textColor" />
+            </LinearLayout>
         </LinearLayout>
-    </LinearLayout>
-
-
-
-
     </LinearLayout>
 </androidx.cardview.widget.CardView>
