@@ -232,7 +232,7 @@ class SettingActivity : AppCompatActivity() {
         }
 
         private fun languageChanger() {
-            val options = arrayOf(getString(R.string.english), getString(R.string.nepali), getString(R.string.french), getString(R.string.spanish), getString(R.string.arabic), getString(R.string.somali))
+            val options = arrayOf(getString(R.string.english), getString(R.string.spanish), getString(R.string.somali), getString(R.string.nepali), getString(R.string.arabic), getString(R.string.french))
             val currentLanguage = LocaleHelper.getLanguage(requireContext())
             val checkedItem = when (currentLanguage) {
                 "en" -> 0
