@@ -36,4 +36,5 @@
     <!-- changes logout button area background from white to whatever the background color for the drawer is.
     Without it, the drawer and logout button area are different colors -->
     <color name="material_drawer_background">@color/colorPrimary</color>
+    <color name="empty_rating">@color/md_white_1000</color>
 </resources>
