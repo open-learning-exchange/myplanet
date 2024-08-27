@@ -236,11 +236,11 @@ class SettingActivity : AppCompatActivity() {
             val currentLanguage = LocaleHelper.getLanguage(requireContext())
             val checkedItem = when (currentLanguage) {
                 "en" -> 0
-                "ne" -> 1
-                "fr" -> 2
-                "es" -> 3
+                "es" -> 1
+                "so" -> 2
+                "ne" -> 3
                 "ar" -> 4
-                "so" -> 5
+                "fr" -> 5
                 else -> 0
             }
 
@@ -249,11 +249,11 @@ class SettingActivity : AppCompatActivity() {
                 .setSingleChoiceItems(ArrayAdapter(requireContext(), R.layout.checked_list_item, options), checkedItem) { dialog, which ->
                     val selectedLanguage = when (which) {
                         0 -> "en"
-                        1 -> "ne"
-                        2 -> "fr"
-                        3 -> "es"
+                        1 -> "es"
+                        2 -> "so"
+                        3 -> "ne"
                         4 -> "ar"
-                        5 -> "so"
+                        5 -> "fr"
                         else -> "en"
                     }
                     LocaleHelper.setLocale(requireContext(), selectedLanguage)
