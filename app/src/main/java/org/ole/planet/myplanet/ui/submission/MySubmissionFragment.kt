@@ -104,7 +104,12 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
 
         val adapter = AdapterMySubmission(requireActivity(), submissions, exams)
         val itemCount = adapter.itemCount
-        showNoData(fragmentMySubmissionBinding.tvMessage, itemCount, "submission")
+        if (type == "survey") {
+            showNoData(fragmentMySubmissionBinding.tvMessage, itemCount, "survey")
+        }
+        else {
+            showNoData(fragmentMySubmissionBinding.tvMessage, itemCount, "submission")
+        }
 
         if (itemCount == 0) {
             fragmentMySubmissionBinding.llSearch.visibility = View.GONE
