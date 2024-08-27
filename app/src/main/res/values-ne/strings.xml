@@ -197,11 +197,11 @@
     </string-array>
 
     <string name="english">english</string>
-    <string name="nepali">नेपाली</string>
-    <string name="french">français</string>
     <string name="spanish">español</string>
-    <string name="arabic">عربى</string>
     <string name="somali">somali</string>
+    <string name="nepali">नेपाली</string>
+    <string name="arabic">عربى</string>
+    <string name="french">français</string>
 
     <string-array name="language_keys">
         <item>en</item>
