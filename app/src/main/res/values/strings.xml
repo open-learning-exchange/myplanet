@@ -196,6 +196,13 @@
         <item>Somali</item>
     </string-array>
 
+    <string name="english">english</string>
+    <string name="nepali">नेपाली</string>
+    <string name="french">français</string>
+    <string name="spanish">español</string>
+    <string name="arabic">عربى</string>
+    <string name="somali">somali</string>
+
     <string-array name="language_keys">
         <item>en</item>
         <item>ne</item>
@@ -786,7 +793,7 @@
     <string name="username_cannot_be_empty">Username cannot be empty</string>
     <string name="unable_to_login">Unable to login</string>
     <string name="planet_server_not_reachable">Planet server not reachable.</string>
-    <string name="select_language">Select Language</string>
+    <string name="select_language">select language</string>
     <string name="thank_you">Thank You!</string>
     <string name="please_wait">Please wait....</string>
     <string name="update_later">Update Later</string>
@@ -1111,5 +1118,6 @@
     <string name="show_less">show less</string>
     <string name="show_more">show more</string>
     <string name="server_address_content_description">server address: %1$s</string>
+    <string name="select_theme_mode">select theme mode</string>
 
 </resources>
