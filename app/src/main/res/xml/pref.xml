@@ -38,6 +38,7 @@
     <PreferenceCategory
         android:dependency="beta_function"
         android:title="@string/beta_functionality">
+
         <SwitchPreference
             android:defaultValue="true"
             android:key="beta_addImageToMessage"
