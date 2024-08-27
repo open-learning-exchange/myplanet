@@ -109,8 +109,9 @@
                 android:focusable="false"
                 android:isIndicator="true"
                 android:numStars="5"
-                android:stepSize="1" />
-
+                android:stepSize="1"
+                android:progressTint="@color/daynight_textColor"
+                android:progressBackgroundTint="@color/empty_rating"/>
         </LinearLayout>
 
         <LinearLayout
