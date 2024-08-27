@@ -283,14 +283,14 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         }
 
         activityLoginBinding.btnLang.setOnClickListener {
-            val options = arrayOf(getString(R.string.english), getString(R.string.nepali), getString(R.string.french), getString(R.string.spanish), getString(R.string.arabic), getString(R.string.somali))
+            val options = arrayOf(getString(R.string.english), getString(R.string.spanish), getString(R.string.somali), getString(R.string.nepali), getString(R.string.arabic), getString(R.string.french))
             val checkedItem = when (currentLanguage) {
                 "en" -> 0
-                "ne" -> 1
-                "fr" -> 2
-                "es" -> 3
+                "es" -> 1
+                "so" -> 2
+                "ne" -> 3
                 "ar" -> 4
-                "so" -> 5
+                "fr" -> 5
                 else -> 0
             }
 
@@ -299,11 +299,11 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                 .setSingleChoiceItems(ArrayAdapter(this, R.layout.checked_list_item, options), checkedItem) { dialog, which ->
                     val selectedLanguage = when (which) {
                         0 -> "en"
-                        1 -> "ne"
-                        2 -> "fr"
-                        3 -> "es"
+                        1 -> "es"
+                        2 -> "so"
+                        3 -> "ne"
                         4 -> "ar"
-                        5 -> "so"
+                        5 -> "fr"
                         else -> "en"
                     }
                     LocaleHelper.setLocale(this, selectedLanguage)
