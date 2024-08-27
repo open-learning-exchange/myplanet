@@ -274,11 +274,11 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         val currentLanguage = LocaleHelper.getLanguage(this)
         activityLoginBinding.btnLang.text = when (currentLanguage) {
             "en" -> getString(R.string.english)
-            "ne" -> getString(R.string.nepali)
-            "fr" -> getString(R.string.french)
             "es" -> getString(R.string.spanish)
-            "ar" -> getString(R.string.arabic)
             "so" -> getString(R.string.somali)
+            "ne" -> getString(R.string.nepali)
+            "ar" -> getString(R.string.arabic)
+            "fr" -> getString(R.string.french)
             else -> getString(R.string.english)
         }
 
