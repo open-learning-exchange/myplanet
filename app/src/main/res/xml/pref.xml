@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
-    <ListPreference
-        android:entries="@array/language"
-        android:entryValues="@array/language_keys"
+    <Preference
         android:key="app_language"
         android:title="@string/language" />
     <SwitchPreference
@@ -40,6 +38,7 @@
     <PreferenceCategory
         android:dependency="beta_function"
         android:title="@string/beta_functionality">
+
         <SwitchPreference
             android:defaultValue="true"
             android:key="beta_addImageToMessage"

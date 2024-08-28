@@ -271,36 +271,50 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     }
 
     private fun setUpLanguageButton() {
-        val languageKey = resources.getStringArray(R.array.language_keys)
-        val languages = resources.getStringArray(R.array.language)
-        val currentLanguageKey = settings.getString(Constants.SELECTED_LANGUAGE, fallbackLanguage)
-        val index = languageKey.indexOf(currentLanguageKey)
-        activityLoginBinding.btnLang.text = languages[index]
+        val currentLanguage = LocaleHelper.getLanguage(this)
+        activityLoginBinding.btnLang.text = when (currentLanguage) {
+            "en" -> getString(R.string.english)
+            "es" -> getString(R.string.spanish)
+            "so" -> getString(R.string.somali)
+            "ne" -> getString(R.string.nepali)
+            "ar" -> getString(R.string.arabic)
+            "fr" -> getString(R.string.french)
+            else -> getString(R.string.english)
+        }
+
         activityLoginBinding.btnLang.setOnClickListener {
-            AlertDialog.Builder(this)
-                .setTitle(R.string.select_language)
-                .setSingleChoiceItems(languages, index) { dialog, which ->
-                    val selectedLanguageKey = languageKey[which]
-                    if (selectedLanguageKey != LocaleHelper.getLanguage(this)) {
-                        LocaleHelper.setLocale(this, selectedLanguageKey)
-                        settings.edit().putString(Constants.SELECTED_LANGUAGE, selectedLanguageKey).apply()
-                        updateLanguage(selectedLanguageKey)
+            val options = arrayOf(getString(R.string.english), getString(R.string.spanish), getString(R.string.somali), getString(R.string.nepali), getString(R.string.arabic), getString(R.string.french))
+            val checkedItem = when (currentLanguage) {
+                "en" -> 0
+                "es" -> 1
+                "so" -> 2
+                "ne" -> 3
+                "ar" -> 4
+                "fr" -> 5
+                else -> 0
+            }
+
+            val builder = AlertDialog.Builder(this, R.style.AlertDialogTheme)
+                .setTitle(getString(R.string.select_language))
+                .setSingleChoiceItems(ArrayAdapter(this, R.layout.checked_list_item, options), checkedItem) { dialog, which ->
+                    val selectedLanguage = when (which) {
+                        0 -> "en"
+                        1 -> "es"
+                        2 -> "so"
+                        3 -> "ne"
+                        4 -> "ar"
+                        5 -> "fr"
+                        else -> "en"
                     }
+                    LocaleHelper.setLocale(this, selectedLanguage)
+                    recreate()
                     dialog.dismiss()
                 }
                 .setNegativeButton(R.string.cancel, null)
-                .show()
-        }
-    }
 
-    @Suppress("DEPRECATION")
-    private fun updateLanguage(language: String) {
-        val locale = Locale(language)
-        Locale.setDefault(locale)
-        val config = resources.configuration
-        config.setLocale(locale)
-        resources.updateConfiguration(config, resources.displayMetrics)
-        recreate()
+            val dialog = builder.create()
+            dialog.show()
+        }
     }
 
     private fun declareHideKeyboardElements() {
