@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import io.realm.Realm
@@ -12,18 +13,20 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentHomeBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.getNoOfSurveySubmissionByUser
+import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.resources.AddResourceFragment
 import org.ole.planet.myplanet.ui.news.NewsFragment
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment
-import org.ole.planet.myplanet.utilities.Constants
-import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.TimeUtils.currentDate
 
 class DashboardFragment : BaseDashboardFragment() {
     private lateinit var fragmentHomeBinding: FragmentHomeBinding
     private lateinit var dRealm: Realm
     private lateinit var databaseService: DatabaseService
+    var user: RealmUserModel? = null
+
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentHomeBinding = FragmentHomeBinding.inflate(inflater, container, false)
@@ -43,6 +46,7 @@ class DashboardFragment : BaseDashboardFragment() {
         }
         databaseService = DatabaseService(requireActivity())
         dRealm = databaseService.realmInstance
+        user = UserProfileDbHandler(requireContext()).userModel
         onLoaded(view)
         initView(view)
         (activity as AppCompatActivity?)?.supportActionBar?.subtitle = currentDate()
@@ -54,7 +58,11 @@ class DashboardFragment : BaseDashboardFragment() {
         val noOfSurvey = getNoOfSurveySubmissionByUser(settings?.getString("userId", "--"), dRealm)
         fragmentHomeBinding.cardProfile.imgSurveyWarn.visibility = if (noOfSurvey == 0) View.VISIBLE else View.GONE
         fragmentHomeBinding.addResource.setOnClickListener {
-            AddResourceFragment().show(childFragmentManager, getString(R.string.add_res))
+            if (user?.id?.startsWith("guest") == false) {
+                AddResourceFragment().show(childFragmentManager, getString(R.string.add_res))
+            } else {
+                Toast.makeText(context, getString(R.string.member_only_allowed), Toast.LENGTH_SHORT).show()
+            }
         }
     }
 }
