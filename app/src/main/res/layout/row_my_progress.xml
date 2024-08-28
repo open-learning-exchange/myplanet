@@ -6,7 +6,8 @@
     android:orientation="horizontal"
     app:cardElevation="2dp"
     app:cardUseCompatPadding="true"
-    app:contentPadding="8dp">
+    app:contentPadding="8dp"
+    app:cardBackgroundColor="@color/card_bg">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -28,7 +29,7 @@
                 android:foregroundGravity="center"
                 android:gravity="center"
                 android:padding="@dimen/padding_large"
-                android:textColor="@color/md_black_1000"
+                android:textColor="@color/daynight_textColor"
                 android:textSize="20sp"
                 android:textStyle="bold" />
 
@@ -38,7 +39,7 @@
                 android:background="@drawable/buttonblue"
                 android:padding="4dp"
                 android:text="@string/mistakes"
-                android:textColor="@color/md_white_1000"
+                android:textColor="@color/daynight_textColor"
                 android:textSize="12sp" />
         </LinearLayout>
 
@@ -54,7 +55,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:padding="@dimen/padding_normal"
-                android:textColor="@color/md_black_1000"
+                android:textColor="@color/daynight_textColor"
                 android:textSize="16sp"
                 android:textStyle="bold" />
 
@@ -65,7 +66,7 @@
                 android:layout_height="wrap_content"
                 android:paddingLeft="@dimen/padding_normal"
                 android:paddingRight="@dimen/padding_normal"
-                android:textColor="@color/md_black_1000"
+                android:textColor="@color/daynight_textColor"
                 android:textSize="14sp"
                 android:textStyle="bold" />
 
