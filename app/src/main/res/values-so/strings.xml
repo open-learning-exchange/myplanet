@@ -196,6 +196,13 @@
         <item>Somali</item>
     </string-array>
 
+    <string name="english">english</string>
+    <string name="spanish">español</string>
+    <string name="somali">somali</string>
+    <string name="nepali">नेपाली</string>
+    <string name="arabic">عربى</string>
+    <string name="french">français</string>
+
     <string-array name="language_keys">
         <item>en</item>
         <item>ne</item>
@@ -1112,5 +1119,6 @@
     <string name="show_more">tus wax badan</string>
     <string name="server_address_content_description">cinwaanka serverka: %1$s</string>
     <string name="member_only_allowed">ku biir xubin ahaan si aad u hesho astaamahan</string>
+    <string name="select_theme_mode">dooro qaabka mawduuca</string>
 
 </resources>
