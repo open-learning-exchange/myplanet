@@ -28,7 +28,7 @@ import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.FileUtils.openOleFolder
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
-import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI:
+import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 
 @RequiresApi(api = Build.VERSION_CODES.O)
 class NewsFragment : BaseNewsFragment() {
@@ -36,6 +36,7 @@ class NewsFragment : BaseNewsFragment() {
     var user: RealmUserModel? = null
     private var updatedNewsList: RealmResults<RealmNews>? = null
     private var filteredNewsList: List<RealmNews?> = listOf()
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentNewsBinding = FragmentNewsBinding.inflate(inflater, container, false)
         llImage = fragmentNewsBinding.llImages
@@ -43,7 +44,7 @@ class NewsFragment : BaseNewsFragment() {
         user = UserProfileDbHandler(requireContext()).userModel
         setupUI(fragmentNewsBinding.newsFragmentParentLayout, requireActivity())
         if (user?.id?.startsWith("guest") == true) {
-            fragmentNewsBinding.btnAddStory.visibility = View.GONE;
+            fragmentNewsBinding.btnAddStory.visibility = View.GONE
         }
         fragmentNewsBinding.btnAddStory.setOnClickListener {
             fragmentNewsBinding.llAddNews.visibility = if (fragmentNewsBinding.llAddNews.visibility == View.VISIBLE) {
