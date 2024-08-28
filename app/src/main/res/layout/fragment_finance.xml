@@ -219,7 +219,8 @@
         android:layout_gravity="center"
         android:gravity="center"
         android:text="@string/nodata"
-        android:visibility="gone" />
+        android:visibility="gone"
+        android:textColor="@color/daynight_textColor" />
 
 
     <com.github.clans.fab.FloatingActionButton
