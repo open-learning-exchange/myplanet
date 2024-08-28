@@ -100,13 +100,10 @@ class SettingActivity : AppCompatActivity() {
             setBetaToggleOn()
             setAutoSyncToggleOn()
             setDownloadSyncFilesToggle()
-            val lp = findPreference<ListPreference>("app_language")
-            if (lp != null) {
-                lp.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, o: Any ->
-                    LocaleHelper.setLocale(requireActivity(), o.toString())
-                    requireActivity().recreate()
-                    true
-                }
+            val lp = findPreference<Preference>("app_language")
+            lp?.setOnPreferenceClickListener {
+                languageChanger()
+                true
             }
 
             val darkMode = findPreference<Preference>("dark_mode")
@@ -234,6 +231,41 @@ class SettingActivity : AppCompatActivity() {
             }
         }
 
+        private fun languageChanger() {
+            val options = arrayOf(getString(R.string.english), getString(R.string.spanish), getString(R.string.somali), getString(R.string.nepali), getString(R.string.arabic), getString(R.string.french))
+            val currentLanguage = LocaleHelper.getLanguage(requireContext())
+            val checkedItem = when (currentLanguage) {
+                "en" -> 0
+                "es" -> 1
+                "so" -> 2
+                "ne" -> 3
+                "ar" -> 4
+                "fr" -> 5
+                else -> 0
+            }
+
+            val builder = AlertDialog.Builder(requireContext())
+                .setTitle(getString(R.string.select_language))
+                .setSingleChoiceItems(ArrayAdapter(requireContext(), R.layout.checked_list_item, options), checkedItem) { dialog, which ->
+                    val selectedLanguage = when (which) {
+                        0 -> "en"
+                        1 -> "es"
+                        2 -> "so"
+                        3 -> "ne"
+                        4 -> "ar"
+                        5 -> "fr"
+                        else -> "en"
+                    }
+                    LocaleHelper.setLocale(requireContext(), selectedLanguage)
+                    requireActivity().recreate()
+                    dialog.dismiss()
+                }
+                .setNegativeButton(R.string.cancel, null)
+
+            val dialog = builder.create()
+            dialog.show()
+        }
+
         private fun darkMode() {
             val options = arrayOf(getString(R.string.dark_mode_off), getString(R.string.dark_mode_on), getString(R.string.dark_mode_follow_system))
             val currentMode = getCurrentThemeMode()
@@ -244,7 +276,7 @@ class SettingActivity : AppCompatActivity() {
             }
 
             val builder = AlertDialog.Builder(requireContext())
-                .setTitle("select theme mode")
+                .setTitle(getString(R.string.select_theme_mode))
                 .setSingleChoiceItems(ArrayAdapter(requireContext(), R.layout.checked_list_item, options), checkedItem) { dialog, which ->
                     val selectedMode = when (which) {
                         0 -> ThemeMode.LIGHT
@@ -255,7 +287,7 @@ class SettingActivity : AppCompatActivity() {
                     setThemeMode(selectedMode)
                     dialog.dismiss()
                 }
-                .setNegativeButton("Cancel", null)
+                .setNegativeButton(R.string.cancel, null)
 
             val dialog = builder.create()
             dialog.show()
