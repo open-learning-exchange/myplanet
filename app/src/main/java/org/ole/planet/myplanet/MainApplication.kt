@@ -27,7 +27,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
-import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.settings
 import org.ole.planet.myplanet.callback.TeamPageListener
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmApkLog
@@ -60,26 +59,19 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         lateinit var mRealm: Realm
         lateinit var service: DatabaseService
         var preferences: SharedPreferences? = null
-        @JvmField
         var syncFailedCount = 0
-        @JvmField
         var isCollectionSwitchOn = false
-        @JvmField
         var showDownload = false
-        @JvmField
         var isSyncRunning = false
-        var showHealthDialog = true
-        @JvmField
         var listener: TeamPageListener? = null
-        val androidId: String
-            get() {
-                try {
-                    return Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-                return "0"
+        val androidId: String get() {
+            try {
+                return Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
+            return "0"
+        }
         val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
         lateinit var defaultPref: SharedPreferences
 
@@ -183,7 +175,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
         isNetworkConnectedFlow.onEach { isConnected ->
             if (isConnected) {
-                val serverUrl = settings?.getString("serverURL", "")
+                val serverUrl = preferences?.getString("serverURL", "")
                 if (!serverUrl.isNullOrEmpty()) {
                     applicationScope.launch {
                         val canReachServer = withContext(Dispatchers.IO) {
