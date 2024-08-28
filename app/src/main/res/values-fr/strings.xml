@@ -1111,5 +1111,6 @@
     <string name="show_less">montrer moins</string>
     <string name="show_more">montrer plus</string>
     <string name="server_address_content_description">adresse du serveur : %1$s</string>
+    <string name="member_only_allowed">adhérez en tant que membre pour accéder à cette fonctionnalité</string>
 
 </resources>
