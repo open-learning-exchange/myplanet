@@ -149,7 +149,7 @@ class DiscussionListFragment : BaseTeamFragment() {
         val binding = AlertInputBinding.inflate(layoutInflater)
         val layout = binding.tlInput
         binding.addNewsImage.setOnClickListener {
-            val openFolderIntent: Intent = openOleFolder()
+            val openFolderIntent = openOleFolder()
             openFolderLauncher.launch(openFolderIntent)
         }
         binding.llImage.visibility = if (showBetaFeature(Constants.KEY_NEWSADDIMAGE, requireContext())) View.VISIBLE else View.GONE
@@ -174,7 +174,12 @@ class DiscussionListFragment : BaseTeamFragment() {
                 fragmentDiscussionListBinding.rvDiscussion.adapter?.notifyDataSetChanged()
                 setData(news)
             }
-            .setNegativeButton(getString(R.string.cancel), null)
+            .setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
+                layout.editText?.text?.clear()
+                imageList.clear()
+                llImage?.removeAllViews()
+                dialog.dismiss()
+            }
             .create()
 
         dialog.show()
