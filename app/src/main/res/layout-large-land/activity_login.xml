@@ -249,7 +249,6 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:contentDescription="@string/language"
-                    android:entries="@array/language"
                     android:padding="@dimen/padding_normal"
                     android:text="@string/language"
                     android:textColor="@android:color/white"
