@@ -357,7 +357,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             R.string.menu_community -> openCallFragment(CommunityTabFragment())
             R.string.txt_myLibrary -> {
                 if (user?.id?.startsWith("guest") == true) {
-                   guestDialog(this)
+                    guestDialog(this)
                 } else {
                     openMyFragment(ResourcesFragment())
                 }
