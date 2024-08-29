@@ -85,7 +85,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
             alertCreateTeamBinding.etName.setText(team.name)
         }
 
-        val builder = AlertDialog.Builder(requireActivity())
+        val builder = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
             .setTitle(String.format(getString(R.string.enter) + "%s " + getString(R.string.detail), if (type == null) getString(R.string.team) else type))
             .setView(alertCreateTeamBinding.root).setPositiveButton(getString(R.string.save), null).setNegativeButton(getString(R.string.cancel), null)
         val dialog = builder.create()

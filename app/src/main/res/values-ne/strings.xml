@@ -196,6 +196,13 @@
         <item>Somali</item>
     </string-array>
 
+    <string name="english">english</string>
+    <string name="spanish">español</string>
+    <string name="somali">somali</string>
+    <string name="nepali">नेपाली</string>
+    <string name="arabic">عربى</string>
+    <string name="french">français</string>
+
     <string-array name="language_keys">
         <item>en</item>
         <item>ne</item>
@@ -1111,5 +1118,7 @@
     <string name="show_less">कम देखाउनुहोस्</string>
     <string name="show_more">थप देखाउनुहोस्</string>
     <string name="server_address_content_description">सर्भर ठेगाना: %1$s</string>
+    <string name="member_only_allowed">यो सुविधा प्रयोग गर्न सदस्यको रूपमा सामेल हुनुहोस्</string>
+    <string name="select_theme_mode">थिम मोड चयन गर्नुहोस्</string>
 
 </resources>

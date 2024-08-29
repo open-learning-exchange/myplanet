@@ -8,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
@@ -29,6 +30,8 @@ import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getCourseByCourseId
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getCourseSteps
 import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.courses.MyProgressFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
@@ -43,16 +46,16 @@ import org.ole.planet.myplanet.ui.team.TeamFragment
 import org.ole.planet.myplanet.utilities.NetworkUtils.coroutineScope
 import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utilities.TimeUtils
-import java.net.*
 import java.util.Date
 
 class BellDashboardFragment : BaseDashboardFragment() {
     private lateinit var fragmentHomeBellBinding: FragmentHomeBellBinding
+    var user: RealmUserModel? = null
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentHomeBellBinding = FragmentHomeBellBinding.inflate(inflater, container, false)
-
+        user = UserProfileDbHandler(requireContext()).userModel
         val view = fragmentHomeBellBinding.root
         initView(view)
         declareElements()
@@ -86,7 +89,11 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
         (activity as DashboardActivity?)?.supportActionBar?.hide()
         fragmentHomeBellBinding.addResource.setOnClickListener {
-            AddResourceFragment().show(childFragmentManager, getString(R.string.add_res))
+            if (user?.id?.startsWith("guest") == false) {
+                AddResourceFragment().show(childFragmentManager, getString(R.string.add_res))
+            } else {
+                Toast.makeText(requireContext(), getString(R.string.member_only_allowed), Toast.LENGTH_SHORT).show()
+            }
         }
         showBadges()
         
