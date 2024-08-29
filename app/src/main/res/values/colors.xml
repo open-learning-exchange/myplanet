@@ -38,4 +38,5 @@
     <color name="material_drawer_background">@color/colorPrimary</color>
     <color name="selected_color">#80B0E0E6</color>
     <color name="empty_rating">@color/md_grey_500</color>
+    <color name="ic_download">#000000</color>
 </resources>
