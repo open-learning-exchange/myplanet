@@ -43,6 +43,9 @@ class NewsFragment : BaseNewsFragment() {
         mRealm = DatabaseService(requireActivity()).realmInstance
         user = UserProfileDbHandler(requireContext()).userModel
         setupUI(fragmentNewsBinding.newsFragmentParentLayout, requireActivity())
+        if (user?.id?.startsWith("guest") == true) {
+            fragmentNewsBinding.btnAddStory.visibility = View.GONE
+        }
         fragmentNewsBinding.btnAddStory.setOnClickListener {
             fragmentNewsBinding.llAddNews.visibility = if (fragmentNewsBinding.llAddNews.visibility == View.VISIBLE) {
                 View.GONE
