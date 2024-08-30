@@ -10,7 +10,6 @@ import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
@@ -309,7 +308,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun updateBadge(badge: TextView, count: Int) {
-        Log.d("Badge", count.toString())
         if (count > 0) {
             badge.text = count.toString()
             badge.visibility = View.VISIBLE
