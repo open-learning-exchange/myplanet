@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
+import android.database.Cursor
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -36,6 +37,7 @@ import org.ole.planet.myplanet.utilities.FileUtils.getRealPathFromURI
 import org.ole.planet.myplanet.utilities.FileUtils.openOleFolder
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import java.io.File
+import java.io.FileOutputStream
 
 @RequiresApi(api = Build.VERSION_CODES.O)
 abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListener {
@@ -58,7 +60,7 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
                 val url: Uri? = data?.data
                 path = getRealPathFromURI(requireActivity(), url)
                 if (TextUtils.isEmpty(path)) {
-                    path = getImagePath(url)
+                    path = getPathFromURI(url)
                 }
                 val `object` = JsonObject()
                 `object`.addProperty("imageUrl", path)
@@ -112,17 +114,35 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
         count?.let { BaseRecyclerFragment.showNoData(v, it, source) }
     }
 
-    private fun getImagePath(uri: Uri?): String? {
-        var cursor = uri?.let { requireContext().contentResolver.query(it, null, null, null, null) }
-        cursor?.moveToFirst()
-        var documentId = cursor?.getString(0)
-        documentId = documentId?.substring(documentId.lastIndexOf(":") + 1)
-        cursor?.close()
-        cursor = requireContext().contentResolver.query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, null, MediaStore.Images.Media._ID + " = ? ", arrayOf(documentId), null)
-        cursor?.moveToFirst()
-        val path = cursor?.getString(cursor.getColumnIndex(MediaStore.Images.Media.DATA))
-        cursor?.close()
-        return path
+    private fun getPathFromURI(uri: Uri?): String? {
+        var filePath: String? = null
+        if (uri != null) {
+            val scheme = uri.scheme
+            if (scheme == "content") {
+                val cursor: Cursor? = requireActivity().contentResolver.query(uri, null, null, null, null)
+                cursor?.use {
+                    if (it.moveToFirst()) {
+                        val columnIndex = it.getColumnIndexOrThrow(MediaStore.Images.Media.DISPLAY_NAME)
+                        val fileName = it.getString(columnIndex)
+                        val cacheDir = requireActivity().cacheDir
+                        val destinationFile = File(cacheDir, fileName)
+                        copyFile(uri, destinationFile)
+                        filePath = destinationFile.absolutePath
+                    }
+                }
+            } else if (scheme == "file") {
+                filePath = uri.path
+            }
+        }
+        return filePath
+    }
+
+    private fun copyFile(sourceUri: Uri, destinationFile: File) {
+        requireActivity().contentResolver.openInputStream(sourceUri)?.use { inputStream ->
+            FileOutputStream(destinationFile).use { outputStream ->
+                inputStream.copyTo(outputStream)
+            }
+        }
     }
 
     fun changeLayoutManager(orientation: Int, recyclerView: RecyclerView) {

@@ -151,4 +151,4 @@ jobs:
           sudo npm install -g @treehouses/cli
           export discord_channel="${{ secrets.CHANNEL }}" #remote
           echo "https://github.com/open-learning-exchange/myplanet/releases/tag/v${{ env.ANDROID_VERSION_NAME }}"
-          treehouses feedback "new myplanet app: https://github.com/open-learning-exchange/myplanet/releases/tag/v${{ env.ANDROID_VERSION_NAME }}"
+          treehouses feedback "new myplanet app: <https://github.com/open-learning-exchange/myplanet/releases/tag/v${{ env.ANDROID_VERSION_NAME }}>"

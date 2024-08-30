@@ -21,7 +21,6 @@
             android:padding="@dimen/padding_small"
             android:textColor="@color/daynight_textColor"
             android:textStyle="bold" />
-
         <TextView
             android:id="@+id/created"
             android:layout_width="0dp"
@@ -29,7 +28,6 @@
             android:layout_weight="1"
             android:padding="@dimen/padding_small"
             android:textColor="@color/daynight_textColor" />
-
         <TextView
             android:id="@+id/type"
             android:layout_width="0dp"
@@ -37,7 +35,6 @@
             android:layout_weight="1"
             android:padding="@dimen/padding_small"
             android:textColor="@color/daynight_textColor" />
-
         <TextView
             android:id="@+id/no_of_visits"
             android:layout_width="0dp"
@@ -45,50 +42,66 @@
             android:layout_weight="1"
             android:padding="@dimen/padding_small"
             android:textColor="@color/daynight_textColor" />
-
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/ltButtons"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="2">
 
-            <Button
+            <ImageButton
                 android:id="@+id/join_leave"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="@string/request_to_join"
-                android:textSize="10sp"
+                android:minWidth="30dp"
+                android:minHeight="30dp"
+                android:src="@drawable/ic_join_request"
+                android:background="?attr/selectableItemBackground"
+                android:scaleType="centerInside"
+                android:contentDescription="@string/request_to_join"
+                android:padding="12dp"
                 app:layout_constraintEnd_toStartOf="@id/edit_team"
-                app:layout_constraintHorizontal_chainStyle="packed"
+                app:layout_constraintHorizontal_chainStyle="spread"
                 app:layout_constraintHorizontal_weight="1"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-            <Button
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_goneMarginEnd="0dp"
+                app:tint="@color/daynight_textColor" />
+            <ImageButton
                 android:id="@+id/edit_team"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="@string/edit"
-                android:textSize="10sp"
+                android:minWidth="30dp"
+                android:minHeight="30dp"
+                android:src="@drawable/ic_edit"
+                android:background="?attr/selectableItemBackground"
+                android:scaleType="centerInside"
+                android:contentDescription="@string/edit"
                 android:visibility="gone"
+                android:padding="12dp"
                 app:layout_constraintEnd_toStartOf="@id/btn_feedback"
                 app:layout_constraintHorizontal_weight="1"
                 app:layout_constraintStart_toEndOf="@id/join_leave"
-                app:layout_constraintTop_toTopOf="parent" />
-
-            <Button
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_goneMarginStart="0dp"
+                app:layout_goneMarginEnd="0dp"
+                app:tint="@color/daynight_textColor" />
+            <ImageButton
                 android:id="@+id/btn_feedback"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="@string/menu_feedback"
+                android:minWidth="30dp"
+                android:minHeight="30dp"
+                android:src="@drawable/ic_feedback"
+                android:background="?attr/selectableItemBackground"
+                android:scaleType="centerInside"
                 android:contentDescription="@string/menu_feedback"
-                android:textSize="10sp"
+                android:padding="12dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintHorizontal_weight="1"
                 app:layout_constraintStart_toEndOf="@id/edit_team"
-                app:layout_constraintTop_toTopOf="parent" />
-
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_goneMarginStart="0dp"
+                app:tint="@color/daynight_textColor" />
         </androidx.constraintlayout.widget.ConstraintLayout>
-
     </TableRow>
 </TableLayout>

@@ -30,7 +30,6 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context,
         this.chatItemClickListener = listener
     }
 
-
     class QueryViewHolder(private val textUserMessageBinding: ItemUserMessageBinding) : RecyclerView.ViewHolder(textUserMessageBinding.root) {
         fun bind(query: String) {
             textUserMessageBinding.textGchatMessageMe.text = query

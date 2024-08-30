@@ -123,6 +123,7 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
-        <service android:name=".datamanager.MyDownloadService" />
+        <service android:name=".datamanager.MyDownloadService"
+            android:exported="false" />
     </application>
 </manifest>

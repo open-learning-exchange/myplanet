@@ -29,12 +29,12 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
         dbService = DatabaseService(requireActivity())
         mRealm = dbService.realmInstance
         user = profileDbHandler.userModel?.let { mRealm.copyFromRealm(it) }
-        try {
-            team = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
+        team = try {
+            mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
                 ?: throw IllegalArgumentException("Team not found for ID: $teamId")
         } catch (e: IllegalArgumentException) {
             try {
-                team = mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId).findFirst()
+                mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId).findFirst()
                     ?: throw IllegalArgumentException("Team not found for ID: $teamId")
             } catch (e: IllegalArgumentException) {
                 Toast.makeText(requireContext(), "Create an account to access this", Toast.LENGTH_LONG).show()

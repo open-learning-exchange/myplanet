@@ -113,7 +113,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
             showUserInfoDialog()
         } else {
             saveCourseProgress()
-            AlertDialog.Builder(requireActivity())
+            AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
                 .setTitle(getString(R.string.thank_you_for_taking_this) + type + getString(R.string.we_wish_you_all_the_best))
                 .setPositiveButton("Finish") { _: DialogInterface?, _: Int ->
                     parentFragmentManager.popBackStack()

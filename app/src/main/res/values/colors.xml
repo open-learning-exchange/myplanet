@@ -3,11 +3,13 @@
     <color name="colorPrimary">@color/md_blue_700</color>
     <color name="colorPrimaryDark">@color/md_blue_900</color>
     <color name="colorPrimaryLight">@color/md_blue_500</color>
+    <color name="colorPrimaryWhite">@color/md_blue_700</color>
     <color name="colorAccent">@color/md_red_500</color>
     <color name="textColorPrimary">#ffffff</color>
     <color name="disable_color">#BDBDBD</color>
     <color name="daynight_textColor">@color/md_black_1000</color>
     <color name="daynight_grey">@color/md_blue_grey_50</color>
+    <color name="daynight_white_grey">#FFFFFF</color>
     <color name="card_bg">#FFFFFF</color>
     <color name="secondary_bg">#FFFFFF</color>
     <color name="hint_color">#808080</color>
@@ -34,6 +36,7 @@
     <!-- changes logout button area background from white to whatever the background color for the drawer is.
     Without it, the drawer and logout button area are different colors -->
     <color name="material_drawer_background">@color/colorPrimary</color>
-
     <color name="selected_color">#80B0E0E6</color>
+    <color name="empty_rating">@color/md_grey_500</color>
+    <color name="ic_download">#000000</color>
 </resources>

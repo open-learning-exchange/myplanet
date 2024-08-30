@@ -13,6 +13,7 @@ import android.widget.LinearLayout
 import android.widget.PopupMenu
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.view.ContextThemeWrapper
 import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -35,7 +36,6 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
-import org.ole.planet.myplanet.ui.chat.ChatAdapter.Companion.clickListener
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
@@ -188,7 +188,8 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     private fun addLabels(holder: RecyclerView.ViewHolder, news: RealmNews?) {
         val viewHolder = holder as ViewHolderNews
         viewHolder.rowNewsBinding.btnAddLabel.setOnClickListener {
-            val menu = PopupMenu(context, viewHolder.rowNewsBinding.btnAddLabel)
+            val wrapper = ContextThemeWrapper(context, R.style.CustomPopupMenu)
+            val menu = PopupMenu(wrapper, viewHolder.rowNewsBinding.btnAddLabel)
             val inflater = menu.menuInflater
             inflater.inflate(R.menu.menu_add_label, menu.menu)
             menu.setOnMenuItemClickListener { menuItem: MenuItem ->
@@ -290,13 +291,14 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
 
     private fun showEditAlert(id: String?, isEdit: Boolean) {
         val v = LayoutInflater.from(context).inflate(R.layout.alert_input, null)
+        v.setBackgroundColor(ContextCompat.getColor(context, R.color.daynight_grey))
         val et = v.findViewById<EditText>(R.id.et_input)
         v.findViewById<View>(R.id.ll_image).visibility = if (showBetaFeature(Constants.KEY_NEWSADDIMAGE, context)) View.VISIBLE else View.GONE
         val llImage = v.findViewById<LinearLayout>(R.id.ll_alert_image)
         v.findViewById<View>(R.id.add_news_image).setOnClickListener { listener?.addImage(llImage) }
         val news = mRealm.where(RealmNews::class.java).equalTo("id", id).findFirst()
         if (isEdit) et.setText(context.getString(R.string.message_placeholder, news?.message))
-        AlertDialog.Builder(context).setTitle(if (isEdit) R.string.edit_post else R.string.reply)
+        val dialog = AlertDialog.Builder(context, R.style.CustomAlertDialog).setTitle(if (isEdit) R.string.edit_post else R.string.reply)
             .setIcon(R.drawable.ic_edit).setView(v)
             .setPositiveButton(R.string.button_submit) { _: DialogInterface?, _: Int ->
                 val s = et.text.toString()
@@ -305,7 +307,12 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                 } else {
                     postReply(s, news)
                 }
-            }.setNegativeButton(R.string.cancel, null).show()
+            }.setNegativeButton(R.string.cancel, null)
+            .create()
+
+        dialog.show()
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(ContextCompat.getColor(context, R.color.colorPrimaryWhite))
+        dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(ContextCompat.getColor(context, R.color.colorPrimaryWhite))
     }
 
     private fun postReply(s: String?, news: RealmNews?) {

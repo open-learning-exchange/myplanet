@@ -5,7 +5,8 @@
     android:layout_height="wrap_content"
     app:cardElevation="4dp"
     app:cardUseCompatPadding="true"
-    app:contentPadding="@dimen/padding_normal">
+    app:contentPadding="@dimen/padding_normal"
+    app:cardBackgroundColor="@color/card_bg">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -17,10 +18,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="4dp"
-            android:textColor="@color/md_black_1000"
+            android:textColor="@color/daynight_textColor"
             android:textSize="@dimen/text_size_mid"
             android:textStyle="bold" />
-
         <TextView
             android:id="@+id/date"
             android:layout_width="match_parent"
@@ -28,16 +28,15 @@
             android:ellipsize="end"
             android:maxLines="2"
             android:padding="4dp"
-            android:textColor="@color/colorPrimaryDark" />
-
+            android:textColor="@color/colorPrimaryWhite" />
         <TextView
             android:id="@+id/description"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:ellipsize="end"
             android:maxLines="2"
-            android:padding="4dp" />
-
+            android:padding="4dp"
+            android:textColor="@color/daynight_textColor" />
         <LinearLayout
             android:id="@+id/ll_edit_delete"
             android:layout_width="wrap_content"
@@ -52,8 +51,8 @@
                 android:layout_marginLeft="8dp"
                 android:background="?attr/selectableItemBackground"
                 android:visibility="visible"
+                app:tint="@color/daynight_textColor"
                 app:srcCompat="@drawable/ic_file_upload" />
-
             <ImageView
                 android:id="@+id/img_edit"
                 android:layout_width="30dp"
@@ -62,8 +61,8 @@
                 android:layout_marginLeft="8dp"
                 android:background="?attr/selectableItemBackground"
                 android:visibility="visible"
+                app:tint="@color/daynight_textColor"
                 app:srcCompat="@drawable/ic_edit" />
-
             <ImageView
                 android:id="@+id/img_delete"
                 android:layout_width="30dp"
@@ -72,9 +71,8 @@
                 android:layout_marginLeft="8dp"
                 android:layout_marginRight="8dp"
                 android:background="?attr/selectableItemBackground"
+                app:tint="@color/daynight_textColor"
                 app:srcCompat="@drawable/ic_delete" />
         </LinearLayout>
-
     </LinearLayout>
-
 </androidx.cardview.widget.CardView>

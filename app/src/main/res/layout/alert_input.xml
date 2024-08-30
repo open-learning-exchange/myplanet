@@ -3,18 +3,21 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
+    android:background="@color/daynight_grey"
     android:padding="@dimen/padding_normal">
 
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/tl_input"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:textColorHint="@color/hint_color"
         android:hint="@string/what_would">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/et_input"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:textColor="@color/daynight_textColor" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <LinearLayout
@@ -30,7 +33,6 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="vertical" />
-
         <Button
             android:id="@+id/add_news_image"
             android:layout_width="wrap_content"

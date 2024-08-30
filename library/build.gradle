@@ -1,6 +1,0 @@
-configurations.maybeCreate("default")
-artifacts.add("default", file('CalendarView-1.0.4.aar'))
-artifacts.add("default", file('ChipCloud-3.0.5.aar'))
-artifacts.add("default", file('barteksc-android-pdf-viewer-3.2.0-beta.1.aar'))
-artifacts.add("default", file('flexbox-1.0.0.aar'))
-artifacts.add("default", file('materialarcmenu-2.0.0.aar'))

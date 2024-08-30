@@ -10,6 +10,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 abstract class BaseRecyclerParentFragment<LI> : BaseResourceFragment() {
     var isMyCourseLib: Boolean = false
 
+    @Suppress("UNCHECKED_CAST")
     fun getList(c: Class<*>): List<LI> {
         return when {
             c == RealmStepExam::class.java -> {
@@ -31,6 +32,7 @@ abstract class BaseRecyclerParentFragment<LI> : BaseResourceFragment() {
 
     fun getList(c: Class<*>, orderBy: String): List<LI> = getList(c, orderBy, Sort.ASCENDING)
 
+    @Suppress("UNCHECKED_CAST")
     fun getList(c: Class<*>, orderBy: String? = null, sort: Sort = Sort.ASCENDING): List<LI> {
         return when {
             c == RealmStepExam::class.java -> {
@@ -48,7 +50,7 @@ abstract class BaseRecyclerParentFragment<LI> : BaseResourceFragment() {
             }
         }
     }
-    
+    @Suppress("UNCHECKED_CAST")
     private fun <T : RealmModel> getMyLibItems(c: Class<T>, orderBy: String? = null): List<LI> {
         val query = mRealm.where(c)
         val realmResults = if (orderBy != null) {

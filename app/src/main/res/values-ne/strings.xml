@@ -196,6 +196,13 @@
         <item>Somali</item>
     </string-array>
 
+    <string name="english">english</string>
+    <string name="spanish">español</string>
+    <string name="somali">somali</string>
+    <string name="nepali">नेपाली</string>
+    <string name="arabic">عربى</string>
+    <string name="french">français</string>
+
     <string-array name="language_keys">
         <item>en</item>
         <item>ne</item>
@@ -1075,8 +1082,7 @@
     <string name="tag_selected">%s छनोट गरिएको</string>
     <string name="resources_size">स्रोतहरू [%d]</string>
     <string name="user_role">- %s</string>
-    <string name="offline_visit">%d भ्रमण</string>
-    <string name="offline_visits">%d भ्रमणहरू</string>
+    <string name="user_name">%s (%d)</string>
     <string name="visit_count">%1$s (%2$d %3$s)</string>
     <string name="two_strings">%1$s %2$s</string>
     <string name="three_strings">%1$s %2$s %3$s</string>
@@ -1095,22 +1101,24 @@
     <string name="are_you_sure_you_want_to_archive_this_course">के तपाइँ निश्चित हुनुहुन्छ कि तपाइँ यो पाठ्यक्रम संग्रह गर्न चाहनुहुन्छ?</string>
     <string name="manual">हस्तपुस्तिका</string>
     <string name="sync_to_server">सर्भरमा समक्रमण गर्नुहोस्:</string>
-    <string name="sync_planet_learning">🌎planet learning</string>
-    <string name="sync_guatemala">🇬🇹planet guatemala</string>
-    <string name="sync_san_pablo">🇬🇹planet san sablo</string>
-    <string name="sync_planet_earth">🌎planet earth</string>
-    <string name="sync_somalia">🇸🇴planet somalia</string>
-    <string name="sync_vi">🌎planet vi</string>
-    <string name="sync_xela">🇬🇹planet xela</string>
-    <string name="sync_uriur">🇰🇪planet uriur</string>
-    <string name="sync_ruiru">🇰🇪planet ruiru</string>
-    <string name="sync_embakasi">🇰🇪planet embakasi</string>
-    <string name="sync_cambridge">🇺🇸planet cambridge</string>
-    <string name="sync_egdirbmac">🇺🇸planet egdirbmac</string>
-    <string name="sync_palmbay">🇺🇸planet palmbay</string>
+    <string name="sync_planet_learning">🌎 planet learning</string>
+    <string name="sync_guatemala">🇬🇹 planet guatemala</string>
+    <string name="sync_san_pablo">🇬🇹 planet san pablo</string>
+    <string name="sync_planet_earth">🌎 planet earth</string>
+    <string name="sync_somalia">🇸🇴 planet somalia</string>
+    <string name="sync_vi">🌎 planet vi</string>
+    <string name="sync_xela">🇬🇹 planet xela</string>
+    <string name="sync_uriur">🇰🇪 planet uriur</string>
+    <string name="sync_ruiru">🇰🇪 planet ruiru</string>
+    <string name="sync_embakasi">🇰🇪 planet embakasi</string>
+    <string name="sync_cambridge">🇺🇸 planet cambridge</string>
+    <string name="sync_egdirbmac">🇺🇸 planet egdirbmac</string>
+    <string name="sync_palmbay">🇺🇸 planet palmbay</string>
     <string name="surveys_to_complete">तपाईंको %1$d %2$s पूरा गर्न बाँकी छ</string>
     <string name="show_less">कम देखाउनुहोस्</string>
     <string name="show_more">थप देखाउनुहोस्</string>
     <string name="server_address_content_description">सर्भर ठेगाना: %1$s</string>
+    <string name="member_only_allowed">यो सुविधा प्रयोग गर्न सदस्यको रूपमा सामेल हुनुहोस्</string>
+    <string name="select_theme_mode">थिम मोड चयन गर्नुहोस्</string>
 
 </resources>

@@ -1,4 +1,5 @@
 package org.ole.planet.myplanet.utilities
+
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
@@ -14,6 +15,7 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.view.Surface
 import androidx.core.content.ContextCompat
+import org.ole.planet.myplanet.MainApplication.Companion.context
 import java.io.File
 import java.io.FileOutputStream
 import java.util.*
@@ -27,18 +29,12 @@ object CameraUtils {
     private var backgroundThread: HandlerThread = HandlerThread("CameraBackground")
 
     @JvmStatic
-    fun capturePhoto(context: Context, callback: ImageCaptureCallback) {
-        if (ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.CAMERA
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
+    fun capturePhoto(callback: ImageCaptureCallback) {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             return
         }
         openCamera(context)
-        imageReader = ImageReader.newInstance(
-            IMAGE_WIDTH, IMAGE_HEIGHT, ImageFormat.JPEG, 1
-        )
+        imageReader = ImageReader.newInstance(IMAGE_WIDTH, IMAGE_HEIGHT, ImageFormat.JPEG, 1)
         imageReader?.setOnImageAvailableListener({ reader ->
             val image = reader.acquireLatestImage()
             val buffer = image.planes[0].buffer
@@ -48,25 +44,47 @@ object CameraUtils {
             image.close()
         }, backgroundHandler)
 
-        val captureBuilder = cameraDevice?.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE)
-        captureBuilder?.addTarget(imageReader!!.surface)
-        captureBuilder?.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
+        try {
+            val captureBuilder = cameraDevice?.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE)
+            captureBuilder?.addTarget(imageReader!!.surface)
+            captureBuilder?.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
 
-        val captureCallback = object : CameraCaptureSession.CaptureCallback() {}
+            val captureCallback = object : CameraCaptureSession.CaptureCallback() {}
 
-        captureSession?.stopRepeating()
-        captureSession?.abortCaptures()
-        captureSession?.capture(captureBuilder!!.build(), captureCallback, null)
+            captureSession?.stopRepeating()
+            captureSession?.abortCaptures()
+            captureSession?.capture(captureBuilder!!.build(), captureCallback, null)
+        } catch (e: CameraAccessException) {
+            when (e.reason) {
+                CameraAccessException.CAMERA_DISCONNECTED -> {
+                    reopenCamera(context)
+                }
+            }
+        }
+    }
+
+    private fun reopenCamera(context: Context) {
+        closeCamera()
+        openCamera(context)
+    }
+
+    private fun closeCamera() {
+        captureSession?.close()
+        captureSession = null
+        cameraDevice?.close()
+        cameraDevice = null
+        imageReader?.close()
+        imageReader = null
     }
 
     @JvmStatic
     private fun savePicture(data: ByteArray, callback: ImageCaptureCallback) {
-        val pictureFileDir = File(Utilities.SD_PATH + "/userimages")
+        val pictureFileDir = File("${Utilities.SD_PATH}/userimages")
         if (!pictureFileDir.exists() && !pictureFileDir.mkdirs()) {
             pictureFileDir.mkdirs()
         }
-        val photoFile = Date().time.toString() + ".jpg"
-        val filename = pictureFileDir.path + File.separator + photoFile
+        val photoFile = "${Date().time}.jpg"
+        val filename = "${pictureFileDir.path}${File.separator}$photoFile"
         val mainPicture = File(filename)
         try {
             val fos = FileOutputStream(mainPicture)
@@ -77,12 +95,13 @@ object CameraUtils {
             error.printStackTrace()
         }
     }
+
     @SuppressLint("MissingPermission")
     @JvmStatic
     private fun openCamera(context: Context) {
         val manager = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
         try {
-            val cameraId = manager.cameraIdList[0] // Assuming we want to use the first (rear) camera
+            val cameraId = manager.cameraIdList[0]
             manager.openCamera(cameraId, object : CameraDevice.StateCallback() {
                 override fun onOpened(camera: CameraDevice) {
                     cameraDevice = camera
@@ -90,12 +109,12 @@ object CameraUtils {
                 }
 
                 override fun onDisconnected(camera: CameraDevice) {
-                    cameraDevice?.close()
+                    closeCamera()
+                    reopenCamera(context)
                 }
 
                 override fun onError(camera: CameraDevice, error: Int) {
-                    cameraDevice?.close()
-                    cameraDevice = null
+                    closeCamera()
                 }
             }, null)
         } catch (e: CameraAccessException) {
@@ -118,15 +137,8 @@ object CameraUtils {
                         if (cameraDevice == null) return
                         captureSession = session
                         try {
-                            captureRequestBuilder.set(
-                                CaptureRequest.CONTROL_AF_MODE,
-                                CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE
-                            )
-                            captureSession!!.setRepeatingRequest(
-                                captureRequestBuilder.build(),
-                                null,
-                                backgroundHandler
-                            )
+                            captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
+                            captureSession?.setRepeatingRequest(captureRequestBuilder.build(), null, backgroundHandler)
                         } catch (e: CameraAccessException) {
                             e.printStackTrace()
                         }
@@ -135,39 +147,24 @@ object CameraUtils {
                     override fun onConfigureFailed(session: CameraCaptureSession) {}
                 }
 
-                val sessionConfiguration = SessionConfiguration(
-                    SessionConfiguration.SESSION_REGULAR,
-                    outputConfigurations,
-                    executor,
-                    stateCallback
-                )
+                val sessionConfiguration = SessionConfiguration(SessionConfiguration.SESSION_REGULAR, outputConfigurations, executor, stateCallback)
 
-                cameraDevice!!.createCaptureSession(sessionConfiguration)
+                cameraDevice?.createCaptureSession(sessionConfiguration)
             } else {
                 @Suppress("DEPRECATION")
-                cameraDevice!!.createCaptureSession(
-                    listOf(surface),
-                    object : CameraCaptureSession.StateCallback() {
-                        override fun onConfigured(session: CameraCaptureSession) {
-                            if (cameraDevice == null) return
-                            captureSession = session
-                            try {
-                                captureRequestBuilder.set(
-                                    CaptureRequest.CONTROL_AF_MODE,
-                                    CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE
-                                )
-                                captureSession!!.setRepeatingRequest(
-                                    captureRequestBuilder.build(),
-                                    null,
-                                    backgroundHandler
-                                )
-                            } catch (e: CameraAccessException) {
-                                e.printStackTrace()
-                            }
+                cameraDevice?.createCaptureSession(listOf(surface), object : CameraCaptureSession.StateCallback() {
+                    override fun onConfigured(session: CameraCaptureSession) {
+                        if (cameraDevice == null) return
+                        captureSession = session
+                        try {
+                            captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
+                            captureSession?.setRepeatingRequest(captureRequestBuilder.build(), null, backgroundHandler)
+                        } catch (e: CameraAccessException) {
+                            e.printStackTrace()
                         }
+                    }
 
-                        override fun onConfigureFailed(session: CameraCaptureSession) {}
-                    },
+                    override fun onConfigureFailed(session: CameraCaptureSession) {} },
                     backgroundHandler
                 )
             }
