@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:backgroundTint="@color/card_bg"
@@ -27,7 +26,6 @@
                 android:layout_gravity="center"
                 android:padding="@dimen/padding_small"
                 android:src="@drawable/ole_logo" />
-
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -45,7 +43,6 @@
                     android:textColor="@color/daynight_textColor"
                     android:textSize="14sp"
                     android:textStyle="bold" />
-
                 <TextView
                     android:id="@+id/tv_date"
                     android:layout_width="match_parent"
@@ -53,7 +50,6 @@
                     android:layout_marginTop="4dp"
                     android:textColor="@color/daynight_textColor"
                     android:textSize="14sp" />
-
             </LinearLayout>
         </LinearLayout>
 
@@ -69,11 +65,10 @@
                 android:id="@+id/sharedChat"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:background="@color/colorPrimary"
+                android:background="@color/mainColor"
                 android:padding="4dp"
                 android:text="@string/shared_chat"
                 android:textColor="@color/md_white_1000" />
-
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/recycler_gchat"
                 android:layout_width="match_parent"
@@ -86,7 +81,6 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/aiTbLayout" />
-
             <LinearLayout
                 android:id="@+id/linearLayout51"
                 android:layout_width="match_parent"
@@ -98,7 +92,6 @@
                     android:layout_height="120dp"
                     android:layout_gravity="center"
                     android:padding="@dimen/padding_small" />
-
                 <TextView
                     android:id="@+id/tv_message"
                     android:layout_width="0dp"
@@ -111,7 +104,6 @@
                     android:textColor="@color/daynight_textColor"
                     android:textSize="14sp"
                     android:visibility="visible" />
-
             </LinearLayout>
         </LinearLayout>
 
@@ -122,7 +114,6 @@
             android:padding="@dimen/padding_normal"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/linearLayout5" />
-
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -141,7 +132,6 @@
                 app:layout_constraintHorizontal_chainStyle="spread_inside"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
-
             <Button
                 android:id="@+id/btn_show_reply"
                 android:layout_width="0dp"
@@ -152,7 +142,6 @@
                 app:layout_constraintEnd_toStartOf="@+id/btn_add_label"
                 app:layout_constraintStart_toEndOf="@+id/btn_reply"
                 app:layout_constraintTop_toTopOf="parent" />
-
             <Button
                 android:id="@+id/btn_add_label"
                 android:layout_width="0dp"
@@ -163,7 +152,6 @@
                 app:layout_constraintEnd_toStartOf="@+id/btn_share"
                 app:layout_constraintStart_toEndOf="@+id/btn_show_reply"
                 app:layout_constraintTop_toTopOf="parent" />
-
             <Button
                 android:id="@+id/btn_share"
                 android:layout_width="0dp"
@@ -174,8 +162,6 @@
                 app:layout_constraintEnd_toStartOf="@+id/ll_edit_delete"
                 app:layout_constraintStart_toEndOf="@+id/btn_add_label"
                 app:layout_constraintTop_toTopOf="parent" />
-
-
             <LinearLayout
                 android:id="@+id/ll_edit_delete"
                 android:layout_width="wrap_content"
@@ -193,17 +179,16 @@
                     android:layout_marginStart="8dp"
                     android:background="?attr/selectableItemBackground"
                     android:visibility="visible"
-                    app:tint="@color/daynight_textColor"
-                    app:srcCompat="@drawable/ic_edit" />
-
+                    app:srcCompat="@drawable/ic_edit"
+                    app:tint="@color/daynight_textColor" />
                 <ImageView
                     android:id="@+id/img_delete"
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:layout_marginStart="8dp"
                     android:background="?attr/selectableItemBackground"
-                    app:tint="@color/daynight_textColor"
-                    app:srcCompat="@drawable/ic_delete" />
+                    app:srcCompat="@drawable/ic_delete"
+                    app:tint="@color/daynight_textColor" />
             </LinearLayout>
         </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>

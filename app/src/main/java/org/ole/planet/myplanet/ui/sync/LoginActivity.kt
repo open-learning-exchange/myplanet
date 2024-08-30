@@ -221,13 +221,14 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     }
 
     fun updateTeamDropdown() {
-        if (mRealm == null || mRealm.isClosed) {
+        if (mRealm.isClosed) {
             mRealm = Realm.getDefaultInstance()
         }
-        val teams: List<RealmMyTeam>? = mRealm?.where(RealmMyTeam::class.java)?.isEmpty("teamId")?.equalTo("status", "active")?.findAll()
+        val teams: List<RealmMyTeam>? = mRealm.where(RealmMyTeam::class.java)
+            ?.isEmpty("teamId")?.equalTo("status", "active")?.findAll()
 
-        if (teams != null && teams.isNotEmpty()) {
-            activityLoginBinding.team?.visibility = View.VISIBLE
+        if (!teams.isNullOrEmpty()) {
+            activityLoginBinding.team.visibility = View.VISIBLE
             teamAdapter = ArrayAdapter(this, R.layout.spinner_item_white, teamList)
             teamAdapter?.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             teamList.clear()
@@ -237,20 +238,20 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                     teamList.add(team.name)
                 }
             }
-            activityLoginBinding.team?.adapter = teamAdapter
+            activityLoginBinding.team.adapter = teamAdapter
             val lastSelection = prefData.getSelectedTeamId()
             if (!lastSelection.isNullOrEmpty()) {
                 for (i in teams.indices) {
                     val team = teams[i]
                     if (team._id != null && team._id == lastSelection && team.isValid) {
                         val lastSelectedPosition = i + 1
-                        activityLoginBinding.team?.setSelection(lastSelectedPosition)
+                        activityLoginBinding.team.setSelection(lastSelectedPosition)
                         break
                     }
                 }
             }
 
-            activityLoginBinding.team?.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            activityLoginBinding.team.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
                 override fun onItemSelected(parentView: AdapterView<*>?, selectedItemView: View?, position: Int, id: Long) {
                     if (position > 0) {
                         val selectedTeam = teams[position - 1]
@@ -265,47 +266,71 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                 override fun onNothingSelected(parentView: AdapterView<*>?) {}
             }
         } else {
-            activityLoginBinding.team?.visibility = View.GONE
+            activityLoginBinding.team.visibility = View.GONE
         }
     }
 
     private fun setUpLanguageButton() {
-        val languageKey = resources.getStringArray(R.array.language_keys)
-        val languages = resources.getStringArray(R.array.language)
-        val currentLanguageKey = settings.getString(Constants.SELECTED_LANGUAGE, fallbackLanguage)
-        val index = languageKey.indexOf(currentLanguageKey)
-        activityLoginBinding.btnLang.text = languages[index]
+        val currentLanguage = LocaleHelper.getLanguage(this)
+        activityLoginBinding.btnLang.text = when (currentLanguage) {
+            "en" -> getString(R.string.english)
+            "es" -> getString(R.string.spanish)
+            "so" -> getString(R.string.somali)
+            "ne" -> getString(R.string.nepali)
+            "ar" -> getString(R.string.arabic)
+            "fr" -> getString(R.string.french)
+            else -> getString(R.string.english)
+        }
+
         activityLoginBinding.btnLang.setOnClickListener {
-            AlertDialog.Builder(this)
-                .setTitle(R.string.select_language)
-                .setSingleChoiceItems(languages, index) { dialog, which ->
-                    val selectedLanguageKey = languageKey[which]
-                    if (selectedLanguageKey != LocaleHelper.getLanguage(this)) {
-                        LocaleHelper.setLocale(this, selectedLanguageKey)
-                        settings.edit().putString(Constants.SELECTED_LANGUAGE, selectedLanguageKey).apply()
-                        updateLanguage(selectedLanguageKey)
+            val options = arrayOf(getString(R.string.english), getString(R.string.spanish), getString(R.string.somali), getString(R.string.nepali), getString(R.string.arabic), getString(R.string.french))
+            val checkedItem = when (currentLanguage) {
+                "en" -> 0
+                "es" -> 1
+                "so" -> 2
+                "ne" -> 3
+                "ar" -> 4
+                "fr" -> 5
+                else -> 0
+            }
+
+            val builder = AlertDialog.Builder(this, R.style.AlertDialogTheme)
+                .setTitle(getString(R.string.select_language))
+                .setSingleChoiceItems(ArrayAdapter(this, R.layout.checked_list_item, options), checkedItem) { dialog, which ->
+                    val selectedLanguage = when (which) {
+                        0 -> "en"
+                        1 -> "es"
+                        2 -> "so"
+                        3 -> "ne"
+                        4 -> "ar"
+                        5 -> "fr"
+                        else -> "en"
                     }
+                    LocaleHelper.setLocale(this, selectedLanguage)
+                    recreate()
                     dialog.dismiss()
                 }
                 .setNegativeButton(R.string.cancel, null)
-                .show()
+
+            val dialog = builder.create()
+            dialog.show()
         }
     }
 
-    @Suppress("DEPRECATION")
-    private fun updateLanguage(language: String) {
-        val locale = Locale(language)
-        Locale.setDefault(locale)
-        val config = resources.configuration
-        config.setLocale(locale)
-        resources.updateConfiguration(config, resources.displayMetrics)
-        recreate()
-    }
-
     private fun declareHideKeyboardElements() {
-        findViewById<View>(R.id.constraintLayout).setOnTouchListener { view: View?, _: MotionEvent? ->
-            hideKeyboard(view)
-            false
+        val constraintLayout = findViewById<View>(R.id.constraintLayout)
+        constraintLayout.setOnTouchListener { view: View?, event: MotionEvent? ->
+            when (event?.action) {
+                MotionEvent.ACTION_DOWN -> {
+                }
+                MotionEvent.ACTION_UP -> {
+                    view?.let {
+                        hideKeyboard(it)
+                        it.performClick()
+                    }
+                }
+            }
+            true
         }
     }
 
@@ -452,7 +477,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
 
                 override fun afterTextChanged(s: Editable) {}
             })
-            val builder = AlertDialog.Builder(this)
+            val builder = AlertDialog.Builder(this, R.style.AlertDialogTheme)
             builder.setTitle(R.string.btn_guest_login)
                 .setView(v)
                 .setPositiveButton(R.string.login, null)
@@ -585,7 +610,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             }
         } else if (source === "member") {
             var userProfile = profileDbHandler.userModel?.userImage
-            var userName: String? = profileDbHandler.userModel?.name
+            val userName: String? = profileDbHandler.userModel?.name
             if (userProfile == null) {
                 userProfile = ""
             }

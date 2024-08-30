@@ -163,6 +163,20 @@
         <item name="android:textColor">@color/daynight_textColor</item>
     </style>
 
+    <style name="CustomAlertDialog" parent="ThemeOverlay.MaterialComponents.Dialog.Alert">
+        <item name="android:background">@color/daynight_grey</item>
+        <item name="android:textColorPrimary">@color/daynight_textColor</item>
+        <item name="android:textColor">@color/daynight_textColor</item>
+    </style>
+
+    <style name="CustomPopupMenu" parent="Widget.AppCompat.PopupMenu">
+        <item name="android:popupMenuStyle">@style/PopupMenu</item>
+        <item name="android:textColor">@color/daynight_textColor</item>
+    </style>
+    <style name="PopupMenu" parent="ThemeOverlay.AppCompat.Dark">
+        <item name="android:popupBackground">@color/daynight_grey</item>
+    </style>
+
     <style name="AlertDialogTheme" parent="ThemeOverlay.AppCompat.Dialog.Alert">
         <item name="android:background">@color/secondary_bg</item>
         <item name="android:textColorPrimary">@color/daynight_textColor</item>

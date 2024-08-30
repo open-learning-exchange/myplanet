@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/secondary_bg"
     tools:context=".ui.helpwanted.HelpWantedFragment">
 
     <FrameLayout
@@ -20,54 +21,46 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:padding="@dimen/padding_normal"
-                android:textColor="@color/md_black_1000"
+                android:textColor="@color/daynight_textColor"
                 android:textSize="@dimen/text_size_mid" />
-
             <TextView
                 android:id="@+id/tv_email"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:padding="@dimen/padding_normal"
-                android:textColor="@color/md_black_1000"
+                android:textColor="@color/daynight_textColor"
                 android:textSize="@dimen/text_size_mid" />
-
             <TextView
                 android:id="@+id/tv_phone"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:padding="@dimen/padding_normal"
-                android:textColor="@color/md_black_1000"
+                android:textColor="@color/daynight_textColor"
                 android:textSize="@dimen/text_size_mid" />
-
-
             <TextView
                 android:id="@+id/tv_ambulance"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:padding="@dimen/padding_normal"
                 android:text="@string/for_ambulance"
-                android:textColor="@color/md_black_1000"
+                android:textColor="@color/daynight_textColor"
                 android:textSize="@dimen/text_size_mid" />
-
             <TextView
                 android:id="@+id/tv_police"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:padding="@dimen/padding_normal"
                 android:text="@string/for_police"
-                android:textColor="@color/md_black_1000"
+                android:textColor="@color/daynight_textColor"
                 android:textSize="@dimen/text_size_mid" />
-
             <TextView
                 android:id="@+id/tv_emerg"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:padding="@dimen/padding_normal"
                 android:text="@string/for_emergency"
-                android:textColor="@color/md_black_1000"
+                android:textColor="@color/daynight_textColor"
                 android:textSize="@dimen/text_size_mid" />
-
-
         </LinearLayout>
 
         <TextView
@@ -76,8 +69,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:gravity="center"
-            android:visibility="gone" />
-
+            android:visibility="gone"
+            android:textColor="@color/daynight_textColor" />
     </FrameLayout>
-
 </androidx.core.widget.NestedScrollView>

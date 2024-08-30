@@ -11,6 +11,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContextCompat
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import io.realm.Realm
@@ -90,13 +91,13 @@ class DiscussionListFragment : BaseTeamFragment() {
     private fun filterNewsList(results: RealmResults<RealmNews>): List<RealmNews?> {
         val filteredList: MutableList<RealmNews?> = ArrayList()
         for (news in results) {
-            if (!TextUtils.isEmpty(news.viewableBy) && news.viewableBy.equals("teams", ignoreCase = true) && news.viewableId.equals(team._id, ignoreCase = true)) {
+            if (!TextUtils.isEmpty(news.viewableBy) && news.viewableBy.equals("teams", ignoreCase = true) && news.viewableId.equals(team?._id, ignoreCase = true)) {
                 filteredList.add(news)
             } else if (!TextUtils.isEmpty(news.viewIn)) {
                 val ar = Gson().fromJson(news.viewIn, JsonArray::class.java)
                 for (e in ar) {
                     val ob = e.asJsonObject
-                    if (ob["_id"].asString.equals(team._id, ignoreCase = true)) {
+                    if (ob["_id"].asString.equals(team?._id, ignoreCase = true)) {
                         filteredList.add(news)
                     }
                 }
@@ -110,13 +111,13 @@ class DiscussionListFragment : BaseTeamFragment() {
             val realmNewsList: List<RealmNews> = mRealm.where(RealmNews::class.java).isEmpty("replyTo").sort("time", Sort.DESCENDING).findAll()
             val list: MutableList<RealmNews> = ArrayList()
             for (news in realmNewsList) {
-                if (!TextUtils.isEmpty(news.viewableBy) && news.viewableBy.equals("teams", ignoreCase = true) && news.viewableId.equals(team._id, ignoreCase = true)) {
+                if (!TextUtils.isEmpty(news.viewableBy) && news.viewableBy.equals("teams", ignoreCase = true) && news.viewableId.equals(team?._id, ignoreCase = true)) {
                     list.add(news)
                 } else if (!TextUtils.isEmpty(news.viewIn)) {
                     val ar = Gson().fromJson(news.viewIn, JsonArray::class.java)
                     for (e in ar) {
                         val ob = e.asJsonObject
-                        if (ob["_id"].asString.equals(team._id, ignoreCase = true)) {
+                        if (ob["_id"].asString.equals(team?._id, ignoreCase = true)) {
                             list.add(news)
                         }
                     }
@@ -153,7 +154,8 @@ class DiscussionListFragment : BaseTeamFragment() {
         }
         binding.llImage.visibility = if (showBetaFeature(Constants.KEY_NEWSADDIMAGE, requireContext())) View.VISIBLE else View.GONE
         layout.hint = getString(R.string.enter_message)
-        AlertDialog.Builder(requireActivity())
+        layout.editText?.setHintTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
+        val dialog = AlertDialog.Builder(requireActivity(), R.style.CustomAlertDialog)
             .setView(binding.root)
             .setTitle(getString(R.string.add_message))
             .setPositiveButton(getString(R.string.save)) { _: DialogInterface?, _: Int ->
@@ -166,14 +168,18 @@ class DiscussionListFragment : BaseTeamFragment() {
                 map["viewInId"] = teamId
                 map["viewInSection"] = "teams"
                 map["message"] = msg
-                map["messageType"] = team.teamType ?: ""
-                map["messagePlanetCode"] = team.teamPlanetCode ?: ""
+                map["messageType"] = team?.teamType ?: ""
+                map["messagePlanetCode"] = team?.teamPlanetCode ?: ""
                 user?.let { createNews(map, mRealm, it, imageList) }
                 fragmentDiscussionListBinding.rvDiscussion.adapter?.notifyDataSetChanged()
                 setData(news)
             }
             .setNegativeButton(getString(R.string.cancel), null)
-            .show()
+            .create()
+
+        dialog.show()
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(ContextCompat.getColor(requireContext(), R.color.colorPrimaryWhite))
+        dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(ContextCompat.getColor(requireContext(), R.color.colorPrimaryWhite))
     }
 
     override fun setData(list: List<RealmNews?>?) {

@@ -51,8 +51,8 @@ class ReportsFragment : BaseTeamFragment() {
         fragmentReportsBinding.addReports.setOnClickListener{
             val dialogAddReportBinding = DialogAddReportBinding.inflate(LayoutInflater.from(requireContext()))
             val v: View = dialogAddReportBinding.root
-            val builder = AlertDialog.Builder(requireContext())
-            builder.setTitle("add report")
+            val builder = AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
+            builder.setTitle("Add Report")
                 .setView(v)
                 .setPositiveButton("submit", null)
                 .setNegativeButton("cancel", null)
@@ -137,8 +137,8 @@ class ReportsFragment : BaseTeamFragment() {
                         addProperty("endDate", endTimeStamp)
                         addProperty("updatedDate", System.currentTimeMillis())
                         addProperty("teamId", teamId)
-                        addProperty("teamType", team.teamType)
-                        addProperty("teamPlanetCode", team.teamPlanetCode)
+                        addProperty("teamType", team?.teamType)
+                        addProperty("teamPlanetCode", team?.teamPlanetCode)
                         addProperty("docType", "report")
                         addProperty("updated", true)
                     }

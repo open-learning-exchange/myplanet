@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.os.Build
 import android.os.Bundle
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 import org.ole.planet.myplanet.base.BaseNewsFragment
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -17,7 +18,8 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
     lateinit var dbService: DatabaseService
     var user: RealmUserModel? = null
     lateinit var teamId: String
-    lateinit var team: RealmMyTeam
+    var team: RealmMyTeam? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         settings = requireActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -28,12 +30,15 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
         mRealm = dbService.realmInstance
         user = profileDbHandler.userModel?.let { mRealm.copyFromRealm(it) }
         team = try {
-            mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst() ?: throw IllegalArgumentException("Team not found for ID: $teamId")
+            mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
+                ?: throw IllegalArgumentException("Team not found for ID: $teamId")
         } catch (e: IllegalArgumentException) {
             try {
-                mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId).findFirst() ?: throw IllegalArgumentException("Team not found for ID: $teamId")
+                mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId).findFirst()
+                    ?: throw IllegalArgumentException("Team not found for ID: $teamId")
             } catch (e: IllegalArgumentException) {
-                throw e
+                Toast.makeText(requireContext(), "Create an account to access this", Toast.LENGTH_LONG).show()
+                return
             }
         }
     }

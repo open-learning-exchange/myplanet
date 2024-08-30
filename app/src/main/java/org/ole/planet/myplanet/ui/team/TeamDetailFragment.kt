@@ -36,8 +36,8 @@ class TeamDetailFragment : BaseTeamFragment() {
             tab.text = (fragmentTeamDetailBinding.viewPager2.adapter as TeamPagerAdapter).getPageTitle(position)
         }.attach()
 
-        fragmentTeamDetailBinding.title.text = team.name
-        fragmentTeamDetailBinding.subtitle.text = team.type
+        fragmentTeamDetailBinding.title.text = team?.name
+        fragmentTeamDetailBinding.subtitle.text = team?.type
 
         if (!isMyTeam) {
             fragmentTeamDetailBinding.llActionButtons.visibility = View.GONE
@@ -45,7 +45,7 @@ class TeamDetailFragment : BaseTeamFragment() {
             fragmentTeamDetailBinding.btnLeave.setOnClickListener {
                 AlertDialog.Builder(requireContext()).setMessage(R.string.confirm_exit)
                     .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                        team.leave(user, mRealm)
+                        team?.leave(user, mRealm)
                         Utilities.toast(activity, getString(R.string.left_team))
                         fragmentTeamDetailBinding.viewPager2.adapter = TeamPagerAdapter(requireActivity(), team, false)
                         TabLayoutMediator(fragmentTeamDetailBinding.tabLayout, fragmentTeamDetailBinding.viewPager2) { tab, position ->
@@ -87,7 +87,7 @@ class TeamDetailFragment : BaseTeamFragment() {
             log.user = user.name
             log.createdOn = user.planetCode
             log.type = "teamVisit"
-            log.teamType = team.teamType
+            log.teamType = team?.teamType
             log.parentCode = user.parentCode
             log.time = Date().time
         }

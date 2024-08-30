@@ -32,13 +32,11 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private lateinit var lRealm: Realm
     private lateinit var library: RealmMyLibrary
     var userModel: RealmUserModel? = null
-    private var openFrom: String? = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) {
             libraryId = requireArguments().getString("libraryId")
-            if (requireArguments().containsKey("openFrom")) openFrom = requireArguments().getString("openFrom")
         }
     }
 
@@ -73,7 +71,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     @RequiresApi(Build.VERSION_CODES.O)
     private fun setLibraryData() {
         with(fragmentLibraryDetailBinding) {
-            tvTitle.text = if (openFrom.isNullOrEmpty()) library.title else "$openFrom-${library.title}"
+            tvTitle.text = library.title
             timesRated.text = requireContext().getString(R.string.num_total, library.timesRated)
             setTextViewVisibility(tvAuthor, llAuthor, library.author)
             setTextViewVisibility(tvPublished, llPublisher, library.publisher)

@@ -18,30 +18,33 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.afollestad.materialdialogs.*
 import com.google.android.material.textfield.TextInputLayout
-import kotlinx.serialization.json.Json
 import io.realm.*
+import kotlinx.serialization.json.Json
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
+import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.databinding.*
-import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.datamanager.*
+import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.datamanager.Service.*
 import org.ole.planet.myplanet.model.*
 import org.ole.planet.myplanet.service.*
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.team.AdapterTeam.OnUserSelectedListener
-import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.androidDecrypter
 import org.ole.planet.myplanet.utilities.*
+import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.androidDecrypter
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Constants.autoSynFeature
 import org.ole.planet.myplanet.utilities.DialogUtils.getUpdateDialog
 import org.ole.planet.myplanet.utilities.DialogUtils.showAlert
 import org.ole.planet.myplanet.utilities.DialogUtils.showSnack
 import org.ole.planet.myplanet.utilities.DialogUtils.showWifiSettingDialog
+import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utilities.NetworkUtils.extractProtocol
 import org.ole.planet.myplanet.utilities.NetworkUtils.getCustomDeviceName
 import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
@@ -136,7 +139,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     private fun clearDataDialog(message: String, onCancel: () -> Unit = {}) {
-        AlertDialog.Builder(this)
+        AlertDialog.Builder(this, R.style.AlertDialogTheme)
             .setMessage(message)
             .setPositiveButton(getString(R.string.clear_data)) { _, _ ->
                 clearRealmDb()
@@ -343,6 +346,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 createLog("synced successfully")
                 showSnack(findViewById(android.R.id.content), getString(R.string.sync_completed))
                 downloadAdditionalResources()
+                if (defaultPref.getBoolean("beta_auto_download", false)) {
+                    backgroundDownload(downloadAllFiles(getAllLibraryList(mRealm)))
+                }
                 cancelAll(this)
                 if (this is LoginActivity) {
                     this.updateTeamDropdown()
@@ -387,7 +393,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         val msDiff = Calendar.getInstance().timeInMillis - cal_last_Sync.timeInMillis
         val daysDiff = TimeUnit.MILLISECONDS.toDays(msDiff)
         return if (daysDiff >= maxDays) {
-            val alertDialogBuilder = AlertDialog.Builder(this)
+            val alertDialogBuilder = AlertDialog.Builder(this, R.style.AlertDialogTheme)
             alertDialogBuilder.setMessage(
                 getString(R.string.it_has_been_more_than) + (daysDiff - 1) + getString(
                     R.string.days_since_you_last_synced_this_device
@@ -421,7 +427,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         syncToServerText = dialogServerUrlBinding.syncToServerText
 
         dialogServerUrlBinding.deviceName.setText(NetworkUtils.getDeviceName())
-        val builder = MaterialDialog.Builder(this)
+        val contextWrapper = ContextThemeWrapper(this, R.style.AlertDialogTheme)
+        val builder = MaterialDialog.Builder(contextWrapper)
         builder.customView(dialogServerUrlBinding.root, true)
             .positiveText(R.string.btn_sync)
             .negativeText(R.string.btn_sync_cancel)
@@ -489,54 +496,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
         dialogServerUrlBinding.clearData.setOnClickListener {
             clearDataDialog(getString(R.string.are_you_sure_you_want_to_clear_data))
-        }
-
-        val teams: List<RealmMyTeam> = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId").equalTo("status", "active").findAll()
-        if (teams.isNotEmpty() && "${dialogServerUrlBinding.inputServerUrl.text}" != "") {
-            dialogServerUrlBinding.team.visibility = View.VISIBLE
-            teamAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, teamList)
-            teamAdapter?.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-            teamList.clear()
-            teamList.add("select team")
-            for (team in teams) {
-                if (team.isValid) {
-                    teamList.add(team.name)
-                }
-            }
-            dialogServerUrlBinding.team.adapter = teamAdapter
-            val lastSelection = prefData.getSelectedTeamId()
-            if (!lastSelection.isNullOrEmpty()) {
-                for (i in teams.indices) {
-                    val team = teams[i]
-                    if (team._id != null && team._id == lastSelection && team.isValid) {
-                        val lastSelectedPosition = i + 1
-                        dialogServerUrlBinding.team.setSelection(lastSelectedPosition)
-                        break
-                    }
-                }
-            }
-
-            dialogServerUrlBinding.team.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-                override fun onItemSelected(parentView: AdapterView<*>?, selectedItemView: View, position: Int, id: Long) {
-                    if (position > 0) {
-                        val selectedTeam = teams[position - 1]
-                        val currentTeamId = prefData.getSelectedTeamId()
-                        if (currentTeamId != selectedTeam._id) {
-                            prefData.setSelectedTeamId(selectedTeam._id)
-                            if (this@SyncActivity is LoginActivity) {
-                                this@SyncActivity.getTeamMembers()
-                            }
-                            dialog.dismiss()
-                        }
-                    }
-                }
-
-                override fun onNothingSelected(parentView: AdapterView<*>?) { }
-            }
-        } else if (teams.isNotEmpty() && "${dialogServerUrlBinding.inputServerUrl.text}" == "") {
-            dialogServerUrlBinding.team.visibility = View.GONE
-        } else {
-            dialogServerUrlBinding.team.visibility = View.GONE
         }
 
         neutralAction.setOnClickListener {
@@ -612,19 +571,15 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             val storedPin = settings.getString("serverPin", null)
             val urlWithoutProtocol = storedUrl?.replace(Regex("^https?://"), "")
 
-            serverAddressAdapter = ServerAddressAdapter(
-                getFilteredServerList(),
-                { serverListAddress ->
-                    val actualUrl = serverListAddress.url.replace(Regex("^https?://"), "")
-                    binding.inputServerUrl.setText(actualUrl)
-                    binding.inputServerPassword.setText(getPinForUrl(actualUrl))
-                    val protocol = if (actualUrl == BuildConfig.PLANET_XELA_URL || actualUrl == BuildConfig.PLANET_SANPABLO_URL) "http://" else "https://"
-                    editor.putString("serverProtocol", protocol).apply()
-                    if (serverCheck) {
-                        performSync(dialog)
-                    }
-                },
-                { _, _ ->
+            serverAddressAdapter = ServerAddressAdapter(getFilteredServerList(), { serverListAddress ->
+                val actualUrl = serverListAddress.url.replace(Regex("^https?://"), "")
+                binding.inputServerUrl.setText(actualUrl)
+                binding.inputServerPassword.setText(getPinForUrl(actualUrl))
+                val protocol = if (actualUrl == BuildConfig.PLANET_XELA_URL || actualUrl == BuildConfig.PLANET_SANPABLO_URL) "http://" else "https://"
+                editor.putString("serverProtocol", protocol).apply()
+                if (serverCheck) {
+                    performSync(dialog)
+                } }, { _, _ ->
                     clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server)) {
                         serverAddressAdapter?.revertSelection()
                     }
@@ -714,8 +669,17 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         val pinMap = mapOf(
             BuildConfig.PLANET_LEARNING_URL to BuildConfig.PLANET_LEARNING_PIN,
             BuildConfig.PLANET_GUATEMALA_URL to BuildConfig.PLANET_GUATEMALA_PIN,
+            BuildConfig.PLANET_SANPABLO_URL to BuildConfig.PLANET_SANPABLO_PIN,
+            BuildConfig.PLANET_EARTH_URL to BuildConfig.PLANET_EARTH_PIN,
+            BuildConfig.PLANET_SOMALIA_URL to BuildConfig.PLANET_SOMALIA_PIN,
+            BuildConfig.PLANET_VI_URL to BuildConfig.PLANET_VI_PIN,
             BuildConfig.PLANET_XELA_URL to BuildConfig.PLANET_XELA_PIN,
-            BuildConfig.PLANET_SANPABLO_URL to BuildConfig.PLANET_SANPABLO_PIN
+//            BuildConfig.PLANET_URIUR_URL to BuildConfig.PLANET_URIUR_PIN,
+            BuildConfig.PLANET_RUIRU_URL to BuildConfig.PLANET_RUIRU_PIN,
+            BuildConfig.PLANET_EMBAKASI_URL to BuildConfig.PLANET_EMBAKASI_PIN,
+            BuildConfig.PLANET_CAMBRIDGE_URL to BuildConfig.PLANET_CAMBRIDGE_PIN,
+//            BuildConfig.PLANET_EGDIRBMAC_URL to BuildConfig.PLANET_EGDIRBMAC_PIN,
+            BuildConfig.PLANET_PALMBAY_URL to BuildConfig.PLANET_PALMBAY_PIN
         )
         return pinMap[url] ?: ""
     }

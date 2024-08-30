@@ -9,22 +9,22 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:padding="@dimen/padding_normal">
+        android:padding="@dimen/padding_normal"
+        android:background="@color/secondary_bg">
 
         <TextView
             android:id="@+id/tv_message"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="@dimen/padding_normal"
+            android:textColor="@color/daynight_textColor"
             android:textSize="@dimen/text_size_mid" />
-
         <TextView
             android:id="@+id/tv_date"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="@dimen/padding_normal"
-            android:textColor="@color/colorPrimaryDark" />
-
+            android:textColor="@color/daynight_textColor" />
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -36,8 +36,9 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="3"
-                android:hint="@string/please_enter_reply" />
-
+                android:hint="@string/please_enter_reply"
+                android:textColorHint="@color/hint_color"
+                android:textColor="@color/daynight_textColor" />
             <Button
                 android:id="@+id/reply_feedback"
                 style="@style/PrimaryButton"
@@ -45,7 +46,6 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="@string/reply" />
-
             <Button
                 android:id="@+id/close_feedback"
                 style="@style/PrimaryButton"
@@ -53,14 +53,11 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="@string/close" />
-
         </LinearLayout>
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_feedback_reply"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
-
     </LinearLayout>
-
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -6,14 +6,14 @@ import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
+import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.ServerAddressesModel
 
-class ServerAddressAdapter(
-    private var serverList: List<ServerAddressesModel>,
+class ServerAddressAdapter(private var serverList: List<ServerAddressesModel>,
     private val onItemClick: (ServerAddressesModel) -> Unit,
-    private val onClearDataDialog: (ServerAddressesModel, Int) -> Unit, // Add callback for clear data dialog
-    private val urlWithoutProtocol: String? // Pass the urlWithoutProtocol to the adapter
+    private val onClearDataDialog: (ServerAddressesModel, Int) -> Unit,
+    private val urlWithoutProtocol: String?
 ) : RecyclerView.Adapter<ServerAddressAdapter.ViewHolder>() {
     private var selectedPosition: Int = -1
     private var lastSelectedPosition: Int = -1
@@ -64,6 +64,7 @@ class ServerAddressAdapter(
 
         fun bind(serverAddress: ServerAddressesModel, isSelected: Boolean) {
             button.text = serverAddress.name
+            button.contentDescription = context.getString(R.string.server_address_content_description, serverAddress.name)
             button.isSelected = isSelected
             if (isSelected) {
                 button.setBackgroundColor(ContextCompat.getColor(button.context, R.color.selected_color))

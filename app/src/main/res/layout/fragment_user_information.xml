@@ -4,6 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="@dimen/padding_normal"
+    android:background="@color/secondary_bg"
     tools:context=".ui.exam.UserInformationFragment">
 
     <LinearLayout
@@ -19,46 +20,50 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:padding="@dimen/padding_normal">
+                android:padding="@dimen/padding_normal"
+                android:textColorHint="@color/hint_color">
 
                 <EditText
                     android:id="@+id/et_fname"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="@string/first_name" />
-
+                    android:hint="@string/first_name"
+                    android:textColor="@color/daynight_textColor"
+                    android:backgroundTint="@color/hint_color" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:padding="@dimen/padding_normal">
+                android:padding="@dimen/padding_normal"
+                android:textColorHint="@color/hint_color">
 
                 <EditText
                     android:id="@+id/et_mname"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="@string/middle_name" />
-
+                    android:hint="@string/middle_name"
+                    android:textColor="@color/daynight_textColor"
+                    android:backgroundTint="@color/hint_color" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:padding="@dimen/padding_normal">
+                android:padding="@dimen/padding_normal"
+                android:textColorHint="@color/hint_color">
 
                 <EditText
                     android:id="@+id/et_lname"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="@string/last_name" />
-
+                    android:hint="@string/last_name"
+                    android:textColor="@color/daynight_textColor"
+                    android:backgroundTint="@color/hint_color" />
             </com.google.android.material.textfield.TextInputLayout>
-
         </LinearLayout>
-
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -68,14 +73,16 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:padding="@dimen/padding_normal">
+                android:padding="@dimen/padding_normal"
+                android:textColorHint="@color/hint_color">
 
                 <EditText
                     android:id="@+id/et_email"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="@string/email" />
-
+                    android:hint="@string/email"
+                    android:textColor="@color/daynight_textColor"
+                    android:backgroundTint="@color/hint_color" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <LinearLayout
@@ -91,16 +98,16 @@
                     android:layout_gravity="center_vertical"
                     android:padding="@dimen/padding_small"
                     android:text="@string/language"
-                    android:textColor="@color/md_black_1000" />
-
+                    android:textColor="@color/hint_color" />
                 <Spinner
                     android:id="@+id/spn_lang"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:entries="@array/language"
                     android:contentDescription="@string/select_language"
-                    android:padding="4dp" />
-
+                    android:textColor="@color/daynight_textColor"
+                    android:padding="4dp"
+                    app:backgroundTint="@color/daynight_textColor" />
             </LinearLayout>
         </LinearLayout>
 
@@ -112,16 +119,17 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:padding="@dimen/padding_normal">
+                android:padding="@dimen/padding_normal"
+                android:textColorHint="@color/hint_color">
 
                 <EditText
                     android:id="@+id/et_phone"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="@string/phone_number" />
-
+                    android:hint="@string/phone_number"
+                    android:textColor="@color/daynight_textColor"
+                    android:backgroundTint="@color/hint_color" />
             </com.google.android.material.textfield.TextInputLayout>
-
 
             <TextView
                 android:id="@+id/txt_dob"
@@ -134,15 +142,14 @@
                 android:padding="@dimen/padding_normal"
                 android:text="@string/birth_date"
                 android:textSize="@dimen/text_size_mid"
-                app:drawableRightCompat="@drawable/ic_date" />
-
+                app:drawableRightCompat="@drawable/ic_date"
+                android:textColor="@color/daynight_textColor"
+                app:drawableTint="@color/daynight_textColor" />
         </LinearLayout>
-
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
-
 
             <TextView
                 android:layout_width="wrap_content"
@@ -150,10 +157,9 @@
                 android:layout_gravity="center_vertical"
                 android:padding="@dimen/padding_normal"
                 android:text="@string/gender"
-                android:textColor="@color/md_black_1000"
+                android:textColor="@color/daynight_textColor"
                 android:textSize="16sp"
                 android:textStyle="bold" />
-
             <RadioGroup
                 android:id="@+id/rb_gender"
                 android:layout_width="match_parent"
@@ -161,20 +167,19 @@
                 android:orientation="horizontal"
                 android:padding="@dimen/padding_normal">
 
-
                 <RadioButton
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/male" />
-
+                    android:text="@string/male"
+                    android:textColor="@color/daynight_textColor"
+                    android:buttonTint="@color/daynight_textColor" />
                 <RadioButton
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/female" />
-
-
+                    android:text="@string/female"
+                    android:textColor="@color/daynight_textColor"
+                    android:buttonTint="@color/daynight_textColor" />
             </RadioGroup>
-
         </LinearLayout>
 
         <LinearLayout
@@ -189,18 +194,16 @@
                 android:layout_gravity="center_vertical"
                 android:padding="@dimen/padding_small"
                 android:text="@string/level"
-                android:textColor="@color/md_black_1000" />
-
+                android:textColor="@color/hint_color" />
             <Spinner
                 android:id="@+id/spn_level"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:entries="@array/level"
                 android:contentDescription="@string/skill_level"
-                android:padding="@dimen/padding_small" />
-
+                android:padding="@dimen/padding_small"
+                app:backgroundTint="@color/daynight_textColor" />
         </LinearLayout>
-
 
         <LinearLayout
             android:layout_width="wrap_content"
@@ -215,7 +218,6 @@
                 android:layout_marginRight="10dp"
                 android:background="@drawable/buttongrey"
                 android:text="@string/button_update" />
-
             <Button
                 android:id="@+id/btn_cancel"
                 style="@style/GreyButtons"
@@ -223,11 +225,6 @@
                 android:layout_height="wrap_content"
                 android:background="@drawable/buttongrey"
                 android:text="@string/button_cancel" />
-
         </LinearLayout>
-
-
     </LinearLayout>
-
-
 </FrameLayout>

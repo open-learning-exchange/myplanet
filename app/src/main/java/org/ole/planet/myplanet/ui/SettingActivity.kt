@@ -3,25 +3,31 @@ package org.ole.planet.myplanet.ui
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ArrayAdapter
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.preference.ListPreference
 import androidx.preference.Preference
 import androidx.preference.Preference.OnPreferenceChangeListener
 import androidx.preference.Preference.OnPreferenceClickListener
 import androidx.preference.PreferenceFragmentCompat
+import androidx.preference.PreferenceManager
 import androidx.preference.SwitchPreference
 import io.realm.Realm
+import org.ole.planet.myplanet.MainApplication.Companion.mRealm
+import org.ole.planet.myplanet.MainApplication.Companion.setThemeMode
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
+import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -32,8 +38,10 @@ import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.clearSharedPref
 import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.restartApp
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
+import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryFormattedString
 import org.ole.planet.myplanet.utilities.LocaleHelper
+import org.ole.planet.myplanet.utilities.ThemeMode
 import org.ole.planet.myplanet.utilities.Utilities
 import java.io.File
 
@@ -72,12 +80,9 @@ class SettingActivity : AppCompatActivity() {
         lateinit var profileDbHandler: UserProfileDbHandler
         var user: RealmUserModel? = null
         private lateinit var dialog: DialogUtils.CustomProgressDialog
+        private lateinit var defaultPref: SharedPreferences
 
-        override fun onCreateView(
-            inflater: LayoutInflater,
-            container: ViewGroup?,
-            savedInstanceState: Bundle?
-        ): View {
+        override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
             val view = super.onCreateView(inflater, container, savedInstanceState)
             view.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.secondary_bg))
             return view
@@ -90,27 +95,21 @@ class SettingActivity : AppCompatActivity() {
             profileDbHandler = UserProfileDbHandler(requireActivity())
             user = profileDbHandler.userModel
             dialog = DialogUtils.getCustomProgressDialog(requireActivity())
+            defaultPref = PreferenceManager.getDefaultSharedPreferences(requireActivity())
+
             setBetaToggleOn()
             setAutoSyncToggleOn()
             setDownloadSyncFilesToggle()
-            val lp = findPreference<ListPreference>("app_language")
-            if (lp != null) {
-                lp.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, o: Any ->
-                    LocaleHelper.setLocale(requireActivity(), o.toString())
-                    requireActivity().recreate()
-                    true
-                }
+            val lp = findPreference<Preference>("app_language")
+            lp?.setOnPreferenceClickListener {
+                languageChanger()
+                true
             }
 
             val darkMode = findPreference<Preference>("dark_mode")
-            if (darkMode != null) {
-                darkMode.onPreferenceChangeListener = OnPreferenceChangeListener { preference: Preference?, newValue: Any? ->
-                    if (preference?.key == "dark_mode") {
-                        darkMode(newValue.toString())
-                        return@OnPreferenceChangeListener true
-                    }
-                    false
-                }
+            darkMode?.setOnPreferenceClickListener {
+                darkMode()
+                true
             }
 
             // Show Available space under the "Freeup Space" preference.
@@ -118,6 +117,18 @@ class SettingActivity : AppCompatActivity() {
             if (spacePreference != null) {
                 spacePreference.summary = availableOverTotalMemoryFormattedString
             }
+
+            val autoDownload = findPreference<SwitchPreference>("beta_auto_download")
+            autoDownload?.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, _: Any? ->
+                if (autoDownload?.isChecked == true) {
+                    defaultPref.edit().putBoolean("beta_auto_download", true).apply()
+                    backgroundDownload(downloadAllFiles(getAllLibraryList(mRealm)))
+                } else {
+                    defaultPref.edit().putBoolean("beta_auto_download", false).apply()
+                }
+                true
+            }
+
             clearDataButtonInit()
         }
 
@@ -220,12 +231,71 @@ class SettingActivity : AppCompatActivity() {
             }
         }
 
-        private fun darkMode(key: String) {
-            when (key) {
-                getString(R.string.dark_mode_on) ->  AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-                getString(R.string.dark_mode_off) -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
-                getString(R.string.dark_mode_follow_system) -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+        private fun languageChanger() {
+            val options = arrayOf(getString(R.string.english), getString(R.string.spanish), getString(R.string.somali), getString(R.string.nepali), getString(R.string.arabic), getString(R.string.french))
+            val currentLanguage = LocaleHelper.getLanguage(requireContext())
+            val checkedItem = when (currentLanguage) {
+                "en" -> 0
+                "es" -> 1
+                "so" -> 2
+                "ne" -> 3
+                "ar" -> 4
+                "fr" -> 5
+                else -> 0
             }
+
+            val builder = AlertDialog.Builder(requireContext())
+                .setTitle(getString(R.string.select_language))
+                .setSingleChoiceItems(ArrayAdapter(requireContext(), R.layout.checked_list_item, options), checkedItem) { dialog, which ->
+                    val selectedLanguage = when (which) {
+                        0 -> "en"
+                        1 -> "es"
+                        2 -> "so"
+                        3 -> "ne"
+                        4 -> "ar"
+                        5 -> "fr"
+                        else -> "en"
+                    }
+                    LocaleHelper.setLocale(requireContext(), selectedLanguage)
+                    requireActivity().recreate()
+                    dialog.dismiss()
+                }
+                .setNegativeButton(R.string.cancel, null)
+
+            val dialog = builder.create()
+            dialog.show()
+        }
+
+        private fun darkMode() {
+            val options = arrayOf(getString(R.string.dark_mode_off), getString(R.string.dark_mode_on), getString(R.string.dark_mode_follow_system))
+            val currentMode = getCurrentThemeMode()
+            val checkedItem = when (currentMode) {
+                ThemeMode.LIGHT -> 0
+                ThemeMode.DARK -> 1
+                else -> 2
+            }
+
+            val builder = AlertDialog.Builder(requireContext())
+                .setTitle(getString(R.string.select_theme_mode))
+                .setSingleChoiceItems(ArrayAdapter(requireContext(), R.layout.checked_list_item, options), checkedItem) { dialog, which ->
+                    val selectedMode = when (which) {
+                        0 -> ThemeMode.LIGHT
+                        1 -> ThemeMode.DARK
+                        2 -> ThemeMode.FOLLOW_SYSTEM
+                        else -> ThemeMode.FOLLOW_SYSTEM
+                    }
+                    setThemeMode(selectedMode)
+                    dialog.dismiss()
+                }
+                .setNegativeButton(R.string.cancel, null)
+
+            val dialog = builder.create()
+            dialog.show()
+        }
+
+        private fun getCurrentThemeMode(): String {
+            val sharedPreferences = requireContext().getSharedPreferences("app_preferences", Context.MODE_PRIVATE)
+            return sharedPreferences.getString("theme_mode", ThemeMode.FOLLOW_SYSTEM) ?: ThemeMode.FOLLOW_SYSTEM
         }
     }
 

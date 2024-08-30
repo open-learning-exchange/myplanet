@@ -2,16 +2,13 @@ package org.ole.planet.myplanet.model
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.text.TextUtils
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
-import com.google.gson.JsonParser
 import com.opencsv.CSVWriter
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
-import io.realm.RealmResults
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
@@ -37,7 +34,7 @@ open class RealmMyLibrary : RealmObject() {
     @JvmField
     var resourceLocalAddress: String? = null
     @JvmField
-    var resourceOffline = false
+    var resourceOffline: Boolean = false
     @JvmField
     var resourceId: String? = null
     @JvmField
@@ -45,7 +42,7 @@ open class RealmMyLibrary : RealmObject() {
     @JvmField
     var downloadedRev: String? = null
     @JvmField
-    var needsOptimization = false
+    var needsOptimization: Boolean = false
     @JvmField
     var publisher: String? = null
     @JvmField
@@ -85,9 +82,9 @@ open class RealmMyLibrary : RealmObject() {
     @JvmField
     var translationAudioPath: String? = null
     @JvmField
-    var sum = 0
+    var sum: Int = 0
     @JvmField
-    var timesRated = 0
+    var timesRated: Int = 0
     @JvmField
     var resourceFor: RealmList<String>? = null
     @JvmField
@@ -103,104 +100,85 @@ open class RealmMyLibrary : RealmObject() {
     @JvmField
     var stepId: String? = null
     @JvmField
-    var isPrivate = false
-
+    var isPrivate: Boolean = false
     fun serializeResource(): JsonObject {
-        val `object` = JsonObject()
-        `object`.addProperty("_id", _id)
-        `object`.addProperty("_rev", _rev)
-        `object`.addProperty("_rev", _rev)
-        `object`.addProperty("need_optimization", needsOptimization)
-        `object`.add("resourceFor", getArray(resourceFor))
-        `object`.addProperty("publisher", publisher)
-        `object`.addProperty("linkToLicense", linkToLicense)
-        `object`.addProperty("addedBy", addedBy)
-        `object`.addProperty("uploadDate", uploadDate)
-        `object`.addProperty("openWith", openWith)
-        `object`.add("subject", getArray(subject))
-        `object`.addProperty("kind", kind)
-        `object`.addProperty("medium", medium)
-        `object`.addProperty("language", language)
-        `object`.addProperty("author", author)
-        `object`.addProperty("sum", sum)
-        `object`.addProperty("createdDate", uploadDate)
-        `object`.add("level", getArray(level))
-        `object`.add("languages", getArray(languages))
-        `object`.add("tag", getArray(tag))
-        `object`.addProperty("timesRated", timesRated)
-        `object`.addProperty("year", year)
-        `object`.addProperty("title", title)
-        `object`.addProperty("averageRating", averageRating)
-        `object`.addProperty("filename", filename)
-        `object`.addProperty("mediaType", mediaType)
-        `object`.addProperty("description", description)
-        val ob = JsonObject()
-        ob.add(resourceLocalAddress, JsonObject())
-        `object`.add("_attachments", ob)
-        return `object`
-    }
-
-    private fun getArray(ar: RealmList<String>?): JsonArray {
-        val sub = JsonArray()
-        if (ar != null) {
-            for (s in ar) {
-                sub.add(s)
-            }
+        return JsonObject().apply {
+            addProperty("_id", _id)
+            addProperty("_rev", _rev)
+            addProperty("need_optimization", needsOptimization)
+            add("resourceFor", resourceFor.toJsonArray())
+            addProperty("publisher", publisher)
+            addProperty("linkToLicense", linkToLicense)
+            addProperty("addedBy", addedBy)
+            addProperty("uploadDate", uploadDate)
+            addProperty("openWith", openWith)
+            add("subject", subject.toJsonArray())
+            addProperty("kind", kind)
+            addProperty("medium", medium)
+            addProperty("language", language)
+            addProperty("author", author)
+            addProperty("sum", sum)
+            addProperty("createdDate", uploadDate)
+            add("level", level.toJsonArray())
+            add("languages", languages.toJsonArray())
+            add("tag", tag.toJsonArray())
+            addProperty("timesRated", timesRated)
+            addProperty("year", year)
+            addProperty("title", title)
+            addProperty("averageRating", averageRating)
+            addProperty("filename", filename)
+            addProperty("mediaType", mediaType)
+            addProperty("description", description)
+            val ob = JsonObject()
+            ob.add(resourceLocalAddress, JsonObject())
+            add("_attachments", ob)
         }
-        return sub
     }
-
+    private fun RealmList<String>?.toJsonArray(): JsonArray {
+        return JsonArray().apply {
+            this@toJsonArray?.forEach { add(it) }
+        }
+    }
     fun setUserId(userId: String?) {
+        if (userId.isNullOrBlank()) return
+
         if (this.userId == null) {
             this.userId = RealmList()
         }
-        if (!this.userId?.contains(userId)!! && !TextUtils.isEmpty(userId)) {
+        if (!this.userId!!.contains(userId)) {
             this.userId?.add(userId)
         }
     }
-
     fun isResourceOffline(): Boolean {
-        return resourceOffline && TextUtils.equals(_rev, downloadedRev)
+        return resourceOffline && _rev == downloadedRev
+    }
+    private fun JsonArray?.setListIfNotNull(targetList: RealmList<String>?, setter: (String) -> Unit) {
+        this?.forEach { jsonElement ->
+            val value = jsonElement.takeIf { it !is JsonNull }?.asString ?: return@forEach
+            if (value !in targetList.orEmpty()) {
+                setter(value)
+            }
+        }
     }
 
     fun setResourceFor(array: JsonArray, resource: RealmMyLibrary?) {
-        for (s in array) {
-            if (s !is JsonNull && !resource?.resourceFor?.contains(s.asString)!!) {
-                resource.resourceFor?.add(s.asString)
-            }
-        }
+        array.setListIfNotNull(resource?.resourceFor) { resource?.resourceFor?.add(it) }
     }
 
     fun setSubject(array: JsonArray, resource: RealmMyLibrary?) {
-        for (s in array) {
-            if (s !is JsonNull && !resource?.subject?.contains(s.asString)!!) {
-                resource.subject?.add(s.asString)
-            }
-        }
+        array.setListIfNotNull(resource?.subject) { resource?.subject?.add(it) }
     }
 
     fun setLevel(array: JsonArray, resource: RealmMyLibrary?) {
-        for (s in array) {
-            if (s !is JsonNull && !resource?.level?.contains(s.asString)!!) {
-                resource.level?.add(s.asString)
-            }
-        }
+        array.setListIfNotNull(resource?.level) { resource?.level?.add(it) }
     }
 
     fun setTag(array: JsonArray, resource: RealmMyLibrary?) {
-        for (s in array) {
-            if (s !is JsonNull && !resource?.tag?.contains(s.asString)!!) {
-                resource.tag?.add(s.asString)
-            }
-        }
+        array.setListIfNotNull(resource?.tag) { resource?.tag?.add(it) }
     }
 
     fun setLanguages(array: JsonArray, resource: RealmMyLibrary?) {
-        for (s in array) {
-            if (s !is JsonNull && !resource?.languages?.contains(s.asString)!!) {
-                resource.languages?.add(s.asString)
-            }
-        }
+        array.setListIfNotNull(resource?.languages) { resource?.languages?.add(it) }
     }
 
     fun setUserId(userId: RealmList<String>?) {
@@ -208,16 +186,7 @@ open class RealmMyLibrary : RealmObject() {
     }
 
     val subjectsAsString: String
-        get() {
-            if (subject?.isEmpty() == true) {
-                return ""
-            }
-            var str = ""
-            for (s in subject ?: emptyList()) {
-                str += "$s, "
-            }
-            return str.substring(0, str.length - 1)
-        }
+        get() = subject?.joinToString(", ") ?: ""
 
     override fun toString(): String {
         return title ?: ""
@@ -228,7 +197,7 @@ open class RealmMyLibrary : RealmObject() {
     }
 
     fun needToUpdate(): Boolean {
-        return resourceLocalAddress != null && !resourceOffline || !TextUtils.equals(_rev, downloadedRev)
+        return !resourceOffline || resourceLocalAddress != null && _rev != downloadedRev
     }
 
     companion object {
@@ -240,88 +209,63 @@ open class RealmMyLibrary : RealmObject() {
         }
 
         fun getMyLibraryByUserId(userId: String?, libs: List<RealmMyLibrary>, mRealm: Realm): List<RealmMyLibrary> {
-            val libraries: MutableList<RealmMyLibrary> = ArrayList()
             val ids = RealmMyTeam.getResourceIdsByUser(userId, mRealm)
-            for (item in libs) {
-                if (item.userId?.contains(userId) == true || ids.contains(item.resourceId)) {
-                    libraries.add(item)
-                }
-            }
-            return libraries
+            return libs.filter { it.userId?.contains(userId) == true || it.resourceId in ids }
         }
 
         @JvmStatic
         fun getMyLibraryByUserId(userId: String?, libs: List<RealmMyLibrary>): List<RealmMyLibrary> {
-            val libraries: MutableList<RealmMyLibrary> = ArrayList()
-            for (item in libs) {
-                if (item.userId?.contains(userId) == true) {
-                    libraries.add(item)
-                }
-            }
-            return libraries
+            return libs.filter { it.userId?.contains(userId) == true }
         }
 
         @JvmStatic
         fun getOurLibrary(userId: String?, libs: List<RealmMyLibrary>): List<RealmMyLibrary> {
-            val libraries: MutableList<RealmMyLibrary> = ArrayList()
-            for (item in libs) {
-                if (!item.userId?.contains(userId)!!) {
-                    libraries.add(item)
-                }
-            }
-            return libraries
+            return libs.filter { it.userId?.contains(userId) == false }
         }
 
         private fun getIds(mRealm: Realm): Array<String?> {
-            val list: List<RealmMyLibrary> = mRealm.where(RealmMyLibrary::class.java).findAll()
-            val ids = arrayOfNulls<String>(list.size)
-            for ((i, library) in list.withIndex()) {
-                ids[i] = library.resourceId
-            }
-            return ids
+            val list = mRealm.where(RealmMyLibrary::class.java).findAll()
+            return list.map { it.resourceId }.toTypedArray()
         }
 
         @JvmStatic
         fun removeDeletedResource(newIds: List<String?>, mRealm: Realm) {
             val ids = getIds(mRealm)
-            for (id in ids) {
-                if (!newIds.contains(id)) {
-                    mRealm.executeTransaction { realm ->
-                        realm.where(RealmMyLibrary::class.java).equalTo("resourceId", id).findAll()
-                            .deleteAllFromRealm()
-                    }
+            ids.filterNot { it in newIds }.forEach { id ->
+                mRealm.executeTransaction { realm ->
+                    realm.where(RealmMyLibrary::class.java).equalTo("resourceId", id).findAll().deleteAllFromRealm()
                 }
             }
         }
 
         @JvmStatic
         fun serialize(personal: RealmMyLibrary, user: RealmUserModel?): JsonObject {
-            val `object` = JsonObject()
-            `object`.addProperty("title", personal.title)
-            `object`.addProperty("uploadDate", Date().time)
-            `object`.addProperty("createdDate", personal.createdDate)
-            `object`.addProperty("filename", FileUtils.getFileNameFromUrl(personal.resourceLocalAddress))
-            `object`.addProperty("author", user?.name)
-            `object`.addProperty("addedBy", user?.id)
-            `object`.addProperty("medium", personal.medium)
-            `object`.addProperty("description", personal.description)
-            `object`.addProperty("year", personal.year)
-            `object`.addProperty("language", personal.language)
-            `object`.add("subject", JsonUtils.getAsJsonArray(personal.subject))
-            `object`.add("level", JsonUtils.getAsJsonArray(personal.level))
-            `object`.addProperty("resourceType", personal.resourceType)
-            `object`.addProperty("openWith", personal.openWith)
-            `object`.add("resourceFor", JsonUtils.getAsJsonArray(personal.resourceFor))
-            `object`.addProperty("private", false)
-            `object`.addProperty("isDownloadable", "")
-            `object`.addProperty("sourcePlanet", user?.planetCode)
-            `object`.addProperty("resideOn", user?.planetCode)
-            `object`.addProperty("updatedDate", Calendar.getInstance().timeInMillis)
-            `object`.addProperty("createdDate", personal.createdDate)
-            `object`.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
-            `object`.addProperty("deviceName", NetworkUtils.getDeviceName())
-            `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
-            return `object`
+            return JsonObject().apply {
+                addProperty("title", personal.title)
+                addProperty("uploadDate", Date().time)
+                addProperty("createdDate", personal.createdDate)
+                addProperty("filename", FileUtils.getFileNameFromUrl(personal.resourceLocalAddress))
+                addProperty("author", user?.name)
+                addProperty("addedBy", user?.id)
+                addProperty("medium", personal.medium)
+                addProperty("description", personal.description)
+                addProperty("year", personal.year)
+                addProperty("language", personal.language)
+                add("subject", JsonUtils.getAsJsonArray(personal.subject))
+                add("level", JsonUtils.getAsJsonArray(personal.level))
+                addProperty("resourceType", personal.resourceType)
+                addProperty("openWith", personal.openWith)
+                add("resourceFor", JsonUtils.getAsJsonArray(personal.resourceFor))
+                addProperty("private", false)
+                addProperty("isDownloadable", "")
+                addProperty("sourcePlanet", user?.planetCode)
+                addProperty("resideOn", user?.planetCode)
+                addProperty("updatedDate", Calendar.getInstance().timeInMillis)
+                addProperty("createdDate", personal.createdDate)
+                addProperty("androidId", NetworkUtils.getUniqueIdentifier())
+                addProperty("deviceName", NetworkUtils.getDeviceName())
+                addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
+            }
         }
 
         private fun insertResources(doc: JsonObject, mRealm: Realm) {
@@ -358,54 +302,53 @@ open class RealmMyLibrary : RealmObject() {
             if (resource == null) {
                 resource = mRealm.createObject(RealmMyLibrary::class.java, resourceId)
             }
-            resource?.setUserId(userId)
-            resource?._id = resourceId
-            if (!TextUtils.isEmpty(stepId)) {
-                resource?.stepId = stepId
-            }
-            if (!TextUtils.isEmpty(courseId)) {
-                resource?.courseId = courseId
-            }
-            resource?._rev = JsonUtils.getString("_rev", doc)
-            resource?.resourceId = resourceId
-            resource?.title = JsonUtils.getString("title", doc)
-            resource?.description = JsonUtils.getString("description", doc)
-            if (doc.has("_attachments")) {
-                val attachments = doc["_attachments"].asJsonObject
-                val element = JsonParser.parseString(attachments.toString())
-                val obj = element.asJsonObject
-                val entries = obj.entrySet()
-                for ((key) in entries) {
-                    if (key.indexOf("/") < 0) {
-                        resource?.resourceRemoteAddress = settings.getString("couchdbURL", "http://") + "/resources/" + resourceId + "/" + key
-                        resource?.resourceLocalAddress = key
-                        resource?.resourceOffline = FileUtils.checkFileExist(resource?.resourceRemoteAddress)
+            resource?.apply {
+                setUserId(userId)
+                _id = resourceId
+                if (!stepId.isNullOrBlank()) {
+                    this.stepId = stepId
+                }
+                if (!courseId.isNullOrBlank()) {
+                    this.courseId = courseId
+                }
+                _rev = JsonUtils.getString("_rev", doc)
+                this.resourceId = resourceId
+                title = JsonUtils.getString("title", doc)
+                description = JsonUtils.getString("description", doc)
+                if (doc.has("_attachments")) {
+                    val attachments = doc["_attachments"].asJsonObject
+                    attachments.entrySet().forEach { (key, _) ->
+                        if (key.indexOf("/") < 0) {
+                            resourceRemoteAddress = "${settings.getString("couchdbURL", "http://")}/resources/$resourceId/$key"
+                            resourceLocalAddress = key
+                            resourceOffline = FileUtils.checkFileExist(resourceRemoteAddress)
+                        }
                     }
                 }
+                filename = JsonUtils.getString("filename", doc)
+                averageRating = JsonUtils.getString("averageRating", doc)
+                uploadDate = JsonUtils.getString("uploadDate", doc)
+                year = JsonUtils.getString("year", doc)
+                addedBy = JsonUtils.getString("addedBy", doc)
+                publisher = JsonUtils.getString("publisher", doc)
+                linkToLicense = JsonUtils.getString("linkToLicense", doc)
+                openWith = JsonUtils.getString("openWith", doc)
+                articleDate = JsonUtils.getString("articleDate", doc)
+                kind = JsonUtils.getString("kind", doc)
+                createdDate = JsonUtils.getLong("createdDate", doc)
+                language = JsonUtils.getString("language", doc)
+                author = JsonUtils.getString("author", doc)
+                mediaType = JsonUtils.getString("mediaType", doc)
+                resourceType = JsonUtils.getString("resourceType", doc)
+                timesRated = JsonUtils.getInt("timesRated", doc)
+                medium = JsonUtils.getString("medium", doc)
+                setResourceFor(JsonUtils.getJsonArray("resourceFor", doc), this)
+                setSubject(JsonUtils.getJsonArray("subject", doc), this)
+                setLevel(JsonUtils.getJsonArray("level", doc), this)
+                setTag(JsonUtils.getJsonArray("tags", doc), this)
+                isPrivate = JsonUtils.getBoolean("private", doc)
+                setLanguages(JsonUtils.getJsonArray("languages", doc), this)
             }
-            resource?.filename = JsonUtils.getString("filename", doc)
-            resource?.averageRating = JsonUtils.getString("averageRating", doc)
-            resource?.uploadDate = JsonUtils.getString("uploadDate", doc)
-            resource?.year = JsonUtils.getString("year", doc)
-            resource?.addedBy = JsonUtils.getString("addedBy", doc)
-            resource?.publisher = JsonUtils.getString("publisher", doc)
-            resource?.linkToLicense = JsonUtils.getString("linkToLicense", doc)
-            resource?.openWith = JsonUtils.getString("openWith", doc)
-            resource?.articleDate = JsonUtils.getString("articleDate", doc)
-            resource?.kind = JsonUtils.getString("kind", doc)
-            resource?.createdDate = JsonUtils.getLong("createdDate", doc)
-            resource?.language = JsonUtils.getString("language", doc)
-            resource?.author = JsonUtils.getString("author", doc)
-            resource?.mediaType = JsonUtils.getString("mediaType", doc)
-            resource?.resourceType = JsonUtils.getString("resourceType", doc)
-            resource?.timesRated = JsonUtils.getInt("timesRated", doc)
-            resource?.medium = JsonUtils.getString("medium", doc)
-            resource?.setResourceFor(JsonUtils.getJsonArray("resourceFor", doc), resource)
-            resource?.setSubject(JsonUtils.getJsonArray("subject", doc), resource)
-            resource?.setLevel(JsonUtils.getJsonArray("level", doc), resource)
-            resource?.setTag(JsonUtils.getJsonArray("tags", doc), resource)
-            resource?.isPrivate = JsonUtils.getBoolean("private", doc)
-            resource?.setLanguages(JsonUtils.getJsonArray("languages", doc), resource)
             mRealm.commitTransaction()
 
             val csvRow = arrayOf(
@@ -450,12 +393,12 @@ open class RealmMyLibrary : RealmObject() {
             try {
                 val file = File(filePath)
                 file.parentFile?.mkdirs()
-                val writer = CSVWriter(FileWriter(file))
-                writer.writeNext(arrayOf("libraryId", "library_rev", "title", "description", "resourceRemoteAddress", "resourceLocalAddress", "resourceOffline", "resourceId", "addedBy", "uploadDate", "createdDate", "openWith", "articleDate", "kind", "language", "author", "year", "medium", "filename", "mediaType", "resourceType", "timesRated", "averageRating", "publisher", "linkToLicense", "subject", "level", "tags", "languages", "courseId", "stepId", "downloaded", "private"))
-                for (row in data) {
-                    writer.writeNext(row)
+                CSVWriter(FileWriter(file)).use { writer ->
+                    writer.writeNext(arrayOf("libraryId", "library_rev", "title", "description", "resourceRemoteAddress", "resourceLocalAddress", "resourceOffline", "resourceId", "addedBy", "uploadDate", "createdDate", "openWith", "articleDate", "kind", "language", "author", "year", "medium", "filename", "mediaType", "resourceType", "timesRated", "averageRating", "publisher", "linkToLicense", "subject", "level", "tags", "languages", "courseId", "stepId", "downloaded", "private"))
+                    data.forEach { row ->
+                        writer.writeNext(row)
+                    }
                 }
-                writer.close()
             } catch (e: IOException) {
                 e.printStackTrace()
             }
@@ -467,25 +410,18 @@ open class RealmMyLibrary : RealmObject() {
 
         @JvmStatic
         fun listToString(list: RealmList<String>?): String {
-            val s = StringBuilder()
-            if (list != null) {
-                for (tag in list) {
-                    s.append(tag).append(", ")
-                }
-            }
-            return s.toString()
+            return list?.joinToString(", ") ?: ""
         }
 
         @JvmStatic
         fun save(allDocs: JsonArray, mRealm: Realm): List<String> {
             val list: MutableList<String> = ArrayList()
-            for (i in 0 until allDocs.size()) {
-                var doc = allDocs[i].asJsonObject
-                doc = JsonUtils.getJsonObject("doc", doc)
-                val id = JsonUtils.getString("_id", doc)
+            allDocs.forEach { doc ->
+                val document = JsonUtils.getJsonObject("doc", doc.asJsonObject)
+                val id = JsonUtils.getString("_id", document)
                 if (!id.startsWith("_design")) {
                     list.add(id)
-                    insertResources(doc, mRealm)
+                    insertResources(document, mRealm)
                 }
             }
             return list
@@ -493,42 +429,23 @@ open class RealmMyLibrary : RealmObject() {
 
         @JvmStatic
         fun getMyLibIds(realm: Realm?, userId: String?): JsonArray {
-            val myLibraries: RealmResults<RealmMyLibrary>? =
-                userId?.let {
-                    realm?.where(RealmMyLibrary::class.java)?.contains("userId", it)?.findAll()
-                }
-            val ids = JsonArray()
-            for (lib in myLibraries ?: emptyList()) {
-                ids.add(lib.id)
+            val myLibraries = userId?.let { realm?.where(RealmMyLibrary::class.java)?.contains("userId", it)?.findAll() }
+            return JsonArray().apply { myLibraries?.forEach { lib -> add(lib.id) }
             }
-            return ids
         }
         @JvmStatic
         fun getLevels(libraries: List<RealmMyLibrary>): Set<String> {
-            val list: MutableSet<String> = HashSet()
-            for (li in libraries) {
-                li.level?.let { list.addAll(it) }
-            }
-            return list
+            return libraries.flatMap { it.level ?: emptyList() }.toSet()
         }
 
         @JvmStatic
         fun getArrayList(libraries: List<RealmMyLibrary>, type: String): Set<String?> {
-            val list: MutableSet<String?> = HashSet()
-            for (li in libraries) {
-                val s = if (type == "mediums") li.mediaType else li.language
-                if (!TextUtils.isEmpty(s)) list.add(s)
-            }
-            return list
+            return libraries.mapNotNull { if (type == "mediums") it.mediaType else it.language }.filterNot { it.isNullOrBlank() }.toSet()
         }
 
         @JvmStatic
         fun getSubjects(libraries: List<RealmMyLibrary>): Set<String> {
-            val list: MutableSet<String> = HashSet()
-            for (li in libraries) {
-                li.subject?.let { list.addAll(it) }
-            }
-            return list
+            return libraries.flatMap { it.subject ?: emptyList() }.toSet()
         }
     }
 }

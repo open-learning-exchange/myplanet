@@ -24,7 +24,6 @@
                 android:layout_height="@dimen/profile_card"
                 android:padding="@dimen/padding_normal"
                 android:src="@mipmap/ic_launcher" />
-
             <TextView
                 android:id="@+id/txtFullName"
                 android:layout_width="match_parent"
@@ -34,7 +33,6 @@
                 android:textColor="@color/textColorPrimary"
                 android:textSize="18sp"
                 android:textStyle="bold" />
-
             <TextView
                 android:id="@+id/txtRole"
                 android:layout_width="match_parent"
@@ -44,16 +42,6 @@
                 android:padding="4dp"
                 android:text="@string/learner"
                 android:textColor="@color/textColorPrimary" />
-
-            <TextView
-                android:id="@+id/txtVisits"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:gravity="center"
-                android:padding="4dp"
-                android:textColor="@color/textColorPrimary" />
-
         </LinearLayout>
 
         <ScrollView
@@ -73,7 +61,6 @@
                     android:text="@string/submission"
                     android:textColor="@color/md_black_1000"
                     android:textSize="18sp" />
-
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -82,7 +69,6 @@
                     android:textColor="@color/disable_color"
                     android:textSize="18sp"
                     android:visibility="gone" />
-
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -90,7 +76,6 @@
                     android:text="@string/email"
                     android:textColor="@color/disable_color"
                     android:textSize="18sp" />
-
                 <TextView
                     android:id="@+id/tv_news"
                     android:layout_width="match_parent"
@@ -99,7 +84,6 @@
                     android:text="@string/our_news"
                     android:textColor="@color/md_black_1000"
                     android:textSize="18sp" />
-
                 <TextView
                     android:id="@+id/tv_achievement"
                     android:layout_width="match_parent"
@@ -108,12 +92,9 @@
                     android:text="@string/menu_achievement"
                     android:textColor="@color/md_black_1000"
                     android:textSize="18sp" />
-
-
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content">
-
 
                     <TextView
                         android:id="@+id/tv_surveys"
@@ -125,7 +106,6 @@
                         android:text="@string/my_survey"
                         android:textColor="@color/md_black_1000"
                         android:textSize="18sp" />
-
                     <ImageView
                         android:id="@+id/img_survey_warn"
                         android:layout_width="20dp"
@@ -134,7 +114,6 @@
                         android:layout_margin="4dp"
                         android:src="@drawable/ic_warn"
                         android:visibility="gone" />
-
                 </LinearLayout>
 
                 <TextView
@@ -145,9 +124,7 @@
                     android:textColor="@color/disable_color"
                     android:textSize="18sp"
                     android:visibility="gone" />
-
             </LinearLayout>
         </ScrollView>
     </LinearLayout>
-
 </androidx.cardview.widget.CardView>

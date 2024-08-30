@@ -196,6 +196,13 @@
         <item>Somali</item>
     </string-array>
 
+    <string name="english">english</string>
+    <string name="spanish">español</string>
+    <string name="somali">somali</string>
+    <string name="nepali">नेपाली</string>
+    <string name="arabic">عربى</string>
+    <string name="french">français</string>
+
     <string-array name="language_keys">
         <item>en</item>
         <item>ne</item>
@@ -1075,8 +1082,7 @@
     <string name="tag_selected">Xulo: %s</string>
     <string name="resources_size">Xogta [%d]</string>
     <string name="user_role">- %s</string>
-    <string name="offline_visit">%d booqasho</string>
-    <string name="offline_visits">%d booqasho</string>
+    <string name="user_name">%s (%d)</string>
     <string name="visit_count">%1$s (%2$d %3$s)</string>
     <string name="two_strings">%1$s %2$s</string>
     <string name="three_strings">%1$s %2$s %3$s</string>
@@ -1095,21 +1101,24 @@
     <string name="are_you_sure_you_want_to_archive_this_course">Ma hubtaa inaad rabto inaad kaydiso koorsadan?</string>
     <string name="manual">buug</string>
     <string name="sync_to_server">Isku xidh adeegga:</string>
-    <string name="sync_planet_learning">🌎planet learning</string>
-    <string name="sync_guatemala">🇬🇹planet guatemala</string>
-    <string name="sync_san_pablo">🇬🇹planet san sablo</string>
-    <string name="sync_planet_earth">🌎planet earth</string>
-    <string name="sync_somalia">🇸🇴planet somalia</string>
-    <string name="sync_vi">🌎planet vi</string>
-    <string name="sync_xela">🇬🇹planet xela</string>
-    <string name="sync_uriur">🇰🇪planet uriur</string>
-    <string name="sync_ruiru">🇰🇪planet ruiru</string>
-    <string name="sync_embakasi">🇰🇪planet embakasi</string>
-    <string name="sync_cambridge">🇺🇸planet cambridge</string>
-    <string name="sync_egdirbmac">🇺🇸planet egdirbmac</string>
-    <string name="sync_palmbay">🇺🇸planet palmbay</string>
-    <string name="surveys_to_complete">Waxaad haysataa %d %s oo ay tahay inaad dhammaystirto</string>
+    <string name="sync_planet_learning">🌎 planet learning</string>
+    <string name="sync_guatemala">🇬🇹 planet guatemala</string>
+    <string name="sync_san_pablo">🇬🇹 planet san pablo</string>
+    <string name="sync_planet_earth">🌎 planet earth</string>
+    <string name="sync_somalia">🇸🇴 planet somalia</string>
+    <string name="sync_vi">🌎 planet vi</string>
+    <string name="sync_xela">🇬🇹 planet xela</string>
+    <string name="sync_uriur">🇰🇪 planet uriur</string>
+    <string name="sync_ruiru">🇰🇪 planet ruiru</string>
+    <string name="sync_embakasi">🇰🇪 planet embakasi</string>
+    <string name="sync_cambridge">🇺🇸 planet cambridge</string>
+    <string name="sync_egdirbmac">🇺🇸 planet egdirbmac</string>
+    <string name="sync_palmbay">🇺🇸 planet palmbay</string>
+    <string name="surveys_to_complete">Waxaad haysataa %1$d %2$s oo ay tahay inaad dhammaystirto</string>
     <string name="show_less">tus wax yar</string>
     <string name="show_more">tus wax badan</string>
+    <string name="server_address_content_description">cinwaanka serverka: %1$s</string>
+    <string name="member_only_allowed">ku biir xubin ahaan si aad u hesho astaamahan</string>
+    <string name="select_theme_mode">dooro qaabka mawduuca</string>
 
 </resources>

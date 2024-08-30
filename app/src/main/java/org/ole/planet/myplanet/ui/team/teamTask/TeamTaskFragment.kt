@@ -21,7 +21,6 @@ import com.google.gson.JsonObject
 import com.nex3z.togglebuttongroup.SingleSelectToggleGroup
 import io.realm.RealmResults
 import io.realm.Sort
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertTaskBinding
 import org.ole.planet.myplanet.databinding.AlertUsersSpinnerBinding
@@ -47,6 +46,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
     private var datePicker: TextView? = null
     var list: List<RealmTeamTask>? = null
     private var teamTaskList: RealmResults<RealmTeamTask>? = null
+    private var currentTab = R.id.btn_all
 
     private lateinit var adapterTask: AdapterTask
     var listener = DatePickerDialog.OnDateSetListener { _: DatePicker?, year: Int, monthOfYear: Int, dayOfMonth: Int ->
@@ -165,30 +165,54 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
         setAdapter()
         showNoData(fragmentTeamTaskBinding.tvNodata, list?.size,"tasks")
         fragmentTeamTaskBinding.taskToggle.setOnCheckedChangeListener { _: SingleSelectToggleGroup?, checkedId: Int ->
-            list = when (checkedId) {
+            currentTab = checkedId
+            when (checkedId) {
                 R.id.btn_my -> {
-                    mRealm.where(RealmTeamTask::class.java).equalTo("teamId", teamId)
-                        .notEqualTo("status", "archived").equalTo("completed", false)
-                        .equalTo("assignee", user?.id).sort("deadline", Sort.DESCENDING).findAll()
+                    myTasks()
                 }
                 R.id.btn_completed -> {
-                    mRealm.where(RealmTeamTask::class.java).equalTo("teamId", teamId)
-                        .notEqualTo("status", "archived").equalTo("completed", true)
-                        .sort("deadline", Sort.DESCENDING).findAll()
+                    completedTasks()
                 }
                 else -> {
-                    mRealm.where(RealmTeamTask::class.java).equalTo("teamId", teamId)
-                        .notEqualTo("status", "archived").sort("completed", Sort.ASCENDING).findAll()
+                    allTasks()
                 }
             }
             setAdapter()
         }
     }
 
+    private fun allTasks() {
+       list = mRealm.where(RealmTeamTask::class.java).equalTo("teamId", teamId)
+            .notEqualTo("status", "archived").sort("completed", Sort.ASCENDING).findAll()
+    }
+
+    private fun completedTasks() {
+        list = mRealm.where(RealmTeamTask::class.java).equalTo("teamId", teamId)
+            .notEqualTo("status", "archived").equalTo("completed", true)
+            .sort("deadline", Sort.DESCENDING).findAll()
+    }
+
+    private fun myTasks() {
+        list = mRealm.where(RealmTeamTask::class.java).equalTo("teamId", teamId)
+            .notEqualTo("status", "archived").equalTo("completed", false)
+            .equalTo("assignee", user?.id).sort("deadline", Sort.DESCENDING).findAll()
+    }
+
     override fun onNewsItemClick(news: RealmNews?) {}
 
     private fun setAdapter() {
-        if(isAdded) {
+        if (isAdded) {
+            when (currentTab) {
+                R.id.btn_my -> {
+                    myTasks()
+                }
+                R.id.btn_completed -> {
+                    completedTasks()
+                }
+                R.id.btn_all -> {
+                    allTasks()
+                }
+            }
             adapterTask = AdapterTask(requireContext(), mRealm, list, !isMember())
             adapterTask.setListener(this)
             fragmentTeamTaskBinding.rvTask.adapter = adapterTask
@@ -201,11 +225,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
         realmTeamTask?.isUpdated = true
         realmTeamTask?.completedTime = Date().time
         mRealm.commitTransaction()
-        try {
-            fragmentTeamTaskBinding.rvTask.adapter?.notifyDataSetChanged()
-        } catch (err: Exception) {
-            err.printStackTrace()
-        }
+        setAdapter()
     }
 
     override fun onEdit(task: RealmTeamTask?) {
@@ -224,12 +244,13 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
     }
 
     override fun onClickMore(realmTeamTask: RealmTeamTask?) {
-        val alertUsersSpinnerBinding = AlertUsersSpinnerBinding.inflate(LayoutInflater.from(MainApplication.context))
+        val alertUsersSpinnerBinding = AlertUsersSpinnerBinding.inflate(LayoutInflater.from(requireActivity()))
         val userList: List<RealmUserModel> = getJoinedMember(teamId, mRealm)
         val filteredUserList = userList.filter { user -> user.getFullName().isNotBlank() }
         val adapter: ArrayAdapter<RealmUserModel> = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, filteredUserList)
         alertUsersSpinnerBinding.spnUser.adapter = adapter
-        AlertDialog.Builder(requireActivity()).setTitle(R.string.select_member)
+        AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
+            .setTitle(R.string.select_member)
             .setView(alertUsersSpinnerBinding.root).setCancelable(false)
             .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
                 val user = alertUsersSpinnerBinding.spnUser.selectedItem as RealmUserModel

@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.team.teamTask
 
+import android.app.AlertDialog
 import android.content.Context
 import android.text.TextUtils
 import android.view.LayoutInflater
@@ -48,7 +49,15 @@ class AdapterTask(private val context: Context, private val realm: Realm, privat
                 listener?.onDelete(list[position])
             }
             holder.itemView.setOnClickListener {
-                showCloseAlert(context, list[position].title, list[position].description!!)
+                val alertDialog = AlertDialog.Builder(context, R.style.AlertDialogTheme)
+                    .setTitle(list[position].title)
+                    .setMessage(list[position].description)
+                    .setNegativeButton("Cancel") { dialog, _ ->
+                        dialog.dismiss()
+                    }
+                    .create()
+
+                alertDialog.show()
             }
             if (nonTeamMember) {
                 rowTaskBinding.editTask.visibility = View.GONE
