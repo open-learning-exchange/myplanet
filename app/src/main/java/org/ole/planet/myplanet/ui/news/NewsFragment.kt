@@ -128,28 +128,27 @@ class NewsFragment : BaseNewsFragment() {
         fragmentNewsBinding.addNewsImage.visibility = if (showBetaFeature(Constants.KEY_NEWSADDIMAGE, requireActivity())) View.VISIBLE else View.GONE
     }
 
-    private val newsList: List<RealmNews?>
-        get() {
-            val allNews: List<RealmNews> = mRealm.where(RealmNews::class.java).sort("time", Sort.DESCENDING).isEmpty("replyTo")
-                .equalTo("docType", "message", Case.INSENSITIVE).findAll()
-            val list: MutableList<RealmNews?> = ArrayList()
-            for (news in allNews) {
-                if (!TextUtils.isEmpty(news.viewableBy) && news.viewableBy.equals("community", ignoreCase = true)) {
-                    list.add(news)
-                    continue
-                }
-                if (!TextUtils.isEmpty(news.viewIn)) {
-                    val ar = Gson().fromJson(news.viewIn, JsonArray::class.java)
-                    for (e in ar) {
-                        val ob = e.asJsonObject
-                        if (ob != null && ob.has("_id") && ob["_id"].asString.equals(if (user != null) user?.planetCode + "@" + user?.parentCode else "", ignoreCase = true)) {
-                            list.add(news)
-                        }
+    private val newsList: List<RealmNews?> get() {
+        val allNews: List<RealmNews> = mRealm.where(RealmNews::class.java).sort("time", Sort.DESCENDING).isEmpty("replyTo")
+            .equalTo("docType", "message", Case.INSENSITIVE).findAll()
+        val list: MutableList<RealmNews?> = ArrayList()
+        for (news in allNews) {
+            if (!TextUtils.isEmpty(news.viewableBy) && news.viewableBy.equals("community", ignoreCase = true)) {
+                list.add(news)
+                continue
+            }
+            if (!TextUtils.isEmpty(news.viewIn)) {
+                val ar = Gson().fromJson(news.viewIn, JsonArray::class.java)
+                for (e in ar) {
+                    val ob = e.asJsonObject
+                    if (ob != null && ob.has("_id") && ob["_id"].asString.equals(if (user != null) user?.planetCode + "@" + user?.parentCode else "", ignoreCase = true)) {
+                        list.add(news)
                     }
                 }
             }
-            return list
         }
+        return list
+    }
 
     override fun setData(list: List<RealmNews?>?) {
         if (isAdded) {
