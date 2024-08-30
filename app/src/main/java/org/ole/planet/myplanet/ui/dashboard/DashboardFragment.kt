@@ -19,6 +19,7 @@ import org.ole.planet.myplanet.ui.resources.AddResourceFragment
 import org.ole.planet.myplanet.ui.news.NewsFragment
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment
+import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utilities.TimeUtils.currentDate
 
 class DashboardFragment : BaseDashboardFragment() {
@@ -61,7 +62,7 @@ class DashboardFragment : BaseDashboardFragment() {
             if (user?.id?.startsWith("guest") == false) {
                 AddResourceFragment().show(childFragmentManager, getString(R.string.add_res))
             } else {
-                Toast.makeText(context, getString(R.string.member_only_allowed), Toast.LENGTH_SHORT).show()
+                guestDialog(requireContext())
             }
         }
     }

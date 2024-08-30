@@ -43,6 +43,7 @@ import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
 import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.ui.team.TeamFragment
+import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utilities.NetworkUtils.coroutineScope
 import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utilities.TimeUtils
@@ -92,7 +93,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
             if (user?.id?.startsWith("guest") == false) {
                 AddResourceFragment().show(childFragmentManager, getString(R.string.add_res))
             } else {
-                Toast.makeText(requireContext(), getString(R.string.member_only_allowed), Toast.LENGTH_SHORT).show()
+                guestDialog(requireContext())
             }
         }
         showBadges()
@@ -197,8 +198,20 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     private fun declareElements() {
         fragmentHomeBellBinding.homeCardTeams.llHomeTeam.setOnClickListener { homeItemClickListener?.openCallFragment(TeamFragment()) }
-        fragmentHomeBellBinding.homeCardLibrary.myLibraryImageButton.setOnClickListener { openHelperFragment(ResourcesFragment()) }
-        fragmentHomeBellBinding.homeCardCourses.myCoursesImageButton.setOnClickListener { openHelperFragment(CoursesFragment()) }
+        fragmentHomeBellBinding.homeCardLibrary.myLibraryImageButton.setOnClickListener {
+            if (user?.id?.startsWith("guest") == true) {
+                guestDialog(requireContext())
+            } else {
+                openHelperFragment(ResourcesFragment())
+            }
+        }
+        fragmentHomeBellBinding.homeCardCourses.myCoursesImageButton.setOnClickListener {
+            if (user?.id?.startsWith("guest") == true) {
+                guestDialog(requireContext())
+            } else {
+                openHelperFragment(CoursesFragment())
+            }
+        }
         fragmentHomeBellBinding.fabMyProgress.setOnClickListener { openHelperFragment(MyProgressFragment()) }
         fragmentHomeBellBinding.fabMyActivity.setOnClickListener { openHelperFragment(MyActivityFragment()) }
         fragmentHomeBellBinding.fabSurvey.setOnClickListener {
