@@ -58,6 +58,7 @@ import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.utilities.BottomNavigationViewHelper.disableShiftMode
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
+import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.Utilities
@@ -154,7 +155,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     if (user?.id?.startsWith("guest") == false) {
                         openCallFragment(ChatHistoryListFragment())
                     } else {
-                        toast(this, getString(R.string.sign_up_to_chat))
+                        guestDialog(this)
                     }
                 }
                 R.id.menu_goOnline -> wifiStatusSwitch()
@@ -354,9 +355,21 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             R.string.menu_surveys -> openCallFragment(SurveyFragment())
             R.string.menu_courses -> openCallFragment(CoursesFragment())
             R.string.menu_community -> openCallFragment(CommunityTabFragment())
-            R.string.txt_myLibrary -> openMyFragment(ResourcesFragment())
+            R.string.txt_myLibrary -> {
+                if (user?.id?.startsWith("guest") == true) {
+                    guestDialog(this)
+                } else {
+                    openMyFragment(ResourcesFragment())
+                }
+            }
             R.string.team -> openMyFragment(TeamFragment())
-            R.string.txt_myCourses -> openMyFragment(CoursesFragment())
+            R.string.txt_myCourses -> {
+                if (user?.id?.startsWith("guest") == true) {
+                    guestDialog(this)
+                } else {
+                    openMyFragment(CoursesFragment())
+                }
+            }
             R.string.enterprises -> openEnterpriseFragment()
             R.string.menu_logout -> logout()
             else -> openCallFragment(BellDashboardFragment())
@@ -445,10 +458,18 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 openCallFragment(CoursesFragment())
             }
             R.id.menu_mycourses -> {
-                openMyFragment(CoursesFragment())
+                if (user?.id?.startsWith("guest") == true) {
+                    guestDialog(this)
+                } else {
+                    openMyFragment(CoursesFragment())
+                }
             }
             R.id.menu_mylibrary -> {
-                openMyFragment(ResourcesFragment())
+                if (user?.id?.startsWith("guest") == true) {
+                    guestDialog(this)
+                } else {
+                    openMyFragment(ResourcesFragment())
+                }
             }
             R.id.menu_enterprises -> {
                 openEnterpriseFragment()
