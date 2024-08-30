@@ -11,6 +11,7 @@ import com.google.gson.reflect.TypeToken
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
+import io.realm.RealmResults
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
