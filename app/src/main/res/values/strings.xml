@@ -1121,7 +1121,6 @@
     <string name="member_only_allowed">join as a member to access this feature</string>
     <string name="select_theme_mode">select theme mode</string>]
     <string name="course_steps">Course Steps</string>
-    <string name="select_theme_mode">select theme mode</string>
     <string name="to_access_this_feature_become_a_member">you are currently a guest user. to access this feature, become a member.</string>
 
 </resources>
