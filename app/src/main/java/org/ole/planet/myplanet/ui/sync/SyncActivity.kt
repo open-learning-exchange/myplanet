@@ -461,7 +461,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                         nonEmptyCommunities.add(community)
                     }
                 }
-                dialogServerUrlBinding.spnCloud.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, nonEmptyCommunities)
+                dialogServerUrlBinding.spnCloud.adapter = ArrayAdapter(this, R.layout.spinner_item_white, nonEmptyCommunities)
                 dialogServerUrlBinding.spnCloud.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
                     override fun onItemSelected(adapterView: AdapterView<*>?, view: View, i: Int, l: Long) {
                         onChangeServerUrl()
