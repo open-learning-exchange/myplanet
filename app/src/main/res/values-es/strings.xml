@@ -488,7 +488,7 @@
     <string name="add_res">Agregar Recurso</string>
     <string name="password">Contraseña</string>
     <string name="retype_password">Volver a ingresar la contraseña</string>
-    <string name="become_a_member">Convertirse en miembro</string>
+    <string name="become_a_member">convertirse en miembro</string>
     <string name="change_member">Cambiar Miembro</string>
     <string name="use_phone_number_as_password">Usar número de teléfono como contraseña</string>
     <string name="feedback">Comentarios</string>
@@ -1121,5 +1121,6 @@
     <string name="member_only_allowed">únete como miembro para acceder a esta función</string>
     <string name="select_theme_mode">seleccionar el modo de tema</string>
     <string name="course_steps">Pasos del curso</string>
+    <string name="to_access_this_feature_become_a_member">actualmente eres un usuario invitado. para acceder a esta función, hazte miembro.</string>
 
 </resources>

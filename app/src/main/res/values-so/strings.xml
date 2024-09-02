@@ -488,7 +488,7 @@
     <string name="add_res">Ku Dar Mashiinada</string>
     <string name="password">Furaha Erayga Sirta</string>
     <string name="retype_password">Xaqiiji Furaha Erayga Sirta</string>
-    <string name="become_a_member">Noqo Xubin</string>
+    <string name="become_a_member">noqo xubin</string>
     <string name="change_member">Beddel Xubin</string>
     <string name="use_phone_number_as_password">Isticmaal Lambarka Taleefonka Sirta</string>
     <string name="feedback">Rajayn</string>
@@ -1121,5 +1121,6 @@
     <string name="member_only_allowed">ku biir xubin ahaan si aad u hesho astaamahan</string>
     <string name="select_theme_mode">dooro qaabka mawduuca</string>
     <string name="course_steps">Talaabooyinka Koorsada</string>
+    <string name="to_access_this_feature_become_a_member">hadda waxaad tahay isticmaale marti ah. si aad u hesho helitaanka astaamahan, noqo xubin.</string>
 
 </resources>

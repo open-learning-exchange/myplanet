@@ -1121,5 +1121,6 @@
     <string name="member_only_allowed">यो सुविधा प्रयोग गर्न सदस्यको रूपमा सामेल हुनुहोस्</string>
     <string name="select_theme_mode">थिम मोड चयन गर्नुहोस्</string>
     <string name="course_steps">पाठ्यक्रम चरणहरू</string>
+    <string name="to_access_this_feature_become_a_member">तपाईं हाल अतिथि प्रयोगकर्ता हुनुहुन्छ। यो सुविधा प्रयोग गर्न, सदस्य बन्नुहोस्।</string>
 
 </resources>
