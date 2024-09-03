@@ -227,7 +227,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             return
         }
         if (user?.id?.startsWith("guest") == true && profileDbHandler.offlineVisits >= 3) {
-            val builder = AlertDialog.Builder(this)
+            val builder = AlertDialog.Builder(this, R.style.AlertDialogTheme)
             builder.setTitle(getString(R.string.become_a_member))
             builder.setMessage(getString(R.string.trial_period_ended))
             builder.setCancelable(false)
