@@ -9,6 +9,7 @@
     <string name="btn_back">Back</string>
     <string name="btn_sign_in">Sign In</string>
     <string name="btn_sync">Sync</string>
+    <string name="select_team">select team</string>
     <string name="btn_sync_save">Save</string>
     <string name="btn_sync_cancel">Cancel</string>
     <string name="err_msg_name">Enter your username</string>
