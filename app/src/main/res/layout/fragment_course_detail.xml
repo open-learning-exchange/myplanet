@@ -30,7 +30,6 @@
                     android:layout_height="wrap_content"
                     android:text="@string/open_resource"
                     android:theme="@style/AccentButton" />
-
                 <Button
                     android:id="@+id/btn_resources"
                     android:layout_width="wrap_content"
@@ -75,14 +74,12 @@
                                 android:padding="4dp"
                                 android:text="@string/zero_total"
                                 android:textColor="@color/daynight_textColor" />
-
                             <androidx.appcompat.widget.AppCompatRatingBar
                                 android:id="@+id/rating_bar"
                                 style="@style/Base.Widget.AppCompat.RatingBar.Small"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:isIndicator="true" />
-
                         </LinearLayout>
 
                         <LinearLayout
@@ -103,7 +100,6 @@
                                 android:textColor="@color/daynight_textColor"
                                 android:textSize="@dimen/text_size_large"
                                 android:textStyle="bold" />
-
                             <TextView
                                 android:id="@+id/average"
                                 android:layout_width="wrap_content"
@@ -124,14 +120,12 @@
                             android:layout_height="wrap_content"
                             android:text="@string/subject_level_colon"
                             android:textColor="@color/daynight_textColor" />
-
                         <TextView
                             android:id="@+id/subject_level"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:padding="@dimen/padding_normal"
                             android:textColor="@color/daynight_textColor" />
-
                     </LinearLayout>
 
                     <LinearLayout
@@ -145,14 +139,12 @@
                             android:layout_height="wrap_content"
                             android:text="@string/grade_level_colon"
                             android:textColor="@color/daynight_textColor" />
-
                         <TextView
                             android:id="@+id/grade_level"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:padding="@dimen/padding_normal"
                             android:textColor="@color/daynight_textColor" />
-
                     </LinearLayout>
 
                     <LinearLayout
@@ -166,14 +158,12 @@
                             android:layout_height="wrap_content"
                             android:text="@string/language_colon"
                             android:textColor="@color/daynight_textColor" />
-
                         <TextView
                             android:id="@+id/language"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:padding="@dimen/padding_normal"
                             android:textColor="@color/daynight_textColor" />
-
                     </LinearLayout>
 
                     <LinearLayout
@@ -187,14 +177,12 @@
                             android:layout_height="wrap_content"
                             android:text="@string/method"
                             android:textColor="@color/daynight_textColor" />
-
                         <TextView
                             android:id="@+id/method"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:padding="@dimen/padding_normal"
                             android:textColor="@color/daynight_textColor" />
-
                     </LinearLayout>
 
                     <LinearLayout
@@ -207,14 +195,12 @@
                             android:layout_height="wrap_content"
                             android:text="@string/number_of_exams"
                             android:textColor="@color/daynight_textColor" />
-
                         <TextView
                             android:id="@+id/no_of_exams"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:padding="@dimen/padding_normal"
                             android:textColor="@color/daynight_textColor" />
-
                     </LinearLayout>
 
                     <LinearLayout
@@ -229,7 +215,6 @@
                             android:layout_height="wrap_content"
                             android:text="@string/description_colon"
                             android:textColor="@color/daynight_textColor" />
-
                         <TextView
                             android:id="@+id/description"
                             android:layout_width="wrap_content"
@@ -238,7 +223,6 @@
                             android:paddingBottom="@dimen/_10dp"
                             android:textColor="@color/daynight_textColor" />
                     </LinearLayout>
-
                 </LinearLayout>
 
                 <LinearLayout
@@ -255,9 +239,8 @@
                         style="@style/HeaderText"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Course Steps"
+                        android:text="@string/course_steps"
                         android:textColor="@color/daynight_textColor" />
-
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/steps_list"
                         android:layout_width="match_parent"
