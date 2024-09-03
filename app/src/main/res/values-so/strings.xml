@@ -1120,6 +1120,7 @@
     <string name="server_address_content_description">cinwaanka serverka: %1$s</string>
     <string name="member_only_allowed">ku biir xubin ahaan si aad u hesho astaamahan</string>
     <string name="select_theme_mode">dooro qaabka mawduuca</string>
+    <string name="course_steps">Talaabooyinka Koorsada</string>
     <string name="to_access_this_feature_become_a_member">hadda waxaad tahay isticmaale marti ah. si aad u hesho helitaanka astaamahan, noqo xubin.</string>
 
 </resources>
