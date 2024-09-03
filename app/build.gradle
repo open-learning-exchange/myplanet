@@ -57,7 +57,7 @@ android {
     lintOptions {
         abortOnError false
     }
-    
+
     namespace 'org.ole.planet.myplanet'
 
     buildFeatures {

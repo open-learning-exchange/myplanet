@@ -67,7 +67,7 @@
     <string name="gender">Gender</string>
     <string name="birth_date">Birth Date</string>
     <string name="phone_number">Phone Number</string>
-    <string name="language">Language</string>
+    <string name="language">language</string>
     <string name="last_name">Last Name</string>
     <string name="version">Version %s</string>
     <string name="middle_name">Middle Name</string>
@@ -150,7 +150,7 @@
     <string name="get_started">GET STARTED</string>
     <string name="enter_password">Enter Password</string>
     <string name="managerial_login">Manager Login</string>
-    <string name="save_username_and_password">Save Username and Password</string>
+    <string name="save_username_and_password">save username and password</string>
     <string name="year">Year</string>
     <string name="publisher">Publisher</string>
     <string name="link_to_license">Link to license</string>
@@ -385,10 +385,10 @@
     <string name="tasks">Tasks</string>
     <string name="join_requests">Join Requests</string>
     <string name="add_image">Add Image</string>
-    <string name="addImageToMessage">Beta Add image to message</string>
+    <string name="addImageToMessage">beta add image to message</string>
     <string name="clear_data">clear data</string>
-    <string name="reset_app">Reset App</string>
-    <string name="freeup_space">Free-up disk space</string>
+    <string name="reset_app">reset app</string>
+    <string name="freeup_space">free-up disk space</string>
     <string name="action_disclaimer">disclaimer</string>
     <string name="action_about">about</string>
     <string name="engilsh_dictionary">English Dictionary</string>
@@ -554,8 +554,8 @@
     <string name="cloud_url">cloud</string>
     <string name="interval">interval</string>
     <string name="autosync">autosync</string>
-    <string name="autosync_off">Autosync Off!</string>
-    <string name="autosync_on">Autosync On</string>
+    <string name="autosync_off">autosync off!</string>
+    <string name="autosync_on">autosync on</string>
     <string name="attached_resources">Attached resources:</string>
     <string name="edit">Edit</string>
     <string name="my_achievements">My Achievements</string>
@@ -862,7 +862,7 @@
     <string name="are_you_sure_want_to_delete_all_the_files">Are you sure want to delete all the files?</string>
     <string name="unable_to_clear_files">Unable to clear files</string>
     <string name="last_synced_never">never synced</string>
-    <string name="last_synced_colon">"Last Synced: "</string>
+    <string name="last_synced_colon">last synced: </string>
 
     <string name="disclaimer">
     <![CDATA[
@@ -949,22 +949,22 @@
     <string name="upgrade_local">Upgrade(Local)</string>
     <string name="upgrade">Upgrade</string>
     <string name="apk_already_exists">Apk already exists</string>
-    <string name="auto_sync">Auto Sync</string>
-    <string name="force_weekly_sync">Force Weekly Sync</string>
-    <string name="force_monthly_sync">Force Monthly Sync</string>
-    <string name="beta_function_for_wifi_switch">Beta Function for WiFi Switch</string>
-    <string name="upgrade_application">Upgrade Application</string>
-    <string name="auto_upgrade">Auto Upgrade</string>
-    <string name="always_move_to_maximum_version">Always move to maximum version?</string>
-    <string name="all_beta_functions">All Beta Functions</string>
-    <string name="auto_sync_device">Auto Sync Device</string>
-    <string name="beta_functionality">Beta Functionality</string>
-    <string name="main_controls">Main Controls</string>
+    <string name="auto_sync">auto sync</string>
+    <string name="force_weekly_sync">force weekly sync</string>
+    <string name="force_monthly_sync">force monthly sync</string>
+    <string name="beta_function_for_wifi_switch">beta function for wifi switch</string>
+    <string name="upgrade_application">upgrade application</string>
+    <string name="auto_upgrade">auto upgrade</string>
+    <string name="always_move_to_maximum_version">always move to maximum version?</string>
+    <string name="all_beta_functions">all beta functions</string>
+    <string name="auto_sync_device">auto sync device</string>
+    <string name="beta_functionality">beta functionality</string>
+    <string name="main_controls">main controls</string>
     <string name="select_user_to_login">Select User To Login</string>
     <string name="dismiss">Dismiss</string>
     <string name="gps_is_settings">GPS is settings</string>
     <string name="gps_is_not_enabled_do_you_want_to_go_to_settings_menu">GPS is not enabled. Do you want to go to settings menu?</string>
-    <string name="available_space_colon">Available Space: </string>
+    <string name="available_space_colon">available space: </string>
     <string name="community_leaders">Community Leaders</string>
     <string name="services">Services</string>
     <string name="survey_taken">Survey taken</string>
@@ -1088,10 +1088,10 @@
     <string name="three_strings">%1$s %2$s %3$s</string>
     <string name="download_sync_files">download sync files</string>
     <string name="member_description">%1$s (%2$d visits)</string>
-    <string name="dark_mode">Dark Mode</string>
-    <string name="dark_mode_off">OFF</string>
-    <string name="dark_mode_on">ON</string>
-    <string name="dark_mode_follow_system">Follow System</string>
+    <string name="dark_mode">dark mode</string>
+    <string name="dark_mode_off">off</string>
+    <string name="dark_mode_on">on</string>
+    <string name="dark_mode_follow_system">follow system</string>
     <string-array name="dark_mode_options">
         <item>@string/dark_mode_off</item>
         <item>@string/dark_mode_on</item>
@@ -1119,7 +1119,8 @@
     <string name="show_more">show more</string>
     <string name="server_address_content_description">server address: %1$s</string>
     <string name="member_only_allowed">join as a member to access this feature</string>
-    <string name="select_theme_mode">select theme mode</string>
+    <string name="select_theme_mode">select theme mode</string>]
+    <string name="course_steps">Course Steps</string>
     <string name="to_access_this_feature_become_a_member">you are currently a guest user. to access this feature, become a member.</string>
 
 </resources>
