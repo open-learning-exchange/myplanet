@@ -488,7 +488,7 @@
     <string name="add_res">Add Resource</string>
     <string name="password">password</string>
     <string name="retype_password">Confirm Password</string>
-    <string name="become_a_member">Become a member</string>
+    <string name="become_a_member">become a member</string>
     <string name="change_member">Change Member</string>
     <string name="use_phone_number_as_password">Use phone number as password</string>
     <string name="feedback">Feedback</string>
@@ -1120,5 +1120,7 @@
     <string name="server_address_content_description">server address: %1$s</string>
     <string name="member_only_allowed">join as a member to access this feature</string>
     <string name="select_theme_mode">select theme mode</string>]
+    <string name="course_steps">Course Steps</string>
+    <string name="to_access_this_feature_become_a_member">you are currently a guest user. to access this feature, become a member.</string>
 
 </resources>
