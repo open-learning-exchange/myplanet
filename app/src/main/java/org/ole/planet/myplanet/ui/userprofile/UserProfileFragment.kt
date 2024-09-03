@@ -98,8 +98,8 @@ class UserProfileFragment : Fragment() {
 
         fragmentUserProfileBinding.btProfilePic.setOnClickListener { searchForPhoto() }
         model = handler.userModel
-        fragmentUserProfileBinding.txtName.text = if (!model?.firstName.isNullOrEmpty() && !model?.middleName.isNullOrEmpty() && !model?.lastName.isNullOrEmpty()) {
-            "${model?.firstName} ${model?.middleName} ${model?.lastName}"
+        fragmentUserProfileBinding.txtName.text = if (!model?.firstName.isNullOrEmpty() && !model?.lastName.isNullOrEmpty()) {
+            "${model?.firstName} ${model?.lastName}"
         } else {
             model?.name ?: ""
         }
