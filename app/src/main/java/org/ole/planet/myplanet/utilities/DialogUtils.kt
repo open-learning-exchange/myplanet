@@ -104,7 +104,7 @@ object DialogUtils {
     @JvmStatic
     fun showAlert(context: Context?, title: String?, message: String?) {
         if (context is Activity && !context.isFinishing) {
-            AlertDialog.Builder(context)
+            AlertDialog.Builder(context, R.style.AlertDialogTheme)
                 .setTitle(title)
                 .setMessage(message)
                 .setPositiveButton(R.string.finish, null)
