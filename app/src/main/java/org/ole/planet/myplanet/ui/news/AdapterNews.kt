@@ -291,14 +291,13 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
 
     private fun showEditAlert(id: String?, isEdit: Boolean) {
         val v = LayoutInflater.from(context).inflate(R.layout.alert_input, null)
-        v.setBackgroundColor(ContextCompat.getColor(context, R.color.daynight_grey))
         val et = v.findViewById<EditText>(R.id.et_input)
         v.findViewById<View>(R.id.ll_image).visibility = if (showBetaFeature(Constants.KEY_NEWSADDIMAGE, context)) View.VISIBLE else View.GONE
         val llImage = v.findViewById<LinearLayout>(R.id.ll_alert_image)
         v.findViewById<View>(R.id.add_news_image).setOnClickListener { listener?.addImage(llImage) }
         val news = mRealm.where(RealmNews::class.java).equalTo("id", id).findFirst()
         if (isEdit) et.setText(context.getString(R.string.message_placeholder, news?.message))
-        val dialog = AlertDialog.Builder(context, R.style.CustomAlertDialog).setTitle(if (isEdit) R.string.edit_post else R.string.reply)
+        val dialog = AlertDialog.Builder(context, R.style.AlertDialogTheme).setTitle(if (isEdit) R.string.edit_post else R.string.reply)
             .setIcon(R.drawable.ic_edit).setView(v)
             .setPositiveButton(R.string.button_submit) { _: DialogInterface?, _: Int ->
                 val s = et.text.toString()
