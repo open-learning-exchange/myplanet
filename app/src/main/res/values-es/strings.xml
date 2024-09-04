@@ -9,12 +9,13 @@
     <string name="btn_back">Volver</string>
     <string name="btn_sign_in">Iniciar sesión</string>
     <string name="btn_sync">Sincronizar</string>
+    <string name="select_team">seleccionar equipo</string>
     <string name="btn_sync_save">Guardar</string>
     <string name="btn_sync_cancel">Cancelar</string>
     <string name="err_msg_name">Ingresa tu nombre de usuario</string>
     <string name="err_msg_password">Ingresa la contraseña</string>
     <string name="err_msg_login">El nombre de usuario y/o la contraseña no coinciden</string>
-    <string name="hint_serverURl">planet ip</string>
+    <string name="hint_serverURl">planet ipag</string>
     <string name="hint_serverPin">pin del servidor</string>
     <string name="radio_protocol">Protocolo:</string>
     <string name="radio_http">http</string>
@@ -551,7 +552,7 @@
     <string name="courses_colon">Cursos:</string>
     <string name="title">Título</string>
     <string name="source">Fuente</string>
-    <string name="cloud_url">cloud</string>
+    <string name="cloud_url">nube</string>
     <string name="interval">Intervalo</string>
     <string name="autosync">Autosincronización</string>
     <string name="autosync_off">¡Autosincronización desactivada!</string>
