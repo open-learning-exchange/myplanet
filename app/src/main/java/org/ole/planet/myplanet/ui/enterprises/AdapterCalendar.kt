@@ -22,9 +22,9 @@ class AdapterCalendar(private val context: Context, private val list: List<Realm
         rowTeamCalendarBinding.tvTitle.text = meetup.title
         rowTeamCalendarBinding.tvDescription.text = meetup.description
         if (meetup.startDate == meetup.endDate) {
-            rowTeamCalendarBinding.tvDate.text = formatDate(meetup.startDate)
+            rowTeamCalendarBinding.tvDate.text = formatDate(meetup.startDate,"")
         } else {
-            rowTeamCalendarBinding.tvDate.text = context.getString(R.string.date_range, formatDate(meetup.startDate), formatDate(meetup.endDate))
+            rowTeamCalendarBinding.tvDate.text = context.getString(R.string.date_range, formatDate(meetup.startDate, ""), formatDate(meetup.endDate, ""))
         }
     }
 

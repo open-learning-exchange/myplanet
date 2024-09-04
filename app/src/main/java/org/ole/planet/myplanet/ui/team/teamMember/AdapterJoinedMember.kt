@@ -4,8 +4,11 @@ import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ArrayAdapter
+import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import org.ole.planet.myplanet.R
@@ -77,7 +80,16 @@ class AdapterJoinedMember(private val context: Context, private val list: List<R
         if (isLoggedInUserTeamLeader) {
             rowJoinedUserBinding.icMore.visibility = View.VISIBLE
             rowJoinedUserBinding.icMore.setOnClickListener {
-                AlertDialog.Builder(context).setItems(overflowMenuOptions) { _, i ->
+                val builder = AlertDialog.Builder(context, R.style.AlertDialogTheme)
+                val adapter = object : ArrayAdapter<CharSequence>(context, android.R.layout.simple_list_item_1, overflowMenuOptions) {
+                    override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                        val view = super.getView(position, convertView, parent) as TextView
+                        val color = ContextCompat.getColor(context, R.color.daynight_textColor)
+                        view.setTextColor(color)
+                        return view
+                    }
+                }
+                builder.setAdapter(adapter) { _, i ->
                     if (i == 0) {
                         reject(list[position], position)
                     } else {

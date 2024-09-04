@@ -7,11 +7,14 @@ import java.util.Locale
 import java.util.TimeZone
 
 object TimeUtils {
+    private val defaultLocale: Locale
+        get() = Locale.getDefault()
+
     @JvmStatic
     fun getFormatedDate(date: Long?): String {
         try {
             val d = date?.let { Date(it) } ?: Date()
-            val f = SimpleDateFormat("EEEE, MMM dd, yyyy")
+            val f = SimpleDateFormat("EEEE, MMM dd, yyyy", defaultLocale)
             f.timeZone = TimeZone.getTimeZone("UTC")
             return f.format(d)
         } catch (e: Exception) {
@@ -64,7 +67,7 @@ object TimeUtils {
     @JvmStatic
     fun getFormatedDate(stringDate: String?, pattern: String?): String {
         return try {
-            val sf = SimpleDateFormat(pattern, Locale.getDefault())
+            val sf = SimpleDateFormat(pattern, defaultLocale)
             sf.timeZone = TimeZone.getTimeZone("UTC")
             val date = stringDate?.let { sf.parse(it) }
             getFormatedDate(date?.time)
@@ -92,5 +95,4 @@ object TimeUtils {
         val dateFormat = SimpleDateFormat(format)
         return dateFormat.format(date)
     }
-
 }

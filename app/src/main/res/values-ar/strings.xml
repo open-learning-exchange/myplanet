@@ -1121,5 +1121,7 @@
     <string name="server_address_content_description">عنوان الخادم: %1$s</string>
     <string name="member_only_allowed">انضم كعضو للوصول إلى هذه الميزة</string>
     <string name="select_theme_mode">اختر وضع السمة</string>
+    <string name="course_steps">خطوات الدورة</string>
+    <string name="to_access_this_feature_become_a_member">أنت حاليًا مستخدم ضيف. للوصول إلى هذه الميزة، كن عضوًا.</string>
 
 </resources>
