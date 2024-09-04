@@ -30,6 +30,7 @@ import org.ole.planet.myplanet.ui.references.ReferenceFragment
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment
+import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utilities.Utilities
 
 open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
@@ -54,7 +55,11 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         v.setOnClickListener {
             if (homeItemClickListener != null) {
                 if (title == getString(R.string.submission)) {
-                    homeItemClickListener?.openCallFragment(MySubmissionFragment())
+                    if (model?.id?.startsWith("guest") == false) {
+                        homeItemClickListener?.openCallFragment(MySubmissionFragment())
+                    } else {
+                        guestDialog(requireContext())
+                    }
                 } else if (title == getString(R.string.our_news)) {
                     homeItemClickListener?.openCallFragment(NewsFragment())
                 } else if (title == getString(R.string.references)) {
@@ -62,18 +67,30 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
                 } else if (title == getString(R.string.calendar)) {
                     homeItemClickListener?.openCallFragment(CalendarFragment())
                 } else if (title == getString(R.string.my_survey)) {
-                    homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("survey"))
+                    if (model?.id?.startsWith("guest") == false) {
+                        homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("survey"))
+                    } else {
+                        guestDialog(requireContext())
+                    }
                 } else if (title == getString(R.string.achievements)) {
-                    homeItemClickListener?.openCallFragment(AchievementFragment())
+                    if (model?.id?.startsWith("guest") == false) {
+                        homeItemClickListener?.openCallFragment(AchievementFragment())
+                    } else {
+                        guestDialog(requireContext())
+                    }
                 } else if (title == getString(R.string.mypersonals)) {
-                    homeItemClickListener?.openCallFragment(MyPersonalsFragment())
+                    if (model?.id?.startsWith("guest") == false) {
+                        homeItemClickListener?.openCallFragment(MyPersonalsFragment())
+                    } else {
+                        guestDialog(requireContext())
+                    }
                 } else if (title == getString(R.string.help_wanted)) {
                     homeItemClickListener?.openCallFragment(HelpWantedFragment())
                 } else if (title == getString(R.string.myhealth)) {
                     if (model?.id?.startsWith("guest") == false) {
                         homeItemClickListener?.openCallFragment(MyHealthFragment())
                     } else {
-                        Utilities.toast(activity, getString(R.string.feature_not_available_for_guest_user))
+                        guestDialog(requireContext())
                     }
                 } else {
                     Utilities.toast(activity, getString(R.string.feature_not_available))

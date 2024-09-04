@@ -488,7 +488,7 @@
     <string name="add_res">Ajouter une ressource</string>
     <string name="password">Mot de passe</string>
     <string name="retype_password">Confirmer le mot de passe</string>
-    <string name="become_a_member">Devenir membre</string>
+    <string name="become_a_member">devenir membre</string>
     <string name="change_member">Changer de membre</string>
     <string name="use_phone_number_as_password">Utiliser le numéro de téléphone comme mot de passe</string>
     <string name="feedback">Retour d\'information</string>
@@ -1121,5 +1121,7 @@
     <string name="member_only_allowed">adhérez en tant que membre pour accéder à cette fonctionnalité</string>
     <string name="select_theme_mode">sélectionner le mode de thème</string>
     <string name="beta_resources_auto_download">Téléchargement automatique des ressources bêta</string>
+    <string name="course_steps">Étapes du cours</string>
+    <string name="to_access_this_feature_become_a_member">vous êtes actuellement un utilisateur invité. pour accéder à cette fonctionnalité, devenez membre.</string>
 
 </resources>

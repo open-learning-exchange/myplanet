@@ -11,12 +11,13 @@ import android.view.View
 import androidx.appcompat.app.AlertDialog
 import com.google.android.material.snackbar.Snackbar
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.DialogProgressBinding
 import org.ole.planet.myplanet.datamanager.MyDownloadService
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.model.MyPlanet
+import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 
 object DialogUtils {
     @JvmStatic
@@ -32,6 +33,35 @@ object DialogUtils {
             prgDialog.dismiss()
         }
         return prgDialog
+    }
+
+    fun guestDialog(context: Context) {
+        val profileDbHandler = UserProfileDbHandler(context)
+        val builder = android.app.AlertDialog.Builder(context, R.style.AlertDialogTheme)
+        builder.setTitle(context.getString(R.string.become_a_member))
+        builder.setMessage(context.getString(R.string.to_access_this_feature_become_a_member))
+        builder.setCancelable(false)
+        builder.setPositiveButton(context.getString(R.string.become_a_member), null)
+        builder.setNegativeButton(context.getString(R.string.cancel), null)
+
+        val dialog = builder.create()
+        dialog.show()
+
+        val becomeMember = dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE)
+        val cancel = dialog.getButton(android.app.AlertDialog.BUTTON_NEGATIVE)
+        becomeMember.contentDescription = context.getString(R.string.confirm_membership)
+        cancel.contentDescription = context.getString(R.string.cancel)
+
+        becomeMember.setOnClickListener {
+            val guest = true
+            val intent = Intent(context, BecomeMemberActivity::class.java)
+            intent.putExtra("username", profileDbHandler.userModel?.name)
+            intent.putExtra("guest", guest)
+            context.startActivity(intent)
+        }
+        cancel.setOnClickListener {
+            dialog.dismiss()
+        }
     }
 
     @JvmStatic
@@ -74,7 +104,7 @@ object DialogUtils {
     @JvmStatic
     fun showAlert(context: Context?, title: String?, message: String?) {
         if (context is Activity && !context.isFinishing) {
-            AlertDialog.Builder(context)
+            AlertDialog.Builder(context, R.style.AlertDialogTheme)
                 .setTitle(title)
                 .setMessage(message)
                 .setPositiveButton(R.string.finish, null)

@@ -13,11 +13,10 @@
         android:layout_gravity="center"
         android:layout_weight="1"
         android:padding="@dimen/padding_normal"
-        android:textColor="@color/md_black_1000"
+        android:textColor="@color/daynight_textColor"
         android:textSize="@dimen/text_size_large"
         android:textStyle="bold"
         tools:text="Profile" />
-
     <TextView
         android:id="@+id/tv_drawer_title_1"
         android:layout_width="0dp"
@@ -25,9 +24,8 @@
         android:layout_gravity="center"
         android:layout_weight="1"
         android:padding="@dimen/padding_normal"
-        android:textColor="@color/md_black_1000"
+        android:textColor="@color/daynight_textColor"
         android:textSize="@dimen/text_size_large" />
-
     <androidx.appcompat.widget.AppCompatImageView
         android:id="@+id/iv_indicators"
         android:layout_width="wrap_content"
@@ -37,10 +35,9 @@
         android:focusableInTouchMode="false"
         android:tint="#000000"
         app:srcCompat="@drawable/ic_keyboard_arrow_down_black_24dp" />
-
     <CheckBox
         android:id="@+id/checkbox"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
-
+        android:layout_height="wrap_content"
+        android:buttonTint="@color/daynight_textColor" />
 </LinearLayout>
