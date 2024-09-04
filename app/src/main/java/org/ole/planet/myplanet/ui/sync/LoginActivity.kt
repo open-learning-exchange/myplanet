@@ -232,7 +232,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             teamAdapter = ArrayAdapter(this, R.layout.spinner_item_white, teamList)
             teamAdapter?.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             teamList.clear()
-            teamList.add("select team")
+            teamList.add(getString(R.string.select_team))
             for (team in teams) {
                 if (team.isValid) {
                     teamList.add(team.name)
