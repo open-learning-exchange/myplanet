@@ -9,12 +9,13 @@
     <string name="btn_back">पछाडी जाउ</string>
     <string name="btn_sign_in">साइन इन गर्नुहोस्</string>
     <string name="btn_sync">सिङ्क</string>
+    <string name="select_team">टोली चयन गर्नुहोस्</string>
     <string name="btn_sync_save">सुरक्षित गर्नुहोस्</string>
     <string name="btn_sync_cancel">रद्द गर्नुहोस्</string>
     <string name="err_msg_name">तपाईंको प्रयोगकर्तानाम लेख्नुहोस्</string>
     <string name="err_msg_password">पासवर्ड लेख्नुहोस्</string>
     <string name="err_msg_login">प्रयोगकर्तानाम र/वा पासवर्ड मेल खान्छैन</string>
-    <string name="hint_serverURl">planet ip</string>
+    <string name="hint_serverURl">planet आईपि</string>
     <string name="hint_serverPin">सर्भर पिन</string>
     <string name="radio_protocol">प्रोटोकल:</string>
     <string name="radio_http">http</string>
@@ -551,7 +552,7 @@
     <string name="courses_colon">कोर्सहरू:</string>
     <string name="title">शीर्षक</string>
     <string name="source">स्रोत</string>
-    <string name="cloud_url">cloud</string>
+    <string name="cloud_url">बादल</string>
     <string name="interval">अन्तराल</string>
     <string name="autosync">अटोसिङ्क</string>
     <string name="autosync_off">अटोसिङ्क बन्द छ!</string>

@@ -10,6 +10,7 @@
     <string name="btn_sign_in">Soo gal</string>
     <string name="btn_sync">Isku xidh </string>
     <string name="btn_sync_save">Keyd</string>
+    <string name="select_team">xulo koox</string>
     <string name="btn_sync_cancel">burin</string>
     <string name="err_msg_name">Geli magaca isticmaalaha</string>
     <string name="err_msg_password">Geli erayga sirta ah</string>
@@ -551,7 +552,7 @@
     <string name="courses_colon">Koorsadayaasha:</string>
     <string name="title">Cinwaanka</string>
     <string name="source">Soo Saar</string>
-    <string name="cloud_url">cloud</string>
+    <string name="cloud_url">daruur</string>
     <string name="interval">Dhibic</string>
     <string name="autosync">Iskaashiga Hore</string>
     <string name="autosync_off">Iskaashiga Off!</string>
