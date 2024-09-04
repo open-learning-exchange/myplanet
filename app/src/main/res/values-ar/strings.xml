@@ -9,12 +9,13 @@
     <string name="btn_back">رجع</string>
     <string name="btn_sign_in">تسجيل الدخول</string>
     <string name="btn_sync">مزامنة</string>
+    <string name="select_team">حدد الفريق</string>
     <string name="btn_sync_save">حفظ</string>
     <string name="btn_sync_cancel">إلغاء</string>
     <string name="err_msg_name">الرجاء إدخال اسم المستخدم</string>
     <string name="err_msg_password">الرجاء إدخال كلمة المرور</string>
     <string name="err_msg_login">اسم المستخدم و/أو كلمة المرور غير متطابقة</string>
-    <string name="hint_serverURl">planet ip</string>
+    <string name="hint_serverURl">planet الملكية الفكرية</string>
     <string name="hint_serverPin">رمز الخادم</string>
     <string name="radio_protocol">البروتوكول:</string>
     <string name="radio_http">http</string>
@@ -551,7 +552,7 @@
     <string name="courses_colon">الدورات:</string>
     <string name="title">العنوان</string>
     <string name="source">المصدر</string>
-    <string name="cloud_url">cloud</string>
+    <string name="cloud_url">سحاب</string>
     <string name="interval">الفترة الزمنية</string>
     <string name="autosync">المزامنة التلقائية</string>
     <string name="autosync_off">إيقاف المزامنة التلقائية!</string>
