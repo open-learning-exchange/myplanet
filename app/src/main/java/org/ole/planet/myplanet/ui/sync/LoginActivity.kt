@@ -52,7 +52,11 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         syncIcon = activityLoginBinding.syncIcon
         service = Service(this)
 
-        activityLoginBinding.tvAvailableSpace.text = availableOverTotalMemoryFormattedString
+        activityLoginBinding.tvAvailableSpace.text = buildString {
+            append(getString(R.string.available_space_colon))
+            append(" ")
+            append(availableOverTotalMemoryFormattedString)
+        }
         changeLogoColor()
         declareElements()
         declareMoreElements()
