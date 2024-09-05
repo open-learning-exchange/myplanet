@@ -1123,5 +1123,7 @@
     <string name="select_theme_mode">seleccionar el modo de tema</string>
     <string name="course_steps">Pasos del curso</string>
     <string name="to_access_this_feature_become_a_member">actualmente eres un usuario invitado. para acceder a esta función, hazte miembro.</string>
+    <string name="hour">hora</string>
+    <string name="hours">horas</string>
 
 </resources>
