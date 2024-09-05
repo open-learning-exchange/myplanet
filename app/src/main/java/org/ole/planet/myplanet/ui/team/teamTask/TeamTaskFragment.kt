@@ -199,6 +199,10 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
     }
 
     override fun onNewsItemClick(news: RealmNews?) {}
+    override fun clearImages() {
+        imageList.clear()
+        llImage?.removeAllViews()
+    }
 
     private fun setAdapter() {
         if (isAdded) {

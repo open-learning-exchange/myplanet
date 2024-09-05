@@ -128,6 +128,10 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
     }
 
     override fun onNewsItemClick(news: RealmNews?) {}
+    override fun clearImages() {
+        imageList.clear()
+        llImage?.removeAllViews()
+    }
 
     private fun setTeamList() {
         val users: List<RealmUserModel> = getUsers(teamId, mRealm, "")

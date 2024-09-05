@@ -88,6 +88,11 @@ class DiscussionListFragment : BaseTeamFragment() {
             .commit()
     }
 
+    override fun clearImages() {
+        imageList.clear()
+        llImage?.removeAllViews()
+    }
+
     private fun filterNewsList(results: RealmResults<RealmNews>): List<RealmNews?> {
         val filteredList: MutableList<RealmNews?> = ArrayList()
         for (news in results) {
