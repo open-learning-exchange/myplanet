@@ -15,6 +15,7 @@ import android.text.TextUtils
 import androidx.annotation.RequiresApi
 import org.ole.planet.myplanet.MainApplication
 import android.content.pm.PackageInstaller
+import android.util.Log
 import org.ole.planet.myplanet.R
 import java.io.BufferedReader
 import java.io.File
@@ -25,6 +26,7 @@ import java.io.InputStream
 import java.io.InputStreamReader
 import java.io.OutputStream
 import java.util.UUID
+import org.ole.planet.myplanet.MainApplication.Companion.context
 
 object FileUtils {
     @JvmStatic
@@ -341,7 +343,7 @@ object FileUtils {
             val context = MainApplication.context
             val available = totalAvailableMemory
             val total = totalMemoryCapacity
-            return context.getString(R.string.available_space_colon) + formatSize(available) + "/" + formatSize(total)
+            return formatSize(available) + "/" + formatSize(total)
         }
 
     @RequiresApi(Build.VERSION_CODES.O)
