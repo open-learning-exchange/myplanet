@@ -67,6 +67,11 @@ class ServicesFragment : BaseTeamFragment() {
 
     override fun onNewsItemClick(news: RealmNews?) {}
 
+    override fun clearImages() {
+        imageList.clear()
+        llImage?.removeAllViews()
+    }
+
     private fun setRecyclerView(links: RealmResults<RealmMyTeam>?) {
         fragmentServicesBinding.llServices.removeAllViews()
         links?.forEach { team ->
