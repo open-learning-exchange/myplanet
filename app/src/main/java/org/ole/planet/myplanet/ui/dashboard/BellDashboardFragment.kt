@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.dashboard
 import android.graphics.Typeface
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -29,6 +30,7 @@ import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getCourseByCourseId
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getCourseSteps
+import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -97,41 +99,29 @@ class BellDashboardFragment : BaseDashboardFragment() {
             }
         }
         showBadges()
-        
-        val noOfSurvey = RealmSubmission.getNoOfSurveySubmissionByUser(model?.id, mRealm)
-        if (noOfSurvey >= 1){
-            val title: String = if (noOfSurvey > 1 ) {
-                "surveys"
-            } else{
-                "survey"
-            }
-            val itemsQuery = mRealm.where(RealmSubmission::class.java).equalTo("userId", model?.id)
-                .equalTo("type", "survey").equalTo("status", "pending", Case.INSENSITIVE)
-                .findAll()
-            val courseTitles = itemsQuery.map { it.parent }
-            val surveyNames = courseTitles.map { json ->
-                try {
-                    val jsonObject = json?.let { JSONObject(it) }
-                    jsonObject?.getString("name")
-                } catch (e: JSONException) {
-                    e.printStackTrace()
-                }
-            }
+        checkPendingSurveys()
+    }
+
+    private fun checkPendingSurveys() {
+        val pendingSurveys = getPendingSurveys(user?.id, mRealm)
+
+        if (pendingSurveys.isNotEmpty()) {
+            val surveyTitles = getSurveyTitlesFromSubmissions(pendingSurveys, mRealm)
             val titleView = TextView(requireActivity()).apply {
-                text = getString(R.string.surveys_to_complete, noOfSurvey, title)
-                setTextColor(context.getColor(R.color.daynight_textColor))
+                text = getString(R.string.surveys_to_complete, pendingSurveys.size, if (pendingSurveys.size > 1) "surveys" else "survey")
+                setTextColor(ContextCompat.getColor(context, R.color.daynight_textColor))
                 setPadding(90, 70, 0, 0)
                 textSize = 20f
                 typeface = Typeface.DEFAULT_BOLD
             }
             val alertDialog: AlertDialog.Builder = AlertDialog.Builder(requireActivity())
             alertDialog.setCustomTitle(titleView)
-            val surveyNamesArray = surveyNames.filterNotNull().map { it as CharSequence }.toTypedArray()
+            val surveyNamesArray = surveyTitles.map { it }.toTypedArray()
             alertDialog.setItems(surveyNamesArray) { _, which ->
-                val selectedSurvey = itemsQuery[which]?.id
+                val selectedSurvey = pendingSurveys[which].id
                 AdapterMySubmission.openSurvey(homeItemClickListener, selectedSurvey, true)
             }
-            alertDialog.setPositiveButton("OK") { dialog, _ ->
+            alertDialog.setPositiveButton(getString(R.string.ok)) { dialog, _ ->
                 homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("survey"))
                 dialog.dismiss()
             }
@@ -139,6 +129,25 @@ class BellDashboardFragment : BaseDashboardFragment() {
             dialog.show()
             dialog.window?.setBackgroundDrawableResource(R.color.card_bg)
         }
+    }
+
+    private fun getPendingSurveys(userId: String?, realm: Realm): List<RealmSubmission> {
+        return realm.where(RealmSubmission::class.java)
+            .equalTo("userId", userId)
+            .equalTo("type", "survey")
+            .equalTo("status", "pending", Case.INSENSITIVE)
+            .findAll()
+    }
+
+    private fun getSurveyTitlesFromSubmissions(submissions: List<RealmSubmission>, realm: Realm): List<String> {
+        val titles = mutableListOf<String>()
+        submissions.forEach { submission ->
+            val exam = realm.where(RealmStepExam::class.java)
+                .equalTo("id", submission.parentId)
+                .findFirst()
+            exam?.name?.let { titles.add(it) }
+        }
+        return titles
     }
 
     private fun showBadges() {
