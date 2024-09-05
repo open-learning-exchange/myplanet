@@ -1123,5 +1123,8 @@
     <string name="select_theme_mode">select theme mode</string>]
     <string name="course_steps">Course Steps</string>
     <string name="to_access_this_feature_become_a_member">you are currently a guest user. to access this feature, become a member.</string>
+    <string name="new_chat">new chat</string>
+    <string name="chat_history_search">Search...</string>
+    <string name="chat_enter_message">Enter Message</string>
 
 </resources>
