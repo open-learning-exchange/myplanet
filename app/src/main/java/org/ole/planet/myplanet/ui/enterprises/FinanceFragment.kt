@@ -119,6 +119,10 @@ class FinanceFragment : BaseTeamFragment() {
     }
 
     override fun onNewsItemClick(news: RealmNews?) {}
+    override fun clearImages() {
+        imageList.clear()
+        llImage?.removeAllViews()
+    }
 
     private fun calculateTotal(list: List<RealmMyTeam>?) {
         var debit = 0

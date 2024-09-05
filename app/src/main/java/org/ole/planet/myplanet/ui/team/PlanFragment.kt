@@ -53,4 +53,8 @@ class PlanFragment : BaseTeamFragment() {
     }
 
     override fun onNewsItemClick(news: RealmNews?) {}
+    override fun clearImages() {
+        imageList.clear()
+        llImage?.removeAllViews()
+    }
 }
