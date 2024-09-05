@@ -306,12 +306,10 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                 } else {
                     postReply(s, news)
                 }
-                listener?.clearImages()
             }.setNegativeButton(R.string.cancel) { dialog, _ ->
                 listener?.clearImages()
                 dialog.dismiss()
             }
-//                .setNegativeButton(R.string.cancel, null)
             .create()
 
         dialog.show()
@@ -331,6 +329,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
 
         currentUser?.let { createNews(map, mRealm, it, imageList) }
         notifyDataSetChanged()
+        listener?.clearImages()
     }
 
     private fun editPost(s: String, news: RealmNews?) {
@@ -342,6 +341,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         news?.message = s
         mRealm.commitTransaction()
         notifyDataSetChanged()
+        listener?.clearImages()
     }
 
     private fun getNews(holder: RecyclerView.ViewHolder, position: Int): RealmNews? {
