@@ -9,4 +9,4 @@
     android:paddingEnd="10dp"
     android:textColor="@color/daynight_textColor"
     android:textSize="16sp"
-    android:checkMarkTint="@color/daynight_textColor"/>
+    android:checkMarkTint="@color/daynight_textColor" />
