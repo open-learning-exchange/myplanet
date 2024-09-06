@@ -59,7 +59,8 @@
                 android:layout_height="50dp"
                 android:layout_gravity="center"
                 android:padding="8dp"
-                android:src="@drawable/ic_delete" />
+                android:src="@drawable/ic_delete"
+                app:tint="@color/ic_download" />
 
 
         </LinearLayout>
