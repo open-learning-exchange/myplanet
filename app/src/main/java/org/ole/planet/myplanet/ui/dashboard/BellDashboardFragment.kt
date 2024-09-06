@@ -3,13 +3,11 @@ package org.ole.planet.myplanet.ui.dashboard
 import android.graphics.Typeface
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
-import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
@@ -19,8 +17,6 @@ import io.realm.Case
 import io.realm.Realm
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.*
-import org.json.JSONException
-import org.json.JSONObject
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerParentFragment
@@ -155,7 +151,8 @@ class BellDashboardFragment : BaseDashboardFragment() {
         val courseCount = countCourseIds(mRealm)
 
         for ((index, entry) in courseCount.withIndex()) {
-            val star = LayoutInflater.from(activity).inflate(R.layout.image_start, null) as ImageView
+            val rootView = requireActivity().findViewById<ViewGroup>(android.R.id.content)
+            val star = LayoutInflater.from(activity).inflate(R.layout.image_start, rootView, false) as ImageView
             val courseId = entry.keys.first()
             val count = entry.values.first()
             val steps = getCourseSteps(mRealm, courseId)
