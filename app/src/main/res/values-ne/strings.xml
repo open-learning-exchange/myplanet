@@ -1124,5 +1124,7 @@
     <string name="beta_resources_auto_download">बीटा स्रोतहरू स्वत: डाउनलोड</string>
     <string name="course_steps">पाठ्यक्रम चरणहरू</string>
     <string name="to_access_this_feature_become_a_member">तपाईं हाल अतिथि प्रयोगकर्ता हुनुहुन्छ। यो सुविधा प्रयोग गर्न, सदस्य बन्नुहोस्।</string>
+    <string name="hour">घण्टा</string>
+    <string name="hours">घण्टा</string>
 
 </resources>
