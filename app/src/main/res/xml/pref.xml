@@ -50,7 +50,7 @@
         <SwitchPreference
             android:defaultValue="false"
             android:key="beta_auto_download"
-            android:title="beta resources auto download" />
+            android:title="@string/beta_resources_auto_download" />
         <SwitchPreference
             android:defaultValue="false"
             android:key="download_sync_files"

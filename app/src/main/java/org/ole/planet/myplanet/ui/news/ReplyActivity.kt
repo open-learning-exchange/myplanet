@@ -92,6 +92,11 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
 
     override fun onNewsItemClick(news: RealmNews?) {}
 
+    override fun clearImages() {
+        imageList.clear()
+        llImage?.removeAllViews()
+    }
+
     private fun handleImageSelection(url: Uri?) {
         if (url == null) {
             return
