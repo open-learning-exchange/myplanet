@@ -1124,5 +1124,19 @@
     <string name="beta_resources_auto_download">Soo dejinta otomaatiga ah ee khayraadka beta</string>
     <string name="course_steps">Talaabooyinka Koorsada</string>
     <string name="to_access_this_feature_become_a_member">hadda waxaad tahay isticmaale marti ah. si aad u hesho helitaanka astaamahan, noqo xubin.</string>
+    <string name="sales">Iibka</string>
+    <string name="beginning_balance">Hadhsiga bilowga</string>
+    <string name="other">Kale</string>
+    <string name="total_income">Dakhliga Guud</string>
+    <string name="personnel">Shaqaalaha</string>
+    <string name="non_personnel">Aan Shaqaalaha Ahayn</string>
+    <string name="total_expenses">Kharashaadka Guud</string>
+    <string name="profit_loss">Faa\'iido/Qasaaro</string>
+    <string name="ending_balance">Hadhsiga dhammaadka</string>
+    <string name="reports_summary">Dulmar Warbixino</string>
+    <string name="summary">Dulmar</string>
+    <string name="other_income">Dakhliga kale</string>
+    <string name="add_reports">Ku dar warbixino</string>
+    <string name="export_csv">Dhoofinta CSV</string>
 
 </resources>
