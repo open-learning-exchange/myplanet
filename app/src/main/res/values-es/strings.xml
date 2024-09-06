@@ -1124,6 +1124,8 @@
     <string name="beta_resources_auto_download">Descarga automática de recursos beta</string>
     <string name="course_steps">Pasos del curso</string>
     <string name="to_access_this_feature_become_a_member">actualmente eres un usuario invitado. para acceder a esta función, hazte miembro.</string>
+    <string name="new_chat">Nuevo chat</string>
+    <string name="chat_enter_message">Introducir mensaje</string>
     <string name="hour">hora</string>
     <string name="hours">horas</string>
 
