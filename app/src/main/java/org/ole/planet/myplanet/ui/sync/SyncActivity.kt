@@ -245,8 +245,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     private fun syncDropdownAdd() {
         val list: MutableList<String> = ArrayList()
-        list.add("1 hour")
-        list.add("3 hours")
+        list.add("1 " + getString(R.string.hour))
+        list.add("3 " + getString(R.string.hours))
         val spinnerArrayAdapter = ArrayAdapter(this, R.layout.spinner_item, list)
         spinnerArrayAdapter.setDropDownViewResource(R.layout.spinner_item)
         spinner.adapter = spinnerArrayAdapter

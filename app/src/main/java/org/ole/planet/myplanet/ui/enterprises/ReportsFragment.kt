@@ -184,6 +184,10 @@ class ReportsFragment : BaseTeamFragment() {
     }
 
     override fun onNewsItemClick(news: RealmNews?) {}
+    override fun clearImages() {
+        imageList.clear()
+        llImage?.removeAllViews()
+    }
 
     private fun updatedReportsList(results: RealmResults<RealmMyTeam>) {
         activity?.runOnUiThread {

@@ -202,6 +202,11 @@ class NewsFragment : BaseNewsFragment() {
         }
     }
 
+    override fun clearImages() {
+        imageList.clear()
+        llImage?.removeAllViews()
+    }
+
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         val orientation = newConfig.orientation
