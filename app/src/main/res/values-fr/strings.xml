@@ -1124,7 +1124,6 @@
     <string name="course_steps">Étapes du cours</string>
     <string name="to_access_this_feature_become_a_member">vous êtes actuellement un utilisateur invité. pour accéder à cette fonctionnalité, devenez membre.</string>
     <string name="new_chat">Nouveau chat</string>
-    <string name="chat_history_search">Rechercher...</string>
     <string name="chat_enter_message">Entrez le message</string>
 
 </resources>

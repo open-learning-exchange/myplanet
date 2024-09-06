@@ -34,7 +34,7 @@
             android:layout_marginStart="10dp"
             android:layout_marginTop="10dp"
             android:layout_marginEnd="10dp"
-            android:hint="@string/chat_history_search"
+            android:hint="@string/search_dots"
             android:textColorHint="@color/hint_color"
             android:backgroundTint="@color/hint_color"
             app:layout_constraintEnd_toEndOf="parent"
