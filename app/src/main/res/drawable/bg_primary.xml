@@ -11,5 +11,5 @@
         android:top="8dp" />
     <solid
         android:width="1dp"
-        android:color="@color/mainColor"/>
+        android:color="@color/mainColor" />
 </shape>
