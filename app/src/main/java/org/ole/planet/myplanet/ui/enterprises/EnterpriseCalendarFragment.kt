@@ -144,6 +144,10 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
     }
 
     override fun onNewsItemClick(news: RealmNews?) {}
+    override fun clearImages() {
+        imageList.clear()
+        llImage?.removeAllViews()
+    }
 
     private fun showMeetupDetails(dateInMillis: Long) {
         fragmentEnterpriseCalendarBinding.meetup.visibility = View.VISIBLE

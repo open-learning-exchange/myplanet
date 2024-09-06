@@ -23,6 +23,10 @@ class MembersFragment : BaseMemberFragment() {
     }
 
     override fun onNewsItemClick(news: RealmNews?) {}
+    override fun clearImages() {
+        imageList.clear()
+        llImage?.removeAllViews()
+    }
 
     override val list: List<RealmUserModel>
         @RequiresApi(Build.VERSION_CODES.O)

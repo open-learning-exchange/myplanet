@@ -37,7 +37,6 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
                 mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId).findFirst()
                     ?: throw IllegalArgumentException("Team not found for ID: $teamId")
             } catch (e: IllegalArgumentException) {
-                Toast.makeText(requireContext(), "Create an account to access this", Toast.LENGTH_LONG).show()
                 return
             }
         }
