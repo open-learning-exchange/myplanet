@@ -131,7 +131,7 @@ class AchievementFragment : BaseContainerFragment() {
                 rowAchievementBinding.tvDescription.text = getString("description", ob.getAsJsonObject())
                 rowAchievementBinding.tvDate.text = getString("date", ob.getAsJsonObject())
                 rowAchievementBinding.tvTitle.text = getString("title", ob.getAsJsonObject())
-                val textColor = ContextCompat.getColor(requireContext(), R.color.daynight_textColor)
+                val textColor = ContextCompat.getColor(requireContext(), R.color.hint_color)
                 rowAchievementBinding.tvDescription.setTextColor(textColor)
                 rowAchievementBinding.tvDate.setTextColor(textColor)
                 rowAchievementBinding.tvTitle.setTextColor(textColor)
