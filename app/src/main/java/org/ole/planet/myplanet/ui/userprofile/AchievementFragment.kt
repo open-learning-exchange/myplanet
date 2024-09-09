@@ -7,6 +7,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.RequiresApi
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.gson.Gson
 import com.google.gson.JsonArray
@@ -130,6 +131,10 @@ class AchievementFragment : BaseContainerFragment() {
                 rowAchievementBinding.tvDescription.text = getString("description", ob.getAsJsonObject())
                 rowAchievementBinding.tvDate.text = getString("date", ob.getAsJsonObject())
                 rowAchievementBinding.tvTitle.text = getString("title", ob.getAsJsonObject())
+                val textColor = ContextCompat.getColor(requireContext(), R.color.daynight_textColor)
+                rowAchievementBinding.tvDescription.setTextColor(textColor)
+                rowAchievementBinding.tvDate.setTextColor(textColor)
+                rowAchievementBinding.tvTitle.setTextColor(textColor)
                 val libraries = getList(ob.getAsJsonArray("resources"))
                 rowAchievementBinding.llRow.setOnClickListener {
                     rowAchievementBinding.llDesc.visibility = if (rowAchievementBinding.llDesc.visibility == View.GONE) View.VISIBLE else View.GONE
