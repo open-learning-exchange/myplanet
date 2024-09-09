@@ -17,7 +17,6 @@
             android:layout_height="wrap_content"
             android:textColor="@color/md_black_1000"
             android:textSize="@dimen/text_size_large" />
-
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
@@ -34,13 +33,11 @@
                     android:layout_height="wrap_content"
                     android:text="@string/attached_resources"
                     android:textSize="@dimen/text_size_small" />
-
                 <com.google.android.flexbox.FlexboxLayout
                     android:id="@+id/flexbox"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     app:flexWrap="wrap" />
-
             </LinearLayout>
 
             <Button
@@ -52,7 +49,6 @@
                 android:background="@drawable/buttongrey"
                 android:text="@string/edit"
                 android:visibility="visible" />
-
             <ImageView
                 android:id="@+id/iv_delete"
                 android:layout_width="50dp"
@@ -61,10 +57,6 @@
                 android:padding="8dp"
                 android:src="@drawable/ic_delete"
                 app:tint="@color/ic_download" />
-
-
         </LinearLayout>
-
     </LinearLayout>
-
 </LinearLayout>
