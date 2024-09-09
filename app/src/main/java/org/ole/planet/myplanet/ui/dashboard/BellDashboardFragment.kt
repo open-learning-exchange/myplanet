@@ -3,24 +3,22 @@ package org.ole.planet.myplanet.ui.dashboard
 import android.graphics.Typeface
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
-import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import io.realm.Case
 import io.realm.Realm
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.*
-import org.json.JSONException
-import org.json.JSONObject
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerParentFragment
@@ -106,28 +104,29 @@ class BellDashboardFragment : BaseDashboardFragment() {
         val pendingSurveys = getPendingSurveys(user?.id, mRealm)
 
         if (pendingSurveys.isNotEmpty()) {
-            val surveyTitles = getSurveyTitlesFromSubmissions(pendingSurveys, mRealm)
-            val titleView = TextView(requireActivity()).apply {
-                text = getString(R.string.surveys_to_complete, pendingSurveys.size, if (pendingSurveys.size > 1) "surveys" else "survey")
-                setTextColor(ContextCompat.getColor(context, R.color.daynight_textColor))
-                setPadding(90, 70, 0, 0)
-                textSize = 20f
-                typeface = Typeface.DEFAULT_BOLD
-            }
-            val alertDialog: AlertDialog.Builder = AlertDialog.Builder(requireActivity())
-            alertDialog.setCustomTitle(titleView)
-            val surveyNamesArray = surveyTitles.map { it }.toTypedArray()
-            alertDialog.setItems(surveyNamesArray) { _, which ->
-                val selectedSurvey = pendingSurveys[which].id
+            val surveyTitles = getSurveyTitlesFromSubmissions(pendingSurveys, mRealm)  //Get surveyTitles from Submissions
+
+            val dialogView = LayoutInflater.from(requireActivity()).inflate(R.layout.dialog_survey_list, null)
+            val recyclerView: RecyclerView = dialogView.findViewById(R.id.recyclerViewSurveys)
+            recyclerView.layoutManager = LinearLayoutManager(requireActivity())
+
+            val alertDialog = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
+                .setTitle(getString(R.string.surveys_to_complete, pendingSurveys.size, if (pendingSurveys.size > 1) "surveys" else "survey"))
+                .setView(dialogView)
+                .setPositiveButton(getString(R.string.ok)) { dialog, _ ->
+                    homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("survey"))
+                    dialog.dismiss()
+                }
+                .create()
+
+            val adapter = SurveyAdapter(surveyTitles, { position ->
+                val selectedSurvey = pendingSurveys[position].id
                 AdapterMySubmission.openSurvey(homeItemClickListener, selectedSurvey, true)
-            }
-            alertDialog.setPositiveButton(getString(R.string.ok)) { dialog, _ ->
-                homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("survey"))
-                dialog.dismiss()
-            }
-            val dialog = alertDialog.create()
-            dialog.show()
-            dialog.window?.setBackgroundDrawableResource(R.color.card_bg)
+            }, alertDialog)
+
+            recyclerView.adapter = adapter
+            alertDialog.show()
+            alertDialog.window?.setBackgroundDrawableResource(R.color.card_bg)
         }
     }
 
@@ -155,7 +154,8 @@ class BellDashboardFragment : BaseDashboardFragment() {
         val courseCount = countCourseIds(mRealm)
 
         for ((index, entry) in courseCount.withIndex()) {
-            val star = LayoutInflater.from(activity).inflate(R.layout.image_start, null) as ImageView
+            val rootView = requireActivity().findViewById<ViewGroup>(android.R.id.content)
+            val star = LayoutInflater.from(activity).inflate(R.layout.image_start, rootView, false) as ImageView
             val courseId = entry.keys.first()
             val count = entry.values.first()
             val steps = getCourseSteps(mRealm, courseId)

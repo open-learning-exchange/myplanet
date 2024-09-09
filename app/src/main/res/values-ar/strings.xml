@@ -1124,5 +1124,9 @@
     <string name="beta_resources_auto_download">تنزيل الموارد التجريبيّة تلقائيًا</string>
     <string name="course_steps">خطوات الدورة</string>
     <string name="to_access_this_feature_become_a_member">أنت حاليًا مستخدم ضيف. للوصول إلى هذه الميزة، كن عضوًا.</string>
+    <string name="new_chat">محادثة جديدة</string>
+    <string name="chat_enter_message">أدخل الرسالة</string>
+    <string name="hour">ساعة</string>
+    <string name="hours">ساعات</string>
 
 </resources>
