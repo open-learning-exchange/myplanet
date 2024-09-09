@@ -71,7 +71,7 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
                     llImage?.visibility = View.VISIBLE
                     for (img in imageList) {
                         val ob = Gson().fromJson(img, JsonObject::class.java)
-                            val inflater = LayoutInflater.from(activity).inflate(R.layout.image_thumb, null)
+                            val inflater = LayoutInflater.from(activity).inflate(R.layout.image_thumb, llImage, false)
                             val imgView = inflater.findViewById<ImageView>(R.id.thumb)
                             Glide.with(requireActivity()).load(File(getString("imageUrl", ob))).into(imgView)
                             llImage?.addView(inflater)
