@@ -1139,5 +1139,9 @@
     <string name="add_reports">Ajouter des rapports</string>
     <string name="export_csv">Exporter CSV</string>
     <string name="add_report">Ajouter un rapport</string>
+    <string name="new_chat">Nouveau chat</string>
+    <string name="chat_enter_message">Entrez le message</string>
+    <string name="hour">heure</string>
+    <string name="hours">heures</string>
 
 </resources>

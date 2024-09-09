@@ -1139,5 +1139,9 @@
     <string name="add_reports">Ku dar warbixino</string>
     <string name="export_csv">Dhoofinta CSV</string>
     <string name="add_report">Ku dar warbixin</string>
+    <string name="new_chat">Wadahadal cusub</string>
+    <string name="chat_enter_message">Geli fariin</string>
+    <string name="hour">saac</string>
+    <string name="hours">saacadood</string>
 
 </resources>

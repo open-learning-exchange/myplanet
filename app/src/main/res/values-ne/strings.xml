@@ -1139,5 +1139,9 @@
     <string name="add_reports">रिपोर्टहरू थप्नुहोस्</string>
     <string name="export_csv">CSV निर्यात गर्नुहोस्</string>
     <string name="add_report">रिपोर्ट थप्नुहोस्</string>
+    <string name="new_chat">नयाँ च्याट</string>
+    <string name="chat_enter_message">सन्देश प्रविष्ट गर्नुहोस्</string>
+    <string name="hour">घण्टा</string>
+    <string name="hours">घण्टा</string>
 
 </resources>
