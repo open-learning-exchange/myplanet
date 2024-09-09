@@ -13,10 +13,8 @@ import android.os.storage.StorageManager
 import android.provider.MediaStore
 import android.text.TextUtils
 import androidx.annotation.RequiresApi
-import org.ole.planet.myplanet.MainApplication
 import android.content.pm.PackageInstaller
-import android.util.Log
-import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.MainApplication.Companion.context
 import java.io.BufferedReader
 import java.io.File
 import java.io.FileInputStream
@@ -26,7 +24,6 @@ import java.io.InputStream
 import java.io.InputStreamReader
 import java.io.OutputStream
 import java.util.UUID
-import org.ole.planet.myplanet.MainApplication.Companion.context
 
 object FileUtils {
     @JvmStatic
@@ -56,7 +53,7 @@ object FileUtils {
     }
 
     private fun createFilePath(folder: String, filename: String): File {
-        val directory = File(MainApplication.context.getExternalFilesDir(null), folder)
+        val directory = File(context.getExternalFilesDir(null), folder)
         if (!directory.exists()) {
             try {
                 if (!directory.mkdirs()) {
@@ -320,12 +317,12 @@ object FileUtils {
     @JvmStatic
     val totalMemoryCapacity: Long
         @RequiresApi(Build.VERSION_CODES.O)
-        get() = getStorageStats(MainApplication.context).first
+        get() = getStorageStats(context).first
 
     @JvmStatic
     val totalAvailableMemory: Long
         @RequiresApi(Build.VERSION_CODES.O)
-        get() = getStorageStats(MainApplication.context).second
+        get() = getStorageStats(context).second
 
     @JvmStatic
     val totalAvailableMemoryRatio: Long
@@ -340,7 +337,7 @@ object FileUtils {
     val availableOverTotalMemoryFormattedString: String
         @RequiresApi(Build.VERSION_CODES.O)
         get() {
-            val context = MainApplication.context
+            val context = context
             val available = totalAvailableMemory
             val total = totalMemoryCapacity
             return formatSize(available) + "/" + formatSize(total)
