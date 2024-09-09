@@ -27,7 +27,6 @@
             android:textSize="16sp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
-
         <Button
             android:id="@+id/exportCSV"
             android:layout_width="wrap_content"
@@ -40,7 +39,6 @@
             android:textSize="16sp"
             app:layout_constraintStart_toEndOf="@+id/addReports"
             app:layout_constraintTop_toTopOf="parent" />
-
     </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
@@ -51,5 +49,4 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/ltButtons" />
-
 </androidx.constraintlayout.widget.ConstraintLayout>
