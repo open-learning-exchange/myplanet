@@ -1138,5 +1138,6 @@
     <string name="other_income">Other Income</string>
     <string name="add_reports">Add Reports</string>
     <string name="export_csv">Export CSV</string>
+    <string name="add_report">Add Report</string>
 
 </resources>

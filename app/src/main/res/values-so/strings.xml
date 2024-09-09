@@ -1138,5 +1138,6 @@
     <string name="other_income">Dakhliga kale</string>
     <string name="add_reports">Ku dar warbixino</string>
     <string name="export_csv">Dhoofinta CSV</string>
+    <string name="add_report">Ku dar warbixin</string>
 
 </resources>

@@ -1138,5 +1138,6 @@
     <string name="other_income">دخل آخر</string>
     <string name="add_reports">إضافة تقارير</string>
     <string name="export_csv">تصدير CSV</string>
+    <string name="add_report">إضافة تقرير</string>
 
 </resources>

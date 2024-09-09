@@ -1138,5 +1138,6 @@
     <string name="other_income">अन्य आय</string>
     <string name="add_reports">रिपोर्टहरू थप्नुहोस्</string>
     <string name="export_csv">CSV निर्यात गर्नुहोस्</string>
+    <string name="add_report">रिपोर्ट थप्नुहोस्</string>
 
 </resources>
