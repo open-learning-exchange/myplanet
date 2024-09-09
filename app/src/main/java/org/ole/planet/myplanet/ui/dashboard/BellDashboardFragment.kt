@@ -110,12 +110,10 @@ class BellDashboardFragment : BaseDashboardFragment() {
         if (pendingSurveys.isNotEmpty()) {
             val surveyTitles = getSurveyTitlesFromSubmissions(pendingSurveys, mRealm)  //Get surveyTitles from Submissions
 
-            //Grab the custom Scrollable Dialog - Dialog Survey List layout
             val dialogView = LayoutInflater.from(requireActivity()).inflate(R.layout.dialog_survey_list, null)
             val recyclerView: RecyclerView = dialogView.findViewById(R.id.recyclerViewSurveys)
             recyclerView.layoutManager = LinearLayoutManager(requireActivity())
 
-            //Create a Alert Dialog Box with night theme
             val alertDialog = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
                 .setTitle(getString(R.string.surveys_to_complete, pendingSurveys.size, if (pendingSurveys.size > 1) "surveys" else "survey"))
                 .setView(dialogView)
@@ -125,7 +123,6 @@ class BellDashboardFragment : BaseDashboardFragment() {
                 }
                 .create()
 
-            //Using the Survey Adapter we send in the surveys , listen on their click and send in the dialog box to close it when clicked
             val adapter = SurveyAdapter(surveyTitles, { position ->
                 val selectedSurvey = pendingSurveys[position].id
                 AdapterMySubmission.openSurvey(homeItemClickListener, selectedSurvey, true)
