@@ -32,6 +32,8 @@ import org.ole.planet.myplanet.model.RealmRating.Companion.getRatings
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmTag.Companion.getTagsArray
+import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Calendar
@@ -52,6 +54,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     private lateinit var selectAll: CheckBox
     private lateinit var filter: ImageButton
     private lateinit var adapterLibrary: AdapterResource
+    var userModel: RealmUserModel ?= null
     var map: HashMap<String?, JsonObject>? = null
     private var confirmation: AlertDialog? = null
 
@@ -70,6 +73,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        userModel = UserProfileDbHandler(requireContext()).userModel
         searchTags = ArrayList()
         config = Utilities.getCloudConfig().showClose(R.color.black_overlay)
         tvAddToLib = view.findViewById(R.id.tv_add)
@@ -83,6 +87,11 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
         initArrays()
         updateTvDelete()
+
+        if(userModel?.isGuest() == true){
+            tvAddToLib.visibility = View.GONE
+            selectAll.visibility = View.GONE
+        }
 
         tvAddToLib.setOnClickListener {
             if ((selectedItems?.size ?: 0) > 0) {

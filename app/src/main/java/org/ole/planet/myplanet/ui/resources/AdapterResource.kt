@@ -20,6 +20,8 @@ import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.RowLibraryBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.courses.AdapterCourses
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
@@ -34,6 +36,7 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
     private var ratingChangeListener: OnRatingChangeListener? = null
     private var isAscending = true
     private var isTitleAscending = false
+    var userModel: RealmUserModel ?= null
 
     init {
         if (context is OnHomeItemClickListener) {
@@ -81,12 +84,15 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
             holder.rowLibraryBinding.tvDate.text = libraryList[position]?.createdDate?.let { formatDate(it, "MMM dd, yyyy") }
             displayTagCloud(holder.rowLibraryBinding.flexboxDrawable, position)
             holder.itemView.setOnClickListener { openLibrary(libraryList[position]) }
+            userModel = UserProfileDbHandler(context).userModel
+
             holder.rowLibraryBinding.ivDownloaded.setImageResource(
                 if (libraryList[position]?.isResourceOffline() == true) {
                     R.drawable.ic_eye
                 } else {
                     R.drawable.ic_download
-                })
+                }
+            )
             holder.rowLibraryBinding.ivDownloaded.contentDescription =
                 if (libraryList[position]?.isResourceOffline() == true) {
                     context.getString(R.string.view)
@@ -95,14 +101,31 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
                 }
             if (ratingMap.containsKey(libraryList[position]?.resourceId)) {
                 val `object` = ratingMap[libraryList[position]?.resourceId]
-                AdapterCourses.showRating(`object`, holder.rowLibraryBinding.rating, holder.rowLibraryBinding.timesRated, holder.rowLibraryBinding.ratingBar)
+                AdapterCourses.showRating(
+                    `object`,
+                    holder.rowLibraryBinding.rating,
+                    holder.rowLibraryBinding.timesRated,
+                    holder.rowLibraryBinding.ratingBar
+                )
             } else {
                 holder.rowLibraryBinding.ratingBar.rating = 0f
             }
-            holder.rowLibraryBinding.checkbox.setOnClickListener { view: View ->
-                holder.rowLibraryBinding.checkbox.contentDescription = context.getString(R.string.select_res_course, libraryList[position]?.title)
-                Utilities.handleCheck((view as CheckBox).isChecked, position, selectedItems, libraryList)
-                if (listener != null) listener?.onSelectedListChange(selectedItems)
+
+            if (!userModel?.isGuest()!!) {
+                holder.rowLibraryBinding.checkbox.setOnClickListener { view: View ->
+                    holder.rowLibraryBinding.checkbox.contentDescription =
+                        context.getString(R.string.select_res_course, libraryList[position]?.title)
+                    Utilities.handleCheck(
+                        (view as CheckBox).isChecked,
+                        position,
+                        selectedItems,
+                        libraryList
+                    )
+                    if (listener != null) listener?.onSelectedListChange(selectedItems)
+                }
+            }
+            else{
+                holder.rowLibraryBinding.checkbox.visibility = View.GONE
             }
         }
     }
@@ -186,11 +209,14 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
             init {
                 rowLibraryBinding.ratingBar.setOnTouchListener { _: View?, event: MotionEvent ->
                     if (event.action == MotionEvent.ACTION_UP) {
-                        homeItemClickListener?.showRatingDialog("resource",
-                            libraryList[bindingAdapterPosition]?.resourceId,
-                            libraryList[bindingAdapterPosition]?.title,
-                            ratingChangeListener
-                        )
+                        if (!userModel?.isGuest()!!) {
+                            homeItemClickListener?.showRatingDialog(
+                                "resource",
+                                libraryList[bindingAdapterPosition]?.resourceId,
+                                libraryList[bindingAdapterPosition]?.title,
+                                ratingChangeListener
+                            )
+                        }
                     }
                     true
                 }
