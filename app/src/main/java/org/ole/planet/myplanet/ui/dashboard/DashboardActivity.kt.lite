@@ -164,7 +164,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     startUpload()
                 }
                 R.id.action_feedback -> {
-                    if (user?.id?.startsWith(" statuguest") == false) {
+                    if (user?.id?.startsWith("guest") == false) {
                         openCallFragment(FeedbackListFragment())
                     } else {
                         guestDialog(this)
