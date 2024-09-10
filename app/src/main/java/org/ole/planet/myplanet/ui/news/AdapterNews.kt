@@ -35,6 +35,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
@@ -55,6 +56,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     private var nonTeamMember = false
     private var sharedPreferences: SharedPrefManager? = null
     private var recyclerView: RecyclerView? = null
+    var user: RealmUserModel? = null
 
     fun setImageList(imageList: RealmList<String>?) {
         this.imageList = imageList
@@ -86,6 +88,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         rowNewsBinding = RowNewsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         sharedPreferences = SharedPrefManager(context)
+        user = UserProfileDbHandler(context).userModel
         return ViewHolderNews(rowNewsBinding)
     }
 
@@ -155,11 +158,13 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                     val conversations = Gson().fromJson(news.conversations, Array<Conversation>::class.java).toList()
                     val chatAdapter = ChatAdapter(ArrayList(), context, holder.rowNewsBinding.recyclerGchat)
 
-                    chatAdapter.setOnChatItemClickListener(object : ChatAdapter.OnChatItemClickListener {
-                        override fun onChatItemClick(position: Int, chatItem: String) {
-                            listener?.onNewsItemClick(news)
-                        }
-                    })
+                    if (user?.id?.startsWith("guest") == false) {
+                        chatAdapter.setOnChatItemClickListener(object : ChatAdapter.OnChatItemClickListener {
+                            override fun onChatItemClick(position: Int, chatItem: String) {
+                                listener?.onNewsItemClick(news)
+                            }
+                        })
+                    }
 
                     for (conversation in conversations) {
                         val query = conversation.query
