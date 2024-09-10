@@ -106,6 +106,7 @@
     <string name="filter_collections">संग्रहहरू छान्नुहोस्</string>
     <string name="select_many_collections">धेरै संग्रहहरू छान्नुहोस्</string>
     <string name="collections">संग्रहहरू</string>
+    <string name="filter_by_category">श्रेणीद्वारा छान्नुहोस्</string>
     <string name="ok">ठिक छ</string>
     <string name="inactive_message">प्रयोगकर्ता सक्रिय गरिएको छैन, कृपया प्रशासक वा प्रबन्धकलाई सम्पर्क गर्नुहोस् तपाईंको खाता सक्रिय गर्नको लागि।</string>
     <string name="archive_mycourse">मेरो पाठ्यक्रम आर्काइभ गर्नुहोस्</string>

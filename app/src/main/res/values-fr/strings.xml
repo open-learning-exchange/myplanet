@@ -106,6 +106,7 @@
     <string name="filter_collections">Filtrer les collections</string>
     <string name="select_many_collections">Sélectionner plusieurs collections</string>
     <string name="collections">Collections</string>
+    <string name="filter_by_category">Filtrer par catégorie</string>
     <string name="ok">OK</string>
     <string name="inactive_message">Utilisateur non activé, veuillez contacter l\'administrateur ou le responsable pour activer votre compte.</string>
     <string name="archive_mycourse">Archiver monCours</string>
