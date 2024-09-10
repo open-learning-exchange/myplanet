@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          xmlns:tools="http://schemas.android.com/tools">
+    xmlns:tools="http://schemas.android.com/tools">
     <queries>
         <intent>
             <action android:name="android.intent.action.VIEW" />
@@ -117,7 +117,7 @@
 
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-            
+
                 <data android:scheme="http" />
                 <data android:host="planet.embakasi.ole.org" />
                 <data android:pathPattern="/eng/login" />
