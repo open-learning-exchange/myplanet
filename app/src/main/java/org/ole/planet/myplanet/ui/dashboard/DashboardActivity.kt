@@ -163,7 +163,13 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     isServerReachable(Utilities.getUrl())
                     startUpload()
                 }
-                R.id.action_feedback -> openCallFragment(FeedbackListFragment())
+                R.id.action_feedback -> {
+                    if (user?.id?.startsWith("guest") == false) {
+                        openCallFragment(FeedbackListFragment())
+                    } else {
+                        guestDialog(this)
+                    }
+                }
                 R.id.action_settings -> startActivity(Intent(this@DashboardActivity, SettingActivity::class.java))
                 R.id.action_disclaimer -> openCallFragment(DisclaimerFragment())
                 R.id.action_about -> openCallFragment(AboutFragment())
