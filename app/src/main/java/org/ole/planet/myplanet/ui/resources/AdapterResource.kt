@@ -85,7 +85,6 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
             displayTagCloud(holder.rowLibraryBinding.flexboxDrawable, position)
             holder.itemView.setOnClickListener { openLibrary(libraryList[position]) }
             userModel = UserProfileDbHandler(context).userModel
-
             holder.rowLibraryBinding.ivDownloaded.setImageResource(
                 if (libraryList[position]?.isResourceOffline() == true) {
                     R.drawable.ic_eye
