@@ -16,10 +16,13 @@ import org.ole.planet.myplanet.model.RealmSubmission.Companion.getRecentSubmissi
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.ui.survey.AdapterSurvey.ViewHolderSurvey
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
+import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.model.RealmUserModel
 
 class AdapterSurvey(private val context: Context, private val examList: List<RealmStepExam>, private val mRealm: Realm, private val userId: String) : RecyclerView.Adapter<ViewHolderSurvey>() {
     private lateinit var rowSurveyBinding: RowSurveyBinding
     private var listener: OnHomeItemClickListener? = null
+    var user: RealmUserModel? = null
 
     init {
         if (context is OnHomeItemClickListener) {
@@ -33,6 +36,7 @@ class AdapterSurvey(private val context: Context, private val examList: List<Rea
     }
 
     override fun onBindViewHolder(holder: ViewHolderSurvey, position: Int) {
+        user = UserProfileDbHandler(context).userModel
         rowSurveyBinding.tvTitle.text = examList[position].name
         rowSurveyBinding.startSurvey.setOnClickListener {
             AdapterMySubmission.openSurvey(listener, examList[position].id, false)
@@ -45,6 +49,9 @@ class AdapterSurvey(private val context: Context, private val examList: List<Rea
         rowSurveyBinding.startSurvey.text = if (examList[position].isFromNation) context.getString(R.string.take_survey) else context.getString(
                 R.string.record_survey
             )
+        if (user?.id?.startsWith("guest") == true) {
+            rowSurveyBinding.startSurvey.visibility = View.GONE
+        }
         val noOfSubmission = getNoOfSubmissionByUser(examList[position].id, userId, mRealm)
         val subDate = getRecentSubmissionDate(examList[position].id, userId, mRealm)
         val createdDate = RealmStepExam.getSurveyCreationTime(examList[position].id!!, mRealm)
