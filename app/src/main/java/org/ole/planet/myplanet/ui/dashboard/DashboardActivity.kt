@@ -227,7 +227,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun openNotificationsList() {
-        Log.d("DashboardActivity", "notification opened")
+        openCallFragment(NotificationsFragment())
     }
 
     private fun updateNotificationBadge(count: Int, onClickListener: View.OnClickListener) {
