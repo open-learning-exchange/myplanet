@@ -9,5 +9,8 @@
         android:id="@+id/recyclerViewSurveys"
         android:layout_width="match_parent"
         android:layout_height="100dp"
+        android:scrollbars="vertical"
+        android:fadeScrollbars="false"
+        android:scrollbarSize="4dp"
         android:layout_marginTop="8dp" />
 </LinearLayout>
