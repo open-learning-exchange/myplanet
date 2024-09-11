@@ -104,9 +104,9 @@
     <string name="removed_from">تمت الإزالة من</string>
     <string name="my_courses">دوراتي</string>
     <string name="filter_collections">تصفية المجموعات</string>
-    <string name="filter_by_category">تصفية حسب الفئة</string>
     <string name="select_many_collections">اختيار العديد من المجموعات</string>
     <string name="collections">المجموعات</string>
+    <string name="filter_by_category">تصفية حسب الفئة</string>
     <string name="ok">موافق</string>
     <string name="inactive_message">المستخدم غير مفعل، يرجى التواصل مع المسؤول أو المدير لتفعيل حسابك.</string>
     <string name="archive_mycourse">أرشفة دورتي</string>
