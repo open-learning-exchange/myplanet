@@ -35,6 +35,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
@@ -55,6 +56,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     private var nonTeamMember = false
     private var sharedPreferences: SharedPrefManager? = null
     private var recyclerView: RecyclerView? = null
+    var user: RealmUserModel? = null
 
     fun setImageList(imageList: RealmList<String>?) {
         this.imageList = imageList
@@ -86,6 +88,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         rowNewsBinding = RowNewsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         sharedPreferences = SharedPrefManager(context)
+        user = UserProfileDbHandler(context).userModel
         return ViewHolderNews(rowNewsBinding)
     }
 
@@ -155,11 +158,13 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                     val conversations = Gson().fromJson(news.conversations, Array<Conversation>::class.java).toList()
                     val chatAdapter = ChatAdapter(ArrayList(), context, holder.rowNewsBinding.recyclerGchat)
 
-                    chatAdapter.setOnChatItemClickListener(object : ChatAdapter.OnChatItemClickListener {
-                        override fun onChatItemClick(position: Int, chatItem: String) {
-                            listener?.onNewsItemClick(news)
-                        }
-                    })
+                    if (user?.id?.startsWith("guest") == false) {
+                        chatAdapter.setOnChatItemClickListener(object : ChatAdapter.OnChatItemClickListener {
+                            override fun onChatItemClick(position: Int, chatItem: String) {
+                                listener?.onNewsItemClick(news)
+                            }
+                        })
+                    }
 
                     for (conversation in conversations) {
                         val query = conversation.query
@@ -291,14 +296,13 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
 
     private fun showEditAlert(id: String?, isEdit: Boolean) {
         val v = LayoutInflater.from(context).inflate(R.layout.alert_input, null)
-        v.setBackgroundColor(ContextCompat.getColor(context, R.color.daynight_grey))
         val et = v.findViewById<EditText>(R.id.et_input)
         v.findViewById<View>(R.id.ll_image).visibility = if (showBetaFeature(Constants.KEY_NEWSADDIMAGE, context)) View.VISIBLE else View.GONE
         val llImage = v.findViewById<LinearLayout>(R.id.ll_alert_image)
         v.findViewById<View>(R.id.add_news_image).setOnClickListener { listener?.addImage(llImage) }
         val news = mRealm.where(RealmNews::class.java).equalTo("id", id).findFirst()
         if (isEdit) et.setText(context.getString(R.string.message_placeholder, news?.message))
-        val dialog = AlertDialog.Builder(context, R.style.CustomAlertDialog).setTitle(if (isEdit) R.string.edit_post else R.string.reply)
+        val dialog = AlertDialog.Builder(context, R.style.AlertDialogTheme).setTitle(if (isEdit) R.string.edit_post else R.string.reply)
             .setIcon(R.drawable.ic_edit).setView(v)
             .setPositiveButton(R.string.button_submit) { _: DialogInterface?, _: Int ->
                 val s = et.text.toString()
@@ -307,7 +311,10 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                 } else {
                     postReply(s, news)
                 }
-            }.setNegativeButton(R.string.cancel, null)
+            }.setNegativeButton(R.string.cancel) { dialog, _ ->
+                listener?.clearImages()
+                dialog.dismiss()
+            }
             .create()
 
         dialog.show()
@@ -327,6 +334,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
 
         currentUser?.let { createNews(map, mRealm, it, imageList) }
         notifyDataSetChanged()
+        listener?.clearImages()
     }
 
     private fun editPost(s: String, news: RealmNews?) {
@@ -338,6 +346,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         news?.message = s
         mRealm.commitTransaction()
         notifyDataSetChanged()
+        listener?.clearImages()
     }
 
     private fun getNews(holder: RecyclerView.ViewHolder, position: Int): RealmNews? {
@@ -397,6 +406,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         fun showReply(news: RealmNews?, fromLogin: Boolean, nonTeamMember: Boolean)
         fun addImage(llImage: LinearLayout?)
         fun onNewsItemClick(news: RealmNews?)
+        fun clearImages()
     }
 
     private fun getLabel(s: String): String {

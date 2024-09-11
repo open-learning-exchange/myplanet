@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.team.teamDiscussion
 
 import android.content.DialogInterface
-import android.content.Intent
 import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
@@ -86,6 +85,11 @@ class DiscussionListFragment : BaseTeamFragment() {
             .replace(R.id.fragment_container, chatDetailFragment)
             .addToBackStack(null)
             .commit()
+    }
+
+    override fun clearImages() {
+        imageList.clear()
+        llImage?.removeAllViews()
     }
 
     private fun filterNewsList(results: RealmResults<RealmNews>): List<RealmNews?> {

@@ -14,7 +14,6 @@ import org.ole.planet.myplanet.databinding.RowTaskBinding
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.team.teamTask.AdapterTask.ViewHolderTask
-import org.ole.planet.myplanet.utilities.DialogUtils.showCloseAlert
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
 class AdapterTask(private val context: Context, private val realm: Realm, private val list: List<RealmTeamTask>?, private val nonTeamMember: Boolean) : RecyclerView.Adapter<ViewHolderTask>() {

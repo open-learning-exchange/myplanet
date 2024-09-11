@@ -44,6 +44,10 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener {
     }
 
     override fun onNewsItemClick(news: RealmNews?) {}
+    override fun clearImages() {
+        imageList.clear()
+        llImage?.removeAllViews()
+    }
 
     private fun showLibraryList() {
         val libraries: List<RealmMyLibrary> = mRealm.where(RealmMyLibrary::class.java).`in`("id", getResourceIds(teamId, mRealm).toTypedArray<String>()).findAll()

@@ -136,7 +136,7 @@
             android:layout_marginStart="16dp"
             android:layout_toStartOf="@+id/button_gchat_send"
             android:background="@android:color/transparent"
-            android:hint="Enter Message"
+            android:hint="@string/chat_enter_message"
             android:textColorHint="@color/hint_color"
             android:textColor="@color/daynight_textColor"
             android:inputType="textMultiLine"

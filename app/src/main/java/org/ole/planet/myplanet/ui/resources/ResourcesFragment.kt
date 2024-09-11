@@ -105,7 +105,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
 
         tvDelete?.setOnClickListener {
-            AlertDialog.Builder(this.context)
+            AlertDialog.Builder(this.context, R.style.AlertDialogTheme)
                 .setMessage(R.string.confirm_removal)
                 .setPositiveButton(R.string.yes) { _, _ ->
                     deleteSelected(true)

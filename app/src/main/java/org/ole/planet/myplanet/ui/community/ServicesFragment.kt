@@ -67,10 +67,15 @@ class ServicesFragment : BaseTeamFragment() {
 
     override fun onNewsItemClick(news: RealmNews?) {}
 
+    override fun clearImages() {
+        imageList.clear()
+        llImage?.removeAllViews()
+    }
+
     private fun setRecyclerView(links: RealmResults<RealmMyTeam>?) {
         fragmentServicesBinding.llServices.removeAllViews()
         links?.forEach { team ->
-            val b: TextView = LayoutInflater.from(activity).inflate(R.layout.button_single, null) as TextView
+            val b: TextView = LayoutInflater.from(activity).inflate(R.layout.button_single, fragmentServicesBinding.llServices, false) as TextView
             b.setPadding(8, 8, 8, 8)
             b.text = team.title
             b.setOnClickListener {

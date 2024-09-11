@@ -28,7 +28,6 @@ import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryForma
 import org.ole.planet.myplanet.utilities.Utilities.getUrl
 import org.ole.planet.myplanet.utilities.Utilities.toast
 import java.text.Normalizer
-import java.util.Locale
 import java.util.regex.Pattern
 
 class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
@@ -38,7 +37,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     private var mAdapter: TeamListAdapter? = null
     private var backPressedTime: Long = 0
     private val backPressedInterval: Long = 2000
-    private var fallbackLanguage: String = "en"
     private var teamList = java.util.ArrayList<String?>()
     private var teamAdapter: ArrayAdapter<String?>? = null
 
@@ -52,7 +50,11 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         syncIcon = activityLoginBinding.syncIcon
         service = Service(this)
 
-        activityLoginBinding.tvAvailableSpace.text = availableOverTotalMemoryFormattedString
+        activityLoginBinding.tvAvailableSpace.text = buildString {
+            append(getString(R.string.available_space_colon))
+            append(" ")
+            append(availableOverTotalMemoryFormattedString)
+        }
         changeLogoColor()
         declareElements()
         declareMoreElements()
@@ -232,7 +234,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             teamAdapter = ArrayAdapter(this, R.layout.spinner_item_white, teamList)
             teamAdapter?.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             teamList.clear()
-            teamList.add("select team")
+            teamList.add(getString(R.string.select_team))
             for (team in teams) {
                 if (team.isValid) {
                     teamList.add(team.name)
@@ -356,7 +358,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             mAdapter?.updateList(prefData.getSavedUsers().toMutableList())
         }
 
-        activityLoginBinding.recyclerView.isNestedScrollingEnabled = true
+        activityLoginBinding.recyclerView.setNestedScrollingEnabled(false)
         activityLoginBinding.recyclerView.setHasFixedSize(true)
     }
 

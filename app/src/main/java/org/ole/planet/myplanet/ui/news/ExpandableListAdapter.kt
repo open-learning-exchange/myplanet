@@ -9,12 +9,7 @@ import android.widget.BaseExpandableListAdapter
 import android.widget.TextView
 import org.ole.planet.myplanet.R
 
-class ExpandableListAdapter(
-    private val context: Context,
-    private val expandableTitleList: List<String>,
-    private val expandableDetailList: HashMap<String, List<String>>
-) : BaseExpandableListAdapter() {
-
+class ExpandableListAdapter(private val context: Context, private val expandableTitleList: List<String>, private val expandableDetailList: HashMap<String, List<String>>) : BaseExpandableListAdapter() {
     override fun getChild(lstPosn: Int, expandedListPosition: Int): Any {
         return expandableDetailList[expandableTitleList[lstPosn]]!![expandedListPosition]
     }
@@ -23,18 +18,12 @@ class ExpandableListAdapter(
         return expandedListPosition.toLong()
     }
 
-    override fun getChildView(
-        lstPosn: Int,
-        expandedListPosition: Int,
-        isLastChild: Boolean,
-        convertView: View?, // Make convertView nullable
-        parent: ViewGroup
-    ): View {
+    override fun getChildView(lstPosn: Int, expandedListPosition: Int, isLastChild: Boolean, convertView: View?, parent: ViewGroup): View {
         var reusedView = convertView
         val expandedListText = getChild(lstPosn, expandedListPosition) as String
         if (reusedView == null) {
             val layoutInflater = context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
-            reusedView = layoutInflater.inflate(R.layout.expandable_list_item, null)
+            reusedView = layoutInflater.inflate(R.layout.expandable_list_item, parent, false)
         }
         val expandedListTextView = reusedView?.findViewById<View>(R.id.expandedListItem) as TextView
         expandedListTextView.text = expandedListText
@@ -57,17 +46,12 @@ class ExpandableListAdapter(
         return listPosition.toLong()
     }
 
-    override fun getGroupView(
-        listPosition: Int,
-        isExpanded: Boolean,
-        convertView: View?, // Make convertView nullable
-        parent: ViewGroup
-    ): View {
+    override fun getGroupView(listPosition: Int, isExpanded: Boolean, convertView: View?, parent: ViewGroup): View {
         var reusedView = convertView
         val listTitle = getGroup(listPosition) as String
         if (reusedView == null) {
             val layoutInflater = context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
-            reusedView = layoutInflater.inflate(R.layout.expandable_list_group, null)
+            reusedView = layoutInflater.inflate(R.layout.expandable_list_group, parent, false)
         }
         val listTitleTextView = reusedView?.findViewById<View>(R.id.listTitle) as TextView
         listTitleTextView.setTypeface(null, Typeface.BOLD)

@@ -9,12 +9,13 @@
     <string name="btn_back">رجع</string>
     <string name="btn_sign_in">تسجيل الدخول</string>
     <string name="btn_sync">مزامنة</string>
+    <string name="select_team">حدد الفريق</string>
     <string name="btn_sync_save">حفظ</string>
     <string name="btn_sync_cancel">إلغاء</string>
     <string name="err_msg_name">الرجاء إدخال اسم المستخدم</string>
     <string name="err_msg_password">الرجاء إدخال كلمة المرور</string>
     <string name="err_msg_login">اسم المستخدم و/أو كلمة المرور غير متطابقة</string>
-    <string name="hint_serverURl">planet ip</string>
+    <string name="hint_serverURl">planet الملكية الفكرية</string>
     <string name="hint_serverPin">رمز الخادم</string>
     <string name="radio_protocol">البروتوكول:</string>
     <string name="radio_http">http</string>
@@ -105,6 +106,7 @@
     <string name="filter_collections">تصفية المجموعات</string>
     <string name="select_many_collections">اختيار العديد من المجموعات</string>
     <string name="collections">المجموعات</string>
+    <string name="filter_by_category">تصفية حسب الفئة</string>
     <string name="ok">موافق</string>
     <string name="inactive_message">المستخدم غير مفعل، يرجى التواصل مع المسؤول أو المدير لتفعيل حسابك.</string>
     <string name="archive_mycourse">أرشفة دورتي</string>
@@ -551,7 +553,7 @@
     <string name="courses_colon">الدورات:</string>
     <string name="title">العنوان</string>
     <string name="source">المصدر</string>
-    <string name="cloud_url">cloud</string>
+    <string name="cloud_url">سحاب</string>
     <string name="interval">الفترة الزمنية</string>
     <string name="autosync">المزامنة التلقائية</string>
     <string name="autosync_off">إيقاف المزامنة التلقائية!</string>
@@ -1099,7 +1101,7 @@
     </string-array>
     <string name="are_you_sure_you_want_to_archive_these_courses">هل أنت متأكد أنك تريد أرشفة هذه الدورات؟</string>
     <string name="are_you_sure_you_want_to_archive_this_course">هل أنت متأكد أنك تريد أرشفة هذه الدورة؟</string>
-    <string name="manual">دليل</string>
+    <string name="manual">يدوي</string>
     <string name="sync_to_server">:المزامنة إلى الخادم</string>
     <string name="sync_planet_learning">🌎 planet learning</string>
     <string name="sync_guatemala">🇬🇹 planet guatemala</string>
@@ -1120,7 +1122,27 @@
     <string name="server_address_content_description">عنوان الخادم: %1$s</string>
     <string name="member_only_allowed">انضم كعضو للوصول إلى هذه الميزة</string>
     <string name="select_theme_mode">اختر وضع السمة</string>
+    <string name="beta_resources_auto_download">تنزيل الموارد التجريبيّة تلقائيًا</string>
     <string name="course_steps">خطوات الدورة</string>
     <string name="to_access_this_feature_become_a_member">أنت حاليًا مستخدم ضيف. للوصول إلى هذه الميزة، كن عضوًا.</string>
+    <string name="sales">المبيعات</string>
+    <string name="beginning_balance">الرصيد الافتتاحي</string>
+    <string name="other">أخرى</string>
+    <string name="total_income">إجمالي الدخل</string>
+    <string name="personnel">الموظفين</string>
+    <string name="non_personnel">غير الموظفين</string>
+    <string name="total_expenses">إجمالي المصروفات</string>
+    <string name="profit_loss">الربح / الخسارة</string>
+    <string name="ending_balance">الرصيد النهائي</string>
+    <string name="reports_summary">ملخص التقارير</string>
+    <string name="summary">ملخص</string>
+    <string name="other_income">دخل آخر</string>
+    <string name="add_reports">إضافة تقارير</string>
+    <string name="export_csv">تصدير CSV</string>
+    <string name="add_report">إضافة تقرير</string>
+    <string name="new_chat">محادثة جديدة</string>
+    <string name="chat_enter_message">أدخل الرسالة</string>
+    <string name="hour">ساعة</string>
+    <string name="hours">ساعات</string>
 
 </resources>

@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.os.Build
 import android.os.Bundle
-import android.widget.Toast
 import androidx.annotation.RequiresApi
 import org.ole.planet.myplanet.base.BaseNewsFragment
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -37,7 +36,6 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
                 mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId).findFirst()
                     ?: throw IllegalArgumentException("Team not found for ID: $teamId")
             } catch (e: IllegalArgumentException) {
-                Toast.makeText(requireContext(), "Create an account to access this", Toast.LENGTH_LONG).show()
                 return
             }
         }

@@ -10,6 +10,7 @@
     <string name="btn_sign_in">Soo gal</string>
     <string name="btn_sync">Isku xidh </string>
     <string name="btn_sync_save">Keyd</string>
+    <string name="select_team">xulo koox</string>
     <string name="btn_sync_cancel">burin</string>
     <string name="err_msg_name">Geli magaca isticmaalaha</string>
     <string name="err_msg_password">Geli erayga sirta ah</string>
@@ -105,6 +106,7 @@
     <string name="filter_collections">Uruurinta shaandhaynta</string>
     <string name="select_many_collections">Dooro Ururo Badan</string>
     <string name="collections">Ururinta</string>
+    <string name="filter_by_category">Sii kala sooc qaybta</string>
     <string name="ok">Sax</string>
     <string name="inactive_message">Isticmalahu ma hawlgelin, fadlan la xidhiidh maamulaha ama maareeyaha si aad u hawlgeliso akoonkaaga.</string>
     <string name="archive_mycourse">Kaydi myCourse</string>
@@ -551,7 +553,7 @@
     <string name="courses_colon">Koorsadayaasha:</string>
     <string name="title">Cinwaanka</string>
     <string name="source">Soo Saar</string>
-    <string name="cloud_url">cloud</string>
+    <string name="cloud_url">daruur</string>
     <string name="interval">Dhibic</string>
     <string name="autosync">Iskaashiga Hore</string>
     <string name="autosync_off">Iskaashiga Off!</string>
@@ -1120,7 +1122,27 @@
     <string name="server_address_content_description">cinwaanka serverka: %1$s</string>
     <string name="member_only_allowed">ku biir xubin ahaan si aad u hesho astaamahan</string>
     <string name="select_theme_mode">dooro qaabka mawduuca</string>
+    <string name="beta_resources_auto_download">Soo dejinta otomaatiga ah ee khayraadka beta</string>
     <string name="course_steps">Talaabooyinka Koorsada</string>
     <string name="to_access_this_feature_become_a_member">hadda waxaad tahay isticmaale marti ah. si aad u hesho helitaanka astaamahan, noqo xubin.</string>
+    <string name="sales">Iibka</string>
+    <string name="beginning_balance">Hadhsiga bilowga</string>
+    <string name="other">Kale</string>
+    <string name="total_income">Dakhliga Guud</string>
+    <string name="personnel">Shaqaalaha</string>
+    <string name="non_personnel">Aan Shaqaalaha Ahayn</string>
+    <string name="total_expenses">Kharashaadka Guud</string>
+    <string name="profit_loss">Faa\'iido/Qasaaro</string>
+    <string name="ending_balance">Hadhsiga dhammaadka</string>
+    <string name="reports_summary">Dulmar Warbixino</string>
+    <string name="summary">Dulmar</string>
+    <string name="other_income">Dakhliga kale</string>
+    <string name="add_reports">Ku dar warbixino</string>
+    <string name="export_csv">Dhoofinta CSV</string>
+    <string name="add_report">Ku dar warbixin</string>
+    <string name="new_chat">Wadahadal cusub</string>
+    <string name="chat_enter_message">Geli fariin</string>
+    <string name="hour">saac</string>
+    <string name="hours">saacadood</string>
 
 </resources>

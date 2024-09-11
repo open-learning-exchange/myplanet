@@ -8,18 +8,17 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
-import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import io.realm.Case
 import io.realm.Realm
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.*
-import org.json.JSONException
-import org.json.JSONObject
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerParentFragment
@@ -29,6 +28,7 @@ import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getCourseByCourseId
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getCourseSteps
+import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -67,7 +67,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
     @RequiresApi(Build.VERSION_CODES.M)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        fragmentHomeBellBinding.cardProfileBell.txtDate.text = TimeUtils.formatDate(Date().time)
+        fragmentHomeBellBinding.cardProfileBell.txtDate.text = TimeUtils.formatDate(Date().time, "")
         fragmentHomeBellBinding.cardProfileBell.txtCommunityName.text = model?.planetCode
         isNetworkConnectedFlow.onEach { isConnected ->
             if (isConnected) {
@@ -97,48 +97,56 @@ class BellDashboardFragment : BaseDashboardFragment() {
             }
         }
         showBadges()
-        
-        val noOfSurvey = RealmSubmission.getNoOfSurveySubmissionByUser(model?.id, mRealm)
-        if (noOfSurvey >= 1){
-            val title: String = if (noOfSurvey > 1 ) {
-                "surveys"
-            } else{
-                "survey"
-            }
-            val itemsQuery = mRealm.where(RealmSubmission::class.java).equalTo("userId", model?.id)
-                .equalTo("type", "survey").equalTo("status", "pending", Case.INSENSITIVE)
-                .findAll()
-            val courseTitles = itemsQuery.map { it.parent }
-            val surveyNames = courseTitles.map { json ->
-                try {
-                    val jsonObject = json?.let { JSONObject(it) }
-                    jsonObject?.getString("name")
-                } catch (e: JSONException) {
-                    e.printStackTrace()
+        checkPendingSurveys()
+    }
+
+    private fun checkPendingSurveys() {
+        val pendingSurveys = getPendingSurveys(user?.id, mRealm)
+
+        if (pendingSurveys.isNotEmpty()) {
+            val surveyTitles = getSurveyTitlesFromSubmissions(pendingSurveys, mRealm)  //Get surveyTitles from Submissions
+
+            val dialogView = LayoutInflater.from(requireActivity()).inflate(R.layout.dialog_survey_list, null)
+            val recyclerView: RecyclerView = dialogView.findViewById(R.id.recyclerViewSurveys)
+            recyclerView.layoutManager = LinearLayoutManager(requireActivity())
+
+            val alertDialog = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
+                .setTitle(getString(R.string.surveys_to_complete, pendingSurveys.size, if (pendingSurveys.size > 1) "surveys" else "survey"))
+                .setView(dialogView)
+                .setPositiveButton(getString(R.string.ok)) { dialog, _ ->
+                    homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("survey"))
+                    dialog.dismiss()
                 }
-            }
-            val titleView = TextView(requireActivity()).apply {
-                text = getString(R.string.surveys_to_complete, noOfSurvey, title)
-                setTextColor(context.getColor(R.color.daynight_textColor))
-                setPadding(90, 70, 0, 0)
-                textSize = 20f
-                typeface = Typeface.DEFAULT_BOLD
-            }
-            val alertDialog: AlertDialog.Builder = AlertDialog.Builder(requireActivity())
-            alertDialog.setCustomTitle(titleView)
-            val surveyNamesArray = surveyNames.filterNotNull().map { it as CharSequence }.toTypedArray()
-            alertDialog.setItems(surveyNamesArray) { _, which ->
-                val selectedSurvey = itemsQuery[which]?.id
+                .create()
+
+            val adapter = SurveyAdapter(surveyTitles, { position ->
+                val selectedSurvey = pendingSurveys[position].id
                 AdapterMySubmission.openSurvey(homeItemClickListener, selectedSurvey, true)
-            }
-            alertDialog.setPositiveButton("OK") { dialog, _ ->
-                homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("survey"))
-                dialog.dismiss()
-            }
-            val dialog = alertDialog.create()
-            dialog.show()
-            dialog.window?.setBackgroundDrawableResource(R.color.card_bg)
+            }, alertDialog)
+
+            recyclerView.adapter = adapter
+            alertDialog.show()
+            alertDialog.window?.setBackgroundDrawableResource(R.color.card_bg)
         }
+    }
+
+    private fun getPendingSurveys(userId: String?, realm: Realm): List<RealmSubmission> {
+        return realm.where(RealmSubmission::class.java)
+            .equalTo("userId", userId)
+            .equalTo("type", "survey")
+            .equalTo("status", "pending", Case.INSENSITIVE)
+            .findAll()
+    }
+
+    private fun getSurveyTitlesFromSubmissions(submissions: List<RealmSubmission>, realm: Realm): List<String> {
+        val titles = mutableListOf<String>()
+        submissions.forEach { submission ->
+            val exam = realm.where(RealmStepExam::class.java)
+                .equalTo("id", submission.parentId)
+                .findFirst()
+            exam?.name?.let { titles.add(it) }
+        }
+        return titles
     }
 
     private fun showBadges() {
@@ -146,7 +154,8 @@ class BellDashboardFragment : BaseDashboardFragment() {
         val courseCount = countCourseIds(mRealm)
 
         for ((index, entry) in courseCount.withIndex()) {
-            val star = LayoutInflater.from(activity).inflate(R.layout.image_start, null) as ImageView
+            val rootView = requireActivity().findViewById<ViewGroup>(android.R.id.content)
+            val star = LayoutInflater.from(activity).inflate(R.layout.image_start, rootView, false) as ImageView
             val courseId = entry.keys.first()
             val count = entry.values.first()
             val steps = getCourseSteps(mRealm, courseId)
