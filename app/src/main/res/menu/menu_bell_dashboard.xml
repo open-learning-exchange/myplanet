@@ -26,7 +26,12 @@
         android:contentDescription="@string/go_to_feedback_page"
         android:title="@string/menu_feedback"
         app:showAsAction="always" />
-
+    <item
+        android:id="@+id/action_notifications"
+        android:icon="@drawable/ic_notifications"
+        android:title="Notification"
+        app:actionLayout="@layout/custom_notification_badge"
+        app:showAsAction="always"/>
     <item
         android:id="@+id/action_about"
         android:icon="@drawable/ic_my_survey"

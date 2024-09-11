@@ -10,14 +10,18 @@ import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
+import androidx.core.view.MenuItemCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.drawerlayout.widget.DrawerLayout
@@ -36,11 +40,14 @@ import com.mikepenz.materialdrawer.model.interfaces.Nameable
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
+import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getLibraryList
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.ActivityDashboardBinding
 import org.ole.planet.myplanet.databinding.CustomTabBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmStepExam
+import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.SettingActivity
@@ -179,6 +186,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         menue = tl?.getTabAt(4)
         menuco = tl?.getTabAt(5)
         hideWifi()
+        getNotifications()
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -204,6 +212,31 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 }
             }
         })
+    }
+
+    private fun getNotifications() {
+        val resourceCount = getLibraryList(mRealm, user?.id).size
+        val surveyList = mRealm.where(RealmSubmission::class.java).equalTo("userId", user?.id).equalTo("status", "pending").equalTo("type", "survey").findAll()
+        val tasks = mRealm.where(RealmTeamTask::class.java).notEqualTo("status", "archived").equalTo("completed", false).equalTo("assignee", user?.id).findAll()
+        val notifList = surveyList.size + tasks.size + if (resourceCount > 0) 1 else 0
+
+        updateNotificationBadge(notifList) {
+            Toast.makeText(this, "Notifications clicked", Toast.LENGTH_SHORT).show()
+            openNotificationsList()
+        }
+    }
+
+    private fun openNotificationsList() {
+        Log.d("DashboardActivity", "notification opened")
+    }
+
+    private fun updateNotificationBadge(count: Int, onClickListener: View.OnClickListener) {
+        val menuItem = activityDashboardBinding.appBarBell.bellToolbar.menu.findItem(R.id.action_notifications)
+        val actionView = MenuItemCompat.getActionView(menuItem)
+        val smsCountTxt = actionView.findViewById<TextView>(R.id.notification_badge)
+        smsCountTxt.text = count.toString()
+        smsCountTxt.visibility = if (count > 0) View.VISIBLE else View.GONE
+        actionView.setOnClickListener(onClickListener)
     }
 
     fun refreshChatHistoryList() {
