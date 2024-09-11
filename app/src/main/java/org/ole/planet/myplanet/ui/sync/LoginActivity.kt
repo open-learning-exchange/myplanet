@@ -360,7 +360,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             mAdapter?.updateList(prefData.getSavedUsers().toMutableList())
         }
 
-        activityLoginBinding.recyclerView.isNestedScrollingEnabled = true
+        activityLoginBinding.recyclerView.setNestedScrollingEnabled(false)
         activityLoginBinding.recyclerView.setHasFixedSize(true)
     }
 
