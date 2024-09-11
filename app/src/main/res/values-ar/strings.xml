@@ -1124,5 +1124,24 @@
     <string name="beta_resources_auto_download">تنزيل الموارد التجريبيّة تلقائيًا</string>
     <string name="course_steps">خطوات الدورة</string>
     <string name="to_access_this_feature_become_a_member">أنت حاليًا مستخدم ضيف. للوصول إلى هذه الميزة، كن عضوًا.</string>
+    <string name="sales">المبيعات</string>
+    <string name="beginning_balance">الرصيد الافتتاحي</string>
+    <string name="other">أخرى</string>
+    <string name="total_income">إجمالي الدخل</string>
+    <string name="personnel">الموظفين</string>
+    <string name="non_personnel">غير الموظفين</string>
+    <string name="total_expenses">إجمالي المصروفات</string>
+    <string name="profit_loss">الربح / الخسارة</string>
+    <string name="ending_balance">الرصيد النهائي</string>
+    <string name="reports_summary">ملخص التقارير</string>
+    <string name="summary">ملخص</string>
+    <string name="other_income">دخل آخر</string>
+    <string name="add_reports">إضافة تقارير</string>
+    <string name="export_csv">تصدير CSV</string>
+    <string name="add_report">إضافة تقرير</string>
+    <string name="new_chat">محادثة جديدة</string>
+    <string name="chat_enter_message">أدخل الرسالة</string>
+    <string name="hour">ساعة</string>
+    <string name="hours">ساعات</string>
 
 </resources>

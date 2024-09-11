@@ -1124,5 +1124,24 @@
     <string name="beta_resources_auto_download">Beta resources auto download</string>
     <string name="course_steps">Course Steps</string>
     <string name="to_access_this_feature_become_a_member">you are currently a guest user. to access this feature, become a member.</string>
+    <string name="sales">Sales</string>
+    <string name="beginning_balance">Beginning Balance</string>
+    <string name="other">Other</string>
+    <string name="total_income">Total Income</string>
+    <string name="personnel">Personnel</string>
+    <string name="non_personnel">Non-Personnel</string>
+    <string name="total_expenses">Total Expenses</string>
+    <string name="profit_loss">Profit/Loss</string>
+    <string name="ending_balance">Ending Balance</string>
+    <string name="reports_summary">Reports Summary</string>
+    <string name="summary">Summary</string>
+    <string name="other_income">Other Income</string>
+    <string name="add_reports">Add Reports</string>
+    <string name="export_csv">Export CSV</string>
+    <string name="add_report">Add Report</string>
+    <string name="new_chat">new chat</string>
+    <string name="chat_enter_message">Enter Message</string>
+    <string name="hour">hour</string>
+    <string name="hours">hours</string>
 
 </resources>
