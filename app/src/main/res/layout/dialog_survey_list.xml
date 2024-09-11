@@ -12,5 +12,6 @@
         android:scrollbars="vertical"
         android:fadeScrollbars="false"
         android:scrollbarSize="4dp"
+        android:scrollbarThumbVertical="@color/daynight_textColor"
         android:layout_marginTop="8dp" />
 </LinearLayout>
