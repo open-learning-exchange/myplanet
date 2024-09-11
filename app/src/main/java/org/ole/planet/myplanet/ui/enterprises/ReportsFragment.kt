@@ -52,7 +52,7 @@ class ReportsFragment : BaseTeamFragment() {
             val dialogAddReportBinding = DialogAddReportBinding.inflate(LayoutInflater.from(requireContext()))
             val v: View = dialogAddReportBinding.root
             val builder = AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
-            builder.setTitle("Add Report")
+            builder.setTitle(R.string.add_report)
                 .setView(v)
                 .setPositiveButton("submit", null)
                 .setNegativeButton("cancel", null)
