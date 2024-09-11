@@ -24,7 +24,6 @@
             android:textColor="@color/hint_color"
             android:textSize="@dimen/text_size_mid"
             app:drawableRightCompat="@drawable/ic_down" />
-
         <TextView
             android:id="@+id/tv_date"
             android:layout_width="wrap_content"
@@ -32,8 +31,6 @@
             android:padding="@dimen/padding_normal"
             android:textColor="@color/hint_color"
             android:textSize="@dimen/text_size_mid" />
-
-
     </LinearLayout>
 
     <LinearLayout
@@ -50,7 +47,6 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textColor="@color/hint_color" />
-
         <com.google.android.flexbox.FlexboxLayout
             android:id="@+id/flexbox_resources"
             android:layout_width="wrap_content"
