@@ -90,8 +90,7 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
                     R.drawable.ic_eye
                 } else {
                     R.drawable.ic_download
-                }
-            )
+                })
             holder.rowLibraryBinding.ivDownloaded.contentDescription =
                 if (libraryList[position]?.isResourceOffline() == true) {
                     context.getString(R.string.view)
@@ -100,26 +99,16 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
                 }
             if (ratingMap.containsKey(libraryList[position]?.resourceId)) {
                 val `object` = ratingMap[libraryList[position]?.resourceId]
-                AdapterCourses.showRating(
-                    `object`,
-                    holder.rowLibraryBinding.rating,
-                    holder.rowLibraryBinding.timesRated,
-                    holder.rowLibraryBinding.ratingBar
-                )
+                AdapterCourses.showRating(`object`, holder.rowLibraryBinding.rating, holder.rowLibraryBinding.timesRated, holder.rowLibraryBinding.ratingBar)
             } else {
                 holder.rowLibraryBinding.ratingBar.rating = 0f
             }
 
-            if (!userModel?.isGuest()!!) {
+            if (userModel?.isGuest() == false) {
                 holder.rowLibraryBinding.checkbox.setOnClickListener { view: View ->
                     holder.rowLibraryBinding.checkbox.contentDescription =
                         context.getString(R.string.select_res_course, libraryList[position]?.title)
-                    Utilities.handleCheck(
-                        (view as CheckBox).isChecked,
-                        position,
-                        selectedItems,
-                        libraryList
-                    )
+                    Utilities.handleCheck((view as CheckBox).isChecked, position, selectedItems, libraryList)
                     if (listener != null) listener?.onSelectedListChange(selectedItems)
                 }
             }
@@ -208,9 +197,8 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
             init {
                 rowLibraryBinding.ratingBar.setOnTouchListener { _: View?, event: MotionEvent ->
                     if (event.action == MotionEvent.ACTION_UP) {
-                        if (!userModel?.isGuest()!!) {
-                            homeItemClickListener?.showRatingDialog(
-                                "resource",
+                        if (userModel?.isGuest() == false) {
+                            homeItemClickListener?.showRatingDialog("resource",
                                 libraryList[bindingAdapterPosition]?.resourceId,
                                 libraryList[bindingAdapterPosition]?.title,
                                 ratingChangeListener
