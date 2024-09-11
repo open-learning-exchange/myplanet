@@ -208,6 +208,26 @@
                 <data android:host="192.168.100.178" />
                 <data android:pathPattern="/eng/login" />
             </intent-filter>
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="http" />
+                <data android:host="192.168.68.126" />
+                <data android:pathPattern="/eng/login" />
+            </intent-filter>
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="https" />
+                <data android:host="planet.egdirbmac.ole.org" />
+                <data android:pathPattern="/eng/login" />
+            </intent-filter>
         </activity>
         <activity
             android:name=".ui.sync.LoginActivity"
