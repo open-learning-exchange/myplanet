@@ -27,7 +27,7 @@
             android:layout_marginStart="2dp"
             android:layout_marginTop="2dp"
             android:gravity="center_vertical"
-            android:hint="Start Date"
+            android:hint="@string/start_date"
             android:textColorHint="@color/hint_color"
             android:textColor="@color/daynight_textColor"
             android:textSize="16sp" />
@@ -58,7 +58,7 @@
             android:layout_marginStart="2dp"
             android:layout_marginTop="2dp"
             android:gravity="center_vertical"
-            android:hint="End Date"
+            android:hint="@string/end_date"
             android:textColorHint="@color/hint_color"
             android:textColor="@color/daynight_textColor"
             android:textSize="16sp" />
@@ -87,7 +87,7 @@
             android:id="@+id/summary"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Summary"
+            android:hint="@string/summary"
             android:textColor="@color/daynight_textColor"
             android:inputType="textMultiLine" />
     </com.google.android.material.textfield.TextInputLayout>
@@ -111,7 +111,7 @@
             android:id="@+id/beginningBalance"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Beginning Balance"
+            android:hint="@string/beginning_balance"
             android:inputType="numberDecimal"
             android:textColor="@color/daynight_textColor"
             android:text="0" />
@@ -136,7 +136,7 @@
             android:id="@+id/sales"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Sales"
+            android:hint="@string/sales"
             android:inputType="numberDecimal"
             android:textColor="@color/daynight_textColor"
             android:text="0" />
@@ -161,7 +161,7 @@
             android:id="@+id/otherIncome"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Other Income"
+            android:hint="@string/other_income"
             android:inputType="numberDecimal"
             android:textColor="@color/daynight_textColor"
             android:text="0" />
@@ -186,7 +186,7 @@
             android:id="@+id/personnel"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Personnel"
+            android:hint="@string/personnel"
             android:inputType="numberDecimal"
             android:textColor="@color/daynight_textColor"
             android:text="0" />
@@ -211,7 +211,7 @@
             android:id="@+id/nonPersonnel"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Non Personnel"
+            android:hint="@string/non_personnel"
             android:inputType="numberDecimal"
             android:textColor="@color/daynight_textColor"
             android:text="0" />
