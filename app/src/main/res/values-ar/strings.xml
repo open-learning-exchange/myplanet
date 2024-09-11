@@ -280,6 +280,12 @@
         <item>المتعلم</item>
     </string-array>
 
+    <string-array name="status_options">
+        <item>الكل</item>
+        <item>مقروء</item>
+        <item>غير مقروء</item>
+    </string-array>
+
     <string name="dictionaries">القواميس</string>
     <string name="bible">الكتاب المقدس</string>
     <string name="feature_not">الميزة غير متوفرة</string>

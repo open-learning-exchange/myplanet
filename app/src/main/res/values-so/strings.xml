@@ -478,6 +478,12 @@
         <item>Waji</item>
     </string-array>
 
+    <string-array name="status_options">
+        <item>dhamaantood</item>
+        <item>la akhriyey</item>
+        <item>aan la akhriyin</item>
+    </string-array>
+
     <string name="title_activity_news_detail">XogtaFareeysaActivity</string>
     <string name="add_story">Ku Dar Hees</string>
     <string name="txt_myprogress">Halistaaga</string>

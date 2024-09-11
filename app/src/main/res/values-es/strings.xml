@@ -280,6 +280,12 @@
         <item>Estudiante</item>
     </string-array>
 
+    <string-array name="status_options">
+        <item>todo</item>
+        <item>leído</item>
+        <item>no leído</item>
+    </string-array>
+
     <string name="dictionaries">Diccionarios</string>
     <string name="bible">Biblias</string>
     <string name="feature_not">Función no disponible</string>

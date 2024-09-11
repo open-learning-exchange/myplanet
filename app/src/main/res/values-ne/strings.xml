@@ -280,6 +280,12 @@
         <item>शिक्षार्थी</item>
     </string-array>
 
+    <string-array name="status_options">
+        <item>सबै</item>
+        <item>पढिएको</item>
+        <item>नपढिएको</item>
+    </string-array>
+
     <string name="dictionaries">शब्दकोशहरू</string>
     <string name="bible">बाइबलहरू</string>
     <string name="feature_not">सुविधा उपलब्ध छैन</string>

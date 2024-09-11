@@ -280,6 +280,12 @@
         <item>Learner</item>
     </string-array>
 
+    <string-array name="status_options">
+        <item>all</item>
+        <item>read</item>
+        <item>unread</item>
+    </string-array>
+
     <string name="dictionaries">Dictionaries</string>
     <string name="bible">Bibles</string>
     <string name="feature_not">Feature not available</string>

@@ -14,10 +14,12 @@ import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
+import androidx.core.view.MenuItemCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.drawerlayout.widget.DrawerLayout
@@ -36,12 +38,11 @@ import com.mikepenz.materialdrawer.model.interfaces.Nameable
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 //import org.ole.planet.myplanet.base.BaseContainerFragment
+import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getLibraryList
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.ActivityDashboardBinding
 import org.ole.planet.myplanet.databinding.CustomTabBinding
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.*
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.chat.ChatHistoryListFragment
@@ -59,6 +60,7 @@ import org.ole.planet.myplanet.utilities.BottomNavigationViewHelper.disableShift
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
+import org.ole.planet.myplanet.utilities.FileUtils.totalAvailableMemoryRatio
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.Utilities
@@ -179,6 +181,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         menue = tl?.getTabAt(4)
         menuco = tl?.getTabAt(5)
         hideWifi()
+        getNotifications()
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -204,6 +207,39 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 //                }
             }
         })
+    }
+
+    private fun getNotifications() {
+        val resourceCount = getLibraryList(mRealm, user?.id).size
+        val surveyList = mRealm.where(RealmSubmission::class.java).equalTo("userId", user?.id).equalTo("status", "pending").equalTo("type", "survey").findAll()
+        val tasks = mRealm.where(RealmTeamTask::class.java).notEqualTo("status", "archived").equalTo("completed", false).equalTo("assignee", user?.id).findAll()
+        val storageRatio = totalAvailableMemoryRatio
+
+        val storageCondition = if (storageRatio <= 10 || storageRatio <= 40) 1 else 0
+        val resourceCondition = if (resourceCount > 0) 1 else 0
+        val notifList = surveyList.size + tasks.size + resourceCondition + storageCondition
+        updateNotificationBadge(notifList) {
+            openNotificationsList(user?.id ?: "", resourceCount)
+        }
+    }
+
+    private fun openNotificationsList(userId: String, resourceCount: Int) {
+        val fragment = NotificationsFragment().apply {
+            arguments = Bundle().apply {
+                putString("userId", userId)
+                putInt("resourceCount", resourceCount)
+            }
+        }
+        openCallFragment(fragment)
+    }
+
+    private fun updateNotificationBadge(count: Int, onClickListener: View.OnClickListener) {
+        val menuItem = activityDashboardBinding.appBarBell.bellToolbar.menu.findItem(R.id.action_notifications)
+        val actionView = MenuItemCompat.getActionView(menuItem)
+        val smsCountTxt = actionView.findViewById<TextView>(R.id.notification_badge)
+        smsCountTxt.text = count.toString()
+        smsCountTxt.visibility = if (count > 0) View.VISIBLE else View.GONE
+        actionView.setOnClickListener(onClickListener)
     }
 
     fun refreshChatHistoryList() {

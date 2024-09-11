@@ -10,13 +10,11 @@ import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.TextView
-import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
@@ -44,11 +42,7 @@ import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getLibraryLis
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.ActivityDashboardBinding
 import org.ole.planet.myplanet.databinding.CustomTabBinding
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmTeamTask
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.*
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.chat.ChatHistoryListFragment
@@ -66,6 +60,7 @@ import org.ole.planet.myplanet.utilities.BottomNavigationViewHelper.disableShift
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
+import org.ole.planet.myplanet.utilities.FileUtils.totalAvailableMemoryRatio
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.Utilities
@@ -218,16 +213,24 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         val resourceCount = getLibraryList(mRealm, user?.id).size
         val surveyList = mRealm.where(RealmSubmission::class.java).equalTo("userId", user?.id).equalTo("status", "pending").equalTo("type", "survey").findAll()
         val tasks = mRealm.where(RealmTeamTask::class.java).notEqualTo("status", "archived").equalTo("completed", false).equalTo("assignee", user?.id).findAll()
-        val notifList = surveyList.size + tasks.size + if (resourceCount > 0) 1 else 0
+        val storageRatio = totalAvailableMemoryRatio
 
+        val storageCondition = if (storageRatio <= 10 || storageRatio <= 40) 1 else 0
+        val resourceCondition = if (resourceCount > 0) 1 else 0
+        val notifList = surveyList.size + tasks.size + resourceCondition + storageCondition
         updateNotificationBadge(notifList) {
-            Toast.makeText(this, "Notifications clicked", Toast.LENGTH_SHORT).show()
-            openNotificationsList()
+            openNotificationsList(user?.id ?: "", resourceCount)
         }
     }
 
-    private fun openNotificationsList() {
-        openCallFragment(NotificationsFragment())
+    private fun openNotificationsList(userId: String, resourceCount: Int) {
+        val fragment = NotificationsFragment().apply {
+            arguments = Bundle().apply {
+                putString("userId", userId)
+                putInt("resourceCount", resourceCount)
+            }
+        }
+        openCallFragment(fragment)
     }
 
     private fun updateNotificationBadge(count: Int, onClickListener: View.OnClickListener) {

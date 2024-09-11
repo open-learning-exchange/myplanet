@@ -18,11 +18,18 @@
             android:id="@+id/btn_show_badge"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
             android:text="mark all as read"
             android:textAllCaps="false"
             app:layout_constraintEnd_toEndOf="parent" />
 
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"/>
 
         <Spinner
             android:id="@+id/status"
@@ -31,6 +38,17 @@
             android:layout_weight="1" />
     </LinearLayout>
 
+    <TextView
+        android:id="@+id/emptyData"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/daynight_textColor"
+        android:text="you have 0 notifications"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/ltTopBar" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv_notifications"
