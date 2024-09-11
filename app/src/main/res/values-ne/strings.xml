@@ -1144,5 +1144,29 @@
     <string name="chat_enter_message">सन्देश प्रविष्ट गर्नुहोस्</string>
     <string name="hour">घण्टा</string>
     <string name="hours">घण्टा</string>
+    <string name="material_calendar_monday">सो</string>
+    <string name="material_calendar_tuesday">मं</string>
+    <string name="material_calendar_wednesday">बु</string>
+    <string name="material_calendar_thursday">बि</string>
+    <string name="material_calendar_friday">शु</string>
+    <string name="material_calendar_saturday">श</string>
+    <string name="material_calendar_sunday">आ</string>
+    <array name="material_calendar_months_array">
+        <item>जनवरी</item>
+        <item>फेब्रुअरी</item>
+        <item>मार्च</item>
+        <item>अप्रिल</item>
+        <item>मई</item>
+        <item>जुन</item>
+        <item>जुलाई</item>
+        <item>अगस्ट</item>
+        <item>सेप्टेम्बर</item>
+        <item>अक्टोबर</item>
+        <item>नोभेम्बर</item>
+        <item>डिसेम्बर</item>
+    </array>
+    <string name="material_calendar_today_button">आज</string>
+    <string name="material_calendar_positive_button">ठीक छ</string>
+    <string name="material_calendar_negative_button">रद्द गर्नुहोस्</string>
 
 </resources>
