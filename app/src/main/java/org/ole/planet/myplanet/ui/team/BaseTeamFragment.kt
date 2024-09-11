@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.os.Build
 import android.os.Bundle
-import android.widget.Toast
 import androidx.annotation.RequiresApi
 import org.ole.planet.myplanet.base.BaseNewsFragment
 import org.ole.planet.myplanet.datamanager.DatabaseService
