@@ -305,6 +305,7 @@
             android:layout_height="35dp"
             android:layout_marginStart="10dp"
             android:background="?attr/selectableItemBackground"
-            app:srcCompat="@drawable/ic_delete" />
+            app:srcCompat="@drawable/ic_delete"
+            app:tint="@color/daynight_textColor" />
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
