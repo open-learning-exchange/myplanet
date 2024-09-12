@@ -1,26 +1,43 @@
 package org.ole.planet.myplanet.ui.dashboard
 
-import android.text.SpannableString
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.databinding.RowNotificationsBinding
-import org.ole.planet.myplanet.ui.dashboard.AdapterNotifications.ViewHolderNotifications
 
-class AdapterNotifications(private val notificationList: List<SpannableString>) : RecyclerView.Adapter<ViewHolderNotifications>() {
-    private lateinit var rowNotificationsBinding: RowNotificationsBinding
+class AdapterNotifications(var notificationList: List<RealmNotification>, private val onMarkAsReadClick: (Int) -> Unit) : RecyclerView.Adapter<AdapterNotifications.ViewHolderNotifications>() {
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderNotifications {
-        rowNotificationsBinding = RowNotificationsBinding.inflate(LayoutInflater.from(context), parent, false)
+        val rowNotificationsBinding = RowNotificationsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ViewHolderNotifications(rowNotificationsBinding)
     }
+
     override fun onBindViewHolder(holder: ViewHolderNotifications, position: Int) {
-        rowNotificationsBinding.title.text = notificationList[position]
+        val notification = notificationList[position]
+        holder.bind(notification, position)
     }
 
-    override fun getItemCount(): Int {
-        return notificationList.size
+    override fun getItemCount(): Int = notificationList.size
+
+    fun updateNotifications(newNotifications: List<RealmNotification>) {
+        notificationList = newNotifications
+        notifyDataSetChanged()
     }
 
-    class ViewHolderNotifications(rowNotificationsBinding: RowNotificationsBinding) : RecyclerView.ViewHolder(rowNotificationsBinding.root)
+    inner class ViewHolderNotifications(private val rowNotificationsBinding: RowNotificationsBinding) : RecyclerView.ViewHolder(rowNotificationsBinding.root) {
+        fun bind(notification: RealmNotification, position: Int) {
+            rowNotificationsBinding.title.text = notification.message
+            if (notification.isRead) {
+                rowNotificationsBinding.btnMarkAsRead.visibility = View.GONE
+                rowNotificationsBinding.root.alpha = 0.5f
+            } else {
+                rowNotificationsBinding.btnMarkAsRead.visibility = View.VISIBLE
+                rowNotificationsBinding.root.alpha = 1.0f
+                rowNotificationsBinding.btnMarkAsRead.setOnClickListener {
+                    onMarkAsReadClick(position)
+                }
+            }
+        }
+    }
 }
