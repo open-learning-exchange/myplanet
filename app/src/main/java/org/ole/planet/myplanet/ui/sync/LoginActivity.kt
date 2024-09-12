@@ -28,7 +28,6 @@ import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryForma
 import org.ole.planet.myplanet.utilities.Utilities.getUrl
 import org.ole.planet.myplanet.utilities.Utilities.toast
 import java.text.Normalizer
-import java.util.Locale
 import java.util.regex.Pattern
 
 class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
@@ -38,7 +37,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     private var mAdapter: TeamListAdapter? = null
     private var backPressedTime: Long = 0
     private val backPressedInterval: Long = 2000
-    private var fallbackLanguage: String = "en"
     private var teamList = java.util.ArrayList<String?>()
     private var teamAdapter: ArrayAdapter<String?>? = null
 
@@ -360,7 +358,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             mAdapter?.updateList(prefData.getSavedUsers().toMutableList())
         }
 
-        activityLoginBinding.recyclerView.isNestedScrollingEnabled = true
+        activityLoginBinding.recyclerView.setNestedScrollingEnabled(false)
         activityLoginBinding.recyclerView.setHasFixedSize(true)
     }
 

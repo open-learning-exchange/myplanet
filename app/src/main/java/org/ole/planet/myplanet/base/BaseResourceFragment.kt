@@ -104,7 +104,8 @@ abstract class BaseResourceFragment : Fragment() {
                             return
                         }
                         val inflater = activity?.layoutInflater
-                        convertView = inflater?.inflate(R.layout.my_library_alertdialog, null)
+                        val rootView = requireActivity().findViewById<ViewGroup>(android.R.id.content)
+                        convertView = inflater?.inflate(R.layout.my_library_alertdialog, rootView, false)
                         val alertDialogBuilder = AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
                         alertDialogBuilder.setView(convertView).setTitle(R.string.download_suggestion)
                         alertDialogBuilder.setPositiveButton(R.string.download_selected) { _: DialogInterface?, _: Int ->
@@ -151,7 +152,7 @@ abstract class BaseResourceFragment : Fragment() {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
                 var convertedView = convertView
                 if (convertedView == null) {
-                    convertedView = LayoutInflater.from(activity).inflate(android.R.layout.simple_list_item_1, null)
+                    convertedView = LayoutInflater.from(activity).inflate(android.R.layout.simple_list_item_1, parent, false)
                 }
                 if (exams.containsKey((getItem(position) as RealmSubmission?)?.parentId)) {
                     (convertedView as TextView?)?.text = exams[list[position].parentId]?.name
