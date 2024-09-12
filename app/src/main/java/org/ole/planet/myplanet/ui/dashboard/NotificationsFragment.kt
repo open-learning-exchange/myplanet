@@ -109,14 +109,6 @@ class NotificationsFragment : Fragment() {
         return query.sort("createdAt", Sort.DESCENDING).findAll().toList()
     }
 
-    private fun loadNotifications(userId: String): List<RealmNotification> {
-        return mRealm.where(RealmNotification::class.java)
-            .equalTo("userId", userId)
-            .sort("createdAt", Sort.DESCENDING)
-            .findAll()
-            .toList()
-    }
-
     private fun markAsRead(position: Int) {
         val notification = adapter.notificationList[position]
         mRealm.executeTransaction {
@@ -156,7 +148,6 @@ class NotificationsFragment : Fragment() {
         val unreadCount = getUnreadNotificationsSize()
         notificationUpdateListener?.onNotificationCountUpdated(unreadCount)
     }
-
 
     override fun onDestroy() {
         super.onDestroy()
