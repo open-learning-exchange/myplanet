@@ -38,5 +38,4 @@
     <color name="material_drawer_background">@color/colorPrimary</color>
     <color name="empty_rating">@color/md_white_1000</color>
     <color name="ic_download">#FFFFFF</color>
-
 </resources>
