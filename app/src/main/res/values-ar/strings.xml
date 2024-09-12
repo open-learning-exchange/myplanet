@@ -1144,5 +1144,29 @@
     <string name="chat_enter_message">أدخل الرسالة</string>
     <string name="hour">ساعة</string>
     <string name="hours">ساعات</string>
+    <string name="material_calendar_monday">الاثنين</string>
+    <string name="material_calendar_tuesday">الثلاثاء</string>
+    <string name="material_calendar_wednesday">الأربعاء</string>
+    <string name="material_calendar_thursday">الخميس</string>
+    <string name="material_calendar_friday">الجمعة</string>
+    <string name="material_calendar_saturday">السبت</string>
+    <string name="material_calendar_sunday">الأحد</string>
+    <array name="material_calendar_months_array">
+        <item>يناير</item>
+        <item>فبراير</item>
+        <item>مارس</item>
+        <item>أبريل</item>
+        <item>مايو</item>
+        <item>يونيو</item>
+        <item>يوليو</item>
+        <item>أغسطس</item>
+        <item>سبتمبر</item>
+        <item>أكتوبر</item>
+        <item>نوفمبر</item>
+        <item>ديسمبر</item>
+    </array>
+    <string name="material_calendar_today_button">اليوم</string>
+    <string name="material_calendar_positive_button">موافق</string>
+    <string name="material_calendar_negative_button">إلغاء</string>
 
 </resources>

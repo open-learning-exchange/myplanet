@@ -1144,5 +1144,29 @@
     <string name="chat_enter_message">Geli fariin</string>
     <string name="hour">saac</string>
     <string name="hours">saacadood</string>
+    <string name="material_calendar_monday">I</string>
+    <string name="material_calendar_tuesday">T</string>
+    <string name="material_calendar_wednesday">Ar</string>
+    <string name="material_calendar_thursday">K</string>
+    <string name="material_calendar_friday">J</string>
+    <string name="material_calendar_saturday">S</string>
+    <string name="material_calendar_sunday">Ax</string>
+    <array name="material_calendar_months_array">
+        <item>Janaayo</item>
+        <item>Febraayo</item>
+        <item>Maarso</item>
+        <item>Abriil</item>
+        <item>May</item>
+        <item>Juun</item>
+        <item>Luulyo</item>
+        <item>Agoosto</item>
+        <item>Sebtember</item>
+        <item>Oktoobar</item>
+        <item>Noofembar</item>
+        <item>Disembar</item>
+    </array>
+    <string name="material_calendar_today_button">Maanta</string>
+    <string name="material_calendar_positive_button">Haa</string>
+    <string name="material_calendar_negative_button">Maya</string>
 
 </resources>

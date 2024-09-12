@@ -1144,5 +1144,29 @@
     <string name="chat_enter_message">Entrez le message</string>
     <string name="hour">heure</string>
     <string name="hours">heures</string>
+    <string name="material_calendar_monday">L</string>
+    <string name="material_calendar_tuesday">M</string>
+    <string name="material_calendar_wednesday">M</string>
+    <string name="material_calendar_thursday">J</string>
+    <string name="material_calendar_friday">V</string>
+    <string name="material_calendar_saturday">S</string>
+    <string name="material_calendar_sunday">D</string>
+    <array name="material_calendar_months_array">
+        <item>Janvier</item>
+        <item>Février</item>
+        <item>Mars</item>
+        <item>Avril</item>
+        <item>Mai</item>
+        <item>Juin</item>
+        <item>Juillet</item>
+        <item>Août</item>
+        <item>Septembre</item>
+        <item>Octobre</item>
+        <item>Novembre</item>
+        <item>Décembre</item>
+    </array>
+    <string name="material_calendar_today_button">Aujourd\'hui</string>
+    <string name="material_calendar_positive_button">Oui</string>
+    <string name="material_calendar_negative_button">Non</string>
 
 </resources>
