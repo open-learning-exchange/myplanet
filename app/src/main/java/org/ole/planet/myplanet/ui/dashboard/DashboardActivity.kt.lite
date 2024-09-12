@@ -14,10 +14,12 @@ import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
+import androidx.core.view.MenuItemCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.drawerlayout.widget.DrawerLayout
@@ -33,20 +35,28 @@ import com.mikepenz.materialdrawer.holder.DimenHolder
 import com.mikepenz.materialdrawer.model.PrimaryDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.Nameable
+import io.realm.Case
+import io.realm.Realm
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 //import org.ole.planet.myplanet.base.BaseContainerFragment
+import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getLibraryList
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.ActivityDashboardBinding
 import org.ole.planet.myplanet.databinding.CustomTabBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmStepExam
+import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.chat.ChatHistoryListFragment
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
+import org.ole.planet.myplanet.ui.dashboard.notification.NotificationFragment
+import org.ole.planet.myplanet.ui.dashboard.notification.NotificationListener
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
 import org.ole.planet.myplanet.ui.resources.ResourceDetailFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
@@ -59,12 +69,16 @@ import org.ole.planet.myplanet.utilities.BottomNavigationViewHelper.disableShift
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
+import org.ole.planet.myplanet.utilities.FileUtils.totalAvailableMemoryRatio
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.LocaleHelper
+import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.Utilities.toast
+import java.util.Date
+import java.util.UUID
 
-class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, NavigationBarView.OnItemSelectedListener {
+class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, NavigationBarView.OnItemSelectedListener, NotificationListener {
     private lateinit var activityDashboardBinding: ActivityDashboardBinding
     private var headerResult: AccountHeader? = null
     var user: RealmUserModel? = null
@@ -185,6 +199,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         menue = tl?.getTabAt(4)
         menuco = tl?.getTabAt(5)
         hideWifi()
+        checkAndCreateNewNotifications()
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -210,6 +225,114 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 //                }
             }
         })
+    }
+
+    private fun checkAndCreateNewNotifications() {
+        val resourceCount = getLibraryList(mRealm, user?.id).size
+        mRealm.executeTransaction { realm ->
+            if (resourceCount > 0) {
+                createNotificationIfNotExists(realm, "resource", "you have $resourceCount resources not downloaded", "$resourceCount")
+            }
+
+            val pendingSurveys = getPendingSurveys(user?.id, realm)
+            val surveyTitles = getSurveyTitlesFromSubmissions(pendingSurveys, realm)
+            surveyTitles.forEach { title ->
+                createNotificationIfNotExists(realm, "survey", "You have a pending survey: $title", title)
+            }
+
+            val tasks = realm.where(RealmTeamTask::class.java)
+                .notEqualTo("status", "archived")
+                .equalTo("completed", false)
+                .equalTo("assignee", user?.id)
+                .findAll()
+            tasks.forEach { task ->
+                createNotificationIfNotExists(realm, "task", "${task.title} is due in ${formatDate(task.deadline)}", task.id)
+            }
+
+            val storageRatio = totalAvailableMemoryRatio
+            when {
+                storageRatio <= 10 -> {
+                    createNotificationIfNotExists(realm, "storage", "${getString(R.string.storage_critically_low)} $storageRatio% ${getString(R.string.available_please_free_up_space)}", "storage")
+                }
+                storageRatio <= 40 -> {
+                    createNotificationIfNotExists(realm, "storage", "${getString(R.string.storage_running_low)} $storageRatio% ${getString(R.string.available)}", "storage")
+                }
+            }
+        }
+
+        updateNotificationBadge(getUnreadNotificationsSize()) {
+            openNotificationsList(user?.id ?: "")
+        }
+    }
+
+    private fun openNotificationsList(userId: String) {
+        val fragment = NotificationFragment().apply {
+            arguments = Bundle().apply {
+                putString("userId", userId)
+            }
+            setNotificationUpdateListener(this@DashboardActivity)
+        }
+        openCallFragment(fragment)
+    }
+
+    override fun onNotificationCountUpdated(unreadCount: Int) {
+        updateNotificationBadge(unreadCount) {
+            openNotificationsList(user?.id ?: "")
+        }
+    }
+
+    private fun createNotificationIfNotExists(realm: Realm, type: String, message: String, relatedId: String?) {
+        val existingNotification = realm.where(RealmNotification::class.java)
+            .equalTo("userId", user?.id)
+            .equalTo("type", type)
+            .equalTo("relatedId", relatedId)
+            .findFirst()
+
+        if (existingNotification == null) {
+            realm.createObject(RealmNotification::class.java, UUID.randomUUID().toString()).apply {
+                this.userId = user?.id ?: ""
+                this.type = type
+                this.message = message
+                this.relatedId = relatedId
+                this.createdAt = Date()
+            }
+        }
+    }
+
+    private fun getPendingSurveys(userId: String?, realm: Realm): List<RealmSubmission> {
+        return realm.where(RealmSubmission::class.java)
+            .equalTo("userId", userId)
+            .equalTo("type", "survey")
+            .equalTo("status", "pending", Case.INSENSITIVE)
+            .findAll()
+    }
+
+    private fun getSurveyTitlesFromSubmissions(submissions: List<RealmSubmission>, realm: Realm): List<String> {
+        val titles = mutableListOf<String>()
+        submissions.forEach { submission ->
+            val exam = realm.where(RealmStepExam::class.java)
+                .equalTo("id", submission.parentId)
+                .findFirst()
+            exam?.name?.let { titles.add(it) }
+        }
+        return titles
+    }
+
+    private fun updateNotificationBadge(count: Int, onClickListener: View.OnClickListener) {
+        val menuItem = activityDashboardBinding.appBarBell.bellToolbar.menu.findItem(R.id.action_notifications)
+        val actionView = MenuItemCompat.getActionView(menuItem)
+        val smsCountTxt = actionView.findViewById<TextView>(R.id.notification_badge)
+        smsCountTxt.text = count.toString()
+        smsCountTxt.visibility = if (count > 0) View.VISIBLE else View.GONE
+        actionView.setOnClickListener(onClickListener)
+    }
+
+    private fun getUnreadNotificationsSize(): Int {
+        return mRealm.where(RealmNotification::class.java)
+            .equalTo("userId", user?.id)
+            .equalTo("isRead", false)
+            .count()
+            .toInt()
     }
 
     fun refreshChatHistoryList() {

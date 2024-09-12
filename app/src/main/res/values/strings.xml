@@ -281,6 +281,12 @@
         <item>Learner</item>
     </string-array>
 
+    <string-array name="status_options">
+        <item>all</item>
+        <item>read</item>
+        <item>unread</item>
+    </string-array>
+
     <string name="dictionaries">Dictionaries</string>
     <string name="bible">Bibles</string>
     <string name="feature_not">Feature not available</string>
@@ -1065,7 +1071,7 @@
     <string name="planet_name">%s\'s Planet</string>
     <string name="no_submissions">submissions not available</string>
     <string name="no_chats">no previous chats</string>
-    <string name ="no_feedback">no feedback available</string>
+    <string name="no_feedback">no feedback available</string>
     <string name="empty_text" />
     <string name="message_placeholder">%s</string>
     <string name="reports">Reports</string>
