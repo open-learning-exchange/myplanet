@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
+
     <item
         android:id="@+id/action_chat"
         android:icon="@drawable/chat"
@@ -26,21 +27,24 @@
         android:contentDescription="@string/go_to_feedback_page"
         android:title="@string/menu_feedback"
         app:showAsAction="always" />
-
+    <item
+        android:id="@+id/action_notifications"
+        android:icon="@drawable/ic_notifications"
+        android:title="Notification"
+        app:actionLayout="@layout/custom_notification_badge"
+        app:showAsAction="always"/>
     <item
         android:id="@+id/action_about"
         android:icon="@drawable/ic_my_survey"
         android:contentDescription="@string/action_about"
         android:title="@string/action_about"
         app:showAsAction="never" />
-
     <item
         android:id="@+id/action_disclaimer"
         android:icon="@drawable/ic_my_survey"
         android:contentDescription="@string/action_disclaimer"
         android:title="@string/action_disclaimer"
         app:showAsAction="never" />
-
     <item
         android:id="@+id/action_settings"
         android:icon="@drawable/settings"
