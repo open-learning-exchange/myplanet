@@ -52,13 +52,15 @@
             android:layout_width="28dp"
             android:layout_height="25dp"
             android:layout_margin="@dimen/padding_small"
-            app:srcCompat="@drawable/ic_delete" />
+            app:srcCompat="@drawable/ic_delete"
+            app:tint="@color/daynight_textColor" />
         <ImageView
             android:id="@+id/ic_more"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_margin="@dimen/padding_small"
             android:translationY="1dp"
-            app:srcCompat="@drawable/ic_more" />
+            app:srcCompat="@drawable/ic_more"
+            app:tint="@color/daynight_textColor" />
     </LinearLayout>
 </androidx.cardview.widget.CardView>
