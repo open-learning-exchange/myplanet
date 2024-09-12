@@ -227,13 +227,13 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             if (resourceCount > 0) {
                 createNotificationIfNotExists(realm, "resource", "you have $resourceCount resources not downloaded", "$resourceCount")
             }
-    
+
             val pendingSurveys = getPendingSurveys(user?.id, realm)
             val surveyTitles = getSurveyTitlesFromSubmissions(pendingSurveys, realm)
             surveyTitles.forEach { title ->
                 createNotificationIfNotExists(realm, "survey", "You have a pending survey: $title", title)
             }
-    
+
             val tasks = realm.where(RealmTeamTask::class.java)
                 .notEqualTo("status", "archived")
                 .equalTo("completed", false)
@@ -242,7 +242,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             tasks.forEach { task ->
                 createNotificationIfNotExists(realm, "task", "${task.title} is due in ${formatDate(task.deadline)}", task.id)
             }
-    
+
             val storageRatio = totalAvailableMemoryRatio
             when {
                 storageRatio <= 10 -> {
@@ -253,12 +253,12 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 }
             }
         }
-    
+
         updateNotificationBadge(getUnreadNotificationsSize()) {
             openNotificationsList(user?.id ?: "")
         }
     }
-    
+
     private fun openNotificationsList(userId: String) {
         val fragment = NotificationFragment().apply {
             arguments = Bundle().apply {
@@ -268,20 +268,20 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
         openCallFragment(fragment)
     }
-    
+
     override fun onNotificationCountUpdated(unreadCount: Int) {
         updateNotificationBadge(unreadCount) {
             openNotificationsList(user?.id ?: "")
         }
     }
-    
+
     private fun createNotificationIfNotExists(realm: Realm, type: String, message: String, relatedId: String?) {
         val existingNotification = realm.where(RealmNotification::class.java)
             .equalTo("userId", user?.id)
             .equalTo("type", type)
             .equalTo("relatedId", relatedId)
             .findFirst()
-    
+
         if (existingNotification == null) {
             realm.createObject(RealmNotification::class.java, UUID.randomUUID().toString()).apply {
                 this.userId = user?.id ?: ""
@@ -292,7 +292,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
         }
     }
-    
+
     private fun getPendingSurveys(userId: String?, realm: Realm): List<RealmSubmission> {
         return realm.where(RealmSubmission::class.java)
             .equalTo("userId", userId)
@@ -300,7 +300,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             .equalTo("status", "pending", Case.INSENSITIVE)
             .findAll()
     }
-    
+
     private fun getSurveyTitlesFromSubmissions(submissions: List<RealmSubmission>, realm: Realm): List<String> {
         val titles = mutableListOf<String>()
         submissions.forEach { submission ->
@@ -311,7 +311,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
         return titles
     }
-    
+
     private fun updateNotificationBadge(count: Int, onClickListener: View.OnClickListener) {
         val menuItem = activityDashboardBinding.appBarBell.bellToolbar.menu.findItem(R.id.action_notifications)
         val actionView = MenuItemCompat.getActionView(menuItem)
@@ -320,7 +320,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         smsCountTxt.visibility = if (count > 0) View.VISIBLE else View.GONE
         actionView.setOnClickListener(onClickListener)
     }
-    
+
     private fun getUnreadNotificationsSize(): Int {
         return mRealm.where(RealmNotification::class.java)
             .equalTo("userId", user?.id)
