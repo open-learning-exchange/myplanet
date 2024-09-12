@@ -54,6 +54,7 @@ import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.chat.ChatHistoryListFragment
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
+import org.ole.planet.myplanet.ui.dashboard.notification.NotificationListener
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
 import org.ole.planet.myplanet.ui.resources.ResourceDetailFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
@@ -75,7 +76,7 @@ import org.ole.planet.myplanet.utilities.Utilities.toast
 import java.util.Date
 import java.util.UUID
 
-class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, NavigationBarView.OnItemSelectedListener {
+class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, NavigationBarView.OnItemSelectedListener, NotificationListener {
     private lateinit var activityDashboardBinding: ActivityDashboardBinding
     private var headerResult: AccountHeader? = null
     var user: RealmUserModel? = null
@@ -252,18 +253,36 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
 
         updateNotificationBadge(getUnreadNotificationsSize()) {
-            openCallFragment(NotificationsFragment())
+            openNotificationsList(user?.id ?: "")
+        }
+    }
+
+    private fun openNotificationsList(userId: String) {
+        val fragment = NotificationsFragment().apply {
+            arguments = Bundle().apply {
+                putString("userId", userId)
+            }
+            setNotificationUpdateListener(this@DashboardActivity)
+        }
+        openCallFragment(fragment)
+    }
+
+    override fun onNotificationCountUpdated(unreadCount: Int) {
+        updateNotificationBadge(unreadCount) {
+            openNotificationsList(user?.id ?: "")
         }
     }
 
     private fun createNotificationIfNotExists(realm: Realm, type: String, message: String, relatedId: String?) {
         val existingNotification = realm.where(RealmNotification::class.java)
+            .equalTo("userId", user?.id)
             .equalTo("type", type)
             .equalTo("relatedId", relatedId)
             .findFirst()
 
         if (existingNotification == null) {
             realm.createObject(RealmNotification::class.java, UUID.randomUUID().toString()).apply {
+                this.userId = user?.id ?: ""
                 this.type = type
                 this.message = message
                 this.relatedId = relatedId
@@ -295,13 +314,14 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         val menuItem = activityDashboardBinding.appBarBell.bellToolbar.menu.findItem(R.id.action_notifications)
         val actionView = MenuItemCompat.getActionView(menuItem)
         val smsCountTxt = actionView.findViewById<TextView>(R.id.notification_badge)
-        smsCountTxt.text = "${getUnreadNotificationsSize()}"
+        smsCountTxt.text = count.toString()
         smsCountTxt.visibility = if (count > 0) View.VISIBLE else View.GONE
         actionView.setOnClickListener(onClickListener)
     }
 
     private fun getUnreadNotificationsSize(): Int {
         return mRealm.where(RealmNotification::class.java)
+            .equalTo("userId", user?.id)
             .equalTo("isRead", false)
             .count()
             .toInt()
