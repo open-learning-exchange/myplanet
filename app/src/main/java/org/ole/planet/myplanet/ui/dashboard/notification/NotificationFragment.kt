@@ -1,100 +1,134 @@
 package org.ole.planet.myplanet.ui.dashboard.notification
 
-import android.app.Dialog
 import android.os.Build
 import android.os.Bundle
-import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.FrameLayout
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import androidx.annotation.RequiresApi
+import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.google.android.material.bottomsheet.BottomSheetBehavior
-import com.google.android.material.bottomsheet.BottomSheetDialog
-import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import io.realm.Realm
+import io.realm.Sort
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getLibraryList
-import org.ole.planet.myplanet.callback.NotificationCallback
 import org.ole.planet.myplanet.databinding.FragmentNotificationBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.model.Notifications
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmTeamTask
-import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.utilities.FileUtils
+import org.ole.planet.myplanet.model.RealmNotification
 
-class NotificationFragment : BottomSheetDialogFragment() {
+class NotificationFragment : Fragment() {
     private lateinit var fragmentNotificationBinding: FragmentNotificationBinding
-    lateinit var callback: NotificationCallback
-    lateinit var resourceList: List<RealmMyLibrary>
-    lateinit var mRealm: Realm
+    private lateinit var databaseService: DatabaseService
+    private lateinit var mRealm: Realm
+    private lateinit var adapter: AdapterNotification
+    private lateinit var userId: String
+    private var notificationUpdateListener: NotificationListener? = null
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        callback = object : NotificationCallback {
-            override fun showPendingSurveyDialog() {}
-            override fun showTaskListDialog() {}
-            override fun showUserResourceDialog() {}
-            override fun showResourceDownloadDialog() {}
-            override fun syncKeyId() {}
-            override fun forceDownloadNewsImages() {}
-            override fun downloadDictionary() {}
-        }
-        mRealm = DatabaseService(requireActivity()).realmInstance
-        resourceList = emptyList()
-        fragmentNotificationBinding = FragmentNotificationBinding.inflate(inflater, container, false)
-        return fragmentNotificationBinding.root
-    }
-
-    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        val bottomSheetDialog = super.onCreateDialog(savedInstanceState) as BottomSheetDialog
-        bottomSheetDialog.setOnShowListener { d ->
-            val dialog = d as BottomSheetDialog
-            val bottomSheet = dialog.findViewById<FrameLayout>(com.google.android.material.R.id.design_bottom_sheet)
-            bottomSheet?.let {
-                val behavior = BottomSheetBehavior.from(it)
-                behavior.state = BottomSheetBehavior.STATE_EXPANDED
-                behavior.skipCollapsed = true
-                behavior.isHideable = true
-            }
-        }
-        return bottomSheetDialog
+    fun setNotificationUpdateListener(listener: NotificationListener) {
+        this.notificationUpdateListener = listener
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        val model = UserProfileDbHandler(requireContext()).userModel!!
-        val surveyList = mRealm.where(RealmSubmission::class.java).equalTo("userId", model.id).equalTo("status", "pending").equalTo("type", "survey").findAll()
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+        fragmentNotificationBinding = FragmentNotificationBinding.inflate(inflater, container, false)
+        databaseService = DatabaseService(requireActivity())
+        mRealm = databaseService.realmInstance
+        userId = arguments?.getString("userId") ?: ""
 
-        val tasks = mRealm.where(RealmTeamTask::class.java).notEqualTo("status", "archived").equalTo("completed", false).equalTo("assignee", model.id).findAll()
+        val notifications = loadNotifications(userId, "all")
 
-        val notificationList: MutableList<Notifications> = ArrayList()
+        val spinnerAdapter = ArrayAdapter.createFromResource(requireContext(), R.array.status_options, android.R.layout.simple_spinner_item)
+        spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        fragmentNotificationBinding.status?.adapter = spinnerAdapter
+        fragmentNotificationBinding.status?.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
+                val selectedOption = parent.getItemAtPosition(position).toString().lowercase()
+                val filteredNotifications = loadNotifications(userId, selectedOption)
+                adapter.updateNotifications(filteredNotifications)
 
-        val resourceCount = getLibraryList(mRealm, model.id).size
-        notificationList.add(Notifications(R.drawable.mylibrary, "$resourceCount ${getString(R.string.resource_not_downloaded)}. ${getString(R.string.bulk_resource_download)}"))
-        notificationList.add(Notifications(R.drawable.survey, "${surveyList.size} ${getString(R.string.pending_survey)} / ${tasks.size} ${getString(R.string.tasks_due)}"))
+                if (filteredNotifications.isEmpty()) {
+                    fragmentNotificationBinding.emptyData?.visibility = View.VISIBLE
+                } else {
+                    fragmentNotificationBinding.emptyData?.visibility = View.GONE
+                }
+            }
 
-        val storageRatio = FileUtils.totalAvailableMemoryRatio
-        val storageNotiText: String = if (storageRatio <= 10) {
-            "${getString(R.string.storage_critically_low)} $storageRatio% ${getString(R.string.available_please_free_up_space)}"
-        } else if (storageRatio <= 40) {
-            "${getString(R.string.storage_running_low)} $storageRatio% ${getString(R.string.available)}"
-        } else {
-            "${getString(R.string.storage_available)} $storageRatio%."
+            override fun onNothingSelected(parent: AdapterView<*>) {}
         }
-        notificationList.add(Notifications(R.drawable.baseline_storage_24, storageNotiText))
 
-        if (!TextUtils.isEmpty(model.key) && model.getRoleAsString().contains("health") && !model.id?.startsWith("guest")!!) {
-            notificationList.add(Notifications(R.drawable.ic_myhealth, getString(R.string.health_record_not_available_click_to_sync)))
+        if (notifications.isEmpty()) {
+            fragmentNotificationBinding.emptyData?.visibility = View.VISIBLE
         }
 
-        fragmentNotificationBinding.rvNotifications.layoutManager = LinearLayoutManager(requireActivity())
-        fragmentNotificationBinding.rvNotifications.adapter = AdapterNotification(requireActivity(), notificationList, callback)
-        fragmentNotificationBinding.icBack.setOnClickListener {
-            dismiss()
+        adapter = AdapterNotification(notifications) { position ->
+            markAsRead(position)
         }
+        fragmentNotificationBinding.rvNotifications.adapter = adapter
+        fragmentNotificationBinding.rvNotifications.layoutManager = LinearLayoutManager(requireContext())
+
+        fragmentNotificationBinding.btnMarkAllAsRead?.setOnClickListener {
+            markAllAsRead()
+        }
+
+        return fragmentNotificationBinding.root
+    }
+
+    private fun loadNotifications(userId: String, filter: String): List<RealmNotification> {
+        val query = mRealm.where(RealmNotification::class.java)
+            .equalTo("userId", userId)
+
+        when (filter) {
+            "read" -> query.equalTo("isRead", true)
+            "unread" -> query.equalTo("isRead", false)
+            "all" -> {}
+        }
+
+        return query.sort("createdAt", Sort.DESCENDING).findAll().toList()
+    }
+
+    private fun markAsRead(position: Int) {
+        val notification = adapter.notificationList[position]
+        mRealm.executeTransaction {
+            notification.isRead = true
+        }
+        adapter.notifyItemChanged(position)
+        updateUnreadCount()
+    }
+
+    private fun markAllAsRead() {
+        mRealm.executeTransaction { realm ->
+            realm.where(RealmNotification::class.java)
+                .equalTo("userId", userId)
+                .equalTo("isRead", false)
+                .findAll()
+                .forEach { it.isRead = true }
+        }
+        adapter.updateNotifications(loadNotifications(userId, fragmentNotificationBinding.status?.selectedItem.toString().lowercase()))
+        updateMarkAllAsReadButtonVisibility()
+        updateUnreadCount()
+    }
+
+    private fun updateMarkAllAsReadButtonVisibility() {
+        val unreadCount = getUnreadNotificationsSize()
+        fragmentNotificationBinding.btnMarkAllAsRead?.visibility = if (unreadCount > 0) View.VISIBLE else View.GONE
+    }
+
+    private fun getUnreadNotificationsSize(): Int {
+        return mRealm.where(RealmNotification::class.java)
+            .equalTo("userId", userId)
+            .equalTo("isRead", false)
+            .count()
+            .toInt()
+    }
+
+    private fun updateUnreadCount() {
+        val unreadCount = getUnreadNotificationsSize()
+        notificationUpdateListener?.onNotificationCountUpdated(unreadCount)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        mRealm.close()
     }
 }

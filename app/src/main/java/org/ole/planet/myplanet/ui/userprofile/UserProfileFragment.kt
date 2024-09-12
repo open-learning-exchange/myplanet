@@ -253,6 +253,11 @@ class UserProfileFragment : Fragment() {
             dialog.show()
         }
 
+        if (model?.id?.startsWith("guest") == true) {
+            fragmentUserProfileBinding.btEditProfile.visibility = View.GONE
+            fragmentUserProfileBinding.btProfilePic.visibility = View.GONE
+        }
+
         val map = linkedMapOf(
             "Community Name" to Utilities.checkNA(model?.planetCode!!),
             "Last Login : " to handler.lastVisit?.let { Utilities.getRelativeTime(it) },

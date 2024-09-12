@@ -106,6 +106,7 @@
     <string name="filter_collections">Filtrar colecciones</string>
     <string name="select_many_collections">Seleccionar varias colecciones</string>
     <string name="collections">Colecciones</string>
+    <string name="filter_by_category">Filtrar por categoría</string>
     <string name="ok">De acuerdo</string>
     <string name="inactive_message">El usuario no está activado. Por favor, ponte en contacto con el administrador o el responsable para activar tu cuenta.</string>
     <string name="archive_mycourse">Archivar miCurso</string>
@@ -278,6 +279,12 @@
         <item>Predeterminado</item>
         <item>Líder</item>
         <item>Estudiante</item>
+    </string-array>
+
+    <string-array name="status_options">
+        <item>todo</item>
+        <item>leído</item>
+        <item>no leído</item>
     </string-array>
 
     <string name="dictionaries">Diccionarios</string>
@@ -1124,9 +1131,48 @@
     <string name="beta_resources_auto_download">Descarga automática de recursos beta</string>
     <string name="course_steps">Pasos del curso</string>
     <string name="to_access_this_feature_become_a_member">actualmente eres un usuario invitado. para acceder a esta función, hazte miembro.</string>
+    <string name="sales">Ventas</string>
+    <string name="beginning_balance">Saldo inicial</string>
+    <string name="other">Otro</string>
+    <string name="total_income">Ingresos Totales</string>
+    <string name="personnel">Personal</string>
+    <string name="non_personnel">No Personal</string>
+    <string name="total_expenses">Gastos Totales</string>
+    <string name="profit_loss">Ganancia/Pérdida</string>
+    <string name="ending_balance">Saldo Final</string>
+    <string name="reports_summary">Resumen de Informes</string>
+    <string name="summary">Resumen</string>
+    <string name="other_income">Otros ingresos</string>
+    <string name="add_reports">Agregar informes</string>
+    <string name="export_csv">Exportar CSV</string>
+    <string name="add_report">Agregar informe</string>
     <string name="new_chat">Nuevo chat</string>
     <string name="chat_enter_message">Introducir mensaje</string>
     <string name="hour">hora</string>
     <string name="hours">horas</string>
+    <string name="material_calendar_monday">L</string>
+    <string name="material_calendar_tuesday">M</string>
+    <string name="material_calendar_wednesday">X</string>
+    <string name="material_calendar_thursday">J</string>
+    <string name="material_calendar_friday">V</string>
+    <string name="material_calendar_saturday">S</string>
+    <string name="material_calendar_sunday">D</string>
+    <array name="material_calendar_months_array">
+        <item>Enero</item>
+        <item>Febrero</item>
+        <item>Marzo</item>
+        <item>Abril</item>
+        <item>Mayo</item>
+        <item>Junio</item>
+        <item>Julio</item>
+        <item>Agosto</item>
+        <item>Septiembre</item>
+        <item>Octubre</item>
+        <item>Noviembre</item>
+        <item>Diciembre</item>
+    </array>
+    <string name="material_calendar_today_button">Hoy</string>
+    <string name="material_calendar_positive_button">Aceptar</string>
+    <string name="material_calendar_negative_button">Cancelar</string>
 
 </resources>

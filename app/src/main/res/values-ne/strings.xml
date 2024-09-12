@@ -106,6 +106,7 @@
     <string name="filter_collections">संग्रहहरू छान्नुहोस्</string>
     <string name="select_many_collections">धेरै संग्रहहरू छान्नुहोस्</string>
     <string name="collections">संग्रहहरू</string>
+    <string name="filter_by_category">श्रेणीद्वारा छान्नुहोस्</string>
     <string name="ok">ठिक छ</string>
     <string name="inactive_message">प्रयोगकर्ता सक्रिय गरिएको छैन, कृपया प्रशासक वा प्रबन्धकलाई सम्पर्क गर्नुहोस् तपाईंको खाता सक्रिय गर्नको लागि।</string>
     <string name="archive_mycourse">मेरो पाठ्यक्रम आर्काइभ गर्नुहोस्</string>
@@ -278,6 +279,12 @@
         <item>पूर्वनिर्धारित</item>
         <item>नेतृत्व गर्ने व्यक्ति</item>
         <item>शिक्षार्थी</item>
+    </string-array>
+
+    <string-array name="status_options">
+        <item>सबै</item>
+        <item>पढिएको</item>
+        <item>नपढिएको</item>
     </string-array>
 
     <string name="dictionaries">शब्दकोशहरू</string>
@@ -1124,9 +1131,48 @@
     <string name="beta_resources_auto_download">बीटा स्रोतहरू स्वत: डाउनलोड</string>
     <string name="course_steps">पाठ्यक्रम चरणहरू</string>
     <string name="to_access_this_feature_become_a_member">तपाईं हाल अतिथि प्रयोगकर्ता हुनुहुन्छ। यो सुविधा प्रयोग गर्न, सदस्य बन्नुहोस्।</string>
+    <string name="sales">बिक्री</string>
+    <string name="beginning_balance">प्रारम्भिक मौज्दात</string>
+    <string name="other">अन्य</string>
+    <string name="total_income">कुल आय</string>
+    <string name="personnel">कर्मचारी</string>
+    <string name="non_personnel">गैर-कर्मचारी</string>
+    <string name="total_expenses">कुल खर्च</string>
+    <string name="profit_loss">नाफा/घाटा</string>
+    <string name="ending_balance">अन्तिम मौज्दात</string>
+    <string name="reports_summary">प्रतिवेदनहरूको सारांश</string>
+    <string name="summary">सारांश</string>
+    <string name="other_income">अन्य आय</string>
+    <string name="add_reports">रिपोर्टहरू थप्नुहोस्</string>
+    <string name="export_csv">CSV निर्यात गर्नुहोस्</string>
+    <string name="add_report">रिपोर्ट थप्नुहोस्</string>
     <string name="new_chat">नयाँ च्याट</string>
     <string name="chat_enter_message">सन्देश प्रविष्ट गर्नुहोस्</string>
     <string name="hour">घण्टा</string>
     <string name="hours">घण्टा</string>
+    <string name="material_calendar_monday">सो</string>
+    <string name="material_calendar_tuesday">मं</string>
+    <string name="material_calendar_wednesday">बु</string>
+    <string name="material_calendar_thursday">बि</string>
+    <string name="material_calendar_friday">शु</string>
+    <string name="material_calendar_saturday">श</string>
+    <string name="material_calendar_sunday">आ</string>
+    <array name="material_calendar_months_array">
+        <item>जनवरी</item>
+        <item>फेब्रुअरी</item>
+        <item>मार्च</item>
+        <item>अप्रिल</item>
+        <item>मई</item>
+        <item>जुन</item>
+        <item>जुलाई</item>
+        <item>अगस्ट</item>
+        <item>सेप्टेम्बर</item>
+        <item>अक्टोबर</item>
+        <item>नोभेम्बर</item>
+        <item>डिसेम्बर</item>
+    </array>
+    <string name="material_calendar_today_button">आज</string>
+    <string name="material_calendar_positive_button">ठीक छ</string>
+    <string name="material_calendar_negative_button">रद्द गर्नुहोस्</string>
 
 </resources>
