@@ -39,7 +39,6 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.TransactionSyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_LOGIN
-import org.ole.planet.myplanet.ui.dashboard.notification.NotificationFragment
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
 import org.ole.planet.myplanet.ui.myhealth.UserListArrayAdapter
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
@@ -334,9 +333,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         initializeFlexBoxView(view, R.id.flexboxLayoutTeams, RealmMyTeam::class.java)
         initializeFlexBoxView(view, R.id.flexboxLayoutMeetups, RealmMeetup::class.java)
         initializeFlexBoxView(view, R.id.flexboxLayoutMyLife, RealmMyLife::class.java)
-        if(!settings?.getBoolean(Constants.KEY_NOTIFICATION_SHOWN, false)!!) {
-            showNotificationFragment()
-        }
 
         if (mRealm.isInTransaction) {
             mRealm.commitTransaction()
@@ -358,14 +354,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         val flexboxLayout: FlexboxLayout = view?.findViewById(R.id.flexboxLayoutTeams) ?: return
         flexboxLayout.removeAllViews()
         setUpMyList(RealmMyTeam::class.java, flexboxLayout, requireView())
-    }
-
-    fun showNotificationFragment() {
-        val fragment = NotificationFragment()
-        fragment.callback = this
-        fragment.resourceList = getLibraryList(mRealm)
-        fragment.show(childFragmentManager, "")
-        editor?.putBoolean(Constants.KEY_NOTIFICATION_SHOWN, true)?.commit()
     }
 
     override fun showResourceDownloadDialog() {

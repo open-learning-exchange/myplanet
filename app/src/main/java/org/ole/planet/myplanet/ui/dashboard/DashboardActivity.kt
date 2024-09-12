@@ -45,6 +45,7 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.ActivityDashboardBinding
 import org.ole.planet.myplanet.databinding.CustomTabBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTeamTask
@@ -54,6 +55,7 @@ import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.chat.ChatHistoryListFragment
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
+import org.ole.planet.myplanet.ui.dashboard.notification.NotificationFragment
 import org.ole.planet.myplanet.ui.dashboard.notification.NotificationListener
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
 import org.ole.planet.myplanet.ui.resources.ResourceDetailFragment
@@ -258,7 +260,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun openNotificationsList(userId: String) {
-        val fragment = NotificationsFragment().apply {
+        val fragment = NotificationFragment().apply {
             arguments = Bundle().apply {
                 putString("userId", userId)
             }

@@ -1,41 +1,45 @@
 package org.ole.planet.myplanet.ui.dashboard.notification
 
-import android.content.Context
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import org.ole.planet.myplanet.callback.NotificationCallback
-import org.ole.planet.myplanet.databinding.RowNotificationBinding
-import org.ole.planet.myplanet.model.Notifications
+import org.ole.planet.myplanet.databinding.RowNotificationsBinding
+import org.ole.planet.myplanet.model.RealmNotification
 
-class AdapterNotification(var context: Context, var list: List<Notifications>, var callback: NotificationCallback) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-    private lateinit var rowNotificationBinding: RowNotificationBinding
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
-        rowNotificationBinding = RowNotificationBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return ViewHolderNotification(rowNotificationBinding)
+
+class AdapterNotification(var notificationList: List<RealmNotification>, private val onMarkAsReadClick: (Int) -> Unit) : RecyclerView.Adapter<AdapterNotification.ViewHolderNotifications>() {
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderNotifications {
+        val rowNotificationsBinding = RowNotificationsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        return ViewHolderNotifications(rowNotificationsBinding)
     }
 
-    override fun getItemCount(): Int {
-        return list.size
+    override fun onBindViewHolder(holder: ViewHolderNotifications, position: Int) {
+        val notification = notificationList[position]
+        holder.bind(notification, position)
     }
 
-    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        if (holder is ViewHolderNotification) {
-            rowNotificationBinding.title.text = list[position].text
-            rowNotificationBinding.icon.setImageResource(list[position].icon)
-            holder.itemView.setOnClickListener {
-                when (position) {
-                    0 -> callback.showResourceDownloadDialog()
-                    1 -> callback.showUserResourceDialog()
-                    2 -> callback.showPendingSurveyDialog()
-                    3 -> callback.forceDownloadNewsImages()
-                    4 -> callback.downloadDictionary()
-                    5 -> callback.showTaskListDialog()
-                    7 -> callback.syncKeyId()
+    override fun getItemCount(): Int = notificationList.size
+
+    fun updateNotifications(newNotifications: List<RealmNotification>) {
+        notificationList = newNotifications
+        notifyDataSetChanged()
+    }
+
+    inner class ViewHolderNotifications(private val rowNotificationsBinding: RowNotificationsBinding) : RecyclerView.ViewHolder(rowNotificationsBinding.root) {
+        fun bind(notification: RealmNotification, position: Int) {
+            rowNotificationsBinding.title.text = notification.message
+            if (notification.isRead) {
+                rowNotificationsBinding.btnMarkAsRead.visibility = View.GONE
+                rowNotificationsBinding.root.alpha = 0.5f
+            } else {
+                rowNotificationsBinding.btnMarkAsRead.visibility = View.VISIBLE
+                rowNotificationsBinding.root.alpha = 1.0f
+                rowNotificationsBinding.btnMarkAsRead.setOnClickListener {
+                    onMarkAsReadClick(position)
                 }
             }
         }
     }
-
-    class ViewHolderNotification(rowNotificationBinding: RowNotificationBinding) : RecyclerView.ViewHolder(rowNotificationBinding.root)
 }
