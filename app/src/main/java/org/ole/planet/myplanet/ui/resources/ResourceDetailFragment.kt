@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.resources
 
+import android.content.DialogInterface
 import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
@@ -22,6 +23,7 @@ import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onAdd
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onRemove
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.utilities.DialogUtils.getAlertDialog
 import org.ole.planet.myplanet.utilities.FileUtils.getFileExtension
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -126,18 +128,24 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             openResource(library)
         }
         val isAdd = !library.userId?.contains(profileDbHandler.userModel?.id)!!
-        fragmentLibraryDetailBinding.btnRemove.setImageResource(
-            if (isAdd) {
-                R.drawable.ic_add_library
-            } else {
-                R.drawable.close_x
-            })
-        fragmentLibraryDetailBinding.btnRemove.contentDescription =
-            if (isAdd) {
-                getString(R.string.add_to_mylib)
-            } else {
-                getString(R.string.btn_remove_lib)
-            }
+        if (userModel?.isGuest() != true) {
+            fragmentLibraryDetailBinding.btnRemove.setImageResource(
+                if (isAdd) {
+                    R.drawable.ic_add_library
+                } else {
+                    R.drawable.close_x
+                }
+            )
+            fragmentLibraryDetailBinding.btnRemove.contentDescription =
+                if (isAdd) {
+                    getString(R.string.add_to_mylib)
+                } else {
+                    getString(R.string.btn_remove_lib)
+                }
+        }
+        else {
+            fragmentLibraryDetailBinding.btnRemove.visibility = View.GONE
+        }
         fragmentLibraryDetailBinding.btnRemove.setOnClickListener {
             if (!lRealm.isInTransaction) lRealm.beginTransaction()
             if (isAdd) {

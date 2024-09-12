@@ -23,11 +23,10 @@
             android:layout_marginStart="10dp"
             android:layout_marginTop="10dp"
             android:padding="@dimen/padding_normal"
-            android:text="Add Reports"
+            android:text="@string/add_reports"
             android:textSize="16sp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
-
         <Button
             android:id="@+id/exportCSV"
             android:layout_width="wrap_content"
@@ -36,11 +35,10 @@
             android:layout_marginStart="10dp"
             android:layout_marginTop="10dp"
             android:padding="@dimen/padding_normal"
-            android:text="Export CSV"
+            android:text="@string/export_csv"
             android:textSize="16sp"
             app:layout_constraintStart_toEndOf="@+id/addReports"
             app:layout_constraintTop_toTopOf="parent" />
-
     </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
@@ -51,5 +49,4 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/ltButtons" />
-
 </androidx.constraintlayout.widget.ConstraintLayout>

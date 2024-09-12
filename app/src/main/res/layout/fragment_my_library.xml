@@ -201,7 +201,7 @@
                     android:layout_margin="4dp"
                     android:layout_weight="1"
                     android:background="@drawable/buttonblue"
-                    android:text="Filter by category"
+                    android:text="@string/filter_by_category"
                     android:textColor="@color/textColorPrimary" />
                 <Button
                     android:id="@+id/btn_collections"
