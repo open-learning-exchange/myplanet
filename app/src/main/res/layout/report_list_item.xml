@@ -43,7 +43,7 @@
                 android:id="@+id/tvBeginningBalance"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Beginning Balance"
+                android:text="@string/beginning_balance"
                 android:textColor="@color/daynight_textColor"
                 android:textSize="16sp"
                 android:textStyle="bold" />
@@ -69,7 +69,7 @@
                 android:id="@+id/tvSales"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Sales"
+                android:text="@string/sales"
                 android:textColor="@color/daynight_textColor"
                 android:textSize="16sp" />
             <TextView
@@ -90,7 +90,7 @@
                 android:id="@+id/tvOther"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Other"
+                android:text="@string/other"
                 android:textColor="@color/daynight_textColor"
                 android:textSize="16sp" />
             <TextView
@@ -111,7 +111,7 @@
                 android:id="@+id/tvTotalIncome"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Total Income"
+                android:text="@string/total_income"
                 android:textColor="@color/daynight_textColor"
                 android:textSize="16sp"
                 android:textStyle="bold" />
@@ -137,7 +137,7 @@
                 android:id="@+id/tvPersonnel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Personnel"
+                android:text="@string/personnel"
                 android:textColor="@color/daynight_textColor"
                 android:textSize="16sp" />
             <TextView
@@ -158,7 +158,7 @@
                 android:id="@+id/tvNonPersonnel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Non-Personnel"
+                android:text="@string/non_personnel"
                 android:textColor="@color/daynight_textColor"
                 android:textSize="16sp" />
             <TextView
@@ -179,7 +179,7 @@
                 android:id="@+id/tvTotalExpenses"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Total Expenses"
+                android:text="@string/total_expenses"
                 android:textColor="@color/daynight_textColor"
                 android:textSize="16sp"
                 android:textStyle="bold" />
@@ -205,7 +205,7 @@
                 android:id="@+id/tvProfitLoss"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Profit/Loss"
+                android:text="@string/profit_loss"
                 android:textColor="@color/daynight_textColor"
                 android:textSize="16sp"
                 android:textStyle="bold" />
@@ -227,7 +227,7 @@
                 android:id="@+id/tvEndingBalance"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Ending Balance"
+                android:text="@string/ending_balance"
                 android:textColor="@color/daynight_textColor"
                 android:textSize="16sp"
                 android:textStyle="bold" />
@@ -254,7 +254,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/_10dp"
-            android:text="Reports Summary"
+            android:text="@string/reports_summary"
             android:textColor="@color/daynight_textColor"
             android:textSize="16sp"
             android:textStyle="bold"
@@ -305,6 +305,7 @@
             android:layout_height="35dp"
             android:layout_marginStart="10dp"
             android:background="?attr/selectableItemBackground"
-            app:srcCompat="@drawable/ic_delete" />
+            app:srcCompat="@drawable/ic_delete"
+            app:tint="@color/daynight_textColor" />
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

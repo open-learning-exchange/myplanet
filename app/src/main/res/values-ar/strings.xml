@@ -106,6 +106,7 @@
     <string name="filter_collections">تصفية المجموعات</string>
     <string name="select_many_collections">اختيار العديد من المجموعات</string>
     <string name="collections">المجموعات</string>
+    <string name="filter_by_category">تصفية حسب الفئة</string>
     <string name="ok">موافق</string>
     <string name="inactive_message">المستخدم غير مفعل، يرجى التواصل مع المسؤول أو المدير لتفعيل حسابك.</string>
     <string name="archive_mycourse">أرشفة دورتي</string>
@@ -278,6 +279,12 @@
         <item>الافتراضي</item>
         <item>القائد</item>
         <item>المتعلم</item>
+    </string-array>
+
+    <string-array name="status_options">
+        <item>الكل</item>
+        <item>مقروء</item>
+        <item>غير مقروء</item>
     </string-array>
 
     <string name="dictionaries">القواميس</string>
@@ -1124,9 +1131,50 @@
     <string name="beta_resources_auto_download">تنزيل الموارد التجريبيّة تلقائيًا</string>
     <string name="course_steps">خطوات الدورة</string>
     <string name="to_access_this_feature_become_a_member">أنت حاليًا مستخدم ضيف. للوصول إلى هذه الميزة، كن عضوًا.</string>
+    <string name="sales">المبيعات</string>
+    <string name="beginning_balance">الرصيد الافتتاحي</string>
+    <string name="other">أخرى</string>
+    <string name="total_income">إجمالي الدخل</string>
+    <string name="personnel">الموظفين</string>
+    <string name="non_personnel">غير الموظفين</string>
+    <string name="total_expenses">إجمالي المصروفات</string>
+    <string name="profit_loss">الربح / الخسارة</string>
+    <string name="ending_balance">الرصيد النهائي</string>
+    <string name="reports_summary">ملخص التقارير</string>
+    <string name="summary">ملخص</string>
+    <string name="other_income">دخل آخر</string>
+    <string name="add_reports">إضافة تقارير</string>
+    <string name="export_csv">تصدير CSV</string>
+    <string name="add_report">إضافة تقرير</string>
     <string name="new_chat">محادثة جديدة</string>
     <string name="chat_enter_message">أدخل الرسالة</string>
     <string name="hour">ساعة</string>
     <string name="hours">ساعات</string>
+    <string name="material_calendar_monday">الاثنين</string>
+    <string name="material_calendar_tuesday">الثلاثاء</string>
+    <string name="material_calendar_wednesday">الأربعاء</string>
+    <string name="material_calendar_thursday">الخميس</string>
+    <string name="material_calendar_friday">الجمعة</string>
+    <string name="material_calendar_saturday">السبت</string>
+    <string name="material_calendar_sunday">الأحد</string>
+    <array name="material_calendar_months_array">
+        <item>يناير</item>
+        <item>فبراير</item>
+        <item>مارس</item>
+        <item>أبريل</item>
+        <item>مايو</item>
+        <item>يونيو</item>
+        <item>يوليو</item>
+        <item>أغسطس</item>
+        <item>سبتمبر</item>
+        <item>أكتوبر</item>
+        <item>نوفمبر</item>
+        <item>ديسمبر</item>
+    </array>
+    <string name="material_calendar_today_button">اليوم</string>
+    <string name="material_calendar_positive_button">موافق</string>
+    <string name="material_calendar_negative_button">إلغاء</string>
+    <string name="switching_off_manual_configuration_to_clear_data">سيؤدي إيقاف التكوين اليدوي إلى مسح جميع البيانات، هل أنت متأكد أنك تريد المتابعة؟</string>
+    <string name="switching_on_manual_configuration_to_clear_data">سيؤدي تشغيل التكوين اليدوي إلى مسح جميع البيانات، هل أنت متأكد أنك تريد المتابعة؟</string>
 
 </resources>

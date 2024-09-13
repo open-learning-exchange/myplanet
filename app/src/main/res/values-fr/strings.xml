@@ -106,6 +106,7 @@
     <string name="filter_collections">Filtrer les collections</string>
     <string name="select_many_collections">Sélectionner plusieurs collections</string>
     <string name="collections">Collections</string>
+    <string name="filter_by_category">Filtrer par catégorie</string>
     <string name="ok">OK</string>
     <string name="inactive_message">Utilisateur non activé, veuillez contacter l\'administrateur ou le responsable pour activer votre compte.</string>
     <string name="archive_mycourse">Archiver monCours</string>
@@ -278,6 +279,12 @@
         <item>Par défaut</item>
         <item>Chef</item>
         <item>Apprenant</item>
+    </string-array>
+
+    <string-array name="status_options">
+        <item>tout</item>
+        <item>lu</item>
+        <item>non lu</item>
     </string-array>
 
     <string name="dictionaries">Dictionnaires</string>
@@ -1124,9 +1131,50 @@
     <string name="beta_resources_auto_download">Téléchargement automatique des ressources bêta</string>
     <string name="course_steps">Étapes du cours</string>
     <string name="to_access_this_feature_become_a_member">vous êtes actuellement un utilisateur invité. pour accéder à cette fonctionnalité, devenez membre.</string>
+    <string name="sales">Ventes</string>
+    <string name="beginning_balance">Solde de départ</string>
+    <string name="other">Autre</string>
+    <string name="total_income">Revenu total</string>
+    <string name="personnel">Personnel</string>
+    <string name="non_personnel">Non-personnel</string>
+    <string name="total_expenses">Dépenses totales</string>
+    <string name="profit_loss">Bénéfice/Perte</string>
+    <string name="ending_balance">Solde final</string>
+    <string name="reports_summary">Résumé des rapports</string>
+    <string name="summary">Résumé</string>
+    <string name="other_income">Autres revenus</string>
+    <string name="add_reports">Ajouter des rapports</string>
+    <string name="export_csv">Exporter CSV</string>
+    <string name="add_report">Ajouter un rapport</string>
     <string name="new_chat">Nouveau chat</string>
     <string name="chat_enter_message">Entrez le message</string>
     <string name="hour">heure</string>
     <string name="hours">heures</string>
+    <string name="material_calendar_monday">L</string>
+    <string name="material_calendar_tuesday">M</string>
+    <string name="material_calendar_wednesday">M</string>
+    <string name="material_calendar_thursday">J</string>
+    <string name="material_calendar_friday">V</string>
+    <string name="material_calendar_saturday">S</string>
+    <string name="material_calendar_sunday">D</string>
+    <array name="material_calendar_months_array">
+        <item>Janvier</item>
+        <item>Février</item>
+        <item>Mars</item>
+        <item>Avril</item>
+        <item>Mai</item>
+        <item>Juin</item>
+        <item>Juillet</item>
+        <item>Août</item>
+        <item>Septembre</item>
+        <item>Octobre</item>
+        <item>Novembre</item>
+        <item>Décembre</item>
+    </array>
+    <string name="material_calendar_today_button">Aujourd\'hui</string>
+    <string name="material_calendar_positive_button">Oui</string>
+    <string name="material_calendar_negative_button">Non</string>
+    <string name="switching_off_manual_configuration_to_clear_data">La désactivation de la configuration manuelle effacera toutes les données. Êtes-vous sûr de vouloir continuer?</string>
+    <string name="switching_on_manual_configuration_to_clear_data">L\'activation de la configuration manuelle effacera toutes les données. Êtes-vous sûr de vouloir continuer?</string>
 
 </resources>

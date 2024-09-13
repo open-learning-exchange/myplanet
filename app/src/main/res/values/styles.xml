@@ -144,7 +144,7 @@
         <item name="android:padding">@dimen/padding_normal</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textSize">24sp</item>
-        <item name="android:textColor">@color/md_black_1000</item>
+        <item name="android:textColor">@color/daynight_textColor</item>
         <item name="android:layout_height">wrap_content</item>
     </style>
 
@@ -202,5 +202,12 @@
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
+    </style>
+
+    <style name="primaryButton" parent="Widget.AppCompat.Button">
+        <item name="android:background">@color/mainColor</item>
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:layout_marginTop">10dp</item>
     </style>
 </resources>
