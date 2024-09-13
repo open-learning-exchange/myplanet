@@ -39,7 +39,7 @@
     <color name="empty_rating">@color/md_white_1000</color>
     <color name="ic_download">#FFFFFF</color>
     <color name="profile_pic">#757575</color>
-    <color name="user_profile_label">@color/md_blue_200</color>
+    <color name="user_profile_label">#1364DA</color>
     <color name="user_profile_description">@color/md_white_1000</color>
-    <color name="user_profile_background">@color/md_grey_600</color>
+    <color name="user_profile_background">#2E2E2E</color>
 </resources>
