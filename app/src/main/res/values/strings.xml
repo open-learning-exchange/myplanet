@@ -1174,5 +1174,7 @@
     <string name="material_calendar_today_button">Today</string>
     <string name="material_calendar_positive_button">OK</string>
     <string name="material_calendar_negative_button">Cancel</string>
+    <string name="switching_off_manual_configuration_to_clear_data">switching off manual configuration will clear all data, are you sure you want to continue?</string>
+    <string name="switching_on_manual_configuration_to_clear_data">switching on manual configuration will clear all data, are you sure you want to continue?</string>
 
 </resources>

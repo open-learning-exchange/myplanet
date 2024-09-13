@@ -1174,5 +1174,7 @@
     <string name="material_calendar_today_button">اليوم</string>
     <string name="material_calendar_positive_button">موافق</string>
     <string name="material_calendar_negative_button">إلغاء</string>
+    <string name="switching_off_manual_configuration_to_clear_data">سيؤدي إيقاف التكوين اليدوي إلى مسح جميع البيانات، هل أنت متأكد أنك تريد المتابعة؟</string>
+    <string name="switching_on_manual_configuration_to_clear_data">سيؤدي تشغيل التكوين اليدوي إلى مسح جميع البيانات، هل أنت متأكد أنك تريد المتابعة؟</string>
 
 </resources>

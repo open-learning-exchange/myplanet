@@ -1174,5 +1174,7 @@
     <string name="material_calendar_today_button">Hoy</string>
     <string name="material_calendar_positive_button">Aceptar</string>
     <string name="material_calendar_negative_button">Cancelar</string>
+    <string name="switching_off_manual_configuration_to_clear_data">desactivar la configuración manual borrará todos los datos, ¿está seguro de que desea continuar?</string>
+    <string name="switching_on_manual_configuration_to_clear_data">activar la configuración manual borrará todos los datos, ¿está seguro de que desea continuar?</string>
 
 </resources>
