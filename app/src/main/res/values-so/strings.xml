@@ -1174,5 +1174,7 @@
     <string name="material_calendar_today_button">Maanta</string>
     <string name="material_calendar_positive_button">Haa</string>
     <string name="material_calendar_negative_button">Maya</string>
+    <string name="switching_off_manual_configuration_to_clear_data">daminta habka gacanta ah waxay tirtiri doontaa dhammaan xogta, ma hubtaa inaad rabto inaad sii waddo?</string>
+    <string name="switching_on_manual_configuration_to_clear_data">furista habka gacanta ah waxay tirtiri doontaa dhammaan xogta, ma hubtaa inaad rabto inaad sii waddo?</string>
 
 </resources>

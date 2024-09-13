@@ -446,46 +446,62 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             dialogServerUrlBinding.manualConfiguration.isChecked = true
             showConfigurationUIElements(dialogServerUrlBinding, true, dialog)
         }
-        dialogServerUrlBinding.manualConfiguration.setOnCheckedChangeListener { _: CompoundButton?, isChecked: Boolean ->
-            if (isChecked) {
-                prefData.setManualConfig(true)
-                editor.putString("serverURL", "").apply()
-                editor.putString("serverPin", "").apply()
-                dialogServerUrlBinding.radioHttp.isChecked = true
-                editor.putString("serverProtocol", getString(R.string.http_protocol)).apply()
-                showConfigurationUIElements(dialogServerUrlBinding, true, dialog)
-                val communities: List<RealmCommunity> = mRealm.where(RealmCommunity::class.java).sort("weight", Sort.ASCENDING).findAll()
-                val nonEmptyCommunities: MutableList<RealmCommunity> = ArrayList()
-                for (community in communities) {
-                    if (community.isValid && !TextUtils.isEmpty(community.name)) {
-                        nonEmptyCommunities.add(community)
-                    }
-                }
-                dialogServerUrlBinding.spnCloud.adapter = ArrayAdapter(this, R.layout.spinner_item_white, nonEmptyCommunities)
-                dialogServerUrlBinding.spnCloud.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-                    override fun onItemSelected(adapterView: AdapterView<*>?, view: View, i: Int, l: Long) {
-                        onChangeServerUrl()
-                    }
+        val configurationId = settings.getString("configurationId", null)
 
-                    override fun onNothingSelected(adapterView: AdapterView<*>?) {}
+        dialogServerUrlBinding.manualConfiguration.setOnCheckedChangeListener(null)
+
+        dialogServerUrlBinding.manualConfiguration.setOnClickListener {
+            if (configurationId != null) {
+                dialogServerUrlBinding.manualConfiguration.isChecked = prefData.getManualConfig()
+                if (prefData.getManualConfig()) {
+                    clearDataDialog(getString(R.string.switching_off_manual_configuration_to_clear_data))
+                } else {
+                    clearDataDialog(getString(R.string.switching_on_manual_configuration_to_clear_data))
                 }
-                dialogServerUrlBinding.switchServerUrl.setOnCheckedChangeListener { _: CompoundButton?, b: Boolean ->
-                    editor.putBoolean("switchCloudUrl", b).apply()
-                    dialogServerUrlBinding.spnCloud.visibility = if (b) {
-                        View.VISIBLE
-                    } else {
-                        View.GONE
-                    }
-                    setUrlAndPin(dialogServerUrlBinding.switchServerUrl.isChecked)
-                }
-                serverUrl.addTextChangedListener(MyTextWatcher(serverUrl))
-                dialogServerUrlBinding.switchServerUrl.isChecked = settings.getBoolean("switchCloudUrl", false)
-                setUrlAndPin(settings.getBoolean("switchCloudUrl", false))
-                protocolSemantics()
             } else {
-                prefData.setManualConfig(false)
-                showConfigurationUIElements(dialogServerUrlBinding, false, dialog)
-                editor.putBoolean("switchCloudUrl", false).apply()
+                val newCheckedState = !prefData.getManualConfig()
+                prefData.setManualConfig(newCheckedState)
+                if (newCheckedState) {
+                    prefData.setManualConfig(true)
+                    editor.putString("serverURL", "").apply()
+                    editor.putString("serverPin", "").apply()
+                    dialogServerUrlBinding.radioHttp.isChecked = true
+                    editor.putString("serverProtocol", getString(R.string.http_protocol)).apply()
+                    showConfigurationUIElements(dialogServerUrlBinding, true, dialog)
+                    val communities: List<RealmCommunity> = mRealm.where(RealmCommunity::class.java).sort("weight", Sort.ASCENDING).findAll()
+                    val nonEmptyCommunities: MutableList<RealmCommunity> = ArrayList()
+                    for (community in communities) {
+                        if (community.isValid && !TextUtils.isEmpty(community.name)) {
+                            nonEmptyCommunities.add(community)
+                        }
+                    }
+                    dialogServerUrlBinding.spnCloud.adapter = ArrayAdapter(this, R.layout.spinner_item_white, nonEmptyCommunities)
+                    dialogServerUrlBinding.spnCloud.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                        override fun onItemSelected(adapterView: AdapterView<*>?, view: View, i: Int, l: Long) {
+                            onChangeServerUrl()
+                        }
+
+                        override fun onNothingSelected(adapterView: AdapterView<*>?) {}
+                    }
+                    dialogServerUrlBinding.switchServerUrl.setOnCheckedChangeListener { _: CompoundButton?, b: Boolean ->
+                        editor.putBoolean("switchCloudUrl", b).apply()
+                        dialogServerUrlBinding.spnCloud.visibility = if (b) {
+                            View.VISIBLE
+                        } else {
+                            View.GONE
+                        }
+                        setUrlAndPin(dialogServerUrlBinding.switchServerUrl.isChecked)
+                    }
+                    serverUrl.addTextChangedListener(MyTextWatcher(serverUrl))
+                    dialogServerUrlBinding.switchServerUrl.isChecked = settings.getBoolean("switchCloudUrl", false)
+                    setUrlAndPin(settings.getBoolean("switchCloudUrl", false))
+                    protocolSemantics()
+                }
+                else {
+                    prefData.setManualConfig(false)
+                    showConfigurationUIElements(dialogServerUrlBinding, false, dialog)
+                    editor.putBoolean("switchCloudUrl", false).apply()
+                }
             }
         }
         dialogServerUrlBinding.radioProtocol.setOnCheckedChangeListener { _: RadioGroup?, checkedId: Int ->
