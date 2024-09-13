@@ -1,13 +1,11 @@
 package org.ole.planet.myplanet.ui.dashboard
 
-import android.graphics.Typeface
 import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
-import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
@@ -229,7 +227,6 @@ class BellDashboardFragment : BaseDashboardFragment() {
         }
         fragmentHomeBellBinding.cardProfileBell.fabFeedback.setOnClickListener { openHelperFragment(FeedbackListFragment()) }
         fragmentHomeBellBinding.homeCardMyLife.myLifeImageButton.setOnClickListener { homeItemClickListener?.openCallFragment(LifeFragment()) }
-        fragmentHomeBellBinding.fabNotification.setOnClickListener { showNotificationFragment() }
     }
 
     private fun openHelperFragment(f: Fragment) {

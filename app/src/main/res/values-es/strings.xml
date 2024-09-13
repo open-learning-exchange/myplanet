@@ -281,6 +281,12 @@
         <item>Estudiante</item>
     </string-array>
 
+    <string-array name="status_options">
+        <item>todo</item>
+        <item>leído</item>
+        <item>no leído</item>
+    </string-array>
+
     <string name="dictionaries">Diccionarios</string>
     <string name="bible">Biblias</string>
     <string name="feature_not">Función no disponible</string>
@@ -1144,5 +1150,29 @@
     <string name="chat_enter_message">Introducir mensaje</string>
     <string name="hour">hora</string>
     <string name="hours">horas</string>
+    <string name="material_calendar_monday">L</string>
+    <string name="material_calendar_tuesday">M</string>
+    <string name="material_calendar_wednesday">X</string>
+    <string name="material_calendar_thursday">J</string>
+    <string name="material_calendar_friday">V</string>
+    <string name="material_calendar_saturday">S</string>
+    <string name="material_calendar_sunday">D</string>
+    <array name="material_calendar_months_array">
+        <item>Enero</item>
+        <item>Febrero</item>
+        <item>Marzo</item>
+        <item>Abril</item>
+        <item>Mayo</item>
+        <item>Junio</item>
+        <item>Julio</item>
+        <item>Agosto</item>
+        <item>Septiembre</item>
+        <item>Octubre</item>
+        <item>Noviembre</item>
+        <item>Diciembre</item>
+    </array>
+    <string name="material_calendar_today_button">Hoy</string>
+    <string name="material_calendar_positive_button">Aceptar</string>
+    <string name="material_calendar_negative_button">Cancelar</string>
 
 </resources>
