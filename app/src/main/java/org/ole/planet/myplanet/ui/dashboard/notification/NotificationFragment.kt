@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.dashboard.notification
 
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -61,9 +62,20 @@ class NotificationFragment : Fragment() {
             fragmentNotificationBinding.emptyData?.visibility = View.VISIBLE
         }
 
-        adapter = AdapterNotification(notifications) { position ->
-            markAsRead(position)
-        }
+//        adapter = AdapterNotification(notifications) { position ->
+//            markAsRead(position),
+//            onNotificationClick = { notification ->
+//                handleNotificationClick(notification)
+//            }
+//        }
+        adapter = AdapterNotification(
+            notifications,
+            onMarkAsReadClick = { position ->
+                markAsRead(position) },
+            onNotificationClick = { notification ->
+                handleNotificationClick(notification)
+            }
+        )
         fragmentNotificationBinding.rvNotifications.adapter = adapter
         fragmentNotificationBinding.rvNotifications.layoutManager = LinearLayoutManager(requireContext())
 
@@ -72,6 +84,28 @@ class NotificationFragment : Fragment() {
         }
 
         return fragmentNotificationBinding.root
+    }
+
+    private fun handleNotificationClick(notification: RealmNotification) {
+        when (notification.type) {
+            "storage" -> {
+                Log.d("ole2", "storage clicked")
+            }
+            "survey" -> {
+                Log.d("ole2", "survey clicked")
+            }
+            "task" -> {
+                Log.d("ole2", "task clicked")
+            }
+            "resource" -> {
+                Log.d("ole2", "resource clicked")
+            }
+        }
+
+        // Mark the notification as read if it's not already
+        if (!notification.isRead) {
+            markAsRead(adapter.notificationList.indexOf(notification))
+        }
     }
 
     private fun loadNotifications(userId: String, filter: String): List<RealmNotification> {
