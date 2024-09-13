@@ -40,7 +40,7 @@
                 android:layout_alignParentBottom="true"
                 android:contentDescription="@string/edit_image"
                 android:src="@drawable/ic_edit"
-                app:backgroundTint="@color/disable_color"
+                app:backgroundTint="@color/profile_pic"
                 app:layout_constraintBottom_toBottomOf="@+id/image"
                 app:layout_constraintEnd_toEndOf="parent" />
         </androidx.constraintlayout.widget.ConstraintLayout>
