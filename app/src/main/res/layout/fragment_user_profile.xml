@@ -40,7 +40,7 @@
                 android:layout_alignParentBottom="true"
                 android:contentDescription="@string/edit_image"
                 android:src="@drawable/ic_edit"
-                app:backgroundTint="@color/disable_color"
+                app:backgroundTint="@color/profile_pic"
                 app:layout_constraintBottom_toBottomOf="@+id/image"
                 app:layout_constraintEnd_toEndOf="parent" />
         </androidx.constraintlayout.widget.ConstraintLayout>
@@ -107,11 +107,8 @@
             android:id="@+id/btEditProfile"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="@color/colorPrimary"
-            android:layout_marginTop="5dp"
+            style="@style/primaryButton"
             android:text="@string/edit_profile"
-            android:textAllCaps="false"
-            android:textColor="@android:color/white"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/txtLevel" />
