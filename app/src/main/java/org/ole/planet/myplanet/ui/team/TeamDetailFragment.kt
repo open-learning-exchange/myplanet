@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam.Companion.isTeamLeader
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.team.teamTask.TeamTaskFragment
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Date
 import java.util.UUID
@@ -35,6 +36,11 @@ class TeamDetailFragment : BaseTeamFragment() {
         TabLayoutMediator(fragmentTeamDetailBinding.tabLayout, fragmentTeamDetailBinding.viewPager2) { tab, position ->
             tab.text = (fragmentTeamDetailBinding.viewPager2.adapter as TeamPagerAdapter).getPageTitle(position)
         }.attach()
+
+        val pageIndex = arguments?.getInt("navigateToPage", -1) ?: -1
+        if (pageIndex >= 0 && pageIndex < (fragmentTeamDetailBinding.viewPager2.adapter?.itemCount ?: 0)) {
+            fragmentTeamDetailBinding.viewPager2.currentItem = pageIndex
+        }
 
         fragmentTeamDetailBinding.title.text = team?.name
         fragmentTeamDetailBinding.subtitle.text = team?.type

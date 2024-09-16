@@ -14,12 +14,16 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import io.realm.Realm
 import io.realm.Sort
+import org.json.JSONObject
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentNotificationBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmNotification
+import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
+import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 
 class NotificationFragment : Fragment() {
     private lateinit var fragmentNotificationBinding: FragmentNotificationBinding
@@ -34,8 +38,6 @@ class NotificationFragment : Fragment() {
         super.onAttach(context)
         if (context is DashboardActivity) {
             dashboardActivity = context
-        } else {
-            throw RuntimeException("$context must be DashboardActivity")
         }
     }
 
@@ -101,7 +103,24 @@ class NotificationFragment : Fragment() {
                 Log.d("ole2", "survey clicked")
             }
             "task" -> {
-                Log.d("ole2", "task clicked")
+                val taskId = notification.relatedId
+                val task = mRealm.where(RealmTeamTask::class.java)
+                    .equalTo("id", taskId)
+                    .findFirst()
+
+                val linkJson = JSONObject(task?.link ?: "{}")
+                val teamId = linkJson.optString("teams")
+                if (teamId.isNotEmpty()) {
+                    if (context is OnHomeItemClickListener) {
+                        val f = TeamDetailFragment()
+                        val b = Bundle()
+                        b.putString("id", teamId)
+                        b.putBoolean("isMyTeam", true)
+                        b.putInt("navigateToPage", 3)
+                        f.arguments = b
+                        (context as OnHomeItemClickListener).openCallFragment(f)
+                    }
+                }
             }
             "resource" -> {
                 dashboardActivity.openMyFragment(ResourcesFragment())
