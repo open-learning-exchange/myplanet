@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.dashboard.notification
 
+import android.content.Context
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -17,6 +18,8 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentNotificationBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmNotification
+import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
+import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 
 class NotificationFragment : Fragment() {
     private lateinit var fragmentNotificationBinding: FragmentNotificationBinding
@@ -25,6 +28,16 @@ class NotificationFragment : Fragment() {
     private lateinit var adapter: AdapterNotification
     private lateinit var userId: String
     private var notificationUpdateListener: NotificationListener? = null
+    private lateinit var dashboardActivity: DashboardActivity
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        if (context is DashboardActivity) {
+            dashboardActivity = context
+        } else {
+            throw RuntimeException("$context must be DashboardActivity")
+        }
+    }
 
     fun setNotificationUpdateListener(listener: NotificationListener) {
         this.notificationUpdateListener = listener
@@ -62,14 +75,7 @@ class NotificationFragment : Fragment() {
             fragmentNotificationBinding.emptyData?.visibility = View.VISIBLE
         }
 
-//        adapter = AdapterNotification(notifications) { position ->
-//            markAsRead(position),
-//            onNotificationClick = { notification ->
-//                handleNotificationClick(notification)
-//            }
-//        }
-        adapter = AdapterNotification(
-            notifications,
+        adapter = AdapterNotification(notifications,
             onMarkAsReadClick = { position ->
                 markAsRead(position) },
             onNotificationClick = { notification ->
@@ -98,11 +104,10 @@ class NotificationFragment : Fragment() {
                 Log.d("ole2", "task clicked")
             }
             "resource" -> {
-                Log.d("ole2", "resource clicked")
+                dashboardActivity.openMyFragment(ResourcesFragment())
             }
         }
 
-        // Mark the notification as read if it's not already
         if (!notification.isRead) {
             markAsRead(adapter.notificationList.indexOf(notification))
         }
