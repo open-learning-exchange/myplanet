@@ -14,7 +14,6 @@
         android:padding="4dp"
         android:textColor="@color/user_profile_label"
         android:textSize="18sp" />
-
     <TextView
         android:id="@+id/tv_description"
         android:layout_width="0dp"
