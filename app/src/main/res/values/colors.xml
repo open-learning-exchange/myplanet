@@ -39,4 +39,8 @@
     <color name="selected_color">#80B0E0E6</color>
     <color name="empty_rating">@color/md_grey_500</color>
     <color name="ic_download">#000000</color>
+    <color name="profile_pic">#BDBDBD</color>
+    <color name="user_profile_label">@color/md_blue_700</color>
+    <color name="user_profile_description">@color/md_grey_700</color>
+    <color name="user_profile_background">@color/md_grey_300</color>
 </resources>
