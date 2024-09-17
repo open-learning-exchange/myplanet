@@ -235,4 +235,24 @@ object Utilities {
             context.startActivity(webIntent)
         }
     }
+
+    fun getStringIdentifier(name: String?): Int {
+        if (name == "mymessages" || name == "myachievements"){
+            val modifiedString = name.substring(2)
+            return context.resources.getIdentifier(modifiedString, "string", context.packageName)
+        }
+        else if (name == "mysurvey"){
+            return context.resources.getIdentifier("my_survey", "string", context.packageName)
+        }
+        else if (name == "mysubmissions"){
+            return context.resources.getIdentifier("submission", "string", context.packageName)
+        }
+        else if (name == "help wanted"){
+            return context.resources.getIdentifier("help_wanted", "string", context.packageName)
+        }
+        else {
+            return context.resources.getIdentifier(name, "string", context.packageName)
+        }
+
+    }
 }

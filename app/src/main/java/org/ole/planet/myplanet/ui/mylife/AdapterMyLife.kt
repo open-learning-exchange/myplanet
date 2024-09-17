@@ -50,7 +50,14 @@ class AdapterMyLife(private val context: Context, private val myLifeList: List<R
     @SuppressLint("ClickableViewAccessibility")
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         if (holder is ViewHolderMyLife) {
-            holder.title.text = myLifeList[position].title
+            var translatedText = myLifeList[position].title
+            try {
+                var resId = Utilities.getStringIdentifier(translatedText?.lowercase())
+                translatedText = context.getString(resId)
+            } catch (e: Exception) {
+                translatedText = myLifeList[position].title
+            }
+            holder.title.text = translatedText
             holder.imageView.setImageResource(context.resources.getIdentifier(myLifeList[position].imageId, "drawable", context.packageName))
             holder.imageView.contentDescription = context.getString(R.string.icon, myLifeList[position].title)
             val fragment = findFragment(myLifeList[position].imageId)
