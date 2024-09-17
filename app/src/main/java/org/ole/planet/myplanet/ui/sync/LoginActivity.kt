@@ -320,14 +320,16 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                 val selectedLanguage = languageCodes[which]
                 if (selectedLanguage != currentLanguage) {
                     LocaleHelper.setLocale(this, selectedLanguage)
-                    updateConfiguration(selectedLanguage)
                     recreate()
+                    dialog.dismiss()
+                } else {
+                    dialog.dismiss()
                 }
-                dialog.dismiss()
             }
             .setNegativeButton(R.string.cancel, null)
             .show()
     }
+
 
     private fun updateConfiguration(languageCode: String) {
         val locale = Locale(languageCode)
