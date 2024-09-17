@@ -36,6 +36,11 @@ class TeamDetailFragment : BaseTeamFragment() {
             tab.text = (fragmentTeamDetailBinding.viewPager2.adapter as TeamPagerAdapter).getPageTitle(position)
         }.attach()
 
+        val pageIndex = arguments?.getInt("navigateToPage", -1) ?: -1
+        if (pageIndex >= 0 && pageIndex < (fragmentTeamDetailBinding.viewPager2.adapter?.itemCount ?: 0)) {
+            fragmentTeamDetailBinding.viewPager2.currentItem = pageIndex
+        }
+
         fragmentTeamDetailBinding.title.text = team?.name
         fragmentTeamDetailBinding.subtitle.text = team?.type
 

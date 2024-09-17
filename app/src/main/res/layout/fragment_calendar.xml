@@ -1,7 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.applandeo.materialcalendarview.CalendarView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/calendarView"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content" />
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/daynight_grey"
+    android:orientation="vertical">
+
+    <com.applandeo.materialcalendarview.CalendarView xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:id="@+id/calendarView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:abbreviationsBarColor="@color/daynight_grey"
+        app:abbreviationsLabelsColor="@color/daynight_textColor"
+        app:anotherMonthsDaysLabelsColor="@color/hint_color"
+        app:daysLabelsColor="@color/daynight_textColor"
+        app:headerColor="@color/colorPrimary"
+        app:pagesColor="@color/secondary_bg" />
+</LinearLayout>
