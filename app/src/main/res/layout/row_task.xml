@@ -25,7 +25,8 @@
                 android:padding="@dimen/padding_normal"
                 android:textColor="@color/daynight_textColor"
                 android:textSize="18sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                android:buttonTint="@color/daynight_textColor" />
             <TextView
                 android:id="@+id/deadline"
                 android:layout_width="match_parent"
