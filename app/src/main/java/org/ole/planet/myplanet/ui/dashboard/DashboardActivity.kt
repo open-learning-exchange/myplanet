@@ -505,7 +505,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-    private fun openMyFragment(f: Fragment) {
+    fun openMyFragment(f: Fragment) {
         val b = Bundle()
         b.putBoolean("isMyCourseLib", true)
         f.arguments = b
