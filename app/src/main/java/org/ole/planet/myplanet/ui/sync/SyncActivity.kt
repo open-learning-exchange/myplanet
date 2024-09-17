@@ -546,18 +546,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         binding.switchServerUrl.visibility = if (manualSelected) View.VISIBLE else View.GONE
 
         if (manualSelected) {
-            if (settings.getString("serverURL", "") == "https://${BuildConfig.PLANET_LEARNING_URL}") {
-                editor.putString("serverURL", "").apply()
-                editor.putString("serverPin", "").apply()
-            }
             if (settings.getString("serverProtocol", "") == getString(R.string.http_protocol)) {
                 binding.radioHttp.isChecked = true
                 editor.putString("serverProtocol", getString(R.string.http_protocol)).apply()
-            }
-            if (settings.getString("serverProtocol", "") == getString(R.string.https_protocol) &&
-                settings.getString("serverURL", "") != "" &&
-                settings.getString("serverURL", "") != "https://${BuildConfig.PLANET_LEARNING_URL}"
-            ) {
+            } else if (settings.getString("serverProtocol", "") == getString(R.string.https_protocol)) {
                 binding.radioHttps.isChecked = true
                 editor.putString("serverProtocol", getString(R.string.https_protocol)).apply()
             }
