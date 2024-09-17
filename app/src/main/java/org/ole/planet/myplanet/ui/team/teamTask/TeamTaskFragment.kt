@@ -217,6 +217,12 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
                     allTasks()
                 }
             }
+            if (list!!.isEmpty()){
+                showNoData(fragmentTeamTaskBinding.tvNodata, list?.size, "tasks")
+            }
+            else {
+                showNoData(fragmentTeamTaskBinding.tvNodata, list?.size, "")
+            }
             adapterTask = AdapterTask(requireContext(), mRealm, list, !isMember())
             adapterTask.setListener(this)
             fragmentTeamTaskBinding.rvTask.adapter = adapterTask
