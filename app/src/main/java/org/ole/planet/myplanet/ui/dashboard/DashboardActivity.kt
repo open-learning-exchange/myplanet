@@ -217,7 +217,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                             val fragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
                             if (fragment is BaseContainerFragment) {
                                 fragment.handleBackPressed()
-
                             }
                             finish()
                         }
