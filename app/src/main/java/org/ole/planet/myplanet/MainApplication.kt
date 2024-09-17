@@ -218,7 +218,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     }
 
     override fun attachBaseContext(base: Context) {
-        super.attachBaseContext(LocaleHelper.onAttach(base, "en"))
+        super.attachBaseContext(LocaleHelper.onAttach(base))
         Utilities.setContext(base)
     }
 
