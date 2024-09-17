@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryForma
 import org.ole.planet.myplanet.utilities.Utilities.getUrl
 import org.ole.planet.myplanet.utilities.Utilities.toast
 import java.text.Normalizer
+import java.util.Locale
 import java.util.regex.Pattern
 
 class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
@@ -273,8 +274,20 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     }
 
     private fun setUpLanguageButton() {
+        updateLanguageButtonText()
+
+        activityLoginBinding.btnLang.setOnClickListener {
+            showLanguageSelectionDialog()
+        }
+    }
+
+    private fun updateLanguageButtonText() {
         val currentLanguage = LocaleHelper.getLanguage(this)
-        activityLoginBinding.btnLang.text = when (currentLanguage) {
+        activityLoginBinding.btnLang.text = getLanguageString(currentLanguage)
+    }
+
+    private fun getLanguageString(languageCode: String): String {
+        return when (languageCode) {
             "en" -> getString(R.string.english)
             "es" -> getString(R.string.spanish)
             "so" -> getString(R.string.somali)
@@ -283,40 +296,49 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             "fr" -> getString(R.string.french)
             else -> getString(R.string.english)
         }
+    }
 
-        activityLoginBinding.btnLang.setOnClickListener {
-            val options = arrayOf(getString(R.string.english), getString(R.string.spanish), getString(R.string.somali), getString(R.string.nepali), getString(R.string.arabic), getString(R.string.french))
-            val checkedItem = when (currentLanguage) {
-                "en" -> 0
-                "es" -> 1
-                "so" -> 2
-                "ne" -> 3
-                "ar" -> 4
-                "fr" -> 5
-                else -> 0
-            }
+    private fun showLanguageSelectionDialog() {
+        val currentLanguage = LocaleHelper.getLanguage(this)
+        val options = arrayOf(
+            getString(R.string.english),
+            getString(R.string.spanish),
+            getString(R.string.somali),
+            getString(R.string.nepali),
+            getString(R.string.arabic),
+            getString(R.string.french)
+        )
+        val languageCodes = arrayOf("en", "es", "so", "ne", "ar", "fr")
+        val checkedItem = languageCodes.indexOf(currentLanguage)
 
-            val builder = AlertDialog.Builder(this, R.style.AlertDialogTheme)
-                .setTitle(getString(R.string.select_language))
-                .setSingleChoiceItems(ArrayAdapter(this, R.layout.checked_list_item, options), checkedItem) { dialog, which ->
-                    val selectedLanguage = when (which) {
-                        0 -> "en"
-                        1 -> "es"
-                        2 -> "so"
-                        3 -> "ne"
-                        4 -> "ar"
-                        5 -> "fr"
-                        else -> "en"
-                    }
+        AlertDialog.Builder(this, R.style.AlertDialogTheme)
+            .setTitle(getString(R.string.select_language))
+            .setSingleChoiceItems(
+                ArrayAdapter(this, R.layout.checked_list_item, options),
+                checkedItem
+            ) { dialog, which ->
+                val selectedLanguage = languageCodes[which]
+                if (selectedLanguage != currentLanguage) {
                     LocaleHelper.setLocale(this, selectedLanguage)
+                    updateConfiguration(selectedLanguage)
                     recreate()
-                    dialog.dismiss()
                 }
-                .setNegativeButton(R.string.cancel, null)
+                dialog.dismiss()
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
 
-            val dialog = builder.create()
-            dialog.show()
-        }
+    private fun updateConfiguration(languageCode: String) {
+        val locale = Locale(languageCode)
+        Locale.setDefault(locale)
+        val config = resources.configuration
+        config.setLocale(locale)
+        resources.updateConfiguration(config, resources.displayMetrics)
+    }
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LocaleHelper.onAttach(newBase))
     }
 
     private fun declareHideKeyboardElements() {

@@ -8,17 +8,14 @@ import org.ole.planet.myplanet.utilities.Constants.SELECTED_LANGUAGE
 import java.util.Locale
 
 object LocaleHelper {
-    fun onAttach(context: Context): Context? {
-        val lang = getPersistedData(context, Locale.getDefault().language)
-        return lang?.let { setLocale(context, it) }
-    }
+    private var cachedLocale: Locale? = null
 
-    fun onAttach(context: Context, defaultLanguage: String): Context? {
+    fun onAttach(context: Context, defaultLanguage: String = Locale.getDefault().language): Context {
         val lang = getPersistedData(context, defaultLanguage)
-        return lang?.let { setLocale(context, it) }
+        return setLocale(context, lang)
     }
 
-    fun getLanguage(context: Context): String? {
+    fun getLanguage(context: Context): String {
         return getPersistedData(context, Locale.getDefault().language)
     }
 
@@ -26,27 +23,24 @@ object LocaleHelper {
         persist(context, language)
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             updateResources(context, language)
-        } else updateResourcesLegacy(
-            context,
-            language
-        )
+        } else {
+            updateResourcesLegacy(context, language)
+        }
     }
 
-    private fun getPersistedData(context: Context, defaultLanguage: String): String? {
+    private fun getPersistedData(context: Context, defaultLanguage: String): String {
         val preferences = PreferenceManager.getDefaultSharedPreferences(context)
-        return preferences.getString(SELECTED_LANGUAGE, defaultLanguage)
+        return preferences.getString(SELECTED_LANGUAGE, defaultLanguage) ?: defaultLanguage
     }
 
-    private fun persist(context: Context, language: String?) {
+    private fun persist(context: Context, language: String) {
         val preferences = PreferenceManager.getDefaultSharedPreferences(context)
-        val editor = preferences.edit()
-        editor.putString(SELECTED_LANGUAGE, language)
-        editor.apply()
+        preferences.edit().putString(SELECTED_LANGUAGE, language).apply()
     }
 
     @TargetApi(Build.VERSION_CODES.N)
     private fun updateResources(context: Context, language: String): Context {
-        val locale = Locale(language)
+        val locale = getLocaleForLanguage(language)
         Locale.setDefault(locale)
         val configuration = context.resources.configuration
         configuration.setLocale(locale)
@@ -54,9 +48,9 @@ object LocaleHelper {
         return context.createConfigurationContext(configuration)
     }
 
-    @Suppress("deprecation")
+    @Suppress("DEPRECATION")
     private fun updateResourcesLegacy(context: Context, language: String): Context {
-        val locale = Locale(language)
+        val locale = getLocaleForLanguage(language)
         Locale.setDefault(locale)
         val resources = context.resources
         val configuration = resources.configuration
@@ -64,5 +58,9 @@ object LocaleHelper {
         configuration.setLayoutDirection(locale)
         resources.updateConfiguration(configuration, resources.displayMetrics)
         return context
+    }
+
+    private fun getLocaleForLanguage(language: String): Locale {
+        return cachedLocale?.takeIf { it.language == language } ?: Locale(language).also { cachedLocale = it }
     }
 }
