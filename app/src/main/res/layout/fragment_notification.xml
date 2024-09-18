@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/light_dark"
     tools:context=".ui.dashboard.notification.NotificationFragment">
 
     <LinearLayout
@@ -13,7 +14,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
-
         <Button
             android:id="@+id/btnMarkAllAsRead"
             android:layout_width="wrap_content"
@@ -33,7 +33,11 @@
             android:id="@+id/status"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1" />
+            android:layout_weight="1"
+            android:layout_marginStart="10dp"
+            android:visibility="gone"
+            android:textSize="16sp"
+            app:backgroundTint="@color/daynight_textColor" />
     </LinearLayout>
 
     <TextView
@@ -47,6 +51,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@+id/ltTopBar" />
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv_notifications"
         android:layout_width="match_parent"
