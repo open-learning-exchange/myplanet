@@ -131,8 +131,14 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         val itemMyLifeBinding = ItemMyLifeBinding.inflate(LayoutInflater.from(activity))
         val v = itemMyLifeBinding.root
         setBackgroundColor(v, itemCnt)
-
-        val title = (obj as RealmMyLife).title
+        var translatedText = (obj as RealmMyLife).title
+        try {
+            var resId = Utilities.getStringIdentifier(translatedText?.lowercase())
+            translatedText = context?.getString(resId)
+        } catch (e: Exception) {
+            translatedText = (obj as RealmMyLife).title
+        }
+        val title = translatedText
         val user = UserProfileDbHandler(requireContext()).userModel
         itemMyLifeBinding.img.setImageResource(resources.getIdentifier(obj.imageId, "drawable", requireActivity().packageName))
         itemMyLifeBinding.tvName.text = title
