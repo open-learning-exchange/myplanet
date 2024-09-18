@@ -54,7 +54,7 @@ class NotificationFragment : Fragment() {
 
         val notifications = loadNotifications(userId, "all")
 
-        val spinnerAdapter = ArrayAdapter.createFromResource(requireContext(), R.array.status_options, android.R.layout.simple_spinner_item)
+        val spinnerAdapter = ArrayAdapter.createFromResource(requireContext(), R.array.status_options, R.layout.spinner_item)
         spinnerAdapter.setDropDownViewResource(R.layout.spinner_item)
         fragmentNotificationBinding.status?.adapter = spinnerAdapter
         fragmentNotificationBinding.status?.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
