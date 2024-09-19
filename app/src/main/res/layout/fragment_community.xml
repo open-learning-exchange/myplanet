@@ -47,7 +47,7 @@
                     android:layout_height="@dimen/_24dp"
                     android:layout_gravity="center_vertical"
                     android:src="@drawable/ic_delete"
-                    app:tint="@color/md_black_1000" />
+                    app:tint="@color/ic_download" />
 
                 <ImageView
                     android:id="@+id/ic_add"
