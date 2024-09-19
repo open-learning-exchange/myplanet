@@ -22,24 +22,21 @@
             android:src="@drawable/ole_logo"
             app:tint="@color/md_white_1000"
             android:contentDescription="@string/menu" />
-
         <TextView
             android:id="@+id/app_title_name"
+            android:minWidth="150dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:layout_margin="@dimen/padding_normal"
-            android:paddingEnd="65dp"
             android:text="@string/app_name"
             android:textColor="@color/md_white_1000"
             android:textSize="@dimen/text_size_large"
             android:textStyle="bold" />
-
         <include
             layout="@layout/bell_actionbar_items"
             android:layout_width="wrap_content"
             android:layout_height="?android:attr/actionBarSize" />
-
         <ImageView
             android:id="@+id/iv_sync"
             android:layout_width="@dimen/_40dp"
@@ -50,7 +47,6 @@
             app:srcCompat="@drawable/sync_icon"
             app:tint="@color/md_white_1000"
             android:contentDescription="@string/sync" />
-
         <ImageView
             android:id="@+id/iv_setting"
             android:layout_width="@dimen/_40dp"
@@ -61,6 +57,5 @@
             app:srcCompat="@drawable/settings"
             app:tint="@color/md_white_1000"
             android:contentDescription="@string/settings" />
-
     </LinearLayout>
 </androidx.appcompat.widget.Toolbar>
