@@ -67,13 +67,13 @@ class MyActivityFragment : Fragment() {
             }
             i = i.plus(1)
         }
-
-        val dataSet = BarDataSet(entries, "No of login ")
+        var label = getString(R.string.chart_label)
+        val dataSet = BarDataSet(entries, label)
 
         val lineData = BarData(dataSet)
         fragmentMyActivityBinding.chart.data = lineData
         val d = Description()
-        d.text = "Login Activity chart"
+        d.text = getString(R.string.chart_description)
         d.textColor = daynight_textColor
         fragmentMyActivityBinding.chart.description = d
         fragmentMyActivityBinding.chart.xAxis.valueFormatter = object : ValueFormatter() {
