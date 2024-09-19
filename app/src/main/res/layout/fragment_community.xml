@@ -11,7 +11,6 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-
         <LinearLayout
             android:id="@+id/ll_links"
             android:layout_width="match_parent"
@@ -26,7 +25,6 @@
                 android:layout_height="wrap_content"
                 android:text="@string/library"
                 android:theme="@style/PrimaryFlatButton" />
-
             <com.google.android.flexbox.FlexboxLayout
                 android:id="@+id/flexbox_link"
                 android:layout_width="0dp"
@@ -35,7 +33,6 @@
                 android:layout_weight="1"
                 android:orientation="horizontal"
                 app:flexWrap="wrap" />
-
             <LinearLayout
                 android:id="@+id/ll_edit_delete"
                 android:layout_width="wrap_content"
@@ -47,8 +44,7 @@
                     android:layout_height="@dimen/_24dp"
                     android:layout_gravity="center_vertical"
                     android:src="@drawable/ic_delete"
-                    app:tint="@color/md_black_1000" />
-
+                    app:tint="@color/ic_download" />
                 <ImageView
                     android:id="@+id/ic_add"
                     android:layout_width="@dimen/_24dp"
@@ -56,10 +52,7 @@
                     android:layout_gravity="center_vertical"
                     android:src="@drawable/ic_add"
                     app:tint="@color/md_black_1000" />
-
             </LinearLayout>
-
-
         </LinearLayout>
 
         <androidx.recyclerview.widget.RecyclerView
@@ -67,9 +60,5 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1" />
-
-
     </LinearLayout>
-
-
 </FrameLayout>
