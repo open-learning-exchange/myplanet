@@ -85,6 +85,8 @@ class MyActivityFragment : Fragment() {
         fragmentMyActivityBinding.chart.axisLeft.textColor = daynight_textColor
         fragmentMyActivityBinding.chart.axisRight.textColor = daynight_textColor
         fragmentMyActivityBinding.chart.legend.textColor = daynight_textColor
+        fragmentMyActivityBinding.chart.description.setPosition(650f,820f)
+        fragmentMyActivityBinding.chart.data.setValueTextColor(daynight_textColor)
         fragmentMyActivityBinding.chart.invalidate()
     }
 
