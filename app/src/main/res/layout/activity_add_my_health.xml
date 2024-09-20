@@ -31,7 +31,8 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:hint="@string/first_name"
-                        android:padding="@dimen/padding_normal" />
+                        android:padding="@dimen/padding_normal"
+                        android:backgroundTint="@color/daynight_textColor"  />
 
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -45,7 +46,8 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:hint="@string/middle_name"
-                        android:padding="@dimen/padding_normal" />
+                        android:padding="@dimen/padding_normal"
+                        android:backgroundTint="@color/daynight_textColor"  />
 
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -59,7 +61,8 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:hint="@string/last_name"
-                        android:padding="@dimen/padding_normal" />
+                        android:padding="@dimen/padding_normal"
+                        android:backgroundTint="@color/daynight_textColor"  />
 
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -81,7 +84,8 @@
                         android:layout_height="wrap_content"
                         android:hint="@string/email"
                         android:inputType="textEmailAddress"
-                        android:padding="@dimen/padding_normal" />
+                        android:padding="@dimen/padding_normal"
+                        android:backgroundTint="@color/daynight_textColor" />
 
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -96,7 +100,8 @@
                         android:layout_height="wrap_content"
                         android:hint="@string/phone_number"
                         android:inputType="phone"
-                        android:padding="@dimen/padding_normal" />
+                        android:padding="@dimen/padding_normal"
+                        android:backgroundTint="@color/daynight_textColor"  />
 
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -117,7 +122,8 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:hint="@string/birth_place"
-                        android:padding="@dimen/padding_normal" />
+                        android:padding="@dimen/padding_normal"
+                        android:backgroundTint="@color/daynight_textColor"  />
 
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -131,7 +137,8 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:hint="@string/birth_date"
-                        android:padding="@dimen/padding_normal" />
+                        android:padding="@dimen/padding_normal"
+                        android:backgroundTint="@color/daynight_textColor"  />
 
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -152,7 +159,8 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:hint="@string/emergency_contact"
-                        android:padding="@dimen/padding_normal" />
+                        android:padding="@dimen/padding_normal"
+                        android:backgroundTint="@color/daynight_textColor" />
 
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -176,7 +184,8 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:hint="@string/contact"
-                        android:padding="@dimen/padding_normal" />
+                        android:padding="@dimen/padding_normal"
+                        android:backgroundTint="@color/daynight_textColor" />
 
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -194,7 +203,8 @@
                     android:layout_height="wrap_content"
                     android:hint="@string/special_needs"
                     android:lines="2"
-                    android:padding="@dimen/padding_normal" />
+                    android:padding="@dimen/padding_normal"
+                    android:backgroundTint="@color/daynight_textColor"  />
 
             </com.google.android.material.textfield.TextInputLayout>
 
@@ -208,7 +218,8 @@
                     android:layout_height="wrap_content"
                     android:hint="@string/other_need"
                     android:lines="2"
-                    android:padding="@dimen/padding_normal" />
+                    android:padding="@dimen/padding_normal"
+                    android:backgroundTint="@color/daynight_textColor" />
 
             </com.google.android.material.textfield.TextInputLayout>
 

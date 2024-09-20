@@ -70,7 +70,8 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:hint="@string/first_name"
-                            android:textColor="@color/daynight_textColor" />
+                            android:textColor="@color/daynight_textColor"
+                            android:backgroundTint="@color/daynight_textColor" />
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <com.google.android.material.textfield.TextInputLayout
@@ -85,7 +86,8 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:hint="@string/middle_name"
-                            android:textColor="@color/daynight_textColor" />
+                            android:textColor="@color/daynight_textColor"
+                            android:backgroundTint="@color/daynight_textColor" />
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <com.google.android.material.textfield.TextInputLayout
@@ -100,7 +102,8 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:hint="@string/last_name"
-                            android:textColor="@color/daynight_textColor" />
+                            android:textColor="@color/daynight_textColor"
+                            android:backgroundTint="@color/daynight_textColor"  />
                     </com.google.android.material.textfield.TextInputLayout>
                 </LinearLayout>
 
@@ -135,7 +138,8 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:hint="@string/birth_place"
-                            android:textColor="@color/daynight_textColor" />
+                            android:textColor="@color/daynight_textColor"
+                            android:backgroundTint="@color/daynight_textColor" />
                     </com.google.android.material.textfield.TextInputLayout>
                 </LinearLayout>
 
@@ -152,7 +156,8 @@
                         android:layout_gravity="center"
                         android:hint="My Purpose - What are your educational and professional ambitions?"
                         android:textSize="20sp"
-                        android:textColor="@color/daynight_textColor" />
+                        android:textColor="@color/daynight_textColor"
+                        android:backgroundTint="@color/daynight_textColor" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
@@ -168,7 +173,8 @@
                         android:layout_gravity="center"
                         android:hint="My Goals - What are your goals for next 10 years?"
                         android:textSize="20sp"
-                        android:textColor="@color/daynight_textColor" />
+                        android:textColor="@color/daynight_textColor"
+                        android:backgroundTint="@color/daynight_textColor" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
@@ -184,7 +190,8 @@
                         android:layout_gravity="center"
                         android:hint="Summery of achievements - Briefly summarize your achievement and add related materials below"
                         android:textSize="20sp"
-                        android:textColor="@color/daynight_textColor" />
+                        android:textColor="@color/daynight_textColor"
+                        android:backgroundTint="@color/daynight_textColor" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <TextView
