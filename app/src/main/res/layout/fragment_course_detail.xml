@@ -79,7 +79,9 @@
                                 style="@style/Base.Widget.AppCompat.RatingBar.Small"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:isIndicator="true" />
+                                android:isIndicator="true"
+                                android:progressTint="@color/daynight_textColor"
+                                android:progressBackgroundTint="@color/empty_rating" />
                         </LinearLayout>
 
                         <LinearLayout
@@ -250,4 +252,3 @@
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 </androidx.constraintlayout.widget.ConstraintLayout>
-
