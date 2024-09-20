@@ -40,15 +40,6 @@
             android:layout_marginTop="8dp"
             app:layout_constraintTop_toBottomOf="@+id/syncToServerText" />
 
-        <!--        <com.google.android.material.card.MaterialCardView-->
-        <!--            android:id="@+id/cardViewAdvanced"-->
-        <!--            android:layout_width="match_parent"-->
-        <!--            android:layout_height="wrap_content"-->
-        <!--            android:layout_marginTop="16dp"-->
-        <!--            app:cardCornerRadius="8dp"-->
-        <!--            app:cardElevation="4dp"-->
-        <!--            app:layout_constraintTop_toBottomOf="@id/serverUrls">-->
-
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/ltAdvanced"
             android:layout_width="match_parent"
@@ -88,7 +79,9 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:backgroundTint="@color/daynight_textColor"
+                android:theme="@style/CustomPopupMenu"
                 android:visibility="gone"
+                app:backgroundTint="@color/daynight_textColor"
                 app:layout_constraintTop_toBottomOf="@+id/radio_protocol" />
 
             <com.google.android.material.textfield.TextInputLayout
@@ -193,17 +186,18 @@
                     android:textStyle="italic" />
             </LinearLayout>
 
-            <com.google.android.material.button.MaterialButton
+            <Button
                 android:id="@+id/clearData"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
+                android:background="@color/mainColor"
                 android:text="@string/clear_data"
                 android:textAllCaps="false"
+                android:textColor="@android:color/white"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/ltDeviceName" />
         </androidx.constraintlayout.widget.ConstraintLayout>
-        <!--        </com.google.android.material.card.MaterialCardView>-->
 
         <LinearLayout
             android:id="@+id/linearLayout2"
