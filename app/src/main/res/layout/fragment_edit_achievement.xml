@@ -103,7 +103,7 @@
                             android:layout_height="wrap_content"
                             android:hint="@string/last_name"
                             android:textColor="@color/daynight_textColor"
-                            android:backgroundTint="@color/daynight_textColor"  />
+                            android:backgroundTint="@color/daynight_textColor" />
                     </com.google.android.material.textfield.TextInputLayout>
                 </LinearLayout>
 
