@@ -6,14 +6,12 @@
     android:layout_margin="5dp"
     android:padding="5dp"
     android:backgroundTint="@color/card_bg" >
-
     <RelativeLayout
         android:id="@+id/rv_item_parent_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="horizontal"
         android:padding="@dimen/padding_normal" >
-
         <TextView
             android:id="@+id/tv_date"
             android:layout_width="wrap_content"
@@ -22,7 +20,6 @@
             android:layout_alignParentBottom="true"
             android:hint="@string/date"
             android:textColor="@color/daynight_textColor" />
-
         <TextView
             android:id="@+id/tv_user"
             android:layout_width="wrap_content"
@@ -30,8 +27,6 @@
             android:hint="@string/user"
             android:textStyle="bold"
             android:textColor="@color/daynight_textColor"/>
-
-
         <TextView
             android:id="@+id/tv_message"
             android:layout_width="wrap_content"
@@ -39,6 +34,5 @@
             android:layout_below="@+id/tv_user"
             android:hint="@string/message"
             android:textColor="@color/daynight_textColor"/>
-
     </RelativeLayout>
 </androidx.cardview.widget.CardView>
