@@ -26,13 +26,13 @@
             android:layout_height="wrap_content"
             android:hint="@string/user"
             android:textStyle="bold"
-            android:textColor="@color/daynight_textColor"/>
+            android:textColor="@color/daynight_textColor" />
         <TextView
             android:id="@+id/tv_message"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_below="@+id/tv_user"
             android:hint="@string/message"
-            android:textColor="@color/daynight_textColor"/>
+            android:textColor="@color/daynight_textColor" />
     </RelativeLayout>
 </androidx.cardview.widget.CardView>
