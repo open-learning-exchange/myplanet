@@ -6,13 +6,11 @@
     android:layout_height="wrap_content"
     android:layout_marginTop="4dp"
     android:stretchColumns="*">
-
     <TableRow
         android:id="@+id/firstRow"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:layout_margin="4dp">
-
         <TextView
             android:id="@+id/name"
             android:layout_width="0dp"
@@ -46,8 +44,7 @@
             android:id="@+id/ltButtons"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="2">
-
+            android:layout_weight="2"qq>
             <ImageButton
                 android:id="@+id/join_leave"
                 android:layout_width="0dp"
@@ -98,7 +95,6 @@
                 android:padding="12dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintHorizontal_weight="1"
-                app:layout_constraintStart_toEndOf="@id/edit_team"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_goneMarginStart="0dp"
                 app:tint="@color/daynight_textColor" />
