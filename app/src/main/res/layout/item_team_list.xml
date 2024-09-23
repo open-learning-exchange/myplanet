@@ -44,7 +44,7 @@
             android:id="@+id/ltButtons"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="2"qq>
+            android:layout_weight="2">
             <ImageButton
                 android:id="@+id/join_leave"
                 android:layout_width="0dp"
