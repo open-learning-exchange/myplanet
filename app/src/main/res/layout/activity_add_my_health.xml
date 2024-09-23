@@ -16,7 +16,6 @@
             android:layout_height="match_parent"
             android:orientation="vertical">
 
-
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
@@ -33,7 +32,6 @@
                         android:hint="@string/first_name"
                         android:padding="@dimen/padding_normal"
                         android:backgroundTint="@color/daynight_textColor"  />
-
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
@@ -48,7 +46,6 @@
                         android:hint="@string/middle_name"
                         android:padding="@dimen/padding_normal"
                         android:backgroundTint="@color/daynight_textColor"  />
-
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
@@ -63,7 +60,6 @@
                         android:hint="@string/last_name"
                         android:padding="@dimen/padding_normal"
                         android:backgroundTint="@color/daynight_textColor"  />
-
                 </com.google.android.material.textfield.TextInputLayout>
 
             </LinearLayout>
@@ -71,7 +67,6 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
-
 
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/et_email"
@@ -86,7 +81,6 @@
                         android:inputType="textEmailAddress"
                         android:padding="@dimen/padding_normal"
                         android:backgroundTint="@color/daynight_textColor" />
-
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
@@ -102,11 +96,8 @@
                         android:inputType="phone"
                         android:padding="@dimen/padding_normal"
                         android:backgroundTint="@color/daynight_textColor"  />
-
                 </com.google.android.material.textfield.TextInputLayout>
-
             </LinearLayout>
-
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -124,7 +115,6 @@
                         android:hint="@string/birth_place"
                         android:padding="@dimen/padding_normal"
                         android:backgroundTint="@color/daynight_textColor"  />
-
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
@@ -139,11 +129,8 @@
                         android:hint="@string/birth_date"
                         android:padding="@dimen/padding_normal"
                         android:backgroundTint="@color/daynight_textColor"  />
-
                 </com.google.android.material.textfield.TextInputLayout>
-
             </LinearLayout>
-
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -161,7 +148,6 @@
                         android:hint="@string/emergency_contact"
                         android:padding="@dimen/padding_normal"
                         android:backgroundTint="@color/daynight_textColor" />
-
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <Spinner
@@ -172,8 +158,6 @@
                     android:layout_weight="1"
                     android:entries="@array/contact_type"
                     android:padding="@dimen/padding_normal" />
-
-
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/et_contact"
                     android:layout_width="0dp"
@@ -186,12 +170,8 @@
                         android:hint="@string/contact"
                         android:padding="@dimen/padding_normal"
                         android:backgroundTint="@color/daynight_textColor" />
-
                 </com.google.android.material.textfield.TextInputLayout>
-
-
             </LinearLayout>
-
 
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/et_special_need"
@@ -205,7 +185,6 @@
                     android:lines="2"
                     android:padding="@dimen/padding_normal"
                     android:backgroundTint="@color/daynight_textColor"  />
-
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
@@ -220,9 +199,7 @@
                     android:lines="2"
                     android:padding="@dimen/padding_normal"
                     android:backgroundTint="@color/daynight_textColor" />
-
             </com.google.android.material.textfield.TextInputLayout>
-
 
             <Button
                 android:id="@+id/btn_submit"
@@ -232,10 +209,6 @@
                 android:text="@string/button_submit"
                 android:textSize="@dimen/text_size_large"
                 android:theme="@style/PrimaryButton" />
-
         </LinearLayout>
-
     </androidx.core.widget.NestedScrollView>
-
-
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
