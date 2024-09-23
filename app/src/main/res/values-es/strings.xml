@@ -1178,5 +1178,6 @@
     <string name="switching_on_manual_configuration_to_clear_data">activar la configuración manual borrará todos los datos, ¿está seguro de que desea continuar?</string>
     <string name="chart_description">Gráfico de Actividad de Inicio de Sesión</string>
     <string name="chart_label">N.º de inicios de sesión</string>
+    <string name="copied_to_clipboard">copiado al portapapeles</string>
 
 </resources>
