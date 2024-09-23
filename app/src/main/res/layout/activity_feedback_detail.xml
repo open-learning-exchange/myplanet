@@ -38,7 +38,8 @@
                 android:layout_weight="3"
                 android:hint="@string/please_enter_reply"
                 android:textColorHint="@color/hint_color"
-                android:textColor="@color/daynight_textColor" />
+                android:textColor="@color/daynight_textColor"
+                android:backgroundTint="@color/daynight_textColor" />
             <Button
                 android:id="@+id/reply_feedback"
                 style="@style/PrimaryButton"
