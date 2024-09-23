@@ -24,8 +24,6 @@ import org.ole.planet.myplanet.databinding.FragmentHomeBellBinding
 import org.ole.planet.myplanet.model.RealmCertification
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getCourseByCourseId
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getCourseSteps
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -149,23 +147,28 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     private fun showBadges() {
         fragmentHomeBellBinding.cardProfileBell.llBadges.removeAllViews()
-        val courseCount = countCourseIds(mRealm)
-
-        for ((index, entry) in courseCount.withIndex()) {
+        val completedCourses = getCompletedCourses(mRealm, user?.id)
+        completedCourses.forEachIndexed { index, course ->
             val rootView = requireActivity().findViewById<ViewGroup>(android.R.id.content)
             val star = LayoutInflater.from(activity).inflate(R.layout.image_start, rootView, false) as ImageView
-            val courseId = entry.keys.first()
-            val count = entry.values.first()
-            val steps = getCourseSteps(mRealm, courseId)
-            if (count.toInt() == steps.size) {
-                setColor(courseId, star)
-                fragmentHomeBellBinding.cardProfileBell.llBadges.addView(star)
-                star.setOnClickListener {
-                    val course = getCourseByCourseId(courseId, mRealm)
-                    star.contentDescription = "${getString(R.string.completed_course)} ${course?.courseTitle}"
-                    openCourse(course, index)
-                }
+            setColor(course.courseId, star)
+            fragmentHomeBellBinding.cardProfileBell.llBadges.addView(star)
+            star.contentDescription = "${getString(R.string.completed_course)} ${course.courseTitle}"
+            star.setOnClickListener {
+                openCourse(course, index)
             }
+        }
+    }
+
+    private fun getCompletedCourses(realm: Realm, userId: String?): List<RealmMyCourse> {
+        val myCourses = RealmMyCourse.getMyCourseByUserId(userId, realm.where(RealmMyCourse::class.java).findAll())
+        val courseProgress = RealmCourseProgress.getCourseProgress(realm, userId)
+
+        return myCourses.filter { course ->
+            val progress = courseProgress[course.id]
+            progress?.let {
+                it.asJsonObject["current"].asInt == it.asJsonObject["max"].asInt
+            } ?: false
         }
     }
 
@@ -180,28 +183,13 @@ class BellDashboardFragment : BaseDashboardFragment() {
         }
     }
 
-    private fun countCourseIds(mRealm: Realm): List<Map<String, Long>> {
-        val courseIdCounts: MutableMap<String, Long> = HashMap()
-        val results = mRealm.where(RealmCourseProgress::class.java).findAll()
-        for (progress in results) {
-            val courseId = progress.courseId
-            if (courseId != null) {
-                if (courseIdCounts.containsKey(courseId)) {
-                    courseIdCounts[courseId] = courseIdCounts[courseId]!! + 1
-                } else {
-                    courseIdCounts[courseId] = 1
-                }
-            }
-        }
-        return courseIdCounts.map { mapOf(it.key to it.value) }
-    }
-
-    private fun setColor(courseId: String, star: ImageView) =
+    private fun setColor(courseId: String?, star: ImageView) {
         if (RealmCertification.isCourseCertified(mRealm, courseId)) {
             star.setColorFilter(ContextCompat.getColor(requireContext(), R.color.colorPrimary))
         } else {
             star.setColorFilter(ContextCompat.getColor(requireContext(), R.color.md_blue_grey_300))
         }
+    }
 
     private fun declareElements() {
         fragmentHomeBellBinding.homeCardTeams.llHomeTeam.setOnClickListener { homeItemClickListener?.openCallFragment(TeamFragment()) }
