@@ -23,7 +23,6 @@
                 android:layout_gravity="center_vertical"
                 android:src="@drawable/ic_left_arrow"
                 app:tint="@color/md_black_1000" />
-
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -41,8 +40,6 @@
             android:layout_height="wrap_content"
             android:entries="@array/add_link_options"
             android:padding="@dimen/padding_normal" />
-
-
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -53,18 +50,14 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="@string/enter_title"
-                android:backgroundTint="@color/daynight_textColor"  />
-
+                android:backgroundTint="@color/daynight_textColor" />
         </com.google.android.material.textfield.TextInputLayout>
-
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_list"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:minHeight="200dp" />
-
-
         <Button
             android:id="@+id/btn_save"
             android:layout_width="match_parent"
@@ -72,5 +65,4 @@
             android:text="@string/save"
             android:theme="@style/PrimaryButton" />
     </LinearLayout>
-
 </FrameLayout>
