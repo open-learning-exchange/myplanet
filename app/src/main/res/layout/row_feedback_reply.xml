@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="100dp"
     android:layout_margin="5dp"
-    android:padding="5dp">
+    android:padding="5dp"
+    android:backgroundTint="@color/card_bg">
 
     <RelativeLayout
         android:id="@+id/rv_item_parent_layout"
@@ -18,22 +20,21 @@
             android:layout_height="wrap_content"
             android:layout_alignParentRight="true"
             android:layout_alignParentBottom="true"
-            android:hint="@string/date" />
-
+            android:hint="@string/date"
+            android:textColor="@color/daynight_textColor" />
         <TextView
             android:id="@+id/tv_user"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:hint="@string/user"
-            android:textStyle="bold" />
-
-
+            android:textStyle="bold"
+            android:textColor="@color/daynight_textColor" />
         <TextView
             android:id="@+id/tv_message"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_below="@+id/tv_user"
-            android:hint="@string/message" />
-
+            android:hint="@string/message"
+            android:textColor="@color/daynight_textColor" />
     </RelativeLayout>
 </androidx.cardview.widget.CardView>

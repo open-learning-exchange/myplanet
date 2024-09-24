@@ -14,6 +14,7 @@ import android.widget.ListView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatTextView
+import androidx.core.content.ContextCompat
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import fisk.chipcloud.ChipCloud
@@ -192,6 +193,9 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         alertAddAttachmentBinding.btnAddResources.setOnClickListener {
             showResourceListDialog(prevList)
         }
+        val tintColor = ContextCompat.getColorStateList(requireContext(), R.color.daynight_textColor)
+        alertAddAttachmentBinding.etDesc.backgroundTintList = tintColor
+        alertAddAttachmentBinding.etTitle.backgroundTintList = tintColor
         val alertAddAttachmentView: View = alertAddAttachmentBinding.root
         AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
             .setTitle(R.string.add_achievement)
