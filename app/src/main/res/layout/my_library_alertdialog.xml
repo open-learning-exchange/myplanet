@@ -8,7 +8,8 @@
     <org.ole.planet.myplanet.utilities.CheckboxListView
         android:id="@+id/alertDialog_listView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="100dp"
+        android:maxHeight="600dp"
         android:layout_gravity="center_vertical"
         android:layout_marginLeft="18dp"
         android:layout_marginTop="3dp" />
