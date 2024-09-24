@@ -163,7 +163,7 @@ class AdapterReports(private val context: Context, private var list: RealmResult
 
         reportListItemBinding.delete.setOnClickListener {
             report?._id?.let { reportId ->
-                val builder = AlertDialog.Builder(context)
+                val builder = AlertDialog.Builder(context, R.style.AlertDialogTheme)
                 builder.setTitle("Delete Report")
                     .setMessage(R.string.delete_record)
                     .setPositiveButton(R.string.ok) { _, _ ->

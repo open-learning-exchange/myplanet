@@ -16,6 +16,7 @@ import io.realm.Realm
 import io.realm.Sort
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.R.array.status_options
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentNotificationBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -24,6 +25,7 @@ import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
+import java.util.ArrayList
 
 class NotificationFragment : Fragment() {
     private lateinit var fragmentNotificationBinding: FragmentNotificationBinding
@@ -54,19 +56,21 @@ class NotificationFragment : Fragment() {
 
         val notifications = loadNotifications(userId, "all")
 
-        val spinnerAdapter = ArrayAdapter.createFromResource(requireContext(), R.array.status_options, android.R.layout.simple_spinner_item)
-        spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        fragmentNotificationBinding.status?.adapter = spinnerAdapter
-        fragmentNotificationBinding.status?.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+        val options = resources.getStringArray(status_options)
+        val optionsList: MutableList<String?> = ArrayList(listOf(*options))
+        val spinnerAdapter = ArrayAdapter(requireContext(), R.layout.spinner_item, optionsList)
+        spinnerAdapter.setDropDownViewResource(R.layout.spinner_item)
+        fragmentNotificationBinding.status.adapter = spinnerAdapter
+        fragmentNotificationBinding.status.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
                 val selectedOption = parent.getItemAtPosition(position).toString().lowercase()
                 val filteredNotifications = loadNotifications(userId, selectedOption)
                 adapter.updateNotifications(filteredNotifications)
 
                 if (filteredNotifications.isEmpty()) {
-                    fragmentNotificationBinding.emptyData?.visibility = View.VISIBLE
+                    fragmentNotificationBinding.emptyData.visibility = View.VISIBLE
                 } else {
-                    fragmentNotificationBinding.emptyData?.visibility = View.GONE
+                    fragmentNotificationBinding.emptyData.visibility = View.GONE
                 }
             }
 
@@ -74,7 +78,7 @@ class NotificationFragment : Fragment() {
         }
 
         if (notifications.isEmpty()) {
-            fragmentNotificationBinding.emptyData?.visibility = View.VISIBLE
+            fragmentNotificationBinding.emptyData.visibility = View.VISIBLE
         }
 
         adapter = AdapterNotification(notifications,
@@ -87,7 +91,7 @@ class NotificationFragment : Fragment() {
         fragmentNotificationBinding.rvNotifications.adapter = adapter
         fragmentNotificationBinding.rvNotifications.layoutManager = LinearLayoutManager(requireContext())
 
-        fragmentNotificationBinding.btnMarkAllAsRead?.setOnClickListener {
+        fragmentNotificationBinding.btnMarkAllAsRead.setOnClickListener {
             markAllAsRead()
         }
 
@@ -162,14 +166,14 @@ class NotificationFragment : Fragment() {
                 .findAll()
                 .forEach { it.isRead = true }
         }
-        adapter.updateNotifications(loadNotifications(userId, fragmentNotificationBinding.status?.selectedItem.toString().lowercase()))
+        adapter.updateNotifications(loadNotifications(userId, fragmentNotificationBinding.status.selectedItem.toString().lowercase()))
         updateMarkAllAsReadButtonVisibility()
         updateUnreadCount()
     }
 
     private fun updateMarkAllAsReadButtonVisibility() {
         val unreadCount = getUnreadNotificationsSize()
-        fragmentNotificationBinding.btnMarkAllAsRead?.visibility = if (unreadCount > 0) View.VISIBLE else View.GONE
+        fragmentNotificationBinding.btnMarkAllAsRead.visibility = if (unreadCount > 0) View.VISIBLE else View.GONE
     }
 
     private fun getUnreadNotificationsSize(): Int {
