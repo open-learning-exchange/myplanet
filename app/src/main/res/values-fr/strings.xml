@@ -1178,5 +1178,6 @@
     <string name="switching_on_manual_configuration_to_clear_data">L\'activation de la configuration manuelle effacera toutes les données. Êtes-vous sûr de vouloir continuer?</string>
     <string name="chart_description">Graphique d\'Activité de Connexion</string>
     <string name="chart_label">Nbre de connexions</string>
+    <string name="copied_to_clipboard">copié dans le presse-papiers</string>
 
 </resources>
