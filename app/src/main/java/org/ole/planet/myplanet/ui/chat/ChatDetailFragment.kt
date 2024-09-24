@@ -58,6 +58,14 @@ class ChatDetailFragment : Fragment() {
         val newsRev = arguments?.getString("newsRev")
         val newsConversations = arguments?.getString("conversations")
         checkAiProviders()
+        val selectedText = arguments?.getString("selectedText")
+        if (!selectedText.isNullOrEmpty()) {
+            // Paste the selected text into the editGchatMessage field
+            fragmentChatDetailBinding.editGchatMessage.setText(selectedText)
+
+            // Simulate a click on the send button
+            fragmentChatDetailBinding.buttonGchatSend.performClick()
+        }
         if (mAdapter.itemCount > 0) {
             fragmentChatDetailBinding.recyclerGchat.scrollToPosition(mAdapter.itemCount - 1)
             fragmentChatDetailBinding.recyclerGchat.smoothScrollToPosition(mAdapter.itemCount - 1)
