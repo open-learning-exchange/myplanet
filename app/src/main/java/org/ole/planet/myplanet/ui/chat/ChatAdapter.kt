@@ -1,17 +1,18 @@
 package org.ole.planet.myplanet.ui.chat
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
-import io.realm.RealmList
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemAiResponseMessageBinding
 import org.ole.planet.myplanet.databinding.ItemUserMessageBinding
-import org.ole.planet.myplanet.model.Conversation
 
 class ChatAdapter(private val chatList: ArrayList<String>, val context: Context, private val recyclerView: RecyclerView) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private lateinit var textUserMessageBinding: ItemUserMessageBinding
@@ -30,27 +31,36 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context,
         this.chatItemClickListener = listener
     }
 
-    class QueryViewHolder(private val textUserMessageBinding: ItemUserMessageBinding) : RecyclerView.ViewHolder(textUserMessageBinding.root) {
+    class QueryViewHolder(private val textUserMessageBinding: ItemUserMessageBinding, private val copyToClipboard: (String) -> Unit) : RecyclerView.ViewHolder(textUserMessageBinding.root) {
         fun bind(query: String) {
             textUserMessageBinding.textGchatMessageMe.text = query
+
+            textUserMessageBinding.textGchatMessageMe.setOnLongClickListener {
+                copyToClipboard(query)
+                true
+            }
         }
     }
 
-    class ResponseViewHolder(private val textAiMessageBinding: ItemAiResponseMessageBinding, val context: Context) : RecyclerView.ViewHolder(textAiMessageBinding.root) {
+    class ResponseViewHolder(private val textAiMessageBinding: ItemAiResponseMessageBinding, private val copyToClipboard: (String) -> Unit, val context: Context) : RecyclerView.ViewHolder(textAiMessageBinding.root) {
         fun bind(response: String, responseSource: Int) {
-            if(responseSource == RESPONSE_SOURCE_NETWORK){
+            if (responseSource == RESPONSE_SOURCE_NETWORK) {
                 val typingDelayMillis = 10L
                 val typingAnimationDurationMillis = response.length * typingDelayMillis
                 textAiMessageBinding.textGchatMessageOther.text = context.getString(R.string.empty_text)
                 Handler(Looper.getMainLooper()).postDelayed({
                     animateTyping(response)
                 }, typingAnimationDurationMillis)
-            } else if(responseSource == RESPONSE_SOURCE_SHARED_VIEW_MODEL){
+            } else if (responseSource == RESPONSE_SOURCE_SHARED_VIEW_MODEL) {
                 if (response.isNotEmpty()) {
                     textAiMessageBinding.textGchatMessageOther.text = response
                 } else{
                     textAiMessageBinding.textGchatMessageOther.visibility = View.GONE
                 }
+            }
+            textAiMessageBinding.textGchatMessageOther.setOnLongClickListener {
+                copyToClipboard(response)
+                true
             }
         }
 
@@ -67,6 +77,13 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context,
             }
             Handler(Looper.getMainLooper()).postDelayed(typingRunnable, 10L)
         }
+    }
+
+    private fun copyToClipboard(text: String) {
+        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        val clip = ClipData.newPlainText("copied Text", text)
+        clipboard.setPrimaryClip(clip)
+        Toast.makeText(context, context.getString(R.string.copied_to_clipboard), Toast.LENGTH_SHORT).show()
     }
 
     fun addQuery(query: String) {
@@ -102,11 +119,11 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context,
         return when (viewType) {
             viewTypeQuery -> {
                 textUserMessageBinding = ItemUserMessageBinding.inflate(LayoutInflater.from(context), parent, false)
-                QueryViewHolder(textUserMessageBinding)
+                QueryViewHolder(textUserMessageBinding, this::copyToClipboard)
             }
             viewTypeResponse -> {
                 textAiMessageBinding = ItemAiResponseMessageBinding.inflate(LayoutInflater.from(context), parent, false)
-                ResponseViewHolder(textAiMessageBinding, context)
+                ResponseViewHolder(textAiMessageBinding, this::copyToClipboard, context)
             }
             else -> throw IllegalArgumentException("Invalid view type")
         }
@@ -138,11 +155,5 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context,
         const val RESPONSE_SOURCE_SHARED_VIEW_MODEL = 1
         const val RESPONSE_SOURCE_NETWORK = 2
         const val RESPONSE_SOURCE_UNKNOWN = 0
-
-        private var chatHistoryItemClickListener: ChatHistoryListAdapter.ChatHistoryItemClickListener? = null
-
-        fun clickListener(conversations: String?, newsId: String?, newsRev: String?) {
-            chatHistoryItemClickListener?.onChatHistoryItemClicked(conversations as RealmList<Conversation>?, newsId ?: "", newsRev ?: "")
-        }
     }
 }

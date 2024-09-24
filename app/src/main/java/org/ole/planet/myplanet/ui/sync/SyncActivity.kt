@@ -626,26 +626,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     binding.inputServerPassword.setText(storedPin)
                 }
             }
-
-            binding.manualConfiguration.setOnCheckedChangeListener { _: CompoundButton?, isChecked: Boolean ->
-                if (isChecked) {
-                    prefData.setManualConfig(true)
-                    editor.putString("serverURL", "").apply()
-                    editor.putString("serverPin", "").apply()
-                    binding.radioHttp.isChecked = true
-                    editor.putString("serverProtocol", getString(R.string.http_protocol)).apply()
-                    showConfigurationUIElements(binding, true, dialog)
-                    serverUrl.addTextChangedListener(MyTextWatcher(serverUrl))
-                    binding.switchServerUrl.isChecked = settings.getBoolean("switchCloudUrl", false)
-                    setUrlAndPin(settings.getBoolean("switchCloudUrl", false))
-                    protocolSemantics()
-                } else {
-                    prefData.setManualConfig(false)
-                    showConfigurationUIElements(binding, false, dialog)
-                    editor.putBoolean("switchCloudUrl", false).apply()
-                }
-            }
-
             serverUrl.isEnabled = false
             serverPassword.isEnabled = false
             editor.putString("serverProtocol", getString(R.string.https_protocol)).apply()
