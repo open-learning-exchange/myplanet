@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.text.TextUtils
-import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
@@ -121,7 +120,7 @@ class FeedbackDetailActivity : AppCompatActivity() {
 
     inner class RvFeedbackAdapter(private val replyList: List<FeedbackReply>?, var context: Context) : RecyclerView.Adapter<ReplyViewHolder>() {
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ReplyViewHolder {
-            rowFeedbackReplyBinding = RowFeedbackReplyBinding.inflate(LayoutInflater.from(context), parent, false)
+            rowFeedbackReplyBinding = RowFeedbackReplyBinding.inflate(layoutInflater, parent, false)
             return ReplyViewHolder(rowFeedbackReplyBinding)
         }
 
