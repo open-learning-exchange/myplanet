@@ -4,78 +4,78 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
+    app:cardBackgroundColor="@color/card_bg"
     app:cardElevation="2dp"
     app:cardUseCompatPadding="true"
-    app:contentPadding="8dp"
-    app:cardBackgroundColor="@color/card_bg">
+    app:contentPadding="8dp">
 
-    <LinearLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:padding="@dimen/padding_normal">
 
-        <LinearLayout
+        <TextView
+            android:id="@+id/tv_total"
+            android:layout_width="@dimen/_40dp"
+            android:layout_height="@dimen/_40dp"
+            android:layout_gravity="center"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/oval_primary"
+            android:foregroundGravity="center"
+            android:gravity="center"
+            android:padding="@dimen/padding_large"
+            android:textColor="@color/daynight_textColor"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/mistakes"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_margin="@dimen/_16dp"
-            android:orientation="vertical">
+            android:background="@drawable/buttonblue"
+            android:padding="4dp"
+            android:text="@string/mistakes"
+            android:textColor="@color/md_white_1000"
+            android:textSize="12sp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tv_total" />
 
-            <TextView
-                android:id="@+id/tv_total"
-                android:layout_width="@dimen/_40dp"
-                android:layout_height="@dimen/_40dp"
-                android:layout_gravity="center"
-                android:background="@drawable/oval_primary"
-                android:foregroundGravity="center"
-                android:gravity="center"
-                android:padding="@dimen/padding_large"
-                android:textColor="@color/daynight_textColor"
-                android:textSize="20sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="@drawable/buttonblue"
-                android:padding="4dp"
-                android:text="@string/mistakes"
-                android:textColor="@color/md_white_1000"
-                android:textSize="12sp" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="0dp"
+        <TextView
+            android:id="@+id/tv_title"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:padding="@dimen/_16dp">
+            android:layout_marginStart="@dimen/padding_normal"
+            android:padding="@dimen/padding_normal"
+            android:textColor="@color/daynight_textColor"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            app:layout_constraintStart_toEndOf="@+id/mistakes"
+            app:layout_constraintTop_toTopOf="parent" />
 
-            <TextView
-                android:id="@+id/tv_title"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:padding="@dimen/padding_normal"
-                android:textColor="@color/daynight_textColor"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-            <TextView
-                android:id="@+id/tv_description"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:paddingLeft="@dimen/padding_normal"
-                android:paddingRight="@dimen/padding_normal"
-                android:textColor="@color/daynight_textColor"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-        </LinearLayout>
+        <TextView
+            android:id="@+id/tv_description"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="11dp"
+            android:textColor="@color/daynight_textColor"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            app:layout_constraintStart_toEndOf="@+id/mistakes"
+            app:layout_constraintTop_toBottomOf="@+id/tv_title" />
 
         <LinearLayout
             android:id="@+id/ll_progress"
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:layout_weight="1"
             android:gravity="center"
-            android:orientation="vertical" />
-    </LinearLayout>
+            android:orientation="vertical"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/mistakes" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.cardview.widget.CardView>
