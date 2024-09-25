@@ -34,7 +34,6 @@
             app:totalColor="@color/total_color"
             app:totalValue="100"
             app:totalWidth="20dp" />
-
         <TextView
             android:id="@+id/tv_course"
             android:layout_width="wrap_content"
@@ -44,8 +43,6 @@
             android:padding="8dp"
             android:textColor="@color/daynight_textColor"
             android:textSize="18sp" />
-
-
         <TextView
             android:id="@+id/tv_progress"
             android:layout_width="wrap_content"
@@ -55,8 +52,6 @@
             android:padding="8dp"
             android:textColor="@color/daynight_textColor"
             android:textSize="16sp" />
-
-
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -66,14 +61,11 @@
             android:text="@string/steps"
             android:textColor="@color/daynight_textColor"
             android:textSize="18sp" />
-
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_progress"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:padding="8dp" />
-
     </LinearLayout>
-
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
