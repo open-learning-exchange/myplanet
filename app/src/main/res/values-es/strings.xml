@@ -1181,6 +1181,5 @@
     <string name="copied_to_clipboard">copiado al portapapeles</string>
     <string name="mark_all_as_read">Marcar todo como leído</string>
     <string name="mark_as_read">Marcar como leído</string>
-    <string name="pending_survey_notification">Tienes una encuesta pendiente:</string>
 
 </resources>

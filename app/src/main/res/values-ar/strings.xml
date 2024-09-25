@@ -1181,6 +1181,5 @@
     <string name="copied_to_clipboard">تم نسخه إلى الحافظة</string>
     <string name="mark_all_as_read">وضع علامة "مقروء" على الجميع</string>
     <string name="mark_as_read">وضع علامة كمقروء</string>
-    <string name="pending_survey_notification">لديك استبيان معلق:</string>
 
 </resources>

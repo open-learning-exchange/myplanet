@@ -1181,6 +1181,5 @@
     <string name="copied_to_clipboard">copié dans le presse-papiers</string>
     <string name="mark_all_as_read">Marquer tout comme lu</string>
     <string name="mark_as_read">Marquer comme lu</string>
-    <string name="pending_survey_notification">Vous avez un sondage en attente:</string>
 
 </resources>
