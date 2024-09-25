@@ -6,20 +6,20 @@
     android:layout_height="match_parent"
     android:padding="@dimen/padding_normal"
     tools:context=".ui.resources.AddResourceActivity"
-    android:background="@color/card_bg" >
+    android:background="@color/card_bg">
 
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent" >
+        android:layout_height="match_parent">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:orientation="vertical" >
+            android:orientation="vertical">
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content" >
+                android:layout_height="wrap_content">
 
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/tl_title"
@@ -27,7 +27,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:padding="@dimen/padding_normal"
-                    android:textColorHint="@color/hint_color" >
+                    android:textColorHint="@color/hint_color">
 
                     <EditText
                         android:id="@+id/et_title"
@@ -35,7 +35,6 @@
                         android:layout_height="wrap_content"
                         android:hint="@string/title_asterisk"
                         android:textColor="@color/daynight_textColor" />
-
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
@@ -43,7 +42,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:padding="@dimen/padding_normal"
-                    android:textColorHint="@color/hint_color" >
+                    android:textColorHint="@color/hint_color">
 
                     <EditText
                         android:id="@+id/et_author"
@@ -51,7 +50,6 @@
                         android:layout_height="wrap_content"
                         android:hint="@string/author"
                         android:textColor="@color/daynight_textColor" />
-
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
@@ -59,7 +57,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:padding="@dimen/padding_normal"
-                    android:textColorHint="@color/hint_color" >
+                    android:textColorHint="@color/hint_color">
 
                     <EditText
                         android:id="@+id/et_year"
@@ -67,16 +65,14 @@
                         android:layout_height="wrap_content"
                         android:hint="@string/year"
                         android:textColor="@color/daynight_textColor" />
-
                 </com.google.android.material.textfield.TextInputLayout>
-
             </LinearLayout>
 
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:padding="@dimen/padding_normal"
-                android:textColorHint="@color/hint_color" >
+                android:textColorHint="@color/hint_color">
 
                 <EditText
                     android:id="@+id/et_description"
@@ -85,12 +81,11 @@
                     android:hint="@string/description"
                     android:lines="3"
                     android:textColor="@color/daynight_textColor" />
-
             </com.google.android.material.textfield.TextInputLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content" >
+                android:layout_height="wrap_content">
 
                 <Spinner
                     android:id="@+id/spn_lang"
@@ -103,13 +98,12 @@
                     android:hint="@string/title_asterisk"
                     android:padding="@dimen/padding_large"
                     android:theme="@style/ResourcePopupMenu" />
-
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:padding="@dimen/padding_normal"
-                    android:textColorHint="@color/hint_color" >
+                    android:textColorHint="@color/hint_color">
 
                     <EditText
                         android:id="@+id/et_publisher"
@@ -117,7 +111,6 @@
                         android:layout_height="wrap_content"
                         android:hint="@string/publisher"
                         android:textColor="@color/daynight_textColor" />
-
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
@@ -125,7 +118,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:padding="@dimen/padding_normal"
-                    android:textColorHint="@color/hint_color" >
+                    android:textColorHint="@color/hint_color">
 
                     <EditText
                         android:id="@+id/et_link_to_license"
@@ -133,14 +126,12 @@
                         android:layout_height="wrap_content"
                         android:textColor="@color/daynight_textColor"
                         android:hint="@string/link_to_license" />
-
                 </com.google.android.material.textfield.TextInputLayout>
-
             </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content" >
+                android:layout_height="wrap_content">
 
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/tl_subjects"
@@ -148,7 +139,7 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:layout_weight="1"
-                    android:padding="@dimen/padding_normal" >
+                    android:padding="@dimen/padding_normal">
 
                     <TextView
                         android:id="@+id/tv_subject"
@@ -166,7 +157,7 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:layout_weight="1"
-                    android:padding="@dimen/padding_normal" >
+                    android:padding="@dimen/padding_normal">
 
                     <TextView
                         android:id="@+id/tv_levels"
@@ -189,12 +180,11 @@
                     android:gravity="center"
                     android:padding="@dimen/padding_large"
                     android:theme="@style/ResourcePopupMenu" />
-
             </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content" >
+                android:layout_height="wrap_content">
 
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/tl_resource_for"
@@ -202,7 +192,7 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:layout_weight="1"
-                    android:padding="@dimen/padding_normal" >
+                    android:padding="@dimen/padding_normal">
 
                     <TextView
                         android:id="@+id/tv_resource_for"
@@ -223,7 +213,6 @@
                     android:gravity="center"
                     android:padding="@dimen/padding_large"
                     android:theme="@style/ResourcePopupMenu" />
-
                 <Spinner
                     android:id="@+id/spn_resource_type"
                     android:layout_width="0dp"
@@ -234,12 +223,11 @@
                     android:gravity="center"
                     android:padding="@dimen/padding_large"
                     android:theme="@style/ResourcePopupMenu" />
-
             </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content" >
+                android:layout_height="wrap_content">
 
                 <TextView
                     android:id="@+id/tv_added_by"
@@ -251,13 +239,12 @@
                     android:text="@string/added_by"
                     android:textSize="@dimen/text_size_mid"
                     android:textColor="@color/daynight_textColor" />
-
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:padding="@dimen/padding_normal"
-                    android:textColorHint="@color/hint_color" >
+                    android:textColorHint="@color/hint_color">
 
                     <EditText
                         android:id="@+id/et_open_which"
@@ -265,15 +252,13 @@
                         android:layout_height="wrap_content"
                         android:hint="@string/open_which_file"
                         android:textColor="@color/daynight_textColor" />
-
                 </com.google.android.material.textfield.TextInputLayout>
-
             </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:padding="@dimen/padding_normal" >
+                android:padding="@dimen/padding_normal">
 
                 <TextView
                     android:id="@+id/file_url"
@@ -284,14 +269,12 @@
                     android:text="@string/file_upload"
                     android:textColor="@color/daynight_textColor"
                     android:textSize="@dimen/text_size_mid" />
-
                 <Button
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:text="@string/choose_file"
                     android:visibility="gone" />
-
                 <CheckBox
                     android:id="@+id/cb_downloadable"
                     android:layout_width="wrap_content"
@@ -306,7 +289,7 @@
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="right" >
+                android:layout_gravity="right">
 
                 <Button
                     android:id="@+id/btn_submit"
@@ -315,14 +298,12 @@
                     android:layout_marginRight="10dp"
                     android:text="@string/button_submit"
                     android:theme="@style/AccentButton" />
-
                 <Button
                     android:id="@+id/btn_cancel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/button_cancel"
                     android:theme="@style/AccentButton" />
-
             </LinearLayout>
         </LinearLayout>
     </ScrollView>
