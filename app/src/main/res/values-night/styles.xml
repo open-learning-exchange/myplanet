@@ -171,4 +171,9 @@
     <style name="PopupMenu" parent="ThemeOverlay.AppCompat.Dark">
         <item name="android:popupBackground">@color/daynight_grey</item>
     </style>
+
+    <style name="ResourcePopupMenu" parent="ThemeOverlay.AppCompat.Dark">
+        <item name="android:popupBackground">@color/daynight_grey</item>
+        <item name="android:textColor">@color/daynight_textColor</item>
+    </style>
 </resources>
