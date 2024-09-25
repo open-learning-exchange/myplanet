@@ -39,7 +39,7 @@
                 android:background="@drawable/buttonblue"
                 android:padding="4dp"
                 android:text="@string/mistakes"
-                android:textColor="@color/daynight_textColor"
+                android:textColor="@color/md_white_1000"
                 android:textSize="12sp" />
         </LinearLayout>
 
