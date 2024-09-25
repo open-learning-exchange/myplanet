@@ -94,7 +94,7 @@ class NotificationFragment : Fragment() {
         fragmentNotificationBinding.btnMarkAllAsRead.setOnClickListener {
             markAllAsRead()
         }
-
+        updateMarkAllAsReadButtonVisibility()
         return fragmentNotificationBinding.root
     }
 
