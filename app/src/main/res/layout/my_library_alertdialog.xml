@@ -1,17 +1,22 @@
-<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="@color/card_bg">
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:background="@color/card_bg"
+    android:maxHeight="400dp"
+    android:padding="10dp">
 
     <org.ole.planet.myplanet.utilities.CheckboxListView
         android:id="@+id/alertDialog_listView"
-        android:layout_width="match_parent"
-        android:layout_height="100dp"
-        android:maxHeight="600dp"
-        android:layout_gravity="center_vertical"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:minHeight="100dp"
         android:layout_marginLeft="18dp"
-        android:layout_marginTop="3dp" />
+        android:layout_marginTop="3dp"
+        android:scrollbars="vertical"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent" />
 
-</LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>
