@@ -125,7 +125,7 @@ class AddResourceActivity : AppCompatActivity() {
         val adapter = ArrayAdapter(this, R.layout.rowlayout, R.id.checkBoxRowLayout, list)
         listView.choiceMode = ListView.CHOICE_MODE_MULTIPLE
         listView.adapter = adapter
-        AlertDialog.Builder(this).setView(listView).setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
+        AlertDialog.Builder(this, R.style.AlertDialogTheme).setView(listView).setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
             val selected = listView.selectedItemsList
             items?.clear()
             var selection = ""
