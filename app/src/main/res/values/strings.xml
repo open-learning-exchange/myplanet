@@ -1179,5 +1179,8 @@
     <string name="chart_description">Login Activity Chart</string>
     <string name="chart_label">No. of login</string>
     <string name="copied_to_clipboard">copied to clipboard</string>
+    <string name="mark_all_as_read">Mark all as read</string>
+    <string name="mark_as_read">Mark as read</string>
+    <string name="pending_survey_notification">You have a pending survey:</string>
 
 </resources>

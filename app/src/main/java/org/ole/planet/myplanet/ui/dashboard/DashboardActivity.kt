@@ -236,7 +236,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             val pendingSurveys = getPendingSurveys(user?.id, realm)
             val surveyTitles = getSurveyTitlesFromSubmissions(pendingSurveys, realm)
             surveyTitles.forEach { title ->
-                createNotificationIfNotExists(realm, "survey", "You have a pending survey: $title", title)
+                createNotificationIfNotExists(realm, "survey", "${getString(R.string.pending_survey_notification)} $title", title)
             }
 
             val tasks = realm.where(RealmTeamTask::class.java)

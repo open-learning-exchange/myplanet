@@ -19,7 +19,7 @@
             android:id="@+id/btnMarkAllAsRead"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="mark all as read"
+            android:text="@string/mark_all_as_read"
             android:textAllCaps="false"
             app:layout_constraintEnd_toEndOf="parent" />
 
