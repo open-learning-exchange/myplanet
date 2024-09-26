@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/secondary_bg"
     tools:context=".ui.courses.CourseProgressActivity">
 
     <LinearLayout
@@ -19,7 +20,7 @@
             android:layout_gravity="center"
             app:animate="true"
             app:animateDuration="600"
-            app:fillColor="@color/colorPrimary"
+            app:fillColor="@color/mainColor"
             app:progressColor="#FFF"
             app:progressInterpolator="@android:anim/accelerate_decelerate_interpolator"
             app:progressRoundCap="true"
@@ -30,10 +31,9 @@
             app:progressValue="10"
             app:progressWidth="12dp"
             app:startAngle="270"
-            app:totalColor="@color/colorPrimaryDark"
+            app:totalColor="@color/total_color"
             app:totalValue="100"
             app:totalWidth="20dp" />
-
         <TextView
             android:id="@+id/tv_course"
             android:layout_width="wrap_content"
@@ -41,10 +41,8 @@
             android:layout_gravity="center"
             android:gravity="center"
             android:padding="8dp"
-            android:textColor="@color/md_black_1000"
+            android:textColor="@color/daynight_textColor"
             android:textSize="18sp" />
-
-
         <TextView
             android:id="@+id/tv_progress"
             android:layout_width="wrap_content"
@@ -52,10 +50,8 @@
             android:layout_gravity="center"
             android:gravity="center"
             android:padding="8dp"
-            android:textColor="@color/md_black_1000"
+            android:textColor="@color/daynight_textColor"
             android:textSize="16sp" />
-
-
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -63,16 +59,13 @@
             android:gravity="center"
             android:padding="8dp"
             android:text="@string/steps"
-            android:textColor="@color/md_black_1000"
+            android:textColor="@color/daynight_textColor"
             android:textSize="18sp" />
-
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_progress"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:padding="8dp" />
-
     </LinearLayout>
-
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

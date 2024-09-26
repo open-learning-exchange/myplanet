@@ -19,6 +19,7 @@
     <color name="mainColorLight">@color/colorPrimaryLight</color>
     <color name="dashboard_item">@color/md_white_1000</color>
     <color name="dashboard_item_alternative">@color/md_grey_300</color>
+    <color name="total_color">@color/md_blue_900</color>
 
     <color name="black_overlay">#66000000</color>
     <color name="bg_white">#FFFFFF</color>
