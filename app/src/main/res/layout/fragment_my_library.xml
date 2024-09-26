@@ -40,7 +40,8 @@
                     android:text="@string/library"
                     android:textColor="@color/textColorPrimary"
                     android:textSize="@dimen/text_size_large"
-                    android:textStyle="bold" />
+                    android:textStyle="bold"
+                    android:minWidth="150dp" />
                 <TextView
                     android:id="@+id/tv_add"
                     style="@style/Widget.AppCompat.Button.Borderless.Colored"
@@ -77,7 +78,7 @@
                     app:drawableLeftCompat="@drawable/ic_delete"
                     app:drawableTint="@color/daynight_textColor"
                     app:tint="@color/textColorPrimary"
-                    android:maxWidth="130dp" />
+                    android:minWidth="120dp" />
                 <ImageButton
                     android:id="@+id/filter"
                     style="@style/YellowButtons"

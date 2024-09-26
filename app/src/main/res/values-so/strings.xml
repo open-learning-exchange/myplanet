@@ -95,7 +95,7 @@
     <string name="alerts">digniino</string>
     <string name="profile">Profile</string>
     <string name="user">Isticmaal</string>
-    <string name="remove_selected">saar la xushay</string>
+    <string name="remove_selected">saar\nla xushay</string>
     <string name="stop_download">jooji soo dejinta</string>
     <string name="downloading_file">soo dejinta faylka…</string>
     <string name="cancel">burin</string>
