@@ -81,7 +81,8 @@
                     android:textSize="@dimen/text_size_mid"
                     android:visibility="gone"
                     app:drawableLeftCompat="@drawable/ic_delete"
-                    app:drawableTint="@color/daynight_textColor"/>
+                    app:drawableTint="@color/daynight_textColor"
+                    android:minWidth="150dp" />
                 <Button
                     android:id="@+id/btn_archive"
                     android:layout_width="wrap_content"
@@ -95,7 +96,7 @@
                     android:textSize="@dimen/text_size_mid"
                     android:visibility="gone"
                     app:drawableLeftCompat="@drawable/ic_delete"
-                    app:drawableTint="@color/daynight_textColor"/>
+                    app:drawableTint="@color/daynight_textColor" />
                 <ImageButton
                     android:id="@+id/filter"
                     style="@style/YellowButtons"

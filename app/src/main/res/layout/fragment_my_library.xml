@@ -54,7 +54,7 @@
                     android:textColor="@color/daynight_textColor"
                     android:textSize="@dimen/text_size_mid"
                     app:drawableLeftCompat="@drawable/ic_add_library"
-                    app:drawableTint="@color/daynight_textColor"/>
+                    app:drawableTint="@color/daynight_textColor" />
                 <TextView
                     android:id="@+id/tv_selected"
                     android:layout_width="wrap_content"
@@ -76,7 +76,8 @@
                     android:visibility="gone"
                     app:drawableLeftCompat="@drawable/ic_delete"
                     app:drawableTint="@color/daynight_textColor"
-                    app:tint="@color/textColorPrimary" />
+                    app:tint="@color/textColorPrimary"
+                    android:maxWidth="130dp" />
                 <ImageButton
                     android:id="@+id/filter"
                     style="@style/YellowButtons"
