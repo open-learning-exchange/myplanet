@@ -33,7 +33,7 @@
                 android:layout_gravity="right"
                 android:padding="4dp"
                 android:src="@drawable/close_x"
-                app:tint="@color/md_black_1000" />
+                app:tint="@color/daynight_textColor" />
         </LinearLayout>
 
         <TextView
