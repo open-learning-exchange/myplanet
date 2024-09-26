@@ -274,7 +274,7 @@ class ChatDetailFragment : Fragment() {
 
     private fun onFailError() {
         fragmentChatDetailBinding.textGchatIndicator.visibility = View.VISIBLE
-        fragmentChatDetailBinding.textGchatIndicator.text = getString(R.string.virtual_assistant_currently_not_available)
+        fragmentChatDetailBinding.textGchatIndicator.text = requireContext().getString(R.string.virtual_assistant_currently_not_available)
         fragmentChatDetailBinding.editGchatMessage.isEnabled = false
         fragmentChatDetailBinding.buttonGchatSend.isEnabled = false
     }
