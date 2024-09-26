@@ -24,7 +24,7 @@
         <View
             android:layout_width="match_parent"
             android:layout_height="@dimen/_1dp"
-            android:background="@color/card_bg" />
+            android:background="@color/daynight_textColor" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -51,7 +51,7 @@
                     android:gravity="center"
                     android:padding="@dimen/padding_large"
                     app:srcCompat="@drawable/ic_camera"
-                    app:tint="@color/daynight_textColor" />
+                    app:tint="@color/md_blue_900" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -82,7 +82,7 @@
                     android:gravity="center"
                     android:padding="@dimen/padding_large"
                     app:srcCompat="@drawable/ic_record_video"
-                    app:tint="@color/daynight_textColor" />
+                    app:tint="@color/md_blue_900" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -113,7 +113,7 @@
                     android:gravity="center"
                     android:padding="@dimen/padding_large"
                     app:srcCompat="@drawable/ic_mic"
-                    app:tint="@color/daynight_textColor" />
+                    app:tint="@color/md_blue_900" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -144,7 +144,7 @@
                     android:gravity="center"
                     android:padding="@dimen/padding_large"
                     app:srcCompat="@drawable/ic_folder"
-                    app:tint="@color/daynight_textColor" />
+                    app:tint="@color/md_blue_900" />
 
                 <TextView
                     android:layout_width="wrap_content"
