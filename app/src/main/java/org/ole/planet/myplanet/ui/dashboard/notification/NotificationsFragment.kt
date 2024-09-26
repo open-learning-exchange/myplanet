@@ -156,6 +156,7 @@ class NotificationsFragment : Fragment() {
         }
         adapter.notifyItemChanged(position)
         updateUnreadCount()
+        updateMarkAllAsReadButtonVisibility()
     }
 
     private fun markAllAsRead() {
