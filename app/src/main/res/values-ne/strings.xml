@@ -1179,5 +1179,7 @@
     <string name="chart_description">लगइन गतिविधि चार्ट</string>
     <string name="chart_label">लगइनहरूको संख्या</string>
     <string name="copied_to_clipboard">क्लिपबोर्डमा प्रति लिइयो</string>
+    <string name="mark_all_as_read">सबैलाई पढिएको रूपमा चिन्ह लगाउनुहोस्</string>
+    <string name="mark_as_read">पढिएको रूपमा चिन्ह लगाउनुहोस्</string>
 
 </resources>
