@@ -210,4 +210,9 @@
         <item name="android:textAllCaps">false</item>
         <item name="android:layout_marginTop">10dp</item>
     </style>
+
+    <style name="ResourcePopupMenu" parent="ThemeOverlay.AppCompat.Light">
+        <item name="android:popupBackground">@color/md_white_1000</item>
+        <item name="android:textColor">@color/daynight_textColor</item>
+    </style>
 </resources>
