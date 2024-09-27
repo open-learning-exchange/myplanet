@@ -69,7 +69,7 @@
                             android:id="@+id/et_fname"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:hint=q"@string/first_name"
+                            android:hint="@string/first_name"
                             android:textColor="@color/daynight_textColor"
                             android:backgroundTint="@color/daynight_textColor" />
                     </com.google.android.material.textfield.TextInputLayout>
