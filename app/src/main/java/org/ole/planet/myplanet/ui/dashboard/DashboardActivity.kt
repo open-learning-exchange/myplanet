@@ -36,7 +36,9 @@ import com.mikepenz.materialdrawer.model.PrimaryDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.Nameable
 import io.realm.Case
-import io.realm.Realm
+import io.realm.RealmChangeListener
+import io.realm.RealmObject
+import io.realm.RealmResults
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
@@ -91,6 +93,12 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private var menut: TabLayout.Tab? = null
     private var tl: TabLayout? = null
     private var dl: DrawerLayout? = null
+    private val realmListeners = mutableListOf<RealmListener>()
+
+    private interface RealmListener {
+        fun removeListener()
+    }
+
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(LocaleHelper.onAttach(base))
     }
@@ -199,6 +207,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         menue = tl?.getTabAt(4)
         menuco = tl?.getTabAt(5)
         hideWifi()
+        setupRealmListeners()
         checkAndCreateNewNotifications()
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
@@ -226,41 +235,84 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         })
     }
 
-    private fun checkAndCreateNewNotifications() {
-        val resourceCount = getLibraryList(mRealm, user?.id).size
-        mRealm.executeTransaction { realm ->
-            if (resourceCount > 0) {
-                createNotificationIfNotExists(realm, "resource", "you have $resourceCount resources not downloaded", "$resourceCount")
-            }
+    private fun setupRealmListeners() {
+        setupListener {
+            mRealm.where(RealmMyLibrary::class.java).findAllAsync()
+        }
 
-            val pendingSurveys = getPendingSurveys(user?.id, realm)
-            val surveyTitles = getSurveyTitlesFromSubmissions(pendingSurveys, realm)
-            surveyTitles.forEach { title ->
-                createNotificationIfNotExists(realm, "survey", "You have a pending survey: $title", title)
-            }
+        setupListener {
+            mRealm.where(RealmSubmission::class.java)
+                .equalTo("userId", user?.id)
+                .equalTo("type", "survey")
+                .equalTo("status", "pending", Case.INSENSITIVE)
+                .findAllAsync()
+        }
 
-            val tasks = realm.where(RealmTeamTask::class.java)
+        setupListener {
+            mRealm.where(RealmTeamTask::class.java)
                 .notEqualTo("status", "archived")
                 .equalTo("completed", false)
                 .equalTo("assignee", user?.id)
-                .findAll()
-            tasks.forEach { task ->
-                createNotificationIfNotExists(realm, "task", "${task.title} is due in ${formatDate(task.deadline)}", task.id)
-            }
+                .findAllAsync()
+        }
+    }
 
-            val storageRatio = totalAvailableMemoryRatio
-            when {
-                storageRatio <= 10 -> {
-                    createNotificationIfNotExists(realm, "storage", "${getString(R.string.storage_critically_low)} $storageRatio% ${getString(R.string.available_please_free_up_space)}", "storage")
-                }
-                storageRatio <= 40 -> {
-                    createNotificationIfNotExists(realm, "storage", "${getString(R.string.storage_running_low)} $storageRatio% ${getString(R.string.available)}", "storage")
-                }
+    private inline fun <reified T : RealmObject> setupListener(crossinline query: () -> RealmResults<T>) {
+        val results = query()
+        val listener = RealmChangeListener<RealmResults<T>> { _ ->
+            checkAndCreateNewNotifications()
+        }
+        results.addChangeListener(listener)
+        realmListeners.add(object : RealmListener {
+            override fun removeListener() {
+                results.removeChangeListener(listener)
+            }
+        })
+    }
+
+    private fun checkAndCreateNewNotifications() {
+        if (mRealm.isInTransaction) {
+            createNotifications()
+        } else {
+            mRealm.executeTransaction { realm ->
+                createNotifications()
             }
         }
 
         updateNotificationBadge(getUnreadNotificationsSize()) {
             openNotificationsList(user?.id ?: "")
+        }
+    }
+
+    private fun createNotifications() {
+        val resourceCount = getLibraryList(mRealm, user?.id).size
+        if (resourceCount > 0) {
+            createNotificationIfNotExists("resource", "you have $resourceCount resources not downloaded", "$resourceCount")
+        }
+
+        val pendingSurveys = getPendingSurveys(user?.id)
+        val surveyTitles = getSurveyTitlesFromSubmissions(pendingSurveys)
+        surveyTitles.forEach { title ->
+            createNotificationIfNotExists("survey", "You have a pending survey: $title", title)
+        }
+
+        val tasks = mRealm.where(RealmTeamTask::class.java)
+            .notEqualTo("status", "archived")
+            .equalTo("completed", false)
+            .equalTo("assignee", user?.id)
+            .findAll()
+        tasks.forEach { task ->
+            createNotificationIfNotExists("task", "${task.title} is due in ${formatDate(task.deadline)}", task.id)
+        }
+
+        val storageRatio = totalAvailableMemoryRatio
+        when {
+            storageRatio <= 10 -> {
+                createNotificationIfNotExists("storage", "${getString(R.string.storage_critically_low)} $storageRatio% ${getString(R.string.available_please_free_up_space)}", "storage")
+            }
+            storageRatio <= 40 -> {
+                createNotificationIfNotExists("storage", "${getString(R.string.storage_running_low)} $storageRatio% ${getString(R.string.available)}", "storage")
+            }
         }
     }
 
@@ -280,15 +332,15 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-    private fun createNotificationIfNotExists(realm: Realm, type: String, message: String, relatedId: String?) {
-        val existingNotification = realm.where(RealmNotification::class.java)
+    private fun createNotificationIfNotExists(type: String, message: String, relatedId: String?) {
+        val existingNotification = mRealm.where(RealmNotification::class.java)
             .equalTo("userId", user?.id)
             .equalTo("type", type)
             .equalTo("relatedId", relatedId)
             .findFirst()
 
         if (existingNotification == null) {
-            realm.createObject(RealmNotification::class.java, UUID.randomUUID().toString()).apply {
+            mRealm.createObject(RealmNotification::class.java, UUID.randomUUID().toString()).apply {
                 this.userId = user?.id ?: ""
                 this.type = type
                 this.message = message
@@ -298,18 +350,18 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-    private fun getPendingSurveys(userId: String?, realm: Realm): List<RealmSubmission> {
-        return realm.where(RealmSubmission::class.java)
+    private fun getPendingSurveys(userId: String?): List<RealmSubmission> {
+        return mRealm.where(RealmSubmission::class.java)
             .equalTo("userId", userId)
             .equalTo("type", "survey")
             .equalTo("status", "pending", Case.INSENSITIVE)
             .findAll()
     }
 
-    private fun getSurveyTitlesFromSubmissions(submissions: List<RealmSubmission>, realm: Realm): List<String> {
+    private fun getSurveyTitlesFromSubmissions(submissions: List<RealmSubmission>): List<String> {
         val titles = mutableListOf<String>()
         submissions.forEach { submission ->
-            val exam = realm.where(RealmStepExam::class.java)
+            val exam = mRealm.where(RealmStepExam::class.java)
                 .equalTo("id", submission.parentId)
                 .findFirst()
             exam?.name?.let { titles.add(it) }
@@ -514,6 +566,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     override fun onDestroy() {
         super.onDestroy()
         profileDbHandler.onDestroy()
+
+        realmListeners.forEach { it.removeListener() }
+        realmListeners.clear()
     }
 
     override fun openCallFragment(f: Fragment) {
