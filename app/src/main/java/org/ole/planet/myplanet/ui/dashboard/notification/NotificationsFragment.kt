@@ -94,7 +94,7 @@ class NotificationsFragment : Fragment() {
         fragmentNotificationsBinding.btnMarkAllAsRead.setOnClickListener {
             markAllAsRead()
         }
-
+        updateMarkAllAsReadButtonVisibility()
         return fragmentNotificationsBinding.root
     }
 
@@ -156,6 +156,7 @@ class NotificationsFragment : Fragment() {
         }
         adapter.notifyItemChanged(position)
         updateUnreadCount()
+        updateMarkAllAsReadButtonVisibility()
     }
 
     private fun markAllAsRead() {
