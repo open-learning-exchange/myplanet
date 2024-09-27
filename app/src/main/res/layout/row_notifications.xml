@@ -39,6 +39,6 @@
         android:layout_gravity="center_vertical"
         android:layout_margin="@dimen/_4dp"
         android:padding="@dimen/padding_normal"
-        android:text="mark as read"
+        android:text="@string/mark_as_read"
         android:textAllCaps="false" />
 </LinearLayout>
