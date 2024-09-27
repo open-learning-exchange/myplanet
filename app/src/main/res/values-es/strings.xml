@@ -95,7 +95,7 @@
     <string name="alerts">Alertas</string>
     <string name="profile">Perfil</string>
     <string name="user">Usuario</string>
-    <string name="remove_selected">Eliminar seleccionados</string>
+    <string name="remove_selected">Eliminar\nseleccionados</string>
     <string name="stop_download">Detener descarga</string>
     <string name="downloading_file">Descargando archivo…</string>
     <string name="cancel">Cancelar</string>
