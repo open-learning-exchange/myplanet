@@ -1179,5 +1179,7 @@
     <string name="chart_description">Gráfico de Actividad de Inicio de Sesión</string>
     <string name="chart_label">N.º de inicios de sesión</string>
     <string name="copied_to_clipboard">copiado al portapapeles</string>
+    <string name="mark_all_as_read">Marcar todo como leído</string>
+    <string name="mark_as_read">Marcar como leído</string>
 
 </resources>
