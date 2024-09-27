@@ -69,7 +69,7 @@
                             android:id="@+id/et_fname"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:hint="@string/first_name"
+                            android:hint=q"@string/first_name"
                             android:textColor="@color/daynight_textColor"
                             android:backgroundTint="@color/daynight_textColor" />
                     </com.google.android.material.textfield.TextInputLayout>
@@ -188,7 +188,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
-                        android:hint="Summery of achievements - Briefly summarize your achievement and add related materials below"
+                        android:hint="Summary of achievements - Briefly summarize your achievement and add related materials below"
                         android:textSize="20sp"
                         android:textColor="@color/daynight_textColor"
                         android:backgroundTint="@color/daynight_textColor" />
