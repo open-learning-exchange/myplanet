@@ -51,7 +51,7 @@
                     android:gravity="center"
                     android:padding="@dimen/padding_large"
                     app:srcCompat="@drawable/ic_camera"
-                    app:tint="@color/md_blue_900" />
+                    app:tint="@color/daynight_textColor" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -82,7 +82,7 @@
                     android:gravity="center"
                     android:padding="@dimen/padding_large"
                     app:srcCompat="@drawable/ic_record_video"
-                    app:tint="@color/md_blue_900" />
+                    app:tint="@color/daynight_textColor" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -113,7 +113,7 @@
                     android:gravity="center"
                     android:padding="@dimen/padding_large"
                     app:srcCompat="@drawable/ic_mic"
-                    app:tint="@color/md_blue_900" />
+                    app:tint="@color/daynight_textColor" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -144,7 +144,7 @@
                     android:gravity="center"
                     android:padding="@dimen/padding_large"
                     app:srcCompat="@drawable/ic_folder"
-                    app:tint="@color/md_blue_900" />
+                    app:tint="@color/daynight_textColor" />
 
                 <TextView
                     android:layout_width="wrap_content"
