@@ -95,7 +95,7 @@
     <string name="alerts">Alertes</string>
     <string name="profile">Profil</string>
     <string name="user">Utilisateur</string>
-    <string name="remove_selected">Supprimer la sélection</string>
+    <string name="remove_selected">Supprimer\nla sélection</string>
     <string name="stop_download">Arrêter le téléchargement</string>
     <string name="downloading_file">Téléchargement du fichier en cours…</string>
     <string name="cancel">Annuler</string>
@@ -1179,5 +1179,7 @@
     <string name="chart_description">Graphique d\'Activité de Connexion</string>
     <string name="chart_label">Nbre de connexions</string>
     <string name="copied_to_clipboard">copié dans le presse-papiers</string>
+    <string name="mark_all_as_read">Marquer tout comme lu</string>
+    <string name="mark_as_read">Marquer comme lu</string>
 
 </resources>
