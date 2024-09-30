@@ -30,7 +30,14 @@ class AudioRecorderService {
     @RequiresApi(Build.VERSION_CODES.S)
     fun startRecording() {
         outputFile = createAudioFile()
-        myAudioRecorder = MediaRecorder(context).apply {
+        myAudioRecorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            MediaRecorder(context)
+        } else {
+            @Suppress("DEPRECATION")
+            MediaRecorder()
+        }
+
+        myAudioRecorder?.apply {
             setAudioSource(MediaRecorder.AudioSource.MIC)
             setOutputFormat(MediaRecorder.OutputFormat.AAC_ADTS)
             setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
@@ -51,11 +58,8 @@ class AudioRecorderService {
         var audioFile: File
         var attempt = 0
         do {
-            audioFileName = UUID.randomUUID().toString() + ".aac"
-            audioFile = File(
-                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC),
-                audioFileName
-            )
+            audioFileName = "${UUID.randomUUID()}.aac"
+            audioFile = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC), audioFileName)
             attempt++
         } while (audioFile.exists() && attempt < 100)
         if (attempt >= 100) {
