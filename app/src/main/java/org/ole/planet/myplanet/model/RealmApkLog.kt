@@ -11,6 +11,8 @@ open class RealmApkLog : RealmObject() {
     @PrimaryKey
     var id: String? = null
     @JvmField
+    var userId: String? = null
+    @JvmField
     var type: String? = null
     @JvmField
     var _rev: String? = null
@@ -62,6 +64,7 @@ open class RealmApkLog : RealmObject() {
             `object`.addProperty("error", log.error)
             `object`.addProperty("page", log.page)
             `object`.addProperty("time", log.time)
+            `object`.addProperty("userId", log.userId)
             `object`.addProperty("version", log.version)
             `object`.addProperty("createdOn", log.createdOn)
             `object`.addProperty("androidId", log.createdOn)
