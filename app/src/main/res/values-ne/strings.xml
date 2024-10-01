@@ -1181,5 +1181,9 @@
     <string name="copied_to_clipboard">क्लिपबोर्डमा प्रति लिइयो</string>
     <string name="mark_all_as_read">सबैलाई पढिएको रूपमा चिन्ह लगाउनुहोस्</string>
     <string name="mark_as_read">पढिएको रूपमा चिन्ह लगाउनुहोस्</string>
+    <string name="our_voices">हाम्रो आवाजहरू</string>
+    <string name="no_voices_available">उपलब्ध आवाजहरू छैनन्</string>
+    <string name="new_voice">नयाँ आवाज</string>
+    <string name="hide_new_voice">नयाँ आवाज लुकाउनुहोस्</string>
 
 </resources>

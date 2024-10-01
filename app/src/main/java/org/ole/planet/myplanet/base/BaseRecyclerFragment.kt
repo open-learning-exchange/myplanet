@@ -294,7 +294,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                 "courses" -> (v as TextView).setText(R.string.no_courses)
                 "resources" -> (v as TextView).setText(R.string.no_resources)
                 "finances" -> (v as TextView).setText(R.string.no_finance_record)
-                "news" -> (v as TextView).setText(R.string.no_stories)
+                "news" -> (v as TextView).setText(R.string.no_voices_available)
                 "teamCourses" -> (v as TextView).setText(R.string.no_team_courses)
                 "teamResources" -> (v as TextView).setText(R.string.no_team_resources)
                 "tasks" -> (v as TextView).setText(R.string.no_tasks)

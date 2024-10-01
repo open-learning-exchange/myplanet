@@ -1181,5 +1181,9 @@
     <string name="copied_to_clipboard">copied to clipboard</string>
     <string name="mark_all_as_read">Mark all as read</string>
     <string name="mark_as_read">Mark as read</string>
+    <string name="our_voices">our voices</string>
+    <string name="no_voices_available">no voices available</string>
+    <string name="new_voice">new voice</string>
+    <string name="hide_new_voice">hide new voice</string>
 
 </resources>

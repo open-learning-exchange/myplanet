@@ -1181,5 +1181,9 @@
     <string name="copied_to_clipboard">waxaa lagu koobay clipboard-ka</string>
     <string name="mark_all_as_read">Calaamadee dhammaan sidii la aqriyay</string>
     <string name="mark_as_read">Calaamadee sidii la aqriyay</string>
+    <string name="our_voices">codadkeena</string>
+    <string name="no_voices_available">ma jiro cod la heli karo</string>
+    <string name="new_voice">cod cusub</string>
+    <string name="hide_new_voice">qarso cod cusub</string>
 
 </resources>

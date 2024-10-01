@@ -1181,5 +1181,9 @@
     <string name="copied_to_clipboard">copiado al portapapeles</string>
     <string name="mark_all_as_read">Marcar todo como leído</string>
     <string name="mark_as_read">Marcar como leído</string>
+    <string name="our_voices">nuestras voces</string>
+    <string name="no_voices_available">no hay voces disponibles</string>
+    <string name="new_voice">nueva voz</string>
+    <string name="hide_new_voice">ocultar nueva voz</string>
 
 </resources>
