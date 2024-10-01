@@ -154,7 +154,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
-                        android:hint="My Purpose - What are your educational and professional ambitions?"
+                        android:hint="@string/my_purpose"
                         android:textSize="20sp"
                         android:textColor="@color/daynight_textColor"
                         android:backgroundTint="@color/daynight_textColor" />
@@ -171,7 +171,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
-                        android:hint="My Goals - What are your goals for next 10 years?"
+                        android:hint="@string/my_goals"
                         android:textSize="20sp"
                         android:textColor="@color/daynight_textColor"
                         android:backgroundTint="@color/daynight_textColor" />
@@ -188,7 +188,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
-                        android:hint="Summery of achievements - Briefly summarize your achievement and add related materials below"
+                        android:hint="@string/summary_of_achievemnets"
                         android:textSize="20sp"
                         android:textColor="@color/daynight_textColor"
                         android:backgroundTint="@color/daynight_textColor" />
@@ -198,7 +198,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:padding="@dimen/padding_small"
-                    android:text="Add any materials demonstrating your achievements below"
+                    android:text="@string/add_materials"
                     android:textColor="@color/daynight_textColor" />
                 <LinearLayout
                     android:id="@+id/ll_attachment"
