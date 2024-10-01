@@ -4,10 +4,12 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/card_bg"
     tools:context=".ui.viewer.AudioPlayerActivity">
 
     <com.example.jean.jcplayer.view.JcPlayerView
         android:id="@+id/jcplayer"
+        style="@style/jcplayerstyle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
@@ -24,7 +26,7 @@
         android:layout_marginBottom="16dp"
         android:gravity="center"
         android:text="Your Text Here"
-        android:textColor="#000000"
+        android:textColor="@color/daynight_textColor"
         android:textSize="16sp"
         app:layout_anchor="@+id/jcplayer"
         app:layout_anchorGravity="bottom|center" />
