@@ -106,7 +106,6 @@ class NotificationsFragment : Fragment() {
                 Log.d("NotificationsFragment", "storage clicked")
             }
             "survey" -> {
-                Log.d("NotificationsFragment", "survey clicked")
                 val currentStepExam = mRealm.where(RealmStepExam::class.java).equalTo("name", notification.relatedId)
                     .findFirst()
                 if(context is OnHomeItemClickListener) {
