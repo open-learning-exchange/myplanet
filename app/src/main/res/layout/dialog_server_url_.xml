@@ -202,23 +202,23 @@
 
             <androidx.appcompat.widget.SwitchCompat
                 android:id="@+id/manualConfiguration"
-                android:layout_width="0dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
                 android:checked="false"
                 android:padding="8dp"
                 android:text="@string/manual"
-                android:textColor="@color/daynight_textColor" />
+                android:textColor="@color/daynight_textColor"
+                app:switchPadding="20dp" />
             <androidx.appcompat.widget.SwitchCompat
                 android:id="@+id/switch_server_url"
-                android:layout_width="0dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
                 android:checked="false"
                 android:padding="8dp"
                 android:text="@string/cloud_url"
                 android:textColor="@color/daynight_textColor"
-                android:visibility="gone" />
+                android:visibility="gone"
+                app:switchPadding="20dp" />
         </LinearLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
 </ScrollView>

@@ -95,7 +95,7 @@
     <string name="alerts">चेतावनीहरू</string>
     <string name="profile">प्रोफाइल</string>
     <string name="user">प्रयोगकर्ता</string>
-    <string name="remove_selected">चयनित हटाउनुहोस्</string>
+    <string name="remove_selected">चयनित\nहटाउनुहोस्</string>
     <string name="stop_download">डाउनलोड रोक्नुहोस्</string>
     <string name="downloading_file">फाइल डाउनलोड गर्दै…</string>
     <string name="cancel">रद्द गर्नुहोस्</string>
