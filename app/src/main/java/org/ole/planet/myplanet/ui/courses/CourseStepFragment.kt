@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.exam.TakeExamFragment
+import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
 import org.ole.planet.myplanet.utilities.CustomClickableSpan
@@ -147,7 +148,18 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         }
         if (stepSurvey.isNotEmpty()) {
             Log.d("okuro", "called")
-            fragmentCourseStepBinding.btnTakeSurvey.visibility = View.VISIBLE
+            val firstStepId = stepSurvey[0].id
+            val questions = cRealm.where(RealmExamQuestion::class.java).equalTo("examId", firstStepId).findAll()
+            val submissionsCount = step.courseId?.let {
+                cRealm.where(RealmSubmission::class.java).contains("parentId", it)
+                    .notEqualTo("status", "pending", Case.INSENSITIVE).count()
+            }
+            if (questions != null && questions.size > 0) {
+                if (submissionsCount != null) {
+                    fragmentCourseStepBinding.btnTakeSurvey.text = if (submissionsCount > 0) { "redo survey" } else { "record survey" }
+                }
+                fragmentCourseStepBinding.btnTakeSurvey.visibility = View.VISIBLE
+            }
         }
     }
 
@@ -175,6 +187,12 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                 takeExam.arguments = b
                 homeItemClickListener?.openCallFragment(takeExam)
                 capturePhoto(this)
+            }
+        }
+
+        fragmentCourseStepBinding.btnTakeSurvey.setOnClickListener {
+            if (stepSurvey.isNotEmpty()) {
+                AdapterMySubmission.openSurvey(homeItemClickListener, stepSurvey[0].id, false)
             }
         }
         val downloadedResources: List<RealmMyLibrary> = cRealm.where(RealmMyLibrary::class.java).equalTo("stepId", stepId).equalTo("resourceOffline", true).isNotNull("resourceLocalAddress").findAll()
