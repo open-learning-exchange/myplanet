@@ -16,7 +16,6 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
-
     <TableLayout
         android:id="@+id/aiTbLayout"
         android:layout_width="wrap_content"
@@ -39,7 +38,6 @@
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:visibility="gone" />
-
             <View
                 android:id="@+id/view1"
                 android:layout_width="1dp"
@@ -51,7 +49,6 @@
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
-
             <Button
                 android:id="@+id/tvPerplexity"
                 android:layout_width="wrap_content"
@@ -62,7 +59,6 @@
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:visibility="gone" />
-
             <View
                 android:id="@+id/view2"
                 android:layout_width="1dp"
@@ -74,7 +70,6 @@
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
-
             <Button
                 android:id="@+id/tvGemini"
                 android:layout_width="wrap_content"
@@ -101,7 +96,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/aiTbLayout" />
-
     <TextView
         android:id="@+id/text_gchat_indicator"
         android:layout_width="wrap_content"
@@ -115,14 +109,12 @@
         app:layout_constraintBottom_toTopOf="@id/view"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
-
     <View
         android:id="@+id/view"
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:background="@color/hint_color"
         app:layout_constraintBottom_toTopOf="@+id/layout_gchat_chatbox" />
-
     <RelativeLayout
         android:id="@+id/layout_gchat_chatbox"
         android:layout_width="match_parent"
@@ -146,7 +138,6 @@
             android:textColor="@color/daynight_textColor"
             android:textColorHint="@color/hint_color"
             tools:ignore="Autofill" />
-
         <pl.droidsonroids.gif.GifImageView
             android:id="@+id/image_gchat_loading"
             android:layout_width="40dp"
@@ -156,7 +147,6 @@
             android:layout_toStartOf="@+id/button_gchat_send"
             android:src="@drawable/ic_loading"
             android:visibility="invisible" />
-
         <ImageView
             android:id="@+id/button_gchat_send"
             android:layout_width="30dp"
