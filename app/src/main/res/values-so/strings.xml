@@ -1182,8 +1182,10 @@
     <string name="mark_all_as_read">Calaamadee dhammaan sidii la aqriyay</string>
     <string name="mark_as_read">Calaamadee sidii la aqriyay</string>
     <string name="summary_of_achievemnets">Dulmar guulo - Si kooban u soo koob guushaada oo hoos ku dar agabka la xiriira</string>
-    <string name="my_goals">Hadafyadayda - Waa maxay yoolalkaaga 10-ka sano ee soo socda?</string>
+    <string name="my_goals_description">Hadafyadayda - Waa maxay yoolalkaaga 10-ka sano ee soo socda?</string>
     <string name="add_materials">Ku dar agabka kasta oo muujinaya guulahaaga hoos</string>
-    <string name="my_purpose">Ujeedadayda - Waa maxay himilooyinkaaga waxbarasho iyo kuwa xirfadeed?</string>
+    <string name="my_purpose_description">Ujeedadayda - Waa maxay himilooyinkaaga waxbarasho iyo kuwa xirfadeed?</string>
+    <string name="my_purpose">Ujeedadayda</string>
+    <string name="my_goals">Hadafyadayda</string>
 
 </resources>

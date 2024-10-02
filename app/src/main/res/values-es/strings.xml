@@ -1182,8 +1182,10 @@
     <string name="mark_all_as_read">Marcar todo como leído</string>
     <string name="mark_as_read">Marcar como leído</string>
     <string name="summary_of_achievemnets">Resumen de logros - Resume brevemente tu logro y añade los materiales relacionados a continuación</string>
-    <string name="my_goals">Mis Metas - ¿Cuáles son tus metas para los próximos 10 años?</string>
+    <string name="my_goals_description">Mis Metas - ¿Cuáles son tus metas para los próximos 10 años?</string>
     <string name="add_materials">Agrega cualquier material que demuestre tus logros a continuación</string>
-    <string name="my_purpose">Mi Propósito - ¿Cuáles son tus ambiciones educativas y profesionales?</string>
+    <string name="my_purpose_description">Mi Propósito - ¿Cuáles son tus ambiciones educativas y profesionales?</string>
+    <string name="my_purpose">Mi Propósito</string>
+    <string name="my_goals">Mis Metas</string>
 
 </resources>

@@ -1182,8 +1182,10 @@
     <string name="mark_all_as_read">सबैलाई पढिएको रूपमा चिन्ह लगाउनुहोस्</string>
     <string name="mark_as_read">पढिएको रूपमा चिन्ह लगाउनुहोस्</string>
     <string name="summary_of_achievemnets">उपलब्धिहरूको सारांश - आफ्नो उपलब्धि संक्षेपमा दिनुहोस् र सम्बन्धित सामग्री तल थप्नुहोस्</string>
-    <string name="my_goals">मेरा लक्ष्यहरू - आगामी १० वर्षका लागि तपाईँका लक्ष्यहरू के हुन्?</string>
+    <string name="my_goals_description">मेरा लक्ष्यहरू - आगामी १० वर्षका लागि तपाईँका लक्ष्यहरू के हुन्?</string>
     <string name="add_materials">तपाईँका उपलब्धिहरू देखाउने कुनै पनि सामग्री तल थप्नुहोस्</string>
-    <string name="my_purpose">मेरो उद्देश्य - तपाईका शैक्षिक र व्यावसायिक महत्वाकांक्षा के हुन्?</string>
+    <string name="my_purpose_description">मेरो उद्देश्य - तपाईका शैक्षिक र व्यावसायिक महत्वाकांक्षा के हुन्?</string>
+    <string name="my_purpose">मेरो उद्देश्य</string>
+    <string name="my_goals">मेरा लक्ष्यहरू</string>
 
 </resources>
