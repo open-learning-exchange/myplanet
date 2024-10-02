@@ -602,6 +602,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             ResourcesCompat.getDrawable(resources, R.drawable.team, null)?.let { menuImageList.add(it) }
             ResourcesCompat.getDrawable(resources, R.drawable.business, null)?.let { menuImageList.add(it) }
             ResourcesCompat.getDrawable(resources, R.drawable.survey, null)?.let { menuImageList.add(it) }
+            ResourcesCompat.getDrawable(resources, R.drawable.survey, null)?.let { menuImageList.add(it) }
             return arrayOf(
                 changeUX(R.string.menu_myplanet, menuImageList[0]).withIdentifier(0),
                 changeUX(R.string.txt_myLibrary, menuImageList[1]).withIdentifier(1),
@@ -611,7 +612,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 changeUX(R.string.team, menuImageList[5]),
                 changeUX(R.string.menu_community, menuImageList[7]),
                 changeUX(R.string.enterprises, menuImageList[6]),
-                changeUX(R.string.menu_surveys, menuImageList[7])
+                changeUX(R.string.menu_surveys, menuImageList[8])
             )
         }
     private val drawerItemsFooter: Array<IDrawerItem<*, *>>
