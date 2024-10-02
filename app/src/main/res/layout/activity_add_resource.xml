@@ -35,7 +35,7 @@
                         android:layout_height="wrap_content"
                         android:hint="@string/title_asterisk"
                         android:textColor="@color/daynight_textColor"
-                        android:backgroundTint="@color/daynight_textColor"  />
+                        android:backgroundTint="@color/daynight_textColor" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
@@ -51,7 +51,7 @@
                         android:layout_height="wrap_content"
                         android:hint="@string/author"
                         android:textColor="@color/daynight_textColor"
-                        android:backgroundTint="@color/daynight_textColor"  />
+                        android:backgroundTint="@color/daynight_textColor" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
@@ -67,7 +67,7 @@
                         android:layout_height="wrap_content"
                         android:hint="@string/year"
                         android:textColor="@color/daynight_textColor"
-                        android:backgroundTint="@color/daynight_textColor"  />
+                        android:backgroundTint="@color/daynight_textColor" />
                 </com.google.android.material.textfield.TextInputLayout>
             </LinearLayout>
 
@@ -84,7 +84,7 @@
                     android:hint="@string/description"
                     android:lines="3"
                     android:textColor="@color/daynight_textColor"
-                    android:backgroundTint="@color/daynight_textColor"  />
+                    android:backgroundTint="@color/daynight_textColor" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <LinearLayout
@@ -115,7 +115,7 @@
                         android:layout_height="wrap_content"
                         android:hint="@string/publisher"
                         android:textColor="@color/daynight_textColor"
-                        android:backgroundTint="@color/daynight_textColor"  />
+                        android:backgroundTint="@color/daynight_textColor" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
@@ -131,7 +131,7 @@
                         android:layout_height="wrap_content"
                         android:textColor="@color/daynight_textColor"
                         android:hint="@string/link_to_license"
-                        android:backgroundTint="@color/daynight_textColor"  />
+                        android:backgroundTint="@color/daynight_textColor" />
                 </com.google.android.material.textfield.TextInputLayout>
             </LinearLayout>
 
@@ -258,7 +258,7 @@
                         android:layout_height="wrap_content"
                         android:hint="@string/open_which_file"
                         android:textColor="@color/daynight_textColor"
-                        android:backgroundTint="@color/daynight_textColor"  />
+                        android:backgroundTint="@color/daynight_textColor" />
                 </com.google.android.material.textfield.TextInputLayout>
             </LinearLayout>
 
