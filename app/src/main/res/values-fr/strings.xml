@@ -1181,6 +1181,10 @@
     <string name="copied_to_clipboard">copié dans le presse-papiers</string>
     <string name="mark_all_as_read">Marquer tout comme lu</string>
     <string name="mark_as_read">Marquer comme lu</string>
+    <string name="our_voices">nos voix</string>
+    <string name="no_voices_available">aucune voix disponible</string>
+    <string name="new_voice">nouvelle voix</string>
+    <string name="hide_new_voice">cacher la nouvelle voix</string>
     <string name="summary_of_achievemnets">Résumé des réalisations - Résumez brièvement votre réalisation et ajoutez les documents associés ci-dessous</string>
     <string name="my_goals">Mes Objectifs - Quels sont vos objectifs pour les 10 prochaines années ?</string>
     <string name="add_materials">Ajoutez tout matériel démontrant vos réalisations ci-dessous</string>
