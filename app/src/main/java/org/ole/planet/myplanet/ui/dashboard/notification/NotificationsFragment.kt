@@ -21,9 +21,11 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentNotificationsBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmNotification
+import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
+import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import java.util.ArrayList
 
@@ -101,10 +103,14 @@ class NotificationsFragment : Fragment() {
     private fun handleNotificationClick(notification: RealmNotification) {
         when (notification.type) {
             "storage" -> {
-                Log.d("ole2", "storage clicked")
+                Log.d("NotificationsFragment", "storage clicked")
             }
             "survey" -> {
-                Log.d("ole2", "survey clicked")
+                val currentStepExam = mRealm.where(RealmStepExam::class.java).equalTo("name", notification.relatedId)
+                    .findFirst()
+                if(context is OnHomeItemClickListener) {
+                    AdapterMySubmission.openSurvey(context as OnHomeItemClickListener, currentStepExam?.id, false)
+                }
             }
             "task" -> {
                 val taskId = notification.relatedId
