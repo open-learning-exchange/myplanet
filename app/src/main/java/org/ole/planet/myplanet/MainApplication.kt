@@ -86,6 +86,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             if (model != null) {
                 log.parentCode = model.parentCode
                 log.createdOn = model.planetCode
+                log.userId = model.id
             }
             log.time = "${Date().time}"
             log.page = ""
@@ -264,7 +265,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     private fun onAppBackgrounded() {}
 
     private fun onAppStarted() {
-        val newStart = "new launch"
+        val newStart = "new login"
         createLog(newStart)
     }
 
@@ -280,6 +281,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         if (model != null) {
             log.parentCode = model.parentCode
             log.createdOn = model.planetCode
+            log.userId = model.id
         }
         log.time = "${Date().time}"
         log.page = ""

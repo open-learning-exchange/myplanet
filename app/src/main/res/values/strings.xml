@@ -1185,5 +1185,9 @@
     <string name="no_voices_available">no voices available</string>
     <string name="new_voice">new voice</string>
     <string name="hide_new_voice">hide new voice</string>
+    <string name="my_purpose">My Purpose - What are your educational and professional ambitions?</string>
+    <string name="my_goals">My Goals - What are your goals for the next 10 years?</string>
+    <string name="summary_of_achievemnets">Summary of achievements - Briefly summarize your achievement and add related materials below</string>
+    <string name="add_materials">Add any materials demonstrating your achievements below</string>
 
 </resources>
