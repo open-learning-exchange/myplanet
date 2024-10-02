@@ -13,7 +13,7 @@
         android:layout_gravity="center"
         android:gravity="center"
         android:padding="@dimen/padding_normal"
-        android:textColor="@color/colorPrimaryDark"
+        android:textColor="@color/user_profile_label"
         android:textSize="28sp" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
