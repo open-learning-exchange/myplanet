@@ -82,28 +82,9 @@ open class RealmStepExam : RealmObject() {
             myExam?.isFromNation = !TextUtils.isEmpty(parentId)
             val oldQuestions: RealmResults<*>? = mRealm.where(RealmExamQuestion::class.java).equalTo("examId", JsonUtils.getString("_id", exam)).findAll()
             if (oldQuestions == null || oldQuestions.isEmpty()) {
-                RealmExamQuestion.insertExamQuestions(
-                    JsonUtils.getJsonArray("questions", exam),
-                    JsonUtils.getString("_id", exam), mRealm
-                )
+                RealmExamQuestion.insertExamQuestions(JsonUtils.getJsonArray("questions", exam), JsonUtils.getString("_id", exam), mRealm)
             }
             mRealm.commitTransaction()
-
-            val csvRow = arrayOf(
-                JsonUtils.getString("_id", exam),
-                JsonUtils.getString("_rev", exam),
-                JsonUtils.getString("name", exam),
-                JsonUtils.getString("passingPercentage", exam),
-                JsonUtils.getString("type", exam),
-                JsonUtils.getString("createdBy", exam),
-                JsonUtils.getString("sourcePlanet", exam),
-                JsonUtils.getString("createdDate", exam),
-                JsonUtils.getString("updatedDate", exam),
-                JsonUtils.getString("totalMarks", exam),
-                JsonUtils.getString("noOfQuestions", exam),
-                JsonUtils.getString("isFromNation", exam)
-            )
-            examDataList.add(csvRow)
         }
 
         fun writeCsv(filePath: String, data: List<Array<String>>) {
