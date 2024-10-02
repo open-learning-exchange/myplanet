@@ -124,11 +124,11 @@ class AdapterMyLife(private val context: Context, private val myLifeList: List<R
         var rvItemContainer: LinearLayout = itemView.findViewById(R.id.rv_item_parent_layout)
 
         override fun onItemSelected() {
-            itemView.setBackgroundColor(Color.LTGRAY)
+            itemView.setBackgroundColor(context.getResources().getColor(R.color.user_profile_background))
         }
 
         override fun onItemClear(viewHolder: RecyclerView.ViewHolder?) {
-            itemView.setBackgroundColor(0)
+            itemView.setBackgroundColor(context.getResources().getColor(R.color.daynight_grey))
             if (viewHolder != null) {
                 if (!myLifeList[viewHolder.bindingAdapterPosition].isVisible) {
                     (viewHolder as ViewHolderMyLife?)?.rvItemContainer?.alpha = hide

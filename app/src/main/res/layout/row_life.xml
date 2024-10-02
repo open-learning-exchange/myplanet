@@ -37,9 +37,10 @@
             android:layout_marginEnd="8dp"
             android:layout_marginBottom="@dimen/_20dp"
             android:layout_toStartOf="@id/edit_image_button"
-            android:background="@drawable/roundcorner"
             android:padding="@dimen/padding_normal"
-            app:srcCompat="@drawable/ic_visibility" />
+            app:srcCompat="@drawable/ic_visibility"
+            app:tint="@color/daynight_textColor"
+            android:background="@color/daynight_grey" />
         <ImageButton
             android:id="@+id/edit_image_button"
             android:layout_width="wrap_content"
@@ -47,9 +48,9 @@
             android:layout_marginTop="@dimen/_20dp"
             android:layout_marginBottom="@dimen/_20dp"
             android:layout_toStartOf="@id/drag_image_button"
-            android:background="@drawable/roundcorner"
             android:padding="@dimen/padding_normal"
-            app:srcCompat="@drawable/ic_edit" />
+            app:srcCompat="@drawable/ic_edit"
+            android:background="@color/daynight_grey" />
         <ImageButton
             android:id="@+id/drag_image_button"
             android:layout_width="wrap_content"
