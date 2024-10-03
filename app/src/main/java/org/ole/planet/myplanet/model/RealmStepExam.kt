@@ -85,6 +85,22 @@ open class RealmStepExam : RealmObject() {
                 RealmExamQuestion.insertExamQuestions(JsonUtils.getJsonArray("questions", exam), JsonUtils.getString("_id", exam), mRealm)
             }
             mRealm.commitTransaction()
+
+            val csvRow = arrayOf(
+                JsonUtils.getString("_id", exam),
+                JsonUtils.getString("_rev", exam),
+                JsonUtils.getString("name", exam),
+                JsonUtils.getString("passingPercentage", exam),
+                JsonUtils.getString("type", exam),
+                JsonUtils.getString("createdBy", exam),
+                JsonUtils.getString("sourcePlanet", exam),
+                JsonUtils.getString("createdDate", exam),
+                JsonUtils.getString("updatedDate", exam),
+                JsonUtils.getString("totalMarks", exam),
+                JsonUtils.getString("noOfQuestions", exam),
+                JsonUtils.getString("isFromNation", exam)
+            )
+            examDataList.add(csvRow)
         }
 
         fun writeCsv(filePath: String, data: List<Array<String>>) {

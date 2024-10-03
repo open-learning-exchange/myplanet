@@ -5,7 +5,6 @@ import android.os.Bundle
 import android.text.Spannable
 import android.text.method.LinkMovementMethod
 import android.text.style.URLSpan
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -129,11 +128,8 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     private fun hideTestIfNoQuestion() {
         fragmentCourseStepBinding.btnTakeTest.visibility = View.GONE
         fragmentCourseStepBinding.btnTakeSurvey.visibility = View.GONE
-        Log.d("okuro", "stepSurvey: ${stepSurvey.isNotEmpty()}")
-        Log.d("okuro", "stepExams: ${stepExams.isNotEmpty()}")
         if (stepExams.isNotEmpty()) {
             val firstStepId = stepExams[0].id
-            Log.d("CourseStepFragment", "firstStepId: $firstStepId")
             val questions = cRealm.where(RealmExamQuestion::class.java).equalTo("examId", firstStepId).findAll()
             val submissionsCount = step.courseId?.let {
                 cRealm.where(RealmSubmission::class.java).contains("parentId", it)
@@ -147,7 +143,6 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
             }
         }
         if (stepSurvey.isNotEmpty()) {
-            Log.d("okuro", "called")
             val firstStepId = stepSurvey[0].id
             val questions = cRealm.where(RealmExamQuestion::class.java).equalTo("examId", firstStepId).findAll()
             val submissionsCount = step.courseId?.let {
