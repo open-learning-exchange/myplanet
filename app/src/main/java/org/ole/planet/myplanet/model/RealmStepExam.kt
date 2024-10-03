@@ -82,10 +82,7 @@ open class RealmStepExam : RealmObject() {
             myExam?.isFromNation = !TextUtils.isEmpty(parentId)
             val oldQuestions: RealmResults<*>? = mRealm.where(RealmExamQuestion::class.java).equalTo("examId", JsonUtils.getString("_id", exam)).findAll()
             if (oldQuestions == null || oldQuestions.isEmpty()) {
-                RealmExamQuestion.insertExamQuestions(
-                    JsonUtils.getJsonArray("questions", exam),
-                    JsonUtils.getString("_id", exam), mRealm
-                )
+                RealmExamQuestion.insertExamQuestions(JsonUtils.getJsonArray("questions", exam), JsonUtils.getString("_id", exam), mRealm)
             }
             mRealm.commitTransaction()
 

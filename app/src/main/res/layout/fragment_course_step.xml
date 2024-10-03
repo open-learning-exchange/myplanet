@@ -1,4 +1,5 @@
 <androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -12,35 +13,35 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="right"
+            android:layout_gravity="end"
             android:layout_marginEnd="@dimen/_10dp"
-            android:gravity="right">
+            android:gravity="end">
 
             <Button
                 android:id="@+id/btn_open"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/open_resource"
+                android:textAllCaps="false"
                 android:theme="@style/AccentButton" />
-
             <Button
                 android:id="@+id/btn_resources"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/download_resources"
+                android:textAllCaps="false"
                 android:theme="@style/AccentButton" />
-
             <Button
                 android:id="@+id/btn_take_test"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/take_test"
+                android:textAllCaps="false"
                 android:theme="@style/PrimaryButton"
                 android:visibility="gone" />
-
         </LinearLayout>
 
-        <LinearLayout
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_gravity="center"
@@ -49,22 +50,33 @@
 
             <TextView
                 android:id="@+id/tv_title"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:padding="@dimen/padding_normal"
                 android:textColor="@color/daynight_textColor"
                 android:textSize="@dimen/text_size_large"
-                android:textStyle="bold" />
-
+                android:textStyle="bold"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
             <TextView
                 android:id="@+id/description"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/_10dp"
+                android:padding="@dimen/padding_normal"
+                android:textColor="@color/daynight_textColor"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/tv_title" />
+            <Button
+                android:id="@+id/btnTakeSurvey"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:layout_marginEnd="@dimen/_10dp"
-                android:textColor="@color/daynight_textColor" />
-        </LinearLayout>
+                android:background="@drawable/buttonyellow"
+                android:text="take survey"
+                android:visibility="gone"
+                android:textAllCaps="false"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/description" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
     </LinearLayout>
-
-
 </androidx.core.widget.NestedScrollView>
