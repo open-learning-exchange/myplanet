@@ -24,7 +24,6 @@
                 android:text="@string/open_resource"
                 android:textAllCaps="false"
                 android:theme="@style/AccentButton" />
-
             <Button
                 android:id="@+id/btn_resources"
                 android:layout_width="wrap_content"
@@ -32,7 +31,6 @@
                 android:text="@string/download_resources"
                 android:textAllCaps="false"
                 android:theme="@style/AccentButton" />
-
             <Button
                 android:id="@+id/btn_take_test"
                 android:layout_width="wrap_content"
@@ -41,7 +39,6 @@
                 android:textAllCaps="false"
                 android:theme="@style/PrimaryButton"
                 android:visibility="gone" />
-
         </LinearLayout>
 
         <androidx.constraintlayout.widget.ConstraintLayout
@@ -61,7 +58,6 @@
                 android:textStyle="bold"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
-
             <TextView
                 android:id="@+id/description"
                 android:layout_width="wrap_content"
@@ -70,7 +66,6 @@
                 android:textColor="@color/daynight_textColor"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/tv_title" />
-
             <Button
                 android:id="@+id/btnTakeSurvey"
                 android:layout_width="wrap_content"
