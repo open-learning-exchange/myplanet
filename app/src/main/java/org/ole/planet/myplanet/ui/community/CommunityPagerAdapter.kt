@@ -13,9 +13,9 @@ import org.ole.planet.myplanet.ui.enterprises.FinanceFragment
 import org.ole.planet.myplanet.ui.news.NewsFragment
 
 class CommunityPagerAdapter(fm: FragmentActivity, private val id: String, private var fromLogin: Boolean) : FragmentStateAdapter(fm) {
-    private var titles = arrayOf(context.getString(R.string.news), context.getString(R.string.community_leaders), context.getString(R.string.calendar), context.getString(
+    private var titles = arrayOf(context.getString(R.string.our_voices), context.getString(R.string.community_leaders), context.getString(R.string.calendar), context.getString(
             R.string.services), context.getString(R.string.finances))
-    private var titlesLogin = arrayOf(context.getString(R.string.news), context.getString(R.string.community_leaders), context.getString(R.string.calendar))
+    private var titlesLogin = arrayOf(context.getString(R.string.our_voices), context.getString(R.string.community_leaders), context.getString(R.string.calendar))
     @RequiresApi(Build.VERSION_CODES.O)
     override fun createFragment(position: Int): Fragment {
         val fragment: Fragment = when (position) {
