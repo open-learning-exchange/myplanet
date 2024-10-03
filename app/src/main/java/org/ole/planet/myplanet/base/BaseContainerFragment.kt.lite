@@ -253,7 +253,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
     @RequiresApi(Build.VERSION_CODES.O)
     private fun showResourceList(downloadedResources: List<RealmMyLibrary>?) {
-        val builderSingle = AlertDialog.Builder(requireActivity())
+        val builderSingle = AlertDialog.Builder(ContextThemeWrapper(requireActivity(), R.style.CustomAlertDialog))
         builderSingle.setTitle(getString(R.string.select_resource_to_open))
         val arrayAdapter: ArrayAdapter<RealmMyLibrary?> = object : ArrayAdapter<RealmMyLibrary?>(
             requireActivity(), android.R.layout.select_dialog_item, downloadedResources!!
@@ -270,6 +270,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                     } else {
                         R.drawable.ic_download
                     }, 0)
+                tv.setTextColor(context.getColor(R.color.daynight_textColor))
                 tv.text = library?.title
                 return tv
             }
