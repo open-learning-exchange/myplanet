@@ -1181,6 +1181,10 @@
     <string name="copied_to_clipboard">क्लिपबोर्डमा प्रति लिइयो</string>
     <string name="mark_all_as_read">सबैलाई पढिएको रूपमा चिन्ह लगाउनुहोस्</string>
     <string name="mark_as_read">पढिएको रूपमा चिन्ह लगाउनुहोस्</string>
+    <string name="our_voices">हाम्रो आवाजहरू</string>
+    <string name="no_voices_available">उपलब्ध आवाजहरू छैनन्</string>
+    <string name="new_voice">नयाँ आवाज</string>
+    <string name="hide_new_voice">नयाँ आवाज लुकाउनुहोस्</string>
     <string name="summary_of_achievemnets">उपलब्धिहरूको सारांश - आफ्नो उपलब्धि संक्षेपमा दिनुहोस् र सम्बन्धित सामग्री तल थप्नुहोस्</string>
     <string name="my_goals_description">मेरा लक्ष्यहरू - आगामी १० वर्षका लागि तपाईँका लक्ष्यहरू के हुन्?</string>
     <string name="add_materials">तपाईँका उपलब्धिहरू देखाउने कुनै पनि सामग्री तल थप्नुहोस्</string>

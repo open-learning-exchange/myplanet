@@ -1181,6 +1181,10 @@
     <string name="copied_to_clipboard">copiado al portapapeles</string>
     <string name="mark_all_as_read">Marcar todo como leído</string>
     <string name="mark_as_read">Marcar como leído</string>
+    <string name="our_voices">nuestras voces</string>
+    <string name="no_voices_available">no hay voces disponibles</string>
+    <string name="new_voice">nueva voz</string>
+    <string name="hide_new_voice">ocultar nueva voz</string>
     <string name="summary_of_achievemnets">Resumen de logros - Resume brevemente tu logro y añade los materiales relacionados a continuación</string>
     <string name="my_goals_description">Mis Metas - ¿Cuáles son tus metas para los próximos 10 años?</string>
     <string name="add_materials">Agrega cualquier material que demuestre tus logros a continuación</string>
