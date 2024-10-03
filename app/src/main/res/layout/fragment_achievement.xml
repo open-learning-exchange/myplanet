@@ -84,7 +84,7 @@
 
                 <TextView
                     style="@style/Header"
-                    android:text="My Purpose"
+                    android:text="@string/my_purpose"
                     android:textColor="@color/daynight_textColor" />
                 <TextView
                     android:id="@+id/tv_purpose"
@@ -95,7 +95,7 @@
                     android:textColor="@color/hint_color" />
                 <TextView
                     style="@style/Header"
-                    android:text="My Goals"
+                    android:text="@string/my_goals"
                     android:textColor="@color/daynight_textColor" />
                 <TextView
                     android:id="@+id/tv_goals"

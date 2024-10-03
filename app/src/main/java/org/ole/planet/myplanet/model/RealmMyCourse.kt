@@ -131,6 +131,7 @@ open class RealmMyCourse : RealmObject() {
                 }
                 insertCourseStepsAttachments(myMyCoursesDB?.courseId, stepId, JsonUtils.getJsonArray("resources", stepJson), mRealm)
                 insertExam(stepJson, mRealm, stepId, i + 1, myMyCoursesDB?.courseId)
+                insertSurvey(stepJson, mRealm, stepId, i + 1, myMyCoursesDB?.courseId)
                 step.noOfResources = JsonUtils.getJsonArray("resources", stepJson).size()
                 step.courseId = myMyCoursesDB?.courseId
                 courseStepsList.add(step)
@@ -236,6 +237,14 @@ open class RealmMyCourse : RealmObject() {
         private fun insertExam(stepContainer: JsonObject, mRealm: Realm, stepId: String, i: Int, myCoursesID: String?) {
             if (stepContainer.has("exam")) {
                 val `object` = stepContainer.getAsJsonObject("exam")
+                `object`.addProperty("stepNumber", i)
+                insertCourseStepsExams(myCoursesID, stepId, `object`, mRealm)
+            }
+        }
+
+        private fun insertSurvey(stepContainer: JsonObject, mRealm: Realm, stepId: String, i: Int, myCoursesID: String?) {
+            if (stepContainer.has("survey")) {
+                val `object` = stepContainer.getAsJsonObject("survey")
                 `object`.addProperty("stepNumber", i)
                 insertCourseStepsExams(myCoursesID, stepId, `object`, mRealm)
             }
