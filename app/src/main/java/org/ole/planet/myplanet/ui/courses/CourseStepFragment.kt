@@ -192,6 +192,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         }
         val downloadedResources: List<RealmMyLibrary> = cRealm.where(RealmMyLibrary::class.java).equalTo("stepId", stepId).equalTo("resourceOffline", true).isNotNull("resourceLocalAddress").findAll()
         setOpenResourceButton(downloadedResources, fragmentCourseStepBinding.btnOpen)
+        fragmentCourseStepBinding.btnResources.visibility = View.GONE
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
