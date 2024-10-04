@@ -226,6 +226,15 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
         super.onConfigurationChanged(newConfig)
         LocaleHelper.onAttach(this)
+        val currentNightMode = newConfig.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
+        when (currentNightMode) {
+            android.content.res.Configuration.UI_MODE_NIGHT_NO -> {
+                applyThemeMode(ThemeMode.LIGHT)
+            }
+            android.content.res.Configuration.UI_MODE_NIGHT_YES -> {
+                applyThemeMode(ThemeMode.DARK)
+            }
+        }
     }
 
     override fun onActivityCreated(activity: Activity, bundle: Bundle?) {}
