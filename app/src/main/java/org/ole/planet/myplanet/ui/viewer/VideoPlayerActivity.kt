@@ -29,6 +29,8 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
     private var auth: String = ""
     private var videoURL: String = ""
     private lateinit var settings: SharedPreferences
+    private var playWhenReady = true
+    private var currentPosition = 0L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -65,6 +67,35 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
         runOnUiThread { Utilities.toast(this, getString(R.string.connection_failed_reason) + s) }
     }
 
+    override fun onResume() {
+        super.onResume()
+        if (exoPlayer == null) {
+            when {
+                videoURL.startsWith("http") -> streamVideoFromUrl(videoURL, auth)
+                else -> prepareExoPlayerFromFileUri(videoURL)
+            }
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        releasePlayer()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        releasePlayer()
+    }
+
+    private fun releasePlayer() {
+        exoPlayer?.let { player ->
+            playWhenReady = player.playWhenReady
+            currentPosition = player.currentPosition
+            player.release()
+            exoPlayer = null
+        }
+    }
+
     @OptIn(UnstableApi::class)
     private fun streamVideoFromUrl(videoUrl: String, auth: String) {
         val trackSelectorDef = DefaultTrackSelector(this)
@@ -81,9 +112,12 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
             .createMediaSource(MediaItem.fromUri(videoUri))
 
         binding.exoPlayerSimple.player = exoPlayer
-        exoPlayer?.setMediaSource(mediaSource)
-        exoPlayer?.prepare()
-        exoPlayer?.playWhenReady = true
+        exoPlayer?.apply {
+            setMediaSource(mediaSource)
+            seekTo(currentPosition)
+            playWhenReady = this@VideoPlayerActivity.playWhenReady
+            prepare()
+        }
     }
 
     @OptIn(UnstableApi::class)
@@ -98,44 +132,22 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
         val fileDataSource = FileDataSource()
         try {
             fileDataSource.open(dataSpec)
+            val factory = DataSource.Factory { fileDataSource }
+
+            fileDataSource.uri?.let { uri ->
+                val audioSource = ProgressiveMediaSource.Factory(factory)
+                    .createMediaSource(MediaItem.fromUri(uri))
+
+                binding.exoPlayerSimple.player = exoPlayer
+                exoPlayer?.apply {
+                    setMediaSource(audioSource)
+                    seekTo(currentPosition)
+                    playWhenReady = this@VideoPlayerActivity.playWhenReady
+                    prepare()
+                }
+            }
         } catch (e: FileDataSource.FileDataSourceException) {
             e.printStackTrace()
         }
-
-        val factory = DataSource.Factory { fileDataSource }
-        val audioSource: MediaSource?
-        if (fileDataSource.uri != null) {
-            audioSource = ProgressiveMediaSource.Factory(factory)
-                .createMediaSource(MediaItem.fromUri(fileDataSource.uri!!))
-            binding.exoPlayerSimple.player = exoPlayer
-            exoPlayer?.setMediaSource(audioSource)
-            exoPlayer?.prepare()
-            exoPlayer?.playWhenReady = true
-        }
-    }
-
-    override fun onResume() {
-        super.onResume()
-        exoPlayer?.playWhenReady = true
-    }
-
-    override fun onPause() {
-        super.onPause()
-        exoPlayer?.playWhenReady = false
-    }
-
-    override fun onStop() {
-        super.onStop()
-        releasePlayer()
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        releasePlayer()
-    }
-
-    private fun releasePlayer() {
-        exoPlayer?.release()
-        exoPlayer = null
     }
 }
