@@ -37,6 +37,7 @@ import io.realm.Case
 import io.realm.RealmChangeListener
 import io.realm.RealmObject
 import io.realm.RealmResults
+import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 //import org.ole.planet.myplanet.base.BaseContainerFragment
@@ -74,6 +75,7 @@ import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.MarkdownDialog
 import org.ole.planet.myplanet.utilities.Utilities.toast
 import java.util.Date
 import java.util.UUID
@@ -230,6 +232,32 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 }
             }
         })
+
+        if (settings.getString("serverURL", "") == "https://${BuildConfig.PLANET_LEARNING_URL}") {
+            challengeDialog()
+        }
+    }
+
+    private fun challengeDialog() {
+        val markdownContent = """
+            ## myPlanet issues challenge
+
+            ![issues challenge](https://meetgor-cdn.pages.dev/github-filter-issues.png)
+
+            get ready for virtual intern github issues challenge!
+
+            **duration:** 30 days
+
+            ## steps to participate:
+            - Find an issue on myPlanet
+            - Take a screenshot/record a video
+            - create an issue on our github repository using link below
+
+            [new myPlanet issue](https://github.com/open-learning-exchange/myplanet/issues/new)
+            """.trimIndent()
+
+            MarkdownDialog.newInstance(markdownContent)
+                .show(supportFragmentManager, "markdown_dialog")
     }
 
     private fun setupRealmListeners() {
