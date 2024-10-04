@@ -13,6 +13,7 @@ import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.Spinner
 import android.widget.TextView
+import androidx.appcompat.view.ContextThemeWrapper
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.Gson
@@ -98,7 +99,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         })
 
         btnRemove.setOnClickListener {
-            val alertDialogBuilder = AlertDialog.Builder(this.context)
+            val alertDialogBuilder = AlertDialog.Builder(ContextThemeWrapper(this.context, R.style.CustomAlertDialog))
             val message = if (countSelected() == 1) {
                 R.string.are_you_sure_you_want_to_delete_this_course
             } else {
@@ -114,7 +115,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 .setNegativeButton(R.string.no, null).show()
         }
         btnArchive.setOnClickListener {
-            val alertDialogBuilder = AlertDialog.Builder(this.context)
+            val alertDialogBuilder = AlertDialog.Builder(ContextThemeWrapper(this.context, R.style.CustomAlertDialog))
             val message = if (countSelected() == 1) {
                 R.string.are_you_sure_you_want_to_archive_this_course
             } else {
