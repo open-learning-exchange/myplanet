@@ -162,6 +162,8 @@
         <item name="android:textColorPrimary">@color/daynight_textColor</item>
         <item name="android:textColor">@color/daynight_textColor</item>
         <item name="buttonBarNegativeButtonStyle">@style/NegativeButtonStyle</item>
+        <item name="buttonBarPositiveButtonStyle">@style/NegativeButtonStyle</item>
+        <item name="android:buttonStyle">@style/NegativeButtonStyle</item>
     </style>
 
     <style name="NegativeButtonStyle" parent="Widget.MaterialComponents.Button.TextButton.Dialog">
