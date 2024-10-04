@@ -73,9 +73,9 @@ import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utilities.FileUtils.totalAvailableMemoryRatio
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.LocaleHelper
+import org.ole.planet.myplanet.utilities.MarkdownDialog
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
-import org.ole.planet.myplanet.utilities.MarkdownDialog
 import org.ole.planet.myplanet.utilities.Utilities.toast
 import java.util.Date
 import java.util.UUID
@@ -256,8 +256,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             [new myPlanet issue](https://github.com/open-learning-exchange/myplanet/issues/new)
             """.trimIndent()
 
-            MarkdownDialog.newInstance(markdownContent)
-                .show(supportFragmentManager, "markdown_dialog")
+        MarkdownDialog.newInstance(markdownContent)
+            .show(supportFragmentManager, "markdown_dialog")
     }
 
     private fun setupRealmListeners() {
