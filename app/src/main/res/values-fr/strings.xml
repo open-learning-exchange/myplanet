@@ -640,7 +640,7 @@
     <string name="please_select_link_item_from_list">Veuillez sélectionner un élément de lien dans la liste</string>
     <string name="title_is_required">Le titre est requis</string>
     <string name="no_data_available">Aucune donnée disponible</string>
-    <string name="are_you_sure_you_want_to_delete_these_courses">Êtes-vous sûr de vouloir supprimer ces cours ?</string>
+    <string name="are_you_sure_you_want_to_leave_these_courses">Êtes-vous sûr de vouloir quitter ces cours ?</string>
     <string name="success_you_have_added_the_following_courses">Succès ! Vous avez ajouté les cours suivants:\n\n</string>
     <string name="return_to_the_home_tab_to_access_mycourses">\n\n Retournez à l\'onglet Accueil pour accéder à Mes cours.\n</string>
     <string name="and">Et </string>
@@ -1060,7 +1060,7 @@
     <string name="enterprise_list">liste des entreprises</string>
     <string name="list_of_teams">liste des équipes</string>
     <string name="sign_up_to_chat">Veuillez vous inscrire pour accéder au chat IA</string>
-    <string name="are_you_sure_you_want_to_delete_this_course">Êtes-vous sûr de vouloir supprimer ce cours ?</string>
+    <string name="are_you_sure_you_want_to_leave_this_course">Êtes-vous sûr de vouloir quitter ce cours ?</string>
     <string name="share_chat">partager le chat</string>
     <string name="shared_chat">chat partagé</string>
     <string name="check_apk_version">vérification de la version app</string>

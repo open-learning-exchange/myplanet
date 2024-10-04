@@ -101,9 +101,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         btnRemove.setOnClickListener {
             val alertDialogBuilder = AlertDialog.Builder(ContextThemeWrapper(this.context, R.style.CustomAlertDialog))
             val message = if (countSelected() == 1) {
-                R.string.are_you_sure_you_want_to_delete_this_course
+                R.string.are_you_sure_you_want_to_leave_this_course
             } else {
-                R.string.are_you_sure_you_want_to_delete_these_courses
+                R.string.are_you_sure_you_want_to_leave_these_courses
             }
             alertDialogBuilder.setMessage(message)
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
