@@ -1,9 +1,10 @@
 package org.ole.planet.myplanet.ui.dashboard.notification
 
 import android.content.Context
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
+import android.provider.Settings.ACTION_INTERNAL_STORAGE_SETTINGS
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -103,7 +104,8 @@ class NotificationsFragment : Fragment() {
     private fun handleNotificationClick(notification: RealmNotification) {
         when (notification.type) {
             "storage" -> {
-                Log.d("NotificationsFragment", "storage clicked")
+                val intent = Intent(ACTION_INTERNAL_STORAGE_SETTINGS)
+                startActivity(intent)
             }
             "survey" -> {
                 val currentStepExam = mRealm.where(RealmStepExam::class.java).equalTo("name", notification.relatedId)
