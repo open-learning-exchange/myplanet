@@ -1,11 +1,18 @@
 package org.ole.planet.myplanet.ui.viewer
 
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.SharedPreferences
+import android.media.AudioManager
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.OnBackPressedCallback
 import androidx.annotation.OptIn
 import androidx.appcompat.app.AppCompatActivity
+import androidx.media3.common.AudioAttributes
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DataSource
@@ -31,6 +38,15 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
     private lateinit var settings: SharedPreferences
     private var playWhenReady = true
     private var currentPosition = 0L
+    private var isActivityVisible = false
+
+    private val audioBecomingNoisyReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == AudioManager.ACTION_AUDIO_BECOMING_NOISY) {
+                exoPlayer?.pause()
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,6 +58,8 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
         val videoType = extras?.getString("videoType")
         videoURL = extras?.getString("videoURL") ?: ""
         auth = extras?.getString("Auth") ?: ""
+
+        registerAudioNoisyReceiver()
 
         when (videoType) {
             "offline" -> prepareExoPlayerFromFileUri(videoURL)
@@ -67,8 +85,14 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
         runOnUiThread { Utilities.toast(this, getString(R.string.connection_failed_reason) + s) }
     }
 
+    override fun onStart() {
+        super.onStart()
+        isActivityVisible = true
+    }
+
     override fun onResume() {
         super.onResume()
+        isActivityVisible = true
         if (exoPlayer == null) {
             when {
                 videoURL.startsWith("http") -> streamVideoFromUrl(videoURL, auth)
@@ -79,27 +103,53 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
 
     override fun onPause() {
         super.onPause()
-        releasePlayer()
+        isActivityVisible = false
+        pauseAndReleasePlayer()
     }
 
     override fun onStop() {
         super.onStop()
+        isActivityVisible = false
+        pauseAndReleasePlayer()
+    }
+
+    private fun pauseAndReleasePlayer() {
+        exoPlayer?.pause()
         releasePlayer()
     }
 
     private fun releasePlayer() {
         exoPlayer?.let { player ->
-            playWhenReady = player.playWhenReady
-            currentPosition = player.currentPosition
-            player.release()
-            exoPlayer = null
+            try {
+                playWhenReady = player.playWhenReady
+                currentPosition = player.currentPosition
+                player.stop()
+                player.clearMediaItems()
+                player.release()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                exoPlayer = null
+            }
         }
     }
 
     @OptIn(UnstableApi::class)
     private fun streamVideoFromUrl(videoUrl: String, auth: String) {
+        if (!isActivityVisible) return
+
         val trackSelectorDef = DefaultTrackSelector(this)
-        exoPlayer = ExoPlayer.Builder(this).setTrackSelector(trackSelectorDef).build()
+
+        exoPlayer = ExoPlayer.Builder(this)
+            .setTrackSelector(trackSelectorDef)
+            .setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(C.USAGE_MEDIA)
+                    .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
+                    .build(),
+                true
+            )
+            .build()
 
         val videoUri = Uri.parse(videoUrl)
         val requestProperties = hashMapOf("Cookie" to auth)
@@ -122,10 +172,21 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
 
     @OptIn(UnstableApi::class)
     private fun prepareExoPlayerFromFileUri(uriString: String) {
+        if (!isActivityVisible) return
+
         val uri = Uri.parse(uriString)
+        val trackSelectorDef = DefaultTrackSelector(this)
+
         exoPlayer = ExoPlayer.Builder(this)
-            .setTrackSelector(DefaultTrackSelector(this))
+            .setTrackSelector(trackSelectorDef)
             .setLoadControl(DefaultLoadControl())
+            .setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(C.USAGE_MEDIA)
+                    .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
+                    .build(),
+                true
+            )
             .build()
 
         val dataSpec = DataSpec(uri)
@@ -147,6 +208,20 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
                 }
             }
         } catch (e: FileDataSource.FileDataSourceException) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun registerAudioNoisyReceiver() {
+        val filter = IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
+        registerReceiver(audioBecomingNoisyReceiver, filter)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        try {
+            unregisterReceiver(audioBecomingNoisyReceiver)
+        } catch (e: IllegalArgumentException) {
             e.printStackTrace()
         }
     }
