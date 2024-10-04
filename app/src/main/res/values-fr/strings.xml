@@ -1186,8 +1186,10 @@
     <string name="new_voice">nouvelle voix</string>
     <string name="hide_new_voice">cacher la nouvelle voix</string>
     <string name="summary_of_achievemnets">Résumé des réalisations - Résumez brièvement votre réalisation et ajoutez les documents associés ci-dessous</string>
-    <string name="my_goals">Mes Objectifs - Quels sont vos objectifs pour les 10 prochaines années ?</string>
+    <string name="my_goals_description">Mes Objectifs - Quels sont vos objectifs pour les 10 prochaines années ?</string>
     <string name="add_materials">Ajoutez tout matériel démontrant vos réalisations ci-dessous</string>
-    <string name="my_purpose">Mon But - Quelles sont vos ambitions éducatives et professionnelles ?</string>
+    <string name="my_purpose_description">Mon But - Quelles sont vos ambitions éducatives et professionnelles ?</string>
+    <string name="my_purpose">Mon But</string>
+    <string name="my_goals">Mes Objectifs</string>
 
 </resources>

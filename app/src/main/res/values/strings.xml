@@ -567,7 +567,7 @@
     <string name="attached_resources">Attached resources:</string>
     <string name="edit">Edit</string>
     <string name="my_achievements">My Achievements</string>
-    <string name="open_resource">Open Resource</string>
+    <string name="open_resource">open resource</string>
     <string name="zero_total">0 total</string>
     <string name="average">Average</string>
     <string name="zero_point_zero">0.0</string>
@@ -579,8 +579,8 @@
     <string name="method">Method:</string>
     <string name="number_of_exams">Number of exams:</string>
     <string name="description_colon">Description:</string>
-    <string name="download_resources">Download Resources</string>
-    <string name="take_test">Take Test [%d]</string>
+    <string name="download_resources">download Resources</string>
+    <string name="take_test">take test [%d]</string>
     <string name="search">search</string>
     <string name="for_ambulance">For Ambulance</string>
     <string name="for_police">For Police</string>
@@ -1185,9 +1185,11 @@
     <string name="no_voices_available">no voices available</string>
     <string name="new_voice">new voice</string>
     <string name="hide_new_voice">hide new voice</string>
-    <string name="my_purpose">My Purpose - What are your educational and professional ambitions?</string>
-    <string name="my_goals">My Goals - What are your goals for the next 10 years?</string>
     <string name="summary_of_achievemnets">Summary of achievements - Briefly summarize your achievement and add related materials below</string>
+    <string name="my_goals_description">My Goals - What are your goals for the next 10 years?</string>
     <string name="add_materials">Add any materials demonstrating your achievements below</string>
+    <string name="my_purpose_description">My Purpose - What are your educational and professional ambitions?</string>
+    <string name="my_purpose">My Purpose</string>
+    <string name="my_goals">My Goals</string>
 
 </resources>
