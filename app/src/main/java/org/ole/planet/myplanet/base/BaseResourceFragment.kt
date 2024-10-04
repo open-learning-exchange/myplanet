@@ -174,6 +174,11 @@ abstract class BaseResourceFragment : Fragment() {
                 override fun isAvailable() {
                     if (urls.isNotEmpty()) {
                         prgDialog.show()
+                        if (urls.size>1){
+                            prgDialog.setPositiveButton("disabling", isVisible = false){
+                                prgDialog.dismiss()
+                            }
+                        }
                         Utilities.openDownloadService(activity, urls, false)
                     }
                 }
@@ -198,7 +203,12 @@ abstract class BaseResourceFragment : Fragment() {
         }
     }
 
-    open fun onDownloadComplete() {}
+    open fun onDownloadComplete() {
+        prgDialog.setPositiveButton("Finish", isVisible = true){
+            prgDialog.dismiss()
+        }
+    }
+
     fun createListView(dbMyLibrary: List<RealmMyLibrary?>, alertDialog: AlertDialog) {
         lv = convertView?.findViewById(R.id.alertDialog_listView)
         val names = ArrayList<String?>()
