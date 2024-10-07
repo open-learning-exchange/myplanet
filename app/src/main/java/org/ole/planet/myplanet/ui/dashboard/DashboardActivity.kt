@@ -77,6 +77,9 @@ import org.ole.planet.myplanet.utilities.MarkdownDialog
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.Utilities.toast
+import java.time.LocalDate
+import java.time.temporal.ChronoUnit
+import java.util.Calendar
 import java.util.Date
 import java.util.UUID
 import kotlin.math.ceil
@@ -233,12 +236,21 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
         })
 
-        if (settings.getString("serverURL", "") == "https://${BuildConfig.PLANET_LEARNING_URL}") {
-            challengeDialog()
+        val calendar = Calendar.getInstance()
+        val currentMonth = calendar.get(Calendar.MONTH)
+
+        if (currentMonth == Calendar.OCTOBER) {
+            if (settings.getString("serverURL", "") == "https://${BuildConfig.PLANET_LEARNING_URL}") {
+                val today = LocalDate.now()
+                val endOfMonth = today.withDayOfMonth(today.lengthOfMonth())
+                val remainingDays = ChronoUnit.DAYS.between(today, endOfMonth).toInt()
+
+                challengeDialog(remainingDays)
+            }
         }
     }
 
-    private fun challengeDialog() {
+    private fun challengeDialog(remainingDays: Int) {
         val markdownContent = """
             ## myPlanet issues challenge
             
@@ -246,7 +258,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     
             get ready for virtual intern github issues challenge!
     
-            **duration:** 30 days
+            **duration:** $remainingDays days remaining
     
             ## steps to participate:
             - Find an issue on myPlanet
