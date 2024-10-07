@@ -67,14 +67,6 @@
             android:src="@drawable/ic_activity"
             android:contentDescription="@string/my_activity"
             app:fab_label="@string/my_activity" />
-        <com.github.clans.fab.FloatingActionButton
-            android:id="@+id/fab_survey"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@drawable/ic_survey"
-            android:contentDescription="@string/menu_surveys"
-            android:tint="@color/md_white_1000"
-            app:fab_label="@string/menu_surveys" />
     </com.github.clans.fab.FloatingActionMenu>
 
     <LinearLayout
