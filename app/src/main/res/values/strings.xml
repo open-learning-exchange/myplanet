@@ -79,7 +79,7 @@
     <string name="published_by">Published By:</string>
     <string name="author">Author:</string>
     <string name="language_with_colon">Language:</string>
-    <string name="subject">Subject/s:</string>
+    <string name="subject">* Subject/s :</string>
     <string name="license">License:</string>
     <string name="type">Type:</string>
     <string name="resource_colon">Resource:</string>
@@ -126,7 +126,7 @@
     <string name="show_filter">Show Filter</string>
     <string name="subjects">Subjects</string>
     <string name="mediums">Mediums</string>
-    <string name="levels">Levels</string>
+    <string name="levels">* Levels</string>
     <string name="languages">Languages</string>
     <string name="txt_myLife">myLife</string>
     <string name="achievements">myAchievements</string>
@@ -567,7 +567,7 @@
     <string name="attached_resources">Attached resources:</string>
     <string name="edit">Edit</string>
     <string name="my_achievements">My Achievements</string>
-    <string name="open_resource">Open Resource</string>
+    <string name="open_resource">open resource</string>
     <string name="zero_total">0 total</string>
     <string name="average">Average</string>
     <string name="zero_point_zero">0.0</string>
@@ -579,8 +579,8 @@
     <string name="method">Method:</string>
     <string name="number_of_exams">Number of exams:</string>
     <string name="description_colon">Description:</string>
-    <string name="download_resources">Download Resources</string>
-    <string name="take_test">Take Test [%d]</string>
+    <string name="download_resources">download Resources</string>
+    <string name="take_test">take test [%d]</string>
     <string name="search">search</string>
     <string name="for_ambulance">For Ambulance</string>
     <string name="for_police">For Police</string>
@@ -1181,9 +1181,15 @@
     <string name="copied_to_clipboard">copied to clipboard</string>
     <string name="mark_all_as_read">Mark all as read</string>
     <string name="mark_as_read">Mark as read</string>
-    <string name="my_purpose">My Purpose - What are your educational and professional ambitions?</string>
-    <string name="my_goals">My Goals - What are your goals for the next 10 years?</string>
+    <string name="our_voices">our voices</string>
+    <string name="no_voices_available">no voices available</string>
+    <string name="new_voice">new voice</string>
+    <string name="hide_new_voice">hide new voice</string>
     <string name="summary_of_achievemnets">Summary of achievements - Briefly summarize your achievement and add related materials below</string>
+    <string name="my_goals_description">My Goals - What are your goals for the next 10 years?</string>
     <string name="add_materials">Add any materials demonstrating your achievements below</string>
+    <string name="my_purpose_description">My Purpose - What are your educational and professional ambitions?</string>
+    <string name="my_purpose">My Purpose</string>
+    <string name="my_goals">My Goals</string>
 
 </resources>

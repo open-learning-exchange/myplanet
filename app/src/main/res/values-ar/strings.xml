@@ -1181,9 +1181,15 @@
     <string name="copied_to_clipboard">تم نسخه إلى الحافظة</string>
     <string name="mark_all_as_read">وضع علامة "مقروء" على الجميع</string>
     <string name="mark_as_read">وضع علامة كمقروء</string>
+    <string name="our_voices">أصواتنا</string>
+    <string name="no_voices_available">لا توجد أصوات متاحة</string>
+    <string name="new_voice">صوت جديد</string>
+    <string name="hide_new_voice">إخفاء الصوت الجديد</string>
     <string name="summary_of_achievemnets">ملخص الإنجازات - قم بتلخيص إنجازاتك بإيجاز وأضف المواد ذات الصلة أدناه</string>
-    <string name="my_goals">أهدافي - ما هي أهدافك للعشر سنوات القادمة؟</string>
+    <string name="my_goals_description">أهدافي - ما هي أهدافك للعشر سنوات القادمة؟</string>
     <string name="add_materials">أضف أي مواد تُظهر إنجازاتك أدناه</string>
-    <string name="my_purpose">هدفي - ما هي طموحاتك التعليمية والمهنية؟</string>
+    <string name="my_purpose_description">هدفي - ما هي طموحاتك التعليمية والمهنية؟</string>
+    <string name="my_purpose">هدفي</string>
+    <string name="my_goals">أهدافي</string>
 
 </resources>

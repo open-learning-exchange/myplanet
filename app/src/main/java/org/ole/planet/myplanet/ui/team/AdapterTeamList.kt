@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.team
 
 import android.content.Context
 import android.content.DialogInterface
+import android.graphics.Color
 import android.graphics.PorterDuff
 import android.os.Build
 import android.os.Bundle
@@ -130,8 +131,8 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
             itemTeamListBinding.joinLeave.isEnabled = false
             itemTeamListBinding.joinLeave.contentDescription = "${context.getString(R.string.requested)} ${filteredList[position].name}"
             itemTeamListBinding.joinLeave.visibility = View.VISIBLE
-            itemTeamListBinding.joinLeave.setImageResource(R.drawable.baseline_check_24)
-            itemTeamListBinding.joinLeave.setColorFilter(ContextCompat.getColor(context, R.color.colorPrimaryWhite), PorterDuff.Mode.SRC_IN)
+            itemTeamListBinding.joinLeave.setImageResource(R.drawable.baseline_hourglass_top_24)
+            itemTeamListBinding.joinLeave.setColorFilter(Color.parseColor("#9fa0a4"), PorterDuff.Mode.SRC_IN)
         } else {
             itemTeamListBinding.joinLeave.contentDescription = "${context.getString(R.string.request_to_join)} ${filteredList[position].name}"
             itemTeamListBinding.joinLeave.visibility = View.VISIBLE

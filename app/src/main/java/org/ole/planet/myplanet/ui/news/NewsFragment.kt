@@ -44,22 +44,22 @@ class NewsFragment : BaseNewsFragment() {
         user = UserProfileDbHandler(requireContext()).userModel
         setupUI(fragmentNewsBinding.newsFragmentParentLayout, requireActivity())
         if (user?.id?.startsWith("guest") == true) {
-            fragmentNewsBinding.btnAddStory.visibility = View.GONE
+            fragmentNewsBinding.btnNewVoice.visibility = View.GONE
         }
-        fragmentNewsBinding.btnAddStory.setOnClickListener {
+        fragmentNewsBinding.btnNewVoice.setOnClickListener {
             fragmentNewsBinding.llAddNews.visibility = if (fragmentNewsBinding.llAddNews.visibility == View.VISIBLE) {
                 View.GONE
             } else {
                 View.VISIBLE
             }
-            fragmentNewsBinding.btnAddStory.text = if (fragmentNewsBinding.llAddNews.visibility == View.VISIBLE) {
-                getString(R.string.hide_add_story)
+            fragmentNewsBinding.btnNewVoice.text = if (fragmentNewsBinding.llAddNews.visibility == View.VISIBLE) {
+                getString(R.string.hide_new_voice)
             } else {
-                getString(R.string.add_story)
+                getString(R.string.new_voice)
             }
         }
         if (requireArguments().getBoolean("fromLogin")) {
-            fragmentNewsBinding.btnAddStory.visibility = View.GONE
+            fragmentNewsBinding.btnNewVoice.visibility = View.GONE
             fragmentNewsBinding.llAddNews.visibility = View.GONE
         }
 
@@ -179,7 +179,7 @@ class NewsFragment : BaseNewsFragment() {
             fragmentNewsBinding.rvNews.adapter = adapterNews
             adapterNews?.let { showNoData(fragmentNewsBinding.tvMessage, it.itemCount, "news") }
             fragmentNewsBinding.llAddNews.visibility = View.GONE
-            fragmentNewsBinding.btnAddStory.text = getString(R.string.add_story)
+            fragmentNewsBinding.btnNewVoice.text = getString(R.string.new_voice)
             adapterNews?.notifyDataSetChanged()
         }
     }

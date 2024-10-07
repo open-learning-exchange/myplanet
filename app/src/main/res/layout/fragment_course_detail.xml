@@ -114,7 +114,8 @@
                     <LinearLayout
                         android:id="@+id/ltSubjectLevel"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content">
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
 
                         <TextView
                             style="@style/HeaderText"
@@ -133,7 +134,8 @@
                     <LinearLayout
                         android:id="@+id/ltGradeLevel"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content">
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
 
                         <TextView
                             style="@style/HeaderText"
@@ -152,7 +154,8 @@
                     <LinearLayout
                         android:id="@+id/ltLanguage"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content">
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
 
                         <TextView
                             style="@style/HeaderText"
@@ -171,7 +174,8 @@
                     <LinearLayout
                         android:id="@+id/ltMethod"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content">
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
 
                         <TextView
                             style="@style/HeaderText"
@@ -189,7 +193,8 @@
 
                     <LinearLayout
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content">
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
 
                         <TextView
                             style="@style/HeaderText"

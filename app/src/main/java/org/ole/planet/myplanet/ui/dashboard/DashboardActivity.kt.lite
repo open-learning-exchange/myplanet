@@ -20,8 +20,6 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.MenuItemCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
 import com.google.android.material.navigation.NavigationBarView
@@ -154,8 +152,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         result?.stickyFooter?.setPadding(0, 0, 0, 0) // moves logout button to the very bottom of the drawer. Without it, the "logout" button suspends a little.
         result?.actionBarDrawerToggle?.isDrawerIndicatorEnabled = true
         dl = result?.drawerLayout
-        WindowInsetsControllerCompat(window, window.decorView).hide(WindowInsetsCompat.Type.statusBars())
-        result?.drawerLayout?.fitsSystemWindows = false
         topbarSetting()
         if (intent != null && intent.hasExtra("fragmentToOpen")) {
             val fragmentToOpen = intent.getStringExtra("fragmentToOpen")
@@ -274,7 +270,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         if (mRealm.isInTransaction) {
             createNotifications()
         } else {
-            mRealm.executeTransaction { realm ->
+            mRealm.executeTransaction {
                 createNotifications()
             }
         }
@@ -293,7 +289,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         val pendingSurveys = getPendingSurveys(user?.id)
         val surveyTitles = getSurveyTitlesFromSubmissions(pendingSurveys)
         surveyTitles.forEach { title ->
-            createNotificationIfNotExists("survey", "You have a pending survey: $title", title)
+            createNotificationIfNotExists("survey", "you have a pending survey: $title", title)
         }
 
         val tasks = mRealm.where(RealmTeamTask::class.java)
@@ -602,6 +598,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             ResourcesCompat.getDrawable(resources, R.drawable.team, null)?.let { menuImageList.add(it) }
             ResourcesCompat.getDrawable(resources, R.drawable.business, null)?.let { menuImageList.add(it) }
             ResourcesCompat.getDrawable(resources, R.drawable.survey, null)?.let { menuImageList.add(it) }
+            ResourcesCompat.getDrawable(resources, R.drawable.survey, null)?.let { menuImageList.add(it) }
             return arrayOf(
                 changeUX(R.string.menu_myplanet, menuImageList[0]).withIdentifier(0),
                 changeUX(R.string.txt_myLibrary, menuImageList[1]).withIdentifier(1),
@@ -611,7 +608,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 changeUX(R.string.team, menuImageList[5]),
                 changeUX(R.string.menu_community, menuImageList[7]),
                 changeUX(R.string.enterprises, menuImageList[6]),
-                changeUX(R.string.menu_surveys, menuImageList[7])
+                changeUX(R.string.menu_surveys, menuImageList[8])
             )
         }
     private val drawerItemsFooter: Array<IDrawerItem<*, *>>

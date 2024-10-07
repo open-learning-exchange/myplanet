@@ -167,6 +167,13 @@
         <item name="android:background">@color/daynight_grey</item>
         <item name="android:textColorPrimary">@color/daynight_textColor</item>
         <item name="android:textColor">@color/daynight_textColor</item>
+        <item name="buttonBarNegativeButtonStyle">@style/NegativeButtonStyle</item>
+        <item name="buttonBarPositiveButtonStyle">@style/NegativeButtonStyle</item>
+        <item name="android:buttonStyle">@style/NegativeButtonStyle</item>
+    </style>
+
+    <style name="NegativeButtonStyle" parent="Widget.MaterialComponents.Button.TextButton.Dialog">
+        <item name="android:textColor">@color/colorAccent</item>
     </style>
 
     <style name="CustomPopupMenu" parent="Widget.AppCompat.PopupMenu">
@@ -214,5 +221,20 @@
     <style name="ResourcePopupMenu" parent="ThemeOverlay.AppCompat.Light">
         <item name="android:popupBackground">@color/md_white_1000</item>
         <item name="android:textColor">@color/daynight_textColor</item>
+    </style>
+
+    <style name="jcplayerstyle">
+        <item name="text_audio_current_duration_color">@color/daynight_textColor</item>
+        <item name="next_icon_color">@color/daynight_textColor</item>
+        <item name="pause_icon_color">@color/daynight_textColor</item>
+        <item name="play_icon_color">@color/daynight_textColor</item>
+        <item name="previous_icon_color">@color/daynight_textColor</item>
+        <item name="progress_color">@color/daynight_textColor</item>
+        <item name="random_icon_color">@color/daynight_textColor</item>
+        <item name="repeat_one_icon_color">@color/daynight_textColor</item>
+        <item name="text_audio_duration_color">@color/daynight_textColor</item>
+        <item name="repeat_one_icon">@color/daynight_textColor</item>
+        <item name="seek_bar_color">@color/daynight_textColor</item>
+        <item name="text_audio_title_color">@color/daynight_textColor</item>
     </style>
 </resources>
