@@ -270,7 +270,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         if (mRealm.isInTransaction) {
             createNotifications()
         } else {
-            mRealm.executeTransaction { realm ->
+            mRealm.executeTransaction {
                 createNotifications()
             }
         }
@@ -289,7 +289,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         val pendingSurveys = getPendingSurveys(user?.id)
         val surveyTitles = getSurveyTitlesFromSubmissions(pendingSurveys)
         surveyTitles.forEach { title ->
-            createNotificationIfNotExists("survey", "You have a pending survey: $title", title)
+            createNotificationIfNotExists("survey", "you have a pending survey: $title", title)
         }
 
         val tasks = mRealm.where(RealmTeamTask::class.java)
