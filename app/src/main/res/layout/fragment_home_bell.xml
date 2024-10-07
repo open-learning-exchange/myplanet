@@ -75,14 +75,6 @@
             android:contentDescription="@string/my_progress"
             app:fab_label="@string/my_progress" />
         <com.github.clans.fab.FloatingActionButton
-            android:id="@+id/fab_survey"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@drawable/ic_survey"
-            android:contentDescription="@string/menu_surveys"
-            android:tint="@color/md_white_1000"
-            app:fab_label="@string/menu_surveys" />
-        <com.github.clans.fab.FloatingActionButton
             android:id="@+id/add_resource"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
