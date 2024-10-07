@@ -244,7 +244,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             
             ![issues challenge](https://meetgor-cdn.pages.dev/github-filter-issues.png)
     
-            get ready for virtual intern github issues challenge! 
+            get ready for virtual intern github issues challenge!
     
             **duration:** 30 days
     
