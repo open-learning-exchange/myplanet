@@ -85,13 +85,6 @@ class BellDashboardFragment : BaseDashboardFragment() {
         }.launchIn(coroutineScope)
 
         (activity as DashboardActivity?)?.supportActionBar?.hide()
-        fragmentHomeBellBinding.addResource.setOnClickListener {
-            if (user?.id?.startsWith("guest") == false) {
-                AddResourceFragment().show(childFragmentManager, getString(R.string.add_res))
-            } else {
-                guestDialog(requireContext())
-            }
-        }
         showBadges()
         checkPendingSurveys()
     }
