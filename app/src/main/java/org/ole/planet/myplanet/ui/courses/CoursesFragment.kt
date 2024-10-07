@@ -143,6 +143,24 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         changeButtonStatus()
         if (!isMyCourseLib) tvFragmentInfo.setText(R.string.our_courses)
         additionalSetup()
+
+        if (isMyCourseLib) {
+            requireView().findViewById<View>(R.id.fabMyProgress).apply {
+                visibility = View.VISIBLE
+                setOnClickListener {
+                    val myProgressFragment = MyProgressFragment().apply {
+                        arguments = Bundle().apply {
+                            putBoolean("isMyCourseLib", true)
+                        }
+                    }
+
+                    parentFragmentManager.beginTransaction()
+                        .replace(R.id.fragment_container, myProgressFragment)
+                        .addToBackStack(null)
+                        .commit()
+                }
+            }
+        }
     }
 
     private fun additionalSetup() {
@@ -188,7 +206,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         spnGrade.onItemSelectedListener = itemSelectedListener
         spnSubject.onItemSelectedListener = itemSelectedListener
         selectAll = requireView().findViewById(R.id.selectAll)
-        if(userModel?.isGuest() == true){
+        if (userModel?.isGuest() == true) {
             tvAddToLib.visibility = View.GONE
             btnRemove.visibility = View.GONE
             btnArchive.visibility = View.GONE

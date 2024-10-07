@@ -68,13 +68,6 @@
             android:contentDescription="@string/my_activity"
             app:fab_label="@string/my_activity" />
         <com.github.clans.fab.FloatingActionButton
-            android:id="@+id/fab_my_progress"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@drawable/ic_my_progress"
-            android:contentDescription="@string/my_progress"
-            app:fab_label="@string/my_progress" />
-        <com.github.clans.fab.FloatingActionButton
             android:id="@+id/fab_survey"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

@@ -200,7 +200,6 @@ class BellDashboardFragment : BaseDashboardFragment() {
                 openHelperFragment(CoursesFragment())
             }
         }
-        fragmentHomeBellBinding.fabMyProgress.setOnClickListener { openHelperFragment(MyProgressFragment()) }
         fragmentHomeBellBinding.fabMyActivity.setOnClickListener { openHelperFragment(MyActivityFragment()) }
         fragmentHomeBellBinding.fabSurvey.setOnClickListener {
             BaseRecyclerParentFragment.isSurvey = true
