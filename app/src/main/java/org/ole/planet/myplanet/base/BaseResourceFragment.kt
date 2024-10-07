@@ -174,11 +174,7 @@ abstract class BaseResourceFragment : Fragment() {
                 override fun isAvailable() {
                     if (urls.isNotEmpty()) {
                         prgDialog.show()
-                        if (urls.size>1){
-                            prgDialog.setPositiveButton("disabling", isVisible = false){
-                                prgDialog.dismiss()
-                            }
-                        }
+//                        prgDialog.setPositiveButton("disabling", isVisible = false){ prgDialog.dismiss() }
                         Utilities.openDownloadService(activity, urls, false)
                     }
                 }
@@ -207,6 +203,7 @@ abstract class BaseResourceFragment : Fragment() {
         prgDialog.setPositiveButton("Finish", isVisible = true){
             prgDialog.dismiss()
         }
+        prgDialog.setNegativeButton("disabling", isVisible = false){ prgDialog.dismiss() }
     }
 
     fun createListView(dbMyLibrary: List<RealmMyLibrary?>, alertDialog: AlertDialog) {
