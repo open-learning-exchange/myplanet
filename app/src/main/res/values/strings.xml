@@ -640,8 +640,8 @@
     <string name="please_select_link_item_from_list">Please select link item from list</string>
     <string name="title_is_required">Title is required</string>
     <string name="no_data_available">No data available</string>
-    <string name="are_you_sure_you_want_to_delete_these_courses">Are you sure you want to delete these courses?</string>
-    <string name="are_you_sure_you_want_to_delete_this_course">Are you sure you want to delete this course?</string>
+    <string name="are_you_sure_you_want_to_leave_these_courses">Are you sure you want to leave these courses?</string>
+    <string name="are_you_sure_you_want_to_leave_this_course">Are you sure you want to leave this course?</string>
     <string name="success_you_have_added_the_following_courses">Success! You have added the following courses:\n\n</string>
     <string name="return_to_the_home_tab_to_access_mycourses">\n\n Return to the Home tab to access myCourses.\n</string>
     <string name="and">"And "</string>
