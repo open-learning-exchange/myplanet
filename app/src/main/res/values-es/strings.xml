@@ -42,7 +42,7 @@
     <string name="download_all">Descargar todo</string>
     <string name="hello_blank_fragment">Hola fragmento en blanco</string>
     <string name="add_to_mycourse">Agregar a misCursos</string>
-    <string name="join_selected">Unirse a los seleccionados</string>
+    <string name="join_selected">Unirse a los\nseleccionados</string>
     <string name="join">Unirse</string>
     <string name="add_to_mylib">Agregar a miBiblioteca</string>
     <string name="step">paso</string>
