@@ -13,6 +13,7 @@ import android.widget.ImageButton
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
+import com.github.clans.fab.FloatingActionButton
 import com.google.android.flexbox.FlexboxLayout
 import com.google.gson.Gson
 import com.google.gson.JsonObject
@@ -34,6 +35,7 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmTag.Companion.getTagsArray
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Calendar
@@ -54,6 +56,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     private lateinit var selectAll: CheckBox
     private lateinit var filter: ImageButton
     private lateinit var adapterLibrary: AdapterResource
+    private lateinit var addResourceButton: FloatingActionButton
     var userModel: RealmUserModel ?= null
     var map: HashMap<String?, JsonObject>? = null
     private var confirmation: AlertDialog? = null
@@ -84,6 +87,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         flexBoxTags = view.findViewById(R.id.flexbox_tags)
         selectAll = view.findViewById(R.id.selectAll)
         filter = view.findViewById(R.id.filter)
+        addResourceButton = view.findViewById(R.id.addResource)
 
         initArrays()
         updateTvDelete()
@@ -155,6 +159,14 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             } else {
                 selectAll.isChecked = true
                 selectAll.text = getString(R.string.unselect_all)
+            }
+        }
+
+        addResourceButton.setOnClickListener {
+            if (userModel?.id?.startsWith("guest") == false) {
+                AddResourceFragment().show(childFragmentManager, getString(R.string.add_res))
+            } else {
+                guestDialog(requireContext())
             }
         }
     }
