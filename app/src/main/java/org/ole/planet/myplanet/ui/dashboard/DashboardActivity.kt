@@ -242,7 +242,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         val markdownContent = """
             ## myPlanet issues challenge
             
-            ![issues challenge](https://meetgor-cdn.pages.dev/github-filter-issues.png)
+            ![issues challenge](file:///android_asset/images/github-filter-issues.png)
     
             get ready for virtual intern github issues challenge!
     
