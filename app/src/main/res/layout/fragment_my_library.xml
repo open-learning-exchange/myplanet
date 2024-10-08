@@ -10,6 +10,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical">
+
         <LinearLayout
             android:id="@+id/ll_actions"
             android:layout_width="match_parent"
@@ -19,12 +20,14 @@
             android:gravity="end"
             android:orientation="vertical"
             android:padding="@dimen/padding_large">
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@color/colorPrimary"
                 android:orientation="horizontal"
                 android:padding="@dimen/padding_normal">
+
                 <TextView
                     android:id="@+id/tv_fragment_info"
                     android:layout_width="wrap_content"
@@ -97,6 +100,7 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:background="@color/secondary_bg">
+
             <CheckBox
                 android:id="@+id/selectAll"
                 android:layout_width="wrap_content"
@@ -120,6 +124,7 @@
             android:layout_height="0dp"
             android:layout_weight="1"
             android:background="@color/secondary_bg">
+
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/recycler"
                 android:layout_width="match_parent"
@@ -141,6 +146,7 @@
         android:animateLayoutChanges="true"
         android:visibility="gone"
         app:cardCornerRadius="8dp">
+
         <LinearLayout
             android:id="@+id/ll_filter"
             android:layout_width="match_parent"
@@ -151,6 +157,7 @@
             android:orientation="vertical"
             android:padding="@dimen/padding_normal"
             app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
+
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -163,6 +170,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal">
+
                 <Button
                     android:id="@+id/order_by_date_button"
                     android:layout_width="0dp"
@@ -188,6 +196,7 @@
                 android:layout_height="wrap_content"
                 android:paddingTop="8dp"
                 android:paddingBottom="8dp">
+
                 <Button
                     android:id="@+id/filterCategories"
                     android:layout_width="0dp"
@@ -212,6 +221,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal">
+
                 <Button
                     android:id="@+id/btn_clear_tags"
                     android:layout_width="0dp"
