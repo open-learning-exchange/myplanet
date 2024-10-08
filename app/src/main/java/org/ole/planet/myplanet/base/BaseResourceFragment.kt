@@ -174,7 +174,6 @@ abstract class BaseResourceFragment : Fragment() {
                 override fun isAvailable() {
                     if (urls.isNotEmpty()) {
                         prgDialog.show()
-//                        prgDialog.setPositiveButton("disabling", isVisible = false){ prgDialog.dismiss() }
                         Utilities.openDownloadService(activity, urls, false)
                     }
                 }
