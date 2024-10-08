@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings.ACTION_INTERNAL_STORAGE_SETTINGS
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -83,6 +84,9 @@ class NotificationsFragment : Fragment() {
         if (notifications.isEmpty()) {
             fragmentNotificationsBinding.emptyData.visibility = View.VISIBLE
         }
+
+        val allNotifications = mRealm.where(RealmNotification::class.java).findAll()
+        Log.d("NotificationsFragment", "All notifications: $allNotifications")
 
         adapter = AdapterNotification(notifications,
             onMarkAsReadClick = { position ->

@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.text.TextUtils
 import android.util.Base64
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -26,6 +27,7 @@ import org.ole.planet.myplanet.model.RealmMyHealthPojo.Companion.healthWriteCsv
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.libraryWriteCsv
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.teamWriteCsv
 import org.ole.planet.myplanet.model.RealmNews.Companion.newsWriteCsv
+import org.ole.planet.myplanet.model.RealmNotification.Companion.insertNotification
 import org.ole.planet.myplanet.model.RealmOfflineActivity.Companion.offlineWriteCsv
 import org.ole.planet.myplanet.model.RealmRating.Companion.ratingWriteCsv
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
@@ -129,6 +131,8 @@ object TransactionSyncManager {
                             if (table == "chat_history") {
                                 insertToChat(arr, mRealm)
                             }
+                            Log.d("TransactionSyncManager", table)
+
                             insertDocs(arr, mRealm, table)
                         }
                         keys.clear()
