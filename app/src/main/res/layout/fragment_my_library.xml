@@ -110,7 +110,8 @@
                 android:text="@string/select_all"
                 android:textColor="@color/daynight_textColor"
                 android:textSize="@dimen/text_size_mid"
-                android:buttonTint="@color/daynight_textColor" />
+                android:buttonTint="@color/daynight_textColor"
+                android:maxWidth="0dp" />
             <include
                 layout="@layout/layout_search"
                 android:layout_width="0dp"
