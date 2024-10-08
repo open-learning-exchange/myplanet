@@ -68,7 +68,8 @@
                     android:textColor="@color/daynight_textColor"
                     app:drawableTint="@color/daynight_textColor"
                     android:textSize="@dimen/text_size_mid"
-                    app:drawableLeftCompat="@drawable/ic_add_library" />
+                    app:drawableLeftCompat="@drawable/ic_add_library"
+                    android:width="180dp" />
                 <TextView
                     android:id="@+id/tv_selected"
                     android:layout_width="wrap_content"
@@ -282,4 +283,15 @@
             </LinearLayout>
         </LinearLayout>
     </androidx.cardview.widget.CardView>
+
+    <com.github.clans.fab.FloatingActionButton
+        android:id="@+id/fabMyProgress"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_my_progress"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="@dimen/padding_large"
+        android:contentDescription="@string/my_progress"
+        app:fab_label="@string/my_progress"
+        android:visibility="gone"/>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

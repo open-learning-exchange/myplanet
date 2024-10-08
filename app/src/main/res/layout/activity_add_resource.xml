@@ -154,7 +154,9 @@
                         android:layout_gravity="center"
                         android:text="@string/subject"
                         android:textSize="@dimen/text_size_mid"
-                        android:textColor="@color/daynight_textColor" />
+                        android:textColor="@color/md_black_1000"
+                        android:padding="8dp"
+                        android:background="@drawable/bg_multiselect_grey" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
@@ -172,7 +174,9 @@
                         android:layout_gravity="center"
                         android:text="@string/levels"
                         android:textSize="@dimen/text_size_mid"
-                        android:textColor="@color/daynight_textColor" />
+                        android:textColor="@color/md_black_1000"
+                        android:padding="8dp"
+                        android:background="@drawable/bg_multiselect_grey" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <Spinner
@@ -206,7 +210,9 @@
                         android:layout_height="wrap_content"
                         android:text="@string/resource_for"
                         android:textSize="@dimen/text_size_mid"
-                        android:textColor="@color/daynight_textColor" />
+                        android:textColor="@color/md_black_1000"
+                        android:padding="8dp"
+                        android:background="@drawable/bg_multiselect_grey" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <Spinner
