@@ -253,18 +253,18 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun challengeDialog(remainingDays: Int) {
         val markdownContent = """
             ## myPlanet issues challenge
-            
+
             ![issues challenge](file:///android_asset/images/github-filter-issues.png)
-    
+
             get ready for virtual intern github issues challenge!
-    
+
             **duration:** $remainingDays days remaining
-    
+
             ## steps to participate:
             - Find an issue on myPlanet
             - Take a screenshot/record a video
             - create an issue on our github repository using link below
-            
+
             [new myPlanet issue](https://github.com/open-learning-exchange/myplanet/issues/new)
             """.trimIndent()
 
