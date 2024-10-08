@@ -42,7 +42,7 @@
     <string name="download_all">सबै डाउनलोड गर्नुहोस्</string>
     <string name="hello_blank_fragment">नमस्ते रिक्त फ्रेमेन्ट</string>
     <string name="add_to_mycourse">मेरो पाठ्यक्रममा थप्नुहोस्</string>
-    <string name="join_selected">चयनितमा सामेल हुनुहोस्</string>
+    <string name="join_selected">चयनितमा\nसामेल हुनुहोस्</string>
     <string name="join">सामेल हुनुहोस्</string>
     <string name="add_to_mylib">मेरो पुस्तकालयमा थप्नुहोस्</string>
     <string name="step">चरण</string>
@@ -640,7 +640,8 @@
     <string name="please_select_link_item_from_list">कृपया सूचीबाट लिंक वस्तु छनौट गर्नुहोस्</string>
     <string name="title_is_required">शीर्षक आवश्यक छ</string>
     <string name="no_data_available">कुनै डाटा उपलब्ध छैन</string>
-    <string name="are_you_sure_you_want_to_delete_these_courses">के तपाइँ निश्चित हुनुहुन्छ तपाइँ यी पाठ्यक्रमहरू हटाउन चाहनुहुन्छ?</string>
+    <string name="are_you_sure_you_want_to_leave_these_courses">के तपाइँ निश्चित हुनुहुन्छ तपाइँ यी पाठ्यक्रमहरू हटाउन चाहनुहुन्छ?</string>
+    <string name="are_you_sure_you_want_to_leave_this_course">के तपाई यो कोर्स छोड्न चाहनुहुन्छ भनेर पक्का हुनुहुन्छ?</string>
     <string name="success_you_have_added_the_following_courses">सफलता! तपाइँले निम्नलिखित पाठ्यक्रमहरू थपेका छौं:\n\n</string>
     <string name="return_to_the_home_tab_to_access_mycourses">\n\n वापतै गृह ट्याबमा जानुहोस् तपाइँको पाठ्यक्रमहरू पहुँच गर्नको लागि।\n</string>
     <string name="and">"र "</string>
@@ -1060,7 +1061,6 @@
     <string name="enterprise_list">उद्यम सूची</string>
     <string name="list_of_teams">टोलीहरूको सूची</string>
     <string name="sign_up_to_chat">कृपया एआई च्याटमा पहुँच गर्न साइन अप गर्नुहोस्।</string>
-    <string name="are_you_sure_you_want_to_delete_this_course">के तपाई यो कोर्स मेटाउन चाहनुहुन्छ भनेर पक्का हुनुहुन्छ?</string>
     <string name="share_chat">च्याट साझेदारी गर्नुहोस्</string>
     <string name="shared_chat">साझेदारी गरिएको कुराकानी</string>
     <string name="check_apk_version">एप संस्करण जाँच गर्दै</string>

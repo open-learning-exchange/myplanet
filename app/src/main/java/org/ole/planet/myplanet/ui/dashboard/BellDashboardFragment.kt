@@ -85,13 +85,6 @@ class BellDashboardFragment : BaseDashboardFragment() {
         }.launchIn(coroutineScope)
 
         (activity as DashboardActivity?)?.supportActionBar?.hide()
-        fragmentHomeBellBinding.addResource.setOnClickListener {
-            if (user?.id?.startsWith("guest") == false) {
-                AddResourceFragment().show(childFragmentManager, getString(R.string.add_res))
-            } else {
-                guestDialog(requireContext())
-            }
-        }
         showBadges()
         checkPendingSurveys()
     }
@@ -207,12 +200,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
                 openHelperFragment(CoursesFragment())
             }
         }
-        fragmentHomeBellBinding.fabMyProgress.setOnClickListener { openHelperFragment(MyProgressFragment()) }
         fragmentHomeBellBinding.fabMyActivity.setOnClickListener { openHelperFragment(MyActivityFragment()) }
-        fragmentHomeBellBinding.fabSurvey.setOnClickListener {
-            BaseRecyclerParentFragment.isSurvey = true
-            openHelperFragment(SurveyFragment())
-        }
         fragmentHomeBellBinding.cardProfileBell.fabFeedback.setOnClickListener { openHelperFragment(FeedbackListFragment()) }
         fragmentHomeBellBinding.homeCardMyLife.myLifeImageButton.setOnClickListener { homeItemClickListener?.openCallFragment(LifeFragment()) }
     }

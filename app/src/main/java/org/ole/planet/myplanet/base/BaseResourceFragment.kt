@@ -198,7 +198,13 @@ abstract class BaseResourceFragment : Fragment() {
         }
     }
 
-    open fun onDownloadComplete() {}
+    open fun onDownloadComplete() {
+        prgDialog.setPositiveButton("Finish", isVisible = true){
+            prgDialog.dismiss()
+        }
+        prgDialog.setNegativeButton("disabling", isVisible = false){ prgDialog.dismiss() }
+    }
+
     fun createListView(dbMyLibrary: List<RealmMyLibrary?>, alertDialog: AlertDialog) {
         lv = convertView?.findViewById(R.id.alertDialog_listView)
         val names = ArrayList<String?>()

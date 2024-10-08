@@ -110,7 +110,8 @@
                 android:text="@string/select_all"
                 android:textColor="@color/daynight_textColor"
                 android:textSize="@dimen/text_size_mid"
-                android:buttonTint="@color/daynight_textColor" />
+                android:buttonTint="@color/daynight_textColor"
+                android:maxWidth="0dp" />
             <include
                 layout="@layout/layout_search"
                 android:layout_width="0dp"
@@ -238,4 +239,15 @@
             </LinearLayout>
         </LinearLayout>
     </androidx.cardview.widget.CardView>
+
+    <com.github.clans.fab.FloatingActionButton
+        android:id="@+id/addResource"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="@dimen/padding_large"
+        android:contentDescription="@string/add_res"
+        android:src="@drawable/ic_add"
+        android:tint="@color/md_white_1000"
+        app:fab_label="@string/add_res" />
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
