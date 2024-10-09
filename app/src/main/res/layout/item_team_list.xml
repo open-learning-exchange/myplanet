@@ -15,7 +15,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintWidth_percent="0.2" />
-
     <TextView
         android:id="@+id/created"
         android:layout_width="0dp"
@@ -26,7 +25,6 @@
         app:layout_constraintStart_toEndOf="@id/name"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintWidth_percent="0.2" />
-
     <TextView
         android:id="@+id/type"
         android:layout_width="0dp"
@@ -36,7 +34,6 @@
         app:layout_constraintStart_toEndOf="@id/created"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintWidth_percent="0.2" />
-
     <TextView
         android:id="@+id/no_of_visits"
         android:layout_width="0dp"
@@ -47,7 +44,6 @@
         app:layout_constraintStart_toEndOf="@id/type"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintWidth_percent="0.2" />
-
     <ImageView
         android:id="@+id/join_leave"
         android:layout_width="40dp"
@@ -60,7 +56,6 @@
         app:layout_constraintStart_toEndOf="@+id/no_of_visits"
         app:layout_constraintTop_toTopOf="parent"
         app:tint="@color/daynight_textColor" />
-
     <ImageView
         android:id="@+id/edit_team"
         android:layout_width="40dp"
@@ -72,7 +67,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:tint="@color/daynight_textColor" />
-
     <ImageView
         android:id="@+id/btn_feedback"
         android:layout_width="40dp"
@@ -84,5 +78,4 @@
         app:layout_constraintEnd_toStartOf="@id/edit_team"
         app:layout_constraintTop_toTopOf="parent"
         app:tint="@color/daynight_textColor" />
-
 </androidx.constraintlayout.widget.ConstraintLayout>
