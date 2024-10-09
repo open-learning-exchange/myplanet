@@ -43,7 +43,6 @@
                         android:src="@drawable/ic_left_arrow"
                         android:text="@string/btn_back"
                         app:tint="@color/md_black_1000" />
-
                     <TextView
                         android:id="@+id/tv_title"
                         android:layout_width="0dp"
@@ -53,7 +52,6 @@
                         android:textAllCaps="true"
                         android:textColor="@color/md_white_1000"
                         android:textStyle="bold" />
-
                     <ImageButton
                         android:id="@+id/btn_download"
                         style="@style/YellowButtons"
@@ -66,7 +64,6 @@
                         android:text="@string/download"
                         app:srcCompat="@drawable/ic_download"
                         app:tint="@color/md_black_1000" />
-
                     <ImageButton
                         android:id="@+id/btn_remove"
                         style="@style/YellowButtons"
@@ -78,7 +75,6 @@
                         android:src="@drawable/close_x"
                         android:text="@string/btn_remove_lib"
                         app:tint="@color/md_black_1000" />
-
                 </LinearLayout>
 
                 <androidx.core.widget.NestedScrollView
@@ -92,7 +88,6 @@
                         android:layout_gravity="center"
                         android:gravity="center"
                         android:orientation="vertical">
-
 
                         <LinearLayout
                             android:layout_width="wrap_content"
@@ -113,7 +108,6 @@
                                     android:orientation="vertical"
                                     android:padding="8dp">
 
-
                                     <TextView
                                         android:id="@+id/times_rated"
                                         android:layout_width="match_parent"
@@ -122,23 +116,21 @@
                                         android:gravity="center"
                                         android:padding="4dp"
                                         android:textColor="@color/daynight_textColor" />
-
                                     <androidx.appcompat.widget.AppCompatRatingBar
                                         android:id="@+id/rating_bar"
                                         style="@style/Base.Widget.AppCompat.RatingBar.Small"
                                         android:layout_width="wrap_content"
                                         android:layout_height="wrap_content"
                                         android:isIndicator="true"
-                                        android:stepSize="1" />
-
-
+                                        android:stepSize="1"
+                                        android:progressTint="@color/daynight_textColor"
+                                        android:progressBackgroundTint="@color/empty_rating" />
                                 </LinearLayout>
 
                                 <LinearLayout
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:layout_gravity="center"
-
                                     android:orientation="vertical"
                                     android:padding="4dp">
 
@@ -153,15 +145,12 @@
                                         android:textColor="@color/daynight_textColor"
                                         android:textSize="@dimen/text_size_large"
                                         android:textStyle="bold" />
-
-
                                     <TextView
                                         android:id="@+id/average"
                                         android:layout_width="match_parent"
                                         android:layout_height="wrap_content"
                                         android:text="@string/average"
                                         android:textColor="@color/daynight_textColor" />
-
                                 </LinearLayout>
                             </LinearLayout>
 
@@ -176,14 +165,12 @@
                                     android:layout_height="wrap_content"
                                     android:text="@string/author"
                                     android:textColor="@color/daynight_textColor" />
-
                                 <TextView
                                     android:id="@+id/tv_author"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
                                     android:padding="@dimen/padding_normal"
                                     android:textColor="@color/daynight_textColor" />
-
                             </LinearLayout>
 
                             <LinearLayout
@@ -197,14 +184,12 @@
                                     android:layout_height="wrap_content"
                                     android:text="@string/published_by"
                                     android:textColor="@color/daynight_textColor" />
-
                                 <TextView
                                     android:id="@+id/tv_published"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
                                     android:padding="@dimen/padding_normal"
                                     android:textColor="@color/daynight_textColor" />
-
                             </LinearLayout>
 
                             <LinearLayout
@@ -218,14 +203,12 @@
                                     android:layout_height="wrap_content"
                                     android:text="@string/media"
                                     android:textColor="@color/daynight_textColor" />
-
                                 <TextView
                                     android:id="@+id/tv_media"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
                                     android:padding="@dimen/padding_normal"
                                     android:textColor="@color/daynight_textColor" />
-
                             </LinearLayout>
 
                             <LinearLayout
@@ -239,14 +222,12 @@
                                     android:layout_height="wrap_content"
                                     android:text="@string/language_with_colon"
                                     android:textColor="@color/daynight_textColor" />
-
                                 <TextView
                                     android:id="@+id/tv_language"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
                                     android:padding="@dimen/padding_normal"
                                     android:textColor="@color/daynight_textColor" />
-
                             </LinearLayout>
 
                             <LinearLayout
@@ -260,14 +241,12 @@
                                     android:layout_height="wrap_content"
                                     android:text="@string/subject"
                                     android:textColor="@color/daynight_textColor"/>
-
                                 <TextView
                                     android:id="@+id/tv_subject"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
                                     android:padding="@dimen/padding_normal"
                                     android:textColor="@color/daynight_textColor" />
-
                             </LinearLayout>
 
                             <LinearLayout
@@ -281,14 +260,12 @@
                                     android:layout_height="wrap_content"
                                     android:text="@string/license"
                                     android:textColor="@color/daynight_textColor"/>
-
                                 <TextView
                                     android:id="@+id/tv_license"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
                                     android:padding="@dimen/padding_normal"
                                     android:textColor="@color/daynight_textColor" />
-
                             </LinearLayout>
 
                             <LinearLayout
@@ -302,14 +279,12 @@
                                     android:layout_height="wrap_content"
                                     android:text="@string/resource_colon"
                                     android:textColor="@color/daynight_textColor" />
-
                                 <TextView
                                     android:id="@+id/tv_resource"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
                                     android:padding="@dimen/padding_normal"
                                     android:textColor="@color/daynight_textColor" />
-
                             </LinearLayout>
 
                             <LinearLayout
@@ -323,26 +298,17 @@
                                     android:layout_height="wrap_content"
                                     android:text="@string/type"
                                     android:textColor="@color/daynight_textColor" />
-
                                 <TextView
                                     android:id="@+id/tv_type"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
                                     android:padding="@dimen/padding_normal"
                                     android:textColor="@color/daynight_textColor" />
-
                             </LinearLayout>
-
                         </LinearLayout>
                     </LinearLayout>
                 </androidx.core.widget.NestedScrollView>
-
             </LinearLayout>
-
-
         </androidx.cardview.widget.CardView>
-
     </LinearLayout>
-
-
 </FrameLayout>

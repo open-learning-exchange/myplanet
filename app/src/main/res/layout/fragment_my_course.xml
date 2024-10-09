@@ -45,7 +45,7 @@
                     android:minWidth="150dp" />
                 <Button
                     android:id="@+id/btn_remove"
-                    android:layout_width="wrap_content"
+                    android:layout_width="70dp"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:layout_margin="@dimen/padding_small"
@@ -53,7 +53,7 @@
                     android:padding="8dp"
                     android:text="@string/leave"
                     android:textColor="@color/md_white_1000"
-                    android:textSize="@dimen/text_size_mid"
+                    android:textSize="13sp"
                     android:visibility="gone" />
                 <TextView
                     android:id="@+id/tv_add"
@@ -87,7 +87,7 @@
                     android:minWidth="120dp" />
                 <Button
                     android:id="@+id/btn_archive"
-                    android:layout_width="wrap_content"
+                    android:layout_width="95dp"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:layout_margin="@dimen/_10dp"
@@ -95,7 +95,7 @@
                     android:gravity="start|center_vertical"
                     android:text="@string/archive"
                     android:textColor="@color/daynight_textColor"
-                    android:textSize="@dimen/text_size_mid"
+                    android:textSize="13sp"
                     android:visibility="gone"
                     app:drawableLeftCompat="@drawable/ic_delete"
                     app:drawableTint="@color/daynight_textColor" />
@@ -294,5 +294,5 @@
         android:layout_margin="@dimen/padding_large"
         android:contentDescription="@string/my_progress"
         app:fab_label="@string/my_progress"
-        android:visibility="gone"/>
+        android:visibility="gone" />
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
