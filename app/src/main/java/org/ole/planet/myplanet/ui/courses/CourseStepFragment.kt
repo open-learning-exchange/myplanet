@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.courses
 
-import android.os.Build
 import android.os.Bundle
 import android.text.Spannable
 import android.text.method.LinkMovementMethod
@@ -8,7 +7,6 @@ import android.text.style.URLSpan
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.annotation.RequiresApi
 import androidx.fragment.app.Fragment
 import io.realm.Case
 import io.realm.Realm
@@ -91,7 +89,6 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         step = cRealm.where(RealmCourseStep::class.java).equalTo("id", stepId).findFirst()!!
@@ -169,7 +166,6 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     private fun setListeners() {
         val notDownloadedResources: List<RealmMyLibrary> = cRealm.where(RealmMyLibrary::class.java).equalTo("stepId", stepId).equalTo("resourceOffline", false).isNotNull("resourceLocalAddress").findAll()
         setResourceButton(notDownloadedResources, fragmentCourseStepBinding.btnResources)
@@ -195,7 +191,6 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         fragmentCourseStepBinding.btnResources.visibility = View.GONE
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun onDownloadComplete() {
         super.onDownloadComplete()
         setListeners()

@@ -2,13 +2,11 @@ package org.ole.planet.myplanet.ui.team.teamDiscussion
 
 import android.content.DialogInterface
 import android.content.res.Configuration
-import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import com.google.gson.Gson
@@ -32,7 +30,6 @@ import org.ole.planet.myplanet.utilities.FileUtils.openOleFolder
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.UUID
 
-@RequiresApi(Build.VERSION_CODES.O)
 class DiscussionListFragment : BaseTeamFragment() {
     private lateinit var fragmentDiscussionListBinding: FragmentDiscussionListBinding
     private var updatedNewsList: RealmResults<RealmNews>? = null

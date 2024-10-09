@@ -1,9 +1,7 @@
 package org.ole.planet.myplanet.ui.team
 
-import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
-import androidx.annotation.RequiresApi
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.viewpager2.adapter.FragmentStateAdapter
@@ -48,7 +46,6 @@ class TeamPagerAdapter(fm: FragmentActivity, team: RealmMyTeam?, isInMyTeam: Boo
         return list[position]
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun createFragment(position: Int): Fragment {
         if (position < 0 || position >= list.size) {
             throw IllegalArgumentException("Invalid position: $position. List size: ${list.size}")

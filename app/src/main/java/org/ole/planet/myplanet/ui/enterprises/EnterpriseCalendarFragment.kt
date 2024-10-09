@@ -4,7 +4,6 @@ import android.app.*
 import android.os.*
 import android.view.*
 import android.widget.*
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.applandeo.materialcalendarview.CalendarDay
@@ -20,7 +19,6 @@ import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.*
 import java.util.*
 
-@RequiresApi(Build.VERSION_CODES.O)
 class EnterpriseCalendarFragment : BaseTeamFragment() {
     private lateinit var fragmentEnterpriseCalendarBinding: FragmentEnterpriseCalendarBinding
     private val selectedDates: MutableList<Calendar> = mutableListOf()

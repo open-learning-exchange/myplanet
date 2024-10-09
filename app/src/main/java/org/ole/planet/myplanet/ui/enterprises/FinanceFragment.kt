@@ -1,13 +1,11 @@
 package org.ole.planet.myplanet.ui.enterprises
 
 import android.content.DialogInterface
-import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.DatePicker
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.borax12.materialdaterangepicker.date.DatePickerDialog
@@ -27,7 +25,6 @@ import java.util.Calendar
 import java.util.Locale
 import java.util.UUID
 
-@RequiresApi(Build.VERSION_CODES.O)
 class FinanceFragment : BaseTeamFragment() {
     private lateinit var fragmentFinanceBinding: FragmentFinanceBinding
     private lateinit var addTransactionBinding: AddTransactionBinding
@@ -102,7 +99,6 @@ class FinanceFragment : BaseTeamFragment() {
         dpd.show(requireActivity().fragmentManager, "DATE_PICKER")
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         if (user?.isManager() == true || user?.isLeader() == true) {
@@ -141,7 +137,6 @@ class FinanceFragment : BaseTeamFragment() {
         if (total >= 0) fragmentFinanceBinding.balanceCaution.visibility = View.GONE
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     private fun addTransaction() {
         AlertDialog.Builder(requireActivity()).setView(setUpAlertUi()).setTitle(R.string.add_transaction)
             .setPositiveButton("Submit") { _: DialogInterface?, _: Int ->

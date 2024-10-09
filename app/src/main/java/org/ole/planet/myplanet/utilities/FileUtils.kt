@@ -6,13 +6,11 @@ import android.content.Context
 import android.content.Intent
 import android.database.Cursor
 import android.net.Uri
-import android.os.Build
 import android.os.Environment
 import android.os.StatFs
 import android.os.storage.StorageManager
 import android.provider.MediaStore
 import android.text.TextUtils
-import androidx.annotation.RequiresApi
 import android.content.pm.PackageInstaller
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import java.io.BufferedReader
@@ -316,17 +314,14 @@ object FileUtils {
 
     @JvmStatic
     val totalMemoryCapacity: Long
-        @RequiresApi(Build.VERSION_CODES.O)
         get() = getStorageStats(context).first
 
     @JvmStatic
     val totalAvailableMemory: Long
-        @RequiresApi(Build.VERSION_CODES.O)
         get() = getStorageStats(context).second
 
     @JvmStatic
     val totalAvailableMemoryRatio: Long
-        @RequiresApi(Build.VERSION_CODES.O)
         get() {
             val total = totalMemoryCapacity
             val available = totalAvailableMemory
@@ -335,42 +330,27 @@ object FileUtils {
 
     @JvmStatic
     val availableOverTotalMemoryFormattedString: String
-        @RequiresApi(Build.VERSION_CODES.O)
         get() {
-            val context = context
             val available = totalAvailableMemory
             val total = totalMemoryCapacity
             return formatSize(available) + "/" + formatSize(total)
         }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     private fun getStorageStats(context: Context): Pair<Long, Long> {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            val storageStatsManager =
-                context.getSystemService(Context.STORAGE_STATS_SERVICE) as StorageStatsManager
-            val storageManager = context.getSystemService(Context.STORAGE_SERVICE) as StorageManager
-            val storageVolume = storageManager.primaryStorageVolume
+        val storageStatsManager =
+            context.getSystemService(Context.STORAGE_STATS_SERVICE) as StorageStatsManager
+        val storageManager = context.getSystemService(Context.STORAGE_SERVICE) as StorageManager
+        val storageVolume = storageManager.primaryStorageVolume
 
-            // Get UUID of the internal storage
-            val uuid =
-                storageVolume.uuid?.let { UUID.fromString(it) } ?: StorageManager.UUID_DEFAULT
+        // Get UUID of the internal storage
+        val uuid =
+            storageVolume.uuid?.let { UUID.fromString(it) } ?: StorageManager.UUID_DEFAULT
 
-            // Get the total bytes and available bytes
-            val totalBytes = storageStatsManager.getTotalBytes(uuid)
-            val availableBytes = storageStatsManager.getFreeBytes(uuid)
+        // Get the total bytes and available bytes
+        val totalBytes = storageStatsManager.getTotalBytes(uuid)
+        val availableBytes = storageStatsManager.getFreeBytes(uuid)
 
-            return Pair(totalBytes, availableBytes)
-        } else {
-            val path = Environment.getDataDirectory()
-            val stat = StatFs(path.path)
-            val blockSize = stat.blockSizeLong
-            val totalBlocks = stat.blockCountLong
-            val availableBlocks = stat.availableBlocksLong
-
-            val totalBytes = blockSize * totalBlocks
-            val availableBytes = blockSize * availableBlocks
-            return Pair(totalBytes, availableBytes)
-        }
+        return Pair(totalBytes, availableBytes)
     }
     private fun extractFileName(filePath: String?): String?{
         if(filePath.isNullOrEmpty()) return null

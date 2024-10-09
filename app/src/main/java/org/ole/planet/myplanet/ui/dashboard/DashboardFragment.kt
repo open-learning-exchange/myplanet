@@ -1,11 +1,9 @@
 package org.ole.planet.myplanet.ui.dashboard
 
-import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import io.realm.Realm
 import org.ole.planet.myplanet.R
@@ -27,7 +25,6 @@ class DashboardFragment : BaseDashboardFragment() {
     private lateinit var databaseService: DatabaseService
     var user: RealmUserModel? = null
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentHomeBinding = FragmentHomeBinding.inflate(inflater, container, false)
         val view: View = fragmentHomeBinding.root
