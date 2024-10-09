@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.text.Spannable
 import android.text.method.LinkMovementMethod
 import android.text.style.URLSpan
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -133,9 +134,21 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                     .notEqualTo("status", "pending", Case.INSENSITIVE).count()
             }
             if (questions != null && questions.size > 0) {
-                if (submissionsCount != null) {
-                    fragmentCourseStepBinding.btnTakeTest.text = if (submissionsCount > 0) { getString(R.string.retake_test, stepExams.size) } else { getString(R.string.take_test, stepExams.size) }
-                }
+                val examId=questions[0]?.examId
+
+                val isSubmitted = step.courseId?.let { courseId ->
+                    val parentId = "$examId@$courseId"
+                    Log.d("4532","CourseStepFragment:: step.courseId: "+step.courseId+"  examId: "+firstStepId+" find submission parent ID: "+parentId)
+
+                    cRealm.where(RealmSubmission::class.java)
+                        .equalTo("parentId", parentId)
+                        .equalTo("status", "complete", Case.INSENSITIVE)
+                        .equalTo("type", "exam")
+                        .findFirst() != null
+                } ?: false
+                Log.d("4532","CourseStepFragment:: Found submission?: "+isSubmitted)
+
+                fragmentCourseStepBinding.btnTakeTest.text = if (isSubmitted) { getString(R.string.retake_test, stepExams.size) } else { getString(R.string.take_test, stepExams.size) }
                 fragmentCourseStepBinding.btnTakeTest.visibility = View.VISIBLE
             }
         }
