@@ -281,10 +281,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun createNotifications() {
-        val resourceCount = getLibraryList(mRealm, user?.id).size
-        if (resourceCount > 0) {
-            createNotificationIfNotExists("resource", "you have $resourceCount resources not downloaded", "$resourceCount")
-        }
+        updateResourceNotification()
 
         val pendingSurveys = getPendingSurveys(user?.id)
         val surveyTitles = getSurveyTitlesFromSubmissions(pendingSurveys)
@@ -312,6 +309,28 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
+    private fun updateResourceNotification() {
+        val resourceCount = getLibraryList(mRealm, user?.id).size
+        if (resourceCount > 0) {
+            val existingNotification = mRealm.where(RealmNotification::class.java)
+                .equalTo("userId", user?.id)
+                .equalTo("type", "resource")
+                .findFirst()
+
+            if (existingNotification != null) {
+                existingNotification.message = "you have $resourceCount resources not downloaded"
+                existingNotification.relatedId = "$resourceCount"
+            } else {
+                createNotificationIfNotExists("resource", "you have $resourceCount resources not downloaded", "$resourceCount")
+            }
+        } else {
+            mRealm.where(RealmNotification::class.java)
+                .equalTo("userId", user?.id)
+                .equalTo("type", "resource")
+                .findFirst()?.deleteFromRealm()
+        }
+    }
+
     private fun openNotificationsList(userId: String) {
         val fragment = NotificationsFragment().apply {
             arguments = Bundle().apply {
@@ -336,7 +355,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             .findFirst()
 
         if (existingNotification == null) {
-            mRealm.createObject(RealmNotification::class.java, UUID.randomUUID().toString()).apply {
+            mRealm.createObject(RealmNotification::class.java, "${UUID.randomUUID()}").apply {
                 this.userId = user?.id ?: ""
                 this.type = type
                 this.message = message
@@ -369,7 +388,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         val menuItem = activityDashboardBinding.appBarBell.bellToolbar.menu.findItem(R.id.action_notifications)
         val actionView = MenuItemCompat.getActionView(menuItem)
         val smsCountTxt = actionView.findViewById<TextView>(R.id.notification_badge)
-        smsCountTxt.text = count.toString()
+        smsCountTxt.text = "$count"
         smsCountTxt.visibility = if (count > 0) View.VISIBLE else View.GONE
         actionView.setOnClickListener(onClickListener)
     }

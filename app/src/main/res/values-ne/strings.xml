@@ -42,7 +42,7 @@
     <string name="download_all">सबै डाउनलोड गर्नुहोस्</string>
     <string name="hello_blank_fragment">नमस्ते रिक्त फ्रेमेन्ट</string>
     <string name="add_to_mycourse">मेरो पाठ्यक्रममा थप्नुहोस्</string>
-    <string name="join_selected">चयनितमा सामेल हुनुहोस्</string>
+    <string name="join_selected">चयनितमा\nसामेल हुनुहोस्</string>
     <string name="join">सामेल हुनुहोस्</string>
     <string name="add_to_mylib">मेरो पुस्तकालयमा थप्नुहोस्</string>
     <string name="step">चरण</string>

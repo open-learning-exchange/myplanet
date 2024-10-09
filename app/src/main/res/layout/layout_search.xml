@@ -53,7 +53,7 @@
                 android:maxLines="1"
                 android:padding="@dimen/padding_normal"
                 android:backgroundTint="@color/hint_color"
-                android:textColor="@color/daynight_textColor"/>
+                android:textColor="@color/daynight_textColor" />
         </com.google.android.material.textfield.TextInputLayout>
     </LinearLayout>
 </LinearLayout>

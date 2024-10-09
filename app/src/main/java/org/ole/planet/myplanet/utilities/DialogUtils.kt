@@ -25,9 +25,6 @@ object DialogUtils {
         val prgDialog = CustomProgressDialog(context)
         prgDialog.setTitle(context.getString(R.string.downloading_file))
         prgDialog.setMax(100)
-        prgDialog.setPositiveButton(context.getString(R.string.finish), isVisible = true) {
-            prgDialog.dismiss()
-        }
         prgDialog.setNegativeButton(context.getString(R.string.stop_download), isVisible = true) {
             context.stopService(Intent(context, MyDownloadService::class.java))
             prgDialog.dismiss()
