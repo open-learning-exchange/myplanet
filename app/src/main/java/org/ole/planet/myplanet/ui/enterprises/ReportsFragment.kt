@@ -3,13 +3,11 @@ package org.ole.planet.myplanet.ui.enterprises
 import android.app.Activity
 import android.app.DatePickerDialog
 import android.content.Intent
-import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.gson.JsonObject
@@ -32,7 +30,6 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
-@RequiresApi(Build.VERSION_CODES.O)
 class ReportsFragment : BaseTeamFragment() {
     private lateinit var fragmentReportsBinding: FragmentReportsBinding
     var list: RealmResults<RealmMyTeam>? = null

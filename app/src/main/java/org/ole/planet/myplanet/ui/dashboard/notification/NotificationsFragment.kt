@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.dashboard.notification
 
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import android.os.Bundle
 import android.provider.Settings.ACTION_INTERNAL_STORAGE_SETTINGS
 import android.view.LayoutInflater
@@ -10,7 +9,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
-import androidx.annotation.RequiresApi
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import io.realm.Realm
@@ -50,7 +48,6 @@ class NotificationsFragment : Fragment() {
         this.notificationUpdateListener = listener
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentNotificationsBinding = FragmentNotificationsBinding.inflate(inflater, container, false)
         databaseService = DatabaseService(requireActivity())

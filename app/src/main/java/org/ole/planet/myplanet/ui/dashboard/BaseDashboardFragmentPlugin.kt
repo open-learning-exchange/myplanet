@@ -1,12 +1,10 @@
 package org.ole.planet.myplanet.ui.dashboard
 
-import android.os.Build
 import android.os.Bundle
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.TextView
-import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import io.realm.RealmObject
@@ -50,7 +48,6 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     private fun handleClickMyLife(title: String, v: View) {
         v.setOnClickListener {
             if (homeItemClickListener != null) {
@@ -126,7 +123,6 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         setBackgroundColor(textView, itemCnt)
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     fun getLayout(itemCnt: Int, obj: RealmObject): View {
         val itemMyLifeBinding = ItemMyLifeBinding.inflate(LayoutInflater.from(activity))
         val v = itemMyLifeBinding.root

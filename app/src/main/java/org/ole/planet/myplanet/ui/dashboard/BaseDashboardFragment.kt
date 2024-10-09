@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.ui.dashboard
 import android.app.DatePickerDialog
 import android.content.Intent
 import android.graphics.Typeface
-import android.os.Build
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
@@ -13,7 +12,6 @@ import android.widget.DatePicker
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import com.bumptech.glide.Glide
@@ -137,7 +135,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     private fun myLibraryDiv(view: View) {
         view.findViewById<FlexboxLayout>(R.id.flexboxLayout).flexDirection = FlexDirection.ROW
         val dbMylibrary = RealmMyLibrary.getMyLibraryByUserId(mRealm, settings)
@@ -274,7 +271,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     private fun myLibraryItemClickAction(textView: TextView, items: RealmMyLibrary?) {
         textView.setOnClickListener {
             items?.let {
@@ -318,7 +314,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         v.visibility = if (count == 0) View.GONE else View.VISIBLE
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     fun initView(view: View) {
         view.findViewById<View>(R.id.imageView).setOnClickListener {
             homeItemClickListener?.openCallFragment(UserProfileFragment())

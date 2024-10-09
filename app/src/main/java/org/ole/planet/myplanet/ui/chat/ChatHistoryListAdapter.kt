@@ -2,10 +2,8 @@ package org.ole.planet.myplanet.ui.chat
 
 import android.app.AlertDialog
 import android.content.Context
-import android.os.Build
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import androidx.annotation.RequiresApi
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.Gson
@@ -89,7 +87,6 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
         notifyDataSetChanged()
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val viewHolderChat = holder as ViewHolderChat
         if (filteredChatHistory[position].conversations != null && filteredChatHistory[position].conversations?.isNotEmpty() == true) {
@@ -113,7 +110,7 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
 
         val isInNewsList = newsList?.any { newsItem ->
             newsItem.newsId == filteredChatHistory[position]._id
-        } ?: false
+        } == true
 
         if (isInNewsList) {
             viewHolderChat.rowChatHistoryBinding.shareChat.setImageResource(R.drawable.baseline_check_24)

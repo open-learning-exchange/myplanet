@@ -1,19 +1,16 @@
 package org.ole.planet.myplanet.ui.team
 
-import android.os.Build
 import android.os.Bundle
 import android.text.Html
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.annotation.RequiresApi
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentPlanBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
-@RequiresApi(Build.VERSION_CODES.O)
 class PlanFragment : BaseTeamFragment() {
     private lateinit var fragmentPlanBinding: FragmentPlanBinding
     private var missionText: String? = null

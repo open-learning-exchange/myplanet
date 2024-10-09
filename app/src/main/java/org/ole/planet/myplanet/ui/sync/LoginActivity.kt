@@ -9,7 +9,6 @@ import android.view.*
 import android.view.inputmethod.EditorInfo
 import android.widget.*
 import androidx.activity.OnBackPressedCallback
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.*
@@ -41,7 +40,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     private var teamList = java.util.ArrayList<String?>()
     private var teamAdapter: ArrayAdapter<String?>? = null
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         activityLoginBinding = ActivityLoginBinding.inflate(layoutInflater)
@@ -382,7 +380,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             mAdapter?.updateList(prefData.getSavedUsers().toMutableList())
         }
 
-        activityLoginBinding.recyclerView.setNestedScrollingEnabled(false)
+        activityLoginBinding.recyclerView.isNestedScrollingEnabled = false
         activityLoginBinding.recyclerView.setHasFixedSize(true)
     }
 
@@ -484,9 +482,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                     val pattern = Pattern.compile(regex)
                     val matcher = pattern.matcher(input)
                     hasSpecialCharacters = matcher.matches()
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                        hasDiacriticCharacters = !normalizedText.codePoints().allMatch { codePoint: Int -> Character.isLetterOrDigit(codePoint) || codePoint == '.'.code || codePoint == '-'.code || codePoint == '_'.code }
-                    }
+                    hasDiacriticCharacters = !normalizedText.codePoints().allMatch { codePoint: Int -> Character.isLetterOrDigit(codePoint) || codePoint == '.'.code || codePoint == '-'.code || codePoint == '_'.code }
                     if (!Character.isDigit(firstChar) && !Character.isLetter(firstChar)) {
                         alertGuestLoginBinding.etUserName.error = getString(R.string.must_start_with_letter_or_number)
                     } else if (hasInvalidCharacters || hasDiacriticCharacters || hasSpecialCharacters) {
@@ -540,10 +536,8 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                             break
                         }
                         hasSpecialCharacters = matcher.matches()
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                            hasDiacriticCharacters = !normalizedText.codePoints().allMatch {
-                                    codePoint -> Character.isLetterOrDigit(codePoint) || codePoint == '.'.code || codePoint == '-'.code || codePoint == '_'.code
-                            }
+                        hasDiacriticCharacters = !normalizedText.codePoints().allMatch {
+                            codePoint -> Character.isLetterOrDigit(codePoint) || codePoint == '.'.code || codePoint == '-'.code || codePoint == '_'.code
                         }
                     }
                     if (hasInvalidCharacters || hasDiacriticCharacters || hasSpecialCharacters) {
