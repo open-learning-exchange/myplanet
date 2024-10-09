@@ -42,7 +42,7 @@
     <string name="download_all">Soo deji Dhammaan</string>
     <string name="hello_blank_fragment">Hello jajab maran</string>
     <string name="add_to_mycourse">ku darso koorsooyinkayga</string>
-    <string name="join_selected">Ku biir la doortay</string>
+    <string name="join_selected">Ku biir la\ndoortay</string>
     <string name="join">Ku biir</string>
     <string name="add_to_mylib">Kudar Maktabadayda</string>
     <string name="step">tallaabo</string>

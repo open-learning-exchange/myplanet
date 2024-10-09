@@ -44,4 +44,5 @@
     <color name="user_profile_label">@color/md_blue_700</color>
     <color name="user_profile_description">@color/md_grey_700</color>
     <color name="user_profile_background">@color/md_grey_300</color>
+    <color name="multi_select_grey">@color/md_grey_300</color>
 </resources>
