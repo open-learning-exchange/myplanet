@@ -29,72 +29,75 @@
                 android:padding="@dimen/padding_normal" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <TableLayout
-            android:id="@+id/tableTitle"
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:stretchColumns="*">
+            android:id="@+id/tableTitle"
+            android:layout_marginStart="8dp"
+            android:layout_height="wrap_content">
 
-            <TableRow
-                android:id="@+id/firstRow"
-                android:layout_width="fill_parent"
+            <TextView
+                android:id="@+id/name"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_margin="4dp">
-
-                <TextView
-                    android:id="@+id/name"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:padding="@dimen/padding_small"
-                    android:text="@string/name_normal"
-                    android:textColor="@color/daynight_textColor"
-                    android:textStyle="bold" />
-                <TextView
-                    android:id="@+id/created"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:padding="@dimen/padding_small"
-                    android:text="@string/created_on"
-                    android:textColor="@color/daynight_textColor"
-                    android:textStyle="bold" />
-                <TextView
-                    android:id="@+id/type"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:padding="@dimen/padding_small"
-                    android:text="@string/type"
-                    android:textColor="@color/daynight_textColor"
-                    android:textStyle="bold" />
-                <TextView
-                    android:id="@+id/no_of_visits"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="2"
-                    android:alpha="0.8"
-                    android:padding="@dimen/padding_small"
-                    android:text="@string/total_visits"
-                    android:textColor="@color/daynight_textColor"
-                    android:textStyle="bold" />
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:padding="@dimen/padding_small"
-                    android:text="@string/action"
-                    android:textColor="@color/daynight_textColor"
-                    android:textStyle="bold" />
-            </TableRow>
-        </TableLayout>
+                android:text="@string/name_normal"
+                android:textColor="@color/daynight_textColor"
+                android:textStyle="bold"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintWidth_percent="0.2" />
+            <TextView
+                android:id="@+id/created"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="@string/created_on"
+                android:textColor="@color/daynight_textColor"
+                android:textStyle="bold"
+                app:layout_constraintStart_toEndOf="@id/name"
+                app:layout_constraintEnd_toStartOf="@id/type"
+                app:layout_constraintWidth_percent="0.2" />
+            <TextView
+                android:id="@+id/type"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:padding="@dimen/padding_small"
+                android:text="Type"
+                android:gravity="center"
+                android:textColor="@color/daynight_textColor"
+                android:textStyle="bold"
+                app:layout_constraintStart_toEndOf="@id/created"
+                app:layout_constraintEnd_toStartOf="@id/no_of_visits"
+                app:layout_constraintWidth_percent="0.2" />
+            <TextView
+                android:id="@+id/no_of_visits"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="@string/total_visits"
+                android:textColor="@color/daynight_textColor"
+                android:layout_gravity="center"
+                android:textStyle="bold"
+                app:layout_constraintStart_toEndOf="@id/type"
+                app:layout_constraintEnd_toStartOf="@id/ltButtons"
+                app:layout_constraintWidth_percent="0.2"
+                app:layout_constraintHorizontal_weight="1" />
+            <TextView
+                android:id="@+id/ltButtons"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="@string/action"
+                android:gravity="center"
+                android:paddingEnd="12dp"
+                android:paddingStart="0dp"
+                android:textColor="@color/daynight_textColor"
+                android:textStyle="bold"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@id/no_of_visits"
+                app:layout_constraintWidth_percent="0.3" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_team_list"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
+            android:layout_height="wrap_content" />
     </LinearLayout>
 
     <TextView
