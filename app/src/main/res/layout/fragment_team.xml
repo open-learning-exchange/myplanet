@@ -45,7 +45,6 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintWidth_percent="0.2" />
-
             <TextView
                 android:id="@+id/created"
                 android:layout_width="0dp"
@@ -56,7 +55,6 @@
                 app:layout_constraintStart_toEndOf="@id/name"
                 app:layout_constraintEnd_toStartOf="@id/type"
                 app:layout_constraintWidth_percent="0.2" />
-
             <TextView
                 android:id="@+id/type"
                 android:layout_width="0dp"
@@ -69,7 +67,6 @@
                 app:layout_constraintStart_toEndOf="@id/created"
                 app:layout_constraintEnd_toStartOf="@id/no_of_visits"
                 app:layout_constraintWidth_percent="0.2" />
-
             <TextView
                 android:id="@+id/no_of_visits"
                 android:layout_width="0dp"
@@ -81,8 +78,7 @@
                 app:layout_constraintStart_toEndOf="@id/type"
                 app:layout_constraintEnd_toStartOf="@id/ltButtons"
                 app:layout_constraintWidth_percent="0.2"
-                app:layout_constraintHorizontal_weight="1"/>
-
+                app:layout_constraintHorizontal_weight="1" />
             <TextView
                 android:id="@+id/ltButtons"
                 android:layout_width="0dp"
@@ -95,8 +91,7 @@
                 android:textStyle="bold"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toEndOf="@id/no_of_visits"
-                app:layout_constraintWidth_percent="0.3"/>
-
+                app:layout_constraintWidth_percent="0.3" />
         </androidx.constraintlayout.widget.ConstraintLayout>
 
         <androidx.recyclerview.widget.RecyclerView
