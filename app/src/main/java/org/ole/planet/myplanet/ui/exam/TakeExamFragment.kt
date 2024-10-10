@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.exam
 
 import android.os.Bundle
 import android.text.TextUtils
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -89,9 +88,6 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                 id
             }
         }
-        Log.d("TakeExamFragment"," Id: "+id)
-
-        Log.d("TakeExamFragment"," submitting examId: "+exam?.id+"  , examCourseid: "+exam?.courseId+" == result "+sub?.parentId)
         sub?.userId = user?.id
         sub?.status = "pending"
         sub?.type = type
