@@ -1,18 +1,15 @@
 package org.ole.planet.myplanet.ui.team.teamCourse
 
-import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.annotation.RequiresApi
 import androidx.recyclerview.widget.LinearLayoutManager
 import org.ole.planet.myplanet.databinding.FragmentTeamCourseBinding
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 
-@RequiresApi(Build.VERSION_CODES.O)
 class TeamCourseFragment : BaseTeamFragment() {
     private lateinit var fragmentTeamCourseBinding: FragmentTeamCourseBinding
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {

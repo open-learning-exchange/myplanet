@@ -1,7 +1,5 @@
 package org.ole.planet.myplanet.ui.resources
 
-import android.content.DialogInterface
-import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
 import android.view.LayoutInflater
@@ -9,7 +7,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
-import androidx.annotation.RequiresApi
 import io.realm.Realm
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
@@ -23,7 +20,6 @@ import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onAdd
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onRemove
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.utilities.DialogUtils.getAlertDialog
 import org.ole.planet.myplanet.utilities.FileUtils.getFileExtension
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -63,14 +59,12 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         return fragmentLibraryDetailBinding.root
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         initRatingView("resource", library.resourceId, library.title, this@ResourceDetailFragment)
         setLibraryData()
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     private fun setLibraryData() {
         with(fragmentLibraryDetailBinding) {
             tvTitle.text = library.title
@@ -118,7 +112,6 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     private fun setClickListeners() {
         fragmentLibraryDetailBinding.btnDownload.setOnClickListener {
             if (TextUtils.isEmpty(library.resourceLocalAddress)) {
