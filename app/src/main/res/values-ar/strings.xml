@@ -1191,5 +1191,7 @@
     <string name="my_purpose_description">هدفي - ما هي طموحاتك التعليمية والمهنية؟</string>
     <string name="my_purpose">هدفي</string>
     <string name="my_goals">أهدافي</string>
+    <string name="redo_survey">إعادة الاستبيان</string>
+    <string name="continue_test">استمرار الاختبار (%1$d/%2$d)</string>
 
 </resources>

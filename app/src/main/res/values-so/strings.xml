@@ -1191,5 +1191,7 @@
     <string name="my_purpose_description">Ujeedadayda - Waa maxay himilooyinkaaga waxbarasho iyo kuwa xirfadeed?</string>
     <string name="my_purpose">Ujeedadayda</string>
     <string name="my_goals">Hadafyadayda</string>
+    <string name="redo_survey">dib u samee sahanka</string>
+    <string name="continue_test">sii wad tijaabada (%1$d/%2$d)</string>
 
 </resources>

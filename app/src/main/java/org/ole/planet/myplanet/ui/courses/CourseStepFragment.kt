@@ -125,33 +125,60 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     private fun hideTestIfNoQuestion() {
         fragmentCourseStepBinding.btnTakeTest.visibility = View.GONE
         fragmentCourseStepBinding.btnTakeSurvey.visibility = View.GONE
+
         if (stepExams.isNotEmpty()) {
             val firstStepId = stepExams[0].id
             val questions = cRealm.where(RealmExamQuestion::class.java).equalTo("examId", firstStepId).findAll()
-            val submissionsCount = step.courseId?.let {
-                cRealm.where(RealmSubmission::class.java).contains("parentId", it)
-                    .notEqualTo("status", "pending", Case.INSENSITIVE).count()
-            }
-            if (questions != null && questions.size > 0) {
-                if (submissionsCount != null) {
-                    fragmentCourseStepBinding.btnTakeTest.text = if (submissionsCount > 0) { getString(R.string.retake_test, stepExams.size) } else { getString(R.string.take_test, stepExams.size) }
-                }
+
+            if (questions != null && questions.isNotEmpty()) {
+                updateTestButtonText(stepExams)
                 fragmentCourseStepBinding.btnTakeTest.visibility = View.VISIBLE
             }
         }
+
         if (stepSurvey.isNotEmpty()) {
             val firstStepId = stepSurvey[0].id
             val questions = cRealm.where(RealmExamQuestion::class.java).equalTo("examId", firstStepId).findAll()
-            val submissionsCount = step.courseId?.let {
-                cRealm.where(RealmSubmission::class.java).contains("parentId", it)
-                    .notEqualTo("status", "pending", Case.INSENSITIVE).count()
-            }
-            if (questions != null && questions.size > 0) {
-                if (submissionsCount != null) {
-                    fragmentCourseStepBinding.btnTakeSurvey.text = if (submissionsCount > 0) { "redo survey" } else { "record survey" }
-                }
+
+            if (questions != null && questions.isNotEmpty()) {
+                updateSurveyButtonText(stepSurvey)
                 fragmentCourseStepBinding.btnTakeSurvey.visibility = View.VISIBLE
             }
+        }
+    }
+
+    private fun updateTestButtonText(stepExams: List<RealmStepExam>) {
+        val totalTests = stepExams.size
+        var completedTests = 0
+
+        for (exam in stepExams) {
+            val submissionsCount = cRealm.where(RealmSubmission::class.java)
+                .equalTo("parentId", "${exam.id}@${step.courseId}")
+                .notEqualTo("status", "pending", Case.INSENSITIVE)
+                .count()
+
+            if (submissionsCount > 0) {
+                completedTests++
+            }
+        }
+
+        fragmentCourseStepBinding.btnTakeTest.text = when {
+            completedTests == 0 -> getString(R.string.take_test, totalTests)
+            completedTests < totalTests -> getString(R.string.continue_test, completedTests, totalTests)
+            else -> getString(R.string.retake_test, totalTests)
+        }
+    }
+
+    private fun updateSurveyButtonText(stepSurvey: List<RealmStepExam>) {
+        val submissionsCount = cRealm.where(RealmSubmission::class.java)
+            .equalTo("parentId", "${stepSurvey[0].id}@${step.courseId}")
+            .notEqualTo("status", "pending", Case.INSENSITIVE)
+            .count()
+
+        fragmentCourseStepBinding.btnTakeSurvey.text = if (submissionsCount > 0) {
+            getString(R.string.redo_survey)
+        } else {
+            getString(R.string.record_survey)
         }
     }
 

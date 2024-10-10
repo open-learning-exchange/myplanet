@@ -51,7 +51,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         var q: RealmQuery<*> = mRealm.where(RealmSubmission::class.java)
             .equalTo("userId", user?.id)
             .equalTo("parentId", if (!TextUtils.isEmpty(exam?.courseId)) {
-                id + "@" + exam?.courseId
+                "$id@${exam?.courseId}"
             } else {
                 id
             }).sort("startTime", Sort.DESCENDING)
@@ -77,13 +77,13 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         sub = createSubmission(sub, mRealm)
         if (TextUtils.isEmpty(id)) {
             sub?.parentId = if (!TextUtils.isEmpty(exam?.courseId)) {
-                exam?.id + "@" + exam?.courseId
+                "${exam?.id}@${exam?.courseId}"
             } else {
                 exam?.id
             }
         } else {
             sub?.parentId = if (!TextUtils.isEmpty(exam?.courseId)) {
-                id + "@" + exam?.courseId
+                "$id@${exam?.courseId}"
             } else {
                 id
             }

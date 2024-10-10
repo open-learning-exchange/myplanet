@@ -645,7 +645,7 @@
     <string name="success_you_have_added_the_following_courses">Success! You have added the following courses:\n\n</string>
     <string name="return_to_the_home_tab_to_access_mycourses">\n\n Return to the Home tab to access myCourses.\n</string>
     <string name="and">"And "</string>
-    <string name="more_course_s">" more course(s)...\n"</string>
+    <string name="more_course_s">" more course(s)…\n"</string>
     <string name="retake_test">Retake Test [%d]</string>
     <string name="do_you_want_to_join_this_course">Do you want to join this course?</string>
     <string name="join_this_course">Join this course</string>
@@ -1191,5 +1191,7 @@
     <string name="my_purpose_description">My Purpose - What are your educational and professional ambitions?</string>
     <string name="my_purpose">My Purpose</string>
     <string name="my_goals">My Goals</string>
+    <string name="redo_survey">redo survey</string>
+    <string name="continue_test">continue Test (%1$d/%2$d)</string>
 
 </resources>
