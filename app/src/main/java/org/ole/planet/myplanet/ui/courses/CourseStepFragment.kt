@@ -130,7 +130,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
             val firstStepId = stepExams[0].id
             val questions = cRealm.where(RealmExamQuestion::class.java).equalTo("examId", firstStepId).findAll()
             val submissionsCount = step.courseId?.let {
-                cRealm.where(RealmSubmission::class.java).contains("parentId", it)
+                cRealm.where(RealmSubmission::class.java).equalTo("userId",user?.id).contains("parentId", it)
                     .notEqualTo("status", "pending", Case.INSENSITIVE).count()
             }
             if (questions != null && questions.size > 0) {
@@ -138,19 +138,19 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
 
                 val isSubmitted = step.courseId?.let { courseId ->
                     val parentId = "$examId@$courseId"
-                    Log.d("4532","CourseStepFragment:: step.courseId: "+step.courseId+"  examId: "+firstStepId+" find submission parent ID: "+parentId)
+                    Log.d("CourseStepFragment"," step.courseId: "+step.courseId+"  examId: "+firstStepId+" find submission parent ID: "+parentId)
 
                     cRealm.where(RealmSubmission::class.java)
+                        .equalTo("userId",user?.id)
                         .equalTo("parentId", parentId)
-                        .equalTo("status", "complete", Case.INSENSITIVE)
                         .equalTo("type", "exam")
                         .findFirst() != null
                 } ?: false
-                Log.d("4532","CourseStepFragment:: Found submission?: "+isSubmitted)
+                Log.d("CourseStepFragment","Found submission?: "+isSubmitted+" , count: "+submissionsCount)
 
                 fragmentCourseStepBinding.btnTakeTest.text = if (isSubmitted) { getString(R.string.retake_test, stepExams.size) } else { getString(R.string.take_test, stepExams.size) }
                 fragmentCourseStepBinding.btnTakeTest.visibility = View.VISIBLE
-            }
+            };
         }
         if (stepSurvey.isNotEmpty()) {
             val firstStepId = stepSurvey[0].id

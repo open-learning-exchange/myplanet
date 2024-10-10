@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.exam
 
 import android.os.Bundle
 import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -75,19 +76,22 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     private fun createSubmission() {
         startTransaction()
         sub = createSubmission(sub, mRealm)
-        if (TextUtils.isEmpty(id)) {
+        if (!TextUtils.isEmpty(exam?.id)) {
             sub?.parentId = if (!TextUtils.isEmpty(exam?.courseId)) {
                 exam?.id + "@" + exam?.courseId
             } else {
                 exam?.id
             }
-        } else {
+        } else if(!TextUtils.isEmpty(id)){
             sub?.parentId = if (!TextUtils.isEmpty(exam?.courseId)) {
                 id + "@" + exam?.courseId
             } else {
                 id
             }
         }
+        Log.d("TakeExamFragment"," Id: "+id)
+
+        Log.d("TakeExamFragment"," submitting examId: "+exam?.id+"  , examCourseid: "+exam?.courseId+" == result "+sub?.parentId)
         sub?.userId = user?.id
         sub?.status = "pending"
         sub?.type = type
