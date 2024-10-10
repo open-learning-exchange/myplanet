@@ -1193,5 +1193,10 @@
     <string name="my_goals">أهدافي</string>
     <string name="open">فتح</string>
     <string name="closed">مغلق</string>
+    <string name="community_name">اسم المجتمع</string>
+    <string name="last_login">آخر تسجيل دخول : </string>
+    <string name="total_visits_overall">إجمالي الزيارات : </string>
+    <string name="most_opened_resource">أكثر مورد تم فتحه : </string>
+    <string name="number_of_resources_opened">عدد الموارد المفتوحة : </string>
 
 </resources>

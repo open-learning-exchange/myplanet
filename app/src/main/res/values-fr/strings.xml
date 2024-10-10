@@ -1193,5 +1193,10 @@
     <string name="my_goals">Mes Objectifs</string>
     <string name="open">Ouvrir</string>
     <string name="closed">Fermé</string>
+    <string name="community_name">Nom de la Communauté</string>
+    <string name="last_login">Dernière Connexion : </string>
+    <string name="total_visits_overall">Total des Visites : </string>
+    <string name="most_opened_resource">Ressource La Plus Consultée : </string>
+    <string name="number_of_resources_opened">Nombre de Ressources Ouvertes : </string>
 
 </resources>

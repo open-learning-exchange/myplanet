@@ -1193,5 +1193,10 @@
     <string name="my_goals">Mis Metas</string>
     <string name="open">Abrir</string>
     <string name="closed">Cerrado</string>
+    <string name="community_name">Nombre de la Comunidad</string>
+    <string name="last_login">Último Inicio de Sesión : </string>
+    <string name="total_visits_overall">Total de Visitas : </string>
+    <string name="most_opened_resource">Recurso Más Abierto : </string>
+    <string name="number_of_resources_opened">Número de Recursos Abiertos : </string>
 
 </resources>

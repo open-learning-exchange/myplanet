@@ -100,6 +100,7 @@ jobs:
 
       - name: publish AAB to playstore fallback
         if: github.event_name != 'workflow_dispatch' && matrix.build == 'lite' && steps.playstore.outcome == 'failure'
+        continue-on-error: true
         uses: dogi/upload-google-play@v1.1.4
         with:
           serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
