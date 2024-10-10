@@ -1191,5 +1191,10 @@
     <string name="my_purpose_description">My Purpose - What are your educational and professional ambitions?</string>
     <string name="my_purpose">My Purpose</string>
     <string name="my_goals">My Goals</string>
+    <string name="community_name">Community Name</string>
+    <string name="last_login">Last Login : </string>
+    <string name="total_visits_overall">Total Visits : </string>
+    <string name="most_opened_resource">Most Opened Resource : </string>
+    <string name="number_of_resources_opened">Number of Resources Opened : </string>
 
 </resources>
