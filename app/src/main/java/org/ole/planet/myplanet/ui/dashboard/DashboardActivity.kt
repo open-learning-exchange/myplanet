@@ -253,7 +253,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun challengeDialog(remainingDays: Int) {
         val markdownContent = """
             ## october challenge: $remainingDays days remaining
-            
+
             <img src="file:///android_asset/images/october-challenge.png" width="100%">
 
             """.trimIndent()
