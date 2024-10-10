@@ -57,6 +57,13 @@ class MarkdownDialog : DialogFragment() {
         setupCloseButton()
     }
 
+    override fun onStart() {
+        super.onStart()
+        val dialog = dialog ?: return
+
+        dialog.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+    }
+
     private fun setupMarkdown() {
         setMarkdownText(dialogCampaignChallengeBinding.markdownTextView, markdownContent)
     }
