@@ -161,13 +161,13 @@ object DialogUtils {
             }
 
             override fun onFail() {
-                val url = arrayListOf(path)
+                val urls = arrayListOf(path)
                 if (progressDialog != null) {
                     progressDialog.setText(context.getString(R.string.downloading_file))
                     progressDialog.setCancelable(false)
                     progressDialog.show()
                 }
-                Utilities.openDownloadService(context, url, false)
+                MyDownloadService.startService(context, "$urls", false)
             }
         }, path)
     }
@@ -247,7 +247,7 @@ object DialogUtils {
             progressTitle.text = text
         }
         fun isShowing(): Boolean {
-            return dialog?.isShowing ?: false
+            return dialog?.isShowing == true
         }
 
         fun disableNegativeButton() {
