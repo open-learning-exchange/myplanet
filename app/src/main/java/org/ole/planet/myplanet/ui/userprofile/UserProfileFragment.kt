@@ -259,11 +259,11 @@ class UserProfileFragment : Fragment() {
         }
 
         val map = linkedMapOf(
-            "Community Name" to Utilities.checkNA(model?.planetCode!!),
-            "Last Login : " to handler.lastVisit?.let { Utilities.getRelativeTime(it) },
-            "Total Visits : " to handler.offlineVisits.toString(),
-            "Most Opened Resource : " to Utilities.checkNA(handler.maxOpenedResource),
-            "Number of Resources Opened : " to Utilities.checkNA(handler.numberOfResourceOpen)
+            getString(R.string.community_name) to Utilities.checkNA(model?.planetCode!!),
+            getString(R.string.last_login) to handler.lastVisit?.let { Utilities.getRelativeTime(it) },
+            getString(R.string.total_visits_overall) to handler.offlineVisits.toString(),
+            getString(R.string.most_opened_resource) to Utilities.checkNA(handler.maxOpenedResource),
+            getString(R.string.number_of_resources_opened) to Utilities.checkNA(handler.numberOfResourceOpen)
         )
 
         val keys = LinkedList(map.keys)

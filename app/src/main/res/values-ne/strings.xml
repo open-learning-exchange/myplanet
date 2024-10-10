@@ -1191,5 +1191,10 @@
     <string name="my_purpose_description">मेरो उद्देश्य - तपाईका शैक्षिक र व्यावसायिक महत्वाकांक्षा के हुन्?</string>
     <string name="my_purpose">मेरो उद्देश्य</string>
     <string name="my_goals">मेरा लक्ष्यहरू</string>
+    <string name="community_name">समुदायको नाम</string>
+    <string name="last_login">अन्तिम लगइन : </string>
+    <string name="total_visits_overall">कुल भ्रमण : </string>
+    <string name="most_opened_resource">सबैभन्दा धेरै खोलेको स्रोत : </string>
+    <string name="number_of_resources_opened">खोलिएका स्रोतहरूको संख्या : </string>
 
 </resources>
