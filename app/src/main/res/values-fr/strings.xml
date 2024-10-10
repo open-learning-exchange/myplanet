@@ -1192,7 +1192,7 @@
     <string name="my_purpose">Mon But</string>
     <string name="my_goals">Mes Objectifs</string>
     <string name="community_name">Nom de la Communauté</string>
-    <string name="last_login">Dernière Connexion :</string>
+    <string name="last_login">Dernière Connexion : </string>
     <string name="total_visits_overall">Total des Visites : </string>
     <string name="most_opened_resource">Ressource La Plus Consultée : </string>
     <string name="number_of_resources_opened">Nombre de Ressources Ouvertes : </string>
