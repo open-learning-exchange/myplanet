@@ -129,13 +129,21 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
             val firstStepId = stepExams[0].id
             val questions = cRealm.where(RealmExamQuestion::class.java).equalTo("examId", firstStepId).findAll()
             val submissionsCount = step.courseId?.let {
-                cRealm.where(RealmSubmission::class.java).contains("parentId", it)
+                cRealm.where(RealmSubmission::class.java).equalTo("userId",user?.id).contains("parentId", it)
                     .notEqualTo("status", "pending", Case.INSENSITIVE).count()
             }
             if (questions != null && questions.size > 0) {
-                if (submissionsCount != null) {
-                    fragmentCourseStepBinding.btnTakeTest.text = if (submissionsCount > 0) { getString(R.string.retake_test, stepExams.size) } else { getString(R.string.take_test, stepExams.size) }
-                }
+                val examId=questions[0]?.examId
+
+                val isSubmitted = step.courseId?.let { courseId ->
+                    val parentId = "$examId@$courseId"
+                    cRealm.where(RealmSubmission::class.java)
+                        .equalTo("userId",user?.id)
+                        .equalTo("parentId", parentId)
+                        .equalTo("type", "exam")
+                        .findFirst() != null
+                } ?: false
+                fragmentCourseStepBinding.btnTakeTest.text = if (isSubmitted) { getString(R.string.retake_test, stepExams.size) } else { getString(R.string.take_test, stepExams.size) }
                 fragmentCourseStepBinding.btnTakeTest.visibility = View.VISIBLE
             }
         }
