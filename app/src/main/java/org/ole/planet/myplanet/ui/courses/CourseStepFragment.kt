@@ -4,7 +4,6 @@ import android.os.Bundle
 import android.text.Spannable
 import android.text.method.LinkMovementMethod
 import android.text.style.URLSpan
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -138,19 +137,15 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
 
                 val isSubmitted = step.courseId?.let { courseId ->
                     val parentId = "$examId@$courseId"
-                    Log.d("CourseStepFragment"," step.courseId: "+step.courseId+"  examId: "+firstStepId+" find submission parent ID: "+parentId)
-
                     cRealm.where(RealmSubmission::class.java)
                         .equalTo("userId",user?.id)
                         .equalTo("parentId", parentId)
                         .equalTo("type", "exam")
                         .findFirst() != null
                 } ?: false
-                Log.d("CourseStepFragment","Found submission?: "+isSubmitted+" , count: "+submissionsCount)
-
                 fragmentCourseStepBinding.btnTakeTest.text = if (isSubmitted) { getString(R.string.retake_test, stepExams.size) } else { getString(R.string.take_test, stepExams.size) }
                 fragmentCourseStepBinding.btnTakeTest.visibility = View.VISIBLE
-            };
+            }
         }
         if (stepSurvey.isNotEmpty()) {
             val firstStepId = stepSurvey[0].id
