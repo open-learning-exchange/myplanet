@@ -59,7 +59,7 @@ class FeedbackDetailActivity : AppCompatActivity() {
         activityFeedbackDetailBinding.closeFeedback.setOnClickListener {
             realm.executeTransactionAsync(Realm.Transaction { realm1: Realm ->
                 val feedback1 = realm1.where(RealmFeedback::class.java).equalTo("id", intent.getStringExtra("id")).findFirst()
-                feedback1?.status = "Closed" },
+                feedback1?.status = getString(R.string.closed) },
                 Realm.Transaction.OnSuccess { updateForClosed() })
         }
         activityFeedbackDetailBinding.replyFeedback.setOnClickListener {
@@ -82,7 +82,7 @@ class FeedbackDetailActivity : AppCompatActivity() {
     }
 
     private fun updateForClosed() {
-        if (feedback.status.equals("Closed", ignoreCase = true)) {
+        if (feedback.status.equals(getString(R.string.closed), ignoreCase = true)) {
             activityFeedbackDetailBinding.closeFeedback.isEnabled = false
             activityFeedbackDetailBinding.replyFeedback.isEnabled = false
             activityFeedbackDetailBinding.feedbackReplyEditText.visibility = View.INVISIBLE
