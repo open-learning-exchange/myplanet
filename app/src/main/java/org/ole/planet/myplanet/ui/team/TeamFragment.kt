@@ -34,6 +34,8 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     var type: String? = null
     var user: RealmUserModel? = null
     private var teamList: RealmResults<RealmMyTeam>? = null
+    private lateinit var adapterTeamList: AdapterTeamList
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) {
@@ -228,9 +230,9 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
             .isEmpty("teamId")
             .notEqualTo("status", "archived")
         val (list, conditionApplied) = getList(query)
-        val adapterTeamList = activity?.let { AdapterTeamList(it, list, mRealm, childFragmentManager) }
-        adapterTeamList?.setType(type)
-        adapterTeamList?.setTeamListener(this@TeamFragment)
+        adapterTeamList = activity?.let { AdapterTeamList(it, list, mRealm, childFragmentManager) } ?: return
+        adapterTeamList.setType(type)
+        adapterTeamList.setTeamListener(this@TeamFragment)
         requireView().findViewById<View>(R.id.type).visibility =
             if (type == null) {
                 View.VISIBLE
@@ -239,7 +241,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
             }
         fragmentTeamBinding.rvTeamList.adapter = adapterTeamList
         listContentDescription(conditionApplied)
-        val itemCount = adapterTeamList?.itemCount
+        val itemCount = adapterTeamList.itemCount
         showNoData(fragmentTeamBinding.tvMessage, itemCount, "teams")
         if (itemCount == 0) {
             fragmentTeamBinding.etSearch.visibility = View.GONE
