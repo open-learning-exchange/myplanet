@@ -1191,5 +1191,7 @@
     <string name="my_purpose_description">هدفي - ما هي طموحاتك التعليمية والمهنية؟</string>
     <string name="my_purpose">هدفي</string>
     <string name="my_goals">أهدافي</string>
+    <string name="open">فتح</string>
+    <string name="closed">مغلق</string>
 
 </resources>

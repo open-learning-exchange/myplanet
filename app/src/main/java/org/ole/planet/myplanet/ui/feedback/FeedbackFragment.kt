@@ -126,7 +126,7 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
         feedback.url = "/"
         feedback.owner = user
         feedback.source = user
-        feedback.status = "Open"
+        feedback.status = getString(R.string.open)
         feedback.priority = urgent
         feedback.type = type
         feedback.parentCode = "dev"
@@ -147,7 +147,7 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
         feedback.url = "/" + argumentArray[2]
         feedback.owner = user
         feedback.source = user
-        feedback.status = "Open"
+        feedback.status = getString(R.string.open)
         feedback.priority = urgent
         feedback.type = type
         feedback.parentCode = "dev"

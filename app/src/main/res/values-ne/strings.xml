@@ -1191,5 +1191,7 @@
     <string name="my_purpose_description">मेरो उद्देश्य - तपाईका शैक्षिक र व्यावसायिक महत्वाकांक्षा के हुन्?</string>
     <string name="my_purpose">मेरो उद्देश्य</string>
     <string name="my_goals">मेरा लक्ष्यहरू</string>
+    <string name="open">खोल्नुहोस्</string>
+    <string name="closed">बन्द</string>
 
 </resources>

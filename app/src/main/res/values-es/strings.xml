@@ -1191,5 +1191,7 @@
     <string name="my_purpose_description">Mi Propósito - ¿Cuáles son tus ambiciones educativas y profesionales?</string>
     <string name="my_purpose">Mi Propósito</string>
     <string name="my_goals">Mis Metas</string>
+    <string name="open">Abrir</string>
+    <string name="closed">Cerrado</string>
 
 </resources>
