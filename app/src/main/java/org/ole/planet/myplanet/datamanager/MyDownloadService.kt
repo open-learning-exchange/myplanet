@@ -1,34 +1,34 @@
 package org.ole.planet.myplanet.datamanager
 
 import android.app.NotificationManager
+import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
-import androidx.work.Worker
-import androidx.work.WorkerParameters
 import io.realm.Realm
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.FileUtils
+import org.ole.planet.myplanet.ui.dashboard.DashboardActivity.Companion.MESSAGE_PROGRESS
+import org.ole.planet.myplanet.utilities.FileUtils.availableExternalMemorySize
+import org.ole.planet.myplanet.utilities.FileUtils.externalMemoryAvailable
+import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
+import org.ole.planet.myplanet.utilities.FileUtils.getSDPathFromUrl
 import org.ole.planet.myplanet.utilities.NotificationUtil
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.Utilities.header
 import retrofit2.Call
-import java.io.BufferedInputStream
-import java.io.File
-import java.io.FileOutputStream
-import java.io.IOException
-import java.io.InputStream
-import java.io.OutputStream
+import java.io.*
 import kotlin.math.pow
 import kotlin.math.roundToInt
 
-class MyDownloadService(context: Context, params: WorkerParameters) : Worker(context, params) {
+class MyDownloadService : Service() {
     private var count = 0
     private var data = ByteArray(1024 * 4)
     private var outputFile: File? = null
@@ -42,69 +42,89 @@ class MyDownloadService(context: Context, params: WorkerParameters) : Worker(con
     private var request: Call<ResponseBody>? = null
     private var completeAll = false
     private var fromSync = false
+
     private val databaseService: DatabaseService by lazy {
-        DatabaseService(applicationContext)
+        DatabaseService(this)
     }
 
     private val mRealm: Realm by lazy {
         databaseService.realmInstance
     }
 
-    override fun doWork(): Result {
-        preferences = applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    override fun onBind(intent: Intent?): IBinder? {
+        return null
+    }
 
-        val urlsKey = inputData.getString("urls_key")
-        val settings = applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        urls = (settings.getStringSet(urlsKey, emptySet())?.toList() ?: return Result.failure()).toTypedArray()
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
 
-        fromSync = inputData.getBoolean("fromSync", false)
+        val urlsKey = intent?.getStringExtra("urls_key") ?: "url_list_key"
 
-        if (urls.isEmpty()) {
-            return Result.failure()
+        val urlSet = preferences?.getStringSet(urlsKey, emptySet())
+
+        if (urlSet.isNullOrEmpty()) {
+            stopSelf()
+            return START_NOT_STICKY
         }
 
-        notificationBuilder = NotificationCompat.Builder(applicationContext, "11")
+        urls = urlSet.toTypedArray()
+        fromSync = intent?.getBooleanExtra("fromSync", false) == true
+
+        initNotification()
+
+        CoroutineScope(Dispatchers.IO).launch {
+            for (i in urls.indices) {
+                url = urls[i]
+                currentIndex = i
+                initDownload(fromSync)
+            }
+        }
+
+        return START_STICKY
+    }
+
+    private fun initNotification() {
+        notificationBuilder = NotificationCompat.Builder(this, "11")
         NotificationUtil.setChannel(notificationManager)
         val notification = notificationBuilder?.setSmallIcon(R.mipmap.ic_launcher)
-            ?.setContentTitle("OLE Download")?.setContentText("Downloading File...")
-            ?.setAutoCancel(true)?.build()
-        notificationManager?.notify(0, notification)
-
-        for (i in urls.indices) {
-            url = urls[i]
-            currentIndex = i
-            initDownload(fromSync)
-        }
-
-        return Result.success()
+            ?.setContentTitle("OLE Download")
+            ?.setContentText("Downloading File...")
+            ?.setAutoCancel(true)
+            ?.build()
+        startForeground(1, notification)
     }
 
     private fun initDownload(fromSync: Boolean) {
         val retrofitInterface = ApiClient.client?.create(ApiInterface::class.java)
         if (retrofitInterface != null) {
-            request = retrofitInterface.downloadFile(Utilities.header, url)
             try {
-                val r = request?.execute()
-                if (r != null) {
-                    if (r.code() == 200) {
-                        val responseBody = r.body()
+                request = retrofitInterface.downloadFile(header, url)
+                val response = request?.execute()
+
+                when {
+                    response == null -> {
+                        downloadFailed("Null response from server", fromSync)
+                    }
+                    response.isSuccessful -> {
+                        val responseBody = response.body()
                         if (!checkStorage(responseBody?.contentLength() ?: 0L)) {
                             responseBody?.let { downloadFile(it) }
                         }
-                    } else {
-                        downloadFiled(if (r.code() == 404) "File Not found " else "Connection failed", fromSync)
+                    }
+                    else -> {
+                        downloadFailed(if (response.code() == 404) "File Not found" else "Connection failed (${response.code()})", fromSync)
                     }
                 }
             } catch (e: IOException) {
-                e.printStackTrace()
-                e.localizedMessage?.let { downloadFiled(it, fromSync) }
-                e.printStackTrace()
+                e.localizedMessage?.let { downloadFailed(it, fromSync) }
             }
+        } else {
+            downloadFailed("Network client initialization failed", fromSync)
         }
     }
 
-    private fun downloadFiled(message: String, fromSync: Boolean) {
+    private fun downloadFailed(message: String, fromSync: Boolean) {
         notificationBuilder?.setContentText(message)
         notificationManager?.notify(0, notificationBuilder?.build())
         val d = Download()
@@ -118,7 +138,7 @@ class MyDownloadService(context: Context, params: WorkerParameters) : Worker(con
     private fun downloadFile(body: ResponseBody?) {
         val fileSize = body?.contentLength()
         val bis: InputStream = BufferedInputStream(body?.byteStream(), 1024 * 8)
-        outputFile = FileUtils.getSDPathFromUrl(url)
+        outputFile = getSDPathFromUrl(url)
         val output: OutputStream = FileOutputStream(outputFile)
         var total: Long = 0
         val startTime = System.currentTimeMillis()
@@ -135,7 +155,7 @@ class MyDownloadService(context: Context, params: WorkerParameters) : Worker(con
             val progress = fileSize?.let { (total * 100 / it).toInt() } ?: 0
             val currentTime = System.currentTimeMillis() - startTime
             val download = Download()
-            download.fileName = FileUtils.getFileNameFromUrl(url)
+            download.fileName = getFileNameFromUrl(url)
             download.totalFileSize = totalFileSize
             if (currentTime > 1000 * timeCount) {
                 download.currentFileSize = current.toInt()
@@ -149,11 +169,11 @@ class MyDownloadService(context: Context, params: WorkerParameters) : Worker(con
     }
 
     private fun checkStorage(fileSize: Long): Boolean {
-        if (!FileUtils.externalMemoryAvailable()) {
-            downloadFiled("Download Failed : SD card Not available", fromSync)
+        if (!externalMemoryAvailable()) {
+            downloadFailed("Download Failed : SD card Not available", fromSync)
             return true
-        } else if (fileSize > FileUtils.availableExternalMemorySize) {
-            downloadFiled("Download Failed : Not enough storage in SD card", fromSync)
+        } else if (fileSize > availableExternalMemorySize) {
+            downloadFailed("Download Failed : Not enough storage in SD card", fromSync)
             return true
         }
         return false
@@ -168,18 +188,18 @@ class MyDownloadService(context: Context, params: WorkerParameters) : Worker(con
     }
 
     private fun sendNotification(download: Download) {
-        download.fileName = "Downloading : " + FileUtils.getFileNameFromUrl(url)
+        download.fileName = "Downloading : ${getFileNameFromUrl(url)}"
         sendIntent(download, fromSync)
         notificationBuilder?.setProgress(100, download.progress, false)
-        notificationBuilder?.setContentText("Downloading file " + download.currentFileSize + "/" + totalFileSize + " KB")
+        notificationBuilder?.setContentText("Downloading file ${download.currentFileSize}/$totalFileSize KB")
         notificationManager?.notify(0, notificationBuilder?.build())
     }
 
     private fun sendIntent(download: Download, fromSync: Boolean) {
-        val intent = Intent(DashboardActivity.MESSAGE_PROGRESS)
+        val intent = Intent(MESSAGE_PROGRESS)
         intent.putExtra("download", download)
         intent.putExtra("fromSync", fromSync)
-        LocalBroadcastManager.getInstance(applicationContext).sendBroadcast(intent)
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
     }
 
     private fun onDownloadComplete() {
@@ -187,12 +207,13 @@ class MyDownloadService(context: Context, params: WorkerParameters) : Worker(con
             changeOfflineStatus()
         }
         val download = Download()
-        download.fileName = FileUtils.getFileNameFromUrl(url)
+        download.fileName = getFileNameFromUrl(url)
         download.fileUrl = url
         download.progress = 100
         if (currentIndex == urls.size - 1) {
             completeAll = true
             download.completeAll = true
+            stopSelf()
         }
         sendIntent(download, fromSync)
         notificationManager?.cancel(0)
@@ -202,7 +223,7 @@ class MyDownloadService(context: Context, params: WorkerParameters) : Worker(con
     }
 
     private fun changeOfflineStatus() {
-        val currentFileName = FileUtils.getFileNameFromUrl(url)
+        val currentFileName = getFileNameFromUrl(url)
         mRealm.executeTransaction { realm: Realm ->
             val matchingItems = realm.where(RealmMyLibrary::class.java)
                 .equalTo("resourceLocalAddress", currentFileName)
@@ -213,6 +234,18 @@ class MyDownloadService(context: Context, params: WorkerParameters) : Worker(con
                     item.downloadedRev = item._rev
                 }
             }
+        }
+    }
+
+    companion object {
+        const val PREFS_NAME = "MyPrefsFile"
+
+        fun startService(context: Context, urlsKey: String, fromSync: Boolean) {
+            val intent = Intent(context, MyDownloadService::class.java).apply {
+                putExtra("urls_key", urlsKey)
+                putExtra("fromSync", fromSync)
+            }
+            context.startService(intent)
         }
     }
 }
