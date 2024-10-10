@@ -1191,5 +1191,10 @@
     <string name="my_purpose_description">Ujeedadayda - Waa maxay himilooyinkaaga waxbarasho iyo kuwa xirfadeed?</string>
     <string name="my_purpose">Ujeedadayda</string>
     <string name="my_goals">Hadafyadayda</string>
+    <string name="community_name">Magaca Bulshada</string>
+    <string name="last_login">Gelitaankii Ugu Dambeeyay : </string>
+    <string name="total_visits_overall">Tirada Booqashooyinka : </string>
+    <string name="most_opened_resource">Kheyraadka Ugu Badan ee La Furay : </string>
+    <string name="number_of_resources_opened">Tirada Kheyraadka La Furay : </string>
 
 </resources>
