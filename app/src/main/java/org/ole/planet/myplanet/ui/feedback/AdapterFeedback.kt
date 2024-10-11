@@ -30,13 +30,13 @@ class AdapterFeedback(private val context: Context, private var list: List<Realm
                 "${context.getString(R.string.open_date)}: ${getFormatedDate(list?.get(position)?.openTime)}"
         rowFeedbackBinding.feedbackCardView.contentDescription = contentDescription
 
-        if ("yes".equals(list?.get(position)?.priority, ignoreCase = true)) {
+        if (context.getString(R.string.yes).equals(list?.get(position)?.priority, ignoreCase = true)) {
             rowFeedbackBinding.tvPriority.background = ResourcesCompat.getDrawable(context.resources, R.drawable.bg_primary, null)
         } else {
             rowFeedbackBinding.tvPriority.background = ResourcesCompat.getDrawable(context.resources, R.drawable.bg_grey, null)
         }
         rowFeedbackBinding.tvStatus.background = ResourcesCompat.getDrawable(context.resources,
-            if ("open".equals(list?.get(position)?.status, ignoreCase = true)) {
+            if (context.getString(R.string.open).equals(list?.get(position)?.status, ignoreCase = true)) {
                 R.drawable.bg_primary
             } else {
                 R.drawable.bg_grey
