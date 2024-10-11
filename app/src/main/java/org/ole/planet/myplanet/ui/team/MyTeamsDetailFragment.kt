@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.team
 
 import android.content.DialogInterface
-import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -11,7 +10,6 @@ import android.widget.ArrayAdapter
 import android.widget.LinearLayout
 import android.widget.ListView
 import android.widget.TextView
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -45,7 +43,6 @@ import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Date
 import java.util.UUID
 
-@RequiresApi(Build.VERSION_CODES.O)
 class MyTeamsDetailFragment : BaseNewsFragment() {
     private lateinit var fragmentMyTeamsDetailBinding: FragmentMyTeamsDetailBinding
     lateinit var tvDescription: TextView

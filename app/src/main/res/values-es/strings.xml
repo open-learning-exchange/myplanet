@@ -1090,7 +1090,7 @@
     <string name="tag_selected">Seleccionado: %s</string>
     <string name="resources_size">Recursos [%d]</string>
     <string name="user_role">- %s</string>
-    <string name="user_name">%s (%d)</string>
+    <string name="user_name">%1$s (%2$s)</string>
     <string name="visit_count">%1$s (%2$d %3$s)</string>
     <string name="two_strings">%1$s %2$s</string>
     <string name="three_strings">%1$s %2$s %3$s</string>
@@ -1191,5 +1191,11 @@
     <string name="my_purpose_description">Mi Propósito - ¿Cuáles son tus ambiciones educativas y profesionales?</string>
     <string name="my_purpose">Mi Propósito</string>
     <string name="my_goals">Mis Metas</string>
+    <string name="community_name">Nombre de la Comunidad</string>
+    <string name="last_login">Último Inicio de Sesión : </string>
+    <string name="total_visits_overall">Total de Visitas : </string>
+    <string name="most_opened_resource">Recurso Más Abierto : </string>
+    <string name="number_of_resources_opened">Número de Recursos Abiertos : </string>
+    <string name="number_of_visits">Número de Visitas</string>
 
 </resources>

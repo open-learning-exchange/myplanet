@@ -1,12 +1,10 @@
 package org.ole.planet.myplanet.ui.courses
 
-import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import androidx.annotation.RequiresApi
 import androidx.recyclerview.widget.LinearLayoutManager
 import io.realm.Realm
 import org.ole.planet.myplanet.MainApplication
@@ -47,14 +45,12 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         return fragmentCourseDetailBinding.root
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         initRatingView("course", courses?.courseId, courses?.courseTitle, this)
         setCourseData()
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     private fun setCourseData() {
         setTextViewVisibility(fragmentCourseDetailBinding.subjectLevel, courses?.subjectLevel, fragmentCourseDetailBinding.ltSubjectLevel)
         setTextViewVisibility(fragmentCourseDetailBinding.method, courses?.method, fragmentCourseDetailBinding.ltMethod)
@@ -90,7 +86,6 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         setRatings(`object`)
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun onDownloadComplete() {
         super.onDownloadComplete()
         setCourseData()

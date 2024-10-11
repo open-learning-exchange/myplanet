@@ -4,12 +4,10 @@ import android.content.Context
 import android.content.DialogInterface
 import android.graphics.Color
 import android.graphics.PorterDuff
-import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.FragmentManager
 import androidx.recyclerview.widget.RecyclerView
@@ -45,7 +43,6 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
         return ViewHolderTeam(itemTeamListBinding)
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun onBindViewHolder(holder: ViewHolderTeam, position: Int) {
         val team = filteredList[position]
         val user: RealmUserModel? = UserProfileDbHandler(context).userModel

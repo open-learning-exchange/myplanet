@@ -75,13 +75,13 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     private fun createSubmission() {
         startTransaction()
         sub = createSubmission(sub, mRealm)
-        if (TextUtils.isEmpty(id)) {
+        if (!TextUtils.isEmpty(exam?.id)) {
             sub?.parentId = if (!TextUtils.isEmpty(exam?.courseId)) {
                 exam?.id + "@" + exam?.courseId
             } else {
                 exam?.id
             }
-        } else {
+        } else if(!TextUtils.isEmpty(id)){
             sub?.parentId = if (!TextUtils.isEmpty(exam?.courseId)) {
                 id + "@" + exam?.courseId
             } else {
