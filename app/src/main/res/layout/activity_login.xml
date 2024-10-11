@@ -350,11 +350,11 @@
                     android:id="@+id/recyclerView"
                     android:layout_width="match_parent"
                     android:layout_height="350dp"
-                    android:layout_marginTop="@dimen/_10dp"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/team" />
+                    app:layout_constraintTop_toBottomOf="@+id/team"
+                    app:layout_constraintVertical_bias="0.2" />
             </androidx.constraintlayout.widget.ConstraintLayout>
         </LinearLayout>
     </LinearLayout>
