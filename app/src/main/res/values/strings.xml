@@ -1196,5 +1196,6 @@
     <string name="total_visits_overall">Total Visits : </string>
     <string name="most_opened_resource">Most Opened Resource : </string>
     <string name="number_of_resources_opened">Number of Resources Opened : </string>
+    <string name="number_of_visits">Number of Visits</string>
 
 </resources>

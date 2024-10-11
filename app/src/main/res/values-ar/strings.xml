@@ -1196,5 +1196,6 @@
     <string name="total_visits_overall">إجمالي الزيارات : </string>
     <string name="most_opened_resource">أكثر مورد تم فتحه : </string>
     <string name="number_of_resources_opened">عدد الموارد المفتوحة : </string>
+    <string name="number_of_visits">عدد الزيارات</string>
 
 </resources>
