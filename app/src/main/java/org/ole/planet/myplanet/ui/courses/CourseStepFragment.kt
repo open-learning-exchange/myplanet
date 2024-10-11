@@ -4,11 +4,11 @@ import android.os.Bundle
 import android.text.Spannable
 import android.text.method.LinkMovementMethod
 import android.text.style.URLSpan
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import io.realm.Case
 import io.realm.Realm
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
@@ -127,40 +127,36 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         fragmentCourseStepBinding.btnTakeSurvey.visibility = View.GONE
         if (stepExams.isNotEmpty()) {
             val firstStepId = stepExams[0].id
-            val questions = cRealm.where(RealmExamQuestion::class.java).equalTo("examId", firstStepId).findAll()
-            val submissionsCount = step.courseId?.let {
-                cRealm.where(RealmSubmission::class.java).equalTo("userId",user?.id).contains("parentId", it)
-                    .notEqualTo("status", "pending", Case.INSENSITIVE).count()
-            }
-            if (questions != null && questions.size > 0) {
-                val examId=questions[0]?.examId
-
-                val isSubmitted = step.courseId?.let { courseId ->
-                    val parentId = "$examId@$courseId"
-                    cRealm.where(RealmSubmission::class.java)
-                        .equalTo("userId",user?.id)
-                        .equalTo("parentId", parentId)
-                        .equalTo("type", "exam")
-                        .findFirst() != null
-                } ?: false
-                fragmentCourseStepBinding.btnTakeTest.text = if (isSubmitted) { getString(R.string.retake_test, stepExams.size) } else { getString(R.string.take_test, stepExams.size) }
-                fragmentCourseStepBinding.btnTakeTest.visibility = View.VISIBLE
-            }
+            val isTestPersent = getSubmission(firstStepId, "exam")
+            fragmentCourseStepBinding.btnTakeTest.text = if (isTestPersent) { getString(R.string.retake_test, stepExams.size) } else { getString(R.string.take_test, stepExams.size) }
+            fragmentCourseStepBinding.btnTakeTest.visibility = View.VISIBLE
         }
         if (stepSurvey.isNotEmpty()) {
             val firstStepId = stepSurvey[0].id
-            val questions = cRealm.where(RealmExamQuestion::class.java).equalTo("examId", firstStepId).findAll()
-            val submissionsCount = step.courseId?.let {
-                cRealm.where(RealmSubmission::class.java).contains("parentId", it)
-                    .notEqualTo("status", "pending", Case.INSENSITIVE).count()
-            }
-            if (questions != null && questions.size > 0) {
-                if (submissionsCount != null) {
-                    fragmentCourseStepBinding.btnTakeSurvey.text = if (submissionsCount > 0) { "redo survey" } else { "record survey" }
-                }
-                fragmentCourseStepBinding.btnTakeSurvey.visibility = View.VISIBLE
+            val isSurveyPresent = getSubmission(firstStepId, "survey")
+            fragmentCourseStepBinding.btnTakeSurvey.text = if (isSurveyPresent) { "redo survey" } else { "record survey" }
+            fragmentCourseStepBinding.btnTakeSurvey.visibility = View.VISIBLE
             }
         }
+
+    private fun getSubmission(firstStepId:String? , submissionType: String): Boolean{
+        val questions = cRealm.where(RealmExamQuestion::class.java).equalTo("examId", firstStepId).findAll()
+        var isPresent=false;
+        Log.d("4608","firstStepIdSurvey(examId): "+firstStepId+" parentId: "+step.courseId)
+        if (questions != null && questions.size > 0) {
+            val examId=questions[0]?.examId
+            val isSubmitted = step.courseId?.let { courseId ->
+                val parentId = "$examId@$courseId"
+                Log.d("4608","Finding parentId: "+parentId)
+                cRealm.where(RealmSubmission::class.java)
+                    .equalTo("userId",user?.id)
+                    .equalTo("parentId", parentId)
+                    .equalTo("type", submissionType)
+                    .findFirst() != null
+            } ?: false
+            isPresent= isSubmitted
+        }
+        return isPresent
     }
 
     override fun setMenuVisibility(visible: Boolean) {
