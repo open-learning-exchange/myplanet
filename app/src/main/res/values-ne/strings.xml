@@ -1090,7 +1090,7 @@
     <string name="tag_selected">%s छनोट गरिएको</string>
     <string name="resources_size">स्रोतहरू [%d]</string>
     <string name="user_role">- %s</string>
-    <string name="user_name">%s (%d)</string>
+    <string name="user_name">%1$s (%2$s)</string>
     <string name="visit_count">%1$s (%2$d %3$s)</string>
     <string name="two_strings">%1$s %2$s</string>
     <string name="three_strings">%1$s %2$s %3$s</string>
