@@ -4,7 +4,6 @@ import android.os.Bundle
 import android.text.Spannable
 import android.text.method.LinkMovementMethod
 import android.text.style.URLSpan
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -127,27 +126,25 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         fragmentCourseStepBinding.btnTakeSurvey.visibility = View.GONE
         if (stepExams.isNotEmpty()) {
             val firstStepId = stepExams[0].id
-            val isTestPersent = getSubmission(firstStepId, "exam")
+            val isTestPersent = existsSubmission(firstStepId, "exam")
             fragmentCourseStepBinding.btnTakeTest.text = if (isTestPersent) { getString(R.string.retake_test, stepExams.size) } else { getString(R.string.take_test, stepExams.size) }
             fragmentCourseStepBinding.btnTakeTest.visibility = View.VISIBLE
         }
         if (stepSurvey.isNotEmpty()) {
             val firstStepId = stepSurvey[0].id
-            val isSurveyPresent = getSubmission(firstStepId, "survey")
+            val isSurveyPresent = existsSubmission(firstStepId, "survey")
             fragmentCourseStepBinding.btnTakeSurvey.text = if (isSurveyPresent) { "redo survey" } else { "record survey" }
             fragmentCourseStepBinding.btnTakeSurvey.visibility = View.VISIBLE
             }
         }
 
-    private fun getSubmission(firstStepId:String? , submissionType: String): Boolean{
+    private fun existsSubmission(firstStepId:String? , submissionType: String): Boolean{
         val questions = cRealm.where(RealmExamQuestion::class.java).equalTo("examId", firstStepId).findAll()
-        var isPresent=false;
-        Log.d("4608","firstStepIdSurvey(examId): "+firstStepId+" parentId: "+step.courseId)
+        var isPresent=false
         if (questions != null && questions.size > 0) {
             val examId=questions[0]?.examId
             val isSubmitted = step.courseId?.let { courseId ->
                 val parentId = "$examId@$courseId"
-                Log.d("4608","Finding parentId: "+parentId)
                 cRealm.where(RealmSubmission::class.java)
                     .equalTo("userId",user?.id)
                     .equalTo("parentId", parentId)
