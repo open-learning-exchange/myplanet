@@ -85,12 +85,11 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
             displayTagCloud(holder.rowLibraryBinding.flexboxDrawable, position)
             holder.itemView.setOnClickListener { openLibrary(libraryList[position]) }
             userModel = UserProfileDbHandler(context).userModel
-            holder.rowLibraryBinding.ivDownloaded.setImageResource(
-                if (libraryList[position]?.isResourceOffline() == true) {
-                    R.drawable.ic_eye
-                } else {
-                    R.drawable.ic_download
-                })
+            if (libraryList[position]?.isResourceOffline() == true) {
+                holder.rowLibraryBinding.ivDownloaded.visibility = View.INVISIBLE
+            } else {
+                holder.rowLibraryBinding.ivDownloaded.visibility = View.VISIBLE
+            }
             holder.rowLibraryBinding.ivDownloaded.contentDescription =
                 if (libraryList[position]?.isResourceOffline() == true) {
                     context.getString(R.string.view)
