@@ -81,8 +81,8 @@
 
             <ImageView
                 android:id="@+id/languagesDropdownIcon"
-                android:layout_width="19dp"
-                android:layout_height="10dp"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
                 android:src="@drawable/down_arrow" />
         </LinearLayout>
 
