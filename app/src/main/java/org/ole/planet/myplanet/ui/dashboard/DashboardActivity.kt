@@ -526,7 +526,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
 
     private fun createDrawer() {
-        val dimenHolder = DimenHolder.fromDp(160)
+        val dimenHolder = DimenHolder.fromDp(220)
         result = headerResult?.let {
             DrawerBuilder().withActivity(this).withFullscreen(true)
                 .withSliderBackgroundColor(ContextCompat.getColor(this, R.color.colorPrimary))
