@@ -4,6 +4,10 @@ import android.os.Bundle
 import android.text.TextUtils
 import android.view.MenuItem
 import android.view.View
+import android.view.ViewGroup
+import android.widget.ArrayAdapter
+import android.widget.Spinner
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.google.gson.Gson
 import io.realm.Realm
@@ -18,6 +22,7 @@ import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.decrypt
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.encrypt
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateKey
 import org.ole.planet.myplanet.utilities.Utilities
+
 
 class AddMyHealthActivity : AppCompatActivity() {
     private lateinit var activityAddMyHealthBinding: ActivityAddMyHealthBinding
@@ -47,6 +52,24 @@ class AddMyHealthActivity : AppCompatActivity() {
             createMyHealth()
             Utilities.toast(this@AddMyHealthActivity, getString(R.string.my_health_saved_successfully))
         }
+        val spinner: Spinner = findViewById(R.id.spn_contact_type)
+
+        val adapter = object : ArrayAdapter<String>(
+            this, R.layout.spinner_item, resources.getStringArray(R.array.contact_type)
+        ) {
+            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                val view = super.getView(position, convertView, parent) as TextView
+                return view
+            }
+
+            override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View {
+                val view = super.getDropDownView(position, convertView, parent) as TextView
+                return view
+            }
+        }
+
+        spinner.adapter = adapter
+
         initViews()
     }
 
