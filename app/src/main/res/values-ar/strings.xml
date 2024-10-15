@@ -1090,7 +1090,7 @@
     <string name="tag_selected">تم اختيار: %s</string>
     <string name="resources_size">الموارد [%d]</string>
     <string name="user_role">- %s</string>
-    <string name="user_name">%s (%d)</string>
+    <string name="user_name">%1$s (%2$s)</string>
     <string name="visit_count">%1$s (%2$d %3$s)</string>
     <string name="two_strings">%1$s %2$s</string>
     <string name="three_strings">%1$s %2$s %3$s</string>
@@ -1191,5 +1191,11 @@
     <string name="my_purpose_description">هدفي - ما هي طموحاتك التعليمية والمهنية؟</string>
     <string name="my_purpose">هدفي</string>
     <string name="my_goals">أهدافي</string>
+    <string name="community_name">اسم المجتمع</string>
+    <string name="last_login">آخر تسجيل دخول : </string>
+    <string name="total_visits_overall">إجمالي الزيارات : </string>
+    <string name="most_opened_resource">أكثر مورد تم فتحه : </string>
+    <string name="number_of_resources_opened">عدد الموارد المفتوحة : </string>
+    <string name="number_of_visits">عدد الزيارات</string>
 
 </resources>
