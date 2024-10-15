@@ -77,6 +77,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.Utilities.toast
 import java.util.Date
 import java.util.UUID
+import kotlin.math.ceil
 
 class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, NavigationBarView.OnItemSelectedListener, NotificationListener {
     private lateinit var activityDashboardBinding: ActivityDashboardBinding
@@ -526,7 +527,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
 
     private fun createDrawer() {
-        val dimenHolder = DimenHolder.fromDp(160)
+        val statusBarHeight = ceil(25 * context.resources.displayMetrics.density).toInt()
+        val dimenHolder = DimenHolder.fromDp(160 + statusBarHeight)
         result = headerResult?.let {
             DrawerBuilder().withActivity(this).withFullscreen(true)
                 .withSliderBackgroundColor(ContextCompat.getColor(this, R.color.colorPrimary))
