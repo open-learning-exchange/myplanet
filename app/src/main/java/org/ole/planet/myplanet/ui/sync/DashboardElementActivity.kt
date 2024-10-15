@@ -19,6 +19,9 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -89,7 +92,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
     }
 
     override fun onPrepareOptionsMenu(menu: Menu): Boolean {
-        goOnline.setVisible(showBetaFeature(Constants.KEY_SYNC, this))
+        goOnline.isVisible = showBetaFeature(Constants.KEY_SYNC, this)
         return super.onPrepareOptionsMenu(menu)
     }
 
@@ -130,7 +133,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
                 DrawableCompat.setTintMode(resIcon.mutate(), PorterDuff.Mode.SRC_ATOP)
                 DrawableCompat.setTint(resIcon, ContextCompat.getColor(this, R.color.green))
             }
-            goOnline.setIcon(resIcon)
+            goOnline.icon = resIcon
             Toast.makeText(this, getString(R.string.wifi_is_turned_off_saving_battery_power), Toast.LENGTH_LONG).show()
         } else {
             wifi.setWifiEnabled(true)
@@ -140,7 +143,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
                 DrawableCompat.setTintMode(resIcon.mutate(), PorterDuff.Mode.SRC_ATOP)
                 DrawableCompat.setTint(resIcon, ContextCompat.getColor(this, R.color.accent))
             }
-            goOnline.setIcon(resIcon)
+            goOnline.icon = resIcon
         }
     }
 
@@ -160,14 +163,16 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
     }
 
     fun logout() {
-        profileDbHandler.onLogout()
-        settings.edit().putBoolean(Constants.KEY_LOGIN, false).apply()
-        settings.edit().putBoolean(Constants.KEY_NOTIFICATION_SHOWN, false).apply()
-        val loginScreen = Intent(this, LoginActivity::class.java)
-            .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
-        startActivity(loginScreen)
-        doubleBackToExitPressedOnce = true
-        finish()
+        CoroutineScope(Dispatchers.Main).launch {
+            profileDbHandler.onLogout()
+            settings.edit().putBoolean(Constants.KEY_LOGIN, false).apply()
+            settings.edit().putBoolean(Constants.KEY_NOTIFICATION_SHOWN, false).apply()
+            val loginScreen = Intent(this@DashboardElementActivity, LoginActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
+            startActivity(loginScreen)
+            doubleBackToExitPressedOnce = true
+            finish()
+        }
     }
 
     override fun finish() {
@@ -176,9 +181,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         } else {
             doubleBackToExitPressedOnce = true
             Toast.makeText(this, getString(R.string.press_back_again_to_exit), Toast.LENGTH_SHORT).show()
-            Handler(Looper.getMainLooper()).postDelayed({
-                doubleBackToExitPressedOnce = false
-            }, 2000)
+            Handler(Looper.getMainLooper()).postDelayed({ doubleBackToExitPressedOnce = false }, 2000)
         }
     }
 
@@ -192,15 +195,19 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         val f = supportFragmentManager.findFragmentById(R.id.fragment_container)
         val fragmentTag = f?.tag
         if (f is CoursesFragment) {
-            if ("shelf" == fragmentTag) navigationView.menu.findItem(R.id.menu_mycourses)
-                .setChecked(true) else navigationView.menu.findItem(R.id.menu_courses)
-                .setChecked(true)
+            if ("shelf" == fragmentTag) {
+                navigationView.menu.findItem(R.id.menu_mycourses).isChecked = true
+            } else {
+                navigationView.menu.findItem(R.id.menu_courses).isChecked = true
+            }
         } else if (f is ResourcesFragment) {
-            if ("shelf" == fragmentTag) navigationView.menu.findItem(R.id.menu_mylibrary)
-                .setChecked(true) else navigationView.menu.findItem(R.id.menu_library)
-                .setChecked(true)
+            if ("shelf" == fragmentTag) {
+                navigationView.menu.findItem(R.id.menu_mylibrary).isChecked = true
+            } else {
+                navigationView.menu.findItem(R.id.menu_library).isChecked = true
+            }
         } else if (f is DashboardFragment) {
-            navigationView.menu.findItem(R.id.menu_home).setChecked(true)
+            navigationView.menu.findItem(R.id.menu_home).isChecked = true
         }
     }
 
