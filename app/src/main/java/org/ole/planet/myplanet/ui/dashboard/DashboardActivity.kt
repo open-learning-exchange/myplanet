@@ -55,8 +55,8 @@ import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.chat.ChatHistoryListFragment
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
-import org.ole.planet.myplanet.ui.dashboard.notification.NotificationsFragment
 import org.ole.planet.myplanet.ui.dashboard.notification.NotificationListener
+import org.ole.planet.myplanet.ui.dashboard.notification.NotificationsFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
 import org.ole.planet.myplanet.ui.resources.ResourceDetailFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
@@ -77,6 +77,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.Utilities.toast
 import java.util.Date
 import java.util.UUID
+import kotlin.math.ceil
 
 class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, NavigationBarView.OnItemSelectedListener, NotificationListener {
     private lateinit var activityDashboardBinding: ActivityDashboardBinding
@@ -526,7 +527,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
 
     private fun createDrawer() {
-        val dimenHolder = DimenHolder.fromDp(220)
+        val statusBarHeight = ceil(25 * context.resources.displayMetrics.density).toInt()
+        val dimenHolder = DimenHolder.fromDp(160 + statusBarHeight)
         result = headerResult?.let {
             DrawerBuilder().withActivity(this).withFullscreen(true)
                 .withSliderBackgroundColor(ContextCompat.getColor(this, R.color.colorPrimary))
