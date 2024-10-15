@@ -12,6 +12,7 @@ import io.realm.Realm
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -207,14 +208,16 @@ class MyDownloadService : Service() {
     private fun changeOfflineStatus() {
         CoroutineScope(Dispatchers.IO).launch {
             val currentFileName = getFileNameFromUrl(urls[currentIndex])
-            mRealm.executeTransaction { realm ->
-                realm.where(RealmMyLibrary::class.java)
-                    .equalTo("resourceLocalAddress", currentFileName)
-                    .findAll()
-                    ?.forEach {
-                        it.resourceOffline = true
-                        it.downloadedRev = it._rev
-                    }
+            withContext(Dispatchers.Main) { // Switch to the main thread
+                mRealm.executeTransaction { realm ->
+                    realm.where(RealmMyLibrary::class.java)
+                        .equalTo("resourceLocalAddress", currentFileName)
+                        .findAll()
+                        ?.forEach {
+                            it.resourceOffline = true
+                            it.downloadedRev = it._rev
+                        }
+                }
             }
         }
     }
