@@ -35,7 +35,7 @@
                 android:id="@+id/feedback_reply_edit_text"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="3"
+                android:layout_weight="2.3"
                 android:hint="@string/please_enter_reply"
                 android:textColorHint="@color/hint_color"
                 android:textColor="@color/daynight_textColor"
@@ -52,7 +52,7 @@
                 style="@style/PrimaryButton"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
+                android:layout_weight="0.8"
                 android:text="@string/close" />
         </LinearLayout>
 
