@@ -47,18 +47,6 @@ open class RealmCourseActivity : RealmObject() {
                 }
             }
         }
-//        fun createActivity(realm: Realm, userModel: RealmUserModel?, course: RealmMyCourse?) {
-//            realm.executeTransactionAsync { bgRealm ->
-//                val activity = bgRealm.createObject(RealmCourseActivity::class.java, "${UUID.randomUUID()}")
-//                activity.type = "visit"
-//                activity.title = course?.courseTitle
-//                activity.courseId = course?.courseId
-//                activity.time = Date().time
-//                activity.parentCode = userModel?.parentCode
-//                activity.createdOn = userModel?.planetCode
-//                activity.user = userModel?.name
-//            }
-//        }
 
         @JvmStatic
         fun serializeSerialize(realmCourseActivities: RealmCourseActivity): JsonObject {
