@@ -23,7 +23,6 @@
                 android:textSize="@dimen/text_size_large"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
-
             <LinearLayout
                 android:id="@+id/ll_services"
                 android:layout_width="wrap_content"
@@ -42,5 +41,4 @@
         android:layout_gravity="bottom|end"
         android:padding="16dp"
         android:src="@drawable/ic_add" />
-
 </FrameLayout>
