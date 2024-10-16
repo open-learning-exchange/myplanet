@@ -19,6 +19,10 @@ import androidx.recyclerview.widget.RecyclerView
 import com.afollestad.materialdialogs.*
 import com.google.android.material.textfield.TextInputLayout
 import io.realm.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.BuildConfig
@@ -142,9 +146,11 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         AlertDialog.Builder(this, R.style.AlertDialogTheme)
             .setMessage(message)
             .setPositiveButton(getString(R.string.clear_data)) { _, _ ->
-                clearRealmDb()
-                clearSharedPref()
-                restartApp()
+                CoroutineScope(Dispatchers.Main).launch {
+                    clearRealmDb()
+                    clearSharedPref()
+                    restartApp()
+                }
             }
             .setNegativeButton(getString(R.string.cancel)) { _, _ ->
                 onCancel()
@@ -846,12 +852,17 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         lateinit var cal_today: Calendar
         lateinit var cal_last_Sync: Calendar
 
-        fun clearRealmDb() {
-            val realm = Realm.getDefaultInstance()
-            realm.executeTransaction { transactionRealm ->
-                transactionRealm.deleteAll()
+        suspend fun clearRealmDb() {
+            withContext(Dispatchers.IO) {
+                val realm = Realm.getDefaultInstance()
+                try {
+                    realm.executeTransaction { transactionRealm ->
+                        transactionRealm.deleteAll()
+                    }
+                } finally {
+                    realm.close()
+                }
             }
-            realm.close()
         }
 
         fun clearSharedPref() {

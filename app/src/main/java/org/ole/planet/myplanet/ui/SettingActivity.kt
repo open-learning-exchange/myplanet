@@ -20,6 +20,9 @@ import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.PreferenceManager
 import androidx.preference.SwitchPreference
 import io.realm.Realm
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication.Companion.mRealm
 import org.ole.planet.myplanet.MainApplication.Companion.setThemeMode
 import org.ole.planet.myplanet.R
@@ -135,9 +138,11 @@ class SettingActivity : AppCompatActivity() {
                 preference.onPreferenceClickListener = OnPreferenceClickListener {
                     AlertDialog.Builder(requireActivity()).setTitle(R.string.are_you_sure)
                         .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                            clearRealmDb()
-                            clearSharedPref()
-                            restartApp()
+                            CoroutineScope(Dispatchers.Main).launch {
+                                clearRealmDb()
+                                clearSharedPref()
+                                restartApp()
+                            }
                         }.setNegativeButton(R.string.no, null).show()
                     false
                 }
