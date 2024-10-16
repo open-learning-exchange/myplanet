@@ -19,9 +19,11 @@ import androidx.recyclerview.widget.RecyclerView
 import com.afollestad.materialdialogs.*
 import com.google.android.material.textfield.TextInputLayout
 import io.realm.*
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.BuildConfig
+import org.ole.planet.myplanet.MainApplication.Companion.applicationScope
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
@@ -343,7 +345,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 syncIconDrawable.stop()
                 syncIconDrawable.selectDrawable(0)
                 syncIcon.invalidateDrawable(syncIconDrawable)
-                createLog("synced successfully")
+                applicationScope.launch {
+                    createLog("synced successfully")
+                }
                 showSnack(findViewById(android.R.id.content), getString(R.string.sync_completed))
                 downloadAdditionalResources()
                 if (defaultPref.getBoolean("beta_auto_download", false)) {
