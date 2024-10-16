@@ -49,6 +49,7 @@ import java.net.URL
 import java.util.Date
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.runBlocking
 
 class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     companion object {
@@ -76,23 +77,30 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         lateinit var defaultPref: SharedPreferences
 
         fun createLog(type: String) {
-            service = DatabaseService(context)
-            val mRealm = service.realmInstance
-            if (!mRealm.isInTransaction) {
-                mRealm.beginTransaction()
+            runBlocking {
+                withContext(Dispatchers.IO) {
+                    val realm = Realm.getDefaultInstance()
+                    try {
+                        realm.executeTransaction { r ->
+                            val log = r.createObject(RealmApkLog::class.java, "${UUID.randomUUID()}")
+                            val model = UserProfileDbHandler(context).userModel
+                            if (model != null) {
+                                log.parentCode = model.parentCode
+                                log.createdOn = model.planetCode
+                                log.userId = model.id
+                            }
+                            log.time = "${Date().time}"
+                            log.page = ""
+                            log.version = getVersionName(context)
+                            log.type = type
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    } finally {
+                        realm.close()
+                    }
+                }
             }
-            val log = mRealm.createObject(RealmApkLog::class.java, "${UUID.randomUUID()}")
-            val model = UserProfileDbHandler(context).userModel
-            if (model != null) {
-                log.parentCode = model.parentCode
-                log.createdOn = model.planetCode
-                log.userId = model.id
-            }
-            log.time = "${Date().time}"
-            log.page = ""
-            log.version = getVersionName(context)
-            log.type = type
-            mRealm.commitTransaction()
         }
 
         private fun applyThemeMode(themeMode: String?) {
@@ -129,6 +137,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                 responseCode in 200..299
 
             } catch (e: Exception) {
+                e.printStackTrace()
                 false
             }
         }
@@ -266,38 +275,49 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         if (isFirstLaunch) {
             isFirstLaunch = false
         } else {
-            val fromForeground = "foreground"
-            createLog(fromForeground)
+            applicationScope.launch {
+                createLog("foreground")
+            }
         }
     }
     
     private fun onAppBackgrounded() {}
 
     private fun onAppStarted() {
-        val newStart = "new login"
-        createLog(newStart)
+        applicationScope.launch {
+            createLog("new login")
+        }
     }
 
     private fun onAppClosed() {}
 
     private fun handleUncaughtException(e: Throwable) {
         e.printStackTrace()
-        if (!mRealm.isInTransaction) {
-            mRealm.beginTransaction()
+        runBlocking {
+            launch(Dispatchers.IO) {
+                try {
+                    val realm = Realm.getDefaultInstance()
+                    realm.executeTransaction { r ->
+                        val log = r.createObject(RealmApkLog::class.java, "${UUID.randomUUID()}")
+                        val model = UserProfileDbHandler(this@MainApplication).userModel
+                        if (model != null) {
+                            log.parentCode = model.parentCode
+                            log.createdOn = model.planetCode
+                            log.userId = model.id
+                        }
+                        log.time = "${Date().time}"
+                        log.page = ""
+                        log.version = getVersionName(this@MainApplication)
+                        log.type = RealmApkLog.ERROR_TYPE_CRASH
+                        log.setError(e)
+                    }
+                    realm.close()
+                } catch (ex: Exception) {
+                    ex.printStackTrace()
+                }
+            }
         }
-        val log = mRealm.createObject(RealmApkLog::class.java, "${UUID.randomUUID()}")
-        val model = UserProfileDbHandler(this).userModel
-        if (model != null) {
-            log.parentCode = model.parentCode
-            log.createdOn = model.planetCode
-            log.userId = model.id
-        }
-        log.time = "${Date().time}"
-        log.page = ""
-        log.version = getVersionName(this)
-        log.type = RealmApkLog.ERROR_TYPE_CRASH
-        log.setError(e)
-        mRealm.commitTransaction()
+
         val homeIntent = Intent(Intent.ACTION_MAIN)
         homeIntent.addCategory(Intent.CATEGORY_HOME)
         homeIntent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
