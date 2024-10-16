@@ -32,11 +32,23 @@ import org.ole.planet.myplanet.model.RealmTag.Companion.getTagsArray
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.resources.CollectionsFragment
+import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import java.util.Calendar
 import java.util.UUID
 
 class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelected, TagClickListener {
+
+    companion object {
+        fun newInstance(isMyCourseLib: Boolean): CoursesFragment {
+            val fragment = CoursesFragment()
+            val args = Bundle()
+            args.putBoolean("isMyCourseLib", isMyCourseLib)
+            fragment.arguments = args
+            return fragment
+        }
+    }
+
     private lateinit var tvAddToLib: TextView
     private lateinit var tvSelected: TextView
     private lateinit var etSearch: EditText
@@ -86,6 +98,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             btnRemove.visibility = View.VISIBLE
             btnArchive.visibility = View.VISIBLE
             checkList()
+        }else {
+            btnRemove.visibility = View.GONE
+            btnArchive.visibility = View.GONE
         }
 
         etSearch.addTextChangedListener(object : TextWatcher {
@@ -281,12 +296,29 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         msg += getString(R.string.return_to_the_home_tab_to_access_mycourses)
         builder.setMessage(msg)
         builder.setCancelable(true)
-        builder.setPositiveButton(R.string.ok) { dialog: DialogInterface, _: Int ->
-            dialog.cancel()
-            val newFragment = CoursesFragment()
-            recreateFragment(newFragment)
-        }
+            .setPositiveButton("Go to myCourses") { dialog: DialogInterface, _: Int ->
+                if (userModel?.id?.startsWith("guest") == true) {
+                    DialogUtils.guestDialog(requireContext())
+                } else {
+                    redirectToMyCourses();
+                }
+            }
+            .setNegativeButton(R.string.ok) { dialog: DialogInterface, _: Int ->
+                dialog.cancel()
+                val newFragment = CoursesFragment()
+                recreateFragment(newFragment)
+            }
+
         return builder.create()
+    }
+
+    fun redirectToMyCourses() {
+        val fragment = CoursesFragment.newInstance(isMyCourseLib = true)
+
+        parentFragmentManager.beginTransaction()
+            .replace(R.id.fragment_container, fragment)
+            .addToBackStack(null)
+            .commit()
     }
 
     override fun onSelectedListChange(list: MutableList<RealmMyCourse?>) {
