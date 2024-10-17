@@ -296,7 +296,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         msg += getString(R.string.return_to_the_home_tab_to_access_mycourses)
         builder.setMessage(msg)
         builder.setCancelable(true)
-            .setPositiveButton("Go to myCourses") { dialog: DialogInterface, _: Int ->
+            .setPositiveButton(R.string.go_to_mycourses) { dialog: DialogInterface, _: Int ->
                 if (userModel?.id?.startsWith("guest") == true) {
                     DialogUtils.guestDialog(requireContext())
                 } else {

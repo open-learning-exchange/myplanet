@@ -644,6 +644,7 @@
     <string name="are_you_sure_you_want_to_leave_this_course">Êtes-vous sûr de vouloir quitter ce cours ?</string>
     <string name="success_you_have_added_the_following_courses">Succès ! Vous avez ajouté les cours suivants:\n\n</string>
     <string name="return_to_the_home_tab_to_access_mycourses">\n\n Retournez à l\'onglet Accueil pour accéder à Mes cours.\n</string>
+    <string name="go_to_mycourses">Aller à mesCours</string>
     <string name="and">Et </string>
     <string name="more_course_s">autre(s) cours…\n</string>
     <string name="retake_test">Repasser le test [%d]</string>
