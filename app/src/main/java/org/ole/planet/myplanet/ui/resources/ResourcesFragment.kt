@@ -196,7 +196,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private fun createAlertDialog(): AlertDialog {
-        val builder = AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
+        val builder = AlertDialog.Builder(requireContext(), R.style.CustomAlertDialog)
         var msg = getString(R.string.success_you_have_added_these_resources_to_your_mylibrary)
         if ((selectedItems?.size ?: 0) <= 5) {
             for (i in selectedItems?.indices ?: emptyList()) {
