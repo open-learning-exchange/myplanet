@@ -644,6 +644,7 @@
     <string name="are_you_sure_you_want_to_leave_this_course">¿Estás seguro de que quieres abandonar este curso?</string>
     <string name="success_you_have_added_the_following_courses">¡Éxito! Has añadido los siguientes cursos:\n\n</string>
     <string name="return_to_the_home_tab_to_access_mycourses">\n\nVuelve a la pestaña de inicio para acceder a misCursos.\n</string>
+    <string name="go_to_mycourses"> Ir a misCursos</string>
     <string name="and">"Y "</string>
     <string name="more_course_s">" más curso(s)…\n"</string>
     <string name="retake_test">Volver a tomar el test [%d]</string>
