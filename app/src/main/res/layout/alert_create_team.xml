@@ -16,7 +16,8 @@
             android:layout_height="match_parent"
             android:padding="@dimen/padding_normal"
             android:textColorHint="@color/hint_color"
-            android:textColor="@color/daynight_textColor" />
+            android:textColor="@color/daynight_textColor"
+            android:backgroundTint="@color/hint_color" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
@@ -30,7 +31,8 @@
             android:layout_height="match_parent"
             android:padding="@dimen/padding_normal"
             android:textColorHint="@color/hint_color"
-            android:textColor="@color/daynight_textColor" />
+            android:textColor="@color/daynight_textColor"
+            android:backgroundTint="@color/hint_color" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
