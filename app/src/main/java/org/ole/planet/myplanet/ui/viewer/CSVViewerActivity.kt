@@ -1,8 +1,12 @@
 package org.ole.planet.myplanet.ui.viewer
 
 import android.os.Bundle
+import android.text.Spannable
+import android.text.SpannableStringBuilder
+import android.text.style.ForegroundColorSpan
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import com.opencsv.CSVParserBuilder
 import com.opencsv.CSVReaderBuilder
 import org.ole.planet.myplanet.R
@@ -32,22 +36,28 @@ class CSVViewerActivity : AppCompatActivity() {
         }
 
         try {
-            val csvFile: File = if (fileName!!.startsWith("/")) {
+            val csvFile: File = if (fileName?.startsWith("/") == true) {
                 File(fileName)
             } else {
                 val basePath = getExternalFilesDir(null)
                 File(basePath, "ole/$fileName")
             }
-            val reader = CSVReaderBuilder(FileReader(csvFile)).withCSVParser(CSVParserBuilder()
-                .withSeparator(',')
-                .withQuoteChar('"')
+            val reader = CSVReaderBuilder(FileReader(csvFile))
+                .withCSVParser(CSVParserBuilder().withSeparator(',').withQuoteChar('"').build())
                 .build()
-            ).build()
+
             val allRows = reader.readAll()
+            val spannableContent = SpannableStringBuilder()
             for (row in allRows) {
-                activityCsvViewerBinding.csvFileContent.append(row.contentToString())
-                activityCsvViewerBinding.csvFileContent.append("\n")
+                val rowText = row.contentToString() + "\n"
+                val start = spannableContent.length
+                spannableContent.append(rowText)
+                spannableContent.setSpan(
+                    ForegroundColorSpan(ContextCompat.getColor(this, R.color.daynight_textColor)),
+                    start, spannableContent.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
             }
+            activityCsvViewerBinding.csvFileContent.text = spannableContent
         } catch (e: Exception) {
             e.printStackTrace()
         }
