@@ -3,6 +3,8 @@ package org.ole.planet.myplanet.service
 import android.content.Context
 import android.content.SharedPreferences
 import io.realm.Realm
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmOfflineActivity
@@ -15,6 +17,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
+
 class UserProfileDbHandler(context: Context) {
     private val settings: SharedPreferences
     var mRealm: Realm
@@ -56,13 +59,18 @@ class UserProfileDbHandler(context: Context) {
         mRealm.commitTransaction()
     }
 
-    fun onLogout() {
-        if (!mRealm.isInTransaction) {
-            mRealm.beginTransaction()
+    suspend fun onLogout() {
+        withContext(Dispatchers.IO) {
+            val realm = realmService.realmInstance
+            try {
+                realm.executeTransaction {
+                    val offlineActivities = getRecentLogin(it)
+                    offlineActivities?.logoutTime = Date().time
+                }
+            } finally {
+                realm.close()
+            }
         }
-        val offlineActivities = getRecentLogin(mRealm) ?: return
-        offlineActivities.logoutTime = Date().time
-        mRealm.commitTransaction()
     }
 
     fun onDestroy() {
@@ -93,6 +101,7 @@ class UserProfileDbHandler(context: Context) {
             0
         }
     }
+
     fun getLastVisit(m: RealmUserModel): String {
         val realm = Realm.getDefaultInstance()
         realm.beginTransaction()
@@ -107,6 +116,7 @@ class UserProfileDbHandler(context: Context) {
             "No logout record found"
         }
     }
+
     fun setResourceOpenCount(item: RealmMyLibrary) {
         setResourceOpenCount(item, KEY_RESOURCE_OPEN)
     }
@@ -126,9 +136,7 @@ class UserProfileDbHandler(context: Context) {
     }
 
     private fun createResourceUser(model: RealmUserModel?): RealmResourceActivity {
-        val offlineActivities = mRealm.createObject(
-            RealmResourceActivity::class.java, UUID.randomUUID().toString()
-        )
+        val offlineActivities = mRealm.createObject(RealmResourceActivity::class.java, "${UUID.randomUUID()}")
         offlineActivities.user = model?.name
         offlineActivities.parentCode = model?.parentCode
         offlineActivities.createdOn = model?.planetCode
@@ -141,19 +149,20 @@ class UserProfileDbHandler(context: Context) {
                 .equalTo("type", KEY_RESOURCE_OPEN).count()
             return if (count == 0L) "" else "Resource opened $count times."
         }
+
     val maxOpenedResource: String
         get() {
-            val result = mRealm.where(
-                RealmResourceActivity::class.java
-            ).equalTo("user", fullName).equalTo("type", KEY_RESOURCE_OPEN).findAll().where()
-                .distinct("resourceId").findAll()
+            val result = mRealm.where(RealmResourceActivity::class.java)
+                .equalTo("user", fullName).equalTo("type", KEY_RESOURCE_OPEN)
+                .findAll().where().distinct("resourceId").findAll()
             var maxCount = 0L
             var maxOpenedResource = ""
             for (realmResourceActivities in result) {
-                val count =
-                    mRealm.where(RealmResourceActivity::class.java).equalTo("user", fullName)
-                        .equalTo("type", KEY_RESOURCE_OPEN)
-                        .equalTo("resourceId", realmResourceActivities.resourceId).count()
+                val count = mRealm.where(RealmResourceActivity::class.java)
+                    .equalTo("user", fullName)
+                    .equalTo("type", KEY_RESOURCE_OPEN)
+                    .equalTo("resourceId", realmResourceActivities.resourceId).count()
+
                 if (count > maxCount) {
                     maxCount = count
                     maxOpenedResource = "${realmResourceActivities.title}"

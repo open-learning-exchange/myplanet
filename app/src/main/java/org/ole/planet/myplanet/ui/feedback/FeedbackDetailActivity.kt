@@ -22,6 +22,7 @@ import org.ole.planet.myplanet.model.FeedbackReply
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.feedback.FeedbackDetailActivity.RvFeedbackAdapter.ReplyViewHolder
+import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormatedDateWithTime
 import java.util.Date
 
@@ -32,6 +33,10 @@ class FeedbackDetailActivity : AppCompatActivity() {
     private lateinit var feedback: RealmFeedback
     lateinit var realm: Realm
     private lateinit var rowFeedbackReplyBinding: RowFeedbackReplyBinding
+
+    override fun attachBaseContext(base: Context) {
+        super.attachBaseContext(LocaleHelper.onAttach(base))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

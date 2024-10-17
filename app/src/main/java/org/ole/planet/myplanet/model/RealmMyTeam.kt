@@ -12,7 +12,10 @@ import io.realm.RealmResults
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
+import org.ole.planet.myplanet.utilities.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utilities.JsonUtils
+import org.ole.planet.myplanet.utilities.Utilities.getUrl
+import org.ole.planet.myplanet.utilities.Utilities.openDownloadService
 import java.io.File
 import java.io.FileWriter
 import java.io.IOException
@@ -98,6 +101,7 @@ open class RealmMyTeam : RealmObject() {
     companion object {
         private val teamDataList: MutableList<Array<String>> = mutableListOf()
         val reportsDataList: MutableList<Array<String>> = mutableListOf()
+        private val concatenatedLinks = ArrayList<String>()
 
         @JvmStatic
         fun insertMyTeams(doc: JsonObject, mRealm: Realm) {
@@ -114,6 +118,13 @@ open class RealmMyTeam : RealmObject() {
                 myTeams.sourcePlanet = JsonUtils.getString("sourcePlanet", doc)
                 myTeams.title = JsonUtils.getString("title", doc)
                 myTeams.description = JsonUtils.getString("description", doc)
+                val links = extractLinks(JsonUtils.getString("description", doc))
+                val baseUrl = getUrl()
+                for (link in links) {
+                    val concatenatedLink = "$baseUrl/$link"
+                    concatenatedLinks.add(concatenatedLink)
+                }
+                openDownloadService(context, concatenatedLinks, true)
                 myTeams.limit = JsonUtils.getInt("limit", doc)
                 myTeams.status = JsonUtils.getString("status", doc)
                 myTeams.teamPlanetCode = JsonUtils.getString("teamPlanetCode", doc)
