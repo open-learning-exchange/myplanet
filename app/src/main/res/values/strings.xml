@@ -1197,5 +1197,6 @@
     <string name="most_opened_resource">Most Opened Resource : </string>
     <string name="number_of_resources_opened">Number of Resources Opened : </string>
     <string name="number_of_visits">Number of Visits</string>
+    <string name="kindly_enter_reply_message">Kindly enter reply message</string>
 
 </resources>
