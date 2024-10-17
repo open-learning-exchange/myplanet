@@ -9,6 +9,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import io.realm.RealmResults
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentServicesBinding
@@ -16,6 +17,7 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.courses.CourseStepFragment
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
@@ -47,13 +49,15 @@ class ServicesFragment : BaseTeamFragment() {
         }
 
         if (links?.size == 0) {
-            val description = team?.description ?: ""
             fragmentServicesBinding.llServices.visibility = View.GONE
-            fragmentServicesBinding.tvDescription.visibility = View.VISIBLE
-            setMarkdownText(fragmentServicesBinding.tvDescription, description)
-        } else {
-            setRecyclerView(links)
         }
+
+        val description = team?.description ?: ""
+        fragmentServicesBinding.llServices.visibility = View.VISIBLE
+        fragmentServicesBinding.tvDescription.visibility = View.VISIBLE
+        val markdownContentWithLocalPaths = CourseStepFragment.prependBaseUrlToImages(description, "file://${MainApplication.context.getExternalFilesDir(null)}/ole/")
+        setMarkdownText(fragmentServicesBinding.tvDescription, markdownContentWithLocalPaths)
+        setRecyclerView(links)
 
         if (user?.isManager() == true || user?.isLeader() == true) {
             fragmentServicesBinding.fab.show()
