@@ -15,10 +15,12 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityAddResourceBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.createFromResource
+import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onAdd
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.CheckboxListView
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.Utilities.toast
 import java.util.Calendar
 import java.util.UUID
 
@@ -71,13 +73,17 @@ class AddResourceActivity : AppCompatActivity() {
     private fun saveResource() {
         val title = activityAddResourceBinding.etTitle.text.toString().trim { it <= ' ' }
         if (!validate(title)) return
+        val id = UUID.randomUUID().toString()
         mRealm.executeTransactionAsync(Realm.Transaction { realm: Realm ->
-            val id = UUID.randomUUID().toString()
             val resource = realm.createObject(RealmMyLibrary::class.java, id)
             resource.title = title
             createResource(resource, id)
         }, Realm.Transaction.OnSuccess {
-            Utilities.toast(this@AddResourceActivity, getString(R.string.resource_saved_successfully))
+            val myObject = mRealm.where(RealmMyLibrary::class.java)
+                .equalTo("resourceId", id).findFirst()
+            createFromResource(myObject, mRealm, userModel?.id)
+            onAdd(mRealm, "resources", userModel?.id, id)
+            toast(this@AddResourceActivity, getString(R.string.added_to_my_library))
             finish()
         })
     }
@@ -110,11 +116,11 @@ class AddResourceActivity : AppCompatActivity() {
             return false
         }
         if (levels?.isEmpty() == true) {
-            Utilities.toast(this, getString(R.string.level_is_required))
+            toast(this, getString(R.string.level_is_required))
             return false
         }
         if (subjects?.isEmpty() == true) {
-            Utilities.toast(this, getString(R.string.subject_is_required))
+            toast(this, getString(R.string.subject_is_required))
             return false
         }
         return true
