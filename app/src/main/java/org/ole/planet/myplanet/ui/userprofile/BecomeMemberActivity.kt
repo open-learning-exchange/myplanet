@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.databinding.ActivityBecomeMemberBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.service.TransactionSyncManager
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.NetworkUtils
@@ -232,6 +233,7 @@ class BecomeMemberActivity : BaseActivity() {
                 override fun onSuccess(message: String) {
                     runOnUiThread {
                         startUpload("becomeMember")
+                        TransactionSyncManager.syncDb(mRealm, "tablet_users")
                         activityBecomeMemberBinding.pbar.visibility = View.GONE
                         Utilities.toast(this@BecomeMemberActivity, message)
                     }
