@@ -540,7 +540,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                         menuAction((drawerItem as Nameable<*>).name.textRes)
                     }
                     false
-                }.withDrawerWidthDp(200).build()
+                }.withDrawerWidthDp(211).build()
         }
     }
 
