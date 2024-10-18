@@ -1197,5 +1197,6 @@
     <string name="most_opened_resource">أكثر مورد تم فتحه : </string>
     <string name="number_of_resources_opened">عدد الموارد المفتوحة : </string>
     <string name="number_of_visits">عدد الزيارات</string>
+    <string name="kindly_enter_reply_message">يرجى إدخال رسالة الرد</string>
 
 </resources>
