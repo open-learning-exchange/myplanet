@@ -1,17 +1,13 @@
 package org.ole.planet.myplanet.ui.userprofile
 
 import android.app.DatePickerDialog
-import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
-import android.os.Build
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
 import android.view.View
 import android.widget.ArrayAdapter
-import androidx.annotation.RequiresApi
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Realm
@@ -35,7 +31,7 @@ import java.util.regex.Pattern
 class BecomeMemberActivity : BaseActivity() {
     private lateinit var activityBecomeMemberBinding: ActivityBecomeMemberBinding
     var dob: String = ""
-    lateinit var settings: SharedPreferences
+//    lateinit var settings: SharedPreferences
     var guest: Boolean = false
     private fun showDatePickerDialog() {
         val now = Calendar.getInstance()
@@ -50,7 +46,6 @@ class BecomeMemberActivity : BaseActivity() {
         dpd.show()
     }
 
-    @RequiresApi(Build.VERSION_CODES.N)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         activityBecomeMemberBinding = ActivityBecomeMemberBinding.inflate(layoutInflater)
@@ -71,7 +66,7 @@ class BecomeMemberActivity : BaseActivity() {
         val username = intent.getStringExtra("username") ?: ""
         guest = intent.getBooleanExtra("guest", false)
 
-        settings = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         textChangedListener(mRealm)
 
         if (guest) {
@@ -105,10 +100,8 @@ class BecomeMemberActivity : BaseActivity() {
                 val matcher = pattern.matcher(input)
 
                 hasSpecialCharacters = matcher.matches()
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                    hasDiacriticCharacters = !normalizedText.codePoints().allMatch { codePoint: Int ->
-                        Character.isLetterOrDigit(codePoint) || codePoint == '.'.code || codePoint == '-'.code || codePoint == '_'.code
-                    }
+                hasDiacriticCharacters = !normalizedText.codePoints().allMatch { codePoint: Int ->
+                    Character.isLetterOrDigit(codePoint) || codePoint == '.'.code || codePoint == '-'.code || codePoint == '_'.code
                 }
 
                 if (!Character.isDigit(firstChar) && !Character.isLetter(firstChar)) {
@@ -192,7 +185,6 @@ class BecomeMemberActivity : BaseActivity() {
                 if (TextUtils.isEmpty(password) && !TextUtils.isEmpty(phoneNumber)) {
                     activityBecomeMemberBinding.etRePassword.setText(phoneNumber)
                     password = phoneNumber
-                    ///Add dialog that using phone as password , Agree / disagree
                 }
 
                 checkMandatoryFieldsAndAddMember(
@@ -208,10 +200,6 @@ class BecomeMemberActivity : BaseActivity() {
         mName: String?, email: String?, language: String?, level: String?, phoneNumber: String?,
         birthDate: String?, gender: String?, mRealm: Realm
     ) {
-        /**
-         * Creates and adds a new member if the username and password
-         * are not empty and password matches rePassword.
-         */
         if (username.isNotEmpty() && password.isNotEmpty() && rePassword == password) {
             val obj = JsonObject()
             obj.addProperty("name", username)
@@ -240,12 +228,10 @@ class BecomeMemberActivity : BaseActivity() {
             roles.add("learner")
             obj.add("roles", roles)
             activityBecomeMemberBinding.pbar.visibility = View.VISIBLE
-//            Service(this).becomeMember(mRealm, obj) {
-//
-//            }
             Service(this).becomeMember(mRealm, obj, object : Service.CreateUserCallback {
                 override fun onSuccess(message: String) {
                     runOnUiThread {
+                        startUpload("becomeMember")
                         activityBecomeMemberBinding.pbar.visibility = View.GONE
                         Utilities.toast(this@BecomeMemberActivity, message)
                     }

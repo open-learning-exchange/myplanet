@@ -11,6 +11,7 @@ import android.graphics.PorterDuff
 import android.net.Uri
 import android.os.Build
 import android.text.TextUtils
+import android.util.Log
 import android.view.View
 import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
@@ -164,26 +165,32 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         return true
     }
 
-    fun startUpload() {
-        customProgressDialog?.setText(getString(R.string.uploading_data_to_server_please_wait))
-        customProgressDialog?.show()
-        UploadToShelfService.instance?.uploadUserData { UploadToShelfService.instance?.uploadHealth() }
-        UploadManager.instance?.uploadUserActivities(this)
-        UploadManager.instance?.uploadExamResult(this)
-        UploadManager.instance?.uploadFeedback(this)
-        UploadManager.instance?.uploadAchievement()
-        UploadManager.instance?.uploadResourceActivities("")
-        UploadManager.instance?.uploadCourseActivities()
-        UploadManager.instance?.uploadSearchActivity()
-        UploadManager.instance?.uploadNews()
-        UploadManager.instance?.uploadTeams()
-        UploadManager.instance?.uploadResource(this)
-        UploadManager.instance?.uploadRating()
-        UploadManager.instance?.uploadTeamTask()
-        UploadManager.instance?.uploadCrashLog()
-        UploadManager.instance?.uploadSubmitPhotos(this)
-        UploadManager.instance?.uploadActivities(this)
-        Toast.makeText(this, getString(R.string.uploading_activities_to_server_please_wait), Toast.LENGTH_SHORT).show()
+    fun startUpload(source: String) {
+        if (source == "becomeMember") {
+            Log.d("UploadManager", "uploading user data")
+            UploadToShelfService.instance?.uploadUserData { UploadToShelfService.instance?.uploadHealth() }
+        } else {
+            Log.d("UploadManager", "uploading all data")
+            customProgressDialog?.setText(getString(R.string.uploading_data_to_server_please_wait))
+            customProgressDialog?.show()
+            UploadToShelfService.instance?.uploadUserData { UploadToShelfService.instance?.uploadHealth() }
+            UploadManager.instance?.uploadUserActivities(this)
+            UploadManager.instance?.uploadExamResult(this)
+            UploadManager.instance?.uploadFeedback(this)
+            UploadManager.instance?.uploadAchievement()
+            UploadManager.instance?.uploadResourceActivities("")
+            UploadManager.instance?.uploadCourseActivities()
+            UploadManager.instance?.uploadSearchActivity()
+            UploadManager.instance?.uploadNews()
+            UploadManager.instance?.uploadTeams()
+            UploadManager.instance?.uploadResource(this)
+            UploadManager.instance?.uploadRating()
+            UploadManager.instance?.uploadTeamTask()
+            UploadManager.instance?.uploadCrashLog()
+            UploadManager.instance?.uploadSubmitPhotos(this)
+            UploadManager.instance?.uploadActivities(this)
+            Toast.makeText(this, getString(R.string.uploading_activities_to_server_please_wait), Toast.LENGTH_SHORT).show()
+        }
     }
 
     protected fun hideKeyboard(view: View?) {
@@ -230,5 +237,11 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         editor.putInt("url_Port", if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port)
         editor.putString("serverURL", url)
         editor.putString("couchdbURL", couchdbURL)
+    }
+
+    fun syncUserModel(){
+        customProgressDialog?.setText(getString(R.string.uploading_data_to_server_please_wait))
+        customProgressDialog?.show()
+        UploadToShelfService.instance?.uploadUserData { UploadToShelfService.instance?.uploadHealth() }
     }
 }

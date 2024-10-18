@@ -20,7 +20,7 @@ import java.util.UUID
 
 class DictionaryActivity : BaseActivity() {
     private lateinit var fragmentDictionaryBinding: FragmentDictionaryBinding
-    lateinit var mRealm: Realm
+//    lateinit var mRealm: Realm
     var list: RealmResults<RealmDictionary>? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

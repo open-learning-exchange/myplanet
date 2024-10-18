@@ -113,7 +113,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
             }
             R.id.action_sync -> {
                 isServerReachable(Utilities.getUrl())
-                startUpload()
+                startUpload("dashboard")
             }
         }
         return super.onOptionsItemSelected(item)

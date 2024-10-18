@@ -7,10 +7,11 @@ import android.os.Bundle
 import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import java.util.Locale
 
-abstract class BaseActivity : AppCompatActivity() {
+abstract class BaseActivity : SyncActivity() {
     override fun attachBaseContext(newBase: Context) {
         val localeUpdatedContext = LocaleHelper.onAttach(newBase)
         super.attachBaseContext(localeUpdatedContext)
