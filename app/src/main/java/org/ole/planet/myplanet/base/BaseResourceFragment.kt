@@ -9,6 +9,8 @@ import android.content.SharedPreferences
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
@@ -175,6 +177,9 @@ abstract class BaseResourceFragment : Fragment() {
                     if (urls.isNotEmpty()) {
                         prgDialog.show()
                         Utilities.openDownloadService(activity, urls, false)
+                        Handler(Looper.getMainLooper()).postDelayed({
+                            prgDialog.dismiss()
+                        }, 1000)
                     }
                 }
 
