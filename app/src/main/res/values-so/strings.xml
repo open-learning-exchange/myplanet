@@ -542,7 +542,7 @@
     <string name="ole_logo">Lambarka Xarunta Ogaalaya</string>
     <string name="open_community">Bulsho Ogaal</string>
     <string name="dash_4">----</string>
-    <string name="add_documents">Ku Dar Documents</string>
+    <string name="add_documents">Ku Dar\nDocuments</string>
     <string name="leave">Ka Dib</string>
     <string name="steps">Agoonta</string>
     <string name="csv_filename">Magaca Faylasha CSV</string>

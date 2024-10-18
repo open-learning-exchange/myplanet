@@ -542,7 +542,7 @@
     <string name="ole_logo">Logo d\'Open Learning Exchange</string>
     <string name="open_community">Communauté ouverte</string>
     <string name="dash_4">----</string>
-    <string name="add_documents">Ajouter des documents</string>
+    <string name="add_documents">Ajouter des\ndocuments</string>
     <string name="leave">Quitter</string>
     <string name="steps">Étapes</string>
     <string name="csv_filename">Nom du fichier CSV</string>
