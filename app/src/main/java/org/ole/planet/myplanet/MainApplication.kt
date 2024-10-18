@@ -293,10 +293,10 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
     private fun handleUncaughtException(e: Throwable) {
         e.printStackTrace()
-        runBlocking {
-            launch(Dispatchers.IO) {
+        applicationScope.launch(Dispatchers.IO) {
+            try {
+                val realm = Realm.getDefaultInstance()
                 try {
-                    val realm = Realm.getDefaultInstance()
                     realm.executeTransaction { r ->
                         val log = r.createObject(RealmApkLog::class.java, "${UUID.randomUUID()}")
                         val model = UserProfileDbHandler(this@MainApplication).userModel
@@ -311,10 +311,11 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                         log.type = RealmApkLog.ERROR_TYPE_CRASH
                         log.setError(e)
                     }
+                } finally {
                     realm.close()
-                } catch (ex: Exception) {
-                    ex.printStackTrace()
                 }
+            } catch (ex: Exception) {
+                ex.printStackTrace()
             }
         }
 
