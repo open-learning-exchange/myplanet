@@ -18,12 +18,12 @@ import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.createStepResource
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utilities.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import java.io.File
 import java.io.FileWriter
 import java.io.IOException
-import java.util.regex.Pattern
 
 open class RealmMyCourse : RealmObject() {
     @JvmField
@@ -181,23 +181,6 @@ open class RealmMyCourse : RealmObject() {
 
         fun courseWriteCsv() {
             writeCsv("${context.getExternalFilesDir(null)}/ole/course.csv", courseDataList)
-        }
-
-        private fun extractLinks(text: String?): ArrayList<String> {
-            val links = ArrayList<String>()
-            val pattern = Pattern.compile("!\\[.*?]\\((.*?)\\)")
-            val matcher = text?.let { pattern.matcher(it) }
-            if (matcher != null) {
-                while (matcher.find()) {
-                    val link = matcher.group(1)
-                    if (link != null) {
-                        if (link.isNotEmpty()) {
-                            links.add(link)
-                        }
-                    }
-                }
-            }
-            return links
         }
 
         @JvmStatic
