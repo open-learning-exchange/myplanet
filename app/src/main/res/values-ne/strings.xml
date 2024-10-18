@@ -542,7 +542,7 @@
     <string name="ole_logo">ओपन लर्निङ एक्सचेञ्ज लोगो</string>
     <string name="open_community">ओपन समुदाय</string>
     <string name="dash_4">----</string>
-    <string name="add_documents">दस्तावेजहरू थप्नुहोस्</string>
+    <string name="add_documents">दस्तावेजहरू\nथप्नुहोस्</string>
     <string name="leave">छोड्नुहोस्</string>
     <string name="steps">चरणहरू</string>
     <string name="csv_filename">CSV फाईलको नाम</string>
