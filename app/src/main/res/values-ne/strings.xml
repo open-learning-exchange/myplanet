@@ -644,6 +644,7 @@
     <string name="are_you_sure_you_want_to_leave_this_course">के तपाई यो कोर्स छोड्न चाहनुहुन्छ भनेर पक्का हुनुहुन्छ?</string>
     <string name="success_you_have_added_the_following_courses">सफलता! तपाइँले निम्नलिखित पाठ्यक्रमहरू थपेका छौं:\n\n</string>
     <string name="return_to_the_home_tab_to_access_mycourses">\n\n वापतै गृह ट्याबमा जानुहोस् तपाइँको पाठ्यक्रमहरू पहुँच गर्नको लागि।\n</string>
+    <string name="go_to_mycourses">मेरो कोर्सहरूमा जानुहोस्</string>
     <string name="and">"र "</string>
     <string name="more_course_s">" थप पाठ्यक्रमहरू…\n"</string>
     <string name="retake_test">पुन: टेस्ट दिनुहोस् [%d]</string>
@@ -1197,5 +1198,6 @@
     <string name="most_opened_resource">सबैभन्दा धेरै खोलेको स्रोत : </string>
     <string name="number_of_resources_opened">खोलिएका स्रोतहरूको संख्या : </string>
     <string name="number_of_visits">भ्रमणहरूको संख्या</string>
+    <string name="kindly_enter_reply_message">कृपया प्रतिक्रिया सन्देश प्रवेश गर्नुहोस्</string>
 
 </resources>
