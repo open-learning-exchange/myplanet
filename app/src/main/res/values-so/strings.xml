@@ -644,6 +644,7 @@
     <string name="are_you_sure_you_want_to_leave_this_course">Ma hubtaa inaad rabto inaad ka baxdo koorsadan?</string>
     <string name="success_you_have_added_the_following_courses">Guul! Waxaad ku daraysay kursiyadaan soo socota:\n\n</string>
     <string name="return_to_the_home_tab_to_access_mycourses">\n\n Ku noqo tabka Home si aad uga heli karto myCourseska.\n</string>
+    <string name="go_to_mycourses">U tag koorsooyinkayga</string>
     <string name="and">"Iyo "</string>
     <string name="more_course_s">" kursi dheer…\n"</string>
     <string name="retake_test">Dib u habayn Imtixaanka [%d]</string>
@@ -1197,5 +1198,6 @@
     <string name="most_opened_resource">Kheyraadka Ugu Badan ee La Furay : </string>
     <string name="number_of_resources_opened">Tirada Kheyraadka La Furay : </string>
     <string name="number_of_visits">Tirada Booqashooyinka</string>
+    <string name="kindly_enter_reply_message">Fadlan geli farriinta jawaabta</string>
 
 </resources>
