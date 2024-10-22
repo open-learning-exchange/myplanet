@@ -69,7 +69,7 @@ class FeedbackDetailActivity : AppCompatActivity() {
         }
         activityFeedbackDetailBinding.replyFeedback.setOnClickListener {
             if (TextUtils.isEmpty(activityFeedbackDetailBinding.feedbackReplyEditText.text.toString().trim { it <= ' ' })) {
-                activityFeedbackDetailBinding.feedbackReplyEditText.error = "Kindly enter reply message"
+                activityFeedbackDetailBinding.feedbackReplyEditText.error = getString(R.string.kindly_enter_reply_message)
             } else {
                 val message = activityFeedbackDetailBinding.feedbackReplyEditText.text.toString().trim { it <= ' ' }
                 val `object` = JsonObject()

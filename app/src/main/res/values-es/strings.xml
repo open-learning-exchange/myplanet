@@ -542,7 +542,7 @@
     <string name="ole_logo">Logo de Open Learning Exchange</string>
     <string name="open_community">Comunidad Abierta</string>
     <string name="dash_4">----</string>
-    <string name="add_documents">Agregar Documentos</string>
+    <string name="add_documents">Agregar\nDocumentos</string>
     <string name="leave">Salir</string>
     <string name="steps">Pasos</string>
     <string name="csv_filename">Nombre del archivo CSV</string>
@@ -644,6 +644,7 @@
     <string name="are_you_sure_you_want_to_leave_this_course">¿Estás seguro de que quieres abandonar este curso?</string>
     <string name="success_you_have_added_the_following_courses">¡Éxito! Has añadido los siguientes cursos:\n\n</string>
     <string name="return_to_the_home_tab_to_access_mycourses">\n\nVuelve a la pestaña de inicio para acceder a misCursos.\n</string>
+    <string name="go_to_mycourses"> Ir a misCursos</string>
     <string name="and">"Y "</string>
     <string name="more_course_s">" más curso(s)…\n"</string>
     <string name="retake_test">Volver a tomar el test [%d]</string>
@@ -1197,5 +1198,6 @@
     <string name="most_opened_resource">Recurso Más Abierto : </string>
     <string name="number_of_resources_opened">Número de Recursos Abiertos : </string>
     <string name="number_of_visits">Número de Visitas</string>
+    <string name="kindly_enter_reply_message">Por favor, ingrese el mensaje de respuesta</string>
 
 </resources>
