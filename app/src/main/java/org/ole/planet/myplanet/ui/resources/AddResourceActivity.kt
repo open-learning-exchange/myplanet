@@ -9,24 +9,29 @@ import android.widget.ListView
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.fragment.app.Fragment
 import io.realm.Realm
 import io.realm.RealmList
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.callback.OnHomeItemClickListener
+import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.ActivityAddResourceBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.createFromResource
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onAdd
+import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.sync.DashboardElementActivity
 import org.ole.planet.myplanet.utilities.CheckboxListView
 import org.ole.planet.myplanet.utilities.Utilities.toast
 import java.util.Calendar
 import java.util.UUID
 
-class AddResourceActivity : AppCompatActivity() {
+class AddResourceActivity : DashboardElementActivity(), OnHomeItemClickListener {
     private lateinit var activityAddResourceBinding: ActivityAddResourceBinding
-    private lateinit var mRealm: Realm
+//    private lateinit var mRealm: Realm
     var userModel: RealmUserModel? = null
     var subjects: RealmList<String>? = null
     var levels: RealmList<String>? = null
@@ -49,7 +54,7 @@ class AddResourceActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        if (this::mRealm.isInitialized && !mRealm.isClosed) {
+        if (!mRealm.isClosed) {
             mRealm.close()
         }
     }
@@ -71,21 +76,27 @@ class AddResourceActivity : AppCompatActivity() {
     }
 
     private fun saveResource() {
-        val title = activityAddResourceBinding.etTitle.text.toString().trim { it <= ' ' }
-        if (!validate(title)) return
-        val id = UUID.randomUUID().toString()
-        mRealm.executeTransactionAsync(Realm.Transaction { realm: Realm ->
-            val resource = realm.createObject(RealmMyLibrary::class.java, id)
-            resource.title = title
-            createResource(resource, id)
-        }, Realm.Transaction.OnSuccess {
-            val myObject = mRealm.where(RealmMyLibrary::class.java)
-                .equalTo("resourceId", id).findFirst()
-            createFromResource(myObject, mRealm, userModel?.id)
-            onAdd(mRealm, "resources", userModel?.id, id)
-            toast(this@AddResourceActivity, getString(R.string.added_to_my_library))
+//        val title = activityAddResourceBinding.etTitle.text.toString().trim { it <= ' ' }
+//        if (!validate(title)) return
+//        val id = UUID.randomUUID().toString()
+//        mRealm.executeTransactionAsync(Realm.Transaction { realm: Realm ->
+//            val resource = realm.createObject(RealmMyLibrary::class.java, id)
+//            resource.title = title
+//            createResource(resource, id)
+//        }, Realm.Transaction.OnSuccess {
+//            val myObject = mRealm.where(RealmMyLibrary::class.java)
+//                .equalTo("resourceId", id).findFirst()
+//            createFromResource(myObject, mRealm, userModel?.id)
+//            onAdd(mRealm, "resources", userModel?.id, id)
+//            toast(this@AddResourceActivity, getString(R.string.added_to_my_library))
             finish()
-        })
+
+            val f: Fragment = ResourceDetailFragment()
+            val b = Bundle()
+            b.putString("libraryId", "117042c0da3bc850563c995c2f00ca73")
+            f.arguments = b
+            openCallFragment(f)
+//        })
     }
 
     private fun createResource(resource: RealmMyLibrary, id: String) {
@@ -148,4 +159,12 @@ class AddResourceActivity : AppCompatActivity() {
         if (item.itemId == android.R.id.home) finish()
         return super.onOptionsItemSelected(item)
     }
+
+    override fun openCallFragment(f: Fragment) {
+        openCallFragment(f, "")
+    }
+
+    override fun openLibraryDetailFragment(library: RealmMyLibrary?) {}
+
+    override fun sendSurvey(current: RealmStepExam?) {}
 }

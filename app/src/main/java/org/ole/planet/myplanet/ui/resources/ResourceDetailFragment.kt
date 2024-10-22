@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.resources
 
 import android.os.Bundle
 import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -55,6 +56,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         dbService = DatabaseService(requireActivity())
         lRealm = dbService.realmInstance
         userModel = UserProfileDbHandler(requireContext()).userModel!!
+        Log.d("ResourceDetailFragment", "onCreateView: $libraryId")
         library = lRealm.where(RealmMyLibrary::class.java).equalTo("resourceId", libraryId).findFirst()!!
         return fragmentLibraryDetailBinding.root
     }
