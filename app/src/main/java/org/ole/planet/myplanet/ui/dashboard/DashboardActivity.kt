@@ -165,7 +165,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
         activityDashboardBinding.appBarBell.ivSync.setOnClickListener {
             isServerReachable(Utilities.getUrl())
-            startUpload()
+            startUpload("dashboard")
         }
         activityDashboardBinding.appBarBell.imgLogo.setOnClickListener { result?.openDrawer() }
         activityDashboardBinding.appBarBell.bellToolbar.setOnMenuItemClickListener { item ->
@@ -180,7 +180,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 R.id.menu_goOnline -> wifiStatusSwitch()
                 R.id.action_sync -> {
                     isServerReachable(Utilities.getUrl())
-                    startUpload()
+                    startUpload("dashboard")
                 }
                 R.id.action_feedback -> {
                     if (user?.id?.startsWith("guest") == false) {

@@ -23,7 +23,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.BuildConfig
@@ -808,7 +807,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 isServerReachable(processedUrl)
             } else if (forceSync) {
                 isServerReachable(processedUrl)
-                startUpload()
+                startUpload("login")
             }
         } catch (e: Exception) {
             e.printStackTrace()

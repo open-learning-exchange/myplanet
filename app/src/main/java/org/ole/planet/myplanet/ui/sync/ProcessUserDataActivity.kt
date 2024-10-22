@@ -164,26 +164,30 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         return true
     }
 
-    fun startUpload() {
-        customProgressDialog?.setText(getString(R.string.uploading_data_to_server_please_wait))
-        customProgressDialog?.show()
-        UploadToShelfService.instance?.uploadUserData { UploadToShelfService.instance?.uploadHealth() }
-        UploadManager.instance?.uploadUserActivities(this)
-        UploadManager.instance?.uploadExamResult(this)
-        UploadManager.instance?.uploadFeedback(this)
-        UploadManager.instance?.uploadAchievement()
-        UploadManager.instance?.uploadResourceActivities("")
-        UploadManager.instance?.uploadCourseActivities()
-        UploadManager.instance?.uploadSearchActivity()
-        UploadManager.instance?.uploadNews()
-        UploadManager.instance?.uploadTeams()
-        UploadManager.instance?.uploadResource(this)
-        UploadManager.instance?.uploadRating()
-        UploadManager.instance?.uploadTeamTask()
-        UploadManager.instance?.uploadCrashLog()
-        UploadManager.instance?.uploadSubmitPhotos(this)
-        UploadManager.instance?.uploadActivities(this)
-        Toast.makeText(this, getString(R.string.uploading_activities_to_server_please_wait), Toast.LENGTH_SHORT).show()
+    fun startUpload(source: String) {
+        if (source == "becomeMember") {
+            UploadToShelfService.instance?.uploadUserData { UploadToShelfService.instance?.uploadHealth() }
+        } else {
+            customProgressDialog?.setText(getString(R.string.uploading_data_to_server_please_wait))
+            customProgressDialog?.show()
+            UploadToShelfService.instance?.uploadUserData { UploadToShelfService.instance?.uploadHealth() }
+            UploadManager.instance?.uploadUserActivities(this)
+            UploadManager.instance?.uploadExamResult(this)
+            UploadManager.instance?.uploadFeedback(this)
+            UploadManager.instance?.uploadAchievement()
+            UploadManager.instance?.uploadResourceActivities("")
+            UploadManager.instance?.uploadCourseActivities()
+            UploadManager.instance?.uploadSearchActivity()
+            UploadManager.instance?.uploadNews()
+            UploadManager.instance?.uploadTeams()
+            UploadManager.instance?.uploadResource(this)
+            UploadManager.instance?.uploadRating()
+            UploadManager.instance?.uploadTeamTask()
+            UploadManager.instance?.uploadCrashLog()
+            UploadManager.instance?.uploadSubmitPhotos(this)
+            UploadManager.instance?.uploadActivities(this)
+            Toast.makeText(this, getString(R.string.uploading_activities_to_server_please_wait), Toast.LENGTH_SHORT).show()
+        }
     }
 
     protected fun hideKeyboard(view: View?) {
