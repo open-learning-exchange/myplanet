@@ -5,7 +5,6 @@ import androidx.core.text.HtmlCompat
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import io.realm.Case
-import io.realm.Realm
 import io.realm.RealmResults
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
@@ -20,7 +19,6 @@ import java.util.UUID
 
 class DictionaryActivity : BaseActivity() {
     private lateinit var fragmentDictionaryBinding: FragmentDictionaryBinding
-    lateinit var mRealm: Realm
     var list: RealmResults<RealmDictionary>? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
