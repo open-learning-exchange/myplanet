@@ -84,8 +84,29 @@ class AddResourceActivity : AppCompatActivity() {
             createFromResource(myObject, mRealm, userModel?.id)
             onAdd(mRealm, "resources", userModel?.id, id)
             toast(this@AddResourceActivity, getString(R.string.added_to_my_library))
-            finish()
+            navigateToResourceDetail(myObject?.resourceId)
         })
+        //finish()
+    }
+
+    private fun navigateToResourceDetail(libraryId: String?) {
+        val existingFragment = supportFragmentManager.findFragmentById(R.id.fragment_container) as? ResourceDetailFragment
+        if (existingFragment == null) {
+            val fragment = ResourceDetailFragment().apply {
+                arguments = Bundle().apply {
+                    putString("libraryId", libraryId)
+                }
+            }
+
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, fragment)
+                .addToBackStack(null)
+                .commitAllowingStateLoss()
+        } else {
+            existingFragment.arguments = Bundle().apply {
+                putString("libraryId", libraryId)
+            }
+        }
     }
 
     private fun createResource(resource: RealmMyLibrary, id: String) {
