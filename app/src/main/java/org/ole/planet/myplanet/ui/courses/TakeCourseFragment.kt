@@ -70,19 +70,23 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         }
         fragmentTakeCourseBinding.viewPager2.adapter = CoursesPagerAdapter(this, courseId, getCourseStepIds(mRealm, courseId))
         fragmentTakeCourseBinding.viewPager2.isUserInputEnabled = false
-        if (fragmentTakeCourseBinding.viewPager2.currentItem == 0) {
+
+        currentStep = getCourseProgress()
+
+        position = when {
+            position > 0 -> position - 1
+            currentStep > 0 -> currentStep - 1
+            else -> 0
+        }
+
+        fragmentTakeCourseBinding.viewPager2.currentItem = position
+        updateStepDisplay(position)
+
+        if (position == 0) {
             fragmentTakeCourseBinding.previousStep.visibility = View.GONE
         }
         setCourseData()
         setListeners()
-        currentStep = getCourseProgress()
-        if (currentStep != 0) {
-            position = if (currentStep == steps.size) {
-                0
-            } else {
-                currentStep - 1
-            }
-        }
         fragmentTakeCourseBinding.viewPager2.currentItem = position
 
     }
@@ -105,6 +109,17 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         })
     }
 
+    private fun updateStepDisplay(position: Int) {
+        val currentPosition = position + 1
+        fragmentTakeCourseBinding.tvStep.text = String.format(getString(R.string.step) + " %d/%d", currentPosition, steps.size)
+
+        val currentProgress = getCurrentProgress(steps, mRealm, userModel?.id, courseId)
+        if (currentProgress < steps.size) {
+            fragmentTakeCourseBinding.courseProgress.secondaryProgress = currentProgress + 1
+        }
+        fragmentTakeCourseBinding.courseProgress.progress = currentProgress
+    }
+
     private fun setCourseData() {
         if (userModel?.isGuest() != true && currentCourse?.userId?.contains(userModel?.id) != true) {
             fragmentTakeCourseBinding.btnRemove.visibility = View.VISIBLE
@@ -114,12 +129,9 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             fragmentTakeCourseBinding.btnRemove.visibility = View.GONE
         }
         createActivity(mRealm, userModel, currentCourse)
-        fragmentTakeCourseBinding.tvStep.text = String.format(Locale.getDefault(),getString(R.string.step)+ " %d/%d", fragmentTakeCourseBinding.viewPager2.currentItem, currentCourse?.courseSteps?.size)
         fragmentTakeCourseBinding.courseProgress.max = steps.size
-        val i = getCurrentProgress(steps, mRealm, userModel?.id, courseId)
-        if (i < steps.size) fragmentTakeCourseBinding.courseProgress.secondaryProgress = i + 1
-        fragmentTakeCourseBinding.tvStep.text = String.format(getString(R.string.step) + " %d/%d", currentStep + i, steps.size)
-        fragmentTakeCourseBinding.courseProgress.progress = i
+        updateStepDisplay(fragmentTakeCourseBinding.viewPager2.currentItem)
+
         if (currentCourse?.userId?.contains(userModel?.id) == true) {
             fragmentTakeCourseBinding.nextStep.visibility = View.VISIBLE
             fragmentTakeCourseBinding.courseProgress.visibility = View.VISIBLE
@@ -131,17 +143,17 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {}
+
     override fun onPageSelected(position: Int) {
         if (position > 0) {
             if (position - 1 < steps.size) changeNextButtonState(position)
         } else {
+            fragmentTakeCourseBinding.nextStep.visibility = View.VISIBLE
             fragmentTakeCourseBinding.nextStep.isClickable = true
             fragmentTakeCourseBinding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
         }
-        val i = getCurrentProgress(steps, mRealm, userModel?.id, courseId)
-        if (i < steps.size) fragmentTakeCourseBinding.courseProgress.secondaryProgress = i + 1
-        fragmentTakeCourseBinding.courseProgress.progress = i
-        fragmentTakeCourseBinding.tvStep.text = String.format(Locale.getDefault(),"${getString(R.string.step)} %d/%d", position, steps.size)
+
+        updateStepDisplay(position)
     }
 
     private fun changeNextButtonState(position: Int) {
