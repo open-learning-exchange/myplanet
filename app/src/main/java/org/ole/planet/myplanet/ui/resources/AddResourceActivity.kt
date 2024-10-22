@@ -71,21 +71,32 @@ class AddResourceActivity : AppCompatActivity() {
     }
 
     private fun saveResource() {
-        val title = activityAddResourceBinding.etTitle.text.toString().trim { it <= ' ' }
-        if (!validate(title)) return
-        val id = UUID.randomUUID().toString()
-        mRealm.executeTransactionAsync(Realm.Transaction { realm: Realm ->
-            val resource = realm.createObject(RealmMyLibrary::class.java, id)
-            resource.title = title
-            createResource(resource, id)
-        }, Realm.Transaction.OnSuccess {
-            val myObject = mRealm.where(RealmMyLibrary::class.java)
-                .equalTo("resourceId", id).findFirst()
-            createFromResource(myObject, mRealm, userModel?.id)
-            onAdd(mRealm, "resources", userModel?.id, id)
-            toast(this@AddResourceActivity, getString(R.string.added_to_my_library))
-            finish()
-        })
+//        val title = activityAddResourceBinding.etTitle.text.toString().trim { it <= ' ' }
+//        if (!validate(title)) return
+//        val id = UUID.randomUUID().toString()
+//        mRealm.executeTransactionAsync(Realm.Transaction { realm: Realm ->
+//            val resource = realm.createObject(RealmMyLibrary::class.java, id)
+//            resource.title = title
+//            createResource(resource, id)
+//        }, Realm.Transaction.OnSuccess {
+//            val myObject = mRealm.where(RealmMyLibrary::class.java)
+//                .equalTo("resourceId", id).findFirst()
+//            createFromResource(myObject, mRealm, userModel?.id)
+//            onAdd(mRealm, "resources", userModel?.id, id)
+//            toast(this@AddResourceActivity, getString(R.string.added_to_my_library))
+//            finish()
+//        })
+
+        val fragment = ResourceDetailFragment().apply {
+            arguments = Bundle().apply {
+                putString("libraryId", "117042c0da3bc850563c995c2f00ca73")
+            }
+        }
+
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.fragment_container, fragment, "")
+            .addToBackStack(null)
+            .commitAllowingStateLoss()
     }
 
     private fun createResource(resource: RealmMyLibrary, id: String) {
