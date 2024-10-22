@@ -18,7 +18,6 @@ import org.ole.planet.myplanet.databinding.ActivityBecomeMemberBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.TransactionSyncManager
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.NetworkUtils
@@ -32,7 +31,6 @@ import java.util.regex.Pattern
 class BecomeMemberActivity : BaseActivity() {
     private lateinit var activityBecomeMemberBinding: ActivityBecomeMemberBinding
     var dob: String = ""
-//    lateinit var settings: SharedPreferences
     var guest: Boolean = false
     private fun showDatePickerDialog() {
         val now = Calendar.getInstance()
@@ -232,8 +230,6 @@ class BecomeMemberActivity : BaseActivity() {
             Service(this).becomeMember(mRealm, obj, object : Service.CreateUserCallback {
                 override fun onSuccess(message: String) {
                     runOnUiThread {
-                        startUpload("becomeMember")
-                        TransactionSyncManager.syncDb(mRealm, "tablet_users")
                         activityBecomeMemberBinding.pbar.visibility = View.GONE
                         Utilities.toast(this@BecomeMemberActivity, message)
                     }

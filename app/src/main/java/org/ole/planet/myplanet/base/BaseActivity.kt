@@ -5,8 +5,6 @@ import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.os.Bundle
 import android.view.MenuItem
-import androidx.appcompat.app.AppCompatActivity
-import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import java.util.Locale

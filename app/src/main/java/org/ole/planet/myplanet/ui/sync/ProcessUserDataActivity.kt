@@ -11,7 +11,6 @@ import android.graphics.PorterDuff
 import android.net.Uri
 import android.os.Build
 import android.text.TextUtils
-import android.util.Log
 import android.view.View
 import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
@@ -167,10 +166,8 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
 
     fun startUpload(source: String) {
         if (source == "becomeMember") {
-            Log.d("UploadManager", "uploading user data")
             UploadToShelfService.instance?.uploadUserData { UploadToShelfService.instance?.uploadHealth() }
         } else {
-            Log.d("UploadManager", "uploading all data")
             customProgressDialog?.setText(getString(R.string.uploading_data_to_server_please_wait))
             customProgressDialog?.show()
             UploadToShelfService.instance?.uploadUserData { UploadToShelfService.instance?.uploadHealth() }
@@ -237,11 +234,5 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         editor.putInt("url_Port", if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port)
         editor.putString("serverURL", url)
         editor.putString("couchdbURL", couchdbURL)
-    }
-
-    fun syncUserModel(){
-        customProgressDialog?.setText(getString(R.string.uploading_data_to_server_please_wait))
-        customProgressDialog?.show()
-        UploadToShelfService.instance?.uploadUserData { UploadToShelfService.instance?.uploadHealth() }
     }
 }
