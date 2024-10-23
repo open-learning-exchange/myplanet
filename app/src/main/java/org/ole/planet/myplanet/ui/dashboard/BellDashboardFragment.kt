@@ -77,7 +77,6 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     private suspend fun updateNetworkIndicator(status: NetworkStatus) {
         if (!isAdded) return
-
         val context = context ?: return
 
         when (status) {
@@ -107,8 +106,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
                 }
             }
             is NetworkStatus.Connected -> {
-                fragmentHomeBellBinding.cardProfileBell.imageView.borderColor =
-                    ContextCompat.getColor(context, R.color.green)
+                fragmentHomeBellBinding.cardProfileBell.imageView.borderColor = ContextCompat.getColor(context, R.color.green)
             }
         }
     }
