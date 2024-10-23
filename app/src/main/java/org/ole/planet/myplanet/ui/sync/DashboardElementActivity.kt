@@ -114,10 +114,30 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
             R.id.action_sync -> {
                 isServerReachable(Utilities.getUrl())
                 startUpload("dashboard")
+                logSyncInSharedPrefs()
             }
         }
         return super.onOptionsItemSelected(item)
     }
+
+    fun logSyncInSharedPrefs() {
+
+        // Retrieve the current sync count (default is 0)
+        var syncCount = settings.getInt("syncCount", 0)
+
+        // Increment the sync count
+        syncCount += 1
+
+        // Get the current time (as the sync time)
+        val syncTime = System.currentTimeMillis()
+
+        // Save the updated sync count and last sync time to SharedPreferences
+        settings.edit()
+            .putInt("syncCount", syncCount)
+            .putLong("lastSyncTime", syncTime)
+            .apply()
+    }
+
 
     @SuppressLint("RestrictedApi")
     fun wifiStatusSwitch() {
