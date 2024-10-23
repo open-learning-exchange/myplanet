@@ -6,6 +6,7 @@ import android.graphics.drawable.AnimationDrawable
 import android.os.Build
 import android.os.Bundle
 import android.text.*
+import android.util.Log
 import android.view.*
 import android.webkit.URLUtil
 import android.widget.*
@@ -52,6 +53,7 @@ import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utilities.NetworkUtils.extractProtocol
 import org.ole.planet.myplanet.utilities.NetworkUtils.getCustomDeviceName
 import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
+import org.ole.planet.myplanet.utilities.TimeUtils.getFormatedDateWithTime
 import org.ole.planet.myplanet.utilities.Utilities.getRelativeTime
 import org.ole.planet.myplanet.utilities.Utilities.openDownloadService
 import retrofit2.Call
@@ -418,6 +420,26 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         handler.onDestroy()
         editor.putBoolean(Constants.KEY_LOGIN, true).commit()
         openDashboard()
+
+        val firstLoginTime =settings.getLong("firstLoginTime", -1)
+        val lastLoginTime = settings.getLong("lastLoginTime", -1)
+        var loginCount = settings.getInt("loginCount", 0)
+        val currentLoginTime = System.currentTimeMillis()
+        val timeThreshold = 5 * 60 * 1000 // 5 minutes in milliseconds
+
+        if (firstLoginTime == -1L) {
+            settings.edit()
+                .putLong("firstLoginTime", currentLoginTime)
+                .apply()
+            loginCount += 1
+
+            settings.edit().putInt("loginCount", loginCount).apply()
+        } else {
+            if (lastLoginTime == -1L || currentLoginTime - lastLoginTime >= timeThreshold) {
+                loginCount += 1
+                settings.edit().putLong("lastLoginTime", currentLoginTime).putInt("loginCount", loginCount).apply()
+            }
+        }
     }
 
     fun settingDialog() {
