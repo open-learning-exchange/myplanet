@@ -39,6 +39,7 @@ import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.datamanager.Service.*
 import org.ole.planet.myplanet.model.*
 import org.ole.planet.myplanet.service.*
+import org.ole.planet.myplanet.service.TransactionSyncManager.logDuration
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.team.AdapterTeam.OnUserSelectedListener
 import org.ole.planet.myplanet.utilities.*
@@ -730,6 +731,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     private fun continueSync(dialog: MaterialDialog) {
+        val start = System.currentTimeMillis()
         processedUrl = saveConfigAndContinue(dialog)
         if (TextUtils.isEmpty(processedUrl)) return
         isSync = true
@@ -739,6 +741,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         Service(this).isPlanetAvailable(object : PlanetAvailableListener {
             override fun isAvailable() {
                 Service(context).checkVersion(this@SyncActivity, settings)
+                val end = System.currentTimeMillis()
+                logDuration(start, end, "continueSync")
             }
             override fun notAvailable() {
                 if (!isFinishing) {
