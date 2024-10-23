@@ -5,12 +5,10 @@ import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
-import android.os.Build
 import android.os.Bundle
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
 import android.provider.Settings
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.preference.PreferenceManager
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -24,6 +22,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
@@ -49,14 +48,13 @@ import java.net.URL
 import java.util.Date
 import java.util.UUID
 import java.util.concurrent.TimeUnit
-import kotlinx.coroutines.runBlocking
 
 class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     companion object {
         private const val AUTO_SYNC_WORK_TAG = "autoSyncWork"
         private const val STAY_ONLINE_WORK_TAG = "stayOnlineWork"
         private const val TASK_NOTIFICATION_WORK_TAG = "taskNotificationWork"
-        lateinit var context: Context
+        lateinit var context: Context 
         lateinit var mRealm: Realm
         lateinit var service: DatabaseService
         var preferences: SharedPreferences? = null
@@ -73,7 +71,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             }
             return "0"
         }
-        val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+        val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         lateinit var defaultPref: SharedPreferences
 
         fun createLog(type: String) {
@@ -112,7 +110,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         }
 
         fun setThemeMode(themeMode: String) {
-            val sharedPreferences = context.getSharedPreferences("app_preferences", Context.MODE_PRIVATE)
+            val sharedPreferences = context.getSharedPreferences("app_preferences", MODE_PRIVATE)
             with(sharedPreferences.edit()) {
                 putString("theme_mode", themeMode)
                 apply()
@@ -147,12 +145,13 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     private var isActivityChangingConfigurations = false
     private var isFirstLaunch = true
 
-    @RequiresApi(Build.VERSION_CODES.N)
     override fun onCreate() {
         super.onCreate()
-        initialize(CoroutineScope(Dispatchers.IO))
-
         context = this
+        initialize(applicationScope)
+        startListenNetworkState()
+
+
         preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         service = DatabaseService(context)
         mRealm = service.realmInstance
@@ -175,10 +174,9 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             handleUncaughtException(e)
         }
         registerActivityLifecycleCallbacks(this)
-        startListenNetworkState()
         onAppStarted()
 
-        val sharedPreferences = getSharedPreferences("app_preferences", Context.MODE_PRIVATE)
+        val sharedPreferences = getSharedPreferences("app_preferences", MODE_PRIVATE)
         val themeMode = sharedPreferences.getString("theme_mode", ThemeMode.FOLLOW_SYSTEM)
 
         applyThemeMode(themeMode)
