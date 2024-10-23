@@ -53,18 +53,6 @@
         android:padding="8dp"
         android:src="@drawable/ic_join_request"
         app:layout_constraintEnd_toStartOf="@id/btn_feedback"
-        app:layout_constraintStart_toEndOf="@+id/no_of_visits"
-        app:layout_constraintTop_toTopOf="parent"
-        app:tint="@color/daynight_textColor" />
-    <ImageView
-        android:id="@+id/edit_team"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:layout_marginStart="8dp"
-        android:background="?attr/selectableItemBackground"
-        android:padding="8dp"
-        android:src="@drawable/ic_edit"
-        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:tint="@color/daynight_textColor" />
     <ImageView
@@ -75,7 +63,7 @@
         android:background="?attr/selectableItemBackground"
         android:padding="8dp"
         android:src="@drawable/ic_feedback"
-        app:layout_constraintEnd_toStartOf="@id/edit_team"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:tint="@color/daynight_textColor" />
 </androidx.constraintlayout.widget.ConstraintLayout>
