@@ -86,7 +86,6 @@ class AddResourceActivity : AppCompatActivity() {
             toast(this@AddResourceActivity, getString(R.string.added_to_my_library))
             navigateToResourceDetail(myObject?.resourceId)
         })
-        //finish()
     }
 
     private fun navigateToResourceDetail(libraryId: String?) {
