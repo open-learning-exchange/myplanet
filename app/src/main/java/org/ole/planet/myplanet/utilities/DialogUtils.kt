@@ -115,7 +115,7 @@ object DialogUtils {
             .setMessage(message)
             .setIcon(R.drawable.courses)
             .setPositiveButton(pos, listener)
-            .setNegativeButton("Cancel", null)
+            .setNegativeButton(R.string.button_cancel, null)
             .show()
     }
 
