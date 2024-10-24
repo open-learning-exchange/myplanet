@@ -38,6 +38,7 @@ import org.ole.planet.myplanet.datamanager.*
 import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.datamanager.Service.*
 import org.ole.planet.myplanet.model.*
+import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createAction
 import org.ole.planet.myplanet.service.*
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.team.AdapterTeam.OnUserSelectedListener
@@ -53,7 +54,6 @@ import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utilities.NetworkUtils.extractProtocol
 import org.ole.planet.myplanet.utilities.NetworkUtils.getCustomDeviceName
 import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
-import org.ole.planet.myplanet.utilities.TimeUtils.getFormatedDateWithTime
 import org.ole.planet.myplanet.utilities.Utilities.getRelativeTime
 import org.ole.planet.myplanet.utilities.Utilities.openDownloadService
 import retrofit2.Call
@@ -399,11 +399,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         val daysDiff = TimeUnit.MILLISECONDS.toDays(msDiff)
         return if (daysDiff >= maxDays) {
             val alertDialogBuilder = AlertDialog.Builder(this, R.style.AlertDialogTheme)
-            alertDialogBuilder.setMessage(
-                getString(R.string.it_has_been_more_than) + (daysDiff - 1) + getString(
-                    R.string.days_since_you_last_synced_this_device
-                ) + getString(R.string.connect_it_to_the_server_over_wifi_and_sync_it_to_reactivate_this_tablet)
-            )
+            alertDialogBuilder.setMessage("${getString(R.string.it_has_been_more_than)}${(daysDiff - 1)}${getString(R.string.days_since_you_last_synced_this_device)}${getString(R.string.connect_it_to_the_server_over_wifi_and_sync_it_to_reactivate_this_tablet)}")
             alertDialogBuilder.setPositiveButton(R.string.okay) { _: DialogInterface?, _: Int ->
                 Toast.makeText(applicationContext, getString(R.string.connect_to_the_server_over_wifi_and_sync_your_device_to_continue), Toast.LENGTH_LONG).show()
             }
@@ -416,30 +412,28 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     fun onLogin() {
         val handler = UserProfileDbHandler(this)
+
+        val userId = handler.userModel?.id
+        if (userId != null) {
+            val latestAction = mRealm.where(RealmUserChallengeActions::class.java)
+                .equalTo("userId", userId).sort("time", Sort.DESCENDING).findFirst()
+
+            val currentTime = System.currentTimeMillis()
+            val thresholdTime = 24 * 60 * 60 * 1000
+
+            if (latestAction == null) {
+                createAction(mRealm, userId, null, "login")
+            } else {
+                if (currentTime - latestAction.time >= thresholdTime) {
+                    createAction(mRealm, userId, null, "login")
+                }
+            }
+        }
+
         handler.onLogin()
         handler.onDestroy()
         editor.putBoolean(Constants.KEY_LOGIN, true).commit()
         openDashboard()
-
-        val firstLoginTime =settings.getLong("firstLoginTime", -1)
-        val lastLoginTime = settings.getLong("lastLoginTime", -1)
-        var loginCount = settings.getInt("loginCount", 0)
-        val currentLoginTime = System.currentTimeMillis()
-        val timeThreshold = 5 * 60 * 1000 // 5 minutes in milliseconds
-
-        if (firstLoginTime == -1L) {
-            settings.edit()
-                .putLong("firstLoginTime", currentLoginTime)
-                .apply()
-            loginCount += 1
-
-            settings.edit().putInt("loginCount", loginCount).apply()
-        } else {
-            if (lastLoginTime == -1L || currentLoginTime - lastLoginTime >= timeThreshold) {
-                loginCount += 1
-                settings.edit().putLong("lastLoginTime", currentLoginTime).putInt("loginCount", loginCount).apply()
-            }
-        }
     }
 
     fun settingDialog() {

@@ -49,6 +49,7 @@ import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.SettingActivity
@@ -239,9 +240,20 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         val calendar = Calendar.getInstance()
         val currentMonth = calendar.get(Calendar.MONTH)
 
-        val loginCount = settings.getInt("loginCount", 0)
-        val resourceOpenCount = settings.getInt("resourceOpenCount", 0)
-        val syncCount = settings.getInt("syncCount", 0)
+        val loginCount = mRealm.where(RealmUserChallengeActions::class.java)
+            .equalTo("userId", user?.id)
+            .equalTo("actionType", "login")
+            .findAll().count()
+
+        val resourceOpenCount = mRealm.where(RealmUserChallengeActions::class.java)
+            .equalTo("userId", user?.id)
+            .equalTo("actionType", "resourceOpen")
+            .findAll().count()
+
+        val syncCount = mRealm.where(RealmUserChallengeActions::class.java)
+            .equalTo("userId", user?.id)
+            .equalTo("actionType", "sync")
+            .findAll().count()
 
 //        if (currentMonth == Calendar.OCTOBER) {
 //            if (settings.getString("serverURL", "") == "https://${BuildConfig.PLANET_GUATEMALA_URL}") {
