@@ -17,7 +17,6 @@ import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.afollestad.materialdialogs.*
-import com.google.android.material.textfield.TextInputLayout
 import io.realm.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -67,18 +66,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private lateinit var syncDate: TextView
     lateinit var lblLastSyncDate: TextView
     private lateinit var intervalLabel: TextView
-    lateinit var tvNoData: TextView
     lateinit var spinner: Spinner
     private lateinit var syncSwitch: SwitchCompat
-    var convertedDate = 0
     private var connectionResult = false
     lateinit var mRealm: Realm
     private lateinit var editor: SharedPreferences.Editor
     private var syncTimeInterval = intArrayOf(60 * 60, 3 * 60 * 60)
     lateinit var syncIcon: ImageView
     lateinit var syncIconDrawable: AnimationDrawable
-    lateinit var inputLayoutName: TextInputLayout
-    lateinit var inputLayoutPassword: TextInputLayout
     lateinit var prefData: SharedPrefManager
     lateinit var profileDbHandler: UserProfileDbHandler
     private lateinit var spnCloud: Spinner
@@ -87,8 +82,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private lateinit var serverPassword: EditText
     private lateinit var serverAddresses: RecyclerView
     private lateinit var syncToServerText: TextView
-    private var teamList = ArrayList<String?>()
-    private var teamAdapter: ArrayAdapter<String?>? = null
     var selectedTeamId: String? = null
     lateinit var positiveAction: View
     private lateinit var neutralAction: View
@@ -101,7 +94,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     lateinit var service: Service
     private var currentDialog: MaterialDialog? = null
     private var serverConfigAction = ""
-    private var previousCheckedId: Int? = null
     private var serverCheck = true
     private var showAdditionalServers = false
     private var serverAddressAdapter : ServerAddressAdapter? = null
@@ -132,23 +124,24 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             } else if (id == savedId) {
                 currentDialog?.let { continueSync(it) }
             } else {
-                clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server))
+                clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server), false)
             }
         } else if (serverConfigAction == "save") {
             if (savedId == null || id == savedId) {
                 currentDialog?.let { saveConfigAndContinue(it) }
             } else {
-                clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server))
+                clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server), false)
             }
         }
     }
 
-    private fun clearDataDialog(message: String, onCancel: () -> Unit = {}) {
+    private fun clearDataDialog(message: String, config: Boolean, onCancel: () -> Unit = {}) {
         AlertDialog.Builder(this, R.style.AlertDialogTheme)
             .setMessage(message)
             .setPositiveButton(getString(R.string.clear_data)) { _, _ ->
                 CoroutineScope(Dispatchers.Main).launch {
                     clearRealmDb()
+                    prefData.setManualConfig(config)
                     clearSharedPref()
                     restartApp()
                 }
@@ -210,6 +203,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                         startSync()
                     }
                 } catch (e: Exception) {
+                    e.printStackTrace()
                     syncFailed = true
                     if (extractProtocol("$processedUrl") == context.getString(R.string.http_protocol)) {
                         alertDialogOkay(getString(R.string.device_couldn_t_reach_local_server))
@@ -463,9 +457,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             if (configurationId != null) {
                 dialogServerUrlBinding.manualConfiguration.isChecked = prefData.getManualConfig()
                 if (prefData.getManualConfig()) {
-                    clearDataDialog(getString(R.string.switching_off_manual_configuration_to_clear_data))
+                    clearDataDialog(getString(R.string.switching_off_manual_configuration_to_clear_data), false)
                 } else {
-                    clearDataDialog(getString(R.string.switching_on_manual_configuration_to_clear_data))
+                    clearDataDialog(getString(R.string.switching_on_manual_configuration_to_clear_data), true)
                 }
             } else {
                 val newCheckedState = !prefData.getManualConfig()
@@ -520,7 +514,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             }
         }
         dialogServerUrlBinding.clearData.setOnClickListener {
-            clearDataDialog(getString(R.string.are_you_sure_you_want_to_clear_data))
+            clearDataDialog(getString(R.string.are_you_sure_you_want_to_clear_data), false)
         }
 
         neutralAction.setOnClickListener {
@@ -597,7 +591,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 if (serverCheck) {
                     performSync(dialog)
                 } }, { _, _ ->
-                    clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server)) {
+                    clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server), false) {
                         serverAddressAdapter?.revertSelection()
                     }
                 },
@@ -871,7 +865,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         fun clearSharedPref() {
             val settings = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             val editor = settings.edit()
-            val keysToKeep = setOf(SharedPrefManager(context).firstLaunch)
+            val keysToKeep = setOf(SharedPrefManager(context).firstLaunch, SharedPrefManager(context).manualConfig )
             val tempStorage = HashMap<String, Boolean>()
             for (key in keysToKeep) {
                 tempStorage[key] = settings.getBoolean(key, false)
