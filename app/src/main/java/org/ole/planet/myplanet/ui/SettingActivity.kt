@@ -295,7 +295,7 @@ class SettingActivity : AppCompatActivity() {
         }
 
         private fun getCurrentThemeMode(): String {
-            val sharedPreferences = requireContext().getSharedPreferences("app_preferences", Context.MODE_PRIVATE)
+            val sharedPreferences = requireContext().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             return sharedPreferences.getString("theme_mode", ThemeMode.FOLLOW_SYSTEM) ?: ThemeMode.FOLLOW_SYSTEM
         }
     }
