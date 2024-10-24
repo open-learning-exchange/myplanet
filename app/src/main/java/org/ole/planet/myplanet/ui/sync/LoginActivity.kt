@@ -131,9 +131,9 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                     submitForm(activityLoginBinding.inputName.text.toString(), activityLoginBinding.inputPassword.text.toString())
                 } else {
                     val builder = AlertDialog.Builder(this)
-                    builder.setMessage("member " + activityLoginBinding.inputName.text.toString() + " is archived")
+                    builder.setMessage("member ${activityLoginBinding.inputName.text} is archived")
                     builder.setCancelable(false)
-                    builder.setPositiveButton("Ok") { dialog: DialogInterface, _: Int ->
+                    builder.setPositiveButton("ok") { dialog: DialogInterface, _: Int ->
                         dialog.dismiss()
                         activityLoginBinding.inputName.setText(R.string.empty_text)
                         activityLoginBinding.inputPassword.setText(R.string.empty_text)

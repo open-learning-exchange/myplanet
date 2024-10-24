@@ -24,6 +24,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
+import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createAction
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
@@ -114,9 +115,14 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
             R.id.action_sync -> {
                 isServerReachable(Utilities.getUrl())
                 startUpload("dashboard")
+                logSyncInSharedPrefs()
             }
         }
         return super.onOptionsItemSelected(item)
+    }
+
+    fun logSyncInSharedPrefs() {
+        createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
     }
 
     @SuppressLint("RestrictedApi")

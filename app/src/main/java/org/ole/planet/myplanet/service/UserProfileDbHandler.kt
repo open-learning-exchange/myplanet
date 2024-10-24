@@ -36,15 +36,14 @@ class UserProfileDbHandler(context: Context) {
         }
     }
 
-    val userModel: RealmUserModel?
-        get() {
-            if (mRealm.isClosed) {
-                mRealm = realmService.realmInstance
-            }
-            return mRealm.where(RealmUserModel::class.java)
-                .equalTo("id", settings.getString("userId", ""))
-                .findFirst()
+    val userModel: RealmUserModel? get() {
+        if (mRealm.isClosed) {
+            mRealm = realmService.realmInstance
         }
+        return mRealm.where(RealmUserModel::class.java)
+            .equalTo("id", settings.getString("userId", ""))
+            .findFirst()
+    }
 
     fun onLogin() {
         if (!mRealm.isInTransaction) {
@@ -89,10 +88,8 @@ class UserProfileDbHandler(context: Context) {
         return offlineActivities
     }
 
-    val lastVisit: Long?
-        get() = mRealm.where(RealmOfflineActivity::class.java).max("loginTime") as Long?
-    val offlineVisits: Int
-        get() = getOfflineVisits(userModel)
+    val lastVisit: Long? get() = mRealm.where(RealmOfflineActivity::class.java).max("loginTime") as Long?
+    val offlineVisits: Int get() = getOfflineVisits(userModel)
 
     fun getOfflineVisits(m: RealmUserModel?): Int { val dbUsers = mRealm.where(RealmOfflineActivity::class.java).equalTo("userName", m?.name).equalTo("type", KEY_LOGIN).findAll()
         return if (!dbUsers.isEmpty()) {
@@ -126,6 +123,7 @@ class UserProfileDbHandler(context: Context) {
         if (model?.id?.startsWith("guest") == true) {
             return
         }
+
         if (!mRealm.isInTransaction) mRealm.beginTransaction()
         val offlineActivities = mRealm.copyToRealm(createResourceUser(model))
         offlineActivities.type = type
@@ -143,33 +141,31 @@ class UserProfileDbHandler(context: Context) {
         return offlineActivities
     }
 
-    val numberOfResourceOpen: String
-        get() {
-            val count = mRealm.where(RealmResourceActivity::class.java).equalTo("user", fullName)
-                .equalTo("type", KEY_RESOURCE_OPEN).count()
-            return if (count == 0L) "" else "Resource opened $count times."
-        }
+    val numberOfResourceOpen: String get() {
+        val count = mRealm.where(RealmResourceActivity::class.java).equalTo("user", fullName)
+            .equalTo("type", KEY_RESOURCE_OPEN).count()
+        return if (count == 0L) "" else "Resource opened $count times."
+    }
 
-    val maxOpenedResource: String
-        get() {
-            val result = mRealm.where(RealmResourceActivity::class.java)
-                .equalTo("user", fullName).equalTo("type", KEY_RESOURCE_OPEN)
-                .findAll().where().distinct("resourceId").findAll()
-            var maxCount = 0L
-            var maxOpenedResource = ""
-            for (realmResourceActivities in result) {
-                val count = mRealm.where(RealmResourceActivity::class.java)
-                    .equalTo("user", fullName)
-                    .equalTo("type", KEY_RESOURCE_OPEN)
-                    .equalTo("resourceId", realmResourceActivities.resourceId).count()
+    val maxOpenedResource: String get() {
+        val result = mRealm.where(RealmResourceActivity::class.java)
+            .equalTo("user", fullName).equalTo("type", KEY_RESOURCE_OPEN)
+            .findAll().where().distinct("resourceId").findAll()
+        var maxCount = 0L
+        var maxOpenedResource = ""
+        for (realmResourceActivities in result) {
+            val count = mRealm.where(RealmResourceActivity::class.java)
+                .equalTo("user", fullName)
+                .equalTo("type", KEY_RESOURCE_OPEN)
+                .equalTo("resourceId", realmResourceActivities.resourceId).count()
 
-                if (count > maxCount) {
-                    maxCount = count
-                    maxOpenedResource = "${realmResourceActivities.title}"
-                }
+            if (count > maxCount) {
+                maxCount = count
+                maxOpenedResource = "${realmResourceActivities.title}"
             }
-            return if (maxCount == 0L) "" else "$maxOpenedResource opened $maxCount times"
         }
+        return if (maxCount == 0L) "" else "$maxOpenedResource opened $maxCount times"
+    }
 
     companion object {
         const val KEY_LOGIN = "login"

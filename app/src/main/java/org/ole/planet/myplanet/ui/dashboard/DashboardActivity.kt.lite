@@ -49,6 +49,7 @@ import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.SettingActivity
@@ -72,9 +73,13 @@ import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utilities.FileUtils.totalAvailableMemoryRatio
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.LocaleHelper
+import org.ole.planet.myplanet.utilities.MarkdownDialog
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.Utilities.toast
+import java.time.LocalDate
+import java.time.temporal.ChronoUnit
+import java.util.Calendar
 import java.util.Date
 import java.util.UUID
 import kotlin.math.ceil
@@ -181,6 +186,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 R.id.action_sync -> {
                     isServerReachable(Utilities.getUrl())
                     startUpload("dashboard")
+                    logSyncInSharedPrefs()
                 }
                 R.id.action_feedback -> {
                     if (user?.id?.startsWith("guest") == false) {
@@ -230,6 +236,52 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 }
             }
         })
+
+        val calendar = Calendar.getInstance()
+        val currentMonth = calendar.get(Calendar.MONTH)
+
+        val loginCount = mRealm.where(RealmUserChallengeActions::class.java)
+            .equalTo("userId", user?.id)
+            .equalTo("actionType", "login")
+            .findAll().count()
+
+        val resourceOpenCount = mRealm.where(RealmUserChallengeActions::class.java)
+            .equalTo("userId", user?.id)
+            .equalTo("actionType", "resourceOpen")
+            .findAll().count()
+
+        val syncCount = mRealm.where(RealmUserChallengeActions::class.java)
+            .equalTo("userId", user?.id)
+            .equalTo("actionType", "sync")
+            .findAll().count()
+
+//        if (currentMonth == Calendar.OCTOBER) {
+//            if (settings.getString("serverURL", "") == "https://${BuildConfig.PLANET_GUATEMALA_URL}") {
+                val today = LocalDate.now()
+                val endOfMonth = today.withDayOfMonth(today.lengthOfMonth())
+                val remainingDays = ChronoUnit.DAYS.between(today, endOfMonth).toInt()
+
+                challengeDialog(remainingDays, loginCount, resourceOpenCount, syncCount)
+//            }
+//        }
+    }
+
+    private fun challengeDialog(remainingDays: Int, loginCount: Int, resourceOpenCount: Int, syncCount: Int) {
+        var remainingLogins = if (4 - loginCount <= 0 ) {0} else {4 - loginCount}
+        val loginTaskDone = if (loginCount >= 4) "✅" else "[ ]"
+        val resourceTaskDone = if (resourceOpenCount >= 1) "✅" else "[ ]"
+        val syncTaskDone = if (syncCount >= 1) "✅" else "[ ]"
+
+        val markdownContent = """
+            ### October Challenge: $remainingDays days remaining
+
+            - $loginTaskDone Login 4 times ($remainingLogins logins remaining)
+            - $resourceTaskDone Open 1 resource
+            - $syncTaskDone Sync
+
+            """.trimIndent()
+        MarkdownDialog.newInstance(markdownContent)
+            .show(supportFragmentManager, "markdown_dialog")
     }
 
     private fun setupRealmListeners() {
@@ -483,7 +535,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     override fun onPrepareOptionsMenu(menu: Menu): Boolean {
         if (user?.rolesList?.isEmpty() == true) {
-            menu.findItem(R.id.action_setting).setEnabled(false)
+            menu.findItem(R.id.action_setting).isEnabled = false
         }
         return super.onPrepareOptionsMenu(menu)
     }
@@ -684,7 +736,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu_bell_dashboard, menu)
-        menu.findItem(R.id.menu_goOnline).setVisible(showBetaFeature(Constants.KEY_SYNC, this))
+        menu.findItem(R.id.menu_goOnline).isVisible = showBetaFeature(Constants.KEY_SYNC, this)
         return super.onCreateOptionsMenu(menu)
     }
 
