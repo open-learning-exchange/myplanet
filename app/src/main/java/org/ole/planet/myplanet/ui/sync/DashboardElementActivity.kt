@@ -24,6 +24,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
+import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createAction
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
@@ -121,21 +122,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
     }
 
     fun logSyncInSharedPrefs() {
-
-        // Retrieve the current sync count (default is 0)
-        var syncCount = settings.getInt("syncCount", 0)
-
-        // Increment the sync count
-        syncCount += 1
-
-        // Get the current time (as the sync time)
-        val syncTime = System.currentTimeMillis()
-
-        // Save the updated sync count and last sync time to SharedPreferences
-        settings.edit()
-            .putInt("syncCount", syncCount)
-            .putLong("lastSyncTime", syncTime)
-            .apply()
+        createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
     }
 
 

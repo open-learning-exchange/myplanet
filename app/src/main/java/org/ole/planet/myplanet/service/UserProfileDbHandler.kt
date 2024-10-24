@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.service
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.util.Log
 import io.realm.Realm
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -123,18 +122,6 @@ class UserProfileDbHandler(context: Context) {
         val model = userModel
         if (model?.id?.startsWith("guest") == true) {
             return
-        }
-
-        if ("${model?.name}" == fullName){
-            val firstLoginTime = settings.getLong("firstLoginTime", -1)
-            if (firstLoginTime == -1L) {
-                Log.d("okuro", "First login time not set, skipping resource open count")
-                return
-            }
-            var resourceOpenCount = settings.getInt("resourceOpenCount", 0)
-            resourceOpenCount += 1
-            settings.edit().putInt("resourceOpenCount", resourceOpenCount).apply()
-            Log.d("okuro", "Resource opened. Total open count: $resourceOpenCount")
         }
 
         if (!mRealm.isInTransaction) mRealm.beginTransaction()
