@@ -125,7 +125,6 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
     }
 
-
     @SuppressLint("RestrictedApi")
     fun wifiStatusSwitch() {
         val resIcon = ContextCompat.getDrawable(this, R.drawable.goonline)
