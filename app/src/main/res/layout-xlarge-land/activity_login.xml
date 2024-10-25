@@ -10,6 +10,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:baselineAligned="false"
         android:orientation="horizontal">
 
         <androidx.constraintlayout.widget.ConstraintLayout
@@ -25,7 +26,7 @@
                 android:id="@+id/syncIcon"
                 android:layout_width="30dp"
                 android:layout_height="30dp"
-                android:layout_alignParentLeft="true"
+                android:layout_alignParentStart="true"
                 android:layout_marginTop="@dimen/_10dp"
                 android:background="@drawable/file_upload_animation_login"
                 android:contentDescription="@string/sync"
@@ -47,12 +48,13 @@
                 android:id="@+id/imgBtnSetting"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_alignParentRight="true"
+                android:layout_alignParentEnd="true"
                 android:layout_marginTop="@dimen/_10dp"
                 android:background="@null"
                 android:contentDescription="@string/settings"
+                android:paddingStart="@dimen/_10dp"
                 android:paddingTop="6dp"
-                android:paddingRight="10dp"
+                android:paddingEnd="10dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
                 app:srcCompat="@drawable/ic_settings_black_24dp" />
@@ -78,6 +80,7 @@
                     android:layout_width="200dp"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
+                    android:hint="@string/hint_name"
                     app:boxBackgroundColor="@color/md_white_1000"
                     app:boxStrokeColor="@color/md_white_1000"
                     app:boxStrokeWidth="0dp"
@@ -94,8 +97,6 @@
                         android:layout_centerVertical="true"
                         android:autofillHints=""
                         android:drawablePadding="12dp"
-                        android:contentDescription="@string/hint_name"
-                        android:hint="@string/hint_name"
                         android:inputType="text"
                         android:paddingStart="10dp"
                         android:paddingEnd="8dp"
@@ -107,6 +108,7 @@
                     android:layout_width="200dp"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
+                    android:hint="@string/password"
                     app:boxBackgroundColor="@color/md_white_1000"
                     app:boxStrokeColor="@color/md_white_1000"
                     app:boxStrokeWidth="0dp"
@@ -124,7 +126,6 @@
                         android:layout_centerVertical="true"
                         android:autofillHints=""
                         android:drawablePadding="12dp"
-                        android:hint="password"
                         android:inputType="textPassword"
                         android:paddingStart="10dp"
                         android:paddingEnd="8dp"
@@ -208,7 +209,7 @@
 
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+                android:layout_height="match_parent">
 
                 <ImageView
                     android:id="@+id/logoImageView"
@@ -276,8 +277,8 @@
                     android:id="@+id/ltAvailablaSpace"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
                     android:layout_marginTop="4dp"
+                    android:orientation="horizontal"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/customDeviceName">
@@ -308,11 +309,11 @@
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/recyclerView"
                     android:layout_width="match_parent"
-                    android:layout_height="350dp"
+                    android:layout_height="0dp"
                     android:layout_marginTop="@dimen/_10dp"
+                    app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/team" />
             </androidx.constraintlayout.widget.ConstraintLayout>
         </LinearLayout>
