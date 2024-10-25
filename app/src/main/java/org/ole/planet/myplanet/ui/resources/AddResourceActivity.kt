@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.resources
 
+import android.content.Context
 import android.content.DialogInterface
 import android.os.Bundle
 import android.view.MenuItem
@@ -20,6 +21,7 @@ import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onAdd
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.CheckboxListView
+import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.Utilities.toast
 import java.util.Calendar
 import java.util.UUID
@@ -32,6 +34,11 @@ class AddResourceActivity : AppCompatActivity() {
     var levels: RealmList<String>? = null
     private var resourceFor: RealmList<String>? = null
     private var resourceUrl: String? = null
+
+    override fun attachBaseContext(base: Context) {
+        super.attachBaseContext(LocaleHelper.onAttach(base))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         activityAddResourceBinding = ActivityAddResourceBinding.inflate(layoutInflater)
