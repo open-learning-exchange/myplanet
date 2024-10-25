@@ -182,7 +182,6 @@
     <string name="my_survey">मेरो सर्वेक्षण</string>
 
     <string-array name="level">
-        <item></item>
         <item>प्रारम्भिक</item>
         <item>मध्यम</item>
         <item>उन्नत</item>
