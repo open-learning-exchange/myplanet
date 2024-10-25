@@ -111,7 +111,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
         tvTime = alertSoundRecorderBinding.tvTime
         floatingActionButton = alertSoundRecorderBinding.fabRecord
         val titleTextView = TextView(requireContext()).apply {
-            text = "Record Audio"
+            text = resources.getString(R.string.record_audio)
             setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
             textSize = 20f
             setPadding(20, 20, 20, 20)
