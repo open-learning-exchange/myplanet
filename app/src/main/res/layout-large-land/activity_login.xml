@@ -10,6 +10,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:baselineAligned="false"
         android:orientation="horizontal">
 
         <androidx.constraintlayout.widget.ConstraintLayout
@@ -25,7 +26,7 @@
                 android:id="@+id/syncIcon"
                 android:layout_width="30dp"
                 android:layout_height="30dp"
-                android:layout_alignParentLeft="true"
+                android:layout_alignParentStart="true"
                 android:layout_marginTop="@dimen/_10dp"
                 android:background="@drawable/file_upload_animation_login"
                 android:contentDescription="@string/sync"
@@ -47,12 +48,13 @@
                 android:id="@+id/imgBtnSetting"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_alignParentRight="true"
+                android:layout_alignParentEnd="true"
                 android:layout_marginTop="@dimen/_10dp"
                 android:background="@null"
                 android:contentDescription="@string/settings"
+                android:paddingStart="@dimen/_10dp"
                 android:paddingTop="6dp"
-                android:paddingRight="10dp"
+                android:paddingEnd="10dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
                 app:srcCompat="@drawable/ic_settings_black_24dp" />
@@ -78,6 +80,7 @@
                     android:layout_width="200dp"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
+                    android:hint="@string/hint_name"
                     app:boxBackgroundColor="@color/md_white_1000"
                     app:boxStrokeColor="@color/md_white_1000"
                     app:boxStrokeWidth="0dp"
@@ -108,6 +111,7 @@
                     android:layout_width="200dp"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
+                    android:hint="@string/password"
                     app:boxBackgroundColor="@color/md_white_1000"
                     app:boxStrokeColor="@color/md_white_1000"
                     app:boxStrokeWidth="0dp"
@@ -205,7 +209,7 @@
 
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+                android:layout_height="match_parent">
 
                 <ImageView
                     android:id="@+id/logoImageView"
@@ -255,6 +259,9 @@
                     android:text="@string/language"
                     android:textColor="@android:color/white"
                     android:theme="@style/PrimaryFlatButton"
+                    android:elevation="1dp"
+                    android:outlineProvider="bounds"
+                    android:strokeColor="@color/daynight_textColor"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/lblVersion" />
@@ -266,29 +273,16 @@
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/btn_lang" />
-                <LinearLayout
-                    android:id="@+id/ltAvailablaSpace"
+                <TextView
+                    android:id="@+id/tv_available_space"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginTop="4dp"
+                    android:textColor="@color/md_white_1000"
+                    app:drawableStartCompat="@drawable/baseline_storage_24"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/customDeviceName">
-
-                    <ImageView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:paddingHorizontal="@dimen/padding_small"
-                        app:srcCompat="@drawable/baseline_storage_24" />
-                    <TextView
-                        android:id="@+id/tv_available_space"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textColor="@color/md_white_1000"
-                        tools:text="@string/available_space_colon" />
-                </LinearLayout>
-
+                    app:layout_constraintTop_toBottomOf="@+id/customDeviceName"
+                    tools:text="@string/available_space_colon" />
                 <Spinner
                     android:id="@+id/team"
                     android:layout_width="wrap_content"
@@ -298,16 +292,18 @@
                     android:visibility="gone"
                     app:backgroundTint="@color/daynight_textColor"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/ltAvailablaSpace" />
+                    app:layout_constraintTop_toBottomOf="@+id/tv_available_space" />
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/recyclerView"
                     android:layout_width="match_parent"
-                    android:layout_height="350dp"
+                    android:layout_height="0dp"
                     android:layout_marginTop="@dimen/_10dp"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/team" />
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintHorizontal_bias="1.0"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/team"
+                    app:layout_constraintVertical_bias="0.503" />
             </androidx.constraintlayout.widget.ConstraintLayout>
         </LinearLayout>
     </LinearLayout>
