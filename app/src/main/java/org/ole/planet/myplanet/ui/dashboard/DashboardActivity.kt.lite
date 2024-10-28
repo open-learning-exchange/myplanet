@@ -271,12 +271,12 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 val endOfMonth = today.withDayOfMonth(today.lengthOfMonth())
                 val remainingDays = ChronoUnit.DAYS.between(today, endOfMonth).toInt()
 
-                challengeDialog(remainingDays, loginCount, resourceOpenCount, syncCount, voiceCount)
+                challengeDialog(remainingDays, loginCount, resourceOpenCount, syncCount, voiceCount, aiResearchCount)
 //            }
 //        }
     }
 
-    private fun challengeDialog(remainingDays: Int, loginCount: Int, resourceOpenCount: Int, syncCount: Int, voiceCount: Int) {
+    private fun challengeDialog(remainingDays: Int, loginCount: Int, resourceOpenCount: Int, syncCount: Int, voiceCount: Int, aiResearchCount: Int) {
         var remainingLogins = if (4 - loginCount <= 0 ) {0} else {4 - loginCount}
         val loginTaskDone = if (loginCount >= 4) "✅" else "[ ]"
         val resourceTaskDone = if (resourceOpenCount >= 1) "✅" else "[ ]"
