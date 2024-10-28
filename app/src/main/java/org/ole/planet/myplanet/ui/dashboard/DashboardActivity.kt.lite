@@ -255,28 +255,35 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             .equalTo("actionType", "sync")
             .findAll().count()
 
+        val voiceCount = mRealm.where(RealmUserChallengeActions::class.java)
+            .equalTo("userId", user?.id)
+            .equalTo("actionType", "voice")
+            .findAll().count()
+
 //        if (currentMonth == Calendar.OCTOBER) {
 //            if (settings.getString("serverURL", "") == "https://${BuildConfig.PLANET_GUATEMALA_URL}") {
                 val today = LocalDate.now()
                 val endOfMonth = today.withDayOfMonth(today.lengthOfMonth())
                 val remainingDays = ChronoUnit.DAYS.between(today, endOfMonth).toInt()
 
-                challengeDialog(remainingDays, loginCount, resourceOpenCount, syncCount)
+                challengeDialog(remainingDays, loginCount, resourceOpenCount, syncCount, voiceCount)
 //            }
 //        }
     }
 
-    private fun challengeDialog(remainingDays: Int, loginCount: Int, resourceOpenCount: Int, syncCount: Int) {
+    private fun challengeDialog(remainingDays: Int, loginCount: Int, resourceOpenCount: Int, syncCount: Int, voiceCount: Int) {
         var remainingLogins = if (4 - loginCount <= 0 ) {0} else {4 - loginCount}
         val loginTaskDone = if (loginCount >= 4) "✅" else "[ ]"
         val resourceTaskDone = if (resourceOpenCount >= 1) "✅" else "[ ]"
+        val voiceTaskDone = if (voiceCount >= 1) "✅" else "[ ]"
         val syncTaskDone = if (syncCount >= 1) "✅" else "[ ]"
 
         val markdownContent = """
-            ### October Challenge: $remainingDays days remaining
+            ### November challenge: $remainingDays days remaining
 
             - $loginTaskDone Login 4 times ($remainingLogins logins remaining)
             - $resourceTaskDone Open 1 resource
+            - $voiceTaskDone Share a voice message
             - $syncTaskDone Sync
 
             """.trimIndent()
