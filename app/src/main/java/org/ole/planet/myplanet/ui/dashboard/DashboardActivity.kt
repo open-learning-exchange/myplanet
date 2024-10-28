@@ -260,23 +260,29 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             .equalTo("actionType", "voice")
             .findAll().count()
 
+        val aiResearchCount = mRealm.where(RealmUserChallengeActions::class.java)
+            .equalTo("userId", user?.id)
+            .equalTo("actionType", "ai research")
+            .findAll().count()
+
 //        if (currentMonth == Calendar.OCTOBER) {
 //            if (settings.getString("serverURL", "") == "https://${BuildConfig.PLANET_GUATEMALA_URL}") {
                 val today = LocalDate.now()
                 val endOfMonth = today.withDayOfMonth(today.lengthOfMonth())
                 val remainingDays = ChronoUnit.DAYS.between(today, endOfMonth).toInt()
 
-                challengeDialog(remainingDays, loginCount, resourceOpenCount, syncCount, voiceCount)
+                challengeDialog(remainingDays, loginCount, resourceOpenCount, syncCount, voiceCount, aiResearchCount)
 //            }
 //        }
     }
 
-    private fun challengeDialog(remainingDays: Int, loginCount: Int, resourceOpenCount: Int, syncCount: Int, voiceCount: Int) {
+    private fun challengeDialog(remainingDays: Int, loginCount: Int, resourceOpenCount: Int, syncCount: Int, voiceCount: Int, aiResearchCount: Int) {
         var remainingLogins = if (4 - loginCount <= 0 ) {0} else {4 - loginCount}
         val loginTaskDone = if (loginCount >= 4) "✅" else "[ ]"
         val resourceTaskDone = if (resourceOpenCount >= 1) "✅" else "[ ]"
         val voiceTaskDone = if (voiceCount >= 1) "✅" else "[ ]"
         val syncTaskDone = if (syncCount >= 1) "✅" else "[ ]"
+        val researchDone = if (aiResearchCount >= 1) "✅" else "[ ]"
 
         val markdownContent = """
             ### November challenge: $remainingDays days remaining
@@ -284,6 +290,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             - $loginTaskDone Login 4 times ($remainingLogins logins remaining)
             - $resourceTaskDone Open 1 resource
             - $voiceTaskDone Share a voice message
+            - $researchDone AI Research
             - $syncTaskDone Sync
 
             """.trimIndent()

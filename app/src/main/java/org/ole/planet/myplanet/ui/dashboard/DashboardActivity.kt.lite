@@ -260,6 +260,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             .equalTo("actionType", "voice")
             .findAll().count()
 
+        val aiResearchCount = mRealm.where(RealmUserChallengeActions::class.java)
+            .equalTo("userId", user?.id)
+            .equalTo("actionType", "ai research")
+            .findAll().count()
+
 //        if (currentMonth == Calendar.OCTOBER) {
 //            if (settings.getString("serverURL", "") == "https://${BuildConfig.PLANET_GUATEMALA_URL}") {
                 val today = LocalDate.now()
@@ -277,6 +282,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         val resourceTaskDone = if (resourceOpenCount >= 1) "✅" else "[ ]"
         val voiceTaskDone = if (voiceCount >= 1) "✅" else "[ ]"
         val syncTaskDone = if (syncCount >= 1) "✅" else "[ ]"
+        val researchDone = if (aiResearchCount >= 1) "✅" else "[ ]"
 
         val markdownContent = """
             ### November challenge: $remainingDays days remaining
@@ -284,6 +290,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             - $loginTaskDone Login 4 times ($remainingLogins logins remaining)
             - $resourceTaskDone Open 1 resource
             - $voiceTaskDone Share a voice message
+            - $researchDone AI Research
             - $syncTaskDone Sync
 
             """.trimIndent()
