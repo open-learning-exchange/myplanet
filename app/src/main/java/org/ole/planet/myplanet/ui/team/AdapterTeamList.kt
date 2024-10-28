@@ -51,7 +51,6 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
             created.text = TimeUtils.getFormatedDate(team.createdDate)
             type.text = team.teamType
             type.visibility = if (team.teamType == null) View.VISIBLE else View.GONE
-            editTeam.visibility = if (RealmMyTeam.getTeamLeader(team._id, mRealm) == user?.id) View.VISIBLE else View.GONE
             name.text = team.name
             noOfVisits.text = context.getString(R.string.number_placeholder, RealmTeamLog.getVisitByTeam(mRealm, team._id))
 
@@ -76,8 +75,6 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
                 feedbackFragment.arguments = getBundle(team)
             }
 
-            editTeam.setOnClickListener { teamListener?.onEditTeam(team) }
-
             joinLeave.setOnClickListener {
                 handleJoinLeaveClick(isMyTeam, team, user, position)
             }
@@ -87,6 +84,7 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
     private fun ItemTeamListBinding.showActionButton(isMyTeam: Boolean, team: RealmMyTeam, user: RealmUserModel?) {
         when {
             user?.isGuest() == true -> joinLeave.visibility = View.GONE
+
             isMyTeam && RealmMyTeam.isTeamLeader(team.teamId, user?.id, mRealm) -> {
                 joinLeave.apply {
                     contentDescription = "${context.getString(R.string.leave)} ${team.name}"
@@ -95,6 +93,7 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
                     clearColorFilter()
                 }
             }
+
             !isMyTeam && team.requested(user?.id, mRealm) -> {
                 joinLeave.apply {
                     isEnabled = false
@@ -104,6 +103,7 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
                     setColorFilter(Color.parseColor("#9fa0a4"), PorterDuff.Mode.SRC_IN)
                 }
             }
+
             !isMyTeam -> {
                 joinLeave.apply {
                     isEnabled = true
@@ -113,6 +113,16 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
                     clearColorFilter()
                 }
             }
+
+            RealmMyTeam.getTeamLeader(team._id, mRealm) == user?.id -> {
+                joinLeave.apply {
+                    contentDescription = "${context.getString(R.string.edit)} ${team.name}"
+                    visibility = View.VISIBLE
+                    setImageResource(R.drawable.ic_edit)
+                    clearColorFilter()
+                }
+            }
+
             else -> joinLeave.visibility = View.GONE
         }
     }
@@ -120,6 +130,8 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
     private fun handleJoinLeaveClick(isMyTeam: Boolean, team: RealmMyTeam, user: RealmUserModel?, position: Int) {
         if (isMyTeam) {
             if (RealmMyTeam.isTeamLeader(team.teamId, user?.id, mRealm)) {
+                teamListener?.onEditTeam(team)
+            } else {
                 AlertDialog.Builder(context).setMessage(R.string.confirm_exit)
                     .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
                         team.leave(user, mRealm)

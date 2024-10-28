@@ -15,7 +15,7 @@ class SharedPrefManager(context: Context) {
 
     private var savedUsers = "savedUsers"
     private var repliedNewsId = "repliedNewsId"
-    private var manualConfig = "manualConfig"
+    var manualConfig = "manualConfig"
     private var selectedTeamId = "selectedTeamId"
     var firstLaunch = "firstLaunch"
     private var teamName = "teamName"

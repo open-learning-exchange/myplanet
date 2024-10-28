@@ -11,7 +11,6 @@ import android.net.wifi.WifiManager
 import android.os.Build
 import android.provider.Settings
 import android.text.TextUtils
-import androidx.annotation.RequiresApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.*
 import org.ole.planet.myplanet.MainApplication.Companion.context
@@ -42,7 +41,6 @@ object NetworkUtils {
 
     private val networkCallback = NetworkCallback()
 
-    @RequiresApi(Build.VERSION_CODES.N)
     fun startListenNetworkState() {
         if (_currentNetwork.value.isListening) {
             return
@@ -109,7 +107,6 @@ object NetworkUtils {
         return wifiManager.isWifiEnabled
     }
 
-    @RequiresApi(Build.VERSION_CODES.M)
     @JvmStatic
     fun isWifiConnected(): Boolean {
         val network = connectivityManager.activeNetwork
@@ -128,7 +125,6 @@ object NetworkUtils {
         return mBluetoothAdapter != null && mBluetoothAdapter.isEnabled
     }
 
-    @RequiresApi(Build.VERSION_CODES.M)
     @JvmStatic
     fun getCurrentNetworkId(context: Context): Int {
         var ssid = -1
