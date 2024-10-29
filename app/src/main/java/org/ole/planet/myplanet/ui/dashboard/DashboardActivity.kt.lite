@@ -44,6 +44,7 @@ import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getLibraryLis
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.ActivityDashboardBinding
 import org.ole.planet.myplanet.databinding.CustomTabBinding
+import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmStepExam
@@ -56,6 +57,8 @@ import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.chat.ChatHistoryListFragment
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
+import org.ole.planet.myplanet.ui.courses.MyProgressFragment.Companion.fetchCourseData
+import org.ole.planet.myplanet.ui.courses.MyProgressFragment.Companion.getCourseProgress
 import org.ole.planet.myplanet.ui.dashboard.notification.NotificationsFragment
 import org.ole.planet.myplanet.ui.dashboard.notification.NotificationListener
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
@@ -265,24 +268,50 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             .equalTo("actionType", "ai research")
             .findAll().count()
 
+        val courseData = fetchCourseData(mRealm, user?.id)
+
+        val courseId = "029d3479cecb2036fa4f38908402ea5c"
+        val progress = getCourseProgress(courseData, courseId)
+
 //        if (currentMonth == Calendar.OCTOBER) {
 //            if (settings.getString("serverURL", "") == "https://${BuildConfig.PLANET_GUATEMALA_URL}") {
                 val today = LocalDate.now()
                 val endOfMonth = today.withDayOfMonth(today.lengthOfMonth())
                 val remainingDays = ChronoUnit.DAYS.between(today, endOfMonth).toInt()
+                val course = mRealm.where(RealmMyCourse::class.java)
+                    .equalTo("courseId", courseId)
+                    .findFirst()
+                val courseName = course?.courseTitle
 
-                challengeDialog(remainingDays, loginCount, resourceOpenCount, syncCount, voiceCount, aiResearchCount)
-//            }
+                if (progress != null) {
+                    val max = progress.get("max").asInt
+                    val current = progress.get("current").asInt
+                    val courseStatus = if (current == max) {
+                        "$courseName completed!"
+                    } else {
+                        "$courseName ($current of $max done)"
+                    }
+
+                    val today = LocalDate.now()
+                    val endOfMonth = today.withDayOfMonth(today.lengthOfMonth())
+                    val remainingDays = ChronoUnit.DAYS.between(today, endOfMonth).toInt()
+
+                    challengeDialog(remainingDays, loginCount, resourceOpenCount, syncCount, voiceCount, aiResearchCount, courseStatus)
+                } else {
+                    challengeDialog(remainingDays, loginCount, resourceOpenCount, syncCount, voiceCount, aiResearchCount, "$courseName not started")
+                }
+            }
 //        }
-    }
+//    }
 
-    private fun challengeDialog(remainingDays: Int, loginCount: Int, resourceOpenCount: Int, syncCount: Int, voiceCount: Int, aiResearchCount: Int) {
+    private fun challengeDialog(remainingDays: Int, loginCount: Int, resourceOpenCount: Int, syncCount: Int, voiceCount: Int, aiResearchCount: Int, courseStatus: String) {
         var remainingLogins = if (4 - loginCount <= 0 ) {0} else {4 - loginCount}
         val loginTaskDone = if (loginCount >= 4) "✅" else "[ ]"
         val resourceTaskDone = if (resourceOpenCount >= 1) "✅" else "[ ]"
         val voiceTaskDone = if (voiceCount >= 1) "✅" else "[ ]"
         val syncTaskDone = if (syncCount >= 1) "✅" else "[ ]"
         val researchDone = if (aiResearchCount >= 1) "✅" else "[ ]"
+        val courseTaskDone = if (courseStatus.contains("completed", ignoreCase = true)) "✅ $courseStatus" else "[ ] $courseStatus"
 
         val markdownContent = """
             ### November challenge: $remainingDays days remaining
@@ -290,6 +319,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             - $loginTaskDone Login 4 times ($remainingLogins logins remaining)
             - $resourceTaskDone Open 1 resource
             - $voiceTaskDone Share a voice message
+            - $courseTaskDone
             - $researchDone AI Research
             - $syncTaskDone Sync
 
