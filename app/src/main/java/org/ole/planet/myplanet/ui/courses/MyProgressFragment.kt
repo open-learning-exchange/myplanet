@@ -37,58 +37,79 @@ class MyProgressFragment : Fragment() {
     private fun initializeData() {
         val realm = DatabaseService(requireActivity()).realmInstance
         val user = UserProfileDbHandler(requireActivity()).userModel
-        val mycourses = RealmMyCourse.getMyCourseByUserId(
-            user?.id, realm.where(RealmMyCourse::class.java).findAll()
-        )
-        val arr = JsonArray()
-        val courseProgress = RealmCourseProgress.getCourseProgress(realm, user?.id)
-        mycourses.forEach { it ->
-            val obj = JsonObject()
-            obj.addProperty("courseName", it.courseTitle)
-            obj.addProperty("courseId", it.courseId)
-            obj.add("progress", courseProgress[it.id])
-            val submissions = it.courseId?.let { it1 ->
-                realm.where(RealmSubmission::class.java)
-                    .equalTo("userId", user?.id)
-                    .contains("parentId", it1)
-                    .equalTo("type", "exam")
-                    .findAll()
-            }
-            val exams = realm.where(RealmStepExam::class.java)
-                .equalTo("courseId", it.courseId)
-                .findAll()
-            val examIds: List<String> = exams.map { it.id as String }
-            if (submissions != null) {
-                submissionMap(submissions, realm, examIds, obj)
-            }
-            arr.add(obj)
-        }
+        val courseData = fetchCourseData(realm, user?.id)
         fragmentMyProgressBinding.rvMyprogress.layoutManager = LinearLayoutManager(requireActivity())
-        fragmentMyProgressBinding.rvMyprogress.adapter = AdapterMyProgress(requireActivity(), arr)
+        fragmentMyProgressBinding.rvMyprogress.adapter = AdapterMyProgress(requireActivity(), courseData)
     }
 
-    private fun submissionMap(submissions: RealmResults<RealmSubmission>, realm: Realm, examIds: List<String>, obj: JsonObject) {
-        var totalMistakes = 0
-        submissions.forEach {
-            val answers = realm.where(RealmAnswer::class.java)
-                .equalTo("submissionId", it.id)
-                .findAll()
-            val mistakesMap = HashMap<String, Int>()
-            answers.forEach { r ->
-                val question = realm.where(RealmExamQuestion::class.java)
-                    .equalTo("id", r.questionId)
-                    .findFirst()
-                if (examIds.contains(question?.examId)) {
-                    totalMistakes += r.mistakes
-                    if (mistakesMap.containsKey(question?.examId)) {
-                        mistakesMap["${examIds.indexOf(question?.examId)}"] = mistakesMap[question?.examId]!!.plus(r.mistakes)
-                    } else {
-                        mistakesMap["${examIds.indexOf(question?.examId)}"] = r.mistakes
+    companion object {
+        fun fetchCourseData(realm: Realm, userId: String?): JsonArray {
+            val mycourses = RealmMyCourse.getMyCourseByUserId(
+                userId,
+                realm.where(RealmMyCourse::class.java).findAll()
+            )
+            val arr = JsonArray()
+            val courseProgress = RealmCourseProgress.getCourseProgress(realm, userId)
+
+            mycourses.forEach { course ->
+                val obj = JsonObject()
+                obj.addProperty("courseName", course.courseTitle)
+                obj.addProperty("courseId", course.courseId)
+                obj.add("progress", courseProgress[course.id])
+
+                val submissions = course.courseId?.let { courseId ->
+                    realm.where(RealmSubmission::class.java)
+                        .equalTo("userId", userId)
+                        .contains("parentId", courseId)
+                        .equalTo("type", "exam")
+                        .findAll()
+                }
+                val exams = realm.where(RealmStepExam::class.java)
+                    .equalTo("courseId", course.courseId)
+                    .findAll()
+                val examIds: List<String> = exams.map { it.id as String }
+
+                if (submissions != null) {
+                    submissionMap(submissions, realm, examIds, obj)
+                }
+                arr.add(obj)
+            }
+            return arr
+        }
+
+        private fun submissionMap(submissions: RealmResults<RealmSubmission>, realm: Realm, examIds: List<String>, obj: JsonObject) {
+            var totalMistakes = 0
+            submissions.forEach {
+                val answers = realm.where(RealmAnswer::class.java)
+                    .equalTo("submissionId", it.id)
+                    .findAll()
+                val mistakesMap = HashMap<String, Int>()
+                answers.forEach { r ->
+                    val question = realm.where(RealmExamQuestion::class.java)
+                        .equalTo("id", r.questionId)
+                        .findFirst()
+                    if (examIds.contains(question?.examId)) {
+                        totalMistakes += r.mistakes
+                        if (mistakesMap.containsKey(question?.examId)) {
+                            mistakesMap["${examIds.indexOf(question?.examId)}"] = mistakesMap[question?.examId]!!.plus(r.mistakes)
+                        } else {
+                            mistakesMap["${examIds.indexOf(question?.examId)}"] = r.mistakes
+                        }
                     }
                 }
+                obj.add("stepMistake", Gson().fromJson(Gson().toJson(mistakesMap), JsonObject::class.java))
+                obj.addProperty("mistakes", totalMistakes)
             }
-            obj.add("stepMistake", Gson().fromJson(Gson().toJson(mistakesMap), JsonObject::class.java))
-            obj.addProperty("mistakes", totalMistakes)
+        }
+
+        fun getCourseProgress(courseData: JsonArray, courseId: String): JsonObject? {
+            courseData.forEach { element ->
+                val course = element.asJsonObject
+                if (course.get("courseId").asString == courseId) {
+                    return course.getAsJsonObject("progress")
+                }
+            }
+            return null
         }
     }
 }
