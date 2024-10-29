@@ -319,7 +319,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             - $loginTaskDone Login 4 times ($remainingLogins logins remaining)
             - $resourceTaskDone Open 1 resource
             - $voiceTaskDone Share a voice message
-            - $courseTaskDone 
+            - $courseTaskDone
             - $researchDone AI Research
             - $syncTaskDone Sync
 
