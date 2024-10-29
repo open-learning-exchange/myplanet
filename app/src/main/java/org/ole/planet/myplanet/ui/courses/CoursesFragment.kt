@@ -300,7 +300,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 if (userModel?.id?.startsWith("guest") == true) {
                     DialogUtils.guestDialog(requireContext())
                 } else {
-                    redirectToMyCourses();
+                    redirectToMyCourses()
                 }
             }
             .setNegativeButton(R.string.ok) { dialog: DialogInterface, _: Int ->
@@ -313,7 +313,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     fun redirectToMyCourses() {
-        val fragment = CoursesFragment.newInstance(isMyCourseLib = true)
+        val fragment = newInstance(isMyCourseLib = true)
 
         parentFragmentManager.beginTransaction()
             .replace(R.id.fragment_container, fragment)
