@@ -45,7 +45,6 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintWidth_percent="0.2" />
-
             <TextView
                 android:id="@+id/created"
                 android:layout_width="0dp"
@@ -57,7 +56,6 @@
                 app:layout_constraintStart_toEndOf="@id/name"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintWidth_percent="0.2" />
-
             <TextView
                 android:id="@+id/type"
                 android:layout_width="0dp"
@@ -71,7 +69,6 @@
                 app:layout_constraintStart_toEndOf="@id/created"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintWidth_percent="0.2" />
-
             <TextView
                 android:id="@+id/no_of_visits"
                 android:layout_width="0dp"
@@ -85,7 +82,6 @@
                 app:layout_constraintStart_toEndOf="@id/type"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintWidth_percent="0.2" />
-
             <TextView
                 android:id="@+id/ltButtons"
                 android:layout_width="0dp"
@@ -115,7 +111,6 @@
         android:layout_gravity="center"
         android:textColor="@color/daynight_textColor"
         android:visibility="gone" />
-
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/add_team"
         android:layout_width="wrap_content"
