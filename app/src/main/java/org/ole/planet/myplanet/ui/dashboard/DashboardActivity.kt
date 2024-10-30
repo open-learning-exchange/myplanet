@@ -287,9 +287,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     val max = progress.get("max").asInt
                     val current = progress.get("current").asInt
                     val courseStatus = if (current == max) {
-                        "$courseName completed!"
+                        "$courseName terminado!"
                     } else {
-                        "$courseName ($current of $max done)"
+                        "Ingresa al curso $courseName completalo ($current of $max done)"
                     }
 
                     val today = LocalDate.now()
@@ -311,14 +311,13 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         val voiceTaskDone = if (voiceCount >= 1) "✅" else "[ ]"
         val syncTaskDone = if (syncCount >= 1) "✅" else "[ ]"
         val researchDone = if (aiResearchCount >= 1) "✅" else "[ ]"
-        val courseTaskDone = if (courseStatus.contains("completed", ignoreCase = true)) "✅ $courseStatus" else "[ ] $courseStatus"
+        val courseTaskDone = if (courseStatus.contains("terminado", ignoreCase = true)) "✅ $courseStatus" else "[ ] $courseStatus"
 
-        val markdownContent = """
-            ### <ins>November challenge: $remainingDays days remaining</ins> <br/>
-            ![issues challenge](file:///android_asset/images/november-challenge.png) <br/> <br/>
-            $courseTaskDone <br/>
-            $voiceTaskDone Share a voice message <br/>
-            $syncTaskDone Sync
+        val markdownContent = """           
+            ![issues challenge](file:///android_asset/images/november_challenge.jpeg) <br/> <br/>
+            ### $courseTaskDone <br/>
+            ### $voiceTaskDone comparte tus opniniones en Nuestras Voces <br/>
+            ### $syncTaskDone Recuerda sincronizar la aplicación Movil.
             """.trimIndent()
         MarkdownDialog.newInstance(markdownContent)
             .show(supportFragmentManager, "markdown_dialog")
