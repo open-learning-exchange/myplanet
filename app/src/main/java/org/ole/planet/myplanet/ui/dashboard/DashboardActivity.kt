@@ -313,7 +313,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         val researchDone = if (aiResearchCount >= 1) "✅" else "[ ]"
         val courseTaskDone = if (courseStatus.contains("terminado", ignoreCase = true)) "✅ $courseStatus" else "[ ] $courseStatus"
 
-        val markdownContent = """           
+        val markdownContent = """
             ![issues challenge](file:///android_asset/images/november_challenge.jpeg) <br/>
             ### $courseTaskDone <br/>
             ### $voiceTaskDone comparte tus opniniones en Nuestras Voces <br/>
