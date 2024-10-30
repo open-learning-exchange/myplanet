@@ -521,7 +521,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 .build()
             val headerBackground = header.headerBackgroundView
             headerBackground.setPadding(
-                paddingHorizontalDp, paddingVerticalDp + statusBarHeight + 15,
+                paddingHorizontalDp, paddingVerticalDp + statusBarHeight + 25,
                 paddingHorizontalDp, paddingVerticalDp + 50
             )
 
