@@ -314,15 +314,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         val courseTaskDone = if (courseStatus.contains("completed", ignoreCase = true)) "✅ $courseStatus" else "[ ] $courseStatus"
 
         val markdownContent = """
-            ### November challenge: $remainingDays days remaining
-
-            - $loginTaskDone Login 4 times ($remainingLogins logins remaining)
-            - $resourceTaskDone Open 1 resource
-            - $voiceTaskDone Share a voice message
-            - $courseTaskDone
-            - $researchDone AI Research
-            - $syncTaskDone Sync
-
+            ### <ins>November challenge: $remainingDays days remaining</ins> <br/>
+            ![issues challenge](file:///android_asset/images/november-challenge.png) <br/> <br/>
+            $courseTaskDone <br/>
+            $voiceTaskDone Share a voice message <br/>
+            $syncTaskDone Sync
             """.trimIndent()
         MarkdownDialog.newInstance(markdownContent)
             .show(supportFragmentManager, "markdown_dialog")
