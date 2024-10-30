@@ -37,6 +37,7 @@ import io.realm.Case
 import io.realm.RealmChangeListener
 import io.realm.RealmObject
 import io.realm.RealmResults
+import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 //import org.ole.planet.myplanet.base.BaseContainerFragment
@@ -81,8 +82,6 @@ import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.Utilities.toast
 import java.time.LocalDate
-import java.time.temporal.ChronoUnit
-import java.util.Calendar
 import java.util.Date
 import java.util.UUID
 import kotlin.math.ceil
@@ -189,6 +188,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 R.id.action_sync -> {
                     isServerReachable(Utilities.getUrl())
                     startUpload("dashboard")
+
                     logSyncInSharedPrefs()
                 }
                 R.id.action_feedback -> {
@@ -240,9 +240,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
         })
 
-        val calendar = Calendar.getInstance()
-        val currentMonth = calendar.get(Calendar.MONTH)
-
         val loginCount = mRealm.where(RealmUserChallengeActions::class.java)
             .equalTo("userId", user?.id)
             .equalTo("actionType", "login")
@@ -270,14 +267,22 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
         val courseData = fetchCourseData(mRealm, user?.id)
 
-        val courseId = "029d3479cecb2036fa4f38908402ea5c"
+        val courseId = "9517e3b45a5bb63e69bb8f269216974d"
         val progress = getCourseProgress(courseData, courseId)
 
-//        if (currentMonth == Calendar.OCTOBER) {
-//            if (settings.getString("serverURL", "") == "https://${BuildConfig.PLANET_GUATEMALA_URL}") {
-                val today = LocalDate.now()
-                val endOfMonth = today.withDayOfMonth(today.lengthOfMonth())
-                val remainingDays = ChronoUnit.DAYS.between(today, endOfMonth).toInt()
+        val validUrls = listOf(
+            "https://${BuildConfig.PLANET_GUATEMALA_URL}",
+            "https://${BuildConfig.PLANET_XELA_URL}",
+            "https://${BuildConfig.PLANET_URIUR_URL}",
+            "https://${BuildConfig.PLANET_SANPABLO_URL}",
+            "https://${BuildConfig.PLANET_EMBAKASI_URL}",
+            "https://${BuildConfig.PLANET_VI_URL}"
+        )
+
+        val today = LocalDate.now()
+        val endDate = LocalDate.of(today.year, 12, 1)
+        if (today.isBefore(endDate)) {
+            if (settings.getString("serverURL", "") in validUrls) {
                 val course = mRealm.where(RealmMyCourse::class.java)
                     .equalTo("courseId", courseId)
                     .findFirst()
@@ -292,32 +297,24 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                         "Ingresa al curso $courseName completalo ($current de $max hecho)"
                     }
 
-                    val today = LocalDate.now()
-                    val endOfMonth = today.withDayOfMonth(today.lengthOfMonth())
-                    val remainingDays = ChronoUnit.DAYS.between(today, endOfMonth).toInt()
-
-                    challengeDialog(remainingDays, loginCount, resourceOpenCount, syncCount, voiceCount, aiResearchCount, courseStatus)
+                    challengeDialog(syncCount, voiceCount, courseStatus)
                 } else {
-                    challengeDialog(remainingDays, loginCount, resourceOpenCount, syncCount, voiceCount, aiResearchCount, "$courseName not started")
+                    challengeDialog(syncCount, voiceCount, "$courseName no iniciado")
                 }
             }
-//        }
-//    }
+        }
+    }
 
-    private fun challengeDialog(remainingDays: Int, loginCount: Int, resourceOpenCount: Int, syncCount: Int, voiceCount: Int, aiResearchCount: Int, courseStatus: String) {
-        var remainingLogins = if (4 - loginCount <= 0 ) {0} else {4 - loginCount}
-        val loginTaskDone = if (loginCount >= 4) "✅" else "[ ]"
-        val resourceTaskDone = if (resourceOpenCount >= 1) "✅" else "[ ]"
+    fun challengeDialog(syncCount: Int, voiceCount: Int, courseStatus: String) {
         val voiceTaskDone = if (voiceCount >= 1) "✅" else "[ ]"
         val syncTaskDone = if (syncCount >= 1 && voiceCount >= 1 && courseStatus.contains("terminado", ignoreCase = true)) "✅" else "[ ]"
-        val researchDone = if (aiResearchCount >= 1) "✅" else "[ ]"
         val courseTaskDone = if (courseStatus.contains("terminado", ignoreCase = true)) "✅ $courseStatus" else "[ ] $courseStatus"
 
         val markdownContent = """
-            ![issues challenge](file:///android_asset/images/november_challenge.jpeg) <br/>
+            ![issues challenge](file:///android_asset/images/novemberr_challenge.jpeg) <br/>
             ### $courseTaskDone <br/>
-            ### $voiceTaskDone comparte tus opniniones en Nuestras Voces <br/>
-            ### $syncTaskDone Recuerda sincronizar la aplicación Movil.
+            ### $voiceTaskDone Comparte tu opinión en Nuestras Voces. <br/>
+            ### $syncTaskDone Recuerda sincronizar la aplicacion movil.
             """.trimIndent()
         MarkdownDialog.newInstance(markdownContent)
             .show(supportFragmentManager, "markdown_dialog")
