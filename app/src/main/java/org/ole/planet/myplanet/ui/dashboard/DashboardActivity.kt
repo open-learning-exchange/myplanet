@@ -309,12 +309,12 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         val loginTaskDone = if (loginCount >= 4) "✅" else "[ ]"
         val resourceTaskDone = if (resourceOpenCount >= 1) "✅" else "[ ]"
         val voiceTaskDone = if (voiceCount >= 1) "✅" else "[ ]"
-        val syncTaskDone = if (syncCount >= 1) "✅" else "[ ]"
+        val syncTaskDone = if (syncCount >= 1 && voiceCount >= 1 && courseStatus.contains("terminado", ignoreCase = true)) "✅" else "[ ]"
         val researchDone = if (aiResearchCount >= 1) "✅" else "[ ]"
         val courseTaskDone = if (courseStatus.contains("terminado", ignoreCase = true)) "✅ $courseStatus" else "[ ] $courseStatus"
 
         val markdownContent = """           
-            ![issues challenge](file:///android_asset/images/november_challenge.jpeg) <br/> <br/>
+            ![issues challenge](file:///android_asset/images/november_challenge.jpeg) <br/>
             ### $courseTaskDone <br/>
             ### $voiceTaskDone comparte tus opniniones en Nuestras Voces <br/>
             ### $syncTaskDone Recuerda sincronizar la aplicación Movil.
