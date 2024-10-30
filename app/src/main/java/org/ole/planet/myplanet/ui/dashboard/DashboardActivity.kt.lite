@@ -289,7 +289,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     val courseStatus = if (current == max) {
                         "$courseName terminado!"
                     } else {
-                        "Ingresa al curso $courseName completalo ($current of $max done)"
+                        "Ingresa al curso $courseName completalo ($current de $max hecho)"
                     }
 
                     val today = LocalDate.now()

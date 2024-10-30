@@ -606,7 +606,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 editor.putString("serverProtocol", protocol).apply()
                 if (serverCheck) {
                     performSync(dialog)
-                } }, { _, _ ->
+                }}, { _, _ ->
                     clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server), false) {
                         serverAddressAdapter?.revertSelection()
                     }
