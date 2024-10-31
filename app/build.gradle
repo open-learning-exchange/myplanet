@@ -5,7 +5,7 @@ apply plugin: 'kotlinx-serialization'
 apply plugin: 'dagger.hilt.android.plugin'
 apply plugin: 'realm-android'
 android {
-    compileSdk 34
+    compileSdk 35
     defaultConfig {
         applicationId "org.ole.planet.myplanet"
         minSdkVersion 26
