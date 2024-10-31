@@ -4,7 +4,6 @@ import android.os.Bundle
 import android.text.Spannable
 import android.text.method.LinkMovementMethod
 import android.text.style.URLSpan
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -211,7 +210,6 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                     val relativePath = matcher.group(1)
                     val modifiedPath = relativePath?.replaceFirst("resources/".toRegex(), "")
                     val fullUrl = baseUrl + modifiedPath
-                    Log.d("Markdown", "fullUrl: $fullUrl")
                     matcher.appendReplacement(result, "<img src=$fullUrl width=600 height=350/>")
                 }
             }

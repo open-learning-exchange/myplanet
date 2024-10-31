@@ -231,6 +231,8 @@ dependencies {
     implementation "io.noties.markwon:html:$markwon_version"
     implementation "io.noties.markwon:ext-tables:$markwon_version"
     implementation(platform("org.jetbrains.kotlin:kotlin-bom:2.0.21"))
+
+    implementation 'com.github.chrisbanes:PhotoView:2.3.0'
 }
 realm {
     syncEnabled = true
