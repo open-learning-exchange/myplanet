@@ -182,7 +182,6 @@
     <string name="my_survey">استطلاعي</string>
 
     <string-array name="level">
-        <item></item>
         <item>مبتدئ</item>
         <item>متوسط</item>
         <item>متقدم</item>

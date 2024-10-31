@@ -235,9 +235,9 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         adapterTeamList.setTeamListener(this@TeamFragment)
         requireView().findViewById<View>(R.id.type).visibility =
             if (type == null) {
-                View.VISIBLE
-            } else {
                 View.GONE
+            } else {
+                View.VISIBLE
             }
         fragmentTeamBinding.rvTeamList.adapter = adapterTeamList
         listContentDescription(conditionApplied)
