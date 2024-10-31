@@ -592,16 +592,26 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
             val paddingVerticalDp = (paddingVerticalPx / density).toInt()
             val paddingHorizontalDp = (paddingHorizontalPx / density).toInt()
+            val resourceId = resources.getIdentifier("status_bar_height", "dimen", "android")
+            val statusBarHeight = if (resourceId > 0) {
+                resources.getDimensionPixelSize(resourceId)
+            } else {
+                ceil(25 * density).toInt()
+            }
 
             val header = AccountHeaderBuilder()
                 .withActivity(this@DashboardActivity)
                 .withTextColor(ContextCompat.getColor(this, R.color.bg_white))
                 .withHeaderBackground(R.drawable.ole_logo)
                 .withDividerBelowHeader(false)
+                .withTranslucentStatusBar(false)
+                .withHeightDp(paddingVerticalDp + 20 * 2 + (statusBarHeight / density).toInt())
                 .build()
-
             val headerBackground = header.headerBackgroundView
-            headerBackground.setPadding(paddingHorizontalDp, paddingVerticalDp, paddingHorizontalDp, paddingVerticalDp)
+            headerBackground.setPadding(
+                paddingHorizontalDp, paddingVerticalDp + statusBarHeight + 25,
+                paddingHorizontalDp, paddingVerticalDp + 50
+            )
 
             val currentNightMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
             if (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_NO ||
@@ -615,10 +625,18 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
 
     private fun createDrawer() {
-        val statusBarHeight = ceil(25 * context.resources.displayMetrics.density).toInt()
-        val dimenHolder = DimenHolder.fromDp(160 + statusBarHeight)
+        val resourceId = resources.getIdentifier("status_bar_height", "dimen", "android")
+        val statusBarHeight = if (resourceId > 0) {
+            resources.getDimensionPixelSize(resourceId)
+        } else {
+            ceil(25 * resources.displayMetrics.density).toInt()
+        }
+
+        val headerHeight = 160 + (statusBarHeight / resources.displayMetrics.density).toInt()
+        val dimenHolder = DimenHolder.fromDp(headerHeight)
+
         result = headerResult?.let {
-            DrawerBuilder().withActivity(this).withFullscreen(true)
+            DrawerBuilder().withActivity(this).withFullscreen(false).withTranslucentStatusBar(false)
                 .withSliderBackgroundColor(ContextCompat.getColor(this, R.color.colorPrimary))
                 .withToolbar(activityDashboardBinding.myToolbar)
                 .withAccountHeader(it).withHeaderHeight(dimenHolder)
