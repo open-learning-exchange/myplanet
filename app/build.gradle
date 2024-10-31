@@ -10,8 +10,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdkVersion 26
         targetSdkVersion 34
-        versionCode 2074
-        versionName "0.20.74"
+        versionCode 2075
+        versionName "0.20.75"
         ndkVersion '21.3.6528147'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -231,6 +231,8 @@ dependencies {
     implementation "io.noties.markwon:html:$markwon_version"
     implementation "io.noties.markwon:ext-tables:$markwon_version"
     implementation(platform("org.jetbrains.kotlin:kotlin-bom:2.0.21"))
+
+    implementation 'com.github.chrisbanes:PhotoView:2.3.0'
 }
 realm {
     syncEnabled = true
