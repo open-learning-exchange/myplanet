@@ -37,6 +37,7 @@ import io.realm.Case
 import io.realm.RealmChangeListener
 import io.realm.RealmObject
 import io.realm.RealmResults
+import io.realm.Sort
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
@@ -296,28 +297,42 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     } else {
                         "Ingresa al curso $courseName completalo ($current de $max hecho)"
                     }
-
-                    challengeDialog(syncCount, voiceCount, courseStatus)
+                    challengeDialog(voiceCount, courseStatus)
                 } else {
-                    challengeDialog(syncCount, voiceCount, "$courseName no iniciado")
+                    challengeDialog(voiceCount, "$courseName no iniciado")
                 }
             }
         }
     }
 
-    fun challengeDialog(syncCount: Int, voiceCount: Int, courseStatus: String) {
+    fun challengeDialog(voiceCount: Int, courseStatus: String) {
         val voiceTaskDone = if (voiceCount >= 1) "✅" else "[ ]"
-        val syncTaskDone = if (syncCount >= 1 && voiceCount >= 1 && courseStatus.contains("terminado", ignoreCase = true)) "✅" else "[ ]"
+        val prereqsMet = courseStatus.contains("terminado", ignoreCase = true) && voiceCount >= 1
+        val syncTaskDone = if (prereqsMet) {
+            val lastPrereqAction = mRealm.where(RealmUserChallengeActions::class.java)
+                .equalTo("userId", user?.id)
+                .`in`("actionType", arrayOf("voice", "courseComplete"))
+                .sort("time", Sort.DESCENDING)
+                .findFirst()
+                ?.time ?: 0
+
+            val hasValidSync = mRealm.where(RealmUserChallengeActions::class.java)
+                .equalTo("userId", user?.id)
+                .equalTo("actionType", "sync")
+                .greaterThan("time", lastPrereqAction)
+                .count() > 0
+
+            if (hasValidSync) "✅" else "[ ]"
+        } else "[ ]"
         val courseTaskDone = if (courseStatus.contains("terminado", ignoreCase = true)) "✅ $courseStatus" else "[ ] $courseStatus"
 
         val markdownContent = """
-            ![issues challenge](file:///android_asset/images/novemberr_challenge.jpeg) <br/>
+            ![issues challenge](file:///android_asset/images/november_challenge.jpeg) <br/>
             ### $courseTaskDone <br/>
             ### $voiceTaskDone Comparte tu opinión en Nuestras Voces. <br/>
             ### $syncTaskDone Recuerda sincronizar la aplicacion movil.
             """.trimIndent()
-        MarkdownDialog.newInstance(markdownContent)
-            .show(supportFragmentManager, "markdown_dialog")
+        MarkdownDialog.newInstance(markdownContent).show(supportFragmentManager, "markdown_dialog")
     }
 
     private fun setupRealmListeners() {
