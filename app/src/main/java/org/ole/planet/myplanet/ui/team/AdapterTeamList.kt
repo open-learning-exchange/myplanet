@@ -50,7 +50,7 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
         with(holder.binding) {
             created.text = TimeUtils.getFormatedDate(team.createdDate)
             type.text = team.teamType
-            type.visibility = if (team.teamType == null) View.VISIBLE else View.GONE
+            type.visibility = if (team.teamType == null) View.GONE else View.VISIBLE
             name.text = team.name
             noOfVisits.text = context.getString(R.string.number_placeholder, RealmTeamLog.getVisitByTeam(mRealm, team._id))
 

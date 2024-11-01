@@ -118,7 +118,7 @@ class Service(private val context: Context) {
                             val responses: String?
                             try {
                                 responses = Gson().fromJson(response.body()?.string(), String::class.java)
-                                if (responses.isEmpty()) {
+                                if (responses == null || responses.isEmpty()) {
                                     callback.onError("Planet up to date", false)
                                     return
                                 }
@@ -154,7 +154,6 @@ class Service(private val context: Context) {
                                 callback.onError("New apk version required  but not found on server - Contact admin", false)
                             }
                         }
-
                         override fun onFailure(call: Call<ResponseBody>, t: Throwable) {}
                     })
                 } else {
