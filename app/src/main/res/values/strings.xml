@@ -79,7 +79,7 @@
     <string name="published_by">Published By:</string>
     <string name="author">Author:</string>
     <string name="language_with_colon">Language:</string>
-    <string name="subject">Subject/s:</string>
+    <string name="subject">Subject/s :</string>
     <string name="license">License:</string>
     <string name="type">Type:</string>
     <string name="resource_colon">Resource:</string>
@@ -182,7 +182,6 @@
     <string name="my_survey">mySurvey</string>
 
     <string-array name="level">
-        <item></item>
         <item>Beginner</item>
         <item>Intermediate</item>
         <item>Advanced</item>
@@ -567,7 +566,7 @@
     <string name="attached_resources">Attached resources:</string>
     <string name="edit">Edit</string>
     <string name="my_achievements">My Achievements</string>
-    <string name="open_resource">Open Resource</string>
+    <string name="open_resource">open resource</string>
     <string name="zero_total">0 total</string>
     <string name="average">Average</string>
     <string name="zero_point_zero">0.0</string>
@@ -579,8 +578,8 @@
     <string name="method">Method:</string>
     <string name="number_of_exams">Number of exams:</string>
     <string name="description_colon">Description:</string>
-    <string name="download_resources">Download Resources</string>
-    <string name="take_test">Take Test [%d]</string>
+    <string name="download_resources">download Resources</string>
+    <string name="take_test">take test [%d]</string>
     <string name="search">search</string>
     <string name="for_ambulance">For Ambulance</string>
     <string name="for_police">For Police</string>
@@ -640,10 +639,11 @@
     <string name="please_select_link_item_from_list">Please select link item from list</string>
     <string name="title_is_required">Title is required</string>
     <string name="no_data_available">No data available</string>
-    <string name="are_you_sure_you_want_to_delete_these_courses">Are you sure you want to delete these courses?</string>
-    <string name="are_you_sure_you_want_to_delete_this_course">Are you sure you want to delete this course?</string>
+    <string name="are_you_sure_you_want_to_leave_these_courses">Are you sure you want to leave these courses?</string>
+    <string name="are_you_sure_you_want_to_leave_this_course">Are you sure you want to leave this course?</string>
     <string name="success_you_have_added_the_following_courses">Success! You have added the following courses:\n\n</string>
     <string name="return_to_the_home_tab_to_access_mycourses">\n\n Return to the Home tab to access myCourses.\n</string>
+    <string name="go_to_mycourses">Go To MyCourses</string>
     <string name="and">"And "</string>
     <string name="more_course_s">" more course(s)...\n"</string>
     <string name="retake_test">Retake Test [%d]</string>
@@ -1090,7 +1090,7 @@
     <string name="tag_selected">Selected: %s</string>
     <string name="resources_size">Resources [%d]</string>
     <string name="user_role">- %s</string>
-    <string name="user_name">%s (%d)</string>
+    <string name="user_name">%1$s (%2$s)</string>
     <string name="visit_count">%1$s (%2$d %3$s)</string>
     <string name="two_strings">%1$s %2$s</string>
     <string name="three_strings">%1$s %2$s %3$s</string>
@@ -1176,5 +1176,27 @@
     <string name="material_calendar_negative_button">Cancel</string>
     <string name="switching_off_manual_configuration_to_clear_data">switching off manual configuration will clear all data, are you sure you want to continue?</string>
     <string name="switching_on_manual_configuration_to_clear_data">switching on manual configuration will clear all data, are you sure you want to continue?</string>
+    <string name="chart_description">Login Activity Chart</string>
+    <string name="chart_label">No. of login</string>
+    <string name="copied_to_clipboard">copied to clipboard</string>
+    <string name="mark_all_as_read">Mark all as read</string>
+    <string name="mark_as_read">Mark as read</string>
+    <string name="our_voices">our voices</string>
+    <string name="no_voices_available">no voices available</string>
+    <string name="new_voice">new voice</string>
+    <string name="hide_new_voice">hide new voice</string>
+    <string name="summary_of_achievemnets">Summary of achievements - Briefly summarize your achievement and add related materials below</string>
+    <string name="my_goals_description">My Goals - What are your goals for the next 10 years?</string>
+    <string name="add_materials">Add any materials demonstrating your achievements below</string>
+    <string name="my_purpose_description">My Purpose - What are your educational and professional ambitions?</string>
+    <string name="my_purpose">My Purpose</string>
+    <string name="my_goals">My Goals</string>
+    <string name="community_name">Community Name</string>
+    <string name="last_login">Last Login : </string>
+    <string name="total_visits_overall">Total Visits : </string>
+    <string name="most_opened_resource">Most Opened Resource : </string>
+    <string name="number_of_resources_opened">Number of Resources Opened : </string>
+    <string name="number_of_visits">Number of Visits</string>
+    <string name="kindly_enter_reply_message">Kindly enter reply message</string>
 
 </resources>

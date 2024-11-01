@@ -1,57 +1,49 @@
 package org.ole.planet.myplanet.ui.dashboard
 
-import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Case
 import io.realm.Realm
-import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.*
-import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.base.BaseRecyclerParentFragment
 import org.ole.planet.myplanet.databinding.FragmentHomeBellBinding
 import org.ole.planet.myplanet.model.RealmCertification
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getCourseByCourseId
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getCourseSteps
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
-import org.ole.planet.myplanet.ui.courses.MyProgressFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
 import org.ole.planet.myplanet.ui.mylife.LifeFragment
-import org.ole.planet.myplanet.ui.resources.AddResourceFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
-import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.ui.team.TeamFragment
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
-import org.ole.planet.myplanet.utilities.NetworkUtils.coroutineScope
-import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utilities.TimeUtils
 import java.util.Date
 
 class BellDashboardFragment : BaseDashboardFragment() {
     private lateinit var fragmentHomeBellBinding: FragmentHomeBellBinding
+    private var networkStatusJob: Job? = null
+    private val viewModel: BellDashboardViewModel by viewModels()
     var user: RealmUserModel? = null
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentHomeBellBinding = FragmentHomeBellBinding.inflate(inflater, container, false)
         user = UserProfileDbHandler(requireContext()).userModel
@@ -62,47 +54,68 @@ class BellDashboardFragment : BaseDashboardFragment() {
         return fragmentHomeBellBinding.root
     }
 
-    @RequiresApi(Build.VERSION_CODES.M)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         fragmentHomeBellBinding.cardProfileBell.txtDate.text = TimeUtils.formatDate(Date().time, "")
         fragmentHomeBellBinding.cardProfileBell.txtCommunityName.text = model?.planetCode
-        isNetworkConnectedFlow.onEach { isConnected ->
-            if (isConnected) {
-                fragmentHomeBellBinding.cardProfileBell.imageView.borderColor = ContextCompat.getColor(requireActivity(), R.color.md_yellow_600)
+        setupNetworkStatusMonitoring()
+        (activity as DashboardActivity?)?.supportActionBar?.hide()
+        showBadges()
+        checkPendingSurveys()
+    }
+
+    private fun setupNetworkStatusMonitoring() {
+        networkStatusJob?.cancel()
+        networkStatusJob = viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.networkStatus.collect { status ->
+                    updateNetworkIndicator(status)
+                }
+            }
+        }
+    }
+
+    private suspend fun updateNetworkIndicator(status: NetworkStatus) {
+        if (!isAdded) return
+        val context = context ?: return
+
+        when (status) {
+            is NetworkStatus.Disconnected -> {
+                fragmentHomeBellBinding.cardProfileBell.imageView.borderColor =
+                    ContextCompat.getColor(context, R.color.md_red_700)
+            }
+            is NetworkStatus.Connecting -> {
+                fragmentHomeBellBinding.cardProfileBell.imageView.borderColor =
+                    ContextCompat.getColor(context, R.color.md_yellow_600)
+
                 val serverUrl = settings?.getString("serverURL", "")
                 if (!serverUrl.isNullOrEmpty()) {
-                    lifecycleScope.launch {
-                        val canReachServer = withContext(Dispatchers.IO) {
-                            isServerReachable(serverUrl)
+                    try {
+                        val canReachServer = viewModel.checkServerConnection(serverUrl)
+                        if (isAdded && view?.isAttachedToWindow == true) {
+                            fragmentHomeBellBinding.cardProfileBell.imageView.borderColor =
+                                ContextCompat.getColor(context, if (canReachServer) R.color.green else R.color.md_yellow_600)
                         }
-                        if (canReachServer) {
-                            fragmentHomeBellBinding.cardProfileBell.imageView.borderColor = ContextCompat.getColor(requireActivity(), R.color.green)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        if (isAdded && view?.isAttachedToWindow == true) {
+                            fragmentHomeBellBinding.cardProfileBell.imageView.borderColor =
+                                ContextCompat.getColor(context, R.color.md_yellow_600)
                         }
                     }
                 }
-            } else {
-                fragmentHomeBellBinding.cardProfileBell.imageView.borderColor = ContextCompat.getColor(requireActivity(), R.color.md_red_700)
             }
-        }.launchIn(coroutineScope)
-
-        (activity as DashboardActivity?)?.supportActionBar?.hide()
-        fragmentHomeBellBinding.addResource.setOnClickListener {
-            if (user?.id?.startsWith("guest") == false) {
-                AddResourceFragment().show(childFragmentManager, getString(R.string.add_res))
-            } else {
-                guestDialog(requireContext())
+            is NetworkStatus.Connected -> {
+                fragmentHomeBellBinding.cardProfileBell.imageView.borderColor = ContextCompat.getColor(context, R.color.green)
             }
         }
-        showBadges()
-        checkPendingSurveys()
     }
 
     private fun checkPendingSurveys() {
         val pendingSurveys = getPendingSurveys(user?.id, mRealm)
 
         if (pendingSurveys.isNotEmpty()) {
-            val surveyTitles = getSurveyTitlesFromSubmissions(pendingSurveys, mRealm)  //Get surveyTitles from Submissions
+            val surveyTitles = getSurveyTitlesFromSubmissions(pendingSurveys, mRealm)
 
             val dialogView = LayoutInflater.from(requireActivity()).inflate(R.layout.dialog_survey_list, null)
             val recyclerView: RecyclerView = dialogView.findViewById(R.id.recyclerViewSurveys)
@@ -149,23 +162,28 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     private fun showBadges() {
         fragmentHomeBellBinding.cardProfileBell.llBadges.removeAllViews()
-        val courseCount = countCourseIds(mRealm)
-
-        for ((index, entry) in courseCount.withIndex()) {
+        val completedCourses = getCompletedCourses(mRealm, user?.id)
+        completedCourses.forEachIndexed { index, course ->
             val rootView = requireActivity().findViewById<ViewGroup>(android.R.id.content)
             val star = LayoutInflater.from(activity).inflate(R.layout.image_start, rootView, false) as ImageView
-            val courseId = entry.keys.first()
-            val count = entry.values.first()
-            val steps = getCourseSteps(mRealm, courseId)
-            if (count.toInt() == steps.size) {
-                setColor(courseId, star)
-                fragmentHomeBellBinding.cardProfileBell.llBadges.addView(star)
-                star.setOnClickListener {
-                    val course = getCourseByCourseId(courseId, mRealm)
-                    star.contentDescription = "${getString(R.string.completed_course)} ${course?.courseTitle}"
-                    openCourse(course, index)
-                }
+            setColor(course.courseId, star)
+            fragmentHomeBellBinding.cardProfileBell.llBadges.addView(star)
+            star.contentDescription = "${getString(R.string.completed_course)} ${course.courseTitle}"
+            star.setOnClickListener {
+                openCourse(course, index)
             }
+        }
+    }
+
+    private fun getCompletedCourses(realm: Realm, userId: String?): List<RealmMyCourse> {
+        val myCourses = RealmMyCourse.getMyCourseByUserId(userId, realm.where(RealmMyCourse::class.java).findAll())
+        val courseProgress = RealmCourseProgress.getCourseProgress(realm, userId)
+
+        return myCourses.filter { course ->
+            val progress = courseProgress[course.id]
+            progress?.let {
+                it.asJsonObject["current"].asInt == it.asJsonObject["max"].asInt
+            } == true
         }
     }
 
@@ -180,28 +198,13 @@ class BellDashboardFragment : BaseDashboardFragment() {
         }
     }
 
-    private fun countCourseIds(mRealm: Realm): List<Map<String, Long>> {
-        val courseIdCounts: MutableMap<String, Long> = HashMap()
-        val results = mRealm.where(RealmCourseProgress::class.java).findAll()
-        for (progress in results) {
-            val courseId = progress.courseId
-            if (courseId != null) {
-                if (courseIdCounts.containsKey(courseId)) {
-                    courseIdCounts[courseId] = courseIdCounts[courseId]!! + 1
-                } else {
-                    courseIdCounts[courseId] = 1
-                }
-            }
-        }
-        return courseIdCounts.map { mapOf(it.key to it.value) }
-    }
-
-    private fun setColor(courseId: String, star: ImageView) =
+    private fun setColor(courseId: String?, star: ImageView) {
         if (RealmCertification.isCourseCertified(mRealm, courseId)) {
             star.setColorFilter(ContextCompat.getColor(requireContext(), R.color.colorPrimary))
         } else {
             star.setColorFilter(ContextCompat.getColor(requireContext(), R.color.md_blue_grey_300))
         }
+    }
 
     private fun declareElements() {
         fragmentHomeBellBinding.homeCardTeams.llHomeTeam.setOnClickListener { homeItemClickListener?.openCallFragment(TeamFragment()) }
@@ -219,12 +222,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
                 openHelperFragment(CoursesFragment())
             }
         }
-        fragmentHomeBellBinding.fabMyProgress.setOnClickListener { openHelperFragment(MyProgressFragment()) }
         fragmentHomeBellBinding.fabMyActivity.setOnClickListener { openHelperFragment(MyActivityFragment()) }
-        fragmentHomeBellBinding.fabSurvey.setOnClickListener {
-            BaseRecyclerParentFragment.isSurvey = true
-            openHelperFragment(SurveyFragment())
-        }
         fragmentHomeBellBinding.cardProfileBell.fabFeedback.setOnClickListener { openHelperFragment(FeedbackListFragment()) }
         fragmentHomeBellBinding.homeCardMyLife.myLifeImageButton.setOnClickListener { homeItemClickListener?.openCallFragment(LifeFragment()) }
     }
@@ -234,5 +232,10 @@ class BellDashboardFragment : BaseDashboardFragment() {
         b.putBoolean("isMyCourseLib", true)
         f.arguments = b
         homeItemClickListener?.openCallFragment(f)
+    }
+
+    override fun onDestroyView() {
+        networkStatusJob?.cancel()
+        super.onDestroyView()
     }
 }

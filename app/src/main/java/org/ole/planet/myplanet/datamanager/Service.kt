@@ -5,21 +5,29 @@ import android.content.Context
 import android.content.DialogInterface
 import android.content.SharedPreferences
 import android.net.Uri
-import android.os.Build
 import android.text.TextUtils
-import androidx.annotation.RequiresApi
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.realm.Realm
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmCommunity
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.isUserExists
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.populateUsersTable
+import org.ole.planet.myplanet.service.TransactionSyncManager
 import org.ole.planet.myplanet.service.UploadToShelfService
+import org.ole.planet.myplanet.ui.sync.ProcessUserDataActivity
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateIv
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateKey
@@ -31,6 +39,7 @@ import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils.extractProtocol
+import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utilities.Sha256Utils
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils
@@ -43,6 +52,8 @@ import kotlin.math.min
 class Service(private val context: Context) {
     private val preferences: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     private val retrofitInterface: ApiInterface? = ApiClient.client?.create(ApiInterface::class.java)
+
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     fun healthAccess(listener: SuccessListener) {
         retrofitInterface?.healthAccess(Utilities.getHealthAccessUrl(preferences))?.enqueue(object : Callback<ResponseBody> {
@@ -95,7 +106,6 @@ class Service(private val context: Context) {
             return
         }
         retrofitInterface?.checkVersion(Utilities.getUpdateUrl(settings))?.enqueue(object : Callback<MyPlanet?> {
-            @RequiresApi(Build.VERSION_CODES.M)
             override fun onResponse(call: Call<MyPlanet?>, response: Response<MyPlanet?>) {
                 preferences.edit().putInt("LastWifiID", NetworkUtils.getCurrentNetworkId(context)).apply()
                 if (response.body() != null) {
@@ -106,7 +116,7 @@ class Service(private val context: Context) {
                             val responses: String?
                             try {
                                 responses = Gson().fromJson(response.body()?.string(), String::class.java)
-                                if (responses.isEmpty()) {
+                                if (responses == null || responses.isEmpty()) {
                                     callback.onError("Planet up to date", false)
                                     return
                                 }
@@ -134,10 +144,10 @@ class Service(private val context: Context) {
                                     }
                                 }
                             } catch (e: Exception) {
-                                callback.onError("New apk version required  but not found on server - Contact admin", false)
+                                e.printStackTrace()
+                                callback.onError("New apk version required but not found on server - Contact admin", false)
                             }
                         }
-
                         override fun onFailure(call: Call<ResponseBody>, t: Throwable) {}
                     })
                 } else {
@@ -242,7 +252,29 @@ class Service(private val context: Context) {
             } catch (e: IOException) {
                 e.printStackTrace()
             }
-        }, { callback.onSuccess("User created successfully") }) { error: Throwable ->
+        }, {
+            callback.onSuccess("User created successfully")
+            isNetworkConnectedFlow.onEach { isConnected ->
+                if (isConnected) {
+                    val serverUrl = settings.getString("serverURL", "")
+                    if (!serverUrl.isNullOrEmpty()) {
+                        serviceScope.launch {
+                            val canReachServer = withContext(Dispatchers.IO) {
+                                isServerReachable(serverUrl)
+                            }
+                            if (canReachServer) {
+                                if (context is ProcessUserDataActivity) {
+                                    context.runOnUiThread {
+                                        context.startUpload("becomeMember")
+                                    }
+                                }
+                                TransactionSyncManager.syncDb(realm, "tablet_users")
+                            }
+                        }
+                    }
+                }
+            }.launchIn(serviceScope)
+        }) { error: Throwable ->
             error.printStackTrace()
             callback.onSuccess("Unable to save user please sync")
         }
@@ -266,10 +298,8 @@ class Service(private val context: Context) {
                                 }
                                 community.localDomain = JsonUtils.getString("localDomain", jsonDoc)
                                 community.name = JsonUtils.getString("name", jsonDoc)
-                                community.parentDomain =
-                                    JsonUtils.getString("parentDomain", jsonDoc)
-                                community.registrationRequest =
-                                    JsonUtils.getString("registrationRequest", jsonDoc)
+                                community.parentDomain = JsonUtils.getString("parentDomain", jsonDoc)
+                                community.registrationRequest = JsonUtils.getString("registrationRequest", jsonDoc)
                             }
                         }, {
                             realm.close()

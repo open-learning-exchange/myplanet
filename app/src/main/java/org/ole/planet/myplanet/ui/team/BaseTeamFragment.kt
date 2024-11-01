@@ -2,9 +2,7 @@ package org.ole.planet.myplanet.ui.team
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.os.Build
 import android.os.Bundle
-import androidx.annotation.RequiresApi
 import org.ole.planet.myplanet.base.BaseNewsFragment
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
@@ -12,7 +10,6 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 
-@RequiresApi(Build.VERSION_CODES.O)
 abstract class BaseTeamFragment : BaseNewsFragment() {
     lateinit var dbService: DatabaseService
     var user: RealmUserModel? = null

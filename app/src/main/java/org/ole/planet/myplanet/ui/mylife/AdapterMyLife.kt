@@ -2,8 +2,6 @@ package org.ole.planet.myplanet.ui.mylife
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.Color
-import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.view.LayoutInflater
@@ -14,7 +12,6 @@ import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
@@ -46,7 +43,6 @@ class AdapterMyLife(private val context: Context, private val myLifeList: List<R
         return ViewHolderMyLife(v)
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     @SuppressLint("ClickableViewAccessibility")
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         if (holder is ViewHolderMyLife) {
@@ -131,11 +127,11 @@ class AdapterMyLife(private val context: Context, private val myLifeList: List<R
         var rvItemContainer: LinearLayout = itemView.findViewById(R.id.rv_item_parent_layout)
 
         override fun onItemSelected() {
-            itemView.setBackgroundColor(Color.LTGRAY)
+            itemView.setBackgroundColor(context.resources.getColor(R.color.user_profile_background))
         }
 
         override fun onItemClear(viewHolder: RecyclerView.ViewHolder?) {
-            itemView.setBackgroundColor(0)
+            itemView.setBackgroundColor(context.resources.getColor(R.color.daynight_grey))
             if (viewHolder != null) {
                 if (!myLifeList[viewHolder.bindingAdapterPosition].isVisible) {
                     (viewHolder as ViewHolderMyLife?)?.rvItemContainer?.alpha = hide
@@ -145,7 +141,6 @@ class AdapterMyLife(private val context: Context, private val myLifeList: List<R
     }
 
     companion object {
-        @RequiresApi(Build.VERSION_CODES.O)
         fun findFragment(frag: String?): Fragment? {
             when (frag) {
                 "ic_mypersonals" -> return MyPersonalsFragment()

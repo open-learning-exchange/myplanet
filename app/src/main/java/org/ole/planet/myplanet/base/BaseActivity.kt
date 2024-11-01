@@ -1,16 +1,63 @@
 package org.ole.planet.myplanet.base
 
-import android.R
+import android.content.Context
+import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.os.Bundle
 import android.view.MenuItem
-import android.content.Context
-import androidx.appcompat.app.AppCompatActivity
+import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.LocaleHelper
+import java.util.Locale
 
-abstract class BaseActivity : AppCompatActivity() {
-
+abstract class BaseActivity : SyncActivity() {
     override fun attachBaseContext(newBase: Context) {
-        super.attachBaseContext(LocaleHelper.onAttach(newBase))
+        val localeUpdatedContext = LocaleHelper.onAttach(newBase)
+        super.attachBaseContext(localeUpdatedContext)
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        resetTitle()
+        updateConfigurationIfNeeded()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        updateConfigurationIfNeeded()
+    }
+
+    private fun resetTitle() {
+        try {
+            val label = packageManager.getActivityInfo(componentName, PackageManager.GET_META_DATA).labelRes
+            if (label != 0) {
+                setTitle(label)
+            }
+        } catch (e: PackageManager.NameNotFoundException) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun updateConfigurationIfNeeded() {
+        val currentLanguage = LocaleHelper.getLanguage(this)
+        val newConfig = resources.configuration
+        val newLocale = Locale(currentLanguage)
+
+        if (newConfig.locale != newLocale) {
+            Locale.setDefault(newLocale)
+            newConfig.setLocale(newLocale)
+            newConfig.setLayoutDirection(newLocale)
+            resources.updateConfiguration(newConfig, resources.displayMetrics)
+            supportActionBar?.title = title
+        }
+    }
+
+    override fun applyOverrideConfiguration(overrideConfiguration: Configuration?) {
+        if (overrideConfiguration != null) {
+            val uiMode = overrideConfiguration.uiMode
+            overrideConfiguration.setTo(baseContext.resources.configuration)
+            overrideConfiguration.uiMode = uiMode
+        }
+        super.applyOverrideConfiguration(overrideConfiguration)
     }
 
     fun initActionBar() {
@@ -19,7 +66,11 @@ abstract class BaseActivity : AppCompatActivity() {
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        if (item.itemId == R.id.home) finish()
-        return super.onOptionsItemSelected(item)
+        return if (item.itemId == android.R.id.home) {
+            finish()
+            true
+        } else {
+            super.onOptionsItemSelected(item)
+        }
     }
 }

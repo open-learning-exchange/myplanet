@@ -17,11 +17,15 @@ import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.afollestad.materialdialogs.*
-import com.google.android.material.textfield.TextInputLayout
 import io.realm.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.BuildConfig
+import org.ole.planet.myplanet.MainApplication.Companion.applicationScope
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
@@ -62,18 +66,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private lateinit var syncDate: TextView
     lateinit var lblLastSyncDate: TextView
     private lateinit var intervalLabel: TextView
-    lateinit var tvNoData: TextView
     lateinit var spinner: Spinner
     private lateinit var syncSwitch: SwitchCompat
-    var convertedDate = 0
     private var connectionResult = false
     lateinit var mRealm: Realm
     private lateinit var editor: SharedPreferences.Editor
     private var syncTimeInterval = intArrayOf(60 * 60, 3 * 60 * 60)
     lateinit var syncIcon: ImageView
     lateinit var syncIconDrawable: AnimationDrawable
-    lateinit var inputLayoutName: TextInputLayout
-    lateinit var inputLayoutPassword: TextInputLayout
     lateinit var prefData: SharedPrefManager
     lateinit var profileDbHandler: UserProfileDbHandler
     private lateinit var spnCloud: Spinner
@@ -82,8 +82,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private lateinit var serverPassword: EditText
     private lateinit var serverAddresses: RecyclerView
     private lateinit var syncToServerText: TextView
-    private var teamList = ArrayList<String?>()
-    private var teamAdapter: ArrayAdapter<String?>? = null
     var selectedTeamId: String? = null
     lateinit var positiveAction: View
     private lateinit var neutralAction: View
@@ -96,7 +94,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     lateinit var service: Service
     private var currentDialog: MaterialDialog? = null
     private var serverConfigAction = ""
-    private var previousCheckedId: Int? = null
     private var serverCheck = true
     private var showAdditionalServers = false
     private var serverAddressAdapter : ServerAddressAdapter? = null
@@ -127,24 +124,27 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             } else if (id == savedId) {
                 currentDialog?.let { continueSync(it) }
             } else {
-                clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server))
+                clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server), false)
             }
         } else if (serverConfigAction == "save") {
             if (savedId == null || id == savedId) {
                 currentDialog?.let { saveConfigAndContinue(it) }
             } else {
-                clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server))
+                clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server), false)
             }
         }
     }
 
-    private fun clearDataDialog(message: String, onCancel: () -> Unit = {}) {
+    private fun clearDataDialog(message: String, config: Boolean, onCancel: () -> Unit = {}) {
         AlertDialog.Builder(this, R.style.AlertDialogTheme)
             .setMessage(message)
             .setPositiveButton(getString(R.string.clear_data)) { _, _ ->
-                clearRealmDb()
-                clearSharedPref()
-                restartApp()
+                CoroutineScope(Dispatchers.Main).launch {
+                    clearRealmDb()
+                    prefData.setManualConfig(config)
+                    clearSharedPref()
+                    restartApp()
+                }
             }
             .setNegativeButton(getString(R.string.cancel)) { _, _ ->
                 onCancel()
@@ -203,6 +203,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                         startSync()
                     }
                 } catch (e: Exception) {
+                    e.printStackTrace()
                     syncFailed = true
                     if (extractProtocol("$processedUrl") == context.getString(R.string.http_protocol)) {
                         alertDialogOkay(getString(R.string.device_couldn_t_reach_local_server))
@@ -343,7 +344,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 syncIconDrawable.stop()
                 syncIconDrawable.selectDrawable(0)
                 syncIcon.invalidateDrawable(syncIconDrawable)
-                createLog("synced successfully")
+                applicationScope.launch {
+                    createLog("synced successfully")
+                }
                 showSnack(findViewById(android.R.id.content), getString(R.string.sync_completed))
                 downloadAdditionalResources()
                 if (defaultPref.getBoolean("beta_auto_download", false)) {
@@ -454,9 +457,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             if (configurationId != null) {
                 dialogServerUrlBinding.manualConfiguration.isChecked = prefData.getManualConfig()
                 if (prefData.getManualConfig()) {
-                    clearDataDialog(getString(R.string.switching_off_manual_configuration_to_clear_data))
+                    clearDataDialog(getString(R.string.switching_off_manual_configuration_to_clear_data), false)
                 } else {
-                    clearDataDialog(getString(R.string.switching_on_manual_configuration_to_clear_data))
+                    clearDataDialog(getString(R.string.switching_on_manual_configuration_to_clear_data), true)
                 }
             } else {
                 val newCheckedState = !prefData.getManualConfig()
@@ -511,7 +514,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             }
         }
         dialogServerUrlBinding.clearData.setOnClickListener {
-            clearDataDialog(getString(R.string.are_you_sure_you_want_to_clear_data))
+            clearDataDialog(getString(R.string.are_you_sure_you_want_to_clear_data), false)
         }
 
         neutralAction.setOnClickListener {
@@ -546,18 +549,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         binding.switchServerUrl.visibility = if (manualSelected) View.VISIBLE else View.GONE
 
         if (manualSelected) {
-            if (settings.getString("serverURL", "") == "https://${BuildConfig.PLANET_LEARNING_URL}") {
-                editor.putString("serverURL", "").apply()
-                editor.putString("serverPin", "").apply()
-            }
             if (settings.getString("serverProtocol", "") == getString(R.string.http_protocol)) {
                 binding.radioHttp.isChecked = true
                 editor.putString("serverProtocol", getString(R.string.http_protocol)).apply()
-            }
-            if (settings.getString("serverProtocol", "") == getString(R.string.https_protocol) &&
-                settings.getString("serverURL", "") != "" &&
-                settings.getString("serverURL", "") != "https://${BuildConfig.PLANET_LEARNING_URL}"
-            ) {
+            } else if (settings.getString("serverProtocol", "") == getString(R.string.https_protocol)) {
                 binding.radioHttps.isChecked = true
                 editor.putString("serverProtocol", getString(R.string.https_protocol)).apply()
             }
@@ -596,7 +591,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 if (serverCheck) {
                     performSync(dialog)
                 } }, { _, _ ->
-                    clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server)) {
+                    clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server), false) {
                         serverAddressAdapter?.revertSelection()
                     }
                 },
@@ -634,26 +629,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     binding.inputServerPassword.setText(storedPin)
                 }
             }
-
-            binding.manualConfiguration.setOnCheckedChangeListener { _: CompoundButton?, isChecked: Boolean ->
-                if (isChecked) {
-                    prefData.setManualConfig(true)
-                    editor.putString("serverURL", "").apply()
-                    editor.putString("serverPin", "").apply()
-                    binding.radioHttp.isChecked = true
-                    editor.putString("serverProtocol", getString(R.string.http_protocol)).apply()
-                    showConfigurationUIElements(binding, true, dialog)
-                    serverUrl.addTextChangedListener(MyTextWatcher(serverUrl))
-                    binding.switchServerUrl.isChecked = settings.getBoolean("switchCloudUrl", false)
-                    setUrlAndPin(settings.getBoolean("switchCloudUrl", false))
-                    protocolSemantics()
-                } else {
-                    prefData.setManualConfig(false)
-                    showConfigurationUIElements(binding, false, dialog)
-                    editor.putBoolean("switchCloudUrl", false).apply()
-                }
-            }
-
             serverUrl.isEnabled = false
             serverPassword.isEnabled = false
             editor.putString("serverProtocol", getString(R.string.https_protocol)).apply()
@@ -826,7 +801,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 isServerReachable(processedUrl)
             } else if (forceSync) {
                 isServerReachable(processedUrl)
-                startUpload()
+                startUpload("login")
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -874,18 +849,23 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         lateinit var cal_today: Calendar
         lateinit var cal_last_Sync: Calendar
 
-        fun clearRealmDb() {
-            val realm = Realm.getDefaultInstance()
-            realm.executeTransaction { transactionRealm ->
-                transactionRealm.deleteAll()
+        suspend fun clearRealmDb() {
+            withContext(Dispatchers.IO) {
+                val realm = Realm.getDefaultInstance()
+                try {
+                    realm.executeTransaction { transactionRealm ->
+                        transactionRealm.deleteAll()
+                    }
+                } finally {
+                    realm.close()
+                }
             }
-            realm.close()
         }
 
         fun clearSharedPref() {
             val settings = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             val editor = settings.edit()
-            val keysToKeep = setOf(SharedPrefManager(context).firstLaunch)
+            val keysToKeep = setOf(SharedPrefManager(context).firstLaunch, SharedPrefManager(context).manualConfig )
             val tempStorage = HashMap<String, Boolean>()
             for (key in keysToKeep) {
                 tempStorage[key] = settings.getBoolean(key, false)

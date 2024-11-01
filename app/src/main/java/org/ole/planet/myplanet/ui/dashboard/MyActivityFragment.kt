@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
 import com.github.mikephil.charting.components.Description
 import com.github.mikephil.charting.data.BarData
@@ -18,6 +19,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import java.text.DateFormatSymbols
 import java.text.SimpleDateFormat
 import java.util.Calendar
+import org.ole.planet.myplanet.R
 
 class MyActivityFragment : Fragment() {
     private lateinit var fragmentMyActivityBinding : FragmentMyActivityBinding
@@ -32,6 +34,7 @@ class MyActivityFragment : Fragment() {
         val userModel = UserProfileDbHandler(requireActivity()).userModel
         realm = DatabaseService(requireActivity()).realmInstance
         val calendar = Calendar.getInstance()
+        val daynight_textColor = ResourcesCompat.getColor(getResources(), R.color.daynight_textColor, null);
 
         calendar.set(Calendar.YEAR, calendar.get(Calendar.YEAR) - 1)
         val resourceActivity = realm.where(RealmOfflineActivity::class.java).equalTo("userId", userModel?.id)
@@ -64,19 +67,26 @@ class MyActivityFragment : Fragment() {
             }
             i = i.plus(1)
         }
-
-        val dataSet = BarDataSet(entries, "No of login ")
+        var label = getString(R.string.chart_label)
+        val dataSet = BarDataSet(entries, label)
 
         val lineData = BarData(dataSet)
         fragmentMyActivityBinding.chart.data = lineData
         val d = Description()
-        d.text = "Login Activity chart"
+        d.text = getString(R.string.chart_description)
+        d.textColor = daynight_textColor
         fragmentMyActivityBinding.chart.description = d
         fragmentMyActivityBinding.chart.xAxis.valueFormatter = object : ValueFormatter() {
             override fun getFormattedValue(value: Float): String {
                 return getMonth(value.toInt())
             }
         }
+        fragmentMyActivityBinding.chart.xAxis.textColor = daynight_textColor
+        fragmentMyActivityBinding.chart.axisLeft.textColor = daynight_textColor
+        fragmentMyActivityBinding.chart.axisRight.textColor = daynight_textColor
+        fragmentMyActivityBinding.chart.legend.textColor = daynight_textColor
+        fragmentMyActivityBinding.chart.description.setPosition(850f,830f)
+        fragmentMyActivityBinding.chart.data.setValueTextColor(daynight_textColor)
         fragmentMyActivityBinding.chart.invalidate()
     }
 

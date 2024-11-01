@@ -4,14 +4,12 @@ import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.SharedPreferences
-import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -22,6 +20,9 @@ import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.PreferenceManager
 import androidx.preference.SwitchPreference
 import io.realm.Realm
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication.Companion.mRealm
 import org.ole.planet.myplanet.MainApplication.Companion.setThemeMode
 import org.ole.planet.myplanet.R
@@ -87,7 +88,6 @@ class SettingActivity : AppCompatActivity() {
             return view
         }
 
-        @RequiresApi(Build.VERSION_CODES.O)
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
             requireContext().setTheme(R.style.PreferencesTheme)
             setPreferencesFromResource(R.xml.pref, rootKey)
@@ -138,9 +138,11 @@ class SettingActivity : AppCompatActivity() {
                 preference.onPreferenceClickListener = OnPreferenceClickListener {
                     AlertDialog.Builder(requireActivity()).setTitle(R.string.are_you_sure)
                         .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                            clearRealmDb()
-                            clearSharedPref()
-                            restartApp()
+                            CoroutineScope(Dispatchers.Main).launch {
+                                clearRealmDb()
+                                clearSharedPref()
+                                restartApp()
+                            }
                         }.setNegativeButton(R.string.no, null).show()
                     false
                 }
@@ -293,7 +295,7 @@ class SettingActivity : AppCompatActivity() {
         }
 
         private fun getCurrentThemeMode(): String {
-            val sharedPreferences = requireContext().getSharedPreferences("app_preferences", Context.MODE_PRIVATE)
+            val sharedPreferences = requireContext().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             return sharedPreferences.getString("theme_mode", ThemeMode.FOLLOW_SYSTEM) ?: ThemeMode.FOLLOW_SYSTEM
         }
     }

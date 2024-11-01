@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.team.teamResource
 
 import android.content.DialogInterface
 import android.graphics.Typeface
-import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -10,7 +9,6 @@ import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.ListView
 import android.widget.TextView
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.GridLayoutManager
 import org.ole.planet.myplanet.R
@@ -25,7 +23,6 @@ import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.CheckboxListView
 import java.util.UUID
 
-@RequiresApi(Build.VERSION_CODES.O)
 class TeamResourceFragment : BaseTeamFragment(), TeamPageListener {
     private lateinit var fragmentTeamResourceBinding: FragmentTeamResourceBinding
     private lateinit var adapterLibrary: AdapterTeamResource

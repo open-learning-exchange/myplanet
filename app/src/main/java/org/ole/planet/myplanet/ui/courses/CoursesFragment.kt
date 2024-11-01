@@ -13,6 +13,7 @@ import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.Spinner
 import android.widget.TextView
+import androidx.appcompat.view.ContextThemeWrapper
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.Gson
@@ -31,11 +32,23 @@ import org.ole.planet.myplanet.model.RealmTag.Companion.getTagsArray
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.resources.CollectionsFragment
+import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import java.util.Calendar
 import java.util.UUID
 
 class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelected, TagClickListener {
+
+    companion object {
+        fun newInstance(isMyCourseLib: Boolean): CoursesFragment {
+            val fragment = CoursesFragment()
+            val args = Bundle()
+            args.putBoolean("isMyCourseLib", isMyCourseLib)
+            fragment.arguments = args
+            return fragment
+        }
+    }
+
     private lateinit var tvAddToLib: TextView
     private lateinit var tvSelected: TextView
     private lateinit var etSearch: EditText
@@ -85,6 +98,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             btnRemove.visibility = View.VISIBLE
             btnArchive.visibility = View.VISIBLE
             checkList()
+        }else {
+            btnRemove.visibility = View.GONE
+            btnArchive.visibility = View.GONE
         }
 
         etSearch.addTextChangedListener(object : TextWatcher {
@@ -98,11 +114,11 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         })
 
         btnRemove.setOnClickListener {
-            val alertDialogBuilder = AlertDialog.Builder(this.context)
+            val alertDialogBuilder = AlertDialog.Builder(ContextThemeWrapper(this.context, R.style.CustomAlertDialog))
             val message = if (countSelected() == 1) {
-                R.string.are_you_sure_you_want_to_delete_this_course
+                R.string.are_you_sure_you_want_to_leave_this_course
             } else {
-                R.string.are_you_sure_you_want_to_delete_these_courses
+                R.string.are_you_sure_you_want_to_leave_these_courses
             }
             alertDialogBuilder.setMessage(message)
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
@@ -114,7 +130,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 .setNegativeButton(R.string.no, null).show()
         }
         btnArchive.setOnClickListener {
-            val alertDialogBuilder = AlertDialog.Builder(this.context)
+            val alertDialogBuilder = AlertDialog.Builder(ContextThemeWrapper(this.context, R.style.CustomAlertDialog))
             val message = if (countSelected() == 1) {
                 R.string.are_you_sure_you_want_to_archive_this_course
             } else {
@@ -142,6 +158,24 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         changeButtonStatus()
         if (!isMyCourseLib) tvFragmentInfo.setText(R.string.our_courses)
         additionalSetup()
+
+        if (isMyCourseLib) {
+            requireView().findViewById<View>(R.id.fabMyProgress).apply {
+                visibility = View.VISIBLE
+                setOnClickListener {
+                    val myProgressFragment = MyProgressFragment().apply {
+                        arguments = Bundle().apply {
+                            putBoolean("isMyCourseLib", true)
+                        }
+                    }
+
+                    parentFragmentManager.beginTransaction()
+                        .replace(R.id.fragment_container, myProgressFragment)
+                        .addToBackStack(null)
+                        .commit()
+                }
+            }
+        }
     }
 
     private fun additionalSetup() {
@@ -187,7 +221,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         spnGrade.onItemSelectedListener = itemSelectedListener
         spnSubject.onItemSelectedListener = itemSelectedListener
         selectAll = requireView().findViewById(R.id.selectAll)
-        if(userModel?.isGuest() == true){
+        if (userModel?.isGuest() == true) {
             tvAddToLib.visibility = View.GONE
             btnRemove.visibility = View.GONE
             btnArchive.visibility = View.GONE
@@ -247,7 +281,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     private fun createAlertDialog(): AlertDialog {
-        val builder = AlertDialog.Builder(requireContext(), 5)
+        val builder = AlertDialog.Builder(requireContext(), R.style.CustomAlertDialog)
         var msg = getString(R.string.success_you_have_added_the_following_courses)
         if ((selectedItems?.size ?: 0) <= 5) {
             for (i in selectedItems?.indices!!) {
@@ -262,12 +296,29 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         msg += getString(R.string.return_to_the_home_tab_to_access_mycourses)
         builder.setMessage(msg)
         builder.setCancelable(true)
-        builder.setPositiveButton(R.string.ok) { dialog: DialogInterface, _: Int ->
-            dialog.cancel()
-            val newFragment = CoursesFragment()
-            recreateFragment(newFragment)
-        }
+            .setPositiveButton(R.string.go_to_mycourses) { dialog: DialogInterface, _: Int ->
+                if (userModel?.id?.startsWith("guest") == true) {
+                    DialogUtils.guestDialog(requireContext())
+                } else {
+                    redirectToMyCourses();
+                }
+            }
+            .setNegativeButton(R.string.ok) { dialog: DialogInterface, _: Int ->
+                dialog.cancel()
+                val newFragment = CoursesFragment()
+                recreateFragment(newFragment)
+            }
+
         return builder.create()
+    }
+
+    fun redirectToMyCourses() {
+        val fragment = CoursesFragment.newInstance(isMyCourseLib = true)
+
+        parentFragmentManager.beginTransaction()
+            .replace(R.id.fragment_container, fragment)
+            .addToBackStack(null)
+            .commit()
     }
 
     override fun onSelectedListChange(list: MutableList<RealmMyCourse?>) {

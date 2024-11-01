@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.courses
 
-import android.os.Build
 import android.os.Bundle
 import android.text.Spannable
 import android.text.method.LinkMovementMethod
@@ -8,9 +7,7 @@ import android.text.style.URLSpan
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.annotation.RequiresApi
 import androidx.fragment.app.Fragment
-import io.realm.Case
 import io.realm.Realm
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
@@ -27,6 +24,7 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.exam.TakeExamFragment
+import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
 import org.ole.planet.myplanet.utilities.CustomClickableSpan
@@ -43,6 +41,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     private lateinit var step: RealmCourseStep
     private lateinit var resources: List<RealmMyLibrary>
     private lateinit var stepExams: List<RealmStepExam>
+    private lateinit var stepSurvey: List<RealmStepExam>
     var user: RealmUserModel? = null
     private var stepNumber = 0
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -59,6 +58,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         cRealm = dbService.realmInstance
         user = UserProfileDbHandler(requireContext()).userModel
         fragmentCourseStepBinding.btnTakeTest.visibility = View.VISIBLE
+        fragmentCourseStepBinding.btnTakeSurvey.visibility = View.VISIBLE
         return fragmentCourseStepBinding.root
     }
 
@@ -88,20 +88,21 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         step = cRealm.where(RealmCourseStep::class.java).equalTo("id", stepId).findFirst()!!
         resources = cRealm.where(RealmMyLibrary::class.java).equalTo("stepId", stepId).findAll()
-        stepExams = cRealm.where(RealmStepExam::class.java).equalTo("stepId", stepId).findAll()
+        stepExams = cRealm.where(RealmStepExam::class.java).equalTo("stepId", stepId).equalTo("type", "courses").findAll()
+        stepSurvey = cRealm.where(RealmStepExam::class.java).equalTo("stepId", stepId).equalTo("type", "surveys").findAll()
         fragmentCourseStepBinding.btnResources.text = getString(R.string.resources_size, resources.size)
         hideTestIfNoQuestion()
         fragmentCourseStepBinding.tvTitle.text = step.stepTitle
-        val markdownContentWithLocalPaths = prependBaseUrlToImages(step.description, "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/")
+        val markdownContentWithLocalPaths = prependBaseUrlToImages(step.description, "file://${MainApplication.context.getExternalFilesDir(null)}/ole/")
         setMarkdownText(fragmentCourseStepBinding.description, markdownContentWithLocalPaths)
         fragmentCourseStepBinding.description.movementMethod = LinkMovementMethod.getInstance()
         if (!isMyCourse(user?.id, step.courseId, cRealm)) {
             fragmentCourseStepBinding.btnTakeTest.visibility = View.GONE
+            fragmentCourseStepBinding.btnTakeSurvey.visibility = View.GONE
         }
         setListeners()
         val textWithSpans = fragmentCourseStepBinding.description.text
@@ -122,26 +123,37 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
 
     private fun hideTestIfNoQuestion() {
         fragmentCourseStepBinding.btnTakeTest.visibility = View.GONE
+        fragmentCourseStepBinding.btnTakeSurvey.visibility = View.GONE
         if (stepExams.isNotEmpty()) {
             val firstStepId = stepExams[0].id
-            val questions = cRealm.where(RealmExamQuestion::class.java).equalTo("examId", firstStepId).findAll()
-            val submissionsCount = step.courseId?.let {
-                cRealm.where(RealmSubmission::class.java).contains("parentId",
-                    it
-                ).notEqualTo("status", "pending", Case.INSENSITIVE).count()
-            }
-            if (questions != null && questions.size > 0) {
-                if (submissionsCount != null) {
-                    fragmentCourseStepBinding.btnTakeTest.text = (
-                            if (submissionsCount > 0) {
-                                getString(R.string.retake_test, stepExams.size)
-                            } else {
-                                getString(R.string.take_test, stepExams.size)
-                            })
-                }
-                fragmentCourseStepBinding.btnTakeTest.visibility = View.VISIBLE
+            val isTestPersent = existsSubmission(firstStepId, "exam")
+            fragmentCourseStepBinding.btnTakeTest.text = if (isTestPersent) { getString(R.string.retake_test, stepExams.size) } else { getString(R.string.take_test, stepExams.size) }
+            fragmentCourseStepBinding.btnTakeTest.visibility = View.VISIBLE
+        }
+        if (stepSurvey.isNotEmpty()) {
+            val firstStepId = stepSurvey[0].id
+            val isSurveyPresent = existsSubmission(firstStepId, "survey")
+            fragmentCourseStepBinding.btnTakeSurvey.text = if (isSurveyPresent) { "redo survey" } else { "record survey" }
+            fragmentCourseStepBinding.btnTakeSurvey.visibility = View.VISIBLE
             }
         }
+
+    private fun existsSubmission(firstStepId:String? , submissionType: String): Boolean{
+        val questions = cRealm.where(RealmExamQuestion::class.java).equalTo("examId", firstStepId).findAll()
+        var isPresent=false
+        if (questions != null && questions.size > 0) {
+            val examId=questions[0]?.examId
+            val isSubmitted = step.courseId?.let { courseId ->
+                val parentId = "$examId@$courseId"
+                cRealm.where(RealmSubmission::class.java)
+                    .equalTo("userId",user?.id)
+                    .equalTo("parentId", parentId)
+                    .equalTo("type", submissionType)
+                    .findFirst() != null
+            } ?: false
+            isPresent= isSubmitted
+        }
+        return isPresent
     }
 
     override fun setMenuVisibility(visible: Boolean) {
@@ -155,7 +167,6 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     private fun setListeners() {
         val notDownloadedResources: List<RealmMyLibrary> = cRealm.where(RealmMyLibrary::class.java).equalTo("stepId", stepId).equalTo("resourceOffline", false).isNotNull("resourceLocalAddress").findAll()
         setResourceButton(notDownloadedResources, fragmentCourseStepBinding.btnResources)
@@ -170,11 +181,17 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                 capturePhoto(this)
             }
         }
+
+        fragmentCourseStepBinding.btnTakeSurvey.setOnClickListener {
+            if (stepSurvey.isNotEmpty()) {
+                AdapterMySubmission.openSurvey(homeItemClickListener, stepSurvey[0].id, false)
+            }
+        }
         val downloadedResources: List<RealmMyLibrary> = cRealm.where(RealmMyLibrary::class.java).equalTo("stepId", stepId).equalTo("resourceOffline", true).isNotNull("resourceLocalAddress").findAll()
         setOpenResourceButton(downloadedResources, fragmentCourseStepBinding.btnOpen)
+        fragmentCourseStepBinding.btnResources.visibility = View.GONE
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun onDownloadComplete() {
         super.onDownloadComplete()
         setListeners()

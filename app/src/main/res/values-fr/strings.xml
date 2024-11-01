@@ -42,7 +42,7 @@
     <string name="download_all">Tout télécharger</string>
     <string name="hello_blank_fragment">Bonjour fragment vide</string>
     <string name="add_to_mycourse">Ajouter à mes cours</string>
-    <string name="join_selected">Rejoindre la sélection</string>
+    <string name="join_selected">Rejoindre la\nsélection</string>
     <string name="join">Rejoindre</string>
     <string name="add_to_mylib">Ajouter à ma bibliothèque</string>
     <string name="step">étape</string>
@@ -95,7 +95,7 @@
     <string name="alerts">Alertes</string>
     <string name="profile">Profil</string>
     <string name="user">Utilisateur</string>
-    <string name="remove_selected">Supprimer la sélection</string>
+    <string name="remove_selected">Supprimer\nla sélection</string>
     <string name="stop_download">Arrêter le téléchargement</string>
     <string name="downloading_file">Téléchargement du fichier en cours…</string>
     <string name="cancel">Annuler</string>
@@ -182,7 +182,6 @@
     <string name="my_survey">Mon sondage</string>
 
     <string-array name="level">
-        <item></item>
         <item>Débutant</item>
         <item>Intermédiaire</item>
         <item>Avancé</item>
@@ -542,7 +541,7 @@
     <string name="ole_logo">Logo d\'Open Learning Exchange</string>
     <string name="open_community">Communauté ouverte</string>
     <string name="dash_4">----</string>
-    <string name="add_documents">Ajouter des documents</string>
+    <string name="add_documents">Ajouter des\ndocuments</string>
     <string name="leave">Quitter</string>
     <string name="steps">Étapes</string>
     <string name="csv_filename">Nom du fichier CSV</string>
@@ -640,9 +639,11 @@
     <string name="please_select_link_item_from_list">Veuillez sélectionner un élément de lien dans la liste</string>
     <string name="title_is_required">Le titre est requis</string>
     <string name="no_data_available">Aucune donnée disponible</string>
-    <string name="are_you_sure_you_want_to_delete_these_courses">Êtes-vous sûr de vouloir supprimer ces cours ?</string>
+    <string name="are_you_sure_you_want_to_leave_these_courses">Êtes-vous sûr de vouloir quitter ces cours ?</string>
+    <string name="are_you_sure_you_want_to_leave_this_course">Êtes-vous sûr de vouloir quitter ce cours ?</string>
     <string name="success_you_have_added_the_following_courses">Succès ! Vous avez ajouté les cours suivants:\n\n</string>
     <string name="return_to_the_home_tab_to_access_mycourses">\n\n Retournez à l\'onglet Accueil pour accéder à Mes cours.\n</string>
+    <string name="go_to_mycourses">Aller à mesCours</string>
     <string name="and">Et </string>
     <string name="more_course_s">autre(s) cours…\n</string>
     <string name="retake_test">Repasser le test [%d]</string>
@@ -1060,7 +1061,6 @@
     <string name="enterprise_list">liste des entreprises</string>
     <string name="list_of_teams">liste des équipes</string>
     <string name="sign_up_to_chat">Veuillez vous inscrire pour accéder au chat IA</string>
-    <string name="are_you_sure_you_want_to_delete_this_course">Êtes-vous sûr de vouloir supprimer ce cours ?</string>
     <string name="share_chat">partager le chat</string>
     <string name="shared_chat">chat partagé</string>
     <string name="check_apk_version">vérification de la version app</string>
@@ -1090,7 +1090,7 @@
     <string name="tag_selected">Sélectionné : %s</string>
     <string name="resources_size">Ressources [%d]</string>
     <string name="user_role">- %s</string>
-    <string name="user_name">%s (%d)</string>
+    <string name="user_name">%1$s (%2$s)</string>
     <string name="visit_count">%1$s (%2$d %3$s)</string>
     <string name="two_strings">%1$s %2$s</string>
     <string name="three_strings">%1$s %2$s %3$s</string>
@@ -1176,5 +1176,27 @@
     <string name="material_calendar_negative_button">Non</string>
     <string name="switching_off_manual_configuration_to_clear_data">La désactivation de la configuration manuelle effacera toutes les données. Êtes-vous sûr de vouloir continuer?</string>
     <string name="switching_on_manual_configuration_to_clear_data">L\'activation de la configuration manuelle effacera toutes les données. Êtes-vous sûr de vouloir continuer?</string>
+    <string name="chart_description">Graphique d\'Activité de Connexion</string>
+    <string name="chart_label">Nbre de connexions</string>
+    <string name="copied_to_clipboard">copié dans le presse-papiers</string>
+    <string name="mark_all_as_read">Marquer tout comme lu</string>
+    <string name="mark_as_read">Marquer comme lu</string>
+    <string name="our_voices">nos voix</string>
+    <string name="no_voices_available">aucune voix disponible</string>
+    <string name="new_voice">nouvelle voix</string>
+    <string name="hide_new_voice">cacher la nouvelle voix</string>
+    <string name="summary_of_achievemnets">Résumé des réalisations - Résumez brièvement votre réalisation et ajoutez les documents associés ci-dessous</string>
+    <string name="my_goals_description">Mes Objectifs - Quels sont vos objectifs pour les 10 prochaines années ?</string>
+    <string name="add_materials">Ajoutez tout matériel démontrant vos réalisations ci-dessous</string>
+    <string name="my_purpose_description">Mon But - Quelles sont vos ambitions éducatives et professionnelles ?</string>
+    <string name="my_purpose">Mon But</string>
+    <string name="my_goals">Mes Objectifs</string>
+    <string name="community_name">Nom de la Communauté</string>
+    <string name="last_login">Dernière Connexion : </string>
+    <string name="total_visits_overall">Total des Visites : </string>
+    <string name="most_opened_resource">Ressource La Plus Consultée : </string>
+    <string name="number_of_resources_opened">Nombre de Ressources Ouvertes : </string>
+    <string name="number_of_visits">Nombre de Visites</string>
+    <string name="kindly_enter_reply_message">Veuillez entrer le message de réponse</string>
 
 </resources>

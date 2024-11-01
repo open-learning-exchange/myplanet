@@ -4,7 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".ui.dashboard.MyActivityFragment">
+    tools:context=".ui.dashboard.MyActivityFragment"
+    android:background="@color/secondary_bg">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -23,12 +24,10 @@
             android:id="@+id/chart"
             android:layout_width="match_parent"
             android:layout_height="300dp" />
-
         <ListView
             android:id="@+id/activity_type"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1" />
     </LinearLayout>
-
 </FrameLayout>

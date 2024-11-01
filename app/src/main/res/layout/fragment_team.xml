@@ -15,100 +15,108 @@
 
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
-            android:labelFor="@+id/et_search"
             android:layout_height="wrap_content"
+            android:labelFor="@+id/et_search"
             android:textColorHint="@color/hint_color">
 
             <EditText
                 android:id="@+id/et_search"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="@string/search"
                 android:backgroundTint="@color/hint_color"
-                android:textColor="@color/daynight_textColor"
-                android:padding="@dimen/padding_normal" />
+                android:hint="@string/search"
+                android:padding="@dimen/padding_normal"
+                android:textColor="@color/daynight_textColor" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <TableLayout
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/tableTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:stretchColumns="*">
+            android:layout_marginStart="8dp">
 
-            <TableRow
-                android:id="@+id/firstRow"
-                android:layout_width="fill_parent"
+            <TextView
+                android:id="@+id/name"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_margin="4dp">
-
-                <TextView
-                    android:id="@+id/name"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:padding="@dimen/padding_small"
-                    android:text="@string/name_normal"
-                    android:textColor="@color/daynight_textColor"
-                    android:textStyle="bold" />
-                <TextView
-                    android:id="@+id/created"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:padding="@dimen/padding_small"
-                    android:text="@string/created_on"
-                    android:textColor="@color/daynight_textColor"
-                    android:textStyle="bold" />
-                <TextView
-                    android:id="@+id/type"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:padding="@dimen/padding_small"
-                    android:text="@string/type"
-                    android:textColor="@color/daynight_textColor"
-                    android:textStyle="bold" />
-                <TextView
-                    android:id="@+id/no_of_visits"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="2"
-                    android:alpha="0.8"
-                    android:padding="@dimen/padding_small"
-                    android:text="@string/total_visits"
-                    android:textColor="@color/daynight_textColor"
-                    android:textStyle="bold" />
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:padding="@dimen/padding_small"
-                    android:text="@string/action"
-                    android:textColor="@color/daynight_textColor"
-                    android:textStyle="bold" />
-            </TableRow>
-        </TableLayout>
+                android:text="@string/name_normal"
+                android:textColor="@color/daynight_textColor"
+                android:textStyle="bold"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintWidth_percent="0.2" />
+            <TextView
+                android:id="@+id/created"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="@string/created_on"
+                android:textColor="@color/daynight_textColor"
+                android:textStyle="bold"
+                app:layout_constraintEnd_toStartOf="@id/type"
+                app:layout_constraintStart_toEndOf="@id/name"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintWidth_percent="0.2" />
+            <TextView
+                android:id="@+id/type"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:padding="@dimen/padding_small"
+                android:text="Type"
+                android:textColor="@color/daynight_textColor"
+                android:textStyle="bold"
+                app:layout_constraintEnd_toStartOf="@id/no_of_visits"
+                app:layout_constraintStart_toEndOf="@id/created"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintWidth_percent="0.2" />
+            <TextView
+                android:id="@+id/no_of_visits"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="@string/total_visits"
+                android:textColor="@color/daynight_textColor"
+                android:textStyle="bold"
+                app:layout_constraintEnd_toStartOf="@id/ltButtons"
+                app:layout_constraintHorizontal_weight="1"
+                app:layout_constraintStart_toEndOf="@id/type"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintWidth_percent="0.2" />
+            <TextView
+                android:id="@+id/ltButtons"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:paddingStart="0dp"
+                android:paddingEnd="12dp"
+                android:text="@string/action"
+                android:textColor="@color/daynight_textColor"
+                android:textStyle="bold"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@id/no_of_visits"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintWidth_percent="0.3" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_team_list"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
+            android:layout_height="wrap_content" />
     </LinearLayout>
 
     <TextView
-        android:visibility="gone"
         android:id="@+id/tvMessage"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="center" />
+        android:layout_gravity="center"
+        android:textColor="@color/daynight_textColor"
+        android:visibility="gone" />
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/add_team"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
+        android:contentDescription="@string/add"
         android:padding="@dimen/padding_normal"
-        app:srcCompat="@drawable/ic_add"
-        android:contentDescription="@string/add" />
+        app:srcCompat="@drawable/ic_add" />
 </FrameLayout>

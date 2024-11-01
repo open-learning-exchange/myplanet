@@ -42,7 +42,7 @@
     <string name="download_all">Soo deji Dhammaan</string>
     <string name="hello_blank_fragment">Hello jajab maran</string>
     <string name="add_to_mycourse">ku darso koorsooyinkayga</string>
-    <string name="join_selected">Ku biir la doortay</string>
+    <string name="join_selected">Ku biir la\ndoortay</string>
     <string name="join">Ku biir</string>
     <string name="add_to_mylib">Kudar Maktabadayda</string>
     <string name="step">tallaabo</string>
@@ -95,7 +95,7 @@
     <string name="alerts">digniino</string>
     <string name="profile">Profile</string>
     <string name="user">Isticmaal</string>
-    <string name="remove_selected">saar la xushay</string>
+    <string name="remove_selected">saar\nla xushay</string>
     <string name="stop_download">jooji soo dejinta</string>
     <string name="downloading_file">soo dejinta faylka…</string>
     <string name="cancel">burin</string>
@@ -182,7 +182,6 @@
     <string name="my_survey">Galmadaayda</string>
 
     <string-array name="level">
-        <item></item>
         <item>Bilow</item>
         <item>Dhexdhexaad</item>
         <item>Sareeye</item>
@@ -542,7 +541,7 @@
     <string name="ole_logo">Lambarka Xarunta Ogaalaya</string>
     <string name="open_community">Bulsho Ogaal</string>
     <string name="dash_4">----</string>
-    <string name="add_documents">Ku Dar Documents</string>
+    <string name="add_documents">Ku Dar\nDocuments</string>
     <string name="leave">Ka Dib</string>
     <string name="steps">Agoonta</string>
     <string name="csv_filename">Magaca Faylasha CSV</string>
@@ -640,9 +639,11 @@
     <string name="please_select_link_item_from_list">Fadlan xulo xogta isku xirka listka.</string>
     <string name="title_is_required">Magaca waa loo baahan yahay</string>
     <string name="no_data_available">Wax macluumaad ah ayaa lama helin</string>
-    <string name="are_you_sure_you_want_to_delete_these_courses">Ma hubtaa inaad tirtirto ka dhamaan kursiyadaan?</string>
+    <string name="are_you_sure_you_want_to_leave_these_courses">Ma hubtaa inaad ka baxdo ka dhamaan kursiyadaan?</string>
+    <string name="are_you_sure_you_want_to_leave_this_course">Ma hubtaa inaad rabto inaad ka baxdo koorsadan?</string>
     <string name="success_you_have_added_the_following_courses">Guul! Waxaad ku daraysay kursiyadaan soo socota:\n\n</string>
     <string name="return_to_the_home_tab_to_access_mycourses">\n\n Ku noqo tabka Home si aad uga heli karto myCourseska.\n</string>
+    <string name="go_to_mycourses">U tag koorsooyinkayga</string>
     <string name="and">"Iyo "</string>
     <string name="more_course_s">" kursi dheer…\n"</string>
     <string name="retake_test">Dib u habayn Imtixaanka [%d]</string>
@@ -1060,7 +1061,6 @@
     <string name="enterprise_list">liiska ganacsiyada</string>
     <string name="list_of_teams">liiska kooxaha</string>
     <string name="sign_up_to_chat">Fadlan isdiiwaangeli si aad u hesho sheekada AI.</string>
-    <string name="are_you_sure_you_want_to_delete_this_course">Ma hubtaa inaad rabto inaad tirtirto koorsadan?</string>
     <string name="share_chat">la wadaag sheekaysiga</string>
     <string name="shared_chat">sheeko wadaag ah</string>
     <string name="check_apk_version">hubinta nooca app</string>
@@ -1090,7 +1090,7 @@
     <string name="tag_selected">Xulo: %s</string>
     <string name="resources_size">Xogta [%d]</string>
     <string name="user_role">- %s</string>
-    <string name="user_name">%s (%d)</string>
+    <string name="user_name">%1$s (%2$s)</string>
     <string name="visit_count">%1$s (%2$d %3$s)</string>
     <string name="two_strings">%1$s %2$s</string>
     <string name="three_strings">%1$s %2$s %3$s</string>
@@ -1176,5 +1176,27 @@
     <string name="material_calendar_negative_button">Maya</string>
     <string name="switching_off_manual_configuration_to_clear_data">daminta habka gacanta ah waxay tirtiri doontaa dhammaan xogta, ma hubtaa inaad rabto inaad sii waddo?</string>
     <string name="switching_on_manual_configuration_to_clear_data">furista habka gacanta ah waxay tirtiri doontaa dhammaan xogta, ma hubtaa inaad rabto inaad sii waddo?</string>
+    <string name="chart_description">Shaxda Waxqabadka Gelitaanka</string>
+    <string name="chart_label">Tirada galitaanka</string>
+    <string name="copied_to_clipboard">waxaa lagu koobay clipboard-ka</string>
+    <string name="mark_all_as_read">Calaamadee dhammaan sidii la aqriyay</string>
+    <string name="mark_as_read">Calaamadee sidii la aqriyay</string>
+    <string name="our_voices">codadkeena</string>
+    <string name="no_voices_available">ma jiro cod la heli karo</string>
+    <string name="new_voice">cod cusub</string>
+    <string name="hide_new_voice">qarso cod cusub</string>
+    <string name="summary_of_achievemnets">Dulmar guulo - Si kooban u soo koob guushaada oo hoos ku dar agabka la xiriira</string>
+    <string name="my_goals_description">Hadafyadayda - Waa maxay yoolalkaaga 10-ka sano ee soo socda?</string>
+    <string name="add_materials">Ku dar agabka kasta oo muujinaya guulahaaga hoos</string>
+    <string name="my_purpose_description">Ujeedadayda - Waa maxay himilooyinkaaga waxbarasho iyo kuwa xirfadeed?</string>
+    <string name="my_purpose">Ujeedadayda</string>
+    <string name="my_goals">Hadafyadayda</string>
+    <string name="community_name">Magaca Bulshada</string>
+    <string name="last_login">Gelitaankii Ugu Dambeeyay : </string>
+    <string name="total_visits_overall">Tirada Booqashooyinka : </string>
+    <string name="most_opened_resource">Kheyraadka Ugu Badan ee La Furay : </string>
+    <string name="number_of_resources_opened">Tirada Kheyraadka La Furay : </string>
+    <string name="number_of_visits">Tirada Booqashooyinka</string>
+    <string name="kindly_enter_reply_message">Fadlan geli farriinta jawaabta</string>
 
 </resources>

@@ -35,18 +35,17 @@ open class RealmCourseActivity : RealmObject() {
         @JvmStatic
         fun createActivity(realm: Realm, userModel: RealmUserModel?, course: RealmMyCourse?) {
             if (!realm.isInTransaction) {
-                realm.beginTransaction()
+                realm.executeTransaction {
+                    val activity = it.createObject(RealmCourseActivity::class.java, UUID.randomUUID().toString())
+                    activity.type = "visit"
+                    activity.title = course?.courseTitle
+                    activity.courseId = course?.courseId
+                    activity.time = Date().time
+                    activity.parentCode = userModel?.parentCode
+                    activity.createdOn = userModel?.planetCode
+                    activity.user = userModel?.name
+                }
             }
-            val activity = realm.createObject(RealmCourseActivity::class.java, UUID.randomUUID().toString())
-            activity.type = "visit"
-            activity.title = course?.courseTitle
-            activity.courseId = course?.courseId
-            activity.time = Date().time
-            activity.parentCode = userModel?.parentCode
-            activity.createdOn = userModel?.planetCode
-            activity.createdOn = userModel?.planetCode
-            activity.user = userModel?.name
-            realm.commitTransaction()
         }
 
         @JvmStatic

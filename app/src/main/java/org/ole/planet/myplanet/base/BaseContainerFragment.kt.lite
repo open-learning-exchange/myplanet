@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 //import android.provider.Settings
 import android.text.TextUtils
@@ -19,8 +18,8 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.view.ContextThemeWrapper
 import androidx.appcompat.widget.AppCompatRatingBar
 //import androidx.core.content.FileProvider
 import com.google.gson.JsonObject
@@ -50,7 +49,6 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 //    private lateinit var installApkLauncher: ActivityResultLauncher<Intent>
     lateinit var prefData: SharedPrefManager
 
-    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         profileDbHandler = UserProfileDbHandler(requireActivity())
@@ -125,7 +123,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         fileOpenIntent.putExtra("resourceId", item.id)
         startActivity(fileOpenIntent)
     }
-    @RequiresApi(Build.VERSION_CODES.O)
+
     fun openResource(items: RealmMyLibrary) {
         val matchingItems = mRealm.where(RealmMyLibrary::class.java)
             .equalTo("resourceLocalAddress", items.resourceLocalAddress)
@@ -147,7 +145,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             }
         }
     }
-    @RequiresApi(Build.VERSION_CODES.O)
+
     private fun checkFileExtension(items: RealmMyLibrary) {
         val filenameArray = items.resourceLocalAddress?.split("\\.".toRegex())?.toTypedArray()
         val extension = filenameArray?.get(filenameArray.size - 1)
@@ -164,7 +162,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             }
         }
     }
-    @RequiresApi(Build.VERSION_CODES.O)
+
     private fun checkMoreFileExtensions(extension: String?, items: RealmMyLibrary) {
         when (extension) {
             "txt" -> openIntent(items, TextFileViewerActivity::class.java)
@@ -177,7 +175,6 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         }
     }
 
-//    @RequiresApi(Build.VERSION_CODES.O)
 //    private fun installApk(items: RealmMyLibrary) {
 //        currentLibrary = items
 //        val directory = File(MainApplication.context.getExternalFilesDir(null).toString() + "/ole" + "/" + items.id)
@@ -211,14 +208,12 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 //        }
 //    }
 
-//    @RequiresApi(Build.VERSION_CODES.O)
 //    private fun requestInstallPermission() {
 //        val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES)
 //        intent.data = Uri.parse("package:" + MainApplication.context.packageName)
 //        installApkLauncher.launch(intent)
 //    }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     private fun openFileType(items: RealmMyLibrary, videoType: String) {
         val mimetype = Utilities.getMimeType(items.resourceLocalAddress)
         if (mimetype == null) {
@@ -251,9 +246,9 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         intent.putExtras(bundle)
         startActivity(intent)
     }
-    @RequiresApi(Build.VERSION_CODES.O)
+
     private fun showResourceList(downloadedResources: List<RealmMyLibrary>?) {
-        val builderSingle = AlertDialog.Builder(requireActivity())
+        val builderSingle = AlertDialog.Builder(ContextThemeWrapper(requireActivity(), R.style.CustomAlertDialog))
         builderSingle.setTitle(getString(R.string.select_resource_to_open))
         val arrayAdapter: ArrayAdapter<RealmMyLibrary?> = object : ArrayAdapter<RealmMyLibrary?>(
             requireActivity(), android.R.layout.select_dialog_item, downloadedResources!!
@@ -270,6 +265,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                     } else {
                         R.drawable.ic_download
                     }, 0)
+                tv.setTextColor(context.getColor(R.color.daynight_textColor))
                 tv.text = library?.title
                 return tv
             }
@@ -280,7 +276,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         }
         builderSingle.setNegativeButton(R.string.dismiss, null).show()
     }
-    @RequiresApi(Build.VERSION_CODES.O)
+
     fun setOpenResourceButton(downloadedResources: List<RealmMyLibrary>?, btnOpen: Button) {
         if (downloadedResources.isNullOrEmpty()) {
             btnOpen.visibility = View.GONE

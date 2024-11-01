@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.CompoundButton
 import android.widget.RadioButton
+import androidx.core.content.ContextCompat
 import androidx.core.widget.NestedScrollView
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.JsonObject
@@ -75,13 +76,13 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     private fun createSubmission() {
         startTransaction()
         sub = createSubmission(sub, mRealm)
-        if (TextUtils.isEmpty(id)) {
+        if (!TextUtils.isEmpty(exam?.id)) {
             sub?.parentId = if (!TextUtils.isEmpty(exam?.courseId)) {
                 exam?.id + "@" + exam?.courseId
             } else {
                 exam?.id
             }
-        } else {
+        } else if(!TextUtils.isEmpty(id)){
             sub?.parentId = if (!TextUtils.isEmpty(exam?.courseId)) {
                 id + "@" + exam?.courseId
             } else {
@@ -188,6 +189,8 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         if (isRadio) {
             fragmentTakeExamBinding.groupChoices.addView(rdBtn)
         } else {
+            rdBtn.setTextColor(resources.getColor(R.color.daynight_textColor))
+            rdBtn.buttonTintList = ContextCompat.getColorStateList(requireContext(), R.color.daynight_textColor)
             fragmentTakeExamBinding.llCheckbox.addView(rdBtn)
         }
     }

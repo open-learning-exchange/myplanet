@@ -41,10 +41,11 @@
                     android:text="@string/txt_myCourses"
                     android:textColor="@color/md_white_1000"
                     android:textSize="@dimen/text_size_large"
-                    android:textStyle="bold" />
+                    android:textStyle="bold"
+                    android:minWidth="150dp" />
                 <Button
                     android:id="@+id/btn_remove"
-                    android:layout_width="wrap_content"
+                    android:layout_width="70dp"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:layout_margin="@dimen/padding_small"
@@ -52,7 +53,7 @@
                     android:padding="8dp"
                     android:text="@string/leave"
                     android:textColor="@color/md_white_1000"
-                    android:textSize="@dimen/text_size_mid"
+                    android:textSize="13sp"
                     android:visibility="gone" />
                 <TextView
                     android:id="@+id/tv_add"
@@ -67,7 +68,8 @@
                     android:textColor="@color/daynight_textColor"
                     app:drawableTint="@color/daynight_textColor"
                     android:textSize="@dimen/text_size_mid"
-                    app:drawableLeftCompat="@drawable/ic_add_library" />
+                    app:drawableLeftCompat="@drawable/ic_add_library"
+                    android:width="180dp" />
                 <TextView
                     android:id="@+id/tv_selected"
                     android:layout_width="wrap_content"
@@ -81,10 +83,11 @@
                     android:textSize="@dimen/text_size_mid"
                     android:visibility="gone"
                     app:drawableLeftCompat="@drawable/ic_delete"
-                    app:drawableTint="@color/daynight_textColor"/>
+                    app:drawableTint="@color/daynight_textColor"
+                    android:minWidth="120dp" />
                 <Button
                     android:id="@+id/btn_archive"
-                    android:layout_width="wrap_content"
+                    android:layout_width="95dp"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:layout_margin="@dimen/_10dp"
@@ -92,10 +95,10 @@
                     android:gravity="start|center_vertical"
                     android:text="@string/archive"
                     android:textColor="@color/daynight_textColor"
-                    android:textSize="@dimen/text_size_mid"
+                    android:textSize="13sp"
                     android:visibility="gone"
                     app:drawableLeftCompat="@drawable/ic_delete"
-                    app:drawableTint="@color/daynight_textColor"/>
+                    app:drawableTint="@color/daynight_textColor" />
                 <ImageButton
                     android:id="@+id/filter"
                     style="@style/YellowButtons"
@@ -128,7 +131,8 @@
                 android:text="@string/select_all"
                 android:textColor="@color/daynight_textColor"
                 android:textSize="@dimen/text_size_mid"
-                android:buttonTint="@color/daynight_textColor" />
+                android:buttonTint="@color/daynight_textColor"
+                android:maxWidth="0dp" />
             <include
                 layout="@layout/layout_search"
                 android:layout_width="0dp"
@@ -280,4 +284,15 @@
             </LinearLayout>
         </LinearLayout>
     </androidx.cardview.widget.CardView>
+
+    <com.github.clans.fab.FloatingActionButton
+        android:id="@+id/fabMyProgress"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_my_progress"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="@dimen/padding_large"
+        android:contentDescription="@string/my_progress"
+        app:fab_label="@string/my_progress"
+        android:visibility="gone" />
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -18,12 +18,12 @@ import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.createStepResource
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utilities.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import java.io.File
 import java.io.FileWriter
 import java.io.IOException
-import java.util.regex.Pattern
 
 open class RealmMyCourse : RealmObject() {
     @JvmField
@@ -131,6 +131,7 @@ open class RealmMyCourse : RealmObject() {
                 }
                 insertCourseStepsAttachments(myMyCoursesDB?.courseId, stepId, JsonUtils.getJsonArray("resources", stepJson), mRealm)
                 insertExam(stepJson, mRealm, stepId, i + 1, myMyCoursesDB?.courseId)
+                insertSurvey(stepJson, mRealm, stepId, i + 1, myMyCoursesDB?.courseId)
                 step.noOfResources = JsonUtils.getJsonArray("resources", stepJson).size()
                 step.courseId = myMyCoursesDB?.courseId
                 courseStepsList.add(step)
@@ -182,23 +183,6 @@ open class RealmMyCourse : RealmObject() {
             writeCsv("${context.getExternalFilesDir(null)}/ole/course.csv", courseDataList)
         }
 
-        private fun extractLinks(text: String?): ArrayList<String> {
-            val links = ArrayList<String>()
-            val pattern = Pattern.compile("!\\[.*?]\\((.*?)\\)")
-            val matcher = text?.let { pattern.matcher(it) }
-            if (matcher != null) {
-                while (matcher.find()) {
-                    val link = matcher.group(1)
-                    if (link != null) {
-                        if (link.isNotEmpty()) {
-                            links.add(link)
-                        }
-                    }
-                }
-            }
-            return links
-        }
-
         @JvmStatic
         fun saveConcatenatedLinksToPrefs() {
             val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
@@ -236,6 +220,14 @@ open class RealmMyCourse : RealmObject() {
         private fun insertExam(stepContainer: JsonObject, mRealm: Realm, stepId: String, i: Int, myCoursesID: String?) {
             if (stepContainer.has("exam")) {
                 val `object` = stepContainer.getAsJsonObject("exam")
+                `object`.addProperty("stepNumber", i)
+                insertCourseStepsExams(myCoursesID, stepId, `object`, mRealm)
+            }
+        }
+
+        private fun insertSurvey(stepContainer: JsonObject, mRealm: Realm, stepId: String, i: Int, myCoursesID: String?) {
+            if (stepContainer.has("survey")) {
+                val `object` = stepContainer.getAsJsonObject("survey")
                 `object`.addProperty("stepNumber", i)
                 insertCourseStepsExams(myCoursesID, stepId, `object`, mRealm)
             }

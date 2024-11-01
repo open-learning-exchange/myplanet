@@ -1,18 +1,15 @@
 package org.ole.planet.myplanet.base
 
-import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import androidx.annotation.RequiresApi
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 
-@RequiresApi(Build.VERSION_CODES.O)
 abstract class BaseMemberFragment : BaseTeamFragment() {
     abstract val list: List<RealmUserModel?>
     abstract val adapter: RecyclerView.Adapter<*>?

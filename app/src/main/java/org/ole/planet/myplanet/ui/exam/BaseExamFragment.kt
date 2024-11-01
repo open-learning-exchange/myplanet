@@ -108,18 +108,12 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     private fun continueExam() {
         if (currentIndex < (questions?.size ?: 0)) {
             startExam(questions?.get(currentIndex))
-        } else if (type?.startsWith("survey") == true) {
-            showUserInfoDialog()
         } else {
             saveCourseProgress()
             AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
                 .setTitle(getString(R.string.thank_you_for_taking_this) + type + getString(R.string.we_wish_you_all_the_best))
                 .setPositiveButton("Finish") { _: DialogInterface?, _: Int ->
                     parentFragmentManager.popBackStack()
-                    try {
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
                 }.show()
         }
     }

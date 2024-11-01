@@ -5,12 +5,10 @@ import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
-import android.os.Build
 import android.os.Bundle
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
 import android.provider.Settings
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.preference.PreferenceManager
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -24,6 +22,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
@@ -55,7 +54,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         private const val AUTO_SYNC_WORK_TAG = "autoSyncWork"
         private const val STAY_ONLINE_WORK_TAG = "stayOnlineWork"
         private const val TASK_NOTIFICATION_WORK_TAG = "taskNotificationWork"
-        lateinit var context: Context
+        lateinit var context: Context 
         lateinit var mRealm: Realm
         lateinit var service: DatabaseService
         var preferences: SharedPreferences? = null
@@ -72,26 +71,34 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             }
             return "0"
         }
-        val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+        val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         lateinit var defaultPref: SharedPreferences
 
         fun createLog(type: String) {
-            service = DatabaseService(context)
-            val mRealm = service.realmInstance
-            if (!mRealm.isInTransaction) {
-                mRealm.beginTransaction()
+            runBlocking {
+                withContext(Dispatchers.IO) {
+                    val realm = Realm.getDefaultInstance()
+                    try {
+                        realm.executeTransaction { r ->
+                            val log = r.createObject(RealmApkLog::class.java, "${UUID.randomUUID()}")
+                            val model = UserProfileDbHandler(context).userModel
+                            if (model != null) {
+                                log.parentCode = model.parentCode
+                                log.createdOn = model.planetCode
+                                log.userId = model.id
+                            }
+                            log.time = "${Date().time}"
+                            log.page = ""
+                            log.version = getVersionName(context)
+                            log.type = type
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    } finally {
+                        realm.close()
+                    }
+                }
             }
-            val log = mRealm.createObject(RealmApkLog::class.java, "${UUID.randomUUID()}")
-            val model = UserProfileDbHandler(context).userModel
-            if (model != null) {
-                log.parentCode = model.parentCode
-                log.createdOn = model.planetCode
-            }
-            log.time = "${Date().time}"
-            log.page = ""
-            log.version = getVersionName(context)
-            log.type = type
-            mRealm.commitTransaction()
         }
 
         private fun applyThemeMode(themeMode: String?) {
@@ -103,7 +110,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         }
 
         fun setThemeMode(themeMode: String) {
-            val sharedPreferences = context.getSharedPreferences("app_preferences", Context.MODE_PRIVATE)
+            val sharedPreferences = context.getSharedPreferences("app_preferences", MODE_PRIVATE)
             with(sharedPreferences.edit()) {
                 putString("theme_mode", themeMode)
                 apply()
@@ -128,6 +135,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                 responseCode in 200..299
 
             } catch (e: Exception) {
+                e.printStackTrace()
                 false
             }
         }
@@ -137,12 +145,12 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     private var isActivityChangingConfigurations = false
     private var isFirstLaunch = true
 
-    @RequiresApi(Build.VERSION_CODES.N)
     override fun onCreate() {
         super.onCreate()
-        initialize(CoroutineScope(Dispatchers.IO))
-
         context = this
+        initialize(applicationScope)
+        startListenNetworkState()
+
         preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         service = DatabaseService(context)
         mRealm = service.realmInstance
@@ -165,10 +173,9 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             handleUncaughtException(e)
         }
         registerActivityLifecycleCallbacks(this)
-        startListenNetworkState()
         onAppStarted()
 
-        val sharedPreferences = getSharedPreferences("app_preferences", Context.MODE_PRIVATE)
+        val sharedPreferences = getSharedPreferences("app_preferences", MODE_PRIVATE)
         val themeMode = sharedPreferences.getString("theme_mode", ThemeMode.FOLLOW_SYSTEM)
 
         applyThemeMode(themeMode)
@@ -218,13 +225,22 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     }
 
     override fun attachBaseContext(base: Context) {
-        super.attachBaseContext(LocaleHelper.onAttach(base, "en"))
+        super.attachBaseContext(LocaleHelper.onAttach(base))
         Utilities.setContext(base)
     }
 
     override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
         super.onConfigurationChanged(newConfig)
         LocaleHelper.onAttach(this)
+        val currentNightMode = newConfig.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
+        when (currentNightMode) {
+            android.content.res.Configuration.UI_MODE_NIGHT_NO -> {
+                applyThemeMode(ThemeMode.LIGHT)
+            }
+            android.content.res.Configuration.UI_MODE_NIGHT_YES -> {
+                applyThemeMode(ThemeMode.DARK)
+            }
+        }
     }
 
     override fun onActivityCreated(activity: Activity, bundle: Bundle?) {}
@@ -256,37 +272,50 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         if (isFirstLaunch) {
             isFirstLaunch = false
         } else {
-            val fromForeground = "foreground"
-            createLog(fromForeground)
+            applicationScope.launch {
+                createLog("foreground")
+            }
         }
     }
     
     private fun onAppBackgrounded() {}
 
     private fun onAppStarted() {
-        val newStart = "new launch"
-        createLog(newStart)
+        applicationScope.launch {
+            createLog("new login")
+        }
     }
 
     private fun onAppClosed() {}
 
     private fun handleUncaughtException(e: Throwable) {
         e.printStackTrace()
-        if (!mRealm.isInTransaction) {
-            mRealm.beginTransaction()
+        applicationScope.launch(Dispatchers.IO) {
+            try {
+                val realm = Realm.getDefaultInstance()
+                try {
+                    realm.executeTransaction { r ->
+                        val log = r.createObject(RealmApkLog::class.java, "${UUID.randomUUID()}")
+                        val model = UserProfileDbHandler(this@MainApplication).userModel
+                        if (model != null) {
+                            log.parentCode = model.parentCode
+                            log.createdOn = model.planetCode
+                            log.userId = model.id
+                        }
+                        log.time = "${Date().time}"
+                        log.page = ""
+                        log.version = getVersionName(this@MainApplication)
+                        log.type = RealmApkLog.ERROR_TYPE_CRASH
+                        log.setError(e)
+                    }
+                } finally {
+                    realm.close()
+                }
+            } catch (ex: Exception) {
+                ex.printStackTrace()
+            }
         }
-        val log = mRealm.createObject(RealmApkLog::class.java, "${UUID.randomUUID()}")
-        val model = UserProfileDbHandler(this).userModel
-        if (model != null) {
-            log.parentCode = model.parentCode
-            log.createdOn = model.planetCode
-        }
-        log.time = "${Date().time}"
-        log.page = ""
-        log.version = getVersionName(this)
-        log.type = RealmApkLog.ERROR_TYPE_CRASH
-        log.setError(e)
-        mRealm.commitTransaction()
+
         val homeIntent = Intent(Intent.ACTION_MAIN)
         homeIntent.addCategory(Intent.CATEGORY_HOME)
         homeIntent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK

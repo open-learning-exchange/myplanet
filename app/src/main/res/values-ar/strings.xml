@@ -182,7 +182,6 @@
     <string name="my_survey">استطلاعي</string>
 
     <string-array name="level">
-        <item></item>
         <item>مبتدئ</item>
         <item>متوسط</item>
         <item>متقدم</item>
@@ -640,9 +639,11 @@
     <string name="please_select_link_item_from_list">يرجى تحديد عنصر الرابط من القائمة</string>
     <string name="title_is_required">العنوان مطلوب</string>
     <string name="no_data_available">لا توجد بيانات متاحة</string>
-    <string name="are_you_sure_you_want_to_delete_these_courses">هل أنت متأكد أنك تريد حذف هذه الدورات؟</string>
+    <string name="are_you_sure_you_want_to_leave_these_courses">هل أنت متأكد أنك تريد حذف هذه الدورات؟</string>
+    <string name="are_you_sure_you_want_to_leave_this_course">هل أنت متأكد أنك تريد مغادرة هذه الدورة؟</string>
     <string name="success_you_have_added_the_following_courses">تمت الإضافة بنجاح! لقد أضفت الدورات التالية:\n\n</string>
     <string name="return_to_the_home_tab_to_access_mycourses">\n\nعودة إلى علامة التبويب الرئيسية للوصول إلى "دوراتي".\n</string>
+    <string name="go_to_mycourses">اذهب إلى دوراتي</string>
     <string name="and">"و "</string>
     <string name="more_course_s">" دورة (دورات) أخرى…\n"</string>
     <string name="retake_test">إعادة الاختبار [%d]</string>
@@ -1060,7 +1061,6 @@
     <string name="enterprise_list">قائمة الشركات</string>
     <string name="list_of_teams">قائمة الفرق</string>
     <string name="sign_up_to_chat">يرجى التسجيل للوصول إلى الدردشة الذكية</string>
-    <string name="are_you_sure_you_want_to_delete_this_course">هل أنت متأكد أنك تريد حذف هذه الدورة؟</string>
     <string name="share_chat">شارك الدردشة</string>
     <string name="shared_chat">دردشة مشتركة</string>
     <string name="check_apk_version">جارٍ فحص إصدار apk</string>
@@ -1090,7 +1090,7 @@
     <string name="tag_selected">تم اختيار: %s</string>
     <string name="resources_size">الموارد [%d]</string>
     <string name="user_role">- %s</string>
-    <string name="user_name">%s (%d)</string>
+    <string name="user_name">%1$s (%2$s)</string>
     <string name="visit_count">%1$s (%2$d %3$s)</string>
     <string name="two_strings">%1$s %2$s</string>
     <string name="three_strings">%1$s %2$s %3$s</string>
@@ -1176,5 +1176,27 @@
     <string name="material_calendar_negative_button">إلغاء</string>
     <string name="switching_off_manual_configuration_to_clear_data">سيؤدي إيقاف التكوين اليدوي إلى مسح جميع البيانات، هل أنت متأكد أنك تريد المتابعة؟</string>
     <string name="switching_on_manual_configuration_to_clear_data">سيؤدي تشغيل التكوين اليدوي إلى مسح جميع البيانات، هل أنت متأكد أنك تريد المتابعة؟</string>
+    <string name="chart_description">مخطط نشاط تسجيل الدخول</string>
+    <string name="chart_label">عدد مرات تسجيل الدخول</string>
+    <string name="copied_to_clipboard">تم نسخه إلى الحافظة</string>
+    <string name="mark_all_as_read">وضع علامة "مقروء" على الجميع</string>
+    <string name="mark_as_read">وضع علامة كمقروء</string>
+    <string name="our_voices">أصواتنا</string>
+    <string name="no_voices_available">لا توجد أصوات متاحة</string>
+    <string name="new_voice">صوت جديد</string>
+    <string name="hide_new_voice">إخفاء الصوت الجديد</string>
+    <string name="summary_of_achievemnets">ملخص الإنجازات - قم بتلخيص إنجازاتك بإيجاز وأضف المواد ذات الصلة أدناه</string>
+    <string name="my_goals_description">أهدافي - ما هي أهدافك للعشر سنوات القادمة؟</string>
+    <string name="add_materials">أضف أي مواد تُظهر إنجازاتك أدناه</string>
+    <string name="my_purpose_description">هدفي - ما هي طموحاتك التعليمية والمهنية؟</string>
+    <string name="my_purpose">هدفي</string>
+    <string name="my_goals">أهدافي</string>
+    <string name="community_name">اسم المجتمع</string>
+    <string name="last_login">آخر تسجيل دخول : </string>
+    <string name="total_visits_overall">إجمالي الزيارات : </string>
+    <string name="most_opened_resource">أكثر مورد تم فتحه : </string>
+    <string name="number_of_resources_opened">عدد الموارد المفتوحة : </string>
+    <string name="number_of_visits">عدد الزيارات</string>
+    <string name="kindly_enter_reply_message">يرجى إدخال رسالة الرد</string>
 
 </resources>

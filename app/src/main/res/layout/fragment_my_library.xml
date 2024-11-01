@@ -40,7 +40,8 @@
                     android:text="@string/library"
                     android:textColor="@color/textColorPrimary"
                     android:textSize="@dimen/text_size_large"
-                    android:textStyle="bold" />
+                    android:textStyle="bold"
+                    android:minWidth="150dp" />
                 <TextView
                     android:id="@+id/tv_add"
                     style="@style/Widget.AppCompat.Button.Borderless.Colored"
@@ -54,7 +55,8 @@
                     android:textColor="@color/daynight_textColor"
                     android:textSize="@dimen/text_size_mid"
                     app:drawableLeftCompat="@drawable/ic_add_library"
-                    app:drawableTint="@color/daynight_textColor"/>
+                    app:drawableTint="@color/daynight_textColor"
+                    android:width="170dp" />
                 <TextView
                     android:id="@+id/tv_selected"
                     android:layout_width="wrap_content"
@@ -76,7 +78,8 @@
                     android:visibility="gone"
                     app:drawableLeftCompat="@drawable/ic_delete"
                     app:drawableTint="@color/daynight_textColor"
-                    app:tint="@color/textColorPrimary" />
+                    app:tint="@color/textColorPrimary"
+                    android:minWidth="120dp" />
                 <ImageButton
                     android:id="@+id/filter"
                     style="@style/YellowButtons"
@@ -108,7 +111,8 @@
                 android:text="@string/select_all"
                 android:textColor="@color/daynight_textColor"
                 android:textSize="@dimen/text_size_mid"
-                android:buttonTint="@color/daynight_textColor" />
+                android:buttonTint="@color/daynight_textColor"
+                android:maxWidth="0dp" />
             <include
                 layout="@layout/layout_search"
                 android:layout_width="0dp"
@@ -236,4 +240,15 @@
             </LinearLayout>
         </LinearLayout>
     </androidx.cardview.widget.CardView>
+
+    <com.github.clans.fab.FloatingActionButton
+        android:id="@+id/addResource"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="@dimen/padding_large"
+        android:contentDescription="@string/add_res"
+        android:src="@drawable/ic_add"
+        android:tint="@color/md_white_1000"
+        app:fab_label="@string/add_res" />
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.text.TextUtils
-import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
@@ -23,6 +22,7 @@ import org.ole.planet.myplanet.model.FeedbackReply
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.feedback.FeedbackDetailActivity.RvFeedbackAdapter.ReplyViewHolder
+import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormatedDateWithTime
 import java.util.Date
 
@@ -33,6 +33,10 @@ class FeedbackDetailActivity : AppCompatActivity() {
     private lateinit var feedback: RealmFeedback
     lateinit var realm: Realm
     private lateinit var rowFeedbackReplyBinding: RowFeedbackReplyBinding
+
+    override fun attachBaseContext(base: Context) {
+        super.attachBaseContext(LocaleHelper.onAttach(base))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -65,7 +69,7 @@ class FeedbackDetailActivity : AppCompatActivity() {
         }
         activityFeedbackDetailBinding.replyFeedback.setOnClickListener {
             if (TextUtils.isEmpty(activityFeedbackDetailBinding.feedbackReplyEditText.text.toString().trim { it <= ' ' })) {
-                activityFeedbackDetailBinding.feedbackReplyEditText.error = "Kindly enter reply message"
+                activityFeedbackDetailBinding.feedbackReplyEditText.error = getString(R.string.kindly_enter_reply_message)
             } else {
                 val message = activityFeedbackDetailBinding.feedbackReplyEditText.text.toString().trim { it <= ' ' }
                 val `object` = JsonObject()
@@ -121,7 +125,7 @@ class FeedbackDetailActivity : AppCompatActivity() {
 
     inner class RvFeedbackAdapter(private val replyList: List<FeedbackReply>?, var context: Context) : RecyclerView.Adapter<ReplyViewHolder>() {
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ReplyViewHolder {
-            rowFeedbackReplyBinding = RowFeedbackReplyBinding.inflate(LayoutInflater.from(context), parent, false)
+            rowFeedbackReplyBinding = RowFeedbackReplyBinding.inflate(layoutInflater, parent, false)
             return ReplyViewHolder(rowFeedbackReplyBinding)
         }
 

@@ -40,7 +40,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Full Name"
+                android:text="@string/full_name"
                 android:textColor="@color/daynight_textColor"
                 android:textStyle="bold" />
             <TextView
@@ -56,7 +56,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="DOB"
+                android:text="@string/date_of_birth"
                 android:textColor="@color/daynight_textColor"
                 android:textStyle="bold" />
             <TextView
@@ -72,7 +72,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Email"
+                android:text="@string/email"
                 android:textColor="@color/daynight_textColor"
                 android:textStyle="bold" />
             <TextView
@@ -88,7 +88,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Phone"
+                android:text="@string/phone_number"
                 android:textColor="@color/daynight_textColor"
                 android:textStyle="bold" />
             <TextView
@@ -104,7 +104,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Language"
+                android:text="@string/language"
                 android:textColor="@color/daynight_textColor"
                 android:textStyle="bold" />
             <TextView
@@ -136,7 +136,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Last Login"
+                android:text="@string/login"
                 android:textColor="@color/daynight_textColor"
                 android:textStyle="bold" />
             <TextView
@@ -152,7 +152,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Level"
+                android:text="@string/level"
                 android:textColor="@color/daynight_textColor"
                 android:textStyle="bold" />
             <TextView
@@ -171,5 +171,5 @@
         android:layout_height="wrap_content"
         android:layout_gravity="end"
         android:layout_marginTop="16dp"
-        android:text="Close" />
+        android:text="@string/close" />
 </LinearLayout>

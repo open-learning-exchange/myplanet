@@ -20,8 +20,6 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.MenuItemCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
 import com.google.android.material.navigation.NavigationBarView
@@ -36,7 +34,9 @@ import com.mikepenz.materialdrawer.model.PrimaryDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.Nameable
 import io.realm.Case
-import io.realm.Realm
+import io.realm.RealmChangeListener
+import io.realm.RealmObject
+import io.realm.RealmResults
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
@@ -55,7 +55,7 @@ import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.chat.ChatHistoryListFragment
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
-import org.ole.planet.myplanet.ui.dashboard.notification.NotificationFragment
+import org.ole.planet.myplanet.ui.dashboard.notification.NotificationsFragment
 import org.ole.planet.myplanet.ui.dashboard.notification.NotificationListener
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
 import org.ole.planet.myplanet.ui.resources.ResourceDetailFragment
@@ -77,6 +77,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.Utilities.toast
 import java.util.Date
 import java.util.UUID
+import kotlin.math.ceil
 
 class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, NavigationBarView.OnItemSelectedListener, NotificationListener {
     private lateinit var activityDashboardBinding: ActivityDashboardBinding
@@ -91,6 +92,12 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private var menut: TabLayout.Tab? = null
     private var tl: TabLayout? = null
     private var dl: DrawerLayout? = null
+    private val realmListeners = mutableListOf<RealmListener>()
+
+    private interface RealmListener {
+        fun removeListener()
+    }
+
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(LocaleHelper.onAttach(base))
     }
@@ -146,8 +153,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         result?.stickyFooter?.setPadding(0, 0, 0, 0) // moves logout button to the very bottom of the drawer. Without it, the "logout" button suspends a little.
         result?.actionBarDrawerToggle?.isDrawerIndicatorEnabled = true
         dl = result?.drawerLayout
-        WindowInsetsControllerCompat(window, window.decorView).hide(WindowInsetsCompat.Type.statusBars())
-        result?.drawerLayout?.fitsSystemWindows = false
         topbarSetting()
         if (intent != null && intent.hasExtra("fragmentToOpen")) {
             val fragmentToOpen = intent.getStringExtra("fragmentToOpen")
@@ -160,7 +165,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
         activityDashboardBinding.appBarBell.ivSync.setOnClickListener {
             isServerReachable(Utilities.getUrl())
-            startUpload()
+            startUpload("dashboard")
         }
         activityDashboardBinding.appBarBell.imgLogo.setOnClickListener { result?.openDrawer() }
         activityDashboardBinding.appBarBell.bellToolbar.setOnMenuItemClickListener { item ->
@@ -175,7 +180,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 R.id.menu_goOnline -> wifiStatusSwitch()
                 R.id.action_sync -> {
                     isServerReachable(Utilities.getUrl())
-                    startUpload()
+                    startUpload("dashboard")
                 }
                 R.id.action_feedback -> {
                     if (user?.id?.startsWith("guest") == false) {
@@ -199,6 +204,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         menue = tl?.getTabAt(4)
         menuco = tl?.getTabAt(5)
         hideWifi()
+        setupRealmListeners()
         checkAndCreateNewNotifications()
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
@@ -214,49 +220,59 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                             toast(context, getString(R.string.press_back_again_to_exit))
                             Handler(Looper.getMainLooper()).postDelayed({ doubleBackToExitPressedOnce = false }, 2000)
                         } else {
+                            val fragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
+                            if (fragment is BaseContainerFragment) {
+                                fragment.handleBackPressed()
+                            }
                             finish()
                         }
                     }
-                }
-
-                val fragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
-                if (fragment is BaseContainerFragment) {
-                    fragment.handleBackPressed()
                 }
             }
         })
     }
 
-    private fun checkAndCreateNewNotifications() {
-        val resourceCount = getLibraryList(mRealm, user?.id).size
-        mRealm.executeTransaction { realm ->
-            if (resourceCount > 0) {
-                createNotificationIfNotExists(realm, "resource", "you have $resourceCount resources not downloaded", "$resourceCount")
-            }
+    private fun setupRealmListeners() {
+        setupListener {
+            mRealm.where(RealmMyLibrary::class.java).findAllAsync()
+        }
 
-            val pendingSurveys = getPendingSurveys(user?.id, realm)
-            val surveyTitles = getSurveyTitlesFromSubmissions(pendingSurveys, realm)
-            surveyTitles.forEach { title ->
-                createNotificationIfNotExists(realm, "survey", "You have a pending survey: $title", title)
-            }
+        setupListener {
+            mRealm.where(RealmSubmission::class.java)
+                .equalTo("userId", user?.id)
+                .equalTo("type", "survey")
+                .equalTo("status", "pending", Case.INSENSITIVE)
+                .findAllAsync()
+        }
 
-            val tasks = realm.where(RealmTeamTask::class.java)
+        setupListener {
+            mRealm.where(RealmTeamTask::class.java)
                 .notEqualTo("status", "archived")
                 .equalTo("completed", false)
                 .equalTo("assignee", user?.id)
-                .findAll()
-            tasks.forEach { task ->
-                createNotificationIfNotExists(realm, "task", "${task.title} is due in ${formatDate(task.deadline)}", task.id)
-            }
+                .findAllAsync()
+        }
+    }
 
-            val storageRatio = totalAvailableMemoryRatio
-            when {
-                storageRatio <= 10 -> {
-                    createNotificationIfNotExists(realm, "storage", "${getString(R.string.storage_critically_low)} $storageRatio% ${getString(R.string.available_please_free_up_space)}", "storage")
-                }
-                storageRatio <= 40 -> {
-                    createNotificationIfNotExists(realm, "storage", "${getString(R.string.storage_running_low)} $storageRatio% ${getString(R.string.available)}", "storage")
-                }
+    private inline fun <reified T : RealmObject> setupListener(crossinline query: () -> RealmResults<T>) {
+        val results = query()
+        val listener = RealmChangeListener<RealmResults<T>> { _ ->
+            checkAndCreateNewNotifications()
+        }
+        results.addChangeListener(listener)
+        realmListeners.add(object : RealmListener {
+            override fun removeListener() {
+                results.removeChangeListener(listener)
+            }
+        })
+    }
+
+    private fun checkAndCreateNewNotifications() {
+        if (mRealm.isInTransaction) {
+            createNotifications()
+        } else {
+            mRealm.executeTransaction {
+                createNotifications()
             }
         }
 
@@ -265,8 +281,59 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
+    private fun createNotifications() {
+        updateResourceNotification()
+
+        val pendingSurveys = getPendingSurveys(user?.id)
+        val surveyTitles = getSurveyTitlesFromSubmissions(pendingSurveys)
+        surveyTitles.forEach { title ->
+            createNotificationIfNotExists("survey", "you have a pending survey: $title", title)
+        }
+
+        val tasks = mRealm.where(RealmTeamTask::class.java)
+            .notEqualTo("status", "archived")
+            .equalTo("completed", false)
+            .equalTo("assignee", user?.id)
+            .findAll()
+        tasks.forEach { task ->
+            createNotificationIfNotExists("task", "${task.title} is due in ${formatDate(task.deadline)}", task.id)
+        }
+
+        val storageRatio = totalAvailableMemoryRatio
+        when {
+            storageRatio <= 10 -> {
+                createNotificationIfNotExists("storage", "${getString(R.string.storage_critically_low)} $storageRatio% ${getString(R.string.available_please_free_up_space)}", "storage")
+            }
+            storageRatio <= 40 -> {
+                createNotificationIfNotExists("storage", "${getString(R.string.storage_running_low)} $storageRatio% ${getString(R.string.available)}", "storage")
+            }
+        }
+    }
+
+    private fun updateResourceNotification() {
+        val resourceCount = getLibraryList(mRealm, user?.id).size
+        if (resourceCount > 0) {
+            val existingNotification = mRealm.where(RealmNotification::class.java)
+                .equalTo("userId", user?.id)
+                .equalTo("type", "resource")
+                .findFirst()
+
+            if (existingNotification != null) {
+                existingNotification.message = "you have $resourceCount resources not downloaded"
+                existingNotification.relatedId = "$resourceCount"
+            } else {
+                createNotificationIfNotExists("resource", "you have $resourceCount resources not downloaded", "$resourceCount")
+            }
+        } else {
+            mRealm.where(RealmNotification::class.java)
+                .equalTo("userId", user?.id)
+                .equalTo("type", "resource")
+                .findFirst()?.deleteFromRealm()
+        }
+    }
+
     private fun openNotificationsList(userId: String) {
-        val fragment = NotificationFragment().apply {
+        val fragment = NotificationsFragment().apply {
             arguments = Bundle().apply {
                 putString("userId", userId)
             }
@@ -281,15 +348,15 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-    private fun createNotificationIfNotExists(realm: Realm, type: String, message: String, relatedId: String?) {
-        val existingNotification = realm.where(RealmNotification::class.java)
+    private fun createNotificationIfNotExists(type: String, message: String, relatedId: String?) {
+        val existingNotification = mRealm.where(RealmNotification::class.java)
             .equalTo("userId", user?.id)
             .equalTo("type", type)
             .equalTo("relatedId", relatedId)
             .findFirst()
 
         if (existingNotification == null) {
-            realm.createObject(RealmNotification::class.java, UUID.randomUUID().toString()).apply {
+            mRealm.createObject(RealmNotification::class.java, "${UUID.randomUUID()}").apply {
                 this.userId = user?.id ?: ""
                 this.type = type
                 this.message = message
@@ -299,18 +366,18 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-    private fun getPendingSurveys(userId: String?, realm: Realm): List<RealmSubmission> {
-        return realm.where(RealmSubmission::class.java)
+    private fun getPendingSurveys(userId: String?): List<RealmSubmission> {
+        return mRealm.where(RealmSubmission::class.java)
             .equalTo("userId", userId)
             .equalTo("type", "survey")
             .equalTo("status", "pending", Case.INSENSITIVE)
             .findAll()
     }
 
-    private fun getSurveyTitlesFromSubmissions(submissions: List<RealmSubmission>, realm: Realm): List<String> {
+    private fun getSurveyTitlesFromSubmissions(submissions: List<RealmSubmission>): List<String> {
         val titles = mutableListOf<String>()
         submissions.forEach { submission ->
-            val exam = realm.where(RealmStepExam::class.java)
+            val exam = mRealm.where(RealmStepExam::class.java)
                 .equalTo("id", submission.parentId)
                 .findFirst()
             exam?.name?.let { titles.add(it) }
@@ -322,7 +389,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         val menuItem = activityDashboardBinding.appBarBell.bellToolbar.menu.findItem(R.id.action_notifications)
         val actionView = MenuItemCompat.getActionView(menuItem)
         val smsCountTxt = actionView.findViewById<TextView>(R.id.notification_badge)
-        smsCountTxt.text = count.toString()
+        smsCountTxt.text = "$count"
         smsCountTxt.visibility = if (count > 0) View.VISIBLE else View.GONE
         actionView.setOnClickListener(onClickListener)
     }
@@ -437,16 +504,26 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
             val paddingVerticalDp = (paddingVerticalPx / density).toInt()
             val paddingHorizontalDp = (paddingHorizontalPx / density).toInt()
+            val resourceId = resources.getIdentifier("status_bar_height", "dimen", "android")
+            val statusBarHeight = if (resourceId > 0) {
+                resources.getDimensionPixelSize(resourceId)
+            } else {
+                ceil(25 * density).toInt()
+            }
 
             val header = AccountHeaderBuilder()
                 .withActivity(this@DashboardActivity)
                 .withTextColor(ContextCompat.getColor(this, R.color.bg_white))
                 .withHeaderBackground(R.drawable.ole_logo)
                 .withDividerBelowHeader(false)
+                .withTranslucentStatusBar(false)
+                .withHeightDp(paddingVerticalDp + 20 * 2 + (statusBarHeight / density).toInt())
                 .build()
-
             val headerBackground = header.headerBackgroundView
-            headerBackground.setPadding(paddingHorizontalDp, paddingVerticalDp, paddingHorizontalDp, paddingVerticalDp)
+            headerBackground.setPadding(
+                paddingHorizontalDp, paddingVerticalDp + statusBarHeight + 25,
+                paddingHorizontalDp, paddingVerticalDp + 50
+            )
 
             val currentNightMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
             if (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_NO ||
@@ -460,9 +537,18 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
 
     private fun createDrawer() {
-        val dimenHolder = DimenHolder.fromDp(160)
+        val resourceId = resources.getIdentifier("status_bar_height", "dimen", "android")
+        val statusBarHeight = if (resourceId > 0) {
+            resources.getDimensionPixelSize(resourceId)
+        } else {
+            ceil(25 * resources.displayMetrics.density).toInt()
+        }
+
+        val headerHeight = 160 + (statusBarHeight / resources.displayMetrics.density).toInt()
+        val dimenHolder = DimenHolder.fromDp(headerHeight)
+
         result = headerResult?.let {
-            DrawerBuilder().withActivity(this).withFullscreen(true)
+            DrawerBuilder().withActivity(this).withFullscreen(false).withTranslucentStatusBar(false)
                 .withSliderBackgroundColor(ContextCompat.getColor(this, R.color.colorPrimary))
                 .withToolbar(activityDashboardBinding.myToolbar)
                 .withAccountHeader(it).withHeaderHeight(dimenHolder)
@@ -505,7 +591,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-    private fun openMyFragment(f: Fragment) {
+    fun openMyFragment(f: Fragment) {
         val b = Bundle()
         b.putBoolean("isMyCourseLib", true)
         f.arguments = b
@@ -515,6 +601,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     override fun onDestroy() {
         super.onDestroy()
         profileDbHandler.onDestroy()
+
+        realmListeners.forEach { it.removeListener() }
+        realmListeners.clear()
     }
 
     override fun openCallFragment(f: Fragment) {
@@ -548,6 +637,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             ResourcesCompat.getDrawable(resources, R.drawable.team, null)?.let { menuImageList.add(it) }
             ResourcesCompat.getDrawable(resources, R.drawable.business, null)?.let { menuImageList.add(it) }
             ResourcesCompat.getDrawable(resources, R.drawable.survey, null)?.let { menuImageList.add(it) }
+            ResourcesCompat.getDrawable(resources, R.drawable.survey, null)?.let { menuImageList.add(it) }
             return arrayOf(
                 changeUX(R.string.menu_myplanet, menuImageList[0]).withIdentifier(0),
                 changeUX(R.string.txt_myLibrary, menuImageList[1]).withIdentifier(1),
@@ -557,7 +647,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 changeUX(R.string.team, menuImageList[5]),
                 changeUX(R.string.menu_community, menuImageList[7]),
                 changeUX(R.string.enterprises, menuImageList[6]),
-                changeUX(R.string.menu_surveys, menuImageList[7])
+                changeUX(R.string.menu_surveys, menuImageList[8])
             )
         }
     private val drawerItemsFooter: Array<IDrawerItem<*, *>>

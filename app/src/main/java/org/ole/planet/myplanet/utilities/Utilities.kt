@@ -13,9 +13,6 @@ import android.util.Patterns
 import android.webkit.MimeTypeMap
 import android.widget.ImageView
 import android.widget.Toast
-import androidx.work.Data
-import androidx.work.OneTimeWorkRequest
-import androidx.work.WorkManager
 import com.bumptech.glide.Glide
 import fisk.chipcloud.ChipCloudConfig
 import org.ole.planet.myplanet.MainApplication.Companion.context
@@ -28,7 +25,6 @@ import java.math.BigInteger
 
 object Utilities {
     private var contextRef: WeakReference<Context>? = null
-    private var settings: SharedPreferences? = null
 
     fun setContext(ctx: Context) {
         contextRef = WeakReference(ctx.applicationContext)
@@ -60,19 +56,10 @@ object Utilities {
     }
 
     fun openDownloadService(context: Context?, urls: ArrayList<String>, fromSync: Boolean) {
-        settings = context?.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        settings?.edit()?.putStringSet("url_list", urls.toSet())?.apply()
-        val inputData = Data.Builder()
-            .putString("urls_key", "url_list")
-            .putBoolean("fromSync", fromSync)
-            .build()
-
-        val downloadWorkRequest = OneTimeWorkRequest.Builder(MyDownloadService::class.java)
-            .setInputData(inputData)
-            .build()
-
-        context?.let {
-            WorkManager.getInstance(it).enqueue(downloadWorkRequest)
+        context?.let { ctx ->
+            val preferences = ctx.getSharedPreferences(MyDownloadService.PREFS_NAME, Context.MODE_PRIVATE)
+            preferences.edit()?.putStringSet("url_list_key", urls.toSet())?.apply()
+            MyDownloadService.startService(ctx, "url_list_key", fromSync)
         }
     }
 
@@ -128,7 +115,7 @@ object Utilities {
     val header: String
         get() {
             val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            return "Basic " + Base64.encodeToString((settings.getString("url_user", "") + ":" + settings.getString("url_pwd", "")).toByteArray(), Base64.NO_WRAP)
+            return "Basic ${Base64.encodeToString(("${settings.getString("url_user", "")}:${ settings.getString("url_pwd", "") }").toByteArray(), Base64.NO_WRAP)}"
         }
 
     fun getUrl(): String {

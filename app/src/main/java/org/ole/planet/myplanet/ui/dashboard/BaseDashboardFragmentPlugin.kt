@@ -1,12 +1,10 @@
 package org.ole.planet.myplanet.ui.dashboard
 
-import android.os.Build
 import android.os.Bundle
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.TextView
-import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import io.realm.RealmObject
@@ -50,43 +48,42 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     private fun handleClickMyLife(title: String, v: View) {
         v.setOnClickListener {
             if (homeItemClickListener != null) {
-                if (title == getString(R.string.submission)) {
+                if (title == "mySubmissions") {
                     if (model?.id?.startsWith("guest") == false) {
                         homeItemClickListener?.openCallFragment(MySubmissionFragment())
                     } else {
                         guestDialog(requireContext())
                     }
-                } else if (title == getString(R.string.our_news)) {
+                } else if (title == "Our News") {
                     homeItemClickListener?.openCallFragment(NewsFragment())
-                } else if (title == getString(R.string.references)) {
+                } else if (title == "References") {
                     homeItemClickListener?.openCallFragment(ReferenceFragment())
-                } else if (title == getString(R.string.calendar)) {
+                } else if (title == "Calendar") {
                     homeItemClickListener?.openCallFragment(CalendarFragment())
-                } else if (title == getString(R.string.my_survey)) {
+                } else if (title == "mySurvey") {
                     if (model?.id?.startsWith("guest") == false) {
                         homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("survey"))
                     } else {
                         guestDialog(requireContext())
                     }
-                } else if (title == getString(R.string.achievements)) {
+                } else if (title == "myAchievements") {
                     if (model?.id?.startsWith("guest") == false) {
                         homeItemClickListener?.openCallFragment(AchievementFragment())
                     } else {
                         guestDialog(requireContext())
                     }
-                } else if (title == getString(R.string.mypersonals)) {
+                } else if (title == "myPersonals") {
                     if (model?.id?.startsWith("guest") == false) {
                         homeItemClickListener?.openCallFragment(MyPersonalsFragment())
                     } else {
                         guestDialog(requireContext())
                     }
-                } else if (title == getString(R.string.help_wanted)) {
+                } else if (title == "Help Wanted") {
                     homeItemClickListener?.openCallFragment(HelpWantedFragment())
-                } else if (title == getString(R.string.myhealth)) {
+                } else if (title == "myHealth") {
                     if (model?.id?.startsWith("guest") == false) {
                         homeItemClickListener?.openCallFragment(MyHealthFragment())
                     } else {
@@ -126,7 +123,6 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         setBackgroundColor(textView, itemCnt)
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     fun getLayout(itemCnt: Int, obj: RealmObject): View {
         val itemMyLifeBinding = ItemMyLifeBinding.inflate(LayoutInflater.from(activity))
         val v = itemMyLifeBinding.root

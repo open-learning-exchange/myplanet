@@ -25,9 +25,6 @@ object DialogUtils {
         val prgDialog = CustomProgressDialog(context)
         prgDialog.setTitle(context.getString(R.string.downloading_file))
         prgDialog.setMax(100)
-        prgDialog.setPositiveButton(context.getString(R.string.finish), isVisible = true) {
-            prgDialog.dismiss()
-        }
         prgDialog.setNegativeButton(context.getString(R.string.stop_download), isVisible = true) {
             context.stopService(Intent(context, MyDownloadService::class.java))
             prgDialog.dismiss()
@@ -118,7 +115,7 @@ object DialogUtils {
             .setMessage(message)
             .setIcon(R.drawable.courses)
             .setPositiveButton(pos, listener)
-            .setNegativeButton("Cancel", null)
+            .setNegativeButton(R.string.button_cancel, null)
             .show()
     }
 
@@ -164,13 +161,13 @@ object DialogUtils {
             }
 
             override fun onFail() {
-                val url = arrayListOf(path)
+                val urls = arrayListOf(path)
                 if (progressDialog != null) {
                     progressDialog.setText(context.getString(R.string.downloading_file))
                     progressDialog.setCancelable(false)
                     progressDialog.show()
                 }
-                Utilities.openDownloadService(context, url, false)
+                MyDownloadService.startService(context, "$urls", false)
             }
         }, path)
     }
@@ -250,7 +247,7 @@ object DialogUtils {
             progressTitle.text = text
         }
         fun isShowing(): Boolean {
-            return dialog?.isShowing ?: false
+            return dialog?.isShowing == true
         }
 
         fun disableNegativeButton() {

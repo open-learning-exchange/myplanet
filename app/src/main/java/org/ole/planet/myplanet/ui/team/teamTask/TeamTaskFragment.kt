@@ -4,7 +4,6 @@ import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.DialogInterface
 import android.graphics.Typeface
-import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -13,7 +12,6 @@ import android.widget.ArrayAdapter
 import android.widget.DatePicker
 import android.widget.TextView
 import android.widget.TimePicker
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.gson.Gson
@@ -39,7 +37,6 @@ import java.util.Calendar
 import java.util.Date
 import java.util.UUID
 
-@RequiresApi(Build.VERSION_CODES.O)
 class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
     private lateinit var fragmentTeamTaskBinding: FragmentTeamTaskBinding
     private var deadline: Calendar? = null
@@ -216,6 +213,12 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
                 R.id.btn_all -> {
                     allTasks()
                 }
+            }
+            if (list!!.isEmpty()){
+                showNoData(fragmentTeamTaskBinding.tvNodata, list?.size, "tasks")
+            }
+            else {
+                showNoData(fragmentTeamTaskBinding.tvNodata, list?.size, "")
             }
             adapterTask = AdapterTask(requireContext(), mRealm, list, !isMember())
             adapterTask.setListener(this)

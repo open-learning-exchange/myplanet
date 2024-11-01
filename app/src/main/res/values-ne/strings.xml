@@ -42,7 +42,7 @@
     <string name="download_all">सबै डाउनलोड गर्नुहोस्</string>
     <string name="hello_blank_fragment">नमस्ते रिक्त फ्रेमेन्ट</string>
     <string name="add_to_mycourse">मेरो पाठ्यक्रममा थप्नुहोस्</string>
-    <string name="join_selected">चयनितमा सामेल हुनुहोस्</string>
+    <string name="join_selected">चयनितमा\nसामेल हुनुहोस्</string>
     <string name="join">सामेल हुनुहोस्</string>
     <string name="add_to_mylib">मेरो पुस्तकालयमा थप्नुहोस्</string>
     <string name="step">चरण</string>
@@ -95,7 +95,7 @@
     <string name="alerts">चेतावनीहरू</string>
     <string name="profile">प्रोफाइल</string>
     <string name="user">प्रयोगकर्ता</string>
-    <string name="remove_selected">चयनित हटाउनुहोस्</string>
+    <string name="remove_selected">चयनित\nहटाउनुहोस्</string>
     <string name="stop_download">डाउनलोड रोक्नुहोस्</string>
     <string name="downloading_file">फाइल डाउनलोड गर्दै…</string>
     <string name="cancel">रद्द गर्नुहोस्</string>
@@ -182,7 +182,6 @@
     <string name="my_survey">मेरो सर्वेक्षण</string>
 
     <string-array name="level">
-        <item></item>
         <item>प्रारम्भिक</item>
         <item>मध्यम</item>
         <item>उन्नत</item>
@@ -542,7 +541,7 @@
     <string name="ole_logo">ओपन लर्निङ एक्सचेञ्ज लोगो</string>
     <string name="open_community">ओपन समुदाय</string>
     <string name="dash_4">----</string>
-    <string name="add_documents">दस्तावेजहरू थप्नुहोस्</string>
+    <string name="add_documents">दस्तावेजहरू\nथप्नुहोस्</string>
     <string name="leave">छोड्नुहोस्</string>
     <string name="steps">चरणहरू</string>
     <string name="csv_filename">CSV फाईलको नाम</string>
@@ -640,9 +639,11 @@
     <string name="please_select_link_item_from_list">कृपया सूचीबाट लिंक वस्तु छनौट गर्नुहोस्</string>
     <string name="title_is_required">शीर्षक आवश्यक छ</string>
     <string name="no_data_available">कुनै डाटा उपलब्ध छैन</string>
-    <string name="are_you_sure_you_want_to_delete_these_courses">के तपाइँ निश्चित हुनुहुन्छ तपाइँ यी पाठ्यक्रमहरू हटाउन चाहनुहुन्छ?</string>
+    <string name="are_you_sure_you_want_to_leave_these_courses">के तपाइँ निश्चित हुनुहुन्छ तपाइँ यी पाठ्यक्रमहरू हटाउन चाहनुहुन्छ?</string>
+    <string name="are_you_sure_you_want_to_leave_this_course">के तपाई यो कोर्स छोड्न चाहनुहुन्छ भनेर पक्का हुनुहुन्छ?</string>
     <string name="success_you_have_added_the_following_courses">सफलता! तपाइँले निम्नलिखित पाठ्यक्रमहरू थपेका छौं:\n\n</string>
     <string name="return_to_the_home_tab_to_access_mycourses">\n\n वापतै गृह ट्याबमा जानुहोस् तपाइँको पाठ्यक्रमहरू पहुँच गर्नको लागि।\n</string>
+    <string name="go_to_mycourses">मेरो कोर्सहरूमा जानुहोस्</string>
     <string name="and">"र "</string>
     <string name="more_course_s">" थप पाठ्यक्रमहरू…\n"</string>
     <string name="retake_test">पुन: टेस्ट दिनुहोस् [%d]</string>
@@ -1060,7 +1061,6 @@
     <string name="enterprise_list">उद्यम सूची</string>
     <string name="list_of_teams">टोलीहरूको सूची</string>
     <string name="sign_up_to_chat">कृपया एआई च्याटमा पहुँच गर्न साइन अप गर्नुहोस्।</string>
-    <string name="are_you_sure_you_want_to_delete_this_course">के तपाई यो कोर्स मेटाउन चाहनुहुन्छ भनेर पक्का हुनुहुन्छ?</string>
     <string name="share_chat">च्याट साझेदारी गर्नुहोस्</string>
     <string name="shared_chat">साझेदारी गरिएको कुराकानी</string>
     <string name="check_apk_version">एप संस्करण जाँच गर्दै</string>
@@ -1090,7 +1090,7 @@
     <string name="tag_selected">%s छनोट गरिएको</string>
     <string name="resources_size">स्रोतहरू [%d]</string>
     <string name="user_role">- %s</string>
-    <string name="user_name">%s (%d)</string>
+    <string name="user_name">%1$s (%2$s)</string>
     <string name="visit_count">%1$s (%2$d %3$s)</string>
     <string name="two_strings">%1$s %2$s</string>
     <string name="three_strings">%1$s %2$s %3$s</string>
@@ -1176,5 +1176,27 @@
     <string name="material_calendar_negative_button">रद्द गर्नुहोस्</string>
     <string name="switching_off_manual_configuration_to_clear_data">म्यानुअल कन्फिगरेसन बन्द गर्दा सबै डाटा मेटिनेछ, के तपाईं निश्चित रूपमा जारी राख्न चाहनुहुन्छ?</string>
     <string name="switching_on_manual_configuration_to_clear_data">म्यानुअल कन्फिगरेसन सुरु गर्दा सबै डाटा मेटिनेछ, के तपाईं निश्चित रूपमा जारी राख्न चाहनुहुन्छ?</string>
+    <string name="chart_description">लगइन गतिविधि चार्ट</string>
+    <string name="chart_label">लगइनहरूको संख्या</string>
+    <string name="copied_to_clipboard">क्लिपबोर्डमा प्रति लिइयो</string>
+    <string name="mark_all_as_read">सबैलाई पढिएको रूपमा चिन्ह लगाउनुहोस्</string>
+    <string name="mark_as_read">पढिएको रूपमा चिन्ह लगाउनुहोस्</string>
+    <string name="our_voices">हाम्रो आवाजहरू</string>
+    <string name="no_voices_available">उपलब्ध आवाजहरू छैनन्</string>
+    <string name="new_voice">नयाँ आवाज</string>
+    <string name="hide_new_voice">नयाँ आवाज लुकाउनुहोस्</string>
+    <string name="summary_of_achievemnets">उपलब्धिहरूको सारांश - आफ्नो उपलब्धि संक्षेपमा दिनुहोस् र सम्बन्धित सामग्री तल थप्नुहोस्</string>
+    <string name="my_goals_description">मेरा लक्ष्यहरू - आगामी १० वर्षका लागि तपाईँका लक्ष्यहरू के हुन्?</string>
+    <string name="add_materials">तपाईँका उपलब्धिहरू देखाउने कुनै पनि सामग्री तल थप्नुहोस्</string>
+    <string name="my_purpose_description">मेरो उद्देश्य - तपाईका शैक्षिक र व्यावसायिक महत्वाकांक्षा के हुन्?</string>
+    <string name="my_purpose">मेरो उद्देश्य</string>
+    <string name="my_goals">मेरा लक्ष्यहरू</string>
+    <string name="community_name">समुदायको नाम</string>
+    <string name="last_login">अन्तिम लगइन : </string>
+    <string name="total_visits_overall">कुल भ्रमण : </string>
+    <string name="most_opened_resource">सबैभन्दा धेरै खोलेको स्रोत : </string>
+    <string name="number_of_resources_opened">खोलिएका स्रोतहरूको संख्या : </string>
+    <string name="number_of_visits">भ्रमणहरूको संख्या</string>
+    <string name="kindly_enter_reply_message">कृपया प्रतिक्रिया सन्देश प्रवेश गर्नुहोस्</string>
 
 </resources>

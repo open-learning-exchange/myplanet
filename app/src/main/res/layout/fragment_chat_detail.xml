@@ -5,17 +5,17 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/secondary_bg"
+    android:fitsSystemWindows="true"
     tools:context=".ui.chat.ChatDetailFragment">
 
     <View
         android:id="@+id/hView"
         android:layout_width="1dp"
-        android:layout_height="match_parent"
+        android:layout_height="0dp"
         android:background="#e0e0e0"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
-
     <TableLayout
         android:id="@+id/aiTbLayout"
         android:layout_width="wrap_content"
@@ -33,73 +33,69 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/openai"
-                android:visibility="gone"
                 android:textAllCaps="false"
                 android:textColor="@color/md_black_1000"
                 android:textSize="18sp"
-                android:textStyle="bold" />
-
+                android:textStyle="bold"
+                android:visibility="gone" />
             <View
                 android:id="@+id/view1"
                 android:layout_width="1dp"
                 android:layout_height="match_parent"
-                android:background="#e0e0e0"
-                android:visibility="gone"
                 android:layout_marginStart="2dp"
                 android:layout_marginEnd="2dp"
+                android:background="#e0e0e0"
+                android:visibility="gone"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
-
             <Button
                 android:id="@+id/tvPerplexity"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/perplexity"
-                android:visibility="gone"
                 android:textAllCaps="false"
                 android:textColor="@color/md_black_1000"
                 android:textSize="18sp"
-                android:textStyle="bold" />
-
+                android:textStyle="bold"
+                android:visibility="gone" />
             <View
                 android:id="@+id/view2"
                 android:layout_width="1dp"
                 android:layout_height="match_parent"
-                android:background="#e0e0e0"
-                android:visibility="gone"
                 android:layout_marginStart="@dimen/_2dp"
                 android:layout_marginEnd="@dimen/_2dp"
+                android:background="#e0e0e0"
+                android:visibility="gone"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
-
             <Button
                 android:id="@+id/tvGemini"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textAllCaps="false"
                 android:text="@string/gemini"
-                android:visibility="gone"
+                android:textAllCaps="false"
                 android:textColor="@color/md_black_1000"
                 android:textSize="18sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                android:visibility="gone" />
         </TableRow>
     </TableLayout>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler_gchat"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
         android:layout_marginTop="4dp"
+        android:clipToPadding="false"
         android:contentDescription="@string/recycler_chat_label"
-        android:layout_marginBottom="16dp"
-        app:layout_constrainedHeight="true"
+        android:paddingBottom="8dp"
+        android:scrollbars="vertical"
         app:layout_constraintBottom_toTopOf="@+id/text_gchat_indicator"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/aiTbLayout" />
-
     <TextView
         android:id="@+id/text_gchat_indicator"
         android:layout_width="wrap_content"
@@ -113,18 +109,18 @@
         app:layout_constraintBottom_toTopOf="@id/view"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
-
     <View
         android:id="@+id/view"
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:background="@color/hint_color"
         app:layout_constraintBottom_toTopOf="@+id/layout_gchat_chatbox" />
-
     <RelativeLayout
         android:id="@+id/layout_gchat_chatbox"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:background="@color/secondary_bg"
+        android:padding="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
@@ -137,12 +133,11 @@
             android:layout_toStartOf="@+id/button_gchat_send"
             android:background="@android:color/transparent"
             android:hint="@string/chat_enter_message"
-            android:textColorHint="@color/hint_color"
-            android:textColor="@color/daynight_textColor"
             android:inputType="textMultiLine"
             android:maxLines="6"
+            android:textColor="@color/daynight_textColor"
+            android:textColorHint="@color/hint_color"
             tools:ignore="Autofill" />
-
         <pl.droidsonroids.gif.GifImageView
             android:id="@+id/image_gchat_loading"
             android:layout_width="40dp"
@@ -152,7 +147,6 @@
             android:layout_toStartOf="@+id/button_gchat_send"
             android:src="@drawable/ic_loading"
             android:visibility="invisible" />
-
         <ImageView
             android:id="@+id/button_gchat_send"
             android:layout_width="30dp"
@@ -160,9 +154,7 @@
             android:layout_alignParentEnd="true"
             android:layout_margin="5dp"
             android:background="?attr/selectableItemBackground"
-            android:src="@drawable/send_icon"
-            android:contentDescription="@string/submit" />
-
+            android:contentDescription="@string/submit"
+            android:src="@drawable/send_icon" />
     </RelativeLayout>
-
 </androidx.constraintlayout.widget.ConstraintLayout>
