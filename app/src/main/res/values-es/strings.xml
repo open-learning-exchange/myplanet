@@ -182,7 +182,6 @@
     <string name="my_survey">miEncuesta</string>
 
     <string-array name="level">
-        <item></item>
         <item>Principiante</item>
         <item>Intermedio</item>
         <item>Avanzado</item>
