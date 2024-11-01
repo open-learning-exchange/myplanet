@@ -119,7 +119,9 @@ class MyDownloadService : Service() {
         var timeCount = 1
 
         try {
-            while (bis.read(data).also { count = it } != -1) {
+            while (true) {
+                count = bis.read(data)
+                if (count == -1) break
                 total += count
                 totalFileSize = (fileSize / 1024.0.pow(1.0)).toInt()
 

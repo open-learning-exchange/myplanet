@@ -43,18 +43,20 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     }
 
     private fun initViews() {
-        val adapterLang = ArrayAdapter.createFromResource(
+        val langArray = resources.getStringArray(R.array.language).toMutableList()
+        val levelArray = resources.getStringArray(R.array.level).toMutableList()
+        val adapterLang = ArrayAdapter(
             requireContext(),
-            R.array.language,
-            R.layout.spinner_item
+            R.layout.spinner_item_white,
+            langArray
         )
-        val adapterLevel = ArrayAdapter.createFromResource(
+        val adapterLevel = ArrayAdapter(
             requireContext(),
-            R.array.level,
-            R.layout.spinner_item
+            R.layout.spinner_item_white,
+            levelArray
         )
-        adapterLang.setDropDownViewResource(R.layout.spinner_item)
-        adapterLevel.setDropDownViewResource(R.layout.spinner_item)
+        adapterLang.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        adapterLevel.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         fragmentUserInformationBinding.spnLang.adapter = adapterLang
         fragmentUserInformationBinding.spnLevel.adapter = adapterLevel
         fragmentUserInformationBinding.spnLang.post {
