@@ -24,7 +24,7 @@ object VersionUtils {
     }
 
     @JvmStatic
-    fun getVersionName(context: Context): String {
+    fun getVersionName(context: Context): String? {
         try {
             val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
             return pInfo.versionName
