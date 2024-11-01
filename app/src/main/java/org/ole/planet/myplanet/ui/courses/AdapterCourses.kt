@@ -128,6 +128,13 @@ class AdapterCourses(private val context: Context, private var courseList: List<
             holder.bind(position)
             val course = courseList[position]
             if (course != null) {
+                if (course.isMyCourse) {
+                    holder.rowCourseBinding.isMyCourse.visibility = View.VISIBLE
+                    holder.rowCourseBinding.checkbox.visibility = View.GONE
+                } else {
+                    holder.rowCourseBinding.checkbox.visibility = View.VISIBLE
+                }
+
                 holder.rowCourseBinding.title.text = course.courseTitle
                 holder.rowCourseBinding.description.text = course.description
                 val markdownContentWithLocalPaths = prependBaseUrlToImages(
@@ -199,29 +206,29 @@ class AdapterCourses(private val context: Context, private var courseList: List<
     }
 
     fun selectAllItems(selectAll: Boolean) {
+        selectedItems.clear()
         if (selectAll) {
-            selectedItems.clear()
-            selectedItems.addAll(courseList)
-        } else {
-            selectedItems.clear()
+            selectedItems.addAll(courseList.filter { course ->
+                course != null && !course.isMyCourse
+            })
         }
         notifyDataSetChanged()
-        if (listener != null) {
-            listener!!.onSelectedListChange(selectedItems)
-        }
+        listener?.onSelectedListChange(selectedItems)
     }
 
     private fun displayTagCloud(flexboxDrawable: FlexboxLayout, position: Int) {
         flexboxDrawable.removeAllViews()
         val chipCloud = ChipCloud(context, flexboxDrawable, config)
-        val tags: List<RealmTag> = mRealm!!.where(RealmTag::class.java).equalTo("db", "courses").equalTo("linkId", courseList[position]!!.id).findAll()
+        val tags: List<RealmTag>? = mRealm?.where(RealmTag::class.java)?.equalTo("db", "courses")?.equalTo("linkId", courseList[position]!!.id)?.findAll()
         showTags(tags, chipCloud)
     }
 
-    private fun showTags(tags: List<RealmTag>, chipCloud: ChipCloud) {
-        for (tag in tags) {
-            val parent = mRealm!!.where(RealmTag::class.java).equalTo("id", tag.tagId).findFirst()
-            parent?.let { showChip(chipCloud, it) }
+    private fun showTags(tags: List<RealmTag>?, chipCloud: ChipCloud) {
+        if (tags != null) {
+            for (tag in tags) {
+                val parent = mRealm?.where(RealmTag::class.java)?.equalTo("id", tag.tagId)?.findFirst()
+                parent?.let { showChip(chipCloud, it) }
+            }
         }
     }
 
@@ -283,9 +290,7 @@ class AdapterCourses(private val context: Context, private var courseList: List<
                     openCourse(courseList[adapterPosition], 0)
                 }
             }
-            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.LOLLIPOP) {
-                rowCourseBinding.courseProgress.scaleY = 0.3f
-            }
+            rowCourseBinding.courseProgress.scaleY = 0.3f
             rowCourseBinding.courseProgress.setOnSeekBarChangeListener(object : OnSeekBarChangeListener {
                 override fun onProgressChanged(seekBar: SeekBar, i: Int, b: Boolean) {
                     val position = bindingAdapterPosition
