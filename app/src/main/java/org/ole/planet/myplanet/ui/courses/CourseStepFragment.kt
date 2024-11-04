@@ -135,23 +135,23 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
             val isSurveyPresent = existsSubmission(firstStepId, "survey")
             fragmentCourseStepBinding.btnTakeSurvey.text = if (isSurveyPresent) { "redo survey" } else { "record survey" }
             fragmentCourseStepBinding.btnTakeSurvey.visibility = View.VISIBLE
-            }
         }
+    }
 
-    private fun existsSubmission(firstStepId:String? , submissionType: String): Boolean{
+    private fun existsSubmission(firstStepId: String?, submissionType: String): Boolean {
         val questions = cRealm.where(RealmExamQuestion::class.java).equalTo("examId", firstStepId).findAll()
-        var isPresent=false
-        if (questions != null && questions.size > 0) {
-            val examId=questions[0]?.examId
+        var isPresent = false
+        if (questions != null && questions.isNotEmpty()) {
+            val examId = questions[0]?.examId
             val isSubmitted = step.courseId?.let { courseId ->
                 val parentId = "$examId@$courseId"
                 cRealm.where(RealmSubmission::class.java)
-                    .equalTo("userId",user?.id)
+                    .equalTo("userId", user?.id)
                     .equalTo("parentId", parentId)
                     .equalTo("type", submissionType)
                     .findFirst() != null
             } ?: false
-            isPresent= isSubmitted
+            isPresent = isSubmitted
         }
         return isPresent
     }
