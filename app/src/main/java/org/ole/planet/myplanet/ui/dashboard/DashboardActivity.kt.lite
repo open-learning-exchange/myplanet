@@ -91,7 +91,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private lateinit var activityDashboardBinding: ActivityDashboardBinding
     private var headerResult: AccountHeader? = null
     var user: RealmUserModel? = null
-    private var result: Drawer? = null
+    var result: Drawer? = null
     private var menul: TabLayout.Tab? = null
     private var menuh: TabLayout.Tab? = null
     private var menuc: TabLayout.Tab? = null
@@ -187,9 +187,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 }
                 R.id.menu_goOnline -> wifiStatusSwitch()
                 R.id.action_sync -> {
-                    isServerReachable(Utilities.getUrl())
-                    startUpload("dashboard")
-
                     logSyncInSharedPrefs()
                 }
                 R.id.action_feedback -> {
@@ -326,13 +323,29 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         } else "[ ]"
         val courseTaskDone = if (courseStatus.contains("terminado", ignoreCase = true)) "✅ $courseStatus" else "[ ] $courseStatus"
 
-        val markdownContent = """
-            ![issues challenge](file:///android_asset/images/november_challenge.jpeg) <br/>
-            ### $courseTaskDone <br/>
-            ### $voiceTaskDone Comparte tu opinión en Nuestras Voces. <br/>
-            ### $syncTaskDone Recuerda sincronizar la aplicacion movil.
-            """.trimIndent()
-        MarkdownDialog.newInstance(markdownContent).show(supportFragmentManager, "markdown_dialog")
+        val isCompleted = syncTaskDone == "✅" && voiceTaskDone == "✅" && courseTaskDone.startsWith("✅")
+        val hasShownCongrats = settings.getBoolean("has_shown_congrats", false)
+
+        if (isCompleted && hasShownCongrats) return
+
+        if (isCompleted && !hasShownCongrats) {
+            editor.putBoolean("has_shown_congrats", true).apply()
+            val markdownContent = """
+                ![issues challenge](file:///android_asset/images/november_challenge.jpeg) <br/>
+                ### congratulations. challenge completed
+                """.trimIndent()
+            MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount)
+                .show(supportFragmentManager, "markdown_dialog")
+        } else {
+            val markdownContent = """
+                ![issues challenge](file:///android_asset/images/november_challenge.jpeg) <br/>
+                ### $courseTaskDone <br/>
+                ### $voiceTaskDone Comparte tu opinión en Nuestras Voces. <br/>
+                ### $syncTaskDone Recuerda sincronizar la aplicacion movil.
+                """.trimIndent()
+            MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount)
+                .show(supportFragmentManager, "markdown_dialog")
+        }
     }
 
     private fun setupRealmListeners() {

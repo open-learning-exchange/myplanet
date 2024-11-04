@@ -17,6 +17,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.DrawableCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
+import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import kotlinx.coroutines.CoroutineScope
@@ -113,8 +114,6 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
                 startActivity(Intent(this, SettingActivity::class.java))
             }
             R.id.action_sync -> {
-                isServerReachable(Utilities.getUrl())
-                startUpload("dashboard")
                 logSyncInSharedPrefs()
             }
         }
@@ -122,7 +121,12 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
     }
 
     fun logSyncInSharedPrefs() {
-        createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
+        lifecycleScope.launch {
+            isServerReachable(Utilities.getUrl())
+            startUpload("dashboard")
+            createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
+
+        }
     }
 
     @SuppressLint("RestrictedApi")
