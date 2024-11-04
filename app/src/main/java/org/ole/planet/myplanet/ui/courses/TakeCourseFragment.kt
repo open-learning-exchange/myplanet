@@ -221,7 +221,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             currentCourse?.setUserId(userModel?.id)
             onAdd(mRealm, "courses", userModel?.id, courseId)
         }
-        Utilities.toast(activity, "Course ${(if (currentCourse?.userId?.contains(userModel?.id) == true) { 
+        Utilities.toast(activity, "course ${(if (currentCourse?.userId?.contains(userModel?.id) == true) { 
             getString(R.string.added_to) 
         } else {
             getString(R.string.removed_from)
@@ -249,28 +249,11 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         }
 
         if (hasUnfinishedSurvey && courseId == "9517e3b45a5bb63e69bb8f269216974d") {
-            fragmentTakeCourseBinding.finishStep.isEnabled = false
-            fragmentTakeCourseBinding.finishStep.setTextColor(
-                ContextCompat.getColor(
-                    requireContext(),
-                    R.color.md_grey_500
-                )
-            )
             fragmentTakeCourseBinding.finishStep.setOnClickListener {
-                Toast.makeText(
-                    context,
-                    "Please complete the survey to finish the course.",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
+                Toast.makeText(context, getString(R.string.please_complete_survey), Toast.LENGTH_SHORT).show() }
         } else {
             fragmentTakeCourseBinding.finishStep.isEnabled = true
-            fragmentTakeCourseBinding.finishStep.setTextColor(
-                ContextCompat.getColor(
-                    requireContext(),
-                    R.color.md_white_1000
-                )
-            )
+            fragmentTakeCourseBinding.finishStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
             fragmentTakeCourseBinding.finishStep.setOnClickListener {
                 requireActivity().supportFragmentManager.popBackStack()
             }
