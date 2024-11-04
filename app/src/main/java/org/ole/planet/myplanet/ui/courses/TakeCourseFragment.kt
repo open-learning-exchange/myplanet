@@ -281,7 +281,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         return isPresent
     }
 
-
     private val isValidClickRight: Boolean
         get() = fragmentTakeCourseBinding.viewPager2.adapter != null && fragmentTakeCourseBinding.viewPager2.currentItem < fragmentTakeCourseBinding.viewPager2.adapter?.itemCount!!
     private val isValidClickLeft: Boolean
