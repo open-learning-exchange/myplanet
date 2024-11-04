@@ -22,9 +22,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
+                android:buttonTint="@color/daynight_textColor"
                 android:gravity="center"
-                android:padding="@dimen/padding_large"
-                android:buttonTint="@color/daynight_textColor" />
+                android:padding="@dimen/padding_large" />
             <TextView
                 android:id="@+id/title"
                 android:layout_width="wrap_content"
@@ -33,6 +33,17 @@
                 android:textColor="@color/daynight_textColor"
                 android:textSize="@dimen/text_size_mid"
                 android:textStyle="bold" />
+            <TextView
+                android:id="@+id/isMyCourse"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/rounded_background"
+                android:text="@string/added_to_my_courses"
+                android:textColor="@color/md_white_1000"
+                android:padding="6dp"
+                android:textSize="@dimen/text_size_mid"
+                android:gravity="center"
+                android:visibility="invisible"/>
         </LinearLayout>
 
         <LinearLayout

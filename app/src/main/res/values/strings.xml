@@ -623,8 +623,8 @@
     <string name="shared_to_community">Shared to community</string>
     <string name="no_data_available_please_check_and_try_again">No data available, please check and try again.</string>
     <string name="no_course_matched_filter">No courses matched filter</string>
-    <string name="added_to_my_library">Added to my library</string>
-    <string name="added_to_my_courses">Added to my courses</string>
+    <string name="added_to_my_library">added to myLibrary</string>
+    <string name="added_to_my_courses">added to myCourses</string>
     <string name="do_you_want_to_stay_online">Do you want to stay online?</string>
     <string name="no_resources_to_download">No resources to download</string>
     <string name="planet_not_available">Planet not available</string>

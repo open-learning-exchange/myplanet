@@ -623,8 +623,8 @@
     <string name="shared_to_community">مشاركة مع المجتمع</string>
     <string name="no_data_available_please_check_and_try_again">لا تتوفر بيانات، يرجى التحقق والمحاولة مرة أخرى.</string>
     <string name="no_course_matched_filter">لا توجد دورات تطابقت مع الفلتر</string>
-    <string name="added_to_my_library">تمت الإضافة إلى مكتبتي</string>
-    <string name="added_to_my_courses">تمت الإضافة إلى دوراتي</string>
+    <string name="added_to_my_library">تمت الإضافة إلى myLibrary</string>
+    <string name="added_to_my_courses">تمت الإضافة إلى myCourses</string>
     <string name="do_you_want_to_stay_online">هل ترغب في البقاء متصلاً على الإنترنت؟</string>
     <string name="no_resources_to_download">لا توجد موارد للتحميل</string>
     <string name="planet_not_available">الكوكب غير متاح</string>
