@@ -53,6 +53,8 @@ open class RealmMyCourse : RealmObject() {
     var createdDate: Long = 0
     private var numberOfSteps: Int? = null
     var courseSteps: RealmList<RealmCourseStep>? = null
+    @Transient
+    var isMyCourse: Boolean = false
     fun setUserId(userId: String?) {
         if (this.userId == null) {
             this.userId = RealmList()

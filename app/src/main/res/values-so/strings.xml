@@ -623,8 +623,8 @@
     <string name="shared_to_community">Lagu wadaa bulshada</string>
     <string name="no_data_available_please_check_and_try_again">Ma jiro wax macluumaad, fadlan mari karo oo isku day.</string>
     <string name="no_course_matched_filter">Ma jiro kursiga laga cabsi qabo</string>
-    <string name="added_to_my_library">Ku daray maktabaddayda</string>
-    <string name="added_to_my_courses">Ku daray kursiyada kayga</string>
+    <string name="added_to_my_library">lagu daray myLibrary</string>
+    <string name="added_to_my_courses">lagu daray myCourses</string>
     <string name="do_you_want_to_stay_online">Ma rabtid inaad joogto internetka?</string>
     <string name="no_resources_to_download">Ma jiro khadka ay la diyaariyaan.</string>
     <string name="planet_not_available">Geedka aan la helin</string>
@@ -1200,5 +1200,6 @@
     <string name="kindly_enter_reply_message">Fadlan geli farriinta jawaabta</string>
     <string name="start">bilow</string>
     <string name="continuation">sii wad</string>
+    <string name="please_complete_survey">fadlan dhameystir sahanka si aad u dhameystirto koorsada</string>
 
 </resources>

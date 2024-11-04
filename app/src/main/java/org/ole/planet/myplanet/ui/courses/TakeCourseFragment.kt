@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
+import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.viewpager.widget.ViewPager
@@ -18,11 +19,14 @@ import org.ole.planet.myplanet.model.RealmCourseActivity.Companion.createActivit
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmCourseProgress.Companion.getCurrentProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
+import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getCourseStepIds
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getCourseSteps
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onAdd
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onRemove
+import org.ole.planet.myplanet.model.RealmStepExam
+import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.isStepCompleted
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -37,7 +41,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     var courseId: String? = null
     private var currentCourse: RealmMyCourse? = null
     lateinit var steps: List<RealmCourseStep?>
-    var userModel: RealmUserModel ?= null
+    var userModel: RealmUserModel? = null
     var position = 0
     private var currentStep = 0
 
@@ -88,7 +92,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         setCourseData()
         setListeners()
         fragmentTakeCourseBinding.viewPager2.currentItem = position
-
+        checkSurveyCompletion()
     }
 
     private fun setListeners() {
@@ -169,7 +173,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     override fun onPageScrollStateChanged(state: Int) {}
 
     private fun onClickNext() {
-        fragmentTakeCourseBinding.tvStep.text = String.format(Locale.getDefault(),"${getString(R.string.step)} %d/%d", fragmentTakeCourseBinding.viewPager2.currentItem, currentCourse?.courseSteps?.size)
+        fragmentTakeCourseBinding.tvStep.text = String.format(Locale.getDefault(), "${getString(R.string.step)} %d/%d", fragmentTakeCourseBinding.viewPager2.currentItem, currentCourse?.courseSteps?.size)
         if (fragmentTakeCourseBinding.viewPager2.currentItem == currentCourse?.courseSteps?.size) {
             fragmentTakeCourseBinding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_grey_500))
             fragmentTakeCourseBinding.nextStep.visibility = View.GONE
@@ -178,7 +182,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private fun onClickPrevious() {
-        fragmentTakeCourseBinding.tvStep.text = String.format(Locale.getDefault(),"${getString(R.string.step)} %d/%d", fragmentTakeCourseBinding.viewPager2.currentItem - 1, currentCourse?.courseSteps?.size)
+        fragmentTakeCourseBinding.tvStep.text = String.format(Locale.getDefault(), "${getString(R.string.step)} %d/%d", fragmentTakeCourseBinding.viewPager2.currentItem - 1, currentCourse?.courseSteps?.size)
         if (fragmentTakeCourseBinding.viewPager2.currentItem - 1 == 0) {
             fragmentTakeCourseBinding.previousStep.visibility = View.GONE
             fragmentTakeCourseBinding.nextStep.visibility = View.VISIBLE
@@ -203,7 +207,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                 }
             }
 
-            R.id.finish_step -> requireActivity().supportFragmentManager.popBackStack()
+            R.id.finish_step -> checkSurveyCompletion()
             R.id.btn_remove -> addRemoveCourse()
         }
     }
@@ -217,7 +221,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             currentCourse?.setUserId(userModel?.id)
             onAdd(mRealm, "courses", userModel?.id, courseId)
         }
-        Utilities.toast(activity, "Course ${(if (currentCourse?.userId?.contains(userModel?.id) == true) { 
+        Utilities.toast(activity, "course ${(if (currentCourse?.userId?.contains(userModel?.id) == true) { 
             getString(R.string.added_to) 
         } else {
             getString(R.string.removed_from)
@@ -231,6 +235,50 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         val courseProgressMap = RealmCourseProgress.getCourseProgress(realm, user?.id)
         val courseProgress = courseProgressMap[courseId]?.asJsonObject?.get("current")?.asInt
         return courseProgress ?: 0
+    }
+
+    private fun checkSurveyCompletion() {
+        val hasUnfinishedSurvey = steps.any { step ->
+            val stepSurvey = mRealm.where(RealmStepExam::class.java)
+                .equalTo("stepId", step?.id)
+                .equalTo("type", "surveys")
+                .findAll()
+            stepSurvey.any { survey ->
+                !existsSubmission(survey.id, "survey")
+            }
+        }
+
+        if (hasUnfinishedSurvey && courseId == "9517e3b45a5bb63e69bb8f269216974d") {
+            fragmentTakeCourseBinding.finishStep.setOnClickListener {
+                Toast.makeText(context, getString(R.string.please_complete_survey), Toast.LENGTH_SHORT).show() }
+        } else {
+            fragmentTakeCourseBinding.finishStep.isEnabled = true
+            fragmentTakeCourseBinding.finishStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
+            fragmentTakeCourseBinding.finishStep.setOnClickListener {
+                requireActivity().supportFragmentManager.popBackStack()
+            }
+        }
+    }
+
+    private fun existsSubmission(firstStepId: String?, submissionType: String): Boolean {
+        val questions = mRealm.where(RealmExamQuestion::class.java)
+            .equalTo("examId", firstStepId)
+            .findAll()
+
+        var isPresent = false
+        if (questions != null && questions.isNotEmpty()) {
+            val examId = questions[0]?.examId
+            val isSubmitted = courseId?.let { courseId ->
+                val parentId = "$examId@$courseId"
+                mRealm.where(RealmSubmission::class.java)
+                    .equalTo("userId", userModel?.id)
+                    .equalTo("parentId", parentId)
+                    .equalTo("type", submissionType)
+                    .findFirst() != null
+            } == true
+            isPresent = isSubmitted
+        }
+        return isPresent
     }
 
     private val isValidClickRight: Boolean

@@ -623,8 +623,8 @@
     <string name="shared_to_community">Partagé avec la communauté</string>
     <string name="no_data_available_please_check_and_try_again">Aucune donnée disponible, veuillez vérifier et réessayer.</string>
     <string name="no_course_matched_filter">Aucun cours correspondant au filtre</string>
-    <string name="added_to_my_library">Ajouté à ma bibliothèque</string>
-    <string name="added_to_my_courses">Ajouté à mes cours</string>
+    <string name="added_to_my_library">ajouté à myLibrary</string>
+    <string name="added_to_my_courses">ajouté à myCourses</string>
     <string name="do_you_want_to_stay_online">Voulez-vous rester en ligne ?</string>
     <string name="no_resources_to_download">Aucune ressource à télécharger</string>
     <string name="planet_not_available">Planète non disponible</string>
@@ -1200,5 +1200,6 @@
     <string name="kindly_enter_reply_message">Veuillez entrer le message de réponse</string>
     <string name="start">démarrer</string>
     <string name="continuation">continuer</string>
+    <string name="please_complete_survey">veuillez compléter le sondage pour terminer le cours</string>
 
 </resources>
