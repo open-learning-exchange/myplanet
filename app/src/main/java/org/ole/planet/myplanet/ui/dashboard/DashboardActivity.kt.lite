@@ -332,7 +332,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             editor.putBoolean("has_shown_congrats", true).apply()
             val markdownContent = """
                 ![issues challenge](file:///android_asset/images/november_challenge.jpeg) <br/>
-                ### congratulations. challenge completed
+                ### ¡Felicidades Reto Completado!
                 """.trimIndent()
             MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount)
                 .show(supportFragmentManager, "markdown_dialog")

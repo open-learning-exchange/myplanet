@@ -1198,5 +1198,7 @@
     <string name="number_of_resources_opened">Nombre de Ressources Ouvertes : </string>
     <string name="number_of_visits">Nombre de Visites</string>
     <string name="kindly_enter_reply_message">Veuillez entrer le message de réponse</string>
+    <string name="start">démarrer</string>
+    <string name="continuation">continuer</string>
 
 </resources>

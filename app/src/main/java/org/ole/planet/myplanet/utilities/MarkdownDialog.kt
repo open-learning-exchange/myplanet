@@ -10,6 +10,7 @@ import android.view.ViewGroup
 import androidx.fragment.app.DialogFragment
 import com.mikepenz.materialdrawer.Drawer
 import io.realm.Sort
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.DialogCampaignChallengeBinding
 import org.ole.planet.myplanet.model.RealmUserChallengeActions
@@ -107,17 +108,17 @@ class MarkdownDialog : DialogFragment() {
             visibility = if (isCompleted) View.GONE else View.VISIBLE
 
             val buttonText = when {
-                courseStatus.contains("no iniciado") -> "start"
-                courseStatus.contains("terminado") && voiceCount < 1 -> "next"
-                courseStatus.contains("terminado") && voiceCount >= 1 -> "sync"
-                else -> "continue"
+                courseStatus.contains("no iniciado") -> context.getString(R.string.start)
+                courseStatus.contains("terminado") && voiceCount < 1 -> context.getString(R.string.next)
+                courseStatus.contains("terminado") && voiceCount >= 1 -> context.getString(R.string.sync)
+                else -> context.getString(R.string.continuation)
             }
 
             text = buttonText
             setOnClickListener {
                 val courseId = "9517e3b45a5bb63e69bb8f269216974d"
                 when (buttonText) {
-                    "start","continue" -> {
+                    context.getString(R.string.start), context.getString(R.string.continuation) -> {
                         val fragment = TakeCourseFragment().apply {
                             arguments = Bundle().apply {
                                 putString("id", courseId)
@@ -125,10 +126,10 @@ class MarkdownDialog : DialogFragment() {
                         }
                         (activity as? OnHomeItemClickListener)?.openCallFragment(fragment)
                     }
-                    "next" -> {
+                    context.getString(R.string.next) -> {
                         (activity as DashboardActivity).openCallFragment(CommunityTabFragment())
                     }
-                    "sync" -> {
+                    context.getString(R.string.sync) -> {
                         (activity as DashboardElementActivity).logSyncInSharedPrefs()
                     }
                 }
