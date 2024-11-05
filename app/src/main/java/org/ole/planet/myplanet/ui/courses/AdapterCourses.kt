@@ -132,6 +132,7 @@ class AdapterCourses(private val context: Context, private var courseList: List<
                     holder.rowCourseBinding.isMyCourse.visibility = View.VISIBLE
                     holder.rowCourseBinding.checkbox.visibility = View.GONE
                 } else {
+                    holder.rowCourseBinding.isMyCourse.visibility = View.GONE
                     holder.rowCourseBinding.checkbox.visibility = View.VISIBLE
                 }
 
