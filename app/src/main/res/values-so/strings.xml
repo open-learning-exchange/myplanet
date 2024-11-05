@@ -180,6 +180,7 @@
     <string name="showing_reply_of">muujinaya jawaabta:</string>
     <string name="open_date">Taariikhda Furan</string>
     <string name="my_survey">Galmadaayda</string>
+    <string name="username_too_long">magaca isticmaale waa inuu ka yar yahay 15 xaraf</string>
 
     <string-array name="level">
         <item>Bilow</item>
