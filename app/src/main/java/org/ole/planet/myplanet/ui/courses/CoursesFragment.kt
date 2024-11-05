@@ -197,7 +197,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 confirmation.show()
                 addToMyList()
                 selectedItems?.clear()
-                tvAddToLib.isEnabled = false // selectedItems will always have a size of 0
+                tvAddToLib.isEnabled = false
                 checkList()
             }
         }
@@ -251,6 +251,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             btnRemove.visibility = View.GONE
             tvSelected.visibility = View.GONE
             btnArchive.visibility = View.GONE
+        } else {
+            val allMyCourses = adapterCourses.getCourseList().all { it?.isMyCourse == true }
+            selectAll.visibility = if (allMyCourses) View.GONE else View.VISIBLE
         }
     }
 
