@@ -178,6 +178,11 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             fragmentTakeCourseBinding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_grey_500))
             fragmentTakeCourseBinding.nextStep.visibility = View.GONE
             fragmentTakeCourseBinding.finishStep.visibility = View.VISIBLE
+        }else{
+            fragmentTakeCourseBinding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
+            fragmentTakeCourseBinding.nextStep.visibility = View.VISIBLE
+            fragmentTakeCourseBinding.finishStep.visibility = View.GONE
+
         }
     }
 
@@ -185,6 +190,10 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         fragmentTakeCourseBinding.tvStep.text = String.format(Locale.getDefault(), "${getString(R.string.step)} %d/%d", fragmentTakeCourseBinding.viewPager2.currentItem - 1, currentCourse?.courseSteps?.size)
         if (fragmentTakeCourseBinding.viewPager2.currentItem - 1 == 0) {
             fragmentTakeCourseBinding.previousStep.visibility = View.GONE
+            fragmentTakeCourseBinding.nextStep.visibility = View.VISIBLE
+            fragmentTakeCourseBinding.finishStep.visibility = View.GONE
+        }else{
+            fragmentTakeCourseBinding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
             fragmentTakeCourseBinding.nextStep.visibility = View.VISIBLE
             fragmentTakeCourseBinding.finishStep.visibility = View.GONE
         }
