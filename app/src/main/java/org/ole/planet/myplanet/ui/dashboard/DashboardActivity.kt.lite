@@ -285,7 +285,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         if (user?.id?.startsWith("guest") == false) {
             val endDate = LocalDate.of(today.year, 12, 1)
             if (today.isBefore(endDate)) {
-//                if (settings.getString("serverURL", "") in validUrls) {
+                if (settings.getString("serverURL", "") in validUrls) {
                     val course = mRealm.where(RealmMyCourse::class.java)
                         .equalTo("courseId", courseId)
                         .findFirst()
@@ -305,7 +305,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     }
                 }
             }
-//        }
+        }
     }
 
     fun challengeDialog(voiceCount: Int, courseStatus: String) {
