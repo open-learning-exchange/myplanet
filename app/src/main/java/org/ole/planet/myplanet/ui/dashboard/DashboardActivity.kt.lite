@@ -278,25 +278,27 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         )
 
         val today = LocalDate.now()
-        val endDate = LocalDate.of(today.year, 12, 1)
-        if (today.isBefore(endDate)) {
-            if (settings.getString("serverURL", "") in validUrls) {
-                val course = mRealm.where(RealmMyCourse::class.java)
-                    .equalTo("courseId", courseId)
-                    .findFirst()
-                val courseName = course?.courseTitle
+        if (user?.id?.startsWith("guest") == false) {
+            val endDate = LocalDate.of(today.year, 12, 1)
+            if (today.isBefore(endDate)) {
+                if (settings.getString("serverURL", "") in validUrls) {
+                    val course = mRealm.where(RealmMyCourse::class.java)
+                        .equalTo("courseId", courseId)
+                        .findFirst()
+                    val courseName = course?.courseTitle
 
-                if (progress != null) {
-                    val max = progress.get("max").asInt
-                    val current = progress.get("current").asInt
-                    val courseStatus = if (current == max) {
-                        "$courseName terminado!"
+                    if (progress != null) {
+                        val max = progress.get("max").asInt
+                        val current = progress.get("current").asInt
+                        val courseStatus = if (current == max) {
+                            "$courseName terminado!"
+                        } else {
+                            "Ingresa al curso $courseName completalo ($current de $max hecho)"
+                        }
+                        challengeDialog(voiceCount, courseStatus)
                     } else {
-                        "Ingresa al curso $courseName completalo ($current de $max hecho)"
+                        challengeDialog(voiceCount, "$courseName no iniciado")
                     }
-                    challengeDialog(voiceCount, courseStatus)
-                } else {
-                    challengeDialog(voiceCount, "$courseName no iniciado")
                 }
             }
         }
