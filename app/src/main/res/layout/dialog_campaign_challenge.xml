@@ -34,5 +34,4 @@
         android:textSize="12sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/markdownTextView" />
-
 </androidx.constraintlayout.widget.ConstraintLayout>
