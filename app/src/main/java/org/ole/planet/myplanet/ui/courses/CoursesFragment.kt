@@ -71,7 +71,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         val map = getRatings(mRealm, "course", model?.id)
         val progressMap = getCourseProgress(mRealm, model?.id)
         val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>()
-        adapterCourses = AdapterCourses(requireActivity(), courseList, map)
+        val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
+        adapterCourses = AdapterCourses(requireActivity(), sortedCourseList, map)
         adapterCourses.setProgressMap(progressMap)
         adapterCourses.setmRealm(mRealm)
         adapterCourses.setListener(this)
@@ -197,7 +198,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 confirmation.show()
                 addToMyList()
                 selectedItems?.clear()
-                tvAddToLib.isEnabled = false // selectedItems will always have a size of 0
+                tvAddToLib.isEnabled = false
                 checkList()
             }
         }
@@ -251,6 +252,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             btnRemove.visibility = View.GONE
             tvSelected.visibility = View.GONE
             btnArchive.visibility = View.GONE
+        } else {
+            val allMyCourses = adapterCourses.getCourseList().all { it?.isMyCourse == true }
+            selectAll.visibility = if (allMyCourses) View.GONE else View.VISIBLE
         }
     }
 

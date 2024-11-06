@@ -84,7 +84,11 @@ class NewsFragment : BaseNewsFragment() {
                 val ar = Gson().fromJson(news.viewIn, JsonArray::class.java)
                 for (e in ar) {
                     val ob = e.asJsonObject
-                    if (ob != null && ob.has("_id") && ob["_id"].asString.equals("${user?.planetCode}@${user?.parentCode}", ignoreCase = true)) {
+                    var userId = "${user?.planetCode}@${user?.parentCode}"
+                    if(userId.isNullOrEmpty() || userId=="@"){
+                        userId = settings?.getString("planetCode","")+"@"+settings?.getString("parentCode", "")
+                    }
+                    if (ob != null && ob.has("_id") && ob["_id"].asString.equals(userId, ignoreCase = true)) {
                         filteredList.add(news)
                         break
                     }
@@ -141,7 +145,11 @@ class NewsFragment : BaseNewsFragment() {
                 val ar = Gson().fromJson(news.viewIn, JsonArray::class.java)
                 for (e in ar) {
                     val ob = e.asJsonObject
-                    if (ob != null && ob.has("_id") && ob["_id"].asString.equals(if (user != null) user?.planetCode + "@" + user?.parentCode else "", ignoreCase = true)) {
+                    var userId = "${user?.planetCode}@${user?.parentCode}"
+                    if(userId.isNullOrEmpty() || userId=="@"){
+                        userId = settings?.getString("planetCode","")+"@"+settings?.getString("parentCode", "")
+                    }
+                    if (ob != null && ob.has("_id") && ob["_id"].asString.equals(userId, ignoreCase = true)) {
                         list.add(news)
                     }
                 }
