@@ -6,6 +6,7 @@ import android.graphics.drawable.AnimationDrawable
 import android.os.Build
 import android.os.Bundle
 import android.text.*
+import android.util.Log
 import android.view.*
 import android.webkit.URLUtil
 import android.widget.*
@@ -413,7 +414,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         val handler = UserProfileDbHandler(this)
 
         val userId = handler.userModel?.id
-        if (userId != null) {
+        if (userId != null && userId.startsWith("guest") == false) {
+            Log.d("okuro", "called")
             val latestAction = mRealm.where(RealmUserChallengeActions::class.java)
                 .equalTo("userId", userId).sort("time", Sort.DESCENDING).findFirst()
 
