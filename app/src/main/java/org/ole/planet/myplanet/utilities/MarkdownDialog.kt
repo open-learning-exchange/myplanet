@@ -10,6 +10,10 @@ import android.view.ViewGroup
 import androidx.fragment.app.DialogFragment
 import com.mikepenz.materialdrawer.Drawer
 import io.realm.Sort
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.DialogCampaignChallengeBinding
@@ -130,7 +134,11 @@ class MarkdownDialog : DialogFragment() {
                         (activity as DashboardActivity).openCallFragment(CommunityTabFragment())
                     }
                     context.getString(R.string.sync) -> {
-                        (activity as DashboardElementActivity).logSyncInSharedPrefs()
+                        CoroutineScope(Dispatchers.IO).launch {
+//                            withContext(Dispatchers.Main) {
+                                (activity as DashboardElementActivity).logSyncInSharedPrefs()
+//                            }
+                        }
                     }
                 }
                 if (drawer != null && drawer.isDrawerOpen) {

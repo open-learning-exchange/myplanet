@@ -22,6 +22,7 @@ import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.MenuItemCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.navigation.NavigationBarView
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayout.OnTabSelectedListener
@@ -38,6 +39,7 @@ import io.realm.RealmChangeListener
 import io.realm.RealmObject
 import io.realm.RealmResults
 import io.realm.Sort
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
@@ -172,8 +174,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             activityDashboardBinding.appBarBell.bellToolbar.visibility = View.VISIBLE
         }
         activityDashboardBinding.appBarBell.ivSync.setOnClickListener {
-            isServerReachable(Utilities.getUrl())
-            startUpload("dashboard")
+            lifecycleScope.launch {
+                isServerReachable(Utilities.getUrl())
+                startUpload("dashboard")
+            }
         }
         activityDashboardBinding.appBarBell.imgLogo.setOnClickListener { result?.openDrawer() }
         activityDashboardBinding.appBarBell.bellToolbar.setOnMenuItemClickListener { item ->
@@ -281,7 +285,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         if (user?.id?.startsWith("guest") == false) {
             val endDate = LocalDate.of(today.year, 12, 1)
             if (today.isBefore(endDate)) {
-                if (settings.getString("serverURL", "") in validUrls) {
+//                if (settings.getString("serverURL", "") in validUrls) {
                     val course = mRealm.where(RealmMyCourse::class.java)
                         .equalTo("courseId", courseId)
                         .findFirst()
@@ -301,7 +305,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     }
                 }
             }
-        }
+//        }
     }
 
     fun challengeDialog(voiceCount: Int, courseStatus: String) {
