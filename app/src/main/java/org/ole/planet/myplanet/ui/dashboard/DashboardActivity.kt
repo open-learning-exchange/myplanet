@@ -131,10 +131,25 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             val userProfileModel = profileDbHandler.userModel
             if (userProfileModel != null) {
                 var name: String? = userProfileModel.getFullName()
+
                 if (name.isNullOrBlank()) {
                     name = profileDbHandler.userModel?.name
                 }
-                activityDashboardBinding.appBarBell.appTitleName.text = getString(R.string.planet_name, name)
+
+                val truncatedName = if (!name.isNullOrBlank()) {
+                    if (name.length > 15) {
+                        name.take(15) + ".."
+                    } else {
+                        name
+                    }
+                } else {
+                    ""
+                }
+
+                activityDashboardBinding.appBarBell.appTitleName.text = getString(
+                    R.string.planet_name,
+                    truncatedName
+                )
             } else {
                 activityDashboardBinding.appBarBell.appTitleName.text = getString(R.string.app_project_name)
             }
