@@ -131,11 +131,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             val userProfileModel = profileDbHandler.userModel
             if (userProfileModel != null) {
                 var name: String? = userProfileModel.getFullName()
-
                 if (name.isNullOrBlank()) {
                     name = profileDbHandler.userModel?.name
                 }
-
                 val truncatedName = if (!name.isNullOrBlank()) {
                     if (name.length > 15) {
                         name.take(15) + ".."
@@ -145,7 +143,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 } else {
                     ""
                 }
-
                 activityDashboardBinding.appBarBell.appTitleName.text = getString(
                     R.string.planet_name,
                     truncatedName
