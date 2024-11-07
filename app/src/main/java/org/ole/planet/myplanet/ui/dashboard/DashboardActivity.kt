@@ -309,7 +309,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     fun challengeDialog(voiceCount: Int, courseStatus: String) {
-        val voiceTaskDone = if (voiceCount >= 1) "✅" else "[ ]"
+        val voiceTaskDone = if (voiceCount >= 5) "✅" else "[ ]"
         val prereqsMet = courseStatus.contains("terminado", ignoreCase = true) && voiceCount >= 1
         val syncTaskDone = if (prereqsMet) {
             val lastPrereqAction = mRealm.where(RealmUserChallengeActions::class.java)

@@ -19,6 +19,7 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
+import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createAction
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -121,7 +122,19 @@ class NewsFragment : BaseNewsFragment() {
             adapterNews?.addItem(n)
             setData(newsList)
 
-            createAction(mRealm, "${user?.id}", "${n?.id}", "voice")
+            val latestAction = mRealm.where(RealmUserChallengeActions::class.java)
+                .equalTo("userId", n?.userId).equalTo("actionType", "voice").sort("time", Sort.DESCENDING).findFirst()
+
+            val currentTime = System.currentTimeMillis()
+            val thresholdTime = 24 * 60 * 60 * 1000
+
+            if (latestAction == null) {
+                createAction(mRealm, "${n?.userId}", n?.id, "voice")
+            } else {
+                if (currentTime - latestAction.time >= thresholdTime) {
+                    createAction(mRealm, "${n?.userId}", n?.id, "voice")
+                }
+            }
         }
 
         fragmentNewsBinding.addNewsImage.setOnClickListener {

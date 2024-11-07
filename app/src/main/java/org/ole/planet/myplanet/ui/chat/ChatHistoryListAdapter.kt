@@ -11,6 +11,7 @@ import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmResults
+import io.realm.Sort
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AddNoteDialogBinding
 import org.ole.planet.myplanet.databinding.ChatShareDialogBinding
@@ -22,6 +23,7 @@ import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
+import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createAction
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -215,8 +217,20 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
             map["news"] = Gson().toJson(serializedMap)
 
             val n = user?.let { it1 -> createNews(map, mRealm, it1, null) }
-            if (section== "community") {
-                createAction(mRealm, "${n?.userId}", n?.id, "voice")
+            if (section == "community") {
+                val latestAction = mRealm.where(RealmUserChallengeActions::class.java)
+                    .equalTo("userId", n?.userId).equalTo("actionType", "voice").sort("time", Sort.DESCENDING).findFirst()
+
+                val currentTime = System.currentTimeMillis()
+                val thresholdTime = 24 * 60 * 60 * 1000
+
+                if (latestAction == null) {
+                    createAction(mRealm, "${n?.userId}", n?.id, "voice")
+                } else {
+                    if (currentTime - latestAction.time >= thresholdTime) {
+                        createAction(mRealm, "${n?.userId}", n?.id, "voice")
+                    }
+                }
             }
             fragment.refreshChatHistoryList()
             dialog.dismiss()
