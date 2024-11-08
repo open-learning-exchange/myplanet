@@ -1198,6 +1198,8 @@
     <string name="number_of_resources_opened">खोलिएका स्रोतहरूको संख्या : </string>
     <string name="number_of_visits">भ्रमणहरूको संख्या</string>
     <string name="kindly_enter_reply_message">कृपया प्रतिक्रिया सन्देश प्रवेश गर्नुहोस्</string>
+    <string name="start">सुरु गर्नुहोस्</string>
+    <string name="continuation">जारी राख्नुहोस्</string>
     <string name="please_complete_survey">कृपया कोर्स समाप्त गर्न सर्वेक्षण पूरा गर्नुहोस्</string>
 
 </resources>

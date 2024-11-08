@@ -1,13 +1,11 @@
 package org.ole.planet.myplanet.ui.news
 
 import android.content.res.Configuration
-import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.annotation.RequiresApi
 import androidx.recyclerview.widget.RecyclerView.AdapterDataObserver
 import com.google.gson.Gson
 import com.google.gson.JsonArray
@@ -21,6 +19,7 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
+import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createAction
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
@@ -30,7 +29,6 @@ import org.ole.planet.myplanet.utilities.FileUtils.openOleFolder
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 
-@RequiresApi(api = Build.VERSION_CODES.O)
 class NewsFragment : BaseNewsFragment() {
     private lateinit var fragmentNewsBinding: FragmentNewsBinding
     var user: RealmUserModel? = null
@@ -122,6 +120,8 @@ class NewsFragment : BaseNewsFragment() {
             llImage?.removeAllViews()
             adapterNews?.addItem(n)
             setData(newsList)
+
+            createAction(mRealm, "${user?.id}", "${n?.id}", "voice")
         }
 
         fragmentNewsBinding.addNewsImage.setOnClickListener {

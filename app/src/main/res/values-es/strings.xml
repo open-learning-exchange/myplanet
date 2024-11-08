@@ -1198,6 +1198,8 @@
     <string name="number_of_resources_opened">Número de Recursos Abiertos : </string>
     <string name="number_of_visits">Número de Visitas</string>
     <string name="kindly_enter_reply_message">Por favor, ingrese el mensaje de respuesta</string>
+    <string name="start">iniciar</string>
+    <string name="continuation">continuar</string>
     <string name="please_complete_survey">por favor complete la encuesta para terminar el curso</string>
 
 </resources>
