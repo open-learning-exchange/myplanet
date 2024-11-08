@@ -526,7 +526,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                     alertGuestLoginBinding.etUserName.error = getString(R.string.username_cannot_be_empty)
                     isValid = false
                 }
-                if (username.length > 15) {
+                if (username.length > 25) {
                     alertGuestLoginBinding.etUserName.error = getString(R.string.username_too_long)
                     isValid = false
                 }
