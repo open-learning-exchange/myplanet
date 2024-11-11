@@ -132,7 +132,7 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
             if (RealmMyTeam.isTeamLeader(team.teamId, user?.id, mRealm)) {
                 teamListener?.onEditTeam(team)
             } else {
-                AlertDialog.Builder(context).setMessage(R.string.confirm_exit)
+                AlertDialog.Builder(context, R.style.CustomAlertDialog).setMessage(R.string.confirm_exit)
                     .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
                         team.leave(user, mRealm)
                         updateList()
