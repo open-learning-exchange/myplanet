@@ -36,7 +36,7 @@ abstract class PermissionActivity : AppCompatActivity() {
     }
 
     fun getUsagesPermission(context: Context): Boolean {
-        val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
+        val appOps = context.getSystemService(APP_OPS_SERVICE) as AppOpsManager
         var mode = -1
         try {
             val method = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {

@@ -10,7 +10,7 @@ import android.util.Log
 import android.view.*
 import android.webkit.URLUtil
 import android.widget.*
-//import androidx.annotation.RequiresApi
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SwitchCompat
 import androidx.lifecycle.lifecycleScope
