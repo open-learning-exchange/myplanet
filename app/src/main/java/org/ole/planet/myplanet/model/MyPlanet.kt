@@ -17,21 +17,13 @@ import java.util.Calendar
 import java.util.Date
 
 class MyPlanet : Serializable {
-    @JvmField
     var planetVersion: String? = null
-//    @JvmField
 //    var latestapk: String? = null
-//    @JvmField
 //    var minapk: String? = null
-    @JvmField
     var minapkcode = 0
-    @JvmField
     var latestapkcode = 0
-    @JvmField
     var apkpath: String? = null
-    @JvmField
     var appname: String? = null
-    @JvmField
     var localapkpath: String? = null
     override fun toString(): String {
         return appname!!

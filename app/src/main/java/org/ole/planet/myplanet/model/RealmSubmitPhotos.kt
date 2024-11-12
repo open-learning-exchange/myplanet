@@ -7,25 +7,15 @@ import io.realm.annotations.PrimaryKey
 open class RealmSubmitPhotos : RealmObject() {
     @PrimaryKey
     var id: String? = null
-    @JvmField
     var _id: String? = null
-    @JvmField
     var _rev: String? = null
-    @JvmField
     var submissionId: String? = null
-    @JvmField
     var courseId: String? = null
-    @JvmField
     var examId: String? = null
-    @JvmField
     var memberId: String? = null
-    @JvmField
     var date: String? = null
-    @JvmField
     var uniqueId: String? = null
-    @JvmField
     var photoLocation: String? = null
-    @JvmField
     var uploaded = false
 
     companion object {

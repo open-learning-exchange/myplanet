@@ -9,7 +9,8 @@ import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.VersionUtils
 
 open class RealmSearchActivity(
-    @PrimaryKey var id: String = "",
+    @PrimaryKey
+    var id: String = "",
     var _id: String = "",
     var _rev: String = "",
     var text: String = "",

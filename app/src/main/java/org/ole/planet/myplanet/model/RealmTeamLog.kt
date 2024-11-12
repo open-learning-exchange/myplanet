@@ -18,25 +18,15 @@ import java.util.Calendar
 open class RealmTeamLog : RealmObject() {
     @PrimaryKey
     var id: String? = null
-    @JvmField
     var _id: String? = null
-    @JvmField
     var _rev: String? = null
-    @JvmField
     var teamId: String? = null
-    @JvmField
     var user: String? = null
-    @JvmField
     var type: String? = null
-    @JvmField
     var teamType: String? = null
-    @JvmField
     var createdOn: String? = null
-    @JvmField
     var parentCode: String? = null
-    @JvmField
     var time: Long? = null
-    @JvmField
     var uploaded = false
     companion object {
         private val teamLogDataList: MutableList<Array<String>> = mutableListOf()

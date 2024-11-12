@@ -10,23 +10,14 @@ import org.ole.planet.myplanet.utilities.NetworkUtils
 open class RealmApkLog : RealmObject() {
     @PrimaryKey
     var id: String? = null
-    @JvmField
     var userId: String? = null
-    @JvmField
     var type: String? = null
-    @JvmField
     var _rev: String? = null
-    @JvmField
     var error: String? = null
-    @JvmField
     var page: String? = null
-    @JvmField
     var parentCode: String? = null
-    @JvmField
     var version: String? = null
-    @JvmField
     var createdOn: String? = null
-    @JvmField
     var time: String? = null
 
     fun setError(e: Throwable) {

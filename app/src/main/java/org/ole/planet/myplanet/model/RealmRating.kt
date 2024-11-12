@@ -16,33 +16,19 @@ import java.io.IOException
 open class RealmRating : RealmObject() {
     @PrimaryKey
     var id: String? = null
-    @JvmField
     var createdOn: String? = null
-    @JvmField
     var _rev: String? = null
-    @JvmField
     var time: Long = 0
-    @JvmField
     var title: String? = null
-    @JvmField
     var userId: String? = null
-    @JvmField
     var isUpdated = false
-    @JvmField
     var rate = 0
-    @JvmField
     var _id: String? = null
-    @JvmField
     var item: String? = null
-    @JvmField
     var comment: String? = null
-    @JvmField
     var parentCode: String? = null
-    @JvmField
     var planetCode: String? = null
-    @JvmField
     var type: String? = null
-    @JvmField
     var user: String? = null
 
     companion object {
