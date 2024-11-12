@@ -42,7 +42,7 @@ class AdapterMyProgress(private val context: Context, private val list: JsonArra
             val stepMistake = list[position].asJsonObject["stepMistake"].asJsonObject
             rowMyProgressBinding.llProgress.removeAllViews()
 
-            if (stepMistake.keySet().size > 0) {
+            if (stepMistake.keySet().isNotEmpty()) {
                 itemProgressBinding = ItemProgressBinding.inflate(LayoutInflater.from(context))
                 itemProgressBinding.step.text = HtmlCompat.fromHtml("<b>Step</b>", HtmlCompat.FROM_HTML_MODE_LEGACY)
                 itemProgressBinding.mistake.text = HtmlCompat.fromHtml("<b>Mistake</b>", HtmlCompat.FROM_HTML_MODE_LEGACY)
@@ -50,8 +50,8 @@ class AdapterMyProgress(private val context: Context, private val list: JsonArra
                 
                 stepMistake.keySet().forEach {
                     rowMyProgressBinding.llProgress.removeAllViews()
-                    itemProgressBinding.step.text = (it.toInt().plus(1).toString())
-                    itemProgressBinding.mistake.text = stepMistake[it].asInt.toString()
+                    itemProgressBinding.step.text = "${it.toInt().plus(1)}"
+                    itemProgressBinding.mistake.text = "${stepMistake[it].asInt}"
                     rowMyProgressBinding.llProgress.addView(itemProgressBinding.root)
                 }
             }

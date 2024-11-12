@@ -17,6 +17,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.DrawableCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
+import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import kotlinx.coroutines.CoroutineScope
@@ -24,6 +25,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
+import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createAction
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
@@ -112,11 +114,19 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
                 startActivity(Intent(this, SettingActivity::class.java))
             }
             R.id.action_sync -> {
-                isServerReachable(Utilities.getUrl())
-                startUpload("dashboard")
+                logSyncInSharedPrefs()
             }
         }
         return super.onOptionsItemSelected(item)
+    }
+
+    fun logSyncInSharedPrefs() {
+        lifecycleScope.launch {
+            if (isServerReachable(Utilities.getUrl())) {
+                startUpload("dashboard")
+                createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
+            }
+        }
     }
 
     @SuppressLint("RestrictedApi")
@@ -128,7 +138,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         val intent = Intent(Settings.ACTION_WIFI_SETTINGS)
         startActivity(intent)
         if (mWifi?.isConnected == true) {
-            wifi.setWifiEnabled(false)
+            wifi.isWifiEnabled = false
             if (resIcon != null) {
                 DrawableCompat.setTintMode(resIcon.mutate(), PorterDuff.Mode.SRC_ATOP)
                 DrawableCompat.setTint(resIcon, ContextCompat.getColor(this, R.color.green))
@@ -136,7 +146,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
             goOnline.icon = resIcon
             Toast.makeText(this, getString(R.string.wifi_is_turned_off_saving_battery_power), Toast.LENGTH_LONG).show()
         } else {
-            wifi.setWifiEnabled(true)
+            wifi.isWifiEnabled = true
             Toast.makeText(this, getString(R.string.turning_on_wifi_please_wait), Toast.LENGTH_LONG).show()
             Handler(Looper.getMainLooper()).postDelayed({ connectToWifi() }, 5000)
             if (resIcon != null) {

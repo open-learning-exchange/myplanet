@@ -10,8 +10,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdkVersion 26
         targetSdkVersion 34
-        versionCode 2075
-        versionName "0.20.75"
+        versionCode 2094
+        versionName "0.20.94"
         ndkVersion '21.3.6528147'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -85,8 +85,8 @@ android {
     def planetViPin = project.findProperty('PLANET_VI_PIN') ?: ""
     def planetXelaUrl = project.findProperty('PLANET_XELA_URL') ?: ""
     def planetXelaPin = project.findProperty('PLANET_XELA_PIN') ?: ""
-    //def planetUriurUrl = project.findProperty('PLANET_URIUR_URL') ?: ""
-    //def planetUriurPin = project.findProperty('PLANET_URIUR_PIN') ?: ""
+    def planetUriurUrl = project.findProperty('PLANET_URIUR_URL') ?: ""
+    def planetUriurPin = project.findProperty('PLANET_URIUR_PIN') ?: ""
     def planetRuiruUrl = project.findProperty('PLANET_RUIRU_URL') ?: ""
     def planetRuiruPin = project.findProperty('PLANET_RUIRU_PIN') ?: ""
     def planetEmbakasiUrl = project.findProperty('PLANET_EMBAKASI_URL') ?: ""
@@ -114,18 +114,18 @@ android {
         it.buildConfigField 'String', 'PLANET_VI_PIN', "\"${planetViPin}\""
         it.buildConfigField 'String', 'PLANET_XELA_URL', "\"${planetXelaUrl}\""
         it.buildConfigField 'String', 'PLANET_XELA_PIN', "\"${planetXelaPin}\""
-        //it.buildConfigField('String', 'PLANET_URIUR_URL', "\"${planetUriurUrl}\"")
-        //it.buildConfigField('String', 'PLANET_URIUR_PIN', "\"${planetUriurPin}\"")
-        it.buildConfigField('String', 'PLANET_RUIRU_URL', "\"${planetRuiruUrl}\"")
-        it.buildConfigField('String', 'PLANET_RUIRU_PIN', "\"${planetRuiruPin}\"")
-        it.buildConfigField('String', 'PLANET_EMBAKASI_URL', "\"${planetEmbakasiUrl}\"")
-        it.buildConfigField('String', 'PLANET_EMBAKASI_PIN', "\"${planetEmbakasiPin}\"")
-        it.buildConfigField('String', 'PLANET_CAMBRIDGE_URL', "\"${planetCambridgeUrl}\"")
-        it.buildConfigField('String', 'PLANET_CAMBRIDGE_PIN', "\"${planetCambridgePin}\"")
-        //it.buildConfigField('String', 'PLANET_EGDIRBMAC_URL', "\"${planetEgdirbmacUrl}\"")
-        //it.buildConfigField('String', 'PLANET_EGDIRBMAC_PIN', "\"${planetEgdirbmacPin}\"")
-        it.buildConfigField('String', 'PLANET_PALMBAY_URL', "\"${planetPalmBayUrl}\"")
-        it.buildConfigField('String', 'PLANET_PALMBAY_PIN', "\"${planetPalmBayPin}\"")
+        it.buildConfigField 'String', 'PLANET_URIUR_URL', "\"${planetUriurUrl}\""
+        it.buildConfigField 'String', 'PLANET_URIUR_PIN', "\"${planetUriurPin}\""
+        it.buildConfigField 'String', 'PLANET_RUIRU_URL', "\"${planetRuiruUrl}\""
+        it.buildConfigField 'String', 'PLANET_RUIRU_PIN', "\"${planetRuiruPin}\""
+        it.buildConfigField 'String', 'PLANET_EMBAKASI_URL', "\"${planetEmbakasiUrl}\""
+        it.buildConfigField 'String', 'PLANET_EMBAKASI_PIN', "\"${planetEmbakasiPin}\""
+        it.buildConfigField 'String', 'PLANET_CAMBRIDGE_URL', "\"${planetCambridgeUrl}\""
+        it.buildConfigField 'String', 'PLANET_CAMBRIDGE_PIN', "\"${planetCambridgePin}\""
+        //it.buildConfigField 'String', 'PLANET_EGDIRBMAC_URL', "\"${planetEgdirbmacUrl}\""
+        //it.buildConfigField 'String', 'PLANET_EGDIRBMAC_PIN', "\"${planetEgdirbmacPin}\""
+        it.buildConfigField 'String', 'PLANET_PALMBAY_URL', "\"${planetPalmBayUrl}\""
+        it.buildConfigField 'String', 'PLANET_PALMBAY_PIN', "\"${planetPalmBayPin}\""
     }
 }
 

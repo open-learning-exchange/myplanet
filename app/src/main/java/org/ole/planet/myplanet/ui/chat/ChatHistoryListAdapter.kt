@@ -22,6 +22,7 @@ import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
+import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createAction
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.news.ExpandableListAdapter
@@ -213,7 +214,10 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
             map["chat"] = "true"
             map["news"] = Gson().toJson(serializedMap)
 
-            createNews(map, mRealm, user, null)
+            val n = user?.let { it1 -> createNews(map, mRealm, it1, null) }
+            if (section== "community") {
+                createAction(mRealm, "${n?.userId}", n?.id, "voice")
+            }
             fragment.refreshChatHistoryList()
             dialog.dismiss()
         }

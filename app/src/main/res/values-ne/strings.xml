@@ -623,8 +623,8 @@
     <string name="shared_to_community">समुदायसँग साझा गरियो</string>
     <string name="no_data_available_please_check_and_try_again">कुनै डाटा उपलब्ध छैन, कृपया जाँच गर्नुहोस् र पुन: प्रयास गर्नुहोस्।</string>
     <string name="no_course_matched_filter">कुनै पाठ्यक्रम मिलेन</string>
-    <string name="added_to_my_library">मेरो पुस्तकालयमा थपियो</string>
-    <string name="added_to_my_courses">मेरो पाठ्यक्रममा थपियो</string>
+    <string name="added_to_my_library">myLibrary मा थपियो</string>
+    <string name="added_to_my_courses">myCourses मा थपियो</string>
     <string name="do_you_want_to_stay_online">के तपाइँ अनलाइन बस्न चाहनुहुन्छ?</string>
     <string name="no_resources_to_download">डाउनलोड गर्नका लागि कुनै स्रोतहरू छैनन्</string>
     <string name="planet_not_available">ग्रह उपलब्ध छैन</string>
@@ -1198,5 +1198,8 @@
     <string name="number_of_resources_opened">खोलिएका स्रोतहरूको संख्या : </string>
     <string name="number_of_visits">भ्रमणहरूको संख्या</string>
     <string name="kindly_enter_reply_message">कृपया प्रतिक्रिया सन्देश प्रवेश गर्नुहोस्</string>
+    <string name="start">सुरु गर्नुहोस्</string>
+    <string name="continuation">जारी राख्नुहोस्</string>
+    <string name="please_complete_survey">कृपया कोर्स समाप्त गर्न सर्वेक्षण पूरा गर्नुहोस्</string>
 
 </resources>
