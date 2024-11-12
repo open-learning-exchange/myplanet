@@ -28,10 +28,6 @@ open class RealmAchievement : RealmObject() {
     var _id: String? = null
     var goals: String? = null
 
-//    fun getReferences(): RealmList<String>? {
-//        return references
-//    }
-
     val achievementsArray: JsonArray
         get() {
             val array = JsonArray()
