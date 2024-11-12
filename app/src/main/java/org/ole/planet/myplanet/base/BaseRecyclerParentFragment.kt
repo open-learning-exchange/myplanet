@@ -23,14 +23,35 @@ abstract class BaseRecyclerParentFragment<LI> : BaseResourceFragment() {
                 RealmMyLibrary.getOurLibrary(model?.id, mRealm.where(c).equalTo("isPrivate", false).findAll().toList()) as List<LI>
             }
             else -> {
-                val results: List<RealmMyCourse> = mRealm.where(RealmMyCourse::class.java).isNotEmpty("courseTitle").findAll().toList()
-                val filteredResults = RealmMyCourse.getOurCourse(model?.id, results)
-                filteredResults as List<LI>
+                val myLibItems = getMyLibItems(c as Class<out RealmModel>)
+                val results: List<RealmMyCourse> = mRealm.where(RealmMyCourse::class.java)
+                    .isNotEmpty("courseTitle")
+                    .findAll()
+                    .toList()
+                val ourCourseItems = RealmMyCourse.getOurCourse(model?.id, results)
+
+                when (c) {
+                    RealmMyCourse::class.java -> {
+                        val combinedList = mutableListOf<RealmMyCourse>()
+                        (myLibItems as List<RealmMyCourse>).forEach { course ->
+                            course.isMyCourse = true
+                            combinedList.add(course)
+                        }
+                        ourCourseItems.forEach { course ->
+                            if (!combinedList.any { it.id == course.id }) {
+                                course.isMyCourse = false
+                                combinedList.add(course)
+                            }
+                        }
+                        combinedList as List<LI>
+                    }
+                    else -> {
+                        throw IllegalArgumentException("Unsupported class: ${c.simpleName}")
+                    }
+                }
             }
         }
     }
-
-    fun getList(c: Class<*>, orderBy: String): List<LI> = getList(c, orderBy, Sort.ASCENDING)
 
     @Suppress("UNCHECKED_CAST")
     fun getList(c: Class<*>, orderBy: String? = null, sort: Sort = Sort.ASCENDING): List<LI> {

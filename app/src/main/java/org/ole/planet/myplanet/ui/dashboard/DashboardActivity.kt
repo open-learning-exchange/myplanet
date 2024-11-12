@@ -22,6 +22,7 @@ import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.MenuItemCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.navigation.NavigationBarView
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayout.OnTabSelectedListener
@@ -37,6 +38,9 @@ import io.realm.Case
 import io.realm.RealmChangeListener
 import io.realm.RealmObject
 import io.realm.RealmResults
+import io.realm.Sort
+import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
@@ -44,17 +48,21 @@ import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getLibraryLis
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.ActivityDashboardBinding
 import org.ole.planet.myplanet.databinding.CustomTabBinding
+import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.chat.ChatHistoryListFragment
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
+import org.ole.planet.myplanet.ui.courses.MyProgressFragment.Companion.fetchCourseData
+import org.ole.planet.myplanet.ui.courses.MyProgressFragment.Companion.getCourseProgress
 import org.ole.planet.myplanet.ui.dashboard.notification.NotificationsFragment
 import org.ole.planet.myplanet.ui.dashboard.notification.NotificationListener
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
@@ -72,9 +80,11 @@ import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utilities.FileUtils.totalAvailableMemoryRatio
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.LocaleHelper
+import org.ole.planet.myplanet.utilities.MarkdownDialog
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.Utilities.toast
+import java.time.LocalDate
 import java.util.Date
 import java.util.UUID
 import kotlin.math.ceil
@@ -83,7 +93,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private lateinit var activityDashboardBinding: ActivityDashboardBinding
     private var headerResult: AccountHeader? = null
     var user: RealmUserModel? = null
-    private var result: Drawer? = null
+    var result: Drawer? = null
     private var menul: TabLayout.Tab? = null
     private var menuh: TabLayout.Tab? = null
     private var menuc: TabLayout.Tab? = null
@@ -164,8 +174,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             activityDashboardBinding.appBarBell.bellToolbar.visibility = View.VISIBLE
         }
         activityDashboardBinding.appBarBell.ivSync.setOnClickListener {
-            isServerReachable(Utilities.getUrl())
-            startUpload("dashboard")
+            lifecycleScope.launch {
+                isServerReachable(Utilities.getUrl())
+                startUpload("dashboard")
+            }
         }
         activityDashboardBinding.appBarBell.imgLogo.setOnClickListener { result?.openDrawer() }
         activityDashboardBinding.appBarBell.bellToolbar.setOnMenuItemClickListener { item ->
@@ -179,8 +191,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 }
                 R.id.menu_goOnline -> wifiStatusSwitch()
                 R.id.action_sync -> {
-                    isServerReachable(Utilities.getUrl())
-                    startUpload("dashboard")
+                    logSyncInSharedPrefs()
                 }
                 R.id.action_feedback -> {
                     if (user?.id?.startsWith("guest") == false) {
@@ -230,6 +241,117 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 }
             }
         })
+
+        val loginCount = mRealm.where(RealmUserChallengeActions::class.java)
+            .equalTo("userId", user?.id)
+            .equalTo("actionType", "login")
+            .findAll().count()
+
+        val resourceOpenCount = mRealm.where(RealmUserChallengeActions::class.java)
+            .equalTo("userId", user?.id)
+            .equalTo("actionType", "resourceOpen")
+            .findAll().count()
+
+        val syncCount = mRealm.where(RealmUserChallengeActions::class.java)
+            .equalTo("userId", user?.id)
+            .equalTo("actionType", "sync")
+            .findAll().count()
+
+        val voiceCount = mRealm.where(RealmUserChallengeActions::class.java)
+            .equalTo("userId", user?.id)
+            .equalTo("actionType", "voice")
+            .findAll().count()
+
+        val aiResearchCount = mRealm.where(RealmUserChallengeActions::class.java)
+            .equalTo("userId", user?.id)
+            .equalTo("actionType", "ai research")
+            .findAll().count()
+
+        val courseData = fetchCourseData(mRealm, user?.id)
+
+        val courseId = "9517e3b45a5bb63e69bb8f269216974d"
+        val progress = getCourseProgress(courseData, courseId)
+
+        val validUrls = listOf(
+            "https://${BuildConfig.PLANET_GUATEMALA_URL}",
+            "https://${BuildConfig.PLANET_XELA_URL}",
+            "https://${BuildConfig.PLANET_URIUR_URL}",
+            "https://${BuildConfig.PLANET_SANPABLO_URL}",
+            "https://${BuildConfig.PLANET_EMBAKASI_URL}",
+            "https://${BuildConfig.PLANET_VI_URL}"
+        )
+
+        val today = LocalDate.now()
+        if (user?.id?.startsWith("guest") == false) {
+            val endDate = LocalDate.of(today.year, 12, 1)
+            if (today.isBefore(endDate)) {
+                if (settings.getString("serverURL", "") in validUrls) {
+                    val course = mRealm.where(RealmMyCourse::class.java)
+                        .equalTo("courseId", courseId)
+                        .findFirst()
+                    val courseName = course?.courseTitle
+
+                    if (progress != null) {
+                        val max = progress.get("max").asInt
+                        val current = progress.get("current").asInt
+                        val courseStatus = if (current == max) {
+                            "$courseName terminado!"
+                        } else {
+                            "Ingresa al curso $courseName completalo ($current de $max hecho)"
+                        }
+                        challengeDialog(voiceCount, courseStatus)
+                    } else {
+                        challengeDialog(voiceCount, "$courseName no iniciado")
+                    }
+                }
+            }
+        }
+    }
+
+    fun challengeDialog(voiceCount: Int, courseStatus: String) {
+        val voiceTaskDone = if (voiceCount >= 1) "✅" else "[ ]"
+        val prereqsMet = courseStatus.contains("terminado", ignoreCase = true) && voiceCount >= 1
+        val syncTaskDone = if (prereqsMet) {
+            val lastPrereqAction = mRealm.where(RealmUserChallengeActions::class.java)
+                .equalTo("userId", user?.id)
+                .`in`("actionType", arrayOf("voice", "courseComplete"))
+                .sort("time", Sort.DESCENDING)
+                .findFirst()
+                ?.time ?: 0
+
+            val hasValidSync = mRealm.where(RealmUserChallengeActions::class.java)
+                .equalTo("userId", user?.id)
+                .equalTo("actionType", "sync")
+                .greaterThan("time", lastPrereqAction)
+                .count() > 0
+
+            if (hasValidSync) "✅" else "[ ]"
+        } else "[ ]"
+        val courseTaskDone = if (courseStatus.contains("terminado", ignoreCase = true)) "✅ $courseStatus" else "[ ] $courseStatus"
+
+        val isCompleted = syncTaskDone == "✅" && voiceTaskDone == "✅" && courseTaskDone.startsWith("✅")
+        val hasShownCongrats = settings.getBoolean("has_shown_congrats", false)
+
+        if (isCompleted && hasShownCongrats) return
+
+        if (isCompleted && !hasShownCongrats) {
+            editor.putBoolean("has_shown_congrats", true).apply()
+            val markdownContent = """
+                ![issues challenge](file:///android_asset/images/november_challenge.jpeg) <br/>
+                ### ¡Felicidades Reto Completado!
+                """.trimIndent()
+            MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount)
+                .show(supportFragmentManager, "markdown_dialog")
+        } else {
+            val markdownContent = """
+                ![issues challenge](file:///android_asset/images/november_challenge.jpeg) <br/>
+                ### $courseTaskDone <br/>
+                ### $voiceTaskDone Comparte tu opinión en Nuestras Voces. <br/>
+                ### $syncTaskDone Recuerda sincronizar la aplicacion movil.
+                """.trimIndent()
+            MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount)
+                .show(supportFragmentManager, "markdown_dialog")
+        }
     }
 
     private fun setupRealmListeners() {
@@ -483,7 +605,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     override fun onPrepareOptionsMenu(menu: Menu): Boolean {
         if (user?.rolesList?.isEmpty() == true) {
-            menu.findItem(R.id.action_setting).setEnabled(false)
+            menu.findItem(R.id.action_setting).isEnabled = false
         }
         return super.onPrepareOptionsMenu(menu)
     }
@@ -702,7 +824,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu_bell_dashboard, menu)
-        menu.findItem(R.id.menu_goOnline).setVisible(showBetaFeature(Constants.KEY_SYNC, this))
+        menu.findItem(R.id.menu_goOnline).isVisible = showBetaFeature(Constants.KEY_SYNC, this)
         return super.onCreateOptionsMenu(menu)
     }
 

@@ -171,8 +171,9 @@ class BellDashboardFragment : BaseDashboardFragment() {
     private fun getSurveyTitlesFromSubmissions(submissions: List<RealmSubmission>, realm: Realm): List<String> {
         val titles = mutableListOf<String>()
         submissions.forEach { submission ->
+            val examId = submission.parentId?.split("@")?.firstOrNull() ?: ""
             val exam = realm.where(RealmStepExam::class.java)
-                .equalTo("id", submission.parentId)
+                .equalTo("id", examId)
                 .findFirst()
             exam?.name?.let { titles.add(it) }
         }
