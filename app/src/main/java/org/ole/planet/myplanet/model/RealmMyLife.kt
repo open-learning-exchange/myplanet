@@ -7,17 +7,11 @@ import io.realm.annotations.PrimaryKey
 
 open class RealmMyLife : RealmObject {
     @PrimaryKey
-    @JvmField
     var _id: String? = null
-    @JvmField
     var imageId: String? = null
-    @JvmField
     var userId: String? = null
-    @JvmField
     var title: String? = null
-    @JvmField
     var isVisible = false
-    @JvmField
     var weight = 0
 
     constructor(imageId: String?, userId: String?, title: String?) {
