@@ -257,7 +257,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             }
         }
 
-        if (hasUnfinishedSurvey && courseId == "9517e3b45a5bb63e69bb8f269216974d") {
+        if (hasUnfinishedSurvey){
             fragmentTakeCourseBinding.finishStep.setOnClickListener {
                 Toast.makeText(context, getString(R.string.please_complete_survey), Toast.LENGTH_SHORT).show() }
         } else {
