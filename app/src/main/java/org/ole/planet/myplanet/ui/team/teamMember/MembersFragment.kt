@@ -6,7 +6,6 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.base.BaseMemberFragment
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getRequestedMember
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -27,7 +26,7 @@ class MembersFragment : BaseMemberFragment() {
     }
 
     override val list: List<RealmUserModel>
-        get() = getRequestedMember(teamId, mRealm)
+        get() = RealmMyTeam.getRequestedMember(teamId, mRealm)
 
     override val adapter: RecyclerView.Adapter<*>
         get() = AdapterMemberRequest(requireActivity(), list.toMutableList(), mRealm, isTeamLeader()).apply { setTeamId(teamId) }

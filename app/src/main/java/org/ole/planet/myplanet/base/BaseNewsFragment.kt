@@ -39,12 +39,9 @@ import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import java.io.File
 import java.io.FileOutputStream
 
-@RequiresApi(api = Build.VERSION_CODES.O)
 abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListener {
     lateinit var imageList: RealmList<String>
-    @JvmField
     protected var llImage: LinearLayout? = null
-    @JvmField
     protected var adapterNews: AdapterNews? = null
     lateinit var openFolderLauncher: ActivityResultLauncher<Intent>
     private lateinit var replyActivityLauncher: ActivityResultLauncher<Intent>

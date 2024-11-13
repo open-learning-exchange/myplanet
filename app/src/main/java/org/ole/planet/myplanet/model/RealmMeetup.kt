@@ -6,7 +6,7 @@ import com.opencsv.CSVWriter
 import io.realm.*
 import io.realm.annotations.PrimaryKey
 import org.json.JSONArray
-import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utilities.*
 import java.io.File
 import java.io.FileWriter
@@ -35,7 +35,6 @@ open class RealmMeetup : RealmObject() {
     companion object {
         private val meetupDataList: MutableList<Array<String>> = mutableListOf()
 
-        @JvmStatic
         fun insert(mRealm: Realm, meetupDoc: JsonObject) {
             insert("", meetupDoc, mRealm)
         }
@@ -88,7 +87,6 @@ open class RealmMeetup : RealmObject() {
             meetupDataList.add(csvRow)
         }
 
-        @JvmStatic
         fun writeCsv(filePath: String, data: List<Array<String>>) {
             try {
                 val file = File(filePath)
@@ -105,7 +103,6 @@ open class RealmMeetup : RealmObject() {
         }
 
 
-        @JvmStatic
         fun getMyMeetUpIds(realm: Realm?, userId: String?): JsonArray {
             val meetups = realm?.where(RealmMeetup::class.java)?.isNotEmpty("userId")
                 ?.equalTo("userId", userId, Case.INSENSITIVE)?.findAll()
@@ -116,7 +113,6 @@ open class RealmMeetup : RealmObject() {
             return ids
         }
 
-        @JvmStatic
         fun getHashMap(meetups: RealmMeetup): HashMap<String, String> {
             val map = HashMap<String, String>()
             map["Meetup Title"] = checkNull(meetups.title)
@@ -145,7 +141,6 @@ open class RealmMeetup : RealmObject() {
             return map
         }
 
-        @JvmStatic
         fun getJoinedUserIds(mRealm: Realm): Array<String?> {
             val list: List<RealmMeetup> = mRealm.where(RealmMeetup::class.java).isNotEmpty("userId").findAll()
             val myIds = arrayOfNulls<String>(list.size)
@@ -159,9 +154,8 @@ open class RealmMeetup : RealmObject() {
             return if (TextUtils.isEmpty(s)) "" else s!!
         }
 
-        @JvmStatic
         fun meetupWriteCsv() {
-            writeCsv("${context.getExternalFilesDir(null)}/ole/meetups.csv", meetupDataList)
+            writeCsv("${MainApplication.context.getExternalFilesDir(null)}/ole/meetups.csv", meetupDataList)
         }
     }
 }

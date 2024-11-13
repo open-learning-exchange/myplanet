@@ -13,30 +13,25 @@ import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.model.DocumentResponse
-import org.ole.planet.myplanet.model.RealmAchievement.Companion.achievementWriteCsv
-import org.ole.planet.myplanet.model.RealmCertification.Companion.certificationWriteCsv
-import org.ole.planet.myplanet.model.RealmChatHistory.Companion.chatWriteCsv
-import org.ole.planet.myplanet.model.RealmChatHistory.Companion.insert
-import org.ole.planet.myplanet.model.RealmCourseProgress.Companion.progressWriteCsv
-import org.ole.planet.myplanet.model.RealmFeedback.Companion.feedbackWriteCsv
-import org.ole.planet.myplanet.model.RealmMeetup.Companion.meetupWriteCsv
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.courseWriteCsv
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
-import org.ole.planet.myplanet.model.RealmMyHealthPojo.Companion.healthWriteCsv
-import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.libraryWriteCsv
-import org.ole.planet.myplanet.model.RealmMyTeam.Companion.teamWriteCsv
-import org.ole.planet.myplanet.model.RealmNews.Companion.newsWriteCsv
-import org.ole.planet.myplanet.model.RealmOfflineActivity.Companion.offlineWriteCsv
-import org.ole.planet.myplanet.model.RealmRating.Companion.ratingWriteCsv
-import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
-import org.ole.planet.myplanet.model.RealmStepExam.Companion.stepExamWriteCsv
-import org.ole.planet.myplanet.model.RealmSubmission.Companion.submissionWriteCsv
-import org.ole.planet.myplanet.model.RealmTag.Companion.tagWriteCsv
-import org.ole.planet.myplanet.model.RealmTeamLog.Companion.teamLogWriteCsv
-import org.ole.planet.myplanet.model.RealmTeamTask.Companion.teamTaskWriteCsv
+import org.ole.planet.myplanet.model.RealmAchievement
+import org.ole.planet.myplanet.model.RealmCertification
+import org.ole.planet.myplanet.model.RealmChatHistory
+import org.ole.planet.myplanet.model.RealmCourseProgress
+import org.ole.planet.myplanet.model.RealmFeedback
+import org.ole.planet.myplanet.model.RealmMeetup
+import org.ole.planet.myplanet.model.RealmMyCourse
+import org.ole.planet.myplanet.model.RealmMyHealthPojo
+import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.RealmOfflineActivity
+import org.ole.planet.myplanet.model.RealmRating
+import org.ole.planet.myplanet.model.RealmStepExam
+import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.model.RealmTeamLog
+import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.model.RealmUserModel.Companion.populateUsersTable
-import org.ole.planet.myplanet.model.RealmUserModel.Companion.userWriteCsv
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.JsonUtils.getJsonArray
@@ -150,7 +145,7 @@ object TransactionSyncManager {
 
         mRealm.executeTransactionAsync { bgRealm ->
             chatHistoryList.forEach { jsonDoc ->
-               insert(bgRealm, jsonDoc)
+                RealmChatHistory.insert(bgRealm, jsonDoc)
             }
         }
     }
@@ -177,39 +172,39 @@ object TransactionSyncManager {
         val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         when (table) {
             "exams" -> {
-                insertCourseStepsExams("", "", jsonDoc, mRealm)
+                RealmStepExam.insertCourseStepsExams("", "", jsonDoc, mRealm)
             }
             "tablet_users" -> {
-                populateUsersTable(jsonDoc, mRealm, settings)
+                RealmUserModel.populateUsersTable(jsonDoc, mRealm, settings)
             }
             else -> {
                 callMethod(mRealm, jsonDoc, table)
             }
         }
-        saveConcatenatedLinksToPrefs()
+        RealmMyCourse.saveConcatenatedLinksToPrefs()
 
         val syncFiles = settings.getBoolean("download_sync_files", false)
 
         if (syncFiles) {
-            meetupWriteCsv()
-            achievementWriteCsv()
-            certificationWriteCsv()
-            chatWriteCsv()
-            progressWriteCsv()
-            feedbackWriteCsv()
-            courseWriteCsv()
-            healthWriteCsv()
-            libraryWriteCsv()
-            teamLogWriteCsv()
-            teamWriteCsv()
-            newsWriteCsv()
-            offlineWriteCsv()
-            ratingWriteCsv()
-            stepExamWriteCsv()
-            submissionWriteCsv()
-            tagWriteCsv()
-            teamTaskWriteCsv()
-            userWriteCsv()
+            RealmMeetup.meetupWriteCsv()
+            RealmAchievement.achievementWriteCsv()
+            RealmCertification.certificationWriteCsv()
+            RealmChatHistory.chatWriteCsv()
+            RealmCourseProgress.progressWriteCsv()
+            RealmFeedback.feedbackWriteCsv()
+            RealmMyCourse.courseWriteCsv()
+            RealmMyHealthPojo.healthWriteCsv()
+            RealmMyLibrary.libraryWriteCsv()
+            RealmTeamLog.teamLogWriteCsv()
+            RealmMyTeam.teamWriteCsv()
+            RealmNews.newsWriteCsv()
+            RealmOfflineActivity.offlineWriteCsv()
+            RealmRating.ratingWriteCsv()
+            RealmStepExam.stepExamWriteCsv()
+            RealmSubmission.submissionWriteCsv()
+            RealmTag.tagWriteCsv()
+            RealmTeamTask.teamTaskWriteCsv()
+            RealmUserModel.userWriteCsv()
         }
     }
 

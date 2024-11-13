@@ -46,7 +46,6 @@ open class RealmAnswer : RealmObject() {
     }
 
     companion object {
-        @JvmStatic
         fun serializeRealmAnswer(answers: RealmList<RealmAnswer>): JsonArray {
             val array = JsonArray()
             for (ans in answers) {

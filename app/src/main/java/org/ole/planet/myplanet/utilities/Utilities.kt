@@ -15,7 +15,7 @@ import android.widget.ImageView
 import android.widget.Toast
 import com.bumptech.glide.Glide
 import fisk.chipcloud.ChipCloudConfig
-import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.datamanager.MyDownloadService
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -31,10 +31,9 @@ object Utilities {
     }
 
     val SD_PATH: String by lazy {
-        context.getExternalFilesDir(null)?.let { "$it/ole/" } ?: ""
+        MainApplication.context.getExternalFilesDir(null)?.let { "$it/ole/" } ?: ""
     }
 
-    @JvmStatic
     fun log(message: String) {
         Log.d("OLE ", "log: $message")
     }
@@ -63,7 +62,6 @@ object Utilities {
         }
     }
 
-    @JvmStatic
     fun toast(context: Context?, s: String?) {
         context ?: return
         Toast.makeText(context, s, Toast.LENGTH_LONG).show()
@@ -95,7 +93,7 @@ object Utilities {
 
     fun loadImage(userImage: String?, imageView: ImageView) {
         if (!TextUtils.isEmpty(userImage)) {
-            Glide.with(context)
+            Glide.with(MainApplication.context)
                 .load(userImage)
                 .placeholder(R.drawable.profile)
                 .error(R.drawable.profile)
@@ -114,12 +112,12 @@ object Utilities {
 
     val header: String
         get() {
-            val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             return "Basic ${Base64.encodeToString(("${settings.getString("url_user", "")}:${ settings.getString("url_pwd", "") }").toByteArray(), Base64.NO_WRAP)}"
         }
 
     fun getUrl(): String {
-        val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         if (settings.contains("couchdbURL")) {
             var url = settings.getString("couchdbURL", "")
 
@@ -133,7 +131,7 @@ object Utilities {
 
     val hostUrl: String
         get() {
-            val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             val url: String?
             val scheme = settings.getString("url_Scheme", "")
             val hostIp = settings.getString("url_Host", "")
@@ -189,7 +187,7 @@ object Utilities {
     }
 
     fun getApkUpdateUrl(path: String?): String {
-        val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val preferences = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         var url = preferences.getString("couchdbURL", "")
         if (url != null) {
             if (url.endsWith("/db")) {
@@ -209,17 +207,18 @@ object Utilities {
     }
 
     fun openPlayStore() {
-        val appPackageName = context.packageName
+        val appPackageName = MainApplication.context.packageName
         val intent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$appPackageName")).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         try {
-            context.startActivity(intent)
+            MainApplication.context.startActivity(intent)
         } catch (e: android.content.ActivityNotFoundException) {
+            e.printStackTrace()
             val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=$appPackageName")).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
-            context.startActivity(webIntent)
+            MainApplication.context.startActivity(webIntent)
         }
     }
 }

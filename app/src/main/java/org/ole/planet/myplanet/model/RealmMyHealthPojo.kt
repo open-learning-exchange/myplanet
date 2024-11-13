@@ -7,7 +7,7 @@ import com.opencsv.CSVWriter
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.JsonUtils
 import java.io.File
@@ -56,7 +56,6 @@ open class RealmMyHealthPojo : RealmObject() {
     companion object {
         val healthDataList: MutableList<Array<String>> = mutableListOf()
 
-        @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject?) {
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
@@ -126,10 +125,9 @@ open class RealmMyHealthPojo : RealmObject() {
         }
 
         fun healthWriteCsv() {
-            writeCsv("${context.getExternalFilesDir(null)}/ole/health.csv", healthDataList)
+            writeCsv("${MainApplication.context.getExternalFilesDir(null)}/ole/health.csv", healthDataList)
         }
 
-        @JvmStatic
         fun serialize(health: RealmMyHealthPojo): JsonObject {
             val `object` = JsonObject()
             if (!TextUtils.isEmpty(health.userId)) `object`.addProperty("_id", health.userId)

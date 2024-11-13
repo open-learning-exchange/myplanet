@@ -25,26 +25,20 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
-import okhttp3.ResponseBody
 import org.ole.planet.myplanet.BuildConfig
-import org.ole.planet.myplanet.MainApplication.Companion.applicationScope
-import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.MainApplication.Companion.createLog
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
-import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
+import org.ole.planet.myplanet.base.BaseResourceFragment
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.databinding.*
 import org.ole.planet.myplanet.datamanager.*
 import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.datamanager.Service.*
 import org.ole.planet.myplanet.model.*
-import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createAction
 import org.ole.planet.myplanet.service.*
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.team.AdapterTeam.OnUserSelectedListener
 import org.ole.planet.myplanet.utilities.*
-import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.androidDecrypter
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Constants.autoSynFeature
 import org.ole.planet.myplanet.utilities.DialogUtils.getUpdateDialog
@@ -57,9 +51,6 @@ import org.ole.planet.myplanet.utilities.NetworkUtils.getCustomDeviceName
 import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
 import org.ole.planet.myplanet.utilities.Utilities.getRelativeTime
 import org.ole.planet.myplanet.utilities.Utilities.openDownloadService
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
 import java.io.File
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -217,8 +208,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     syncFailed = true
                     val protocol = extractProtocol("$processedUrl")
                     val errorMessage = when (protocol) {
-                        context.getString(R.string.http_protocol) -> getString(R.string.device_couldn_t_reach_local_server)
-                        context.getString(R.string.https_protocol) -> getString(R.string.device_couldn_t_reach_nation_server)
+                        MainApplication.context.getString(R.string.http_protocol) -> getString(R.string.device_couldn_t_reach_local_server)
+                        MainApplication.context.getString(R.string.https_protocol) -> getString(R.string.device_couldn_t_reach_nation_server)
                         else -> ""
                     }
                     withContext(Dispatchers.Main) {
@@ -293,7 +284,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                         return true
                     }
                 } else {
-                    if (androidDecrypter(username, password, it.derived_key, it.salt)) {
+                    if (AndroidDecrypter.androidDecrypter(username, password, it.derived_key, it.salt)) {
                         if (isManagerMode && !it.isManager()) return false
                         saveUserInfoPref(settings, password, it)
                         return true
@@ -350,13 +341,13 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 syncIconDrawable.stop()
                 syncIconDrawable.selectDrawable(0)
                 syncIcon.invalidateDrawable(syncIconDrawable)
-                applicationScope.launch {
-                    createLog("synced successfully")
+                MainApplication.applicationScope.launch {
+                    MainApplication.createLog("synced successfully")
                 }
                 showSnack(findViewById(android.R.id.content), getString(R.string.sync_completed))
                 downloadAdditionalResources()
                 if (defaultPref.getBoolean("beta_auto_download", false)) {
-                    backgroundDownload(downloadAllFiles(getAllLibraryList(mRealm)))
+                    BaseResourceFragment.backgroundDownload(downloadAllFiles(BaseResourceFragment.getAllLibraryList(mRealm)))
                 }
                 cancelAll(this)
                 if (this is LoginActivity) {
@@ -370,7 +361,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         val storedJsonConcatenatedLinks = settings.getString("concatenated_links", null)
         if (storedJsonConcatenatedLinks != null) {
             val storedConcatenatedLinks: ArrayList<String> = Json.decodeFromString(storedJsonConcatenatedLinks)
-            openDownloadService(context, storedConcatenatedLinks, true)
+            openDownloadService(MainApplication.context, storedConcatenatedLinks, true)
         }
     }
 
@@ -427,10 +418,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             val thresholdTime = 24 * 60 * 60 * 1000
 
             if (latestAction == null) {
-                createAction(mRealm, userId, null, "login")
+                RealmUserChallengeActions.createAction(mRealm, userId, null, "login")
             } else {
                 if (currentTime - latestAction.time >= thresholdTime) {
-                    createAction(mRealm, userId, null, "login")
+                    RealmUserChallengeActions.createAction(mRealm, userId, null, "login")
                 }
             }
         }
@@ -753,12 +744,12 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
         Service(this).isPlanetAvailable(object : PlanetAvailableListener {
             override fun isAvailable() {
-                Service(context).checkVersion(this@SyncActivity, settings)
+                Service(MainApplication.context).checkVersion(this@SyncActivity, settings)
             }
             override fun notAvailable() {
                 if (!isFinishing) {
                     syncFailed = true
-                    showAlert(context, "Error", getString(R.string.planet_server_not_reachable))
+                    showAlert(MainApplication.context, "Error", getString(R.string.planet_server_not_reachable))
                 }
             }
         })
@@ -886,9 +877,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
 
         fun clearSharedPref() {
-            val settings = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             val editor = settings.edit()
-            val keysToKeep = setOf(SharedPrefManager(context).firstLaunch, SharedPrefManager(context).manualConfig )
+            val keysToKeep = setOf(SharedPrefManager(MainApplication.context).firstLaunch, SharedPrefManager(MainApplication.context).manualConfig )
             val tempStorage = HashMap<String, Boolean>()
             for (key in keysToKeep) {
                 tempStorage[key] = settings.getBoolean(key, false)
@@ -899,14 +890,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             }
             editor.commit()
 
-            val preferences = PreferenceManager.getDefaultSharedPreferences(context)
+            val preferences = PreferenceManager.getDefaultSharedPreferences(MainApplication.context)
             preferences.edit().clear().apply()
         }
 
         fun restartApp() {
-            val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+            val intent = MainApplication.context.packageManager.getLaunchIntentForPackage(MainApplication.context.packageName)
             val mainIntent = Intent.makeRestartActivityTask(intent?.component)
-            context.startActivity(mainIntent)
+            MainApplication.context.startActivity(mainIntent)
             Runtime.getRuntime().exit(0)
         }
     }

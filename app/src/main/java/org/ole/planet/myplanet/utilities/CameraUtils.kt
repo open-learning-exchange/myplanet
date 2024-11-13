@@ -15,7 +15,7 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.view.Surface
 import androidx.core.content.ContextCompat
-import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.MainApplication
 import java.io.File
 import java.io.FileOutputStream
 import java.util.*
@@ -28,12 +28,11 @@ object CameraUtils {
     private var backgroundHandler: Handler
     private var backgroundThread: HandlerThread = HandlerThread("CameraBackground")
 
-    @JvmStatic
     fun capturePhoto(callback: ImageCaptureCallback) {
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(MainApplication.context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             return
         }
-        openCamera(context)
+        openCamera(MainApplication.context)
         imageReader = ImageReader.newInstance(IMAGE_WIDTH, IMAGE_HEIGHT, ImageFormat.JPEG, 1)
         imageReader?.setOnImageAvailableListener({ reader ->
             val image = reader.acquireLatestImage()
@@ -57,7 +56,7 @@ object CameraUtils {
         } catch (e: CameraAccessException) {
             when (e.reason) {
                 CameraAccessException.CAMERA_DISCONNECTED -> {
-                    reopenCamera(context)
+                    reopenCamera(MainApplication.context)
                 }
             }
         }
@@ -77,7 +76,6 @@ object CameraUtils {
         imageReader = null
     }
 
-    @JvmStatic
     private fun savePicture(data: ByteArray, callback: ImageCaptureCallback) {
         val pictureFileDir = File("${Utilities.SD_PATH}/userimages")
         if (!pictureFileDir.exists() && !pictureFileDir.mkdirs()) {
@@ -97,7 +95,6 @@ object CameraUtils {
     }
 
     @SuppressLint("MissingPermission")
-    @JvmStatic
     private fun openCamera(context: Context) {
         val manager = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
         try {

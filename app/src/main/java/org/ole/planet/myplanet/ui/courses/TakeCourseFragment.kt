@@ -15,19 +15,14 @@ import io.realm.Realm
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentTakeCourseBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.model.RealmCourseActivity.Companion.createActivity
+import org.ole.planet.myplanet.model.RealmCourseActivity
 import org.ole.planet.myplanet.model.RealmCourseProgress
-import org.ole.planet.myplanet.model.RealmCourseProgress.Companion.getCurrentProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getCourseStepIds
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getCourseSteps
-import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onAdd
-import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onRemove
+import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmSubmission.Companion.isStepCompleted
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.DialogUtils.getAlertDialog
@@ -67,12 +62,12 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         fragmentTakeCourseBinding.tvCourseTitle.text = currentCourse?.courseTitle
-        steps = getCourseSteps(mRealm, courseId)
+        steps = RealmMyCourse.getCourseSteps(mRealm, courseId)
         if (steps.isEmpty()) {
             fragmentTakeCourseBinding.nextStep.visibility = View.GONE
             fragmentTakeCourseBinding.previousStep.visibility = View.GONE
         }
-        fragmentTakeCourseBinding.viewPager2.adapter = CoursesPagerAdapter(this, courseId, getCourseStepIds(mRealm, courseId))
+        fragmentTakeCourseBinding.viewPager2.adapter = CoursesPagerAdapter(this, courseId, RealmMyCourse.getCourseStepIds(mRealm, courseId))
         fragmentTakeCourseBinding.viewPager2.isUserInputEnabled = false
 
         currentStep = getCourseProgress()
@@ -102,7 +97,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         fragmentTakeCourseBinding.finishStep.setOnClickListener(this)
         fragmentTakeCourseBinding.courseProgress.setOnSeekBarChangeListener(object : OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar, i: Int, b: Boolean) {
-                val currentProgress = getCurrentProgress(steps, mRealm, userModel?.id, courseId)
+                val currentProgress = RealmCourseProgress.getCurrentProgress(steps, mRealm, userModel?.id, courseId)
                 if (b && i <= currentProgress + 1) {
                     fragmentTakeCourseBinding.viewPager2.currentItem = i
                 }
@@ -117,7 +112,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         val currentPosition = position + 1
         fragmentTakeCourseBinding.tvStep.text = String.format(getString(R.string.step) + " %d/%d", currentPosition, steps.size)
 
-        val currentProgress = getCurrentProgress(steps, mRealm, userModel?.id, courseId)
+        val currentProgress = RealmCourseProgress.getCurrentProgress(steps, mRealm, userModel?.id, courseId)
         if (currentProgress < steps.size) {
             fragmentTakeCourseBinding.courseProgress.secondaryProgress = currentProgress + 1
         }
@@ -132,7 +127,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         } else {
             fragmentTakeCourseBinding.btnRemove.visibility = View.GONE
         }
-        createActivity(mRealm, userModel, currentCourse)
+        RealmCourseActivity.createActivity(mRealm, userModel, currentCourse)
         fragmentTakeCourseBinding.courseProgress.max = steps.size
         updateStepDisplay(fragmentTakeCourseBinding.viewPager2.currentItem)
 
@@ -161,7 +156,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private fun changeNextButtonState(position: Int) {
-        if (isStepCompleted(mRealm, steps[position - 1]?.id, userModel?.id)) {
+        if (RealmSubmission.isStepCompleted(mRealm, steps[position - 1]?.id, userModel?.id)) {
             fragmentTakeCourseBinding.nextStep.isClickable = true
             fragmentTakeCourseBinding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
         } else {
@@ -225,10 +220,10 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         if (!mRealm.isInTransaction) mRealm.beginTransaction()
         if (currentCourse?.userId?.contains(userModel?.id) == true) {
             currentCourse?.removeUserId(userModel?.id)
-            onRemove(mRealm, "courses", userModel?.id, courseId)
+            RealmRemovedLog.onRemove(mRealm, "courses", userModel?.id, courseId)
         } else {
             currentCourse?.setUserId(userModel?.id)
-            onAdd(mRealm, "courses", userModel?.id, courseId)
+            RealmRemovedLog.onAdd(mRealm, "courses", userModel?.id, courseId)
         }
         Utilities.toast(activity, "course ${(if (currentCourse?.userId?.contains(userModel?.id) == true) { 
             getString(R.string.added_to) 

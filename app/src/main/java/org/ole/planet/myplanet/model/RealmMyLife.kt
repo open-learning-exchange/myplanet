@@ -29,13 +29,11 @@ open class RealmMyLife : RealmObject {
             return getMyLifeByUserId(mRealm, userId)
         }
 
-        @JvmStatic
         fun getMyLifeByUserId(mRealm: Realm, userId: String?): List<RealmMyLife> {
             return mRealm.where(RealmMyLife::class.java).equalTo("userId", userId).findAll()
                 .sort("weight")
         }
 
-        @JvmStatic
         fun updateWeight(weight: Int, id: String?, realm: Realm, userId: String?) {
             realm.executeTransaction { mRealm ->
                 var currentWeight = -1
@@ -54,7 +52,6 @@ open class RealmMyLife : RealmObject {
             }
         }
 
-        @JvmStatic
         fun updateVisibility(isVisible: Boolean, id: String?, realm: Realm, userId: String?) {
             realm.executeTransaction { mRealm ->
                 val myLifeList = getMyLifeByUserId(mRealm, userId)

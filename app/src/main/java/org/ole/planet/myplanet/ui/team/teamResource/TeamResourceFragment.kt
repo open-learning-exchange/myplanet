@@ -17,7 +17,6 @@ import org.ole.planet.myplanet.databinding.FragmentTeamResourceBinding
 import org.ole.planet.myplanet.databinding.MyLibraryAlertdialogBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getResourceIds
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.CheckboxListView
@@ -47,7 +46,7 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener {
     }
 
     private fun showLibraryList() {
-        val libraries: List<RealmMyLibrary> = mRealm.where(RealmMyLibrary::class.java).`in`("id", getResourceIds(teamId, mRealm).toTypedArray<String>()).findAll()
+        val libraries: List<RealmMyLibrary> = mRealm.where(RealmMyLibrary::class.java).`in`("id", RealmMyTeam.getResourceIds(teamId, mRealm).toTypedArray<String>()).findAll()
         adapterLibrary = settings?.let { AdapterTeamResource(requireActivity(), libraries, mRealm, teamId, it) }!!
         fragmentTeamResourceBinding.rvResource.layoutManager = GridLayoutManager(activity, 3)
         fragmentTeamResourceBinding.rvResource.adapter = adapterLibrary
@@ -69,7 +68,7 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener {
         val alertDialogBuilder = AlertDialog.Builder(requireActivity())
         alertDialogBuilder.setCustomTitle(titleView)
         val libraries: List<RealmMyLibrary> = mRealm.where(RealmMyLibrary::class.java)
-            .not().`in`("_id", getResourceIds(teamId, mRealm).toTypedArray())
+            .not().`in`("_id", RealmMyTeam.getResourceIds(teamId, mRealm).toTypedArray())
             .findAll()
         alertDialogBuilder.setView(myLibraryAlertdialogBinding.root)
             .setPositiveButton(R.string.add) { _: DialogInterface?, _: Int ->
@@ -81,12 +80,12 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener {
                     val team = mRealm.createObject(RealmMyTeam::class.java, UUID.randomUUID().toString())
                     team.teamId = teamId
                     team.title = libraries[se].title
-                    team.status = user!!.parentCode
+                    team.status = user?.parentCode
                     team.resourceId = libraries[se]._id
                     team.docType = "resourceLink"
                     team.updated = true
                     team.teamType = "local"
-                    team.teamPlanetCode = user!!.planetCode
+                    team.teamPlanetCode = user?.planetCode
                 }
                 mRealm.commitTransaction()
                 showLibraryList()
@@ -104,11 +103,11 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener {
         val adapter = ArrayAdapter(requireActivity(), R.layout.rowlayout, R.id.checkBoxRowLayout, names)
         lv.choiceMode = ListView.CHOICE_MODE_MULTIPLE
         lv.setCheckChangeListener {
-            alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = lv.selectedItemsList.size > 0
+            alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = lv.selectedItemsList.isNotEmpty()
         }
         lv.adapter = adapter
         alertDialog.show()
-        alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = lv.selectedItemsList.size > 0
+        alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = lv.selectedItemsList.isNotEmpty()
     }
 
     override fun onAddDocument() {

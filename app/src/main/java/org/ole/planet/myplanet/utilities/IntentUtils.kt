@@ -5,7 +5,6 @@ import android.content.Intent
 import org.ole.planet.myplanet.ui.viewer.AudioPlayerActivity
 
 object IntentUtils {
-    @JvmStatic
     fun openAudioFile(context: Context, path: String?) {
         val i = Intent(context, AudioPlayerActivity::class.java)
         i.putExtra("isFullPath", true)

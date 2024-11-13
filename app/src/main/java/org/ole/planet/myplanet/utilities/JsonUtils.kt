@@ -8,7 +8,6 @@ import com.google.gson.JsonObject
 import io.realm.RealmList
 
 object JsonUtils {
-    @JvmStatic
     fun getString(fieldName: String, jsonObject: JsonObject?): String {
         return try {
             if (jsonObject?.has(fieldName) == true) {
@@ -29,7 +28,6 @@ object JsonUtils {
         }
     }
 
-    @JvmStatic
     fun getString(array: JsonArray, index: Int): String {
         return try {
             val el: JsonElement = array.get(index)
@@ -40,14 +38,12 @@ object JsonUtils {
         }
     }
 
-    @JvmStatic
     fun getAsJsonArray(list: RealmList<String>?): JsonArray {
         val array = JsonArray()
         list?.forEach { s -> array.add(s) }
         return array
     }
 
-    @JvmStatic
     fun getBoolean(fieldName: String, jsonObject: JsonObject?): Boolean {
         return try {
             if (jsonObject?.has(fieldName) == true) {
@@ -62,32 +58,26 @@ object JsonUtils {
         }
     }
 
-    @JvmStatic
     fun addString(`object`: JsonObject, fieldName: String, value: String?) {
         if (!TextUtils.isEmpty(value)) `object`.addProperty(fieldName, value)
     }
 
-    @JvmStatic
     fun addLong(`object`: JsonObject, fieldName: String, value: Long) {
         if (value > 0) `object`.addProperty(fieldName, value)
     }
 
-    @JvmStatic
     fun addInteger(`object`: JsonObject, fieldName: String, value: Int) {
         if (value != 0) `object`.addProperty(fieldName, value)
     }
 
-    @JvmStatic
     fun addFloat(`object`: JsonObject, fieldName: String, value: Float) {
         if (value != 0f) `object`.addProperty(fieldName, value)
     }
 
-    @JvmStatic
     fun addJson(`object`: JsonObject, fieldName: String, value: JsonObject?) {
         if (value != null && value.keySet().size > 0) `object`.add(fieldName, value)
     }
 
-    @JvmStatic
     fun getInt(fieldName: String, jsonObject: JsonObject?): Int {
         return try {
             if (jsonObject?.has(fieldName) == true) {
@@ -102,7 +92,6 @@ object JsonUtils {
         }
     }
 
-    @JvmStatic
     fun getFloat(fieldName: String, jsonObject: JsonObject?): Float {
         return try {
             if (jsonObject?.has(fieldName) == true) {
@@ -117,7 +106,6 @@ object JsonUtils {
         }
     }
 
-    @JvmStatic
     fun getJsonArray(fieldName: String, jsonObject: JsonObject?): JsonArray {
         return try {
             val array: JsonElement? = jsonObject?.let {
@@ -130,7 +118,6 @@ object JsonUtils {
         }
     }
 
-    @JvmStatic
     fun getJsonObject(fieldName: String, jsonObject: JsonObject?): JsonObject {
         return try {
             val el: JsonElement? = jsonObject?.let {
@@ -143,7 +130,6 @@ object JsonUtils {
         }
     }
 
-    @JvmStatic
     fun getJsonElement(fieldName: String, jsonObject: JsonObject, type: Class<*>): JsonElement {
         return try {
             val jsonElement: JsonElement = if (type == JsonObject::class.java) JsonObject() else JsonArray()
@@ -158,7 +144,6 @@ object JsonUtils {
         }
     }
 
-    @JvmStatic
     fun getLong(fieldName: String, jsonObject: JsonObject?): Long {
         return try {
             if (jsonObject?.has(fieldName) == true) {

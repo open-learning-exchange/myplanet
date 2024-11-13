@@ -41,10 +41,10 @@ import io.realm.RealmResults
 import io.realm.Sort
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.BuildConfig
-import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
-import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getLibraryList
+import org.ole.planet.myplanet.base.BaseResourceFragment
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.ActivityDashboardBinding
 import org.ole.planet.myplanet.databinding.CustomTabBinding
@@ -61,10 +61,9 @@ import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.chat.ChatHistoryListFragment
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
-import org.ole.planet.myplanet.ui.courses.MyProgressFragment.Companion.fetchCourseData
-import org.ole.planet.myplanet.ui.courses.MyProgressFragment.Companion.getCourseProgress
-import org.ole.planet.myplanet.ui.dashboard.notification.NotificationsFragment
+import org.ole.planet.myplanet.ui.courses.MyProgressFragment
 import org.ole.planet.myplanet.ui.dashboard.notification.NotificationListener
+import org.ole.planet.myplanet.ui.dashboard.notification.NotificationsFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
 import org.ole.planet.myplanet.ui.resources.ResourceDetailFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
@@ -228,7 +227,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     } else {
                         if (!doubleBackToExitPressedOnce) {
                             doubleBackToExitPressedOnce = true
-                            toast(context, getString(R.string.press_back_again_to_exit))
+                            toast(MainApplication.context, getString(R.string.press_back_again_to_exit))
                             Handler(Looper.getMainLooper()).postDelayed({ doubleBackToExitPressedOnce = false }, 2000)
                         } else {
                             val fragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
@@ -267,10 +266,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             .equalTo("actionType", "ai research")
             .findAll().count()
 
-        val courseData = fetchCourseData(mRealm, user?.id)
+        val courseData = MyProgressFragment.fetchCourseData(mRealm, user?.id)
 
         val courseId = "9517e3b45a5bb63e69bb8f269216974d"
-        val progress = getCourseProgress(courseData, courseId)
+        val progress = MyProgressFragment.getCourseProgress(courseData, courseId)
 
         val validUrls = listOf(
             "https://${BuildConfig.PLANET_GUATEMALA_URL}",
@@ -433,7 +432,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun updateResourceNotification() {
-        val resourceCount = getLibraryList(mRealm, user?.id).size
+        val resourceCount = BaseResourceFragment.getLibraryList(mRealm, user?.id).size
         if (resourceCount > 0) {
             val existingNotification = mRealm.where(RealmNotification::class.java)
                 .equalTo("userId", user?.id)

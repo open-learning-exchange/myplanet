@@ -7,7 +7,7 @@ import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utilities.JsonUtils
 import java.io.File
 import java.io.FileWriter
@@ -40,7 +40,6 @@ open class RealmTag : RealmObject() {
     companion object {
         private val tagDataList: MutableList<Array<String>> = mutableListOf()
 
-        @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject) {
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
@@ -97,10 +96,9 @@ open class RealmTag : RealmObject() {
         }
 
         fun tagWriteCsv() {
-            writeCsv("${context.getExternalFilesDir(null)}/ole/tags.csv", tagDataList)
+            writeCsv("${MainApplication.context.getExternalFilesDir(null)}/ole/tags.csv", tagDataList)
         }
 
-        @JvmStatic
         fun getTagsArray(list: List<RealmTag>): JsonArray {
             val array = JsonArray()
             for (t in list) {

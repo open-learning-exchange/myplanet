@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.courses
 
 import android.content.Context
-import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -20,7 +19,6 @@ import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
 import io.realm.Realm
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnCourseItemSelected
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
@@ -323,7 +321,7 @@ class AdapterCourses(private val context: Context, private var courseList: List<
                 average.text = String.format(Locale.getDefault(), "%.2f", `object`?.get("averageRating")?.asFloat)
             }
             if (ratingCount != null) {
-                ratingCount.text = context.getString(R.string.rating_count_format, `object`?.get("total")?.asInt)
+                ratingCount.text = MainApplication.context.getString(R.string.rating_count_format, `object`?.get("total")?.asInt)
             }
             if (`object` != null) {
                 if (`object`.has("ratingByUser"))

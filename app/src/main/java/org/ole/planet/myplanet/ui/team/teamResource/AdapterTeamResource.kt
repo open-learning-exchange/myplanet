@@ -10,13 +10,13 @@ import io.realm.Realm
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.RowTeamResourceBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getTeamCreator
+import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.ui.team.teamResource.AdapterTeamResource.ViewHolderTeamResource
 
 class AdapterTeamResource(private val context: Context, private val list: List<RealmMyLibrary>, mRealm: Realm, teamId: String?, private val settings: SharedPreferences) : RecyclerView.Adapter<ViewHolderTeamResource>() {
     private lateinit var rowTeamResourceBinding: RowTeamResourceBinding
     private var listener: OnHomeItemClickListener? = null
-    private val teamCreator: String = getTeamCreator(teamId, mRealm)
+    private val teamCreator: String = RealmMyTeam.getTeamCreator(teamId, mRealm)
 
     init {
         if (context is OnHomeItemClickListener) {

@@ -74,7 +74,6 @@ open class FileUploadService {
     }
 
     companion object {
-        @JvmStatic
         fun getHeaderMap(mimeType: String, rev: String): Map<String, String> {
             val hashMap: MutableMap<String, String> = HashMap()
             hashMap["Authorization"] = Utilities.header

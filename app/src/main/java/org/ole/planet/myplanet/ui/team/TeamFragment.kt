@@ -11,12 +11,12 @@ import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
-import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmQuery
 import io.realm.RealmResults
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
 import org.ole.planet.myplanet.databinding.FragmentTeamBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -242,7 +242,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         fragmentTeamBinding.rvTeamList.adapter = adapterTeamList
         listContentDescription(conditionApplied)
         val itemCount = adapterTeamList.itemCount
-        showNoData(fragmentTeamBinding.tvMessage, itemCount, "teams")
+        BaseRecyclerFragment.showNoData(fragmentTeamBinding.tvMessage, itemCount, "teams")
         if (itemCount == 0) {
             fragmentTeamBinding.etSearch.visibility = View.GONE
             fragmentTeamBinding.tableTitle.visibility = View.GONE

@@ -14,10 +14,9 @@ import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.FragmentCourseDetailBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getCourseSteps
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmRating.Companion.getRatingsById
-import org.ole.planet.myplanet.model.RealmStepExam.Companion.getNoOfExam
+import org.ole.planet.myplanet.model.RealmRating
+import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
@@ -58,7 +57,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         setTextViewVisibility(fragmentCourseDetailBinding.language, courses?.languageOfInstruction, fragmentCourseDetailBinding.ltLanguage)
         val markdownContentWithLocalPaths = CourseStepFragment.prependBaseUrlToImages(courses?.description, "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/")
         setMarkdownText(fragmentCourseDetailBinding.description, markdownContentWithLocalPaths)
-        fragmentCourseDetailBinding.noOfExams.text = context?.getString(R.string.number_placeholder, getNoOfExam(cRealm, id))
+        fragmentCourseDetailBinding.noOfExams.text = context?.getString(R.string.number_placeholder, RealmStepExam.getNoOfExam(cRealm, id))
         val resources: List<RealmMyLibrary> = cRealm.where(RealmMyLibrary::class.java).equalTo("courseId", id).equalTo("resourceOffline", false).isNotNull("resourceLocalAddress").findAll()
         setResourceButton(resources, fragmentCourseDetailBinding.btnResources)
         val downloadedResources: List<RealmMyLibrary> = cRealm.where(RealmMyLibrary::class.java).equalTo("resourceOffline", true).equalTo("courseId", id).isNotNull("resourceLocalAddress").findAll()
@@ -76,13 +75,13 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     }
 
     private fun setStepsList() {
-        val steps = getCourseSteps(cRealm, courses?.courseId)
+        val steps = RealmMyCourse.getCourseSteps(cRealm, courses?.courseId)
         fragmentCourseDetailBinding.stepsList.layoutManager = LinearLayoutManager(activity)
         fragmentCourseDetailBinding.stepsList.adapter = AdapterSteps(requireActivity(), steps, cRealm)
     }
 
     override fun onRatingChanged() {
-        val `object` = getRatingsById(cRealm, "course", courses?.courseId, user?.id)
+        val `object` = RealmRating.getRatingsById(cRealm, "course", courses?.courseId, user?.id)
         setRatings(`object`)
     }
 

@@ -7,7 +7,7 @@ import com.opencsv.CSVWriter
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utilities.JsonUtils
 import java.io.File
 import java.io.FileWriter
@@ -27,7 +27,6 @@ open class RealmCertification : RealmObject() {
     companion object {
         private val certificationDataList: MutableList<Array<String>> = mutableListOf()
 
-        @JvmStatic
         fun insert(mRealm: Realm, `object`: JsonObject?) {
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
@@ -48,7 +47,6 @@ open class RealmCertification : RealmObject() {
             certificationDataList.add(csvRow)
         }
 
-        @JvmStatic
         fun isCourseCertified(realm: Realm, courseId: String?): Boolean {
             // FIXME
             if (courseId == null) {
@@ -59,7 +57,6 @@ open class RealmCertification : RealmObject() {
             return c > 0
         }
 
-        @JvmStatic
         fun writeCsv(filePath: String, data: List<Array<String>>) {
             try {
                 val file = File(filePath)
@@ -75,9 +72,8 @@ open class RealmCertification : RealmObject() {
             }
         }
 
-        @JvmStatic
         fun certificationWriteCsv() {
-            writeCsv("${context.getExternalFilesDir(null)}/ole/certification.csv", certificationDataList)
+            writeCsv("${MainApplication.context.getExternalFilesDir(null)}/ole/certification.csv", certificationDataList)
         }
     }
 }

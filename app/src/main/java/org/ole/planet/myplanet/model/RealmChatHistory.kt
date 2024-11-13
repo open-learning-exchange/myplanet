@@ -8,7 +8,7 @@ import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utilities.JsonUtils
 import java.util.Date
 import java.io.File
@@ -30,7 +30,6 @@ open class RealmChatHistory : RealmObject() {
     companion object {
         private val chatDataList: MutableList<Array<String>> = mutableListOf()
 
-        @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject?) {
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
@@ -112,7 +111,7 @@ open class RealmChatHistory : RealmObject() {
         }
 
         fun chatWriteCsv() {
-            writeCsv("${context.getExternalFilesDir(null)}/ole/chatHistory.csv", chatDataList)
+            writeCsv("${MainApplication.context.getExternalFilesDir(null)}/ole/chatHistory.csv", chatDataList)
         }
     }
 }

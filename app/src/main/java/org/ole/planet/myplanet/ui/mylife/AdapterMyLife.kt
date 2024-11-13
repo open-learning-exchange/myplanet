@@ -18,8 +18,6 @@ import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmMyLife
-import org.ole.planet.myplanet.model.RealmMyLife.Companion.updateVisibility
-import org.ole.planet.myplanet.model.RealmMyLife.Companion.updateWeight
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment
 import org.ole.planet.myplanet.ui.helpwanted.HelpWantedFragment
 import org.ole.planet.myplanet.ui.myPersonals.MyPersonalsFragment
@@ -30,7 +28,6 @@ import org.ole.planet.myplanet.ui.mylife.helper.OnStartDragListener
 import org.ole.planet.myplanet.ui.news.NewsFragment
 import org.ole.planet.myplanet.ui.references.ReferenceFragment
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
-import org.ole.planet.myplanet.ui.submission.MySubmissionFragment.Companion.newInstance
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -77,14 +74,13 @@ class AdapterMyLife(private val context: Context, private val myLifeList: List<R
     private fun updateVisibility(holder: RecyclerView.ViewHolder, position: Int, isVisible: Boolean) {
         mRealm.executeTransactionAsync({ realm: Realm? ->
             realm?.let {
-                updateVisibility(!isVisible, myLifeList[position]._id,
-                    it, myLifeList[position].userId)
+                RealmMyLife.updateVisibility(!isVisible, myLifeList[position]._id, it, myLifeList[position].userId)
             }
         }, {
-                Handler(Looper.getMainLooper()).post {
-                    if (isVisible) {
-                        changeVisibility(holder, R.drawable.ic_visibility, hide)
-                        Utilities.toast(context, myLifeList[position].title + context.getString(R.string.is_now_hidden))
+            Handler(Looper.getMainLooper()).post {
+                if (isVisible) {
+                    changeVisibility(holder, R.drawable.ic_visibility, hide)
+                    Utilities.toast(context, myLifeList[position].title + context.getString(R.string.is_now_hidden))
                 } else {
                     changeVisibility(holder, R.drawable.ic_visibility_off, show)
                     Utilities.toast(context, myLifeList[position].title + context.getString(R.string.is_now_shown))
@@ -106,7 +102,7 @@ class AdapterMyLife(private val context: Context, private val myLifeList: List<R
     }
 
     override fun onItemMove(fromPosition: Int, toPosition: Int): Boolean {
-        updateWeight(toPosition + 1, myLifeList[fromPosition]._id, mRealm, myLifeList[fromPosition].userId)
+        RealmMyLife.updateWeight(toPosition + 1, myLifeList[fromPosition]._id, mRealm, myLifeList[fromPosition].userId)
         notifyItemMoved(fromPosition, toPosition)
         return true
     }
@@ -139,7 +135,7 @@ class AdapterMyLife(private val context: Context, private val myLifeList: List<R
                 "ic_mypersonals" -> return MyPersonalsFragment()
                 "ic_news" -> return NewsFragment()
                 "ic_submissions" -> return MySubmissionFragment()
-                "ic_my_survey" -> return newInstance("survey")
+                "ic_my_survey" -> return MySubmissionFragment.newInstance("survey")
                 "ic_myhealth" -> return MyHealthFragment()
                 "ic_calendar" -> return CalendarFragment()
                 "ic_help_wanted" -> return HelpWantedFragment()

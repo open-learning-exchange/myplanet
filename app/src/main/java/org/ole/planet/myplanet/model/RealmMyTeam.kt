@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.model
 
 import android.content.SharedPreferences
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
@@ -10,7 +11,7 @@ import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.RealmResults
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utilities.JsonUtils
@@ -66,8 +67,8 @@ open class RealmMyTeam : RealmObject() {
         val reportsDataList: MutableList<Array<String>> = mutableListOf()
         private val concatenatedLinks = ArrayList<String>()
 
-        @JvmStatic
-        fun insertMyTeams(doc: JsonObject, mRealm: Realm) {
+        fun insertMyTeams(doc: JsonObject, mRealm: Realm, string: String) {
+            Log.d("okuro", "source: $string")
             val teamId = JsonUtils.getString("_id", doc)
             var myTeams = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
             if (myTeams == null) {
@@ -87,7 +88,7 @@ open class RealmMyTeam : RealmObject() {
                     val concatenatedLink = "$baseUrl/$link"
                     concatenatedLinks.add(concatenatedLink)
                 }
-                openDownloadService(context, concatenatedLinks, true)
+                openDownloadService(MainApplication.context, concatenatedLinks, true)
                 myTeams.limit = JsonUtils.getInt("limit", doc)
                 myTeams.status = JsonUtils.getString("status", doc)
                 myTeams.teamPlanetCode = JsonUtils.getString("teamPlanetCode", doc)
@@ -178,10 +179,9 @@ open class RealmMyTeam : RealmObject() {
         }
 
         fun teamWriteCsv() {
-            writeCsv("${context.getExternalFilesDir(null)}/ole/team.csv", teamDataList)
+            writeCsv("${MainApplication.context.getExternalFilesDir(null)}/ole/team.csv", teamDataList)
         }
 
-        @JvmStatic
         fun insertReports(doc: JsonObject, mRealm: Realm) {
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
@@ -230,7 +230,6 @@ open class RealmMyTeam : RealmObject() {
             reportsDataList.add(csvRow)
         }
 
-        @JvmStatic
         fun updateReports(doc: JsonObject, mRealm: Realm) {
             mRealm.executeTransactionAsync { realm ->
                 val reportId = JsonUtils.getString("_id", doc)
@@ -250,7 +249,6 @@ open class RealmMyTeam : RealmObject() {
             }
         }
 
-        @JvmStatic
         fun deleteReport(reportId: String, realm: Realm) {
             realm.executeTransactionAsync { transactionRealm ->
                 val report = transactionRealm.where(RealmMyTeam::class.java).equalTo("_id", reportId).findFirst()
@@ -258,7 +256,6 @@ open class RealmMyTeam : RealmObject() {
             }
         }
 
-        @JvmStatic
         fun getResourceIds(teamId: String?, realm: Realm): MutableList<String> {
             val teams = realm.where(RealmMyTeam::class.java).equalTo("teamId", teamId).findAll()
             val ids = mutableListOf<String>()
@@ -270,7 +267,6 @@ open class RealmMyTeam : RealmObject() {
             return ids
         }
 
-        @JvmStatic
         fun getResourceIdsByUser(userId: String?, realm: Realm): MutableList<String> {
             val list = realm.where(RealmMyTeam::class.java)
                 .equalTo("userId", userId)
@@ -295,13 +291,11 @@ open class RealmMyTeam : RealmObject() {
             return ids
         }
 
-        @JvmStatic
         fun getTeamCreator(teamId: String?, realm: Realm?): String {
             val teams = realm?.where(RealmMyTeam::class.java)?.equalTo("teamId", teamId)?.findFirst()
             return teams?.userId ?: ""
         }
 
-        @JvmStatic
         fun getTeamLeader(teamId: String?, realm: Realm): String {
             val team = realm.where(RealmMyTeam::class.java)
                 .equalTo("teamId", teamId)
@@ -312,10 +306,9 @@ open class RealmMyTeam : RealmObject() {
 
         @JvmStatic
         fun insert(mRealm: Realm, doc: JsonObject) {
-            insertMyTeams(doc, mRealm)
+            insertMyTeams(doc, mRealm, "insert")
         }
 
-        @JvmStatic
         fun requestToJoin(teamId: String?, userModel: RealmUserModel?, mRealm: Realm) {
             if (!mRealm.isInTransaction) mRealm.beginTransaction()
             val team = mRealm.createObject(RealmMyTeam::class.java, AndroidDecrypter.generateIv())
@@ -329,17 +322,14 @@ open class RealmMyTeam : RealmObject() {
             mRealm.commitTransaction()
         }
 
-        @JvmStatic
         fun getRequestedMember(teamId: String, realm: Realm): MutableList<RealmUserModel> {
             return getUsers(teamId, realm, "request")
         }
 
-        @JvmStatic
         fun getJoinedMember(teamId: String, realm: Realm): MutableList<RealmUserModel> {
             return getUsers(teamId, realm, "membership")
         }
 
-        @JvmStatic
         fun isTeamLeader(teamId: String?, userId: String?, realm: Realm): Boolean {
             val team = realm.where(RealmMyTeam::class.java)
                 .equalTo("teamId", teamId)
@@ -350,7 +340,6 @@ open class RealmMyTeam : RealmObject() {
             return team != null
         }
 
-        @JvmStatic
         fun getUsers(teamId: String?, mRealm: Realm, docType: String): MutableList<RealmUserModel> {
             var query = mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId)
             if (docType.isNotEmpty()) {
@@ -367,7 +356,6 @@ open class RealmMyTeam : RealmObject() {
             return list
         }
 
-        @JvmStatic
         fun filterUsers(teamId: String?, user: String, mRealm: Realm): MutableList<RealmUserModel> {
             val myTeam = mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId).findAll()
             val list = mutableListOf<RealmUserModel>()
@@ -382,7 +370,6 @@ open class RealmMyTeam : RealmObject() {
             return list
         }
 
-        @JvmStatic
         fun serialize(team: RealmMyTeam): JsonObject {
             val gson = Gson()
             val `object` = JsonObject()

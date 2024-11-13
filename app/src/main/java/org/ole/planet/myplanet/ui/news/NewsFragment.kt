@@ -18,8 +18,7 @@ import org.ole.planet.myplanet.databinding.FragmentNewsBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
-import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createAction
+import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
@@ -85,7 +84,7 @@ class NewsFragment : BaseNewsFragment() {
                 for (e in ar) {
                     val ob = e.asJsonObject
                     var userId = "${user?.planetCode}@${user?.parentCode}"
-                    if(userId.isNullOrEmpty() || userId=="@"){
+                    if(userId.isEmpty() || userId=="@"){
                         userId = settings?.getString("planetCode","")+"@"+settings?.getString("parentCode", "")
                     }
                     if (ob != null && ob.has("_id") && ob["_id"].asString.equals(userId, ignoreCase = true)) {
@@ -115,13 +114,13 @@ class NewsFragment : BaseNewsFragment() {
             map["messageType"] = "sync"
             map["messagePlanetCode"] = user?.planetCode ?: ""
 
-            val n = user?.let { it1 -> createNews(map, mRealm, it1, imageList) }
+            val n = user?.let { it1 -> RealmNews.createNews(map, mRealm, it1, imageList) }
             imageList.clear()
             llImage?.removeAllViews()
             adapterNews?.addItem(n)
             setData(newsList)
 
-            createAction(mRealm, "${user?.id}", "${n?.id}", "voice")
+            RealmUserChallengeActions.createAction(mRealm, "${user?.id}", "${n?.id}", "voice")
         }
 
         fragmentNewsBinding.addNewsImage.setOnClickListener {
@@ -146,7 +145,7 @@ class NewsFragment : BaseNewsFragment() {
                 for (e in ar) {
                     val ob = e.asJsonObject
                     var userId = "${user?.planetCode}@${user?.parentCode}"
-                    if(userId.isNullOrEmpty() || userId=="@"){
+                    if(userId.isEmpty() || userId=="@"){
                         userId = settings?.getString("planetCode","")+"@"+settings?.getString("parentCode", "")
                     }
                     if (ob != null && ob.has("_id") && ob["_id"].asString.equals(userId, ignoreCase = true)) {

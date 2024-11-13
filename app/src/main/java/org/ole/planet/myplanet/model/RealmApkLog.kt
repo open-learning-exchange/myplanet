@@ -48,7 +48,6 @@ open class RealmApkLog : RealmObject() {
         @Ignore
         const val ERROR_TYPE_CRASH = "crash"
 
-        @JvmStatic
         fun serialize(log: RealmApkLog, context: Context): JsonObject {
             val `object` = JsonObject()
             `object`.addProperty("type", log.type)

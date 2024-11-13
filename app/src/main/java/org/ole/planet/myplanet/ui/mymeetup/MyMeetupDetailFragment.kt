@@ -13,8 +13,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentMyMeetupDetailBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMeetup
-import org.ole.planet.myplanet.model.RealmMeetup.Companion.getHashMap
-import org.ole.planet.myplanet.model.RealmMeetup.Companion.getJoinedUserIds
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Constants
@@ -59,15 +57,15 @@ class MyMeetupDetailFragment : Fragment(), View.OnClickListener {
     }
 
     private fun setUserList() {
-        val ids = getJoinedUserIds(mRealm)
+        val ids = RealmMeetup.getJoinedUserIds(mRealm)
         val users = mRealm.where(RealmUserModel::class.java).`in`("id", ids).findAll()
         listUsers?.adapter = ArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, users)
-        tvJoined?.text = String.format(getString(R.string.joined_members_colon) + " %s", if (users.size == 0) """(0) ${getString(R.string.no_members_has_joined_this_meet_up)}""" else users.size)
+        tvJoined?.text = String.format(getString(R.string.joined_members_colon) + " %s", if (users.isEmpty()) """(0) ${getString(R.string.no_members_has_joined_this_meet_up)}""" else users.size)
     }
 
     private fun setUpData() {
         fragmentMyMeetupDetailBinding.meetupTitle.text = meetups?.title
-        val map: HashMap<String, String>? = meetups?.let { getHashMap(it) }
+        val map: HashMap<String, String>? = meetups?.let { RealmMeetup.getHashMap(it) }
         val keys = ArrayList(map?.keys ?: emptyList())
         listDesc?.adapter = object : ArrayAdapter<String?>(requireActivity(), R.layout.row_description, keys) {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {

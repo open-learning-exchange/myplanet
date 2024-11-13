@@ -23,7 +23,6 @@ import org.ole.planet.myplanet.model.RealmTeamTask
 object Constants {
     const val KEY_LOGIN = "isLoggedIn"
     const val DICTIONARY_URL = "http://157.245.241.39:8000/output.json"
-    @JvmField
     var shelfDataList = mutableListOf<ShelfData>()
     const val KEY_SYNC = "beta_wifi_switch"
     const val KEY_MEETUPS = "key_meetup"
@@ -36,9 +35,7 @@ object Constants {
     const val ABOUT = R.string.about
     const val PREFS_NAME = "OLE_PLANET"
     private val COLOR_MAP = HashMap<Class<*>, Int>()
-    @JvmField
     var classList = HashMap<String, Class<*>>()
-    @JvmField
     var LABELS = HashMap<String, String>()
     const val KEY_NOTIFICATION_SHOWN = "notification_shown"
     const val SELECTED_LANGUAGE = "app_language"
@@ -78,21 +75,19 @@ object Constants {
         classList["courses_progress"] = RealmCourseProgress::class.java
     }
 
-    @JvmStatic
     fun showBetaFeature(s: String, context: Context): Boolean {
         val preferences = PreferenceManager.getDefaultSharedPreferences(context)
         return preferences.getBoolean("beta_function", false) && preferences.getBoolean(s, s == KEY_NEWSADDIMAGE)
     }
 
-    @JvmStatic
     fun autoSynFeature(s: String?, context: Context): Boolean {
         val preferences = PreferenceManager.getDefaultSharedPreferences(context)
         return preferences.getBoolean(s, false)
     }
 
     class ShelfData(
-        @JvmField var key: String,
-        @JvmField var type: String,
-        @JvmField var categoryKey: String
+        var key: String,
+        var type: String,
+        var categoryKey: String
     )
 }

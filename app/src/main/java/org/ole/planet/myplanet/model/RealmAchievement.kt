@@ -11,7 +11,7 @@ import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utilities.JsonUtils
 import java.io.File
 import java.io.FileWriter
@@ -71,7 +71,6 @@ open class RealmAchievement : RealmObject() {
     companion object {
         private val achievementDataList: MutableList<Array<String>> = mutableListOf()
 
-        @JvmStatic
         fun serialize(sub: RealmAchievement): JsonObject {
             val `object` = JsonObject()
             `object`.addProperty("_id", sub._id)
@@ -84,7 +83,6 @@ open class RealmAchievement : RealmObject() {
             return `object`
         }
 
-        @JvmStatic
         fun createReference(name: String?, relation: EditText, phone: EditText, email: EditText): JsonObject {
             val ob = JsonObject()
             ob.addProperty("name", name)
@@ -94,7 +92,6 @@ open class RealmAchievement : RealmObject() {
             return ob
         }
 
-        @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject?) {
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
@@ -124,7 +121,6 @@ open class RealmAchievement : RealmObject() {
             achievementDataList.add(csvRow)
         }
 
-        @JvmStatic
         fun writeCsv(filePath: String, data: List<Array<String>>) {
             try {
                 val file = File(filePath)
@@ -140,9 +136,8 @@ open class RealmAchievement : RealmObject() {
             }
         }
 
-        @JvmStatic
         fun achievementWriteCsv() {
-            writeCsv("${context.getExternalFilesDir(null)}/ole/achievements.csv", achievementDataList)
+            writeCsv("${MainApplication.context.getExternalFilesDir(null)}/ole/achievements.csv", achievementDataList)
         }
     }
 }

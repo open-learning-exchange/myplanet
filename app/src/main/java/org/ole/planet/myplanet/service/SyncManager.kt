@@ -17,14 +17,11 @@ import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.ManagerSync
-import org.ole.planet.myplanet.model.RealmMeetup.Companion.insert
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.insertMyCourses
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
-import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.insertMyLibrary
-import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.removeDeletedResource
-import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.save
-import org.ole.planet.myplanet.model.RealmMyTeam.Companion.insertMyTeams
-import org.ole.planet.myplanet.model.RealmResourceActivity.Companion.onSynced
+import org.ole.planet.myplanet.model.RealmMeetup
+import org.ole.planet.myplanet.model.RealmMyCourse
+import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.Rows
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
@@ -117,7 +114,7 @@ class SyncManager private constructor(private val context: Context) {
             TransactionSyncManager.syncDb(mRealm, "chat_history")
             ManagerSync.instance?.syncAdmin()
             resourceTransactionSync()
-            onSynced(mRealm, settings)
+            RealmResourceActivity.onSynced(mRealm, settings)
             mRealm.close()
         } catch (err: Exception) {
             err.printStackTrace()
@@ -159,13 +156,13 @@ class SyncManager private constructor(private val context: Context) {
                 obj.add("keys", Gson().fromJson(Gson().toJson(keys), JsonArray::class.java))
                 val response = dbClient?.findDocs(Utilities.header, "application/json", Utilities.getUrl() + "/resources/_all_docs?include_docs=true", obj)?.execute()
                 if (response?.body() != null) {
-                    val ids: List<String?> = save(getJsonArray("rows", response.body()), mRealm)
+                    val ids: List<String?> = RealmMyLibrary.save(getJsonArray("rows", response.body()), mRealm)
                     newIds.addAll(ids)
                 }
                 keys.clear()
             }
         }
-        removeDeletedResource(newIds, mRealm)
+        RealmMyLibrary.removeDeletedResource(newIds, mRealm)
     }
 
     private fun myLibraryTransactionSync() {
@@ -228,20 +225,20 @@ class SyncManager private constructor(private val context: Context) {
 
     private fun triggerInsert(stringArray: Array<String?>, resourceDoc: JsonObject) {
         when (stringArray[2]) {
-            "resources" -> insertMyLibrary(stringArray[0], resourceDoc, mRealm)
-            "meetups" -> insert(mRealm, resourceDoc)
+            "resources" -> RealmMyLibrary.insertMyLibrary(stringArray[0], resourceDoc, mRealm)
+            "meetups" -> RealmMeetup.insert(mRealm, resourceDoc)
             "courses" -> {
                 if (!mRealm.isInTransaction){
                     mRealm.beginTransaction()
                 }
-                insertMyCourses(stringArray[0], resourceDoc, mRealm)
+                RealmMyCourse.insertMyCourses(stringArray[0], resourceDoc, mRealm)
                 if (mRealm.isInTransaction){
                     mRealm.commitTransaction()
                 }
             }
-            "teams" -> insertMyTeams(resourceDoc, mRealm)
+            "teams" -> RealmMyTeam.insertMyTeams(resourceDoc, mRealm, "trigger Insert")
         }
-        saveConcatenatedLinksToPrefs()
+        RealmMyCourse.saveConcatenatedLinksToPrefs()
     }
 
     companion object {

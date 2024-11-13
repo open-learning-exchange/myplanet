@@ -19,7 +19,6 @@ import org.ole.planet.myplanet.databinding.AlertInputBinding
 import org.ole.planet.myplanet.databinding.FragmentDiscussionListBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmTeamNotification
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.news.AdapterNews
@@ -172,7 +171,7 @@ class DiscussionListFragment : BaseTeamFragment() {
                 map["message"] = msg
                 map["messageType"] = team?.teamType ?: ""
                 map["messagePlanetCode"] = team?.teamPlanetCode ?: ""
-                user?.let { createNews(map, mRealm, it, imageList) }
+                user?.let { RealmNews.createNews(map, mRealm, it, imageList) }
                 fragmentDiscussionListBinding.rvDiscussion.adapter?.notifyDataSetChanged()
                 setData(news)
                 layout.editText?.text?.clear()

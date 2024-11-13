@@ -17,10 +17,9 @@ import io.realm.Sort
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentTakeExamBinding
 import org.ole.planet.myplanet.model.RealmAnswer
-import org.ole.planet.myplanet.model.RealmCertification.Companion.isCourseCertified
+import org.ole.planet.myplanet.model.RealmCertification
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
@@ -61,7 +60,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         }
         sub = q.findFirst() as RealmSubmission?
         val courseId = exam?.courseId
-        isCertified = isCourseCertified(mRealm, courseId)
+        isCertified = RealmCertification.isCourseCertified(mRealm, courseId)
         if ((questions?.size ?: 0) > 0) {
             createSubmission()
             startExam(questions?.get(currentIndex))
@@ -75,7 +74,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
     private fun createSubmission() {
         startTransaction()
-        sub = createSubmission(sub, mRealm)
+        sub = RealmSubmission.createSubmission(sub, mRealm)
         if (!TextUtils.isEmpty(exam?.id)) {
             sub?.parentId = if (!TextUtils.isEmpty(exam?.courseId)) {
                 exam?.id + "@" + exam?.courseId

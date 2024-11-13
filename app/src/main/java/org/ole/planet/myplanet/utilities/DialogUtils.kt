@@ -20,7 +20,6 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 
 object DialogUtils {
-    @JvmStatic
     fun getProgressDialog(context: Context): CustomProgressDialog {
         val prgDialog = CustomProgressDialog(context)
         prgDialog.setTitle(context.getString(R.string.downloading_file))
@@ -61,13 +60,11 @@ object DialogUtils {
         }
     }
 
-    @JvmStatic
     fun showError(prgDialog: CustomProgressDialog?, message: String?) {
         prgDialog?.setTitle(message)
         prgDialog?.disableNegativeButton()
     }
 
-    @JvmStatic
     fun showWifiSettingDialog(context: Context) {
         if (!NetworkUtils.isWifiBluetoothEnabled()) return
         showDialog(context)
@@ -91,14 +88,12 @@ object DialogUtils {
         }
     }
 
-    @JvmStatic
     fun showSnack(v: View?, s: String?) {
         if (v != null) {
             s?.let { Snackbar.make(v, it, Snackbar.LENGTH_LONG).show() }
         }
     }
 
-    @JvmStatic
     fun showAlert(context: Context?, title: String?, message: String?) {
         if (context is Activity && !context.isFinishing) {
             AlertDialog.Builder(context, R.style.AlertDialogTheme)
@@ -109,7 +104,6 @@ object DialogUtils {
         }
     }
 
-    @JvmStatic
     fun getAlertDialog(context: Context, message: String, pos: String, listener: DialogInterface.OnClickListener?): AlertDialog {
         return AlertDialog.Builder(ContextThemeWrapper(context, R.style.AlertDialogTheme))
             .setMessage(message)
@@ -119,7 +113,6 @@ object DialogUtils {
             .show()
     }
 
-    @JvmStatic
     fun showCloseAlert(context: Context, title: String?, message: String) {
         AlertDialog.Builder(context)
             .setTitle(title)
@@ -128,7 +121,6 @@ object DialogUtils {
             .show()
     }
 
-    @JvmStatic
     fun getAlertDialog(context: Context, title: String, v: View): AlertDialog {
         return AlertDialog.Builder(ContextThemeWrapper(context, R.style.AlertDialogTheme))
             .setTitle(title)
@@ -139,7 +131,6 @@ object DialogUtils {
             .show()
     }
 
-    @JvmStatic
     fun getUpdateDialog(context: Context, info: MyPlanet?, progressDialog: CustomProgressDialog?): AlertDialog.Builder {
         return AlertDialog.Builder(context)
             .setTitle(R.string.new_version_of_my_planet_available)
@@ -152,7 +143,6 @@ object DialogUtils {
             }
     }
 
-    @JvmStatic
     fun startDownloadUpdate(context: Context, path: String, progressDialog: CustomProgressDialog?) {
         Service(MainApplication.context).checkCheckSum(object : Service.ChecksumCallback {
             override fun onMatch() {
@@ -172,7 +162,6 @@ object DialogUtils {
         }, path)
     }
 
-    @JvmStatic
     fun getCustomProgressDialog(context: Context): CustomProgressDialog {
         return CustomProgressDialog(context)
     }

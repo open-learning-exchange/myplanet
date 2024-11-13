@@ -26,13 +26,9 @@ import org.ole.planet.myplanet.callback.OnFilterListener
 import org.ole.planet.myplanet.callback.OnLibraryItemSelected
 import org.ole.planet.myplanet.callback.TagClickListener
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getArrayList
-import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getLevels
-import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getSubjects
-import org.ole.planet.myplanet.model.RealmRating.Companion.getRatings
+import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTag
-import org.ole.planet.myplanet.model.RealmTag.Companion.getTagsArray
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
@@ -66,7 +62,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
-        map = getRatings(mRealm, "resource", model?.id)
+        map = RealmRating.getRatings(mRealm, "resource", model?.id)
         val libraryList: List<RealmMyLibrary?> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary?>()
         adapterLibrary = AdapterResource(requireActivity(), libraryList, map!!, mRealm)
         adapterLibrary.setRatingChangeListener(this)
@@ -301,10 +297,10 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     override fun getData(): Map<String, Set<String>> {
         val libraryList = adapterLibrary.getLibraryList().filterNotNull()
         val b: MutableMap<String, Set<String>> = HashMap()
-        b["languages"] = libraryList.let { getArrayList(it, "languages").filterNotNull().toSet() }
-        b["subjects"] = libraryList.let { getSubjects(it).toList().toSet() }
-        b["mediums"] = getArrayList(libraryList, "mediums").filterNotNull().toSet()
-        b["levels"] = getLevels(libraryList).toList().toSet()
+        b["languages"] = libraryList.let { RealmMyLibrary.getArrayList(it, "languages").filterNotNull().toSet() }
+        b["subjects"] = libraryList.let { RealmMyLibrary.getSubjects(it).toList().toSet() }
+        b["mediums"] = RealmMyLibrary.getArrayList(libraryList, "mediums").filterNotNull().toSet()
+        b["levels"] = RealmMyLibrary.getLevels(libraryList).toList().toSet()
         return b
     }
 
@@ -340,7 +336,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             activity.text = "${etSearch.text}"
             activity.type = "resources"
             val filter = JsonObject()
-            filter.add("tags", getTagsArray(searchTags))
+            filter.add("tags", RealmTag.getTagsArray(searchTags))
             filter.add("subjects", getJsonArrayFromList(subjects))
             filter.add("language", getJsonArrayFromList(languages))
             filter.add("level", getJsonArrayFromList(levels))

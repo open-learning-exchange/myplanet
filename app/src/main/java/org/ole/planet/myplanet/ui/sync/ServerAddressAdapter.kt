@@ -6,7 +6,7 @@ import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
-import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.ServerAddressesModel
 
@@ -64,7 +64,7 @@ class ServerAddressAdapter(private var serverList: List<ServerAddressesModel>,
 
         fun bind(serverAddress: ServerAddressesModel, isSelected: Boolean) {
             button.text = serverAddress.name
-            button.contentDescription = context.getString(R.string.server_address_content_description, serverAddress.name)
+            button.contentDescription = MainApplication.context.getString(R.string.server_address_content_description, serverAddress.name)
             button.isSelected = isSelected
             if (isSelected) {
                 button.setBackgroundColor(ContextCompat.getColor(button.context, R.color.selected_color))

@@ -10,7 +10,7 @@ import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utilities.JsonUtils
 import java.io.File
 import java.io.FileWriter
@@ -103,7 +103,6 @@ open class RealmNews : RealmObject() {
     companion object {
         val newsDataList: MutableList<Array<String>> = mutableListOf()
 
-        @JvmStatic
         fun insert(mRealm: Realm, doc: JsonObject?) {
             if (!mRealm.isInTransaction) mRealm.beginTransaction()
             var news = mRealm.where(RealmNews::class.java)
@@ -190,10 +189,9 @@ open class RealmNews : RealmObject() {
         }
 
         fun newsWriteCsv() {
-            writeCsv("${context.getExternalFilesDir(null)}/ole/news.csv", newsDataList)
+            writeCsv("${MainApplication.context.getExternalFilesDir(null)}/ole/news.csv", newsDataList)
         }
 
-        @JvmStatic
         fun serializeNews(news: RealmNews): JsonObject {
             val `object` = JsonObject()
             `object`.addProperty("chat", news.chat)
@@ -237,7 +235,6 @@ open class RealmNews : RealmObject() {
             }
         }
 
-        @JvmStatic
         fun createNews(map: HashMap<String?, String>, mRealm: Realm, user: RealmUserModel?, imageUrls: RealmList<String>?): RealmNews {
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
@@ -311,7 +308,6 @@ open class RealmNews : RealmObject() {
             return news
         }
 
-        @JvmStatic
         fun getViewInJson(map: HashMap<String?, String>): String {
             val viewInArray = JsonArray()
             if (!TextUtils.isEmpty(map["viewInId"])) {

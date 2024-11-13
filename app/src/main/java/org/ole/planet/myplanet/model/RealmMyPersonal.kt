@@ -22,7 +22,6 @@ open class RealmMyPersonal : RealmObject() {
     var path: String? = null
 
     companion object {
-        @JvmStatic
         fun serialize(personal: RealmMyPersonal, context: Context): JsonObject {
             val `object` = JsonObject()
             `object`.addProperty("title", personal.title)

@@ -30,7 +30,6 @@ class MyPlanet : Serializable {
     }
 
     companion object {
-        @JvmStatic
         fun getMyPlanetActivities(context: Context, pref: SharedPreferences, model: RealmUserModel): JsonObject {
             val postJSON = JsonObject()
             val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -45,7 +44,6 @@ class MyPlanet : Serializable {
             return postJSON
         }
 
-        @JvmStatic
         fun getNormalMyPlanetActivities(context: Context, pref: SharedPreferences, model: RealmUserModel): JsonObject {
             val postJSON = JsonObject()
             val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -65,7 +63,6 @@ class MyPlanet : Serializable {
             return postJSON
         }
 
-        @JvmStatic
         fun getTabletUsages(context: Context): JsonArray {
             val cal = Calendar.getInstance()
             val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
