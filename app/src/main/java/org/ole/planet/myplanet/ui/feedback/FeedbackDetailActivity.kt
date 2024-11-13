@@ -45,7 +45,7 @@ class FeedbackDetailActivity : AppCompatActivity() {
         supportActionBar?.setHomeButtonEnabled(true)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         setTitle(R.string.feedback)
-        realm = DatabaseService(this).realmInstance
+        realm = DatabaseService().realmInstance
         feedback = realm.where(RealmFeedback::class.java).equalTo("id", intent.getStringExtra("id")).findFirst()!!
         activityFeedbackDetailBinding.tvDate.text = getFormatedDateWithTime(feedback.openTime)
         activityFeedbackDetailBinding.tvMessage.text = if (TextUtils.isEmpty(feedback.message))

@@ -25,7 +25,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
-import okhttp3.ResponseBody
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication.Companion.applicationScope
 import org.ole.planet.myplanet.MainApplication.Companion.context
@@ -57,9 +56,6 @@ import org.ole.planet.myplanet.utilities.NetworkUtils.getCustomDeviceName
 import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
 import org.ole.planet.myplanet.utilities.Utilities.getRelativeTime
 import org.ole.planet.myplanet.utilities.Utilities.openDownloadService
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
 import java.io.File
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -107,7 +103,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         super.onCreate(savedInstanceState)
         settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         editor = settings.edit()
-        mRealm = DatabaseService(this).realmInstance
+        mRealm = DatabaseService().realmInstance
         mRealm = Realm.getDefaultInstance()
         requestAllPermissions()
         customProgressDialog = DialogUtils.getCustomProgressDialog(this)

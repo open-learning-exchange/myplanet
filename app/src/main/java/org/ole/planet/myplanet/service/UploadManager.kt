@@ -71,7 +71,7 @@ import java.util.Date
 
 class UploadManager(var context: Context) : FileUploadService() {
     var pref: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-    private val dbService: DatabaseService = DatabaseService(context)
+    private val dbService: DatabaseService = DatabaseService()
     lateinit var mRealm: Realm
 
     private fun uploadNewsActivities() {
@@ -236,7 +236,7 @@ class UploadManager(var context: Context) : FileUploadService() {
     }
 
     fun uploadSubmitPhotos(listener: SuccessListener?) {
-        mRealm = DatabaseService(context).realmInstance
+        mRealm = DatabaseService().realmInstance
         val apiInterface = client?.create(ApiInterface::class.java)
         mRealm.executeTransactionAsync { realm: Realm ->
             val data: List<RealmSubmitPhotos> = realm.where(RealmSubmitPhotos::class.java).equalTo("uploaded", false).findAll()
@@ -259,7 +259,7 @@ class UploadManager(var context: Context) : FileUploadService() {
     }
 
     fun uploadResource(listener: SuccessListener?) {
-        mRealm = DatabaseService(context).realmInstance
+        mRealm = DatabaseService().realmInstance
         val apiInterface = client?.create(ApiInterface::class.java)
         mRealm.executeTransactionAsync { realm: Realm ->
             val user = realm.where(RealmUserModel::class.java).equalTo("id", pref.getString("userId", "")).findFirst()
@@ -282,7 +282,7 @@ class UploadManager(var context: Context) : FileUploadService() {
     }
 
     fun uploadMyPersonal(personal: RealmMyPersonal, listener: SuccessListener) {
-        mRealm = DatabaseService(context).realmInstance
+        mRealm = DatabaseService().realmInstance
         val apiInterface = client?.create(ApiInterface::class.java)
         if (!personal.isUploaded) {
             apiInterface?.postDoc(Utilities.header, "application/json", Utilities.getUrl() + "/resources", serialize(personal, context))?.enqueue(object : Callback<JsonObject?> {
@@ -310,7 +310,7 @@ class UploadManager(var context: Context) : FileUploadService() {
     }
 
     fun uploadTeamTask() {
-        mRealm = DatabaseService(context).realmInstance
+        mRealm = DatabaseService().realmInstance
         val apiInterface = client?.create(ApiInterface::class.java)
         mRealm.executeTransactionAsync { realm: Realm ->
             val list: List<RealmTeamTask> = realm.where(RealmTeamTask::class.java).findAll()

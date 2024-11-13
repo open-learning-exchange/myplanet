@@ -152,7 +152,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         startListenNetworkState()
 
         preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        service = DatabaseService(context)
+        service = DatabaseService()
         mRealm = service.realmInstance
         defaultPref = PreferenceManager.getDefaultSharedPreferences(this)
 

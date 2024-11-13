@@ -29,7 +29,7 @@ class SendSurveyFragment : BaseDialogFragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentSendSurveyBinding = FragmentSendSurveyBinding.inflate(inflater, container, false)
-        dbService = DatabaseService(requireActivity())
+        dbService = DatabaseService()
         mRealm = dbService.realmInstance
         if (TextUtils.isEmpty(id)) {
             dismiss()
@@ -40,7 +40,7 @@ class SendSurveyFragment : BaseDialogFragment() {
     }
 
     private fun createSurveySubmission(userId: String?) {
-        val mRealm = DatabaseService(requireActivity()).realmInstance
+        val mRealm = DatabaseService().realmInstance
         val exam = mRealm.where(RealmStepExam::class.java).equalTo("id", id).findFirst()
         mRealm.beginTransaction()
         var sub = mRealm.where(RealmSubmission::class.java).equalTo("userId", userId)

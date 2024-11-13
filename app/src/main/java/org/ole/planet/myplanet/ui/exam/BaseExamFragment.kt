@@ -54,7 +54,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     var submitId = ""
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        db = DatabaseService(requireActivity())
+        db = DatabaseService()
         mRealm = db.realmInstance
         if (arguments != null) {
             stepId = requireArguments().getString("stepId")

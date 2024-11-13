@@ -70,7 +70,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         initViews()
         currentUser = UserProfileDbHandler(this).userModel
         mapConditions = HashMap()
-        mRealm = DatabaseService(this).realmInstance
+        mRealm = DatabaseService().realmInstance
         userId = intent.getStringExtra("userId")
         pojo = mRealm.where(RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
         if (pojo == null) {

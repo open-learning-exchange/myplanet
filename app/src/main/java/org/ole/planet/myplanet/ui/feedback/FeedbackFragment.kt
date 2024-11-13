@@ -43,7 +43,7 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentFeedbackBinding = FragmentFeedbackBinding.inflate(inflater, container, false)
-        databaseService = DatabaseService(requireActivity())
+        databaseService = DatabaseService()
         mRealm = databaseService.realmInstance
         model = UserProfileDbHandler(requireContext()).userModel
         user = model?.name

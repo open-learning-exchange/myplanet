@@ -32,7 +32,7 @@ class MyActivityFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val userModel = UserProfileDbHandler(requireActivity()).userModel
-        realm = DatabaseService(requireActivity()).realmInstance
+        realm = DatabaseService().realmInstance
         val calendar = Calendar.getInstance()
         val daynight_textColor = ResourcesCompat.getColor(getResources(), R.color.daynight_textColor, null);
 

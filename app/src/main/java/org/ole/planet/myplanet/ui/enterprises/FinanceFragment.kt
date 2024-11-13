@@ -47,7 +47,7 @@ class FinanceFragment : BaseTeamFragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentFinanceBinding = FragmentFinanceBinding.inflate(inflater, container, false)
-        fRealm = DatabaseService(requireActivity()).realmInstance
+        fRealm = DatabaseService().realmInstance
         date = Calendar.getInstance()
         fragmentFinanceBinding.btnFilter.setOnClickListener { showDatePickerDialog() }
         list = fRealm.where(RealmMyTeam::class.java).notEqualTo("status", "archived")

@@ -23,7 +23,6 @@ import org.ole.planet.myplanet.utilities.FileUtils.getSDPathFromUrl
 import org.ole.planet.myplanet.utilities.Utilities.header
 import retrofit2.Call
 import java.io.*
-import kotlin.math.pow
 import kotlin.math.roundToInt
 
 class MyDownloadService : Service() {
@@ -40,7 +39,7 @@ class MyDownloadService : Service() {
     private var completeAll = false
     private var fromSync = false
 
-    private val databaseService: DatabaseService by lazy { DatabaseService(this) }
+    private val databaseService: DatabaseService by lazy { DatabaseService() }
     private val mRealm: Realm by lazy { databaseService.realmInstance }
 
     override fun onBind(intent: Intent?): IBinder? = null

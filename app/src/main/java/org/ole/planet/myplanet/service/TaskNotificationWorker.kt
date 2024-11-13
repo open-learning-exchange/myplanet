@@ -12,7 +12,7 @@ import java.util.Calendar
 
 class TaskNotificationWorker(private val context: Context, workerParams: WorkerParameters) : Worker(context, workerParams) {
     override fun doWork(): Result {
-        val mRealm = DatabaseService(context).realmInstance
+        val mRealm = DatabaseService().realmInstance
         val current = Calendar.getInstance().timeInMillis
         val tomorrow = Calendar.getInstance()
         tomorrow.add(Calendar.DAY_OF_YEAR, 1)

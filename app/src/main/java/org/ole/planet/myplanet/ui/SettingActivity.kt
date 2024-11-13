@@ -132,7 +132,7 @@ class SettingActivity : AppCompatActivity() {
         }
 
         private fun clearDataButtonInit() {
-            val mRealm = DatabaseService(requireActivity()).realmInstance
+            val mRealm = DatabaseService().realmInstance
             val preference = findPreference<Preference>("reset_app")
             if (preference != null) {
                 preference.onPreferenceClickListener = OnPreferenceClickListener {

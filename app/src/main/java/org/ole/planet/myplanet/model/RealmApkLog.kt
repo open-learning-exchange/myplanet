@@ -2,12 +2,12 @@ package org.ole.planet.myplanet.model
 
 import android.content.Context
 import com.google.gson.JsonObject
-import io.realm.RealmObject
-import io.realm.annotations.Ignore
-import io.realm.annotations.PrimaryKey
+import io.realm.kotlin.types.RealmObject
+import io.realm.kotlin.types.annotations.Ignore
+import io.realm.kotlin.types.annotations.PrimaryKey
 import org.ole.planet.myplanet.utilities.NetworkUtils
 
-open class RealmApkLog : RealmObject() {
+class RealmApkLog : RealmObject {
     @PrimaryKey
     var id: String? = null
     var userId: String? = null
@@ -21,24 +21,17 @@ open class RealmApkLog : RealmObject() {
     var time: String? = null
 
     fun setError(e: Throwable) {
-        error += "--------- Stack trace ---------\n\n"
+        error = (error ?: "") + "--------- Stack trace ---------\n\n"
         appendReport(e)
         error += "--------- Cause ---------\n\n"
-        val cause = e.cause
-        appendReport(cause)
+        appendReport(e.cause)
     }
 
     private fun appendReport(cause: Throwable?) {
-        if (cause != null) {
-            error += """
-                $cause
-                
-                
-                """.trimIndent()
-            val arr = cause.stackTrace
-            for (i in arr.indices) {
-                error += """    ${arr[i]}
-"""
+        cause?.let {
+            error += "$it\n\n"
+            for (element in it.stackTrace) {
+                error += "    $element\n"
             }
         }
         error += "-------------------------------\n\n"
@@ -50,21 +43,20 @@ open class RealmApkLog : RealmObject() {
 
         @JvmStatic
         fun serialize(log: RealmApkLog, context: Context): JsonObject {
-            val `object` = JsonObject()
-            `object`.addProperty("type", log.type)
-            `object`.addProperty("error", log.error)
-            `object`.addProperty("page", log.page)
-            `object`.addProperty("time", log.time)
-            `object`.addProperty("userId", log.userId)
-            `object`.addProperty("version", log.version)
-            `object`.addProperty("createdOn", log.createdOn)
-            `object`.addProperty("androidId", log.createdOn)
-            `object`.addProperty("createdOn", log.createdOn)
-            `object`.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
-            `object`.addProperty("deviceName", NetworkUtils.getDeviceName())
-            `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
-            `object`.addProperty("parentCode", log.parentCode)
-            return `object`
+            val jsonObject = JsonObject().apply {
+                addProperty("type", log.type)
+                addProperty("error", log.error)
+                addProperty("page", log.page)
+                addProperty("time", log.time)
+                addProperty("userId", log.userId)
+                addProperty("version", log.version)
+                addProperty("createdOn", log.createdOn)
+                addProperty("androidId", NetworkUtils.getUniqueIdentifier())
+                addProperty("deviceName", NetworkUtils.getDeviceName())
+                addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
+                addProperty("parentCode", log.parentCode)
+            }
+            return jsonObject
         }
     }
 }

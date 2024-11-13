@@ -39,7 +39,7 @@ class CollectionsFragment : DialogFragment(), TagExpandableAdapter.OnClickTagIte
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentCollectionsBinding = FragmentCollectionsBinding.inflate(inflater, container, false)
-        mRealm = DatabaseService(requireActivity()).realmInstance
+        mRealm = DatabaseService().realmInstance
         KeyboardUtils.hideSoftKeyboard(requireActivity())
         return fragmentCollectionsBinding.root
     }

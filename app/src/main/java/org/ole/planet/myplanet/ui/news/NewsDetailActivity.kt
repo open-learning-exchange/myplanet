@@ -32,7 +32,7 @@ class NewsDetailActivity : BaseActivity() {
         setContentView(activityNewsDetailBinding.root)
         setSupportActionBar(activityNewsDetailBinding.toolbar)
         initActionBar()
-        realm = DatabaseService(this).realmInstance
+        realm = DatabaseService().realmInstance
         val id = intent.getStringExtra("newsId")
         news = realm.where(RealmNews::class.java).equalTo("id", id).findFirst()
         if (news == null) {

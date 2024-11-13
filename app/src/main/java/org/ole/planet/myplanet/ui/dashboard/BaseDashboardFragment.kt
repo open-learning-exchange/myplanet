@@ -106,7 +106,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     override fun forceDownloadNewsImages() {
-        mRealm = DatabaseService(requireContext()).realmInstance
+        mRealm = DatabaseService().realmInstance
         Utilities.toast(activity, getString(R.string.please_select_starting_date))
         val now = Calendar.getInstance()
         val dpd = DatePickerDialog(requireActivity(), { _: DatePicker?, i: Int, i1: Int, i2: Int ->
@@ -249,7 +249,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     private fun setUpMyLife(userId: String?) {
-        val realm = DatabaseService(requireContext()).realmInstance
+        val realm = DatabaseService().realmInstance
         val realmObjects = RealmMyLife.getMyLifeByUserId(mRealm, settings)
         if (realmObjects.isEmpty()) {
             if (!realm.isInTransaction) {
@@ -321,7 +321,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         view.findViewById<View>(R.id.txtFullName).setOnClickListener {
             homeItemClickListener?.openCallFragment(UserProfileFragment())
         }
-        dbService = DatabaseService(requireContext())
+        dbService = DatabaseService()
         mRealm = dbService.realmInstance
         myLibraryDiv(view)
         initializeFlexBoxView(view, R.id.flexboxLayoutCourse, RealmMyCourse::class.java)

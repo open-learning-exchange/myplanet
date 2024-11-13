@@ -49,7 +49,7 @@ class RatingFragment : DialogFragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentRatingBinding = FragmentRatingBinding.inflate(inflater, container, false)
-        databaseService = DatabaseService(requireActivity())
+        databaseService = DatabaseService()
         mRealm = databaseService.realmInstance
         settings = requireActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         return fragmentRatingBinding.root

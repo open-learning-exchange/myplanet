@@ -69,7 +69,7 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         rowChatHistoryBinding = RowChatHistoryBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        mRealm = DatabaseService(context).realmInstance
+        mRealm = DatabaseService().realmInstance
         user = UserProfileDbHandler(context).userModel
         newsList = mRealm.where(RealmNews::class.java)
             .equalTo("docType", "message", Case.INSENSITIVE)

@@ -54,7 +54,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentCourseStepBinding = FragmentCourseStepBinding.inflate(inflater, container, false)
-        dbService = DatabaseService(requireActivity())
+        dbService = DatabaseService()
         cRealm = dbService.realmInstance
         user = UserProfileDbHandler(requireContext()).userModel
         fragmentCourseStepBinding.btnTakeTest.visibility = View.VISIBLE

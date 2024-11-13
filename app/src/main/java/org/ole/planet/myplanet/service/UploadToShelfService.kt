@@ -31,7 +31,7 @@ import java.io.IOException
 import java.util.Date
 
 class UploadToShelfService(context: Context) {
-    private val dbService: DatabaseService = DatabaseService(context)
+    private val dbService: DatabaseService = DatabaseService()
     private val sharedPreferences: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     lateinit var mRealm: Realm
 

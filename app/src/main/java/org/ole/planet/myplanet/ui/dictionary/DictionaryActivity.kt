@@ -26,7 +26,7 @@ class DictionaryActivity : BaseActivity() {
         setContentView(fragmentDictionaryBinding.root)
         initActionBar()
         title = getString(R.string.dictionary)
-        mRealm = DatabaseService(this).realmInstance
+        mRealm = DatabaseService().realmInstance
         list = mRealm.where(RealmDictionary::class.java)?.findAll()
         fragmentDictionaryBinding.tvResult.text = getString(R.string.list_size, list?.size)
         if (FileUtils.checkFileExist(Constants.DICTIONARY_URL)) {

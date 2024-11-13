@@ -3,7 +3,7 @@ apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-kapt'
 apply plugin: 'kotlinx-serialization'
 apply plugin: 'dagger.hilt.android.plugin'
-apply plugin: 'realm-android'
+
 android {
     compileSdk 35
     defaultConfig {
@@ -233,9 +233,7 @@ dependencies {
     implementation(platform("org.jetbrains.kotlin:kotlin-bom:2.0.21"))
 
     implementation 'com.github.chrisbanes:PhotoView:2.3.0'
-}
-realm {
-    syncEnabled = true
+    implementation "io.realm.kotlin:library-base:1.11.0"
 }
 kapt{
     correctErrorTypes  true

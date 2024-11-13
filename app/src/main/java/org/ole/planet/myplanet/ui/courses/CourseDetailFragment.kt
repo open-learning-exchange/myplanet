@@ -38,7 +38,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentCourseDetailBinding = FragmentCourseDetailBinding.inflate(inflater, container, false)
-        dbService = DatabaseService(requireActivity())
+        dbService = DatabaseService()
         cRealm = dbService.realmInstance
         courses = cRealm.where(RealmMyCourse::class.java).equalTo("courseId", id).findFirst()
         user = UserProfileDbHandler(requireContext()).userModel

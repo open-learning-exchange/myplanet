@@ -1,47 +1,43 @@
 package org.ole.planet.myplanet.model
-
 import android.text.TextUtils
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import io.realm.RealmList
-import io.realm.RealmObject
-import io.realm.annotations.PrimaryKey
+import io.realm.kotlin.ext.realmListOf
+import io.realm.kotlin.types.RealmList
+import io.realm.kotlin.types.RealmObject
+import io.realm.kotlin.types.annotations.PrimaryKey
 
-open class RealmAnswer : RealmObject() {
+class RealmAnswer : RealmObject {
     @PrimaryKey
     var id: String? = null
     var value: String? = null
-    var valueChoices: RealmList<String>? = null
-    var mistakes = 0
-    var isPassed = false
-    var grade = 0
+    var valueChoices: RealmList<String> = realmListOf()
+    var mistakes: Int = 0
+    var isPassed: Boolean = false
+    var grade: Int = 0
     var examId: String? = null
     var questionId: String? = null
     var submissionId: String? = null
-    val valueChoicesArray: JsonArray
-        get() {
-            val array = JsonArray()
-            if (valueChoices == null) {
-                return array
-            }
-            for (choice in valueChoices ?: emptyList()) {
-                array.add(Gson().fromJson(choice, JsonObject::class.java))
-            }
-            return array
+
+    val valueChoicesArray: JsonArray get() {
+        val array = JsonArray()
+        for (choice in valueChoices) {
+            array.add(Gson().fromJson(choice, JsonObject::class.java))
         }
+        return array
+    }
 
     fun setValueChoices(map: HashMap<String, String>?, isLastAnsValid: Boolean) {
         if (!isLastAnsValid) {
-            valueChoices?.clear()
+            valueChoices.clear()
         }
-        if (map != null) {
-            for (key in map.keys) {
-                val ob = JsonObject()
-                ob.addProperty("id", map[key])
-                ob.addProperty("text", key)
-                valueChoices?.add(Gson().toJson(ob))
+        map?.forEach { (key, value) ->
+            val ob = JsonObject().apply {
+                addProperty("id", value)
+                addProperty("text", key)
             }
+            valueChoices.add(Gson().toJson(ob))
         }
     }
 
@@ -49,22 +45,22 @@ open class RealmAnswer : RealmObject() {
         @JvmStatic
         fun serializeRealmAnswer(answers: RealmList<RealmAnswer>): JsonArray {
             val array = JsonArray()
-            for (ans in answers) {
+            answers.forEach { ans ->
                 array.add(createObject(ans))
             }
             return array
         }
 
         private fun createObject(ans: RealmAnswer): JsonObject {
-            val `object` = JsonObject()
+            val jsonObject = JsonObject()
             if (!TextUtils.isEmpty(ans.value)) {
-                `object`.addProperty("value", ans.value)
+                jsonObject.addProperty("value", ans.value)
             } else {
-                `object`.add("value", ans.valueChoicesArray)
+                jsonObject.add("value", ans.valueChoicesArray)
             }
-            `object`.addProperty("mistakes", ans.mistakes)
-            `object`.addProperty("passed", ans.isPassed)
-            return `object`
+            jsonObject.addProperty("mistakes", ans.mistakes)
+            jsonObject.addProperty("passed", ans.isPassed)
+            return jsonObject
         }
     }
 }

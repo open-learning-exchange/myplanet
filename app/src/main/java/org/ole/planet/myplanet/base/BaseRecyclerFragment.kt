@@ -89,7 +89,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         tvMessage = v.findViewById(R.id.tv_message)
         selectedItems = mutableListOf()
         list = mutableListOf()
-        realmService = DatabaseService(requireActivity())
+        realmService = DatabaseService()
         mRealm = realmService.realmInstance
         profileDbHandler = UserProfileDbHandler(requireActivity())
         model = profileDbHandler.userModel!!

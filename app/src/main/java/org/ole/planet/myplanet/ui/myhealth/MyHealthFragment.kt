@@ -51,7 +51,7 @@ class MyHealthFragment : Fragment() {
     var dialog: AlertDialog? = null
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentVitalSignBinding = FragmentVitalSignBinding.inflate(inflater, container, false)
-        mRealm = DatabaseService(requireContext()).realmInstance
+        mRealm = DatabaseService().realmInstance
         return fragmentVitalSignBinding.root
     }
 
