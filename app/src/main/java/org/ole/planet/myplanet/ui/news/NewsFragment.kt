@@ -29,6 +29,7 @@ import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.FileUtils.openOleFolder
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
+import java.util.Calendar
 
 class NewsFragment : BaseNewsFragment() {
     private lateinit var fragmentNewsBinding: FragmentNewsBinding
@@ -123,15 +124,33 @@ class NewsFragment : BaseNewsFragment() {
             setData(newsList)
 
             val latestAction = mRealm.where(RealmUserChallengeActions::class.java)
-                .equalTo("userId", n?.userId).equalTo("actionType", "voice").sort("time", Sort.DESCENDING).findFirst()
+                .equalTo("userId", n?.userId)
+                .equalTo("actionType", "voice")
+                .sort("time", Sort.DESCENDING)
+                .findFirst()
 
             val currentTime = System.currentTimeMillis()
-            val thresholdTime = 24 * 60 * 60 * 1000
 
             if (latestAction == null) {
                 createAction(mRealm, "${n?.userId}", n?.id, "voice")
             } else {
-                if (currentTime - latestAction.time >= thresholdTime) {
+                val lastActionCalendar = Calendar.getInstance().apply {
+                    timeInMillis = latestAction.time
+                    set(Calendar.HOUR_OF_DAY, 0)
+                    set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }
+
+                val currentCalendar = Calendar.getInstance().apply {
+                    timeInMillis = currentTime
+                    set(Calendar.HOUR_OF_DAY, 0)
+                    set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }
+
+                if (currentCalendar.after(lastActionCalendar)) {
                     createAction(mRealm, "${n?.userId}", n?.id, "voice")
                 }
             }

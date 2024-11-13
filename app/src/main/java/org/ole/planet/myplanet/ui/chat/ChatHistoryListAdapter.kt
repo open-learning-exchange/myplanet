@@ -31,6 +31,7 @@ import org.ole.planet.myplanet.ui.news.ExpandableListAdapter
 import org.ole.planet.myplanet.ui.news.GrandChildAdapter
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment.Companion.settings
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import java.util.Calendar
 import java.util.Date
 
 class ChatHistoryListAdapter(var context: Context, private var chatHistory: List<RealmChatHistory>, private val fragment: ChatHistoryListFragment) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
@@ -219,15 +220,33 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
             val n = user?.let { it1 -> createNews(map, mRealm, it1, null) }
             if (section == "community") {
                 val latestAction = mRealm.where(RealmUserChallengeActions::class.java)
-                    .equalTo("userId", n?.userId).equalTo("actionType", "voice").sort("time", Sort.DESCENDING).findFirst()
+                    .equalTo("userId", n?.userId)
+                    .equalTo("actionType", "voice")
+                    .sort("time", Sort.DESCENDING)
+                    .findFirst()
 
                 val currentTime = System.currentTimeMillis()
-                val thresholdTime = 24 * 60 * 60 * 1000
 
                 if (latestAction == null) {
                     createAction(mRealm, "${n?.userId}", n?.id, "voice")
                 } else {
-                    if (currentTime - latestAction.time >= thresholdTime) {
+                    val lastActionCalendar = Calendar.getInstance().apply {
+                        timeInMillis = latestAction.time
+                        set(Calendar.HOUR_OF_DAY, 0)
+                        set(Calendar.MINUTE, 0)
+                        set(Calendar.SECOND, 0)
+                        set(Calendar.MILLISECOND, 0)
+                    }
+
+                    val currentCalendar = Calendar.getInstance().apply {
+                        timeInMillis = currentTime
+                        set(Calendar.HOUR_OF_DAY, 0)
+                        set(Calendar.MINUTE, 0)
+                        set(Calendar.SECOND, 0)
+                        set(Calendar.MILLISECOND, 0)
+                    }
+
+                    if (currentCalendar.after(lastActionCalendar)) {
                         createAction(mRealm, "${n?.userId}", n?.id, "voice")
                     }
                 }
