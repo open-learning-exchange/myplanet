@@ -22,7 +22,6 @@ abstract class PermissionActivity : AppCompatActivity() {
         return result == PackageManager.PERMISSION_GRANTED
     }
 
-    @RequiresApi(Build.VERSION_CODES.M)
     fun checkUsagesPermission() {
         if (!getUsagesPermission(this)) {
             Utilities.toast(this, getString(R.string.please_allow_usages_permission_to_myplanet_app))
@@ -36,9 +35,8 @@ abstract class PermissionActivity : AppCompatActivity() {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.M)
     fun getUsagesPermission(context: Context): Boolean {
-        val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
+        val appOps = context.getSystemService(APP_OPS_SERVICE) as AppOpsManager
         var mode = -1
         try {
             val method = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -106,9 +104,7 @@ abstract class PermissionActivity : AppCompatActivity() {
         const val PERMISSION_REQUEST_CODE_FILE = 111
         @JvmStatic
         fun hasInstallPermission(context: Context): Boolean {
-            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.packageManager.canRequestPackageInstalls()
-            } else true
+            return context.packageManager.canRequestPackageInstalls()
         }
     }
 }

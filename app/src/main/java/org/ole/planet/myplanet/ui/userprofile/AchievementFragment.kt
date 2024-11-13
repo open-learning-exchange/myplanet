@@ -11,6 +11,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import io.realm.Realm
+import io.realm.RealmList
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
@@ -99,7 +100,7 @@ class AchievementFragment : BaseContainerFragment() {
                         rowAchievementBinding.tvTitle.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0)
                         createAchievementList()
                         fragmentAchievementBinding.rvOtherInfo.layoutManager = LinearLayoutManager(MainApplication.context)
-                        fragmentAchievementBinding.rvOtherInfo.adapter = AdapterOtherInfo(MainApplication.context, achievement?.getReferences()!!)
+                        fragmentAchievementBinding.rvOtherInfo.adapter = AdapterOtherInfo(MainApplication.context, achievement?.references ?: RealmList())
                     }
                     aRealm.addChangeListener {
                         fragmentAchievementBinding.llAchievement.removeAllViews()
@@ -114,7 +115,7 @@ class AchievementFragment : BaseContainerFragment() {
                 fragmentAchievementBinding.llAchievement.addView(rowAchievementBinding.root)
             }
             fragmentAchievementBinding.rvOtherInfo.layoutManager = LinearLayoutManager(MainApplication.context)
-            fragmentAchievementBinding.rvOtherInfo.adapter = AdapterOtherInfo(MainApplication.context, achievement?.getReferences()!!)
+            fragmentAchievementBinding.rvOtherInfo.adapter = AdapterOtherInfo(MainApplication.context, achievement?.references ?: RealmList())
         }
     }
 
