@@ -139,7 +139,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     private fun clearDataDialog(message: String, config: Boolean, onCancel: () -> Unit = {}) {
-        AlertDialog.Builder(this, R.style.CustomAlertDialog)
+        AlertDialog.Builder(this, R.style.AlertDialogTheme)
             .setMessage(message)
             .setPositiveButton(getString(R.string.clear_data)) { _, _ ->
                 CoroutineScope(Dispatchers.Main).launch {
