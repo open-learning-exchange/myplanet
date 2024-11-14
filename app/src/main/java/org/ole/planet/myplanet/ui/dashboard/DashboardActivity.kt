@@ -270,7 +270,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             .equalTo("actionType", "ai research")
             .findAll().count()
 
-        val startTime = 1731589532454
+        val startTime = 1731608134
         val commVoiceResults = mRealm.where(RealmNews::class.java)
             .equalTo("userId", user?.id)
             .greaterThanOrEqualTo("time", startTime)
