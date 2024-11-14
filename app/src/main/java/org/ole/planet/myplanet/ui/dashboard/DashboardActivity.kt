@@ -40,6 +40,7 @@ import io.realm.RealmObject
 import io.realm.RealmResults
 import io.realm.Sort
 import kotlinx.coroutines.launch
+import org.json.JSONArray
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
@@ -50,6 +51,7 @@ import org.ole.planet.myplanet.databinding.ActivityDashboardBinding
 import org.ole.planet.myplanet.databinding.CustomTabBinding
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
@@ -84,6 +86,7 @@ import org.ole.planet.myplanet.utilities.MarkdownDialog
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.Utilities.toast
+import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.util.Date
 import java.util.UUID
@@ -267,6 +270,38 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             .equalTo("actionType", "ai research")
             .findAll().count()
 
+        val startTime = 1731589532454
+        val commVoiceResults = mRealm.where(RealmNews::class.java)
+            .equalTo("userId", user?.id)
+            .greaterThanOrEqualTo("time", startTime)
+            .findAll()
+
+        val commVoice = commVoiceResults.filter { realmNews ->
+            realmNews.viewIn?.let { viewInStr ->
+                try {
+                    val viewInArray = JSONArray(viewInStr)
+                    for (i in 0 until viewInArray.length()) {
+                        val viewInObj = viewInArray.getJSONObject(i)
+                        if (viewInObj.optString("section") == "community") {
+                            return@filter true
+                        }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+            false
+        }
+
+        fun getDateFromTimestamp(timestamp: Long): String {
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd")
+            return dateFormat.format(Date(timestamp))
+        }
+
+        val uniqueDates = commVoice
+            .map { getDateFromTimestamp(it.time) }
+            .distinct()
+
         val courseData = fetchCourseData(mRealm, user?.id)
 
         val courseId = "9517e3b45a5bb63e69bb8f269216974d"
@@ -299,9 +334,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                         } else {
                             "Ingresa al curso $courseName completalo ($current de $max hecho)"
                         }
-                        challengeDialog(voiceCount, courseStatus)
+                        challengeDialog(uniqueDates.size, courseStatus)
                     } else {
-                        challengeDialog(voiceCount, "$courseName no iniciado")
+                        challengeDialog(uniqueDates.size, "$courseName no iniciado")
                     }
                 }
             }
