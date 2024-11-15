@@ -26,30 +26,19 @@ import java.io.FileWriter
 import java.io.IOException
 
 open class RealmMyCourse : RealmObject() {
-    @JvmField
     @PrimaryKey
     var id: String? = null
     var userId: RealmList<String>? = null
         private set
-    @JvmField
     var courseId: String? = null
-    @JvmField
     var courseRev: String? = null
-    @JvmField
     var languageOfInstruction: String? = null
-    @JvmField
     var courseTitle: String? = null
-    @JvmField
     var memberLimit: Int? = null
-    @JvmField
     var description: String? = null
-    @JvmField
     var method: String? = null
-    @JvmField
     var gradeLevel: String? = null
-    @JvmField
     var subjectLevel: String? = null
-    @JvmField
     var createdDate: Long = 0
     private var numberOfSteps: Int? = null
     var courseSteps: RealmList<RealmCourseStep>? = null

@@ -15,9 +15,7 @@ import java.io.IOException
 
 open class RealmCertification : RealmObject() {
     @PrimaryKey
-    @JvmField
     var _id: String? = null
-    @JvmField
     var _rev: String? = null
     var name: String? = null
     private var courseIds: String? = null

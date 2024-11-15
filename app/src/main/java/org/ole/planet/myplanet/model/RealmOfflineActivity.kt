@@ -18,27 +18,16 @@ import java.io.IOException
 open class RealmOfflineActivity : RealmObject() {
     @PrimaryKey
     var id: String? = null
-    @JvmField
     var _id: String? = null
-    @JvmField
     var _rev: String? = null
-    @JvmField
     var userName: String? = null
-    @JvmField
     var userId: String? = null
-    @JvmField
     var type: String? = null
-    @JvmField
     var description: String? = null
-    @JvmField
     var createdOn: String? = null
-    @JvmField
     var parentCode: String? = null
-    @JvmField
     var loginTime: Long? = null
-    @JvmField
     var logoutTime: Long? = null
-    @JvmField
     var androidId: String? = null
     fun changeRev(r: JsonObject?) {
         if (r != null) {
