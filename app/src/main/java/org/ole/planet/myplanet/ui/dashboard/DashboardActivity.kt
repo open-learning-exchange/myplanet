@@ -270,7 +270,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             .equalTo("actionType", "ai research")
             .findAll().count()
 
-        val startTime = 1731608134
+        val startTime = 1730408400
         val commVoiceResults = mRealm.where(RealmNews::class.java)
             .equalTo("userId", user?.id)
             .greaterThanOrEqualTo("time", startTime)
@@ -345,7 +345,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     fun challengeDialog(voiceCount: Int, courseStatus: String) {
         val voiceTaskDone = if (voiceCount >= 5) "✅" else "[ ]"
-        val prereqsMet = courseStatus.contains("terminado", ignoreCase = true) && voiceCount >= 1
+        val prereqsMet = courseStatus.contains("terminado", ignoreCase = true) && voiceCount >= 5
         val syncTaskDone = if (prereqsMet) {
             val lastPrereqAction = mRealm.where(RealmUserChallengeActions::class.java)
                 .equalTo("userId", user?.id)

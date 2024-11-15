@@ -113,8 +113,8 @@ class MarkdownDialog : DialogFragment() {
 
             val buttonText = when {
                 courseStatus.contains("no iniciado") -> context.getString(R.string.start)
-                courseStatus.contains("terminado") && voiceCount < 1 -> context.getString(R.string.next)
-                courseStatus.contains("terminado") && voiceCount >= 1 -> context.getString(R.string.sync)
+                courseStatus.contains("terminado") && voiceCount < 5 -> context.getString(R.string.next)
+                courseStatus.contains("terminado") && voiceCount >= 5 -> context.getString(R.string.sync)
                 else -> context.getString(R.string.continuation)
             }
 
