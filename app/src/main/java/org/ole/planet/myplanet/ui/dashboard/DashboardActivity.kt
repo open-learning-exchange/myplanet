@@ -309,10 +309,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
         val validUrls = listOf(
             "https://${BuildConfig.PLANET_GUATEMALA_URL}",
-            "https://${BuildConfig.PLANET_XELA_URL}",
-            "https://${BuildConfig.PLANET_URIUR_URL}",
-            "https://${BuildConfig.PLANET_SANPABLO_URL}",
-            "https://${BuildConfig.PLANET_EMBAKASI_URL}",
+            "http://${BuildConfig.PLANET_XELA_URL}",
+            "http://${BuildConfig.PLANET_URIUR_URL}",
+            "http://${BuildConfig.PLANET_SANPABLO_URL}",
+            "http://${BuildConfig.PLANET_EMBAKASI_URL}",
             "https://${BuildConfig.PLANET_VI_URL}"
         )
 
