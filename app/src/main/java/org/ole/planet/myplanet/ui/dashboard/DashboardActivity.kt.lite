@@ -344,7 +344,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     fun challengeDialog(voiceCount: Int, courseStatus: String) {
-        val voicesRemaining = maxOf(0, 5 - voiceCount)
         val voiceTaskDone = if (voiceCount >= 5) "✅" else "[ ]"
         val prereqsMet = courseStatus.contains("terminado", ignoreCase = true) && voiceCount >= 5
         val syncTaskDone = if (prereqsMet) {
@@ -379,8 +378,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount)
                 .show(supportFragmentManager, "markdown_dialog")
         } else {
-            val voicesText = if (voicesRemaining > 0) {
-                "(Quedan $voicesRemaining voces)"
+            val voicesText = if (voiceCount > 0) {
+                "$voiceCount de 5 Voces diarias"
             } else {
                 ""
             }

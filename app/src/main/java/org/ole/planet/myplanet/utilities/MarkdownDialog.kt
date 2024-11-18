@@ -92,22 +92,20 @@ class MarkdownDialog : DialogFragment() {
 
     private fun setupCourseButton(drawer: Drawer?) {
         dialogCampaignChallengeBinding.btnStart.apply {
-            val isCompleted = courseStatus.contains("terminado") &&
-                    voiceCount >= 1 &&
-                    (activity as? DashboardActivity)?.mRealm?.let { realm ->
-                        val lastPrereqAction = realm.where(RealmUserChallengeActions::class.java)
-                            .equalTo("userId", (activity as? DashboardActivity)?.user?.id)
-                            .`in`("actionType", arrayOf("voice", "courseComplete"))
-                            .sort("time", Sort.DESCENDING)
-                            .findFirst()
-                            ?.time ?: 0
+            val isCompleted = courseStatus.contains("terminado") && voiceCount >= 5 && (activity as? DashboardActivity)?.mRealm?.let { realm ->
+                val lastPrereqAction = realm.where(RealmUserChallengeActions::class.java)
+                    .equalTo("userId", (activity as? DashboardActivity)?.user?.id)
+                    .`in`("actionType", arrayOf("voice", "courseComplete"))
+                    .sort("time", Sort.DESCENDING)
+                    .findFirst()
+                    ?.time ?: 0
 
-                        realm.where(RealmUserChallengeActions::class.java)
-                            .equalTo("userId", (activity as? DashboardActivity)?.user?.id)
-                            .equalTo("actionType", "sync")
-                            .greaterThan("time", lastPrereqAction)
-                            .count() > 0
-                    } == true
+                realm.where(RealmUserChallengeActions::class.java)
+                    .equalTo("userId", (activity as? DashboardActivity)?.user?.id)
+                    .equalTo("actionType", "sync")
+                    .greaterThan("time", lastPrereqAction)
+                    .count() > 0
+            } == true
 
             visibility = if (isCompleted) View.GONE else View.VISIBLE
 
