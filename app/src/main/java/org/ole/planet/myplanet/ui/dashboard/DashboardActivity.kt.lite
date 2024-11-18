@@ -344,6 +344,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     fun challengeDialog(voiceCount: Int, courseStatus: String) {
+        val voicesRemaining = maxOf(0, 5 - voiceCount)
         val voiceTaskDone = if (voiceCount >= 5) "✅" else "[ ]"
         val prereqsMet = courseStatus.contains("terminado", ignoreCase = true) && voiceCount >= 5
         val syncTaskDone = if (prereqsMet) {
@@ -378,10 +379,15 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount)
                 .show(supportFragmentManager, "markdown_dialog")
         } else {
+            val voicesText = if (voicesRemaining > 0) {
+                "(Quedan $voicesRemaining voces)"
+            } else {
+                ""
+            }
             val markdownContent = """
                 ![issues challenge](file:///android_asset/images/november_challenge.jpeg) <br/>
                 ### $courseTaskDone <br/>
-                ### $voiceTaskDone Comparte tu opinión en Nuestras Voces. <br/>
+                ### $voiceTaskDone Comparte tu opinión en Nuestras Voces. $voicesText <br/>
                 ### $syncTaskDone Recuerda sincronizar la aplicacion movil.
                 """.trimIndent()
             MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount)
