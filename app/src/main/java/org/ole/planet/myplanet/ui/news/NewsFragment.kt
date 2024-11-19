@@ -19,8 +19,6 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
-import org.ole.planet.myplanet.model.RealmUserChallengeActions
-import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createAction
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
@@ -29,7 +27,6 @@ import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.FileUtils.openOleFolder
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
-import java.util.Calendar
 
 class NewsFragment : BaseNewsFragment() {
     private lateinit var fragmentNewsBinding: FragmentNewsBinding
@@ -87,7 +84,7 @@ class NewsFragment : BaseNewsFragment() {
                 for (e in ar) {
                     val ob = e.asJsonObject
                     var userId = "${user?.planetCode}@${user?.parentCode}"
-                    if(userId.isNullOrEmpty() || userId=="@"){
+                    if(userId.isEmpty() || userId=="@"){
                         userId = settings?.getString("planetCode","")+"@"+settings?.getString("parentCode", "")
                     }
                     if (ob != null && ob.has("_id") && ob["_id"].asString.equals(userId, ignoreCase = true)) {
@@ -122,38 +119,6 @@ class NewsFragment : BaseNewsFragment() {
             llImage?.removeAllViews()
             adapterNews?.addItem(n)
             setData(newsList)
-
-            val latestAction = mRealm.where(RealmUserChallengeActions::class.java)
-                .equalTo("userId", n?.userId)
-                .equalTo("actionType", "voice")
-                .sort("time", Sort.DESCENDING)
-                .findFirst()
-
-            val currentTime = System.currentTimeMillis()
-
-            if (latestAction == null) {
-                createAction(mRealm, "${n?.userId}", n?.id, "voice")
-            } else {
-                val lastActionCalendar = Calendar.getInstance().apply {
-                    timeInMillis = latestAction.time
-                    set(Calendar.HOUR_OF_DAY, 0)
-                    set(Calendar.MINUTE, 0)
-                    set(Calendar.SECOND, 0)
-                    set(Calendar.MILLISECOND, 0)
-                }
-
-                val currentCalendar = Calendar.getInstance().apply {
-                    timeInMillis = currentTime
-                    set(Calendar.HOUR_OF_DAY, 0)
-                    set(Calendar.MINUTE, 0)
-                    set(Calendar.SECOND, 0)
-                    set(Calendar.MILLISECOND, 0)
-                }
-
-                if (currentCalendar.after(lastActionCalendar)) {
-                    createAction(mRealm, "${n?.userId}", n?.id, "voice")
-                }
-            }
         }
 
         fragmentNewsBinding.addNewsImage.setOnClickListener {
@@ -178,7 +143,7 @@ class NewsFragment : BaseNewsFragment() {
                 for (e in ar) {
                     val ob = e.asJsonObject
                     var userId = "${user?.planetCode}@${user?.parentCode}"
-                    if(userId.isNullOrEmpty() || userId=="@"){
+                    if(userId.isEmpty() || userId=="@"){
                         userId = settings?.getString("planetCode","")+"@"+settings?.getString("parentCode", "")
                     }
                     if (ob != null && ob.has("_id") && ob["_id"].asString.equals(userId, ignoreCase = true)) {

@@ -38,7 +38,6 @@ import io.realm.Case
 import io.realm.RealmChangeListener
 import io.realm.RealmObject
 import io.realm.RealmResults
-import io.realm.Sort
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.ole.planet.myplanet.BuildConfig
@@ -347,24 +346,16 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         val voiceTaskDone = if (voiceCount >= 5) "✅" else "[ ]"
         val prereqsMet = courseStatus.contains("terminado", ignoreCase = true) && voiceCount >= 5
         val syncTaskDone = if (prereqsMet) {
-            val lastPrereqAction = mRealm.where(RealmUserChallengeActions::class.java)
-                .equalTo("userId", user?.id)
-                .`in`("actionType", arrayOf("voice", "courseComplete"))
-                .sort("time", Sort.DESCENDING)
-                .findFirst()
-                ?.time ?: 0
-
             val hasValidSync = mRealm.where(RealmUserChallengeActions::class.java)
                 .equalTo("userId", user?.id)
                 .equalTo("actionType", "sync")
-                .greaterThan("time", lastPrereqAction)
                 .count() > 0
 
             if (hasValidSync) "✅" else "[ ]"
         } else "[ ]"
         val courseTaskDone = if (courseStatus.contains("terminado", ignoreCase = true)) "✅ $courseStatus" else "[ ] $courseStatus"
 
-        val isCompleted = syncTaskDone == "✅" && voiceTaskDone == "✅" && courseTaskDone.startsWith("✅")
+        val isCompleted = syncTaskDone.startsWith("✅") && voiceTaskDone.startsWith("✅") && courseTaskDone.startsWith("✅")
         val hasShownCongrats = settings.getBoolean("has_shown_congrats", false)
 
         if (isCompleted && hasShownCongrats) return

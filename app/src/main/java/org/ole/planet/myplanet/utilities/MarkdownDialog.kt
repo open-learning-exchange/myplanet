@@ -9,11 +9,9 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.DialogFragment
 import com.mikepenz.materialdrawer.Drawer
-import io.realm.Sort
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.DialogCampaignChallengeBinding
@@ -93,17 +91,9 @@ class MarkdownDialog : DialogFragment() {
     private fun setupCourseButton(drawer: Drawer?) {
         dialogCampaignChallengeBinding.btnStart.apply {
             val isCompleted = courseStatus.contains("terminado") && voiceCount >= 5 && (activity as? DashboardActivity)?.mRealm?.let { realm ->
-                val lastPrereqAction = realm.where(RealmUserChallengeActions::class.java)
-                    .equalTo("userId", (activity as? DashboardActivity)?.user?.id)
-                    .`in`("actionType", arrayOf("voice", "courseComplete"))
-                    .sort("time", Sort.DESCENDING)
-                    .findFirst()
-                    ?.time ?: 0
-
                 realm.where(RealmUserChallengeActions::class.java)
                     .equalTo("userId", (activity as? DashboardActivity)?.user?.id)
                     .equalTo("actionType", "sync")
-                    .greaterThan("time", lastPrereqAction)
                     .count() > 0
             } == true
 
@@ -133,9 +123,7 @@ class MarkdownDialog : DialogFragment() {
                     }
                     context.getString(R.string.sync) -> {
                         CoroutineScope(Dispatchers.IO).launch {
-//                            withContext(Dispatchers.Main) {
-                                (activity as DashboardElementActivity).logSyncInSharedPrefs()
-//                            }
+                            (activity as DashboardElementActivity).logSyncInSharedPrefs()
                         }
                     }
                 }

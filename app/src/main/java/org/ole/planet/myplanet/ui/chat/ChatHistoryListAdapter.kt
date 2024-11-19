@@ -11,7 +11,6 @@ import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmResults
-import io.realm.Sort
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AddNoteDialogBinding
 import org.ole.planet.myplanet.databinding.ChatShareDialogBinding
@@ -23,15 +22,12 @@ import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
-import org.ole.planet.myplanet.model.RealmUserChallengeActions
-import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createAction
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.news.ExpandableListAdapter
 import org.ole.planet.myplanet.ui.news.GrandChildAdapter
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment.Companion.settings
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import java.util.Calendar
 import java.util.Date
 
 class ChatHistoryListAdapter(var context: Context, private var chatHistory: List<RealmChatHistory>, private val fragment: ChatHistoryListFragment) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
@@ -217,40 +213,8 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
             map["chat"] = "true"
             map["news"] = Gson().toJson(serializedMap)
 
-            val n = user?.let { it1 -> createNews(map, mRealm, it1, null) }
-            if (section == "community") {
-                val latestAction = mRealm.where(RealmUserChallengeActions::class.java)
-                    .equalTo("userId", n?.userId)
-                    .equalTo("actionType", "voice")
-                    .sort("time", Sort.DESCENDING)
-                    .findFirst()
+            createNews(map, mRealm, user, null)
 
-                val currentTime = System.currentTimeMillis()
-
-                if (latestAction == null) {
-                    createAction(mRealm, "${n?.userId}", n?.id, "voice")
-                } else {
-                    val lastActionCalendar = Calendar.getInstance().apply {
-                        timeInMillis = latestAction.time
-                        set(Calendar.HOUR_OF_DAY, 0)
-                        set(Calendar.MINUTE, 0)
-                        set(Calendar.SECOND, 0)
-                        set(Calendar.MILLISECOND, 0)
-                    }
-
-                    val currentCalendar = Calendar.getInstance().apply {
-                        timeInMillis = currentTime
-                        set(Calendar.HOUR_OF_DAY, 0)
-                        set(Calendar.MINUTE, 0)
-                        set(Calendar.SECOND, 0)
-                        set(Calendar.MILLISECOND, 0)
-                    }
-
-                    if (currentCalendar.after(lastActionCalendar)) {
-                        createAction(mRealm, "${n?.userId}", n?.id, "voice")
-                    }
-                }
-            }
             fragment.refreshChatHistoryList()
             dialog.dismiss()
         }
