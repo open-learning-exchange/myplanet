@@ -177,8 +177,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
         activityDashboardBinding.appBarBell.ivSync.setOnClickListener {
             lifecycleScope.launch {
-                isServerReachable(Utilities.getUrl())
-                startUpload("dashboard")
+                if (isServerReachable(Utilities.getUrl())) {
+                    startUpload("dashboard")
+                }
             }
         }
         activityDashboardBinding.appBarBell.imgLogo.setOnClickListener { result?.openDrawer() }
@@ -244,29 +245,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
         })
 
-        val loginCount = mRealm.where(RealmUserChallengeActions::class.java)
-            .equalTo("userId", user?.id)
-            .equalTo("actionType", "login")
-            .findAll().count()
-
-        val resourceOpenCount = mRealm.where(RealmUserChallengeActions::class.java)
-            .equalTo("userId", user?.id)
-            .equalTo("actionType", "resourceOpen")
-            .findAll().count()
-
-        val syncCount = mRealm.where(RealmUserChallengeActions::class.java)
-            .equalTo("userId", user?.id)
-            .equalTo("actionType", "sync")
-            .findAll().count()
-
         val voiceCount = mRealm.where(RealmUserChallengeActions::class.java)
             .equalTo("userId", user?.id)
             .equalTo("actionType", "voice")
-            .findAll().count()
-
-        val aiResearchCount = mRealm.where(RealmUserChallengeActions::class.java)
-            .equalTo("userId", user?.id)
-            .equalTo("actionType", "ai research")
             .findAll().count()
 
         val startTime = 1730408400
@@ -356,6 +337,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         val courseTaskDone = if (courseStatus.contains("terminado", ignoreCase = true)) "✅ $courseStatus" else "[ ] $courseStatus"
 
         val isCompleted = syncTaskDone.startsWith("✅") && voiceTaskDone.startsWith("✅") && courseTaskDone.startsWith("✅")
+
         val hasShownCongrats = settings.getBoolean("has_shown_congrats", false)
 
         if (isCompleted && hasShownCongrats) return
