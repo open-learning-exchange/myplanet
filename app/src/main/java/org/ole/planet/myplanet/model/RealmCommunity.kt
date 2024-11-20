@@ -1,9 +1,9 @@
 package org.ole.planet.myplanet.model
 
-import io.realm.RealmObject
-import io.realm.annotations.PrimaryKey
+import io.realm.kotlin.types.RealmObject
+import io.realm.kotlin.types.annotations.PrimaryKey
 
-open class RealmCommunity : RealmObject() {
+class RealmCommunity : RealmObject {
     @PrimaryKey
     var id: String = ""
     var weight: Int = 10
@@ -12,7 +12,5 @@ open class RealmCommunity : RealmObject() {
     var name: String = ""
     var parentDomain: String = ""
 
-    override fun toString(): String {
-        return name
-    }
+    override fun toString(): String = name
 }

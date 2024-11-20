@@ -1,14 +1,14 @@
 package org.ole.planet.myplanet.model
 
 import com.google.gson.JsonObject
-import io.realm.Realm
-import io.realm.RealmObject
-import io.realm.annotations.PrimaryKey
+import io.realm.kotlin.Realm
+import io.realm.kotlin.types.RealmObject
+import io.realm.kotlin.types.annotations.PrimaryKey
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import java.util.Date
 import java.util.UUID
 
-open class RealmCourseActivity : RealmObject() {
+class RealmCourseActivity : RealmObject {
     @PrimaryKey
     var id: String? = null
     var _id: String? = null
@@ -22,35 +22,34 @@ open class RealmCourseActivity : RealmObject() {
     var user: String? = null
 
     companion object {
-        @JvmStatic
         fun createActivity(realm: Realm, userModel: RealmUserModel?, course: RealmMyCourse?) {
-            if (!realm.isInTransaction) {
-                realm.executeTransaction {
-                    val activity = it.createObject(RealmCourseActivity::class.java, UUID.randomUUID().toString())
-                    activity.type = "visit"
-                    activity.title = course?.courseTitle
-                    activity.courseId = course?.courseId
-                    activity.time = Date().time
-                    activity.parentCode = userModel?.parentCode
-                    activity.createdOn = userModel?.planetCode
-                    activity.user = userModel?.name
+            realm.writeBlocking {
+                val activity = RealmCourseActivity().apply {
+                    id = UUID.randomUUID().toString()
+                    type = "visit"
+                    title = course?.courseTitle
+                    courseId = course?.courseId
+                    time = Date().time
+                    parentCode = userModel?.parentCode
+                    createdOn = userModel?.planetCode
+                    user = userModel?.name
                 }
+                copyToRealm(activity)
             }
         }
 
-        @JvmStatic
-        fun serializeSerialize(realmCourseActivities: RealmCourseActivity): JsonObject {
-            val ob = JsonObject()
-            ob.addProperty("user", realmCourseActivities.user)
-            ob.addProperty("courseId", realmCourseActivities.courseId)
-            ob.addProperty("type", realmCourseActivities.type)
-            ob.addProperty("title", realmCourseActivities.title)
-            ob.addProperty("time", realmCourseActivities.time)
-            ob.addProperty("createdOn", realmCourseActivities.createdOn)
-            ob.addProperty("parentCode", realmCourseActivities.parentCode)
-            ob.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
-            ob.addProperty("deviceName", NetworkUtils.getDeviceName())
-            return ob
+        fun serializeSerialize(realmCourseActivity: RealmCourseActivity): JsonObject {
+            return JsonObject().apply {
+                addProperty("user", realmCourseActivity.user)
+                addProperty("courseId", realmCourseActivity.courseId)
+                addProperty("type", realmCourseActivity.type)
+                addProperty("title", realmCourseActivity.title)
+                addProperty("time", realmCourseActivity.time)
+                addProperty("createdOn", realmCourseActivity.createdOn)
+                addProperty("parentCode", realmCourseActivity.parentCode)
+                addProperty("androidId", NetworkUtils.getUniqueIdentifier())
+                addProperty("deviceName", NetworkUtils.getDeviceName())
+            }
         }
     }
 }
