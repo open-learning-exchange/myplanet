@@ -14,26 +14,16 @@ import java.io.FileWriter
 import java.io.IOException
 
 open class RealmTag : RealmObject() {
-    @JvmField
     @PrimaryKey
     var id: String? = null
-    @JvmField
     var _id: String? = null
-    @JvmField
     var _rev: String? = null
-    @JvmField
     var name: String? = null
-    @JvmField
     var linkId: String? = null
-    @JvmField
     var tagId: String? = null
-    @JvmField
     var attachedTo: RealmList<String>? = null
-    @JvmField
     var docType: String? = null
-    @JvmField
     var db: String? = null
-    @JvmField
     var isAttached = false
     private fun setAttachedTo(attachedTo: JsonArray) {
         this.attachedTo = RealmList()

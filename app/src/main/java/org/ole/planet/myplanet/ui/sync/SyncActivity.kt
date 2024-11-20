@@ -25,7 +25,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
-import okhttp3.ResponseBody
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication.Companion.applicationScope
 import org.ole.planet.myplanet.MainApplication.Companion.context
@@ -57,9 +56,6 @@ import org.ole.planet.myplanet.utilities.NetworkUtils.getCustomDeviceName
 import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
 import org.ole.planet.myplanet.utilities.Utilities.getRelativeTime
 import org.ole.planet.myplanet.utilities.Utilities.openDownloadService
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
 import java.io.File
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -71,7 +67,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private lateinit var intervalLabel: TextView
     lateinit var spinner: Spinner
     private lateinit var syncSwitch: SwitchCompat
-    private var connectionResult = false
     lateinit var mRealm: Realm
     lateinit var editor: SharedPreferences.Editor
     private var syncTimeInterval = intArrayOf(60 * 60, 3 * 60 * 60)
@@ -189,97 +184,48 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
     }
 
-    @Throws(Exception::class)
-//    fun isServerReachable(processedUrl: String?): Boolean {
-//        customProgressDialog?.setText(getString(R.string.connecting_to_server))
-//        customProgressDialog?.show()
-//        val apiInterface = client?.create(ApiInterface::class.java)
-//        apiInterface?.isPlanetAvailable("$processedUrl/_all_dbs")?.enqueue(object : Callback<ResponseBody?> {
-//            override fun onResponse(call: Call<ResponseBody?>, response: Response<ResponseBody?>) {
-//                try {
-//                    customProgressDialog?.dismiss()
-//                    val ss = response.body()?.string()
-//                    val myList = ss?.split(",".toRegex())?.dropLastWhile { it.isEmpty() }?.let { listOf(*it.toTypedArray()) }
-//                    if ((myList?.size ?: 0) < 8) {
-//                        alertDialogOkay(getString(R.string.check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server))
-//                    } else {
-//                        startSync()
-//                    }
-//                } catch (e: Exception) {
-//                    e.printStackTrace()
-//                    syncFailed = true
-//                    if (extractProtocol("$processedUrl") == context.getString(R.string.http_protocol)) {
-//                        alertDialogOkay(getString(R.string.device_couldn_t_reach_local_server))
-//                    } else if (extractProtocol("$processedUrl") == context.getString(R.string.https_protocol)) {
-//                        alertDialogOkay(getString(R.string.device_couldn_t_reach_nation_server))
-//                    }
-//                    customProgressDialog?.dismiss()
-//                }
-//            }
-//
-//                override fun onFailure(call: Call<ResponseBody?>, t: Throwable) {
-//                    syncFailed = true
-//                    if (extractProtocol("$processedUrl") == context.getString(R.string.http_protocol)) {
-//                        alertDialogOkay(getString(R.string.device_couldn_t_reach_local_server))
-//                    } else if (extractProtocol("$processedUrl") == context.getString(R.string.https_protocol)) {
-//                        alertDialogOkay(getString(R.string.device_couldn_t_reach_nation_server))
-//                    }
-//                    customProgressDialog?.dismiss()
-//                }
-//            })
-//        return connectionResult
-//    }
-
-    suspend fun isServerReachable(processedUrl: String?): Boolean = withContext(Dispatchers.IO) {
-        try {
-            withContext(Dispatchers.Main) {
-                customProgressDialog?.setText(getString(R.string.connecting_to_server))
-                customProgressDialog?.show()
-            }
-
+    suspend fun isServerReachable(processedUrl: String?): Boolean {
+        return withContext(Dispatchers.IO) {
             val apiInterface = client?.create(ApiInterface::class.java)
-            val response = apiInterface?.isPlanetAvailable("$processedUrl/_all_dbs")?.execute()
+            try {
+                val response = apiInterface?.isPlanetAvailable("$processedUrl/_all_dbs")?.execute()
 
-            response?.let {
-                if (it.isSuccessful) {
-                    val myList = it.body()?.string()?.split(",")?.dropLastWhile { it.isEmpty() }
-                    if ((myList?.size ?: 0) < 8) {
+                when {
+                    response?.isSuccessful == true -> {
+                        val ss = response.body()?.string()
+                        val myList = ss?.split(",")?.dropLastWhile { it.isEmpty() }
+
+                        if ((myList?.size ?: 0) < 8) {
+                            withContext(Dispatchers.Main) {
+                                customProgressDialog?.dismiss()
+                                alertDialogOkay(context.getString(R.string.check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server))
+                            }
+                            false
+                        } else {
+                            withContext(Dispatchers.Main) {
+                                startSync()
+                            }
+                            true
+                        }
+                    }
+                    else -> {
+                        syncFailed = true
+                        val protocol = extractProtocol("$processedUrl")
+                        val errorMessage = when (protocol) {
+                            context.getString(R.string.http_protocol) -> context.getString(R.string.device_couldn_t_reach_local_server)
+                            context.getString(R.string.https_protocol) -> context.getString(R.string.device_couldn_t_reach_nation_server)
+                            else -> ""
+                        }
                         withContext(Dispatchers.Main) {
-                            alertDialogOkay(getString(R.string.check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server))
+                            customProgressDialog?.dismiss()
+                            alertDialogOkay(errorMessage)
                         }
                         false
-                    } else {
-                        withContext(Dispatchers.Main) {
-                            startSync()
-                        }
-                        true
                     }
-                } else {
-                    handleServerError()
-                    false
                 }
-            } ?: run {
-                handleServerError()
+            } catch (e: Exception) {
+                e.printStackTrace()
                 false
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            handleServerError()
-            false
-        } finally {
-            withContext(Dispatchers.Main) {
-                customProgressDialog?.dismiss()
-            }
-        }
-    }
-
-    private suspend fun handleServerError() {
-        withContext(Dispatchers.Main) {
-            syncFailed = true
-            if (extractProtocol(processedUrl) == getString(R.string.http_protocol)) {
-                alertDialogOkay(getString(R.string.device_couldn_t_reach_local_server))
-            } else if (extractProtocol(processedUrl) == getString(R.string.https_protocol)) {
-                alertDialogOkay(getString(R.string.device_couldn_t_reach_nation_server))
             }
         }
     }

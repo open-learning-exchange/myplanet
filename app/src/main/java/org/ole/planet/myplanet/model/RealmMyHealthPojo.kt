@@ -16,47 +16,28 @@ import java.io.IOException
 
 open class RealmMyHealthPojo : RealmObject() {
     @PrimaryKey
-    @JvmField
     var _id: String? = null
-    @JvmField
     var userId: String? = null
-    @JvmField
     var isUpdated = false
-    @JvmField
     var _rev: String? = null
-    @JvmField
     var data: String? = null
     var temperature = 0f
         private set
-    @JvmField
     var pulse = 0
-    @JvmField
     var bp: String? = null
-    @JvmField
     var height = 0f
     var weight = 0f
         private set
-    @JvmField
     var vision: String? = null
-    @JvmField
     var date: Long = 0
-    @JvmField
     var hearing: String? = null
-    @JvmField
     var conditions: String? = null
-    @JvmField
     var isSelfExamination = false
-    @JvmField
     var planetCode: String? = null
-    @JvmField
     var isHasInfo = false
-    @JvmField
     var profileId: String? = null
-    @JvmField
     var creatorId: String? = null
-    @JvmField
     var gender: String? = null
-    @JvmField
     var age = 0
     fun getEncryptedDataAsJson(model: RealmUserModel): JsonObject {
         return if (!TextUtils.isEmpty(data)) Gson().fromJson(
