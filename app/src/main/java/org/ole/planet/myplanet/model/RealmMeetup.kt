@@ -15,37 +15,21 @@ import java.io.IOException
 open class RealmMeetup : RealmObject() {
     @PrimaryKey
     var id: String? = null
-    @JvmField
     var userId: String? = null
-    @JvmField
     var meetupId: String? = null
-    @JvmField
     var meetupIdRev: String? = null
-    @JvmField
     var title: String? = null
-    @JvmField
     var description: String? = null
-    @JvmField
     var startDate: Long = 0
-    @JvmField
     var endDate: Long = 0
-    @JvmField
     var recurring: String? = null
-    @JvmField
     var day: String? = null
-    @JvmField
     var startTime: String? = null
-    @JvmField
     var endTime: String? = null
-    @JvmField
     var category: String? = null
-    @JvmField
     var meetupLocation: String? = null
-    @JvmField
     var creator: String? = null
-    @JvmField
     var links: String? = null
-    @JvmField
     var teamId: String? = null
 
     companion object {

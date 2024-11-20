@@ -10,25 +10,15 @@ import java.util.UUID
 
 open class RealmCourseActivity : RealmObject() {
     @PrimaryKey
-    @JvmField
     var id: String? = null
-    @JvmField
     var _id: String? = null
-    @JvmField
     var createdOn: String? = null
-    @JvmField
     var _rev: String? = null
-    @JvmField
     var time: Long = 0
-    @JvmField
     var title: String? = null
-    @JvmField
     var courseId: String? = null
-    @JvmField
     var parentCode: String? = null
-    @JvmField
     var type: String? = null
-    @JvmField
     var user: String? = null
 
     companion object {

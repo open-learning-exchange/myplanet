@@ -26,33 +26,24 @@ import java.io.FileWriter
 import java.io.IOException
 
 open class RealmMyCourse : RealmObject() {
-    @JvmField
     @PrimaryKey
     var id: String? = null
     var userId: RealmList<String>? = null
         private set
-    @JvmField
     var courseId: String? = null
-    @JvmField
     var courseRev: String? = null
-    @JvmField
     var languageOfInstruction: String? = null
-    @JvmField
     var courseTitle: String? = null
-    @JvmField
     var memberLimit: Int? = null
-    @JvmField
     var description: String? = null
-    @JvmField
     var method: String? = null
-    @JvmField
     var gradeLevel: String? = null
-    @JvmField
     var subjectLevel: String? = null
-    @JvmField
     var createdDate: Long = 0
     private var numberOfSteps: Int? = null
     var courseSteps: RealmList<RealmCourseStep>? = null
+    @Transient
+    var isMyCourse: Boolean = false
     fun setUserId(userId: String?) {
         if (this.userId == null) {
             this.userId = RealmList()
@@ -131,7 +122,7 @@ open class RealmMyCourse : RealmObject() {
                 }
                 insertCourseStepsAttachments(myMyCoursesDB?.courseId, stepId, JsonUtils.getJsonArray("resources", stepJson), mRealm)
                 insertExam(stepJson, mRealm, stepId, i + 1, myMyCoursesDB?.courseId)
-                insertSurvey(stepJson, mRealm, stepId, i + 1, myMyCoursesDB?.courseId)
+                insertSurvey(stepJson, mRealm, stepId, i + 1, myMyCoursesDB?.courseId, myMyCoursesDB?.createdDate)
                 step.noOfResources = JsonUtils.getJsonArray("resources", stepJson).size()
                 step.courseId = myMyCoursesDB?.courseId
                 courseStepsList.add(step)
@@ -225,10 +216,11 @@ open class RealmMyCourse : RealmObject() {
             }
         }
 
-        private fun insertSurvey(stepContainer: JsonObject, mRealm: Realm, stepId: String, i: Int, myCoursesID: String?) {
+        private fun insertSurvey(stepContainer: JsonObject, mRealm: Realm, stepId: String, i: Int, myCoursesID: String?, createdDate: Long?) {
             if (stepContainer.has("survey")) {
                 val `object` = stepContainer.getAsJsonObject("survey")
                 `object`.addProperty("stepNumber", i)
+                `object`.addProperty("createdDate", createdDate)
                 insertCourseStepsExams(myCoursesID, stepId, `object`, mRealm)
             }
         }

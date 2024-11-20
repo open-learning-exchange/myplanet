@@ -23,66 +23,36 @@ import java.util.Locale
 import java.util.UUID
 
 open class RealmUserModel : RealmObject() {
-    @JvmField
     @PrimaryKey
     var id: String? = null
-    @JvmField
     var _id: String? = null
-    @JvmField
     var _rev: String? = null
-    @JvmField
     var name: String? = null
-    @JvmField
     var rolesList: RealmList<String?>? = null
-    @JvmField
     var userAdmin: Boolean? = null
-    @JvmField
     var joinDate: Long = 0
-    @JvmField
     var firstName: String? = null
-    @JvmField
     var lastName: String? = null
-    @JvmField
     var middleName: String? = null
-    @JvmField
     var email: String? = null
-    @JvmField
     var planetCode: String? = null
-    @JvmField
     var parentCode: String? = null
-    @JvmField
     var phoneNumber: String? = null
-    @JvmField
     var password_scheme: String? = null
-    @JvmField
     var iterations: String? = null
-    @JvmField
     var derived_key: String? = null
-    @JvmField
     var level: String? = null
-    @JvmField
     var language: String? = null
-    @JvmField
     var gender: String? = null
-    @JvmField
     var salt: String? = null
-    @JvmField
     var dob: String? = null
-    @JvmField
     var birthPlace: String? = null
-    @JvmField
     var userImage: String? = null
-    @JvmField
     var key: String? = null
-    @JvmField
     var iv: String? = null
-    @JvmField
     var password: String? = null
-    @JvmField
     var isUpdated = false
-    @JvmField
     var isShowTopbar = false
-    @JvmField
     var isArchived = false
 
     fun serialize(): JsonObject {

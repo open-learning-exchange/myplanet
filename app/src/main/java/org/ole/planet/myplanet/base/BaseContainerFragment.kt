@@ -29,6 +29,8 @@ import org.ole.planet.myplanet.base.PermissionActivity.Companion.hasInstallPermi
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmUserChallengeActions
+import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createAction
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_RESOURCE_DOWNLOAD
 import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_RESOURCE_OPEN
@@ -150,13 +152,29 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         val filenameArray = items.resourceLocalAddress?.split("\\.".toRegex())?.toTypedArray()
         val extension = filenameArray?.get(filenameArray.size - 1)
         val mimetype = Utilities.getMimeType(items.resourceLocalAddress)
+        val userId = "${model?.id}"
+
+        val existingAction = mRealm.where(RealmUserChallengeActions::class.java)
+            .equalTo("userId", userId)
+            .equalTo("resourceId", items.resourceId)
+            .findFirst()
+
         if (mimetype != null) {
             if (mimetype.contains("image")) {
                 openIntent(items, ImageViewerActivity::class.java)
+                if (existingAction == null) {
+                    createAction(mRealm, userId, items.resourceId, "resourceOpen")
+                }
             } else if (mimetype.contains("pdf")) {
                 openPdf(items)
+                if (existingAction == null) {
+                    createAction(mRealm, userId, items.resourceId, "resourceOpen")
+                }
             } else if (mimetype.contains("audio")) {
                 openIntent(items, AudioPlayerActivity::class.java)
+                if (existingAction == null) {
+                    createAction(mRealm, userId, items.resourceId, "resourceOpen")
+                }
             } else {
                 checkMoreFileExtensions(extension, items)
             }
@@ -164,14 +182,38 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
 
     private fun checkMoreFileExtensions(extension: String?, items: RealmMyLibrary) {
+        val userId = "${model?.id}"
+        val existingAction = mRealm.where(RealmUserChallengeActions::class.java)
+            .equalTo("userId", userId)
+            .equalTo("resourceId", items.resourceId)
+            .findFirst()
+
         when (extension) {
-            "txt" -> openIntent(items, TextFileViewerActivity::class.java)
-            "md" -> openIntent(items, MarkdownViewerActivity::class.java)
-            "csv" -> openIntent(items, CSVViewerActivity::class.java)
-            "apk" -> installApk(items)
-            else -> Toast.makeText(
-                activity, getString(R.string.this_file_type_is_currently_unsupported), Toast.LENGTH_LONG
-            ).show()
+            "txt" -> {
+                if (existingAction == null) {
+                    createAction(mRealm, userId, items.resourceId, "resourceOpen")
+                }
+                openIntent(items, TextFileViewerActivity::class.java)
+            }
+            "md" -> {
+                if (existingAction == null) {
+                    createAction(mRealm, userId, items.resourceId, "resourceOpen")
+                }
+                openIntent(items, MarkdownViewerActivity::class.java)
+            }
+            "csv" -> {
+                if (existingAction == null) {
+                    createAction(mRealm, userId, items.resourceId, "resourceOpen")
+                }
+                openIntent(items, CSVViewerActivity::class.java)
+            }
+            "apk" -> {
+                if (existingAction == null) {
+                    createAction(mRealm, userId, items.resourceId, "resourceOpen")
+                }
+                installApk(items)
+            }
+            else -> Toast.makeText(activity, getString(R.string.this_file_type_is_currently_unsupported), Toast.LENGTH_LONG).show()
         }
     }
 

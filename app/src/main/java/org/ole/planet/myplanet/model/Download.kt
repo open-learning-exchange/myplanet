@@ -4,21 +4,13 @@ import android.os.Parcel
 import android.os.Parcelable
 
 class Download() : Parcelable {
-    @JvmField
     var fileName: String? = null
-    @JvmField
     var progress: Int = 0
-    @JvmField
     var currentFileSize: Int = 0
-    @JvmField
     var totalFileSize: Int = 0
-    @JvmField
     var completeAll: Boolean = false
-    @JvmField
     var failed: Boolean = false
-    @JvmField
     var message: String? = null
-    @JvmField
     var fileUrl: String? = null
 
     constructor(parcel: Parcel) : this() {

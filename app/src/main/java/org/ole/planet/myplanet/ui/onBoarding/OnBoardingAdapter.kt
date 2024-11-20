@@ -1,13 +1,11 @@
 package org.ole.planet.myplanet.ui.onBoarding
 
 import android.content.Context
-import android.os.Build
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
-import androidx.annotation.RequiresApi
 import androidx.viewpager.widget.PagerAdapter
 import org.ole.planet.myplanet.R
 
@@ -21,7 +19,6 @@ class OnBoardingAdapter(private val mContext: Context, private val onBoardItems:
         return view == `object`
     }
 
-    @RequiresApi(Build.VERSION_CODES.M)
     override fun instantiateItem(container: ViewGroup, position: Int): Any {
         val itemView = LayoutInflater.from(mContext).inflate(R.layout.onboard_item, container, false)
 

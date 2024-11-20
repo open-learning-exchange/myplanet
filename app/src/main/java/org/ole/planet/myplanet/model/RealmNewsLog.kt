@@ -7,20 +7,13 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utilities.NetworkUtils
 
 open class RealmNewsLog : RealmObject() {
-    @JvmField
     @PrimaryKey
     var id: String? = null
-    @JvmField
     var _id: String? = null
-    @JvmField
     var _rev: String? = null
-    @JvmField
     var type: String? = null
-    @JvmField
     var time: Long? = null
-    @JvmField
     var userId: String? = null
-    @JvmField
     var androidId: String? = null
 
     companion object {
