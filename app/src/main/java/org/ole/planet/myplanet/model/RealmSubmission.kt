@@ -26,40 +26,23 @@ import java.util.Date
 import java.util.UUID
 
 open class RealmSubmission : RealmObject() {
-    @JvmField
     @PrimaryKey
     var id: String? = null
-    @JvmField
     var _id: String? = null
-    @JvmField
     var _rev: String? = null
-    @JvmField
     var parentId: String? = null
-    @JvmField
     var type: String? = null
-    @JvmField
     var userId: String? = null
-    @JvmField
     var user: String? = null
-    @JvmField
     var startTime: Long = 0
-    @JvmField
     var lastUpdateTime: Long = 0
-    @JvmField
     var answers: RealmList<RealmAnswer>? = null
-    @JvmField
     var grade: Long = 0
-    @JvmField
     var status: String? = null
-    @JvmField
     var uploaded = false
-    @JvmField
     var sender: String? = null
-    @JvmField
     var source: String? = null
-    @JvmField
     var parentCode: String? = null
-    @JvmField
     var parent: String? = null
 
     companion object {

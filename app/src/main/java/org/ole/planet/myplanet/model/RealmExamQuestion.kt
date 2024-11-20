@@ -14,21 +14,14 @@ import org.ole.planet.myplanet.utilities.JsonUtils
 import java.util.Locale
 
 open class RealmExamQuestion : RealmObject() {
-    @JvmField
     @PrimaryKey
     var id: String? = null
-    @JvmField
     var header: String? = null
-    @JvmField
     var body: String? = null
-    @JvmField
     var type: String? = null
-    @JvmField
     var examId: String? = null
     private var correctChoice: RealmList<String>? = null
-    @JvmField
     var marks: String? = null
-    @JvmField
     var choices: String? = null
     private fun setCorrectChoiceArray(array: JsonArray, question: RealmExamQuestion?) {
         for (i in 0 until array.size()) {

@@ -426,7 +426,7 @@ class Service(private val context: Context) {
     }
 
     fun showAlertDialog(message: String?, playStoreRedirect: Boolean) {
-        val builder = AlertDialog.Builder(context)
+        val builder = AlertDialog.Builder(context, R.style.CustomAlertDialog)
         builder.setMessage(message)
         builder.setCancelable(true)
         builder.setNegativeButton(R.string.okay) {

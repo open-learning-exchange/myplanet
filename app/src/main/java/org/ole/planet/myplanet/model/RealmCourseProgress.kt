@@ -17,25 +17,15 @@ import java.io.IOException
 open class RealmCourseProgress : RealmObject() {
     @PrimaryKey
     var id: String? = null
-    @JvmField
     var _id: String? = null
-    @JvmField
     var createdOn: String? = null
-    @JvmField
     var createdDate: Long = 0
-    @JvmField
     var updatedDate: Long = 0
-    @JvmField
     var _rev: String? = null
-    @JvmField
     var stepNum = 0
-    @JvmField
     var passed = false
-    @JvmField
     var userId: String? = null
-    @JvmField
     var courseId: String? = null
-    @JvmField
     var parentCode: String? = null
 
     companion object {
