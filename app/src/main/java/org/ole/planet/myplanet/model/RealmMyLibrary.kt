@@ -24,84 +24,46 @@ import java.util.Calendar
 import java.util.Date
 
 open class RealmMyLibrary : RealmObject() {
-    @JvmField
     @PrimaryKey
     var id: String? = null
-    @JvmField
     var _id: String? = null
     var userId: RealmList<String>? = null
         private set
-    @JvmField
     var resourceRemoteAddress: String? = null
-    @JvmField
     var resourceLocalAddress: String? = null
-    @JvmField
     var resourceOffline: Boolean = false
-    @JvmField
     var resourceId: String? = null
-    @JvmField
     var _rev: String? = null
-    @JvmField
     var downloadedRev: String? = null
-    @JvmField
     var needsOptimization: Boolean = false
-    @JvmField
     var publisher: String? = null
-    @JvmField
     var linkToLicense: String? = null
-    @JvmField
     var addedBy: String? = null
-    @JvmField
     var uploadDate: String? = null
-    @JvmField
     var createdDate: Long = 0
-    @JvmField
     var openWith: String? = null
-    @JvmField
     var articleDate: String? = null
-    @JvmField
     var kind: String? = null
-    @JvmField
     var language: String? = null
-    @JvmField
     var author: String? = null
-    @JvmField
     var year: String? = null
-    @JvmField
     var medium: String? = null
-    @JvmField
     var title: String? = null
-    @JvmField
     var averageRating: String? = null
-    @JvmField
     var filename: String? = null
-    @JvmField
     var mediaType: String? = null
-    @JvmField
     var resourceType: String? = null
-    @JvmField
     var description: String? = null
-    @JvmField
     var translationAudioPath: String? = null
-    @JvmField
     var sum: Int = 0
-    @JvmField
     var timesRated: Int = 0
-    @JvmField
     var resourceFor: RealmList<String>? = null
-    @JvmField
     var subject: RealmList<String>? = null
-    @JvmField
     var level: RealmList<String>? = null
-    @JvmField
     var tag: RealmList<String>? = null
-    @JvmField
     var languages: RealmList<String>? = null
-    @JvmField
     var courseId: String? = null
-    @JvmField
     var stepId: String? = null
-    @JvmField
     var isPrivate: Boolean = false
     fun serializeResource(): JsonObject {
         return JsonObject().apply {

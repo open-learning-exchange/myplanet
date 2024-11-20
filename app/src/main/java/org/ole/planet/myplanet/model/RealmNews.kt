@@ -19,50 +19,28 @@ import java.util.Date
 import java.util.UUID
 
 open class RealmNews : RealmObject() {
-    @JvmField
     @PrimaryKey
     var id: String? = null
-    @JvmField
     var _id: String? = null
-    @JvmField
     var _rev: String? = null
-    @JvmField
     var userId: String? = null
-    @JvmField
     var user: String? = null
-    @JvmField
     var message: String? = null
-    @JvmField
     var docType: String? = null
-    @JvmField
     var viewableBy: String? = null
-    @JvmField
     var viewableId: String? = null
-    @JvmField
     var avatar: String? = null
-    @JvmField
     var replyTo: String? = null
-    @JvmField
     var userName: String? = null
-    @JvmField
     var messagePlanetCode: String? = null
-    @JvmField
     var messageType: String? = null
-    @JvmField
     var updatedDate: Long = 0
-    @JvmField
     var time: Long = 0
-    @JvmField
     var createdOn: String? = null
-    @JvmField
     var parentCode: String? = null
-    @JvmField
     var imageUrls: RealmList<String>? = null
-    @JvmField
     var images: String? = null
-    @JvmField
     var labels: RealmList<String>? = null
-    @JvmField
     var viewIn: String? = null
     var newsId: String? = null
     var newsRev: String? = null

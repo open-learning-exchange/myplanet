@@ -27,33 +27,24 @@ import java.io.IOException
 import java.util.regex.Pattern
 
 open class RealmMyCourse : RealmObject() {
-    @JvmField
     @PrimaryKey
     var id: String? = null
     var userId: RealmList<String>? = null
         private set
-    @JvmField
     var courseId: String? = null
-    @JvmField
     var courseRev: String? = null
-    @JvmField
     var languageOfInstruction: String? = null
-    @JvmField
     var courseTitle: String? = null
-    @JvmField
     var memberLimit: Int? = null
-    @JvmField
     var description: String? = null
-    @JvmField
     var method: String? = null
-    @JvmField
     var gradeLevel: String? = null
-    @JvmField
     var subjectLevel: String? = null
-    @JvmField
     var createdDate: Long = 0
     private var numberOfSteps: Int? = null
     var courseSteps: RealmList<RealmCourseStep>? = null
+    @Transient
+    var isMyCourse: Boolean = false
     fun setUserId(userId: String?) {
         if (this.userId == null) {
             this.userId = RealmList()
@@ -247,10 +238,11 @@ open class RealmMyCourse : RealmObject() {
             }
         }
 
-        private fun insertSurvey(stepContainer: JsonObject, mRealm: Realm, stepId: String, i: Int, myCoursesID: String?) {
+        private fun insertSurvey(stepContainer: JsonObject, mRealm: Realm, stepId: String, i: Int, myCoursesID: String?, createdDate: Long?) {
             if (stepContainer.has("survey")) {
                 val `object` = stepContainer.getAsJsonObject("survey")
                 `object`.addProperty("stepNumber", i)
+                `object`.addProperty("createdDate", createdDate)
                 insertCourseStepsExams(myCoursesID, stepId, `object`, mRealm)
             }
         }
