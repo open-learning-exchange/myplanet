@@ -18,7 +18,6 @@ import org.ole.planet.myplanet.databinding.FragmentNewsBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
@@ -119,8 +118,6 @@ class NewsFragment : BaseNewsFragment() {
             llImage?.removeAllViews()
             adapterNews?.addItem(n)
             setData(newsList)
-
-            RealmUserChallengeActions.createAction(mRealm, "${user?.id}", "${n?.id}", "voice")
         }
 
         fragmentNewsBinding.addNewsImage.setOnClickListener {

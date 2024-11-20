@@ -38,8 +38,8 @@ import io.realm.Case
 import io.realm.RealmChangeListener
 import io.realm.RealmObject
 import io.realm.RealmResults
-import io.realm.Sort
 import kotlinx.coroutines.launch
+import org.json.JSONArray
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
@@ -50,6 +50,7 @@ import org.ole.planet.myplanet.databinding.ActivityDashboardBinding
 import org.ole.planet.myplanet.databinding.CustomTabBinding
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
@@ -83,6 +84,7 @@ import org.ole.planet.myplanet.utilities.MarkdownDialog
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.Utilities.toast
+import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.util.Date
 import java.util.UUID
@@ -174,8 +176,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
         activityDashboardBinding.appBarBell.ivSync.setOnClickListener {
             lifecycleScope.launch {
-                isServerReachable(Utilities.getUrl())
-                startUpload("dashboard")
+                if (isServerReachable(Utilities.getUrl())) {
+                    startUpload("dashboard")
+                }
             }
         }
         activityDashboardBinding.appBarBell.imgLogo.setOnClickListener { result?.openDrawer() }
@@ -241,30 +244,42 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
         })
 
-        val loginCount = mRealm.where(RealmUserChallengeActions::class.java)
-            .equalTo("userId", user?.id)
-            .equalTo("actionType", "login")
-            .findAll().count()
-
-        val resourceOpenCount = mRealm.where(RealmUserChallengeActions::class.java)
-            .equalTo("userId", user?.id)
-            .equalTo("actionType", "resourceOpen")
-            .findAll().count()
-
-        val syncCount = mRealm.where(RealmUserChallengeActions::class.java)
-            .equalTo("userId", user?.id)
-            .equalTo("actionType", "sync")
-            .findAll().count()
-
         val voiceCount = mRealm.where(RealmUserChallengeActions::class.java)
             .equalTo("userId", user?.id)
             .equalTo("actionType", "voice")
             .findAll().count()
 
-        val aiResearchCount = mRealm.where(RealmUserChallengeActions::class.java)
+        val startTime = 1730408400
+        val commVoiceResults = mRealm.where(RealmNews::class.java)
             .equalTo("userId", user?.id)
-            .equalTo("actionType", "ai research")
-            .findAll().count()
+            .greaterThanOrEqualTo("time", startTime)
+            .findAll()
+
+        val commVoice = commVoiceResults.filter { realmNews ->
+            realmNews.viewIn?.let { viewInStr ->
+                try {
+                    val viewInArray = JSONArray(viewInStr)
+                    for (i in 0 until viewInArray.length()) {
+                        val viewInObj = viewInArray.getJSONObject(i)
+                        if (viewInObj.optString("section") == "community") {
+                            return@filter true
+                        }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+            false
+        }
+
+        fun getDateFromTimestamp(timestamp: Long): String {
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd")
+            return dateFormat.format(Date(timestamp))
+        }
+
+        val uniqueDates = commVoice
+            .map { getDateFromTimestamp(it.time) }
+            .distinct()
 
         val courseData = MyProgressFragment.fetchCourseData(mRealm, user?.id)
 
@@ -273,10 +288,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
         val validUrls = listOf(
             "https://${BuildConfig.PLANET_GUATEMALA_URL}",
-            "https://${BuildConfig.PLANET_XELA_URL}",
-            "https://${BuildConfig.PLANET_URIUR_URL}",
-            "https://${BuildConfig.PLANET_SANPABLO_URL}",
-            "https://${BuildConfig.PLANET_EMBAKASI_URL}",
+            "http://${BuildConfig.PLANET_XELA_URL}",
+            "http://${BuildConfig.PLANET_URIUR_URL}",
+            "http://${BuildConfig.PLANET_SANPABLO_URL}",
+            "http://${BuildConfig.PLANET_EMBAKASI_URL}",
             "https://${BuildConfig.PLANET_VI_URL}"
         )
 
@@ -298,9 +313,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                         } else {
                             "Ingresa al curso $courseName completalo ($current de $max hecho)"
                         }
-                        challengeDialog(voiceCount, courseStatus)
+                        challengeDialog(uniqueDates.size, courseStatus)
                     } else {
-                        challengeDialog(voiceCount, "$courseName no iniciado")
+                        challengeDialog(uniqueDates.size, "$courseName no iniciado")
                     }
                 }
             }
@@ -308,27 +323,20 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     fun challengeDialog(voiceCount: Int, courseStatus: String) {
-        val voiceTaskDone = if (voiceCount >= 1) "✅" else "[ ]"
-        val prereqsMet = courseStatus.contains("terminado", ignoreCase = true) && voiceCount >= 1
+        val voiceTaskDone = if (voiceCount >= 5) "✅" else "[ ]"
+        val prereqsMet = courseStatus.contains("terminado", ignoreCase = true) && voiceCount >= 5
         val syncTaskDone = if (prereqsMet) {
-            val lastPrereqAction = mRealm.where(RealmUserChallengeActions::class.java)
-                .equalTo("userId", user?.id)
-                .`in`("actionType", arrayOf("voice", "courseComplete"))
-                .sort("time", Sort.DESCENDING)
-                .findFirst()
-                ?.time ?: 0
-
             val hasValidSync = mRealm.where(RealmUserChallengeActions::class.java)
                 .equalTo("userId", user?.id)
                 .equalTo("actionType", "sync")
-                .greaterThan("time", lastPrereqAction)
                 .count() > 0
 
             if (hasValidSync) "✅" else "[ ]"
         } else "[ ]"
         val courseTaskDone = if (courseStatus.contains("terminado", ignoreCase = true)) "✅ $courseStatus" else "[ ] $courseStatus"
 
-        val isCompleted = syncTaskDone == "✅" && voiceTaskDone == "✅" && courseTaskDone.startsWith("✅")
+        val isCompleted = syncTaskDone.startsWith("✅") && voiceTaskDone.startsWith("✅") && courseTaskDone.startsWith("✅")
+
         val hasShownCongrats = settings.getBoolean("has_shown_congrats", false)
 
         if (isCompleted && hasShownCongrats) return
@@ -342,10 +350,15 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount)
                 .show(supportFragmentManager, "markdown_dialog")
         } else {
+            val voicesText = if (voiceCount > 0) {
+                "$voiceCount de 5 Voces diarias"
+            } else {
+                ""
+            }
             val markdownContent = """
                 ![issues challenge](file:///android_asset/images/november_challenge.jpeg) <br/>
                 ### $courseTaskDone <br/>
-                ### $voiceTaskDone Comparte tu opinión en Nuestras Voces. <br/>
+                ### $voiceTaskDone Comparte tu opinión en Nuestras Voces. $voicesText <br/>
                 ### $syncTaskDone Recuerda sincronizar la aplicacion movil.
                 """.trimIndent()
             MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount)

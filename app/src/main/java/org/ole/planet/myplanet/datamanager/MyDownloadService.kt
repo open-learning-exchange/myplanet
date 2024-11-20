@@ -211,16 +211,18 @@ class MyDownloadService : Service() {
 
     private fun changeOfflineStatus() {
         CoroutineScope(Dispatchers.IO).launch {
-            val currentFileName = getFileNameFromUrl(urls[currentIndex])
-            withContext(Dispatchers.Main) { // Switch to the main thread
-                mRealm.executeTransaction { realm ->
-                    realm.where(RealmMyLibrary::class.java)
-                        .equalTo("resourceLocalAddress", currentFileName)
-                        .findAll()
-                        ?.forEach {
-                            it.resourceOffline = true
-                            it.downloadedRev = it._rev
-                        }
+            if (urls.isNotEmpty() && currentIndex >= 0 && currentIndex < urls.size) {
+                val currentFileName = getFileNameFromUrl(urls[currentIndex])
+                withContext(Dispatchers.Main) {
+                    mRealm.executeTransaction { realm ->
+                        realm.where(RealmMyLibrary::class.java)
+                            .equalTo("resourceLocalAddress", currentFileName)
+                            .findAll()
+                            ?.forEach {
+                                it.resourceOffline = true
+                                it.downloadedRev = it._rev
+                            }
+                    }
                 }
             }
         }

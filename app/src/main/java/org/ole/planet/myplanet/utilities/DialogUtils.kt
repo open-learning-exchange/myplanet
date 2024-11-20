@@ -168,7 +168,7 @@ object DialogUtils {
 
     class CustomProgressDialog(context: Context) {
         private val binding: DialogProgressBinding = DialogProgressBinding.inflate(LayoutInflater.from(context))
-        private val dialogBuilder: AlertDialog.Builder = AlertDialog.Builder(context)
+        private val dialogBuilder: AlertDialog.Builder = AlertDialog.Builder(context, R.style.CustomAlertDialog)
         private val progressBar = binding.progressBar
         private val progressText = binding.progressText
         private val progressTitle = binding.progressTitle
