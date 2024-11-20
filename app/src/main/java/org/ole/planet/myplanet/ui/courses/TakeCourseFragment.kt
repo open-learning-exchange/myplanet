@@ -94,8 +94,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         setListeners()
         fragmentTakeCourseBinding.viewPager2.currentItem = position
         checkSurveyCompletion()
-        val backButton: ImageView = view.findViewById(R.id.backButton)
-        backButton.setOnClickListener {
+        fragmentTakeCourseBinding.backButton.setOnClickListener {
             requireActivity().supportFragmentManager.popBackStack()
         }
     }
