@@ -67,7 +67,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private lateinit var intervalLabel: TextView
     lateinit var spinner: Spinner
     private lateinit var syncSwitch: SwitchCompat
-    private var connectionResult = false
     lateinit var mRealm: Realm
     lateinit var editor: SharedPreferences.Editor
     private var syncTimeInterval = intArrayOf(60 * 60, 3 * 60 * 60)
@@ -185,48 +184,50 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
     }
 
-    @Throws(Exception::class)
     suspend fun isServerReachable(processedUrl: String?): Boolean {
-        var isReachable = false
-        withContext(Dispatchers.IO) {
+        return withContext(Dispatchers.IO) {
             val apiInterface = client?.create(ApiInterface::class.java)
-            val response = apiInterface?.isPlanetAvailable("$processedUrl/_all_dbs")?.execute()
+            try {
+                val response = apiInterface?.isPlanetAvailable("$processedUrl/_all_dbs")?.execute()
 
-            isReachable = when {
-                response?.isSuccessful == true -> {
-                    val ss = response.body()?.string()
-                    val myList = ss?.split(",".toRegex())?.dropLastWhile { it.isEmpty() }?.let { listOf(*it.toTypedArray()) }
-                    if ((myList?.size ?: 0) < 8) {
+                when {
+                    response?.isSuccessful == true -> {
+                        val ss = response.body()?.string()
+                        val myList = ss?.split(",")?.dropLastWhile { it.isEmpty() }
+
+                        if ((myList?.size ?: 0) < 8) {
+                            withContext(Dispatchers.Main) {
+                                customProgressDialog?.dismiss()
+                                alertDialogOkay(context.getString(R.string.check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server))
+                            }
+                            false
+                        } else {
+                            withContext(Dispatchers.Main) {
+                                startSync()
+                            }
+                            true
+                        }
+                    }
+                    else -> {
+                        syncFailed = true
+                        val protocol = extractProtocol("$processedUrl")
+                        val errorMessage = when (protocol) {
+                            context.getString(R.string.http_protocol) -> context.getString(R.string.device_couldn_t_reach_local_server)
+                            context.getString(R.string.https_protocol) -> context.getString(R.string.device_couldn_t_reach_nation_server)
+                            else -> ""
+                        }
                         withContext(Dispatchers.Main) {
                             customProgressDialog?.dismiss()
-                            alertDialogOkay(getString(R.string.check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server))
+                            alertDialogOkay(errorMessage)
                         }
                         false
-                    } else {
-                        withContext(Dispatchers.Main) {
-                            startSync()
-                        }
-                        true
                     }
                 }
-                else -> {
-                    syncFailed = true
-                    val protocol = extractProtocol("$processedUrl")
-                    val errorMessage = when (protocol) {
-                        context.getString(R.string.http_protocol) -> getString(R.string.device_couldn_t_reach_local_server)
-                        context.getString(R.string.https_protocol) -> getString(R.string.device_couldn_t_reach_nation_server)
-                        else -> ""
-                    }
-                    withContext(Dispatchers.Main) {
-                        customProgressDialog?.dismiss()
-                        alertDialogOkay(errorMessage)
-                    }
-                    false
-                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                false
             }
         }
-
-        return isReachable
     }
 
     private fun dateCheck(dialog: MaterialDialog) {
