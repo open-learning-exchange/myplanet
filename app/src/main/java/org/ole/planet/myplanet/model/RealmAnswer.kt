@@ -11,21 +11,13 @@ import io.realm.annotations.PrimaryKey
 open class RealmAnswer : RealmObject() {
     @PrimaryKey
     var id: String? = null
-    @JvmField
     var value: String? = null
-    @JvmField
     var valueChoices: RealmList<String>? = null
-    @JvmField
     var mistakes = 0
-    @JvmField
     var isPassed = false
-    @JvmField
     var grade = 0
-    @JvmField
     var examId: String? = null
-    @JvmField
     var questionId: String? = null
-    @JvmField
     var submissionId: String? = null
     val valueChoicesArray: JsonArray
         get() {

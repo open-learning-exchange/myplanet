@@ -18,38 +18,23 @@ import java.io.IOException
 import java.io.StringReader
 
 open class RealmFeedback : RealmObject() {
-    @JvmField
     @PrimaryKey
     var id: String? = null
-    @JvmField
     var _id: String? = null
-    @JvmField
     var title: String? = null
-    @JvmField
     var source: String? = null
-    @JvmField
     var status: String? = null
-    @JvmField
     var priority: String? = null
-    @JvmField
     var owner: String? = null
-    @JvmField
     var openTime: Long = 0
-    @JvmField
     var type: String? = null
-    @JvmField
     var url: String? = null
-    @JvmField
     var isUploaded = false
-    @JvmField
     var _rev: String? = null
     var messages: String? = null
         private set
-    @JvmField
     var item: String? = null
-    @JvmField
     var parentCode: String? = null
-    @JvmField
     var state: String? = null
     fun setMessages(messages: JsonArray?) {
         this.messages = Gson().toJson(messages)

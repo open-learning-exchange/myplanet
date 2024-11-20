@@ -214,6 +214,7 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
             map["news"] = Gson().toJson(serializedMap)
 
             createNews(map, mRealm, user, null)
+
             fragment.refreshChatHistoryList()
             dialog.dismiss()
         }

@@ -600,7 +600,7 @@
     <string name="send_survey_to">Send Survey to:</string>
     <string name="send_survey">Send Survey</string>
     <string name="previous">Previous</string>
-    <string name="next">Next</string>
+    <string name="next">next</string>
     <string name="submit_answer">Submit Answer</string>
     <string name="all_task">All Task</string>
     <string name="my_task">My task</string>
@@ -623,8 +623,8 @@
     <string name="shared_to_community">Shared to community</string>
     <string name="no_data_available_please_check_and_try_again">No data available, please check and try again.</string>
     <string name="no_course_matched_filter">No courses matched filter</string>
-    <string name="added_to_my_library">Added to my library</string>
-    <string name="added_to_my_courses">Added to my courses</string>
+    <string name="added_to_my_library">added to myLibrary</string>
+    <string name="added_to_my_courses">added to myCourses</string>
     <string name="do_you_want_to_stay_online">Do you want to stay online?</string>
     <string name="no_resources_to_download">No resources to download</string>
     <string name="planet_not_available">Planet not available</string>
@@ -674,7 +674,7 @@
     <string name="feature_not_available_for_guest_user">Feature not available for guest user</string>
     <string name="feature_not_available">Feature Not Available</string>
     <string name="health_record_not_available_sync_health_data">Health record not available, Sync health data?</string>
-    <string name="sync">Sync</string>
+    <string name="sync">sync</string>
     <string name="got_it">GOT IT</string>
     <string name="please_make_sure_your_device_is_horizontal">Please make sure your device is horizontal</string>
     <string name="click_on_the_logo_to_get_the_full_menu_of_your_planet_home_mylibrary_mycourses_library_courses_community_enterprises_and_surveys">Click on the logo to get the full menu of your planet: Home, myLibrary, myCourses, Library, Courses, Community, Enterprises, and Surveys</string>
@@ -1198,5 +1198,8 @@
     <string name="number_of_resources_opened">Number of Resources Opened : </string>
     <string name="number_of_visits">Number of Visits</string>
     <string name="kindly_enter_reply_message">Kindly enter reply message</string>
+    <string name="start">start</string>
+    <string name="continuation">continue</string>
+    <string name="please_complete_survey">please complete the survey to finish the course</string>
 
 </resources>

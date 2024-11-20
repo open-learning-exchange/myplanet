@@ -120,27 +120,29 @@ class MyDownloadService : Service() {
 
         try {
             while (true) {
-                count = bis.read(data)
-                if (count == -1) break
-                total += count
-                totalFileSize = (fileSize / 1024.0.pow(1.0)).toInt()
+                val readCount = bis.read(data)
+                if (readCount == -1) break
 
-                val current = (total / 1024.0.pow(1.0)).roundToInt().toDouble()
-                val progress = (total * 100 / fileSize).toInt()
-                val currentTime = System.currentTimeMillis() - startTime
+                if (readCount > 0) {
+                    total += readCount
+                    totalFileSize = (fileSize / 1024.0).toInt()
+                    val current = (total / 1024.0).roundToInt().toDouble()
+                    val progress = (total * 100 / fileSize).toInt()
+                    val currentTime = System.currentTimeMillis() - startTime
 
-                val download = Download().apply {
-                    fileName = getFileNameFromUrl(url)
-                    totalFileSize = this@MyDownloadService.totalFileSize
+                    val download = Download().apply {
+                        fileName = getFileNameFromUrl(url)
+                        totalFileSize = this@MyDownloadService.totalFileSize
+                    }
+
+                    if (currentTime > 1000 * timeCount) {
+                        download.currentFileSize = current.toInt()
+                        download.progress = progress
+                        sendNotification(download)
+                        timeCount++
+                    }
+                    output.write(data, 0, readCount)
                 }
-
-                if (currentTime > 1000 * timeCount) {
-                    download.currentFileSize = current.toInt()
-                    download.progress = progress
-                    sendNotification(download)
-                    timeCount++
-                }
-                output.write(data, 0, count)
             }
         } finally {
             closeStreams(output, bis)
@@ -209,16 +211,18 @@ class MyDownloadService : Service() {
 
     private fun changeOfflineStatus() {
         CoroutineScope(Dispatchers.IO).launch {
-            val currentFileName = getFileNameFromUrl(urls[currentIndex])
-            withContext(Dispatchers.Main) { // Switch to the main thread
-                mRealm.executeTransaction { realm ->
-                    realm.where(RealmMyLibrary::class.java)
-                        .equalTo("resourceLocalAddress", currentFileName)
-                        .findAll()
-                        ?.forEach {
-                            it.resourceOffline = true
-                            it.downloadedRev = it._rev
-                        }
+            if (urls.isNotEmpty() && currentIndex >= 0 && currentIndex < urls.size) {
+                val currentFileName = getFileNameFromUrl(urls[currentIndex])
+                withContext(Dispatchers.Main) {
+                    mRealm.executeTransaction { realm ->
+                        realm.where(RealmMyLibrary::class.java)
+                            .equalTo("resourceLocalAddress", currentFileName)
+                            .findAll()
+                            ?.forEach {
+                                it.resourceOffline = true
+                                it.downloadedRev = it._rev
+                            }
+                    }
                 }
             }
         }

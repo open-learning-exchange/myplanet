@@ -26,40 +26,23 @@ import java.util.Date
 import java.util.UUID
 
 open class RealmSubmission : RealmObject() {
-    @JvmField
     @PrimaryKey
     var id: String? = null
-    @JvmField
     var _id: String? = null
-    @JvmField
     var _rev: String? = null
-    @JvmField
     var parentId: String? = null
-    @JvmField
     var type: String? = null
-    @JvmField
     var userId: String? = null
-    @JvmField
     var user: String? = null
-    @JvmField
     var startTime: Long = 0
-    @JvmField
     var lastUpdateTime: Long = 0
-    @JvmField
     var answers: RealmList<RealmAnswer>? = null
-    @JvmField
     var grade: Long = 0
-    @JvmField
     var status: String? = null
-    @JvmField
     var uploaded = false
-    @JvmField
     var sender: String? = null
-    @JvmField
     var source: String? = null
-    @JvmField
     var parentCode: String? = null
-    @JvmField
     var parent: String? = null
 
     companion object {
@@ -223,30 +206,40 @@ open class RealmSubmission : RealmObject() {
 
         @JvmStatic
         fun getNoOfSubmissionByUser(id: String?, userId: String?, mRealm: Realm): String {
-            val submissionCount = mRealm.where(RealmSubmission::class.java).equalTo("parentId", id).equalTo("userId", userId).equalTo("status", "complete").findAll().size
-            val pluralizedString: String = if (submissionCount == 1) {
-                context.getString(R.string.time)
-            } else {
-                context.getString(R.string.times)
-            }
+            if (id == null || userId == null) return "No Submissions Found"
+
+            val submissionCount = mRealm.where(RealmSubmission::class.java)
+                .equalTo("parentId", id)
+                .equalTo("userId", userId)
+                .equalTo("status", "complete")
+                .count().toInt()
+
+            val pluralizedString = if (submissionCount == 1) "time" else "times"
             return context.getString(R.string.survey_taken) + " " + submissionCount + " " + pluralizedString
         }
 
         @JvmStatic
         fun getNoOfSurveySubmissionByUser(userId: String?, mRealm: Realm): Int {
-            return mRealm.where(RealmSubmission::class.java).equalTo("userId", userId)
-                .equalTo("type", "survey").equalTo("status", "pending", Case.INSENSITIVE)
-                .findAll().size
+            if (userId == null) return 0
+
+            return mRealm.where(RealmSubmission::class.java)
+                .equalTo("userId", userId)
+                .equalTo("type", "survey")
+                .equalTo("status", "pending", Case.INSENSITIVE)
+                .count().toInt()
         }
 
         @JvmStatic
         fun getRecentSubmissionDate(id: String?, userId: String?, mRealm: Realm): String {
-            val s = mRealm.where(RealmSubmission::class.java).equalTo("parentId", id).equalTo("userId", userId).sort("startTime", Sort.DESCENDING).findFirst()
-            return if (s == null) {
-                ""
-            } else {
-                TimeUtils.getFormatedDateWithTime(s.startTime)
-            }
+            if (id == null || userId == null) return ""
+
+            val recentSubmission = mRealm.where(RealmSubmission::class.java)
+                .equalTo("parentId", id)
+                .equalTo("userId", userId)
+                .sort("startTime", Sort.DESCENDING)
+                .findFirst()
+
+            return recentSubmission?.startTime?.let { TimeUtils.getFormatedDateWithTime(it) } ?: ""
         }
 
         @JvmStatic

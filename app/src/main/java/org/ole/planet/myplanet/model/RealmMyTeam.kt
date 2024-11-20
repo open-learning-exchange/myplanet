@@ -22,80 +22,43 @@ import java.io.IOException
 import java.util.Date
 
 open class RealmMyTeam : RealmObject() {
-    @JvmField
     @PrimaryKey
     var _id: String? = null
-    @JvmField
     var _rev: String? = null
-    @JvmField
     var courses: RealmList<String>? = null
-    @JvmField
     var teamId: String? = null
-    @JvmField
     var name: String? = null
-    @JvmField
     var userId: String? = null
-    @JvmField
     var description: String? = null
-    @JvmField
     var requests: String? = null
-    @JvmField
     var sourcePlanet: String? = null
-    @JvmField
     var limit = 0
-    @JvmField
     var createdDate: Long = 0
-    @JvmField
     var resourceId: String? = null
-    @JvmField
     var status: String? = null
-    @JvmField
     var teamType: String? = null
-    @JvmField
     var teamPlanetCode: String? = null
-    @JvmField
     var userPlanetCode: String? = null
-    @JvmField
     var parentCode: String? = null
-    @JvmField
     var docType: String? = null
-    @JvmField
     var title: String? = null
-    @JvmField
     var route: String? = null
-    @JvmField
     var services: String? = null
-    @JvmField
     var createdBy: String? = null
-    @JvmField
     var rules: String? = null
-    @JvmField
     var isLeader = false
-    @JvmField
     var type: String? = null
-    @JvmField
     var amount = 0
-    @JvmField
     var date: Long = 0
-    @JvmField
     var isPublic = false
-    @JvmField
     var updated = false
-    @JvmField
     var beginningBalance = 0
-    @JvmField
     var sales = 0
-    @JvmField
     var otherIncome = 0
-    @JvmField
     var wages = 0
-    @JvmField
     var otherExpenses = 0
-    @JvmField
     var startDate: Long = 0
-    @JvmField
     var endDate: Long = 0
-    @JvmField
     var updatedDate: Long = 0
 
     companion object {

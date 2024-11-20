@@ -1,14 +1,18 @@
 package org.ole.planet.myplanet.ui.news
 
 import android.app.Activity
+import android.app.Dialog
 import android.content.Context
 import android.content.DialogInterface
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.os.Build
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.PopupMenu
 import androidx.annotation.RequiresApi
@@ -19,6 +23,7 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.github.chrisbanes.photoview.PhotoView
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -57,6 +62,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     private var sharedPreferences: SharedPrefManager? = null
     private var recyclerView: RecyclerView? = null
     var user: RealmUserModel? = null
+    private var currentZoomDialog: Dialog? = null
 
     fun setImageList(imageList: RealmList<String>?) {
         this.imageList = imageList
@@ -232,12 +238,16 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     private fun loadImage(holder: RecyclerView.ViewHolder, news: RealmNews?) {
         val viewHolder = holder as ViewHolderNews
         val imageUrls = news?.imageUrls
-        if (imageUrls != null && imageUrls.size > 0) {
+        if (imageUrls != null && imageUrls.isNotEmpty()) {
             try {
                 val imgObject = Gson().fromJson(imageUrls[0], JsonObject::class.java)
                 viewHolder.rowNewsBinding.imgNews.visibility = View.VISIBLE
                 Glide.with(context).load(File(getString("imageUrl", imgObject)))
                     .into(viewHolder.rowNewsBinding.imgNews)
+
+                viewHolder.rowNewsBinding.imgNews.setOnClickListener {
+                    showZoomableImage(it.context, getString("imageUrl", imgObject))
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -260,6 +270,10 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                                     .load(imageFile)
                                     .into(viewHolder.rowNewsBinding.imgNews)
                                 viewHolder.rowNewsBinding.imgNews.visibility = View.VISIBLE
+
+                                viewHolder.rowNewsBinding.imgNews.setOnClickListener {
+                                    showZoomableImage(it.context, imageFile.toString())
+                                }
                                 return
                             }
                         }
@@ -270,7 +284,36 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         viewHolder.rowNewsBinding.imgNews.visibility = View.GONE
     }
 
-    @RequiresApi(Build.VERSION_CODES.M)
+    private fun showZoomableImage(context: Context, imageUrl: String) {
+        currentZoomDialog?.dismiss()
+
+        val dialog = Dialog(context, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
+        currentZoomDialog = dialog
+
+        val view = LayoutInflater.from(context).inflate(R.layout.dialog_zoomable_image, null)
+        val photoView = view.findViewById<PhotoView>(R.id.photoView)
+        val closeButton = view.findViewById<ImageView>(R.id.closeButton)
+
+        dialog.setContentView(view)
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.BLACK))
+
+        Glide.with(context)
+            .load(imageUrl)
+            .error(R.drawable.ic_loading)
+            .into(photoView)
+
+        closeButton.setOnClickListener {
+            dialog.dismiss()
+            currentZoomDialog = null
+        }
+
+        dialog.setOnDismissListener {
+            currentZoomDialog = null
+        }
+
+        dialog.show()
+    }
+
     private fun showReplyButton(holder: RecyclerView.ViewHolder, finalNews: RealmNews?, position: Int) {
         val viewHolder = holder as ViewHolderNews
         if (listener == null || fromLogin) {
