@@ -1,13 +1,11 @@
 package org.ole.planet.myplanet.ui.news
 
 import android.content.res.Configuration
-import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.annotation.RequiresApi
 import androidx.recyclerview.widget.RecyclerView.AdapterDataObserver
 import com.google.gson.Gson
 import com.google.gson.JsonArray
@@ -30,7 +28,6 @@ import org.ole.planet.myplanet.utilities.FileUtils.openOleFolder
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 
-@RequiresApi(api = Build.VERSION_CODES.O)
 class NewsFragment : BaseNewsFragment() {
     private lateinit var fragmentNewsBinding: FragmentNewsBinding
     var user: RealmUserModel? = null
@@ -87,7 +84,7 @@ class NewsFragment : BaseNewsFragment() {
                 for (e in ar) {
                     val ob = e.asJsonObject
                     var userId = "${user?.planetCode}@${user?.parentCode}"
-                    if(userId.isNullOrEmpty() || userId=="@"){
+                    if(userId.isEmpty() || userId=="@"){
                         userId = settings?.getString("planetCode","")+"@"+settings?.getString("parentCode", "")
                     }
                     if (ob != null && ob.has("_id") && ob["_id"].asString.equals(userId, ignoreCase = true)) {
@@ -146,7 +143,7 @@ class NewsFragment : BaseNewsFragment() {
                 for (e in ar) {
                     val ob = e.asJsonObject
                     var userId = "${user?.planetCode}@${user?.parentCode}"
-                    if(userId.isNullOrEmpty() || userId=="@"){
+                    if(userId.isEmpty() || userId=="@"){
                         userId = settings?.getString("planetCode","")+"@"+settings?.getString("parentCode", "")
                     }
                     if (ob != null && ob.has("_id") && ob["_id"].asString.equals(userId, ignoreCase = true)) {

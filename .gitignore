@@ -40,9 +40,6 @@ proguard
 # Log files
 *.log
 
-# Raw folder
-assets
-
 # Android Studio Navigation editor temp folder
 .navigation
 

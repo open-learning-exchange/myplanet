@@ -14,34 +14,20 @@ import java.io.FileWriter
 import java.io.IOException
 
 open class RealmStepExam : RealmObject() {
-    @JvmField
     @PrimaryKey
     var id: String? = null
-    @JvmField
     var _rev: String? = null
-    @JvmField
     var createdDate: Long = 0
-    @JvmField
     var updatedDate: Long = 0
-    @JvmField
     var createdBy: String? = null
-    @JvmField
     var totalMarks = 0
-    @JvmField
     var name: String? = null
-    @JvmField
     var type: String? = null
-    @JvmField
     var stepId: String? = null
-    @JvmField
     var courseId: String? = null
-    @JvmField
     var sourcePlanet: String? = null
-    @JvmField
     var passingPercentage: String? = null
-    @JvmField
     var noOfQuestions = 0
-    @JvmField
     var isFromNation = false
 
     companion object {

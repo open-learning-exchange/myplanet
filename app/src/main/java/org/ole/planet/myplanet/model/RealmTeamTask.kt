@@ -14,36 +14,21 @@ import java.io.FileWriter
 import java.io.IOException
 
 open class RealmTeamTask : RealmObject() {
-    @JvmField
     @PrimaryKey
     var id: String? = null
-    @JvmField
     var _id: String? = null
-    @JvmField
     var _rev: String? = null
-    @JvmField
     var title: String? = null
-    @JvmField
     var description: String? = null
-    @JvmField
     var link: String? = null
-    @JvmField
     var sync: String? = null
-    @JvmField
     var teamId: String? = null
-    @JvmField
     var isUpdated = false
-    @JvmField
     var assignee: String? = null
-    @JvmField
     var deadline: Long = 0
-    @JvmField
     var completedTime: Long = 0
-    @JvmField
     var status: String? = null
-    @JvmField
     var completed = false
-    @JvmField
     var isNotified = false
 
     override fun toString(): String {

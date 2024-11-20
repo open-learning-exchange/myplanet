@@ -2,13 +2,11 @@ package org.ole.planet.myplanet.ui.helpwanted
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.os.Build
 import android.os.Bundle
 import android.text.Html
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.annotation.RequiresApi
 import androidx.core.text.HtmlCompat
 import androidx.fragment.app.Fragment
 import com.google.gson.JsonObject
@@ -29,7 +27,6 @@ class HelpWantedFragment : Fragment() {
         return fragmentHelpWantedBinding.root
     }
 
-    @RequiresApi(Build.VERSION_CODES.N)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val boldName = "<b>" + getString(R.string.name_colon) + "</b>"

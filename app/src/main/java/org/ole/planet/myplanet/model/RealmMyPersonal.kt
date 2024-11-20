@@ -11,22 +11,14 @@ import java.util.Date
 open class RealmMyPersonal : RealmObject() {
     @PrimaryKey
     var id: String? = null
-    @JvmField
     var _id: String? = null
-    @JvmField
     var _rev: String? = null
     var isUploaded = false
-    @JvmField
     var title: String? = null
-    @JvmField
     var description: String? = null
-    @JvmField
     var date: Long = 0
-    @JvmField
     var userId: String? = null
-    @JvmField
     var userName: String? = null
-    @JvmField
     var path: String? = null
 
     companion object {

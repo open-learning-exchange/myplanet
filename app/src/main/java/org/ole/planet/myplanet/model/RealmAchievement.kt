@@ -18,27 +18,15 @@ import java.io.FileWriter
 import java.io.IOException
 
 open class RealmAchievement : RealmObject() {
-    @JvmField
     var achievements: RealmList<String>? = null
-    @JvmField
     var references: RealmList<String>? = null
-    @JvmField
     var purpose: String? = null
-    @JvmField
     var achievementsHeader: String? = null
-    @JvmField
     var sendToNation: String? = null
-    @JvmField
     var _rev: String? = null
     @PrimaryKey
-    @JvmField
     var _id: String? = null
-    @JvmField
     var goals: String? = null
-
-    fun getReferences(): RealmList<String>? {
-        return references
-    }
 
     val achievementsArray: JsonArray
         get() {

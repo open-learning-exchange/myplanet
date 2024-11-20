@@ -48,7 +48,7 @@ object Markdown {
             .usePlugin(object : AbstractMarkwonPlugin() {
                 override fun configure(registry: MarkwonPlugin.Registry) {
                     registry.require(ImagesPlugin::class.java) { imagesPlugin ->
-                        imagesPlugin.addSchemeHandler(FileSchemeHandler.create())
+                        imagesPlugin.addSchemeHandler(FileSchemeHandler.createWithAssets(context.assets))
                         imagesPlugin.addSchemeHandler(NetworkSchemeHandler.create())
                         imagesPlugin.addSchemeHandler(OkHttpNetworkSchemeHandler.create())
                     }
