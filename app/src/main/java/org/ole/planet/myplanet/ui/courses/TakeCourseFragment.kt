@@ -88,6 +88,9 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         setListeners()
         fragmentTakeCourseBinding.viewPager2.currentItem = position
         checkSurveyCompletion()
+        fragmentTakeCourseBinding.backButton.setOnClickListener {
+            requireActivity().supportFragmentManager.popBackStack()
+        }
     }
 
     private fun setListeners() {
