@@ -21,7 +21,13 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.textfield.TextInputLayout
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.PermissionActivity
 import org.ole.planet.myplanet.callback.SuccessListener
@@ -166,27 +172,33 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
 
     fun startUpload(source: String) {
         if (source == "becomeMember") {
-            UploadToShelfService.instance?.uploadUserData { UploadToShelfService.instance?.uploadHealth() }
+            UploadToShelfService.instance?.uploadUserData {
+                UploadToShelfService.instance?.uploadHealth()
+            }
         } else {
-            customProgressDialog?.setText(getString(R.string.uploading_data_to_server_please_wait))
+            customProgressDialog?.setText(context.getString(R.string.uploading_data_to_server_please_wait))
             customProgressDialog?.show()
+
             UploadToShelfService.instance?.uploadUserData { UploadToShelfService.instance?.uploadHealth() }
-            UploadManager.instance?.uploadUserActivities(this)
-            UploadManager.instance?.uploadExamResult(this)
-            UploadManager.instance?.uploadFeedback(this)
+            UploadManager.instance?.uploadUserActivities(this@ProcessUserDataActivity)
+            UploadManager.instance?.uploadExamResult(this@ProcessUserDataActivity)
+            UploadManager.instance?.uploadFeedback(this@ProcessUserDataActivity)
             UploadManager.instance?.uploadAchievement()
             UploadManager.instance?.uploadResourceActivities("")
             UploadManager.instance?.uploadCourseActivities()
             UploadManager.instance?.uploadSearchActivity()
             UploadManager.instance?.uploadNews()
             UploadManager.instance?.uploadTeams()
-            UploadManager.instance?.uploadResource(this)
+            UploadManager.instance?.uploadResource(this@ProcessUserDataActivity)
             UploadManager.instance?.uploadRating()
             UploadManager.instance?.uploadTeamTask()
             UploadManager.instance?.uploadCrashLog()
-            UploadManager.instance?.uploadSubmitPhotos(this)
-            UploadManager.instance?.uploadActivities(this)
-            Toast.makeText(this, getString(R.string.uploading_activities_to_server_please_wait), Toast.LENGTH_SHORT).show()
+            UploadManager.instance?.uploadSubmitPhotos(this@ProcessUserDataActivity)
+            UploadManager.instance?.uploadActivities(this@ProcessUserDataActivity)
+
+            runOnUiThread {
+                Toast.makeText(this@ProcessUserDataActivity, getString(R.string.uploading_activities_to_server_please_wait), Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
