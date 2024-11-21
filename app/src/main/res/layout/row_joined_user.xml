@@ -45,7 +45,7 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:srcCompat="@drawable/ic_more"
-            app:tint="@color/md_black_1000" />
+            app:tint="@color/daynight_textColor" />
 
         <TextView
             android:id="@+id/tv_description"
