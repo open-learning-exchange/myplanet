@@ -386,7 +386,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 
                 ### $courseTaskDone <br/>
                 ### $voiceTaskDone Comparte tu opinión en Nuestras Voces. $voicesText <br/>
-                ### $syncTaskDone Recuerda sincronizar la aplicación móvil. <br/> 
+                ### $syncTaskDone Recuerda sincronizar la aplicación móvil. <br/>
                 """.trimIndent()
             MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount, allVoiceCount)
                 .show(supportFragmentManager, "markdown_dialog")
