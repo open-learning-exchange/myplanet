@@ -12,6 +12,7 @@ import android.widget.ArrayAdapter
 import android.widget.DatePicker
 import android.widget.TextView
 import android.widget.TimePicker
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.gson.Gson
@@ -254,13 +255,22 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
         val alertUsersSpinnerBinding = AlertUsersSpinnerBinding.inflate(LayoutInflater.from(requireActivity()))
         val userList: List<RealmUserModel> = getJoinedMember(teamId, mRealm)
         val filteredUserList = userList.filter { user -> user.getFullName().isNotBlank() }
+        if (filteredUserList.isEmpty()) {
+            Toast.makeText(context, "No Team members present to assign tasks", Toast.LENGTH_SHORT).show()
+            return
+        }
         val adapter: ArrayAdapter<RealmUserModel> = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, filteredUserList)
         alertUsersSpinnerBinding.spnUser.adapter = adapter
         AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
             .setTitle(R.string.select_member)
             .setView(alertUsersSpinnerBinding.root).setCancelable(false)
             .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
-                val user = alertUsersSpinnerBinding.spnUser.selectedItem as RealmUserModel
+                val selectedItem = alertUsersSpinnerBinding.spnUser.selectedItem
+                if (selectedItem == null) {
+                    Toast.makeText(context, "No member selected. Please try again.", Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+                val user = selectedItem as RealmUserModel
                 val userId = user.id
                 if (!mRealm.isInTransaction) {
                     mRealm.beginTransaction()
