@@ -370,7 +370,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         if (isCompleted && !hasShownCongrats) {
             editor.putBoolean("has_shown_congrats", true).apply()
             val markdownContent = """
-                ganancias totales: **$${calculateProgress(allVoiceCount)}**
+                Ganancias totales: **$${calculateProgress(allVoiceCount)}**
                 ### ¡Felicidades! Reto Completado <br/>
                 """.trimIndent()
             MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount, allVoiceCount)
@@ -382,7 +382,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 ""
             }
             val markdownContent = """
-                ganancias totales: **$${calculateProgress(allVoiceCount)}**
+                Ganancias totales: **$${calculateProgress(allVoiceCount)}**
                 ### $courseTaskDone <br/>
                 ### $voiceTaskDone Comparte tu opinión en Nuestras Voces. $voicesText <br/>
                 ### $syncTaskDone Recuerda sincronizar la aplicación móvil. <br/>
