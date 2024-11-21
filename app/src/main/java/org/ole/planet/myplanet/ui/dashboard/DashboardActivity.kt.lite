@@ -383,7 +383,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
             val markdownContent = """
                 ganancias totales: **$${calculateProgress(allVoiceCount)}**
-
                 ### $courseTaskDone <br/>
                 ### $voiceTaskDone Comparte tu opinión en Nuestras Voces. $voicesText <br/>
                 ### $syncTaskDone Recuerda sincronizar la aplicación móvil. <br/>
