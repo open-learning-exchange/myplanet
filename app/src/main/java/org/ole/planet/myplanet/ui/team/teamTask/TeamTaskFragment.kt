@@ -256,7 +256,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
         val userList: List<RealmUserModel> = getJoinedMember(teamId, mRealm)
         val filteredUserList = userList.filter { user -> user.getFullName().isNotBlank() }
         if (filteredUserList.isEmpty()) {
-            Toast.makeText(context, "No Team members present to assign tasks", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, R.string.no_members_task, Toast.LENGTH_SHORT).show()
             return
         }
         val adapter: ArrayAdapter<RealmUserModel> = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, filteredUserList)
@@ -267,7 +267,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
             .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
                 val selectedItem = alertUsersSpinnerBinding.spnUser.selectedItem
                 if (selectedItem == null) {
-                    Toast.makeText(context, "No member selected. Please try again.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, R.string.no_member_selected, Toast.LENGTH_SHORT).show()
                     return@setPositiveButton
                 }
                 val user = selectedItem as RealmUserModel
