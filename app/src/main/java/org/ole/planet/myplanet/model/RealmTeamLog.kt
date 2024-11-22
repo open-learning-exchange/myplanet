@@ -1,13 +1,12 @@
 package org.ole.planet.myplanet.model
 
 import android.content.Context
-import android.text.TextUtils
 import com.google.gson.JsonObject
 import com.opencsv.CSVWriter
-import io.realm.Realm
-import io.realm.RealmObject
-import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.MainApplication.Companion.context
+import io.realm.kotlin.Realm
+import io.realm.kotlin.types.RealmObject
+import io.realm.kotlin.types.annotations.PrimaryKey
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import java.io.File
@@ -15,7 +14,7 @@ import java.io.FileWriter
 import java.io.IOException
 import java.util.Calendar
 
-open class RealmTeamLog : RealmObject() {
+class RealmTeamLog : RealmObject {
     @PrimaryKey
     var id: String? = null
     var _id: String? = null
@@ -27,63 +26,68 @@ open class RealmTeamLog : RealmObject() {
     var createdOn: String? = null
     var parentCode: String? = null
     var time: Long? = null
-    var uploaded = false
+    var uploaded: Boolean = false
+
     companion object {
         private val teamLogDataList: MutableList<Array<String>> = mutableListOf()
 
-        @JvmStatic
         fun getVisitCount(realm: Realm, userName: String?, teamId: String?): Long {
-            return realm.where(RealmTeamLog::class.java).equalTo("type", "teamVisit").equalTo("user", userName).equalTo("teamId", teamId).count()
+            return realm.query<RealmTeamLog>(RealmTeamLog::class, "type == $0 AND user == $1 AND teamId == $2", "teamVisit", userName, teamId).count().find()
         }
 
-        @JvmStatic
         fun getVisitByTeam(realm: Realm, teamId: String?): Long {
             val calendar = Calendar.getInstance()
             calendar.add(Calendar.DAY_OF_YEAR, -30)
-            return realm.where(RealmTeamLog::class.java).equalTo("type", "teamVisit").equalTo("teamId", teamId).greaterThan("time", calendar.timeInMillis).count()
+            return realm.query<RealmTeamLog>(RealmTeamLog::class, "type == 'teamVisit' AND teamId == $0 AND time > $1", teamId ?: "", calendar.timeInMillis).count().find()
         }
 
-        @JvmStatic
         fun serializeTeamActivities(log: RealmTeamLog, context: Context): JsonObject {
-            val ob = JsonObject()
-            ob.addProperty("user", log.user)
-            ob.addProperty("type", log.type)
-            ob.addProperty("createdOn", log.createdOn)
-            ob.addProperty("parentCode", log.parentCode)
-            ob.addProperty("teamType", log.teamType)
-            ob.addProperty("time", log.time)
-            ob.addProperty("teamId", log.teamId)
-            ob.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
-            ob.addProperty("deviceName", NetworkUtils.getDeviceName())
-            ob.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
-            if (!TextUtils.isEmpty(log._rev)) {
-                ob.addProperty("_rev", log._rev)
-                ob.addProperty("_id", log._id)
+            return JsonObject().apply {
+                addProperty("user", log.user)
+                addProperty("type", log.type)
+                addProperty("createdOn", log.createdOn)
+                addProperty("parentCode", log.parentCode)
+                addProperty("teamType", log.teamType)
+                addProperty("time", log.time)
+                addProperty("teamId", log.teamId)
+                addProperty("androidId", NetworkUtils.getUniqueIdentifier())
+                addProperty("deviceName", NetworkUtils.getDeviceName())
+                addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
+                if (!log._rev.isNullOrEmpty()) {
+                    addProperty("_rev", log._rev)
+                    addProperty("_id", log._id)
+                }
             }
-            return ob
         }
 
-        @JvmStatic
-        fun insert(mRealm: Realm, act: JsonObject?) {
-            if (!mRealm.isInTransaction) {
-                mRealm.beginTransaction()
+        suspend fun insert(realm: Realm, act: JsonObject?) {
+            if (act == null) return
+
+            realm.write {
+                val id = JsonUtils.getString("_id", act)
+
+                val existingLog = query(RealmTeamLog::class, "id == $0", id).first().find()
+
+                val tag = existingLog ?: copyToRealm(RealmTeamLog().apply {
+                    this.id = id
+                })
+
+                tag.apply {
+                    _rev = JsonUtils.getString("_rev", act)
+                    _id = JsonUtils.getString("_id", act)
+                    type = JsonUtils.getString("type", act)
+                    user = JsonUtils.getString("user", act)
+                    createdOn = JsonUtils.getString("createdOn", act)
+                    parentCode = JsonUtils.getString("parentCode", act)
+                    time = JsonUtils.getLong("time", act)
+                    teamId = JsonUtils.getString("teamId", act)
+                    teamType = JsonUtils.getString("teamType", act)
+                }
+
+                if (existingLog == null) {
+                    copyToRealm(tag)
+                }
             }
-            var tag = mRealm.where(RealmTeamLog::class.java).equalTo("id", JsonUtils.getString("_id", act)).findFirst()
-            if (tag == null) {
-                tag = mRealm.createObject(RealmTeamLog::class.java, JsonUtils.getString("_id", act))
-            }
-            if (tag != null) {
-                tag._rev = JsonUtils.getString("_rev", act)
-                tag._id = JsonUtils.getString("_id", act)
-                tag.type = JsonUtils.getString("type", act)
-                tag.user = JsonUtils.getString("user", act)
-                tag.createdOn = JsonUtils.getString("createdOn", act)
-                tag.parentCode = JsonUtils.getString("parentCode", act)
-                tag.time = JsonUtils.getLong("time", act)
-                tag.teamId = JsonUtils.getString("teamId", act)
-                tag.teamType = JsonUtils.getString("teamType", act)
-            }
-            mRealm.commitTransaction()
 
             val csvRow = arrayOf(
                 JsonUtils.getString("_id", act),
@@ -103,20 +107,19 @@ open class RealmTeamLog : RealmObject() {
             try {
                 val file = File(filePath)
                 file.parentFile?.mkdirs()
-                val writer = CSVWriter(FileWriter(file))
-                writer.writeNext(arrayOf("_id", "_rev", "user", "type", "createdOn", "parentCode", "time", "teamId", "teamType"))
-                for (row in data) {
-                    writer.writeNext(row)
+                CSVWriter(FileWriter(file)).use { writer ->
+                    writer.writeNext(arrayOf("_id", "_rev", "user", "type", "createdOn", "parentCode", "time", "teamId", "teamType"))
+                    data.forEach { row ->
+                        writer.writeNext(row)
+                    }
                 }
-                writer.close()
             } catch (e: IOException) {
                 e.printStackTrace()
             }
         }
 
         fun teamLogWriteCsv() {
-            writeCsv("${context.getExternalFilesDir(null)}/ole/teamLog.csv", teamLogDataList)
+            writeCsv("${MainApplication.context.getExternalFilesDir(null)}/ole/teamLog.csv", teamLogDataList)
         }
-
     }
 }
