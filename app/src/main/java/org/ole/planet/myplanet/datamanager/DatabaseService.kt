@@ -10,8 +10,7 @@ class DatabaseService() {
     private val config: RealmConfiguration
 
     init {
-        RealmLog.level = LogLevel.DEBUG // Set log level
-        // Define the Realm configuration
+        RealmLog.level = LogLevel.DEBUG 
         config = RealmConfiguration.create(
             schema = setOf(
                 RealmAchievement::class, RealmAnswer::class, RealmApkLog::class,
@@ -29,28 +28,8 @@ class DatabaseService() {
             schemaVersion = 4
         )
     }
-
-    // Lazily open a Realm instance with the configuration
+    
     val realmInstance: Realm by lazy {
         Realm.open(config)
     }
 }
-
-//class DatabaseService(context: Context) {
-//    init {
-//        Realm.init(context)
-//        RealmLog.setLevel(LogLevel.DEBUG)
-//        val config = RealmConfiguration.Builder()
-//            .name(Realm.DEFAULT_REALM_NAME)
-//            .deleteRealmIfMigrationNeeded()
-//            .schemaVersion(4)
-//            .allowWritesOnUiThread(true)
-//            .build()
-//        Realm.setDefaultConfiguration(config)
-//    }
-//
-//    val realmInstance: Realm
-//        get() {
-//            return Realm.getDefaultInstance()
-//        }
-//}
