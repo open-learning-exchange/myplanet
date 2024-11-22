@@ -21,7 +21,6 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
-
         <TextView
             android:id="@+id/tv_title"
             android:layout_width="0dp"
@@ -34,7 +33,6 @@
             app:layout_constraintStart_toEndOf="@+id/memberImage"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintEnd_toStartOf="@+id/ic_more" />
-
         <ImageView
             android:id="@+id/ic_more"
             android:layout_width="@dimen/_40dp"
@@ -45,8 +43,7 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:srcCompat="@drawable/ic_more"
-            app:tint="@color/md_black_1000" />
-
+            app:tint="@color/daynight_textColor" />
         <TextView
             android:id="@+id/tv_description"
             android:layout_width="0dp"
@@ -57,7 +54,6 @@
             app:layout_constraintStart_toEndOf="@+id/memberImage"
             app:layout_constraintTop_toBottomOf="@+id/tv_title"
             app:layout_constraintEnd_toStartOf="@+id/ic_more" />
-
         <TextView
             android:id="@+id/tv_is_leader"
             android:layout_width="wrap_content"
@@ -67,12 +63,10 @@
             android:textColor="@android:color/holo_red_dark"
             app:layout_constraintStart_toEndOf="@+id/memberImage"
             app:layout_constraintTop_toBottomOf="@+id/tv_description" />
-
     </androidx.constraintlayout.widget.ConstraintLayout>
     <FrameLayout
         android:id="@+id/fragment_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_below="@id/memberImage" />
-
 </androidx.cardview.widget.CardView>
