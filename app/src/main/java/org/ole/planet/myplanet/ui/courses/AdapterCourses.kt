@@ -210,7 +210,6 @@ class AdapterCourses(private val context: Context, private var courseList: List<
         }
     }
 
-
     private fun setTextViewContent(textView: TextView?, content: String?, layout: View?, prefix: String) {
         if (content.isNullOrEmpty()) {
             layout?.visibility = View.GONE
