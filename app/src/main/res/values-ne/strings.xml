@@ -180,6 +180,7 @@
     <string name="showing_reply_of">उत्तर देखाउँदै:</string>
     <string name="open_date">खोल्ने मिति</string>
     <string name="my_survey">मेरो सर्वेक्षण</string>
+    <string name="cannot_remove_user">प्रयोगकर्ता हटाउन सकिएन</string>
 
     <string-array name="level">
         <item>प्रारम्भिक</item>

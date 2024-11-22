@@ -180,6 +180,7 @@
     <string name="showing_reply_of">Affichage de la réponse de :</string>
     <string name="open_date">Date d\'ouverture</string>
     <string name="my_survey">Mon sondage</string>
+    <string name="cannot_remove_user">L\'utilisateur n\'a pas pu être supprimé</string>
 
     <string-array name="level">
         <item>Débutant</item>
