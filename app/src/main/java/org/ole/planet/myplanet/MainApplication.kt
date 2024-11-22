@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
 import org.ole.planet.myplanet.callback.TeamPageListener
@@ -138,6 +139,40 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                 e.printStackTrace()
                 false
             }
+        }
+
+        fun handleUncaughtException(e: Throwable) {
+            e.printStackTrace()
+            applicationScope.launch(Dispatchers.IO) {
+                try {
+                    val realm = Realm.getDefaultInstance()
+                    try {
+                        realm.executeTransaction { r ->
+                            val log = r.createObject(RealmApkLog::class.java, "${UUID.randomUUID()}")
+                            val model = UserProfileDbHandler(context).userModel
+                            if (model != null) {
+                                log.parentCode = model.parentCode
+                                log.createdOn = model.planetCode
+                                log.userId = model.id
+                            }
+                            log.time = "${Date().time}"
+                            log.page = ""
+                            log.version = getVersionName(context)
+                            log.type = RealmApkLog.ERROR_TYPE_CRASH
+                            log.setError(e)
+                        }
+                    } finally {
+                        realm.close()
+                    }
+                } catch (ex: Exception) {
+                    ex.printStackTrace()
+                }
+            }
+
+            val homeIntent = Intent(Intent.ACTION_MAIN)
+            homeIntent.addCategory(Intent.CATEGORY_HOME)
+            homeIntent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+            context.startActivity(homeIntent)
         }
     }
 
@@ -287,40 +322,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     }
 
     private fun onAppClosed() {}
-
-    private fun handleUncaughtException(e: Throwable) {
-        e.printStackTrace()
-        applicationScope.launch(Dispatchers.IO) {
-            try {
-                val realm = Realm.getDefaultInstance()
-                try {
-                    realm.executeTransaction { r ->
-                        val log = r.createObject(RealmApkLog::class.java, "${UUID.randomUUID()}")
-                        val model = UserProfileDbHandler(this@MainApplication).userModel
-                        if (model != null) {
-                            log.parentCode = model.parentCode
-                            log.createdOn = model.planetCode
-                            log.userId = model.id
-                        }
-                        log.time = "${Date().time}"
-                        log.page = ""
-                        log.version = getVersionName(this@MainApplication)
-                        log.type = RealmApkLog.ERROR_TYPE_CRASH
-                        log.setError(e)
-                    }
-                } finally {
-                    realm.close()
-                }
-            } catch (ex: Exception) {
-                ex.printStackTrace()
-            }
-        }
-
-        val homeIntent = Intent(Intent.ACTION_MAIN)
-        homeIntent.addCategory(Intent.CATEGORY_HOME)
-        homeIntent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
-        startActivity(homeIntent)
-    }
 
     override fun onTerminate() {
         super.onTerminate()

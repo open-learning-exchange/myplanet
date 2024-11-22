@@ -77,12 +77,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
 
         currentStep = getCourseProgress()
 
-        position = when {
-            position > 0 -> position - 1
-            currentStep > 0 -> currentStep - 1
-            else -> 0
-        }
-
+        position = if (currentStep > 0) currentStep - 1 else 0
         fragmentTakeCourseBinding.viewPager2.currentItem = position
         updateStepDisplay(position)
 
@@ -93,6 +88,9 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         setListeners()
         fragmentTakeCourseBinding.viewPager2.currentItem = position
         checkSurveyCompletion()
+        fragmentTakeCourseBinding.backButton.setOnClickListener {
+            requireActivity().supportFragmentManager.popBackStack()
+        }
     }
 
     private fun setListeners() {
