@@ -138,6 +138,40 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                 false
             }
         }
+
+        fun handleUncaughtException(e: Throwable) {
+            e.printStackTrace()
+            applicationScope.launch(Dispatchers.IO) {
+                try {
+                    val realm = Realm.getDefaultInstance()
+                    try {
+                        realm.executeTransaction { r ->
+                            val log = r.createObject(RealmApkLog::class.java, "${UUID.randomUUID()}")
+                            val model = UserProfileDbHandler(context).userModel
+                            if (model != null) {
+                                log.parentCode = model.parentCode
+                                log.createdOn = model.planetCode
+                                log.userId = model.id
+                            }
+                            log.time = "${Date().time}"
+                            log.page = ""
+                            log.version = getVersionName(context)
+                            log.type = RealmApkLog.ERROR_TYPE_CRASH
+                            log.setError(e)
+                        }
+                    } finally {
+                        realm.close()
+                    }
+                } catch (ex: Exception) {
+                    ex.printStackTrace()
+                }
+            }
+
+            val homeIntent = Intent(Intent.ACTION_MAIN)
+            homeIntent.addCategory(Intent.CATEGORY_HOME)
+            homeIntent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+            context.startActivity(homeIntent)
+        }
     }
 
     private var activityReferences = 0
@@ -286,40 +320,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     }
 
     private fun onAppClosed() {}
-
-    private fun handleUncaughtException(e: Throwable) {
-        e.printStackTrace()
-        applicationScope.launch(Dispatchers.IO) {
-            try {
-                val realm = Realm.getDefaultInstance()
-                try {
-                    realm.executeTransaction { r ->
-                        val log = r.createObject(RealmApkLog::class.java, "${UUID.randomUUID()}")
-                        val model = UserProfileDbHandler(this@MainApplication).userModel
-                        if (model != null) {
-                            log.parentCode = model.parentCode
-                            log.createdOn = model.planetCode
-                            log.userId = model.id
-                        }
-                        log.time = "${Date().time}"
-                        log.page = ""
-                        log.version = getVersionName(this@MainApplication)
-                        log.type = RealmApkLog.ERROR_TYPE_CRASH
-                        log.setError(e)
-                    }
-                } finally {
-                    realm.close()
-                }
-            } catch (ex: Exception) {
-                ex.printStackTrace()
-            }
-        }
-
-        val homeIntent = Intent(Intent.ACTION_MAIN)
-        homeIntent.addCategory(Intent.CATEGORY_HOME)
-        homeIntent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
-        startActivity(homeIntent)
-    }
 
     override fun onTerminate() {
         super.onTerminate()

@@ -73,11 +73,18 @@ class AudioRecorderService {
     }
 
     fun stopRecording() {
-        if (myAudioRecorder != null) {
-            myAudioRecorder?.stop()
-            myAudioRecorder?.release()
-            myAudioRecorder = null
-            audioRecordListener?.onRecordStopped(outputFile)
+        myAudioRecorder?.let { recorder ->
+            try {
+                if (isRecording()) {
+                    recorder.stop()
+                    recorder.release()
+                }
+            } catch (e: RuntimeException) {
+                MainApplication.handleUncaughtException(e)
+            } finally {
+                myAudioRecorder = null
+                audioRecordListener?.onRecordStopped(outputFile)
+            }
         }
     }
 

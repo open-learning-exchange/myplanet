@@ -135,11 +135,23 @@ class AdapterCourses(private val context: Context, private var courseList: List<
                 }
 
                 holder.rowCourseBinding.title.text = course.courseTitle
-                holder.rowCourseBinding.description.text = course.description
-                val markdownContentWithLocalPaths = prependBaseUrlToImages(
-                    course.description, "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/"
-                )
-                setMarkdownText(holder.rowCourseBinding.description, markdownContentWithLocalPaths)
+                holder.rowCourseBinding.description.apply {
+                    text = course.description
+                    val markdownContentWithLocalPaths = AdapterCourses.prependBaseUrlToImages(
+                        course.description, "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/"
+                    )
+                    setMarkdownText(this, markdownContentWithLocalPaths)
+
+                    setOnClickListener {
+                        homeItemClickListener?.openCallFragment(TakeCourseFragment().apply {
+                            arguments = Bundle().apply {
+                                putString("id", course.courseId)
+                                putInt("position", position)
+                            }
+                        })
+                    }
+                }
+
                 if (course.gradeLevel.isNullOrEmpty() && course.subjectLevel.isNullOrEmpty()) {
                     holder.rowCourseBinding.holder.visibility = View.VISIBLE
                     holder.rowCourseBinding.tvDate2.visibility = View.VISIBLE
@@ -180,12 +192,18 @@ class AdapterCourses(private val context: Context, private var courseList: List<
                     holder.rowCourseBinding.checkbox.setOnClickListener { view: View ->
                         holder.rowCourseBinding.checkbox.contentDescription = context.getString(R.string.select_res_course, course.courseTitle)
                         Utilities.handleCheck((view as CheckBox).isChecked, position, selectedItems, courseList)
-                        if (listener != null) listener!!.onSelectedListChange(selectedItems)
+                        listener?.onSelectedListChange(selectedItems)
                     }
                 } else {
                     holder.rowCourseBinding.checkbox.visibility = View.GONE
                 }
                 showProgressAndRating(position, holder)
+
+                holder.rowCourseBinding.root.setOnClickListener {
+                    if (position != RecyclerView.NO_POSITION) {
+                        openCourse(courseList[position], 0)
+                    }
+                }
             }
         }
     }
