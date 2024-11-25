@@ -27,18 +27,21 @@ class MarkdownDialog : DialogFragment() {
     private var markdownContent: String = ""
     private var courseStatus: String = ""
     private var voiceCount: Int = 0
+    private var allVoiceCount: Int = 0
 
     companion object {
         private const val ARG_MARKDOWN_CONTENT = "markdown_content"
         private const val ARG_COURSE_STATUS = "course_status"
         private const val ARG_VOICE_COUNT = "voice_count"
+        private const val ARG_ALL_VOICE_COUNT = "all_voice_count"
 
-        fun newInstance(markdownContent: String, courseStatus: String, voiceCount: Int): MarkdownDialog {
+        fun newInstance(markdownContent: String, courseStatus: String, voiceCount: Int, allVoiceCount: Int): MarkdownDialog {
             val fragment = MarkdownDialog()
             val args = Bundle().apply {
                 putString(ARG_MARKDOWN_CONTENT, markdownContent)
                 putString(ARG_COURSE_STATUS, courseStatus)
                 putInt(ARG_VOICE_COUNT, voiceCount)
+                putInt(ARG_ALL_VOICE_COUNT, allVoiceCount)
             }
             fragment.arguments = args
             return fragment
@@ -50,6 +53,7 @@ class MarkdownDialog : DialogFragment() {
         markdownContent = arguments?.getString(ARG_MARKDOWN_CONTENT) ?: ""
         courseStatus = arguments?.getString(ARG_COURSE_STATUS) ?: ""
         voiceCount = arguments?.getInt(ARG_VOICE_COUNT, 0) ?: 0
+        allVoiceCount = arguments?.getInt(ARG_ALL_VOICE_COUNT, 0) ?: 0
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -75,6 +79,11 @@ class MarkdownDialog : DialogFragment() {
             }
         }
         setupCloseButton()
+
+        val earnedDollars = allVoiceCount * 5
+        val progressValue = ((earnedDollars.toDouble() / 500) * 100).toInt()
+        dialogCampaignChallengeBinding.progressBar.progress = progressValue
+
     }
 
     override fun onStart() {
