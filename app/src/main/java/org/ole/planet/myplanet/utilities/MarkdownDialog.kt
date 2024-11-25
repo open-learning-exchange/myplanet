@@ -81,9 +81,8 @@ class MarkdownDialog : DialogFragment() {
         setupCloseButton()
 
         val earnedDollars = allVoiceCount * 5
-        val progressValue = ((earnedDollars.toDouble() / 500) * 100).toInt()
+        val progressValue = ((earnedDollars.toDouble() / 500) * 100).toInt().coerceAtMost(100)
         dialogCampaignChallengeBinding.progressBar.progress = progressValue
-
     }
 
     override fun onStart() {

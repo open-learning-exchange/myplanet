@@ -393,7 +393,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun calculateProgress(allVoiceCount: Int): Int {
-        return (allVoiceCount) * 5
+        return (allVoiceCount * 5).coerceAtMost(500)
     }
 
     private fun setupRealmListeners() {
