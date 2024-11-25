@@ -285,12 +285,37 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             false
         }
 
+        val allCommVoiceResults = mRealm.where(RealmNews::class.java)
+            .greaterThanOrEqualTo("time", startTime)
+            .findAll()
+
+        val allCommVoice = allCommVoiceResults.filter { realmNews ->
+            realmNews.viewIn?.let { viewInStr ->
+                try {
+                    val viewInArray = JSONArray(viewInStr)
+                    for (i in 0 until viewInArray.length()) {
+                        val viewInObj = viewInArray.getJSONObject(i)
+                        if (viewInObj.optString("section") == "community") {
+                            return@filter true
+                        }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+            false
+        }
+
         fun getDateFromTimestamp(timestamp: Long): String {
             val dateFormat = SimpleDateFormat("yyyy-MM-dd")
             return dateFormat.format(Date(timestamp))
         }
 
         val uniqueDates = commVoice
+            .map { getDateFromTimestamp(it.time) }
+            .distinct()
+
+        val allUniqueDates = allCommVoice
             .map { getDateFromTimestamp(it.time) }
             .distinct()
 
@@ -326,16 +351,16 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                         } else {
                             "Ingresa al curso $courseName completalo ($current de $max hecho)"
                         }
-                        challengeDialog(uniqueDates.size, courseStatus)
+                        challengeDialog(uniqueDates.size, courseStatus, allUniqueDates.size)
                     } else {
-                        challengeDialog(uniqueDates.size, "$courseName no iniciado")
+                        challengeDialog(uniqueDates.size, "$courseName no iniciado", allUniqueDates.size)
                     }
                 }
             }
         }
     }
 
-    fun challengeDialog(voiceCount: Int, courseStatus: String) {
+    fun challengeDialog(voiceCount: Int, courseStatus: String, allVoiceCount: Int) {
         val voiceTaskDone = if (voiceCount >= 5) "✅" else "[ ]"
         val prereqsMet = courseStatus.contains("terminado", ignoreCase = true) && voiceCount >= 5
         val syncTaskDone = if (prereqsMet) {
@@ -357,10 +382,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         if (isCompleted && !hasShownCongrats) {
             editor.putBoolean("has_shown_congrats", true).apply()
             val markdownContent = """
-                ![issues challenge](file:///android_asset/images/november_challenge.jpeg) <br/>
-                ### ¡Felicidades Reto Completado!
+                Ganancias totales: **$${calculateProgress(allVoiceCount)}**
+                ### ¡Felicidades! Reto Completado <br/>
                 """.trimIndent()
-            MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount)
+            MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount, allVoiceCount)
                 .show(supportFragmentManager, "markdown_dialog")
         } else {
             val voicesText = if (voiceCount > 0) {
@@ -369,14 +394,18 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 ""
             }
             val markdownContent = """
-                ![issues challenge](file:///android_asset/images/november_challenge.jpeg) <br/>
+                Ganancias totales: **$${calculateProgress(allVoiceCount)}**
                 ### $courseTaskDone <br/>
                 ### $voiceTaskDone Comparte tu opinión en Nuestras Voces. $voicesText <br/>
-                ### $syncTaskDone Recuerda sincronizar la aplicacion movil.
+                ### $syncTaskDone Recuerda sincronizar la aplicación móvil. <br/>
                 """.trimIndent()
-            MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount)
+            MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount, allVoiceCount)
                 .show(supportFragmentManager, "markdown_dialog")
         }
+    }
+
+    private fun calculateProgress(allVoiceCount: Int): Int {
+        return (allVoiceCount) * 5
     }
 
     private fun setupRealmListeners() {

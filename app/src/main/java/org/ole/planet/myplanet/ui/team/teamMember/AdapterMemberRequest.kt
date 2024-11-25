@@ -23,16 +23,25 @@ class AdapterMemberRequest(private val context: Context, private val list: Mutab
     }
 
     override fun onBindViewHolder(holder: ViewHolderUser, position: Int) {
-        rowMemberRequestBinding.tvName.text = list[position].name ?: list[position].toString()
+        val currentItem = list.getOrNull(position) ?: return
+        rowMemberRequestBinding.tvName.text = currentItem.name ?: currentItem.toString()
 
         if (isTeamLeader) {
             rowMemberRequestBinding.btnAccept.isEnabled = true
             rowMemberRequestBinding.btnReject.isEnabled = true
+
             rowMemberRequestBinding.btnAccept.setOnClickListener {
-                acceptReject(list[position], true, position)
+                val adapterPosition = holder.bindingAdapterPosition
+                if (adapterPosition != RecyclerView.NO_POSITION && adapterPosition < list.size) {
+                    acceptReject(list[adapterPosition], true, adapterPosition)
+                }
             }
+
             rowMemberRequestBinding.btnReject.setOnClickListener {
-                acceptReject(list[position], false, position)
+                val adapterPosition = holder.bindingAdapterPosition
+                if (adapterPosition != RecyclerView.NO_POSITION && adapterPosition < list.size) {
+                    acceptReject(list[adapterPosition], false, adapterPosition)
+                }
             }
         } else {
             rowMemberRequestBinding.btnAccept.isEnabled = false
