@@ -180,6 +180,7 @@
     <string name="showing_reply_of">mostrando la respuesta de:</string>
     <string name="open_date">Fecha de apertura</string>
     <string name="my_survey">miEncuesta</string>
+    <string name="username_too_long">el nombre de usuario debe tener menos de 15 caracteres</string>
 
     <string-array name="level">
         <item>Principiante</item>

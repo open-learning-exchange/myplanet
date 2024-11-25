@@ -78,7 +78,10 @@ class BecomeMemberActivity : BaseActivity() {
 
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 val input = s.toString()
-
+                if (input.length > 15) {
+                    activityBecomeMemberBinding.etUsername.error = getString(R.string.username_too_long)
+                    return
+                }
                 val firstChar = if (input.isNotEmpty()) input[0] else '\u0000'
                 var hasInvalidCharacters = false
                 val hasSpecialCharacters: Boolean
