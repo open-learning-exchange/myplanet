@@ -16,8 +16,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityAddResourceBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.createFromResource
-import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onAdd
+import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.CheckboxListView
@@ -88,8 +87,8 @@ class AddResourceActivity : AppCompatActivity() {
         }, Realm.Transaction.OnSuccess {
             val myObject = mRealm.where(RealmMyLibrary::class.java)
                 .equalTo("resourceId", id).findFirst()
-            createFromResource(myObject, mRealm, userModel?.id)
-            onAdd(mRealm, "resources", userModel?.id, id)
+            RealmMyLibrary.createFromResource(myObject, mRealm, userModel?.id)
+            RealmRemovedLog.onAdd(mRealm, "resources", userModel?.id, id)
             toast(this@AddResourceActivity, getString(R.string.added_to_my_library))
             navigateToResourceDetail(myObject?.resourceId)
         })

@@ -24,7 +24,6 @@ open class RealmResourceActivity : RealmObject() {
     var androidId: String? = null
 
     companion object {
-        @JvmStatic
         fun serializeResourceActivities(realmResourceActivities: RealmResourceActivity): JsonObject {
             val ob = JsonObject()
             ob.addProperty("user", realmResourceActivities.user)
@@ -39,7 +38,6 @@ open class RealmResourceActivity : RealmObject() {
             return ob
         }
 
-        @JvmStatic
         fun onSynced(mRealm: Realm, settings: SharedPreferences) {
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()

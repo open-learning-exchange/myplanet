@@ -6,7 +6,6 @@ import com.google.android.material.bottomnavigation.BottomNavigationMenuView
 import com.google.android.material.bottomnavigation.BottomNavigationView
 
 object BottomNavigationViewHelper {
-    @JvmStatic
     @SuppressLint("RestrictedApi")
     fun disableShiftMode(view: BottomNavigationView) {
         val menuView = view.getChildAt(0) as BottomNavigationMenuView

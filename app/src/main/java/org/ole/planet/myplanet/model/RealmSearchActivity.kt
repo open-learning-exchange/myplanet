@@ -39,7 +39,6 @@ open class RealmSearchActivity(
     }
 
     companion object {
-        @JvmStatic
         fun insert(log: RealmNewsLog): JsonObject {
             val ob = JsonObject()
             ob.addProperty("user", log.userId)

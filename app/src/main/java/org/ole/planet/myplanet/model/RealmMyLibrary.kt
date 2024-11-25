@@ -10,7 +10,7 @@ import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
@@ -175,12 +175,10 @@ open class RealmMyLibrary : RealmObject() {
             return libs.filter { it.userId?.contains(userId) == true || it.resourceId in ids }
         }
 
-        @JvmStatic
         fun getMyLibraryByUserId(userId: String?, libs: List<RealmMyLibrary>): List<RealmMyLibrary> {
             return libs.filter { it.userId?.contains(userId) == true }
         }
 
-        @JvmStatic
         fun getOurLibrary(userId: String?, libs: List<RealmMyLibrary>): List<RealmMyLibrary> {
             return libs.filter { it.userId?.contains(userId) == false }
         }
@@ -190,7 +188,6 @@ open class RealmMyLibrary : RealmObject() {
             return list.map { it.resourceId }.toTypedArray()
         }
 
-        @JvmStatic
         fun removeDeletedResource(newIds: List<String?>, mRealm: Realm) {
             val ids = getIds(mRealm)
             ids.filterNot { it in newIds }.forEach { id ->
@@ -200,7 +197,6 @@ open class RealmMyLibrary : RealmObject() {
             }
         }
 
-        @JvmStatic
         fun serialize(personal: RealmMyLibrary, user: RealmUserModel?): JsonObject {
             return JsonObject().apply {
                 addProperty("title", personal.title)
@@ -226,7 +222,7 @@ open class RealmMyLibrary : RealmObject() {
                 addProperty("createdDate", personal.createdDate)
                 addProperty("androidId", NetworkUtils.getUniqueIdentifier())
                 addProperty("deviceName", NetworkUtils.getDeviceName())
-                addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
+                addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
             }
         }
 
@@ -234,17 +230,14 @@ open class RealmMyLibrary : RealmObject() {
             insertMyLibrary("", doc, mRealm)
         }
 
-        @JvmStatic
         fun createStepResource(mRealm: Realm, res: JsonObject, myCoursesID: String?, stepId: String?) {
             insertMyLibrary("", stepId, myCoursesID, res, mRealm)
         }
 
-        @JvmStatic
         fun insertMyLibrary(userId: String?, doc: JsonObject, mRealm: Realm) {
             insertMyLibrary(userId, "", "", doc, mRealm)
         }
 
-        @JvmStatic
         fun createFromResource(resource: RealmMyLibrary?, mRealm: Realm, userId: String?) {
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
@@ -253,13 +246,12 @@ open class RealmMyLibrary : RealmObject() {
             mRealm.commitTransaction()
         }
 
-        @JvmStatic
         fun insertMyLibrary(userId: String?, stepId: String?, courseId: String?, doc: JsonObject, mRealm: Realm) {
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
             }
             val resourceId = JsonUtils.getString("_id", doc)
-            val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             var resource = mRealm.where(RealmMyLibrary::class.java).equalTo("id", resourceId).findFirst()
             if (resource == null) {
                 resource = mRealm.createObject(RealmMyLibrary::class.java, resourceId)
@@ -367,15 +359,13 @@ open class RealmMyLibrary : RealmObject() {
         }
 
         fun libraryWriteCsv() {
-            writeCsv("${context.getExternalFilesDir(null)}/ole/library.csv", libraryDataList)
+            writeCsv("${MainApplication.context.getExternalFilesDir(null)}/ole/library.csv", libraryDataList)
         }
 
-        @JvmStatic
         fun listToString(list: RealmList<String>?): String {
             return list?.joinToString(", ") ?: ""
         }
 
-        @JvmStatic
         fun save(allDocs: JsonArray, mRealm: Realm): List<String> {
             val list: MutableList<String> = ArrayList()
             allDocs.forEach { doc ->
@@ -389,23 +379,19 @@ open class RealmMyLibrary : RealmObject() {
             return list
         }
 
-        @JvmStatic
         fun getMyLibIds(realm: Realm?, userId: String?): JsonArray {
             val myLibraries = userId?.let { realm?.where(RealmMyLibrary::class.java)?.contains("userId", it)?.findAll() }
             return JsonArray().apply { myLibraries?.forEach { lib -> add(lib.id) }
             }
         }
-        @JvmStatic
         fun getLevels(libraries: List<RealmMyLibrary>): Set<String> {
             return libraries.flatMap { it.level ?: emptyList() }.toSet()
         }
 
-        @JvmStatic
         fun getArrayList(libraries: List<RealmMyLibrary>, type: String): Set<String?> {
             return libraries.mapNotNull { if (type == "mediums") it.mediaType else it.language }.filterNot { it.isNullOrBlank() }.toSet()
         }
 
-        @JvmStatic
         fun getSubjects(libraries: List<RealmMyLibrary>): Set<String> {
             return libraries.flatMap { it.subject ?: emptyList() }.toSet()
         }

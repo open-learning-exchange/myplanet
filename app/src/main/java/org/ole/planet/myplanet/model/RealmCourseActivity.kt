@@ -22,7 +22,6 @@ open class RealmCourseActivity : RealmObject() {
     var user: String? = null
 
     companion object {
-        @JvmStatic
         fun createActivity(realm: Realm, userModel: RealmUserModel?, course: RealmMyCourse?) {
             if (!realm.isInTransaction) {
                 realm.executeTransaction {
@@ -38,7 +37,6 @@ open class RealmCourseActivity : RealmObject() {
             }
         }
 
-        @JvmStatic
         fun serializeSerialize(realmCourseActivities: RealmCourseActivity): JsonObject {
             val ob = JsonObject()
             ob.addProperty("user", realmCourseActivities.user)

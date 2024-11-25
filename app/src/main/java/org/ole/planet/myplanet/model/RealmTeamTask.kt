@@ -7,7 +7,7 @@ import com.opencsv.CSVWriter
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utilities.JsonUtils
 import java.io.File
 import java.io.FileWriter
@@ -38,7 +38,6 @@ open class RealmTeamTask : RealmObject() {
     companion object {
         val taskDataList: MutableList<Array<String>> = mutableListOf()
 
-        @JvmStatic
         fun insert(mRealm: Realm, obj: JsonObject?) {
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
@@ -97,10 +96,9 @@ open class RealmTeamTask : RealmObject() {
         }
 
         fun teamTaskWriteCsv() {
-            writeCsv("${context.getExternalFilesDir(null)}/ole/teamTask.csv", taskDataList)
+            writeCsv("${MainApplication.context.getExternalFilesDir(null)}/ole/teamTask.csv", taskDataList)
         }
 
-        @JvmStatic
         fun serialize(realm: Realm, task: RealmTeamTask): JsonObject {
             val `object` = JsonObject()
             if (!TextUtils.isEmpty(task._id)) {

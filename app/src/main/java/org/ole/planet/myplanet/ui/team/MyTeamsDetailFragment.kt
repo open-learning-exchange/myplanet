@@ -26,12 +26,8 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getResourceIds
-import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getUsers
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmTeamLog
-import org.ole.planet.myplanet.model.RealmTeamLog.Companion.getVisitCount
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.ui.resources.ResourceDetailFragment
@@ -112,7 +108,7 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
                 map["message"] = msg
                 map["messageType"] = team?.teamType!!
                 map["messagePlanetCode"] = team?.teamPlanetCode!!
-                createNews(map, mRealm, user, imageList)
+                RealmNews.createNews(map, mRealm, user, imageList)
                 rvDiscussion.adapter?.notifyItemInserted(0)
             }.setNegativeButton(R.string.cancel, null).show()
     }
@@ -131,7 +127,7 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
     }
 
     private fun setTeamList() {
-        val users: List<RealmUserModel> = getUsers(teamId, mRealm, "")
+        val users: List<RealmUserModel> = RealmMyTeam.getUsers(teamId, mRealm, "")
         createTeamLog()
         val reqUsers = getRequestedTeamList(team?.requests)
         val realmNewsList: List<RealmNews> = mRealm.where(RealmNews::class.java)
@@ -141,7 +137,7 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
         showRecyclerView(realmNewsList)
         listContent.visibility = View.GONE
         val courses = mRealm.where(RealmMyCourse::class.java).`in`("id", team?.courses?.toTypedArray<String>()).findAll()
-        libraries = mRealm.where(RealmMyLibrary::class.java).`in`("id", getResourceIds(teamId, mRealm).toTypedArray<String>()).findAll()
+        libraries = mRealm.where(RealmMyLibrary::class.java).`in`("id", RealmMyTeam.getResourceIds(teamId, mRealm).toTypedArray<String>()).findAll()
         tabLayout.getTabAt(1)?.setText(String.format(getString(R.string.joined_members_colon) + " (%s)", users.size))
         tabLayout.getTabAt(3)?.setText(String.format(getString(R.string.courses_colon) + " (%s)", courses.size))
         tabLayout.getTabAt(2)?.setText(String.format(getString(R.string.requested_members_colon) + " (%s)", reqUsers.size))
@@ -244,8 +240,8 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
                     convertView = LayoutInflater.from(activity)
                         .inflate(android.R.layout.simple_list_item_1, parent, false)
                 }
-                val tv = convertView!!.findViewById<TextView>(android.R.id.text1)
-                val formattedText = getString(R.string.visit_count, getItem(position)?.name ?: "", getVisitCount(mRealm, getItem(position)?.name, teamId), getString(R.string.visits))
+                val tv = convertView.findViewById<TextView>(android.R.id.text1)
+                val formattedText = getString(R.string.visit_count, getItem(position)?.name ?: "", RealmTeamLog.getVisitCount(mRealm, getItem(position)?.name, teamId), getString(R.string.visits))
                 tv.text = formattedText
                 return convertView
             }

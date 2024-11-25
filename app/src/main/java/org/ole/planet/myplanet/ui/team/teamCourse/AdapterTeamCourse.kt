@@ -12,7 +12,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.RowTeamResourceBinding
 import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getTeamCreator
+import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.ui.team.teamCourse.AdapterTeamCourse.ViewHolderTeamCourse
 
@@ -27,7 +27,7 @@ class AdapterTeamCourse(private val context: Context, private val list: List<Rea
             listener = context
         }
         this.settings = settings
-        teamCreator = getTeamCreator(teamId, mRealm)
+        teamCreator = RealmMyTeam.getTeamCreator(teamId, mRealm)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderTeamCourse {

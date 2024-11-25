@@ -5,7 +5,6 @@ import java.util.regex.Pattern
 import kotlin.text.isNotEmpty
 
 object DownloadUtils {
-    @JvmStatic
     fun downloadAllFiles(dbMyLibrary: List<RealmMyLibrary?>): ArrayList<String> {
         val urls = ArrayList<String>()
         for (i in dbMyLibrary.indices) {
@@ -14,7 +13,6 @@ object DownloadUtils {
         return urls
     }
 
-    @JvmStatic
     fun downloadFiles(dbMyLibrary: List<RealmMyLibrary?>, selectedItems: ArrayList<Int>): ArrayList<String> {
         val urls = ArrayList<String>()
         for (i in selectedItems.indices) {

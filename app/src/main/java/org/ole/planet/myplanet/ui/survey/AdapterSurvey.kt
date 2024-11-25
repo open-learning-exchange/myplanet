@@ -12,8 +12,7 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.RowSurveyBinding
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmSubmission.Companion.getNoOfSubmissionByUser
-import org.ole.planet.myplanet.model.RealmSubmission.Companion.getRecentSubmissionDate
+import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
@@ -85,8 +84,8 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
                     startSurvey.visibility = View.GONE
                 }
 
-                tvNoSubmissions.text = getNoOfSubmissionByUser(exam.id, user?.id, mRealm)
-                tvDateCompleted.text = getRecentSubmissionDate(exam.id, user?.id, mRealm)
+                tvNoSubmissions.text = RealmSubmission.getNoOfSubmissionByUser(exam.id, user?.id, mRealm)
+                tvDateCompleted.text = RealmSubmission.getRecentSubmissionDate(exam.id, user?.id, mRealm)
                 tvDate.text = formatDate(RealmStepExam.getSurveyCreationTime(exam.id!!, mRealm)!!, "MMM dd, yyyy")
             }
         }

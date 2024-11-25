@@ -13,15 +13,13 @@ import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.model.RealmMeetup.Companion.getMyMeetUpIds
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourseIds
+import org.ole.planet.myplanet.model.RealmMeetup
+import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyHealthPojo
-import org.ole.planet.myplanet.model.RealmMyHealthPojo.Companion.serialize
-import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getMyLibIds
-import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.removedIds
+import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateIv
-import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateKey
+import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.JsonUtils.getJsonArray
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
@@ -118,8 +116,8 @@ class UploadToShelfService(context: Context) {
         val table = "userdb-" + Utilities.toHex(model.planetCode) + "-" + Utilities.toHex(model.name)
         val header = "Basic " + Base64.encodeToString((obj["name"].asString + ":" + obj["password"].asString).toByteArray(), Base64.NO_WRAP)
         val ob = JsonObject()
-        var keyString = generateKey()
-        var iv: String? = generateIv()
+        var keyString = AndroidDecrypter.generateKey()
+        var iv: String? = AndroidDecrypter.generateIv()
         if (!TextUtils.isEmpty(model.iv)) {
             iv = model.iv
         }
@@ -151,7 +149,7 @@ class UploadToShelfService(context: Context) {
             val myHealths: List<RealmMyHealthPojo> = realm.where(RealmMyHealthPojo::class.java).equalTo("isUpdated", true).notEqualTo("userId", "").findAll()
             for (pojo in myHealths) {
                 try {
-                    val res = apiInterface?.postDoc(Utilities.header, "application/json", Utilities.getUrl() + "/health", serialize(pojo))?.execute()
+                    val res = apiInterface?.postDoc(Utilities.header, "application/json", Utilities.getUrl() + "/health", RealmMyHealthPojo.serialize(pojo))?.execute()
                     if (res?.body() != null && res.body()?.has("id") == true) {
                         pojo._rev = res.body()!!["rev"].asString
                         pojo.isUpdated = false
@@ -188,11 +186,11 @@ class UploadToShelfService(context: Context) {
     }
 
     private fun getShelfData(realm: Realm?, userId: String?, jsonDoc: JsonObject?): JsonObject {
-        val myLibs = getMyLibIds(realm, userId)
-        val myCourses = getMyCourseIds(realm, userId)
-        val myMeetups = getMyMeetUpIds(realm, userId)
-        val removedResources = listOf(*removedIds(realm, "resources", userId))
-        val removedCourses = listOf(*removedIds(realm, "courses", userId))
+        val myLibs = RealmMyLibrary.getMyLibIds(realm, userId)
+        val myCourses = RealmMyCourse.getMyCourseIds(realm, userId)
+        val myMeetups = RealmMeetup.getMyMeetUpIds(realm, userId)
+        val removedResources = listOf(*RealmRemovedLog.removedIds(realm, "resources", userId))
+        val removedCourses = listOf(*RealmRemovedLog.removedIds(realm, "courses", userId))
         val mergedResourceIds = mergeJsonArray(myLibs, getJsonArray("resourceIds", jsonDoc), removedResources)
         val mergedCourseIds = mergeJsonArray(myCourses, getJsonArray("courseIds", jsonDoc), removedCourses)
         val `object` = JsonObject()

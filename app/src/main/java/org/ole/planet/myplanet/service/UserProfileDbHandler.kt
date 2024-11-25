@@ -8,7 +8,6 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmOfflineActivity
-import org.ole.planet.myplanet.model.RealmOfflineActivity.Companion.getRecentLogin
 import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
@@ -63,7 +62,7 @@ class UserProfileDbHandler(context: Context) {
             val realm = realmService.realmInstance
             try {
                 realm.executeTransaction {
-                    val offlineActivities = getRecentLogin(it)
+                    val offlineActivities = RealmOfflineActivity.getRecentLogin(it)
                     offlineActivities?.logoutTime = Date().time
                 }
             } finally {

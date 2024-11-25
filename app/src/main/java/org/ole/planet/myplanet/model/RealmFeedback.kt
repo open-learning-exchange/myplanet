@@ -10,7 +10,7 @@ import com.opencsv.CSVWriter
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utilities.JsonUtils
 import java.io.File
 import java.io.FileWriter
@@ -87,7 +87,6 @@ open class RealmFeedback : RealmObject() {
 
     companion object {
         val feedbacksDataList: MutableList<Array<String>> = mutableListOf()
-        @JvmStatic
         fun serializeFeedback(feedback: RealmFeedback): JsonObject {
             val `object` = JsonObject()
             `object`.addProperty("title", feedback.title)
@@ -112,7 +111,6 @@ open class RealmFeedback : RealmObject() {
             return `object`
         }
 
-        @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject?) {
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
@@ -172,7 +170,7 @@ open class RealmFeedback : RealmObject() {
         }
 
         fun feedbackWriteCsv() {
-            writeCsv("${context.getExternalFilesDir(null)}/ole/feedback.csv", feedbacksDataList)
+            writeCsv("${MainApplication.context.getExternalFilesDir(null)}/ole/feedback.csv", feedbacksDataList)
         }
     }
 }

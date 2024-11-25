@@ -36,7 +36,6 @@ import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.TransactionSyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_LOGIN
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
 import org.ole.planet.myplanet.ui.myhealth.UserListArrayAdapter
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
@@ -99,10 +98,10 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
         offlineActivitiesResults = mRealm.where(RealmOfflineActivity::class.java)
             .equalTo("userName", profileDbHandler.userModel?.name)
-            .equalTo("type", KEY_LOGIN)
+            .equalTo("type", UserProfileDbHandler.KEY_LOGIN)
             .findAllAsync()
         v.findViewById<TextView>(R.id.txtRole).text = getString(R.string.user_role, model?.getRoleAsString())
-        v.findViewById<TextView>(R.id.txtFullName).text =getString(R.string.user_name, fullName, profileDbHandler.offlineVisits)
+        v.findViewById<TextView>(R.id.txtFullName).text = getString(R.string.user_name, fullName, "${profileDbHandler.offlineVisits}")
     }
 
     override fun forceDownloadNewsImages() {

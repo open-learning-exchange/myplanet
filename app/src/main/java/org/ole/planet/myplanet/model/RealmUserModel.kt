@@ -11,7 +11,7 @@ import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import org.apache.commons.lang3.StringUtils
-import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.Utilities
@@ -66,8 +66,8 @@ open class RealmUserModel : RealmObject() {
         if (_id?.isEmpty() == true) {
             `object`.addProperty("password", password)
             `object`.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
-            `object`.addProperty("uniqueAndroidId", VersionUtils.getAndroidId(context))
-            `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
+            `object`.addProperty("uniqueAndroidId", VersionUtils.getAndroidId(MainApplication.context))
+            `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
         } else {
             `object`.addProperty("derived_key", derived_key)
             `object`.addProperty("salt", salt)
@@ -151,7 +151,6 @@ open class RealmUserModel : RealmObject() {
     companion object {
         private val userDataList: MutableList<Array<String>> = mutableListOf()
 
-        @JvmStatic
         fun createGuestUser(username: String?, mRealm: Realm, settings: SharedPreferences): RealmUserModel? {
             val `object` = JsonObject()
             `object`.addProperty("_id", "guest_$username")
@@ -164,7 +163,6 @@ open class RealmUserModel : RealmObject() {
             return populateUsersTable(`object`, mRealm, settings)
         }
 
-        @JvmStatic
         fun populateUsersTable(jsonDoc: JsonObject?, mRealm: Realm?, settings: SharedPreferences): RealmUserModel? {
             try {
                 var id = JsonUtils.getString("_id", jsonDoc)
@@ -181,7 +179,6 @@ open class RealmUserModel : RealmObject() {
             return null
         }
 
-        @JvmStatic
         fun isUserExists(realm: Realm, name: String?): Boolean {
             return realm.where(RealmUserModel::class.java).equalTo("name", name).count() > 0
         }
@@ -271,7 +268,7 @@ open class RealmUserModel : RealmObject() {
         }
 
         fun userWriteCsv() {
-            writeCsv("${context.getExternalFilesDir(null)}/ole/userData.csv", userDataList)
+            writeCsv("${MainApplication.context.getExternalFilesDir(null)}/ole/userData.csv", userDataList)
         }
 
 
@@ -294,9 +291,9 @@ open class RealmUserModel : RealmObject() {
                 }
             }, {
                 onSuccess.invoke()
-                Utilities.toast(context, "User details updated successfully")
+                Utilities.toast(MainApplication.context, "User details updated successfully")
             }) {
-                Utilities.toast(context, "User details update failed")
+                Utilities.toast(MainApplication.context, "User details update failed")
             }
         }
     }

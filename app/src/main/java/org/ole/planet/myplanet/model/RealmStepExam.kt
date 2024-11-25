@@ -7,7 +7,7 @@ import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.RealmResults
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utilities.JsonUtils
 import java.io.File
 import java.io.FileWriter
@@ -33,12 +33,10 @@ open class RealmStepExam : RealmObject() {
     companion object {
         val examDataList: MutableList<Array<String>> = mutableListOf()
 
-        @JvmStatic
         fun insertCourseStepsExams(myCoursesID: String?, stepId: String?, exam: JsonObject, mRealm: Realm) {
             insertCourseStepsExams(myCoursesID, stepId, exam, "", mRealm)
         }
 
-        @JvmStatic
         fun insertCourseStepsExams(myCoursesID: String?, stepId: String?, exam: JsonObject, parentId: String?, mRealm: Realm) {
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
@@ -105,7 +103,7 @@ open class RealmStepExam : RealmObject() {
         }
 
         fun stepExamWriteCsv() {
-            writeCsv("${context.getExternalFilesDir(null)}/ole/stepExam.csv", examDataList)
+            writeCsv("${MainApplication.context.getExternalFilesDir(null)}/ole/stepExam.csv", examDataList)
         }
 
         private fun checkIdsAndInsert(myCoursesID: String?, stepId: String?, myExam: RealmStepExam?) {
@@ -117,13 +115,11 @@ open class RealmStepExam : RealmObject() {
             }
         }
 
-        @JvmStatic
         fun getNoOfExam(mRealm: Realm, courseId: String?): Int {
             val res: RealmResults<*>? = mRealm.where(RealmStepExam::class.java).equalTo("courseId", courseId).findAll()
             return res?.size ?: 0
         }
 
-        @JvmStatic
         fun serializeExam(mRealm: Realm, exam: RealmStepExam): JsonObject {
             val `object` = JsonObject()
             `object`.addProperty("_id", exam.id)
@@ -141,7 +137,6 @@ open class RealmStepExam : RealmObject() {
             return `object`
         }
 
-        @JvmStatic
         fun getIds(list: List<RealmStepExam>): Array<String?> {
             val ids = arrayOfNulls<String>(list.size)
             for ((i, e) in list.withIndex()) {
@@ -154,7 +149,6 @@ open class RealmStepExam : RealmObject() {
             return ids
         }
 
-        @JvmStatic
         fun getSurveyCreationTime(surveyId: String, mRealm: Realm): Long? {
             val survey = mRealm.where(RealmStepExam::class.java).equalTo("id", surveyId).findFirst()
             return survey?.createdDate

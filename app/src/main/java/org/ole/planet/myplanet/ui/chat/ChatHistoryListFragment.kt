@@ -9,7 +9,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.slidingpanelayout.widget.SlidingPaneLayout
 import io.realm.*
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
+import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.databinding.FragmentChatHistoryListBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.*
@@ -93,7 +93,7 @@ class ChatHistoryListFragment : Fragment() {
             fragmentChatHistoryListBinding.recyclerView.visibility = View.VISIBLE
         }
 
-        showNoData(fragmentChatHistoryListBinding.noChats, list.size, "chatHistory")
+        BaseRecyclerFragment.showNoData(fragmentChatHistoryListBinding.noChats, list.size, "chatHistory")
         if (list.isEmpty()) {
             fragmentChatHistoryListBinding.searchBar.visibility = View.GONE
             fragmentChatHistoryListBinding.recyclerView.visibility = View.GONE

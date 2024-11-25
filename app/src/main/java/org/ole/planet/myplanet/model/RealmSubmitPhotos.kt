@@ -32,7 +32,6 @@ open class RealmSubmitPhotos : RealmObject() {
          * return arr;
          * }
         </RealmSubmitPhotos> */
-        @JvmStatic
         fun serializeRealmSubmitPhotos(submit: RealmSubmitPhotos): JsonObject {
             val obj = JsonObject()
             obj.addProperty("id", submit.id)

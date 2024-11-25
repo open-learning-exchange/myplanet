@@ -15,7 +15,6 @@ import org.ole.planet.myplanet.databinding.FragmentSendSurveyBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Date
@@ -46,7 +45,7 @@ class SendSurveyFragment : BaseDialogFragment() {
         var sub = mRealm.where(RealmSubmission::class.java).equalTo("userId", userId)
             .equalTo("parentId", if (!TextUtils.isEmpty(exam?.courseId)) id + "@" + exam?.courseId else id)
             .sort("lastUpdateTime", Sort.DESCENDING).equalTo("status", "pending").findFirst()
-        sub = createSubmission(sub, mRealm)
+        sub = RealmSubmission.createSubmission(sub, mRealm)
         sub.parentId = if (!TextUtils.isEmpty(exam?.courseId)) id + "@" + exam?.courseId else id
         sub.userId = userId
         sub.type = "survey"

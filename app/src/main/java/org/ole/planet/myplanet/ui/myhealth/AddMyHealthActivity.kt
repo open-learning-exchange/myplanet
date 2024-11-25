@@ -18,9 +18,7 @@ import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmMyHealth.RealmMyHealthProfile
 import org.ole.planet.myplanet.model.RealmMyHealthPojo
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.decrypt
-import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.encrypt
-import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateKey
+import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.Utilities
 
 
@@ -92,7 +90,7 @@ class AddMyHealthActivity : AppCompatActivity() {
             myHealth = RealmMyHealth()
         }
         if (TextUtils.isEmpty(myHealth?.userKey)) {
-            myHealth?.userKey = generateKey()
+            myHealth?.userKey = AndroidDecrypter.generateKey()
         }
         myHealth?.profile = health
         if (healthPojo == null) {
@@ -101,7 +99,7 @@ class AddMyHealthActivity : AppCompatActivity() {
         healthPojo?.isUpdated = true
         healthPojo?.userId = userModelB?._id
         try {
-            healthPojo?.data = encrypt(Gson().toJson(myHealth), key, iv)
+            healthPojo?.data = AndroidDecrypter.encrypt(Gson().toJson(myHealth), key, iv)
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -116,7 +114,7 @@ class AddMyHealthActivity : AppCompatActivity() {
     private fun populate() {
         if (healthPojo != null && !TextUtils.isEmpty(healthPojo?.data)) {
             myHealth = Gson().fromJson(
-                decrypt(healthPojo?.data, userModelB?.key, userModelB?.iv),
+                AndroidDecrypter.decrypt(healthPojo?.data, userModelB?.key, userModelB?.iv),
                 RealmMyHealth::class.java
             )
             val health = myHealth?.profile

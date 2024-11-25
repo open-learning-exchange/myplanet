@@ -21,12 +21,11 @@ import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.news.ExpandableListAdapter
 import org.ole.planet.myplanet.ui.news.GrandChildAdapter
-import org.ole.planet.myplanet.ui.team.BaseTeamFragment.Companion.settings
+import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import java.util.Date
 
@@ -141,9 +140,9 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
                             showGrandChildRecyclerView(enterpriseList, "enterprises", filteredChatHistory[position])
                         }
                     } else {
-                        settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                        val sParentcode = settings?.getString("parentCode", "")
-                        val communityName = settings?.getString("communityName", "")
+                        BaseTeamFragment.settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                        val sParentcode = BaseTeamFragment.settings?.getString("parentCode", "")
+                        val communityName = BaseTeamFragment.settings?.getString("communityName", "")
                         val teamId = "$communityName@$sParentcode"
                         val community = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
                         showEditTextAndShareButton(community, "community", filteredChatHistory[position])
@@ -213,8 +212,7 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
             map["chat"] = "true"
             map["news"] = Gson().toJson(serializedMap)
 
-            createNews(map, mRealm, user, null)
-
+            RealmNews.createNews(map, mRealm, user, null)
             fragment.refreshChatHistoryList()
             dialog.dismiss()
         }

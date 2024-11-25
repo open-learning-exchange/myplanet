@@ -8,13 +8,13 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import io.realm.Realm
 import io.realm.RealmResults
+import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.databinding.FragmentFeedbackListBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment.OnFeedbackSubmittedListener
-import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 
 class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     private lateinit var fragmentFeedbackListBinding: FragmentFeedbackListBinding
@@ -55,7 +55,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
         fragmentFeedbackListBinding.rvFeedback.adapter = adapterFeedback
 
         val itemCount = feedbackList?.size ?: 0
-        showNoData(fragmentFeedbackListBinding.tvMessage, itemCount, "feedback")
+        BaseRecyclerFragment.showNoData(fragmentFeedbackListBinding.tvMessage, itemCount, "feedback")
 
         updateTextViewsVisibility(itemCount)
     }
@@ -87,7 +87,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
             adapterFeedback?.notifyDataSetChanged()
 
             val itemCount = updatedList?.size ?: 0
-            showNoData(fragmentFeedbackListBinding.tvMessage, itemCount, "feedback")
+            BaseRecyclerFragment.showNoData(fragmentFeedbackListBinding.tvMessage, itemCount, "feedback")
             updateTextViewsVisibility(itemCount)
         }
     }

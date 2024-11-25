@@ -14,8 +14,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentChatDetailBinding
 import org.ole.planet.myplanet.datamanager.*
 import org.ole.planet.myplanet.model.*
-import org.ole.planet.myplanet.model.RealmChatHistory.Companion.addConversationToChatHistory
-import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createAction
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utilities.Utilities
@@ -343,7 +341,7 @@ class ChatDetailFragment : Fragment() {
                         (requireActivity() as? DashboardActivity)?.refreshChatHistoryList()
                     }
 
-                    createAction(mRealm, "${user?.id}", "${response.body()?.couchDBResponse?.id}", "ai research")
+                    RealmUserChallengeActions.createAction(mRealm, "${user?.id}", "${response.body()?.couchDBResponse?.id}", "ai research")
                 } else {
                     fragmentChatDetailBinding.textGchatIndicator.visibility = View.VISIBLE
                     fragmentChatDetailBinding.textGchatIndicator.text = if (response.message() == "null"){
@@ -414,7 +412,7 @@ class ChatDetailFragment : Fragment() {
 
     private fun continueConversationRealm(id:String, query:String, chatResponse:String) {
         try {
-            addConversationToChatHistory(mRealm, id, query, chatResponse)
+            RealmChatHistory.addConversationToChatHistory(mRealm, id, query, chatResponse)
             mRealm.commitTransaction()
         } catch (e: Exception) {
             e.printStackTrace()

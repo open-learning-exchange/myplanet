@@ -8,7 +8,6 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 
 object NotificationUtil {
-    @JvmStatic
     fun create(context: Context, smallIcon: Int, contentTitle: String?, contentText: String?) {
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val a = NotificationCompat.Builder(context, "11")
@@ -18,19 +17,16 @@ object NotificationUtil {
         manager.notify(111, notification)
     }
 
-    @JvmStatic
     fun cancel(context: Context, id: Int) {
         val nm = NotificationManagerCompat.from(context)
         nm.cancel(id)
     }
 
-    @JvmStatic
     fun cancelAll(context: Context) {
         val nm = NotificationManagerCompat.from(context)
         nm.cancelAll()
     }
 
-    @JvmStatic
     fun setChannel(notificationManager: NotificationManager?) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val importance = NotificationManager.IMPORTANCE_LOW

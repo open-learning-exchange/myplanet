@@ -7,7 +7,6 @@ import android.provider.Settings
 import androidx.core.content.pm.PackageInfoCompat.getLongVersionCode
 
 object VersionUtils {
-    @JvmStatic
     fun getVersionCode(context: Context): Int {
         try {
             val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
@@ -23,7 +22,6 @@ object VersionUtils {
         return 0
     }
 
-    @JvmStatic
     fun getVersionName(context: Context): String? {
         try {
             val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
@@ -34,7 +32,6 @@ object VersionUtils {
         return ""
     }
 
-    @JvmStatic
     fun getAndroidId(context: Context): String {
         return Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
     }

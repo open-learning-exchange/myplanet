@@ -5,7 +5,7 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.UserListItemBinding
 import org.ole.planet.myplanet.model.User
@@ -45,7 +45,7 @@ class TeamListAdapter(private var membersList: MutableList<User>, val context: C
             } else {
                 binding.userNameTextView.text = account.fullName
             }
-            Glide.with(context)
+            Glide.with(MainApplication.context)
                 .load(account.image)
                 .placeholder(R.drawable.profile)
                 .error(R.drawable.profile)

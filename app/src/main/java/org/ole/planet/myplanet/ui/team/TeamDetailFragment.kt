@@ -12,7 +12,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmMyTeam.Companion.isTeamLeader
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -65,7 +64,7 @@ class TeamDetailFragment : BaseTeamFragment() {
                 }
             }
         }
-        if (isTeamLeader(teamId, user?.id, mRealm)) {
+        if (RealmMyTeam.isTeamLeader(teamId, user?.id, mRealm)) {
             fragmentTeamDetailBinding.btnLeave.visibility = View.GONE
         }
         return fragmentTeamDetailBinding.root

@@ -25,10 +25,7 @@ import org.ole.planet.myplanet.model.RealmMyHealth.RealmMyHealthProfile
 import org.ole.planet.myplanet.model.RealmMyHealthPojo
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.decrypt
-import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.encrypt
-import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateIv
-import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateKey
+import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.DimenUtils.dpToPx
 import org.ole.planet.myplanet.utilities.JsonUtils.getBoolean
@@ -78,7 +75,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         }
         user = mRealm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
         if (pojo != null && !TextUtils.isEmpty(pojo?.data)) {
-            health = Gson().fromJson(decrypt(pojo?.data, user?.key, user?.iv), RealmMyHealth::class.java)
+            health = Gson().fromJson(AndroidDecrypter.decrypt(pojo?.data, user?.key, user?.iv), RealmMyHealth::class.java)
         }
         if (health == null) {
             initHealth()
@@ -215,7 +212,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         health = RealmMyHealth()
         val profile = RealmMyHealthProfile()
         health?.lastExamination = Date().time
-        health?.userKey = generateKey()
+        health?.userKey = AndroidDecrypter.generateKey()
         health?.profile = profile
         mRealm.commitTransaction()
     }
@@ -224,7 +221,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         if (!mRealm.isInTransaction) mRealm.beginTransaction()
         createPojo()
         if (examination == null) {
-            val userId = generateIv()
+            val userId = AndroidDecrypter.generateIv()
             examination = mRealm.createObject(RealmMyHealthPojo::class.java, userId)
             examination?.userId = userId
         }
@@ -260,7 +257,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         examination?.isHasInfo = hasInfo
         pojo?.isUpdated = true
         try {
-            examination?.data = encrypt(Gson().toJson(sign), user?.key!!, user?.iv!!)
+            examination?.data = AndroidDecrypter.encrypt(Gson().toJson(sign), user?.key!!, user?.iv!!)
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -310,6 +307,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         return try {
             trim.toInt()
         } catch (e: Exception) {
+            e.printStackTrace()
             0
         }
     }
@@ -329,7 +327,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
                 pojo?.userId = user?._id
             }
             health?.lastExamination = Date().time
-            pojo?.data = encrypt(Gson().toJson(health), user?.key, user?.iv)
+            pojo?.data = AndroidDecrypter.encrypt(Gson().toJson(health), user?.key, user?.iv)
         } catch (e: Exception) {
             e.printStackTrace()
             Utilities.toast(this, getString(R.string.unable_to_add_health_record))
