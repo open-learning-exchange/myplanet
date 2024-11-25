@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -90,10 +91,14 @@ class AdapterJoinedMember(private val context: Context, private val list: List<R
                     }
                 }
                 builder.setAdapter(adapter) { _, i ->
-                    if (i == 0) {
-                        reject(list[position], position)
+                    if (i >= 0 && i < list.size) {
+                        if (i == 0) {
+                            reject(list[i], i)
+                        } else {
+                            makeLeader(list[i])
+                        }
                     } else {
-                        makeLeader(list[position])
+                        Toast.makeText(context, R.string.cannot_remove_user, Toast.LENGTH_SHORT).show()
                     }
                 }.setNegativeButton(R.string.dismiss, null).show()
             }
