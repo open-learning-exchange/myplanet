@@ -205,15 +205,15 @@ open class RealmMyCourse : RealmObject() {
             } else {
                 mutableListOf()
             }
-
+            val linksToProcess: List<String>
             synchronized(concatenatedLinks) {
-                for (link in concatenatedLinks) {
-                    if (!existingConcatenatedLinks.contains(link)) {
-                        existingConcatenatedLinks.add(link)
-                    }
+                linksToProcess = concatenatedLinks.toList()
+            }
+            for (link in linksToProcess) {
+                if (!existingConcatenatedLinks.contains(link)) {
+                    existingConcatenatedLinks.add(link)
                 }
             }
-
             val jsonConcatenatedLinks = gson.toJson(existingConcatenatedLinks)
             settings.edit().putString("concatenated_links", jsonConcatenatedLinks).apply()
         }
