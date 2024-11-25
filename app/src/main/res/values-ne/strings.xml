@@ -181,6 +181,8 @@
     <string name="open_date">खोल्ने मिति</string>
     <string name="my_survey">मेरो सर्वेक्षण</string>
     <string name="cannot_remove_user">प्रयोगकर्ता हटाउन सकिएन</string>
+    <string name="no_members_task">कार्य सौंपन टोली सदस्यहरू उपस्थित छैनन्</string>
+    <string name="no_member_selected">कुनै सदस्य चयन गरिएको छैन। कृपया फेरि प्रयास गर्नुहोस्</string>
 
     <string-array name="level">
         <item>प्रारम्भिक</item>
