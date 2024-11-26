@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.dashboard
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -76,10 +77,8 @@ class BellDashboardFragment : BaseDashboardFragment() {
         val primaryServer = settings?.getString("serverURL", "")
         val lastReachableServer = settings?.getString("last_reachable_server", "")
 
-        return listOfNotNull(
-            lastReachableServer,
-            primaryServer
-        ) + listOf(
+        // Default server list
+        val defaultServers = listOf(
             "http://example.com/server1",
             "http://35.231.161.29",
             "https://example.com/server3",
@@ -89,7 +88,27 @@ class BellDashboardFragment : BaseDashboardFragment() {
             "http://example.com/server7",
             "https://example.com/server8",
             "https://example.com/server9"
-        ).filterNot { it == lastReachableServer || it == primaryServer }
+        )
+
+        // Create a prioritized list
+        return buildList {
+            // First, try the last reachable server if it's different from primary
+            if (lastReachableServer != null && lastReachableServer != primaryServer) {
+                add(lastReachableServer)
+            }
+
+            // Then add the primary server
+            if (primaryServer != null) {
+                add(primaryServer)
+            }
+
+            // Add remaining default servers, excluding already added servers
+            addAll(
+                defaultServers.filterNot {
+                    it == lastReachableServer || it == primaryServer
+                }
+            )
+        }
     }
 
     private suspend fun checkServerWithCache(url: String): Boolean {
@@ -162,6 +181,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
             val colorRes = when {
                 reachableServer != null -> {
                     val processedUrl = ProcessUserDataActivity.setUrlParts(reachableServer, settings?.getString("serverPin", "") ?: "")
+                    Log.d("BellDashboardFragment", "Server reachable: $processedUrl")
                     if (processedUrl.isNotEmpty()) R.color.green else R.color.md_red_700
                 }
                 status is NetworkStatus.Disconnected -> R.color.md_red_700
