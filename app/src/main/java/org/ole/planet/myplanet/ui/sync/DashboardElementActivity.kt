@@ -10,6 +10,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
+import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
@@ -122,6 +123,8 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
 
     fun logSyncInSharedPrefs() {
         lifecycleScope.launch {
+            Log.d("DashboardActivity 1", "Syncing: ${Utilities.getUrl()}")
+            Log.d("DashboardActivity 2", "Syncing: ${isServerReachable(Utilities.getUrl())}")
             if (isServerReachable(Utilities.getUrl())) {
                 startUpload("dashboard")
                 createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")

@@ -21,12 +21,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.lifecycleScope
 import com.google.android.material.textfield.TextInputLayout
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.PermissionActivity
@@ -43,7 +38,6 @@ import org.ole.planet.myplanet.utilities.FileUtils.installApk
 import kotlin.math.roundToInt
 
 abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
-    lateinit var settings: SharedPreferences
     var customProgressDialog: DialogUtils.CustomProgressDialog? = null
 
     @JvmField
@@ -130,36 +124,58 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         }
     }
 
-    fun setUrlParts(url: String, password: String): String {
-        val editor = settings.edit()
-        val uri = Uri.parse(url)
-        var couchdbURL: String
-        val urlUser: String
-        val urlPwd: String
-        if (url.contains("@")) {
-            val userinfo = getUserInfo(uri)
-            urlUser = userinfo[0]
-            urlPwd = userinfo[1]
-            couchdbURL = url
-        } else if (TextUtils.isEmpty(password)) {
-            showAlert(this, "", getString(R.string.pin_is_required))
-            return ""
-        } else {
-            urlUser = "satellite"
-            urlPwd = password
-            couchdbURL = uri.scheme + "://" + urlUser + ":" + urlPwd + "@" + uri.host + ":" + if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port
+    companion object {
+        lateinit var settings: SharedPreferences
+
+        fun setUrlParts(url: String, password: String): String {
+            val editor = settings.edit()
+            val uri = Uri.parse(url)
+            var couchdbURL: String
+            val urlUser: String
+            val urlPwd: String
+            if (url.contains("@")) {
+                val userinfo = getUserInfo(uri)
+                urlUser = userinfo[0]
+                urlPwd = userinfo[1]
+                couchdbURL = url
+            } else if (TextUtils.isEmpty(password)) {
+                showAlert(context, "", context.getString(R.string.pin_is_required))
+                return ""
+            } else {
+                urlUser = "satellite"
+                urlPwd = password
+                couchdbURL = "${uri.scheme}://$urlUser:$urlPwd@${uri.host}:${if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else "${uri.port}"}"
+            }
+            editor.putString("serverPin", password)
+            saveUrlScheme(editor, uri, url, couchdbURL)
+            editor.putString("url_user", urlUser)
+            editor.putString("url_pwd", urlPwd)
+            editor.putString("url_Scheme", uri.scheme)
+            editor.putString("url_Host", uri.host)
+            editor.apply()
+            if (!couchdbURL.endsWith("db")) {
+                couchdbURL += "/db"
+            }
+            return couchdbURL
         }
-        editor.putString("serverPin", password)
-        saveUrlScheme(editor, uri, url, couchdbURL)
-        editor.putString("url_user", urlUser)
-        editor.putString("url_pwd", urlPwd)
-        editor.putString("url_Scheme", uri.scheme)
-        editor.putString("url_Host", uri.host)
-        editor.apply()
-        if (!couchdbURL.endsWith("db")) {
-            couchdbURL += "/db"
+
+        fun getUserInfo(uri: Uri): Array<String> {
+            val ar = arrayOf("", "")
+            val info = uri.userInfo?.split(":".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()
+            if ((info?.size ?: 0) > 1) {
+                ar[0] = "${info?.get(0)}"
+                ar[1] = "${info?.get(1)}"
+            }
+            return ar
         }
-        return couchdbURL
+
+        fun saveUrlScheme(editor: SharedPreferences.Editor, uri: Uri, url: String?, couchdbURL: String?) {
+            editor.putString("url_Scheme", uri.scheme)
+            editor.putString("url_Host", uri.host)
+            editor.putInt("url_Port", if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port)
+            editor.putString("serverURL", url)
+            editor.putString("couchdbURL", couchdbURL)
+        }
     }
 
     fun isUrlValid(url: String): Boolean {
@@ -208,7 +224,6 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
     }
 
     fun saveUserInfoPref(settings: SharedPreferences, password: String?, user: RealmUserModel) {
-        this.settings = settings
         val editor = settings.edit()
         editor.putString("userId", user.id)
         editor.putString("name", user.name)
@@ -228,23 +243,5 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         builder1.setNegativeButton(R.string.okay) { dialog: DialogInterface, _: Int -> dialog.cancel() }
         val alert11 = builder1.create()
         alert11.show()
-    }
-
-    private fun getUserInfo(uri: Uri): Array<String> {
-        val ar = arrayOf("", "")
-        val info = uri.userInfo?.split(":".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()
-        if ((info?.size ?: 0) > 1) {
-            ar[0] = "${info?.get(0)}"
-            ar[1] = "${info?.get(1)}"
-        }
-        return ar
-    }
-
-    private fun saveUrlScheme(editor: SharedPreferences.Editor, uri: Uri, url: String?, couchdbURL: String?) {
-        editor.putString("url_Scheme", uri.scheme)
-        editor.putString("url_Host", uri.host)
-        editor.putInt("url_Port", if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port)
-        editor.putString("serverURL", url)
-        editor.putString("couchdbURL", couchdbURL)
     }
 }

@@ -415,7 +415,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         val editor = settings.edit()
         editor.putString("loginUserName", name)
         editor.putString("loginUserPassword", password)
-        val isLoggedIn = authenticateUser(settings, name, password, false)
+        val isLoggedIn = authenticateUser(name, password, false)
         if (isLoggedIn) {
             Toast.makeText(applicationContext, getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
             onLogin()
@@ -429,7 +429,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
 
                 override fun onSyncComplete() {
                     customProgressDialog?.dismiss()
-                    val log = authenticateUser(settings, name, password, true)
+                    val log = authenticateUser(name, password, true)
                     if (log) {
                         Toast.makeText(applicationContext, getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
                         onLogin()

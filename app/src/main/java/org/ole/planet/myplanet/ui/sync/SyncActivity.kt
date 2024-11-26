@@ -263,11 +263,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         editor.apply()
     }
 
-    fun authenticateUser(settings: SharedPreferences?, username: String?, password: String?, isManagerMode: Boolean): Boolean {
+    fun authenticateUser(username: String?, password: String?, isManagerMode: Boolean): Boolean {
         return try {
-            if (settings != null) {
-                this.settings = settings
-            }
             if (mRealm.isEmpty) {
                 alertDialogOkay(getString(R.string.server_not_configured_properly_connect_this_device_with_planet_server))
                 false
@@ -839,7 +836,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             .setTitle(R.string.please_enter_your_password)
             .setPositiveButton(R.string.login) { _: DialogInterface?, _: Int ->
                 val password = "${layoutChildLoginBinding.etChildPassword.text}"
-                if (authenticateUser(settings, userModel.name, password, false)) {
+                if (authenticateUser(userModel.name, password, false)) {
                     Toast.makeText(applicationContext, getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
                     onLogin()
                 } else {
