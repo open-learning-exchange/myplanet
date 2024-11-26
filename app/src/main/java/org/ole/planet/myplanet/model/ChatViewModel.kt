@@ -3,7 +3,7 @@ package org.ole.planet.myplanet.model
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import io.realm.RealmList
+import io.realm.kotlin.types.RealmList
 
 class ChatViewModel : ViewModel() {
     private val selectedChatHistoryLiveData = MutableLiveData<RealmList<Conversation>>()

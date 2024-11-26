@@ -1,10 +1,11 @@
 package org.ole.planet.myplanet.model
 
-import com.google.gson.JsonArray
-import com.google.gson.JsonElement
-import com.google.gson.JsonObject
 import io.realm.kotlin.types.RealmObject
 import io.realm.kotlin.types.annotations.PrimaryKey
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 class RealmMessage : RealmObject {
     @PrimaryKey
@@ -15,14 +16,13 @@ class RealmMessage : RealmObject {
 
     companion object {
         fun serialize(messages: List<RealmMessage>): JsonElement {
-            return JsonArray().apply {
+            return buildJsonArray {
                 messages.forEach { ms ->
-                    val `object` = JsonObject().apply {
-                        addProperty("user", ms.user)
-                        addProperty("time", ms.time)
-                        addProperty("message", ms.message)
-                    }
-                    add(`object`)
+                    add(buildJsonObject {
+                        put("user", ms.user)
+                        put("time", ms.time)
+                        put("message", ms.message)
+                    })
                 }
             }
         }

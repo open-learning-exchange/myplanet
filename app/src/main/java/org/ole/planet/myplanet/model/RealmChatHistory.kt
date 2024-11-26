@@ -1,21 +1,22 @@
 package org.ole.planet.myplanet.model
 
 import com.google.gson.Gson
-import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.opencsv.CSVWriter
-import io.realm.Realm
-import io.realm.RealmList
-import io.realm.RealmObject
-import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.MainApplication.Companion.context
+import io.realm.kotlin.Realm
+import io.realm.kotlin.ext.realmListOf
+import io.realm.kotlin.types.RealmList
+import io.realm.kotlin.types.RealmObject
+import io.realm.kotlin.types.annotations.PrimaryKey
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utilities.JsonUtils
-import java.util.Date
 import java.io.File
 import java.io.FileWriter
 import java.io.IOException
+import java.util.Date
 
-open class RealmChatHistory : RealmObject() {
+
+class RealmChatHistory : RealmObject {
     @PrimaryKey
     var id: String? = null
     var _id: String? = null
@@ -27,71 +28,87 @@ open class RealmChatHistory : RealmObject() {
     var updatedDate: String? = null
     var lastUsed: Long = 0
     var conversations: RealmList<Conversation>? = null
+
+    constructor()
+
     companion object {
         private val chatDataList: MutableList<Array<String>> = mutableListOf()
 
-        @JvmStatic
-        fun insert(mRealm: Realm, act: JsonObject?) {
-            if (!mRealm.isInTransaction) {
-                mRealm.beginTransaction()
-            }
-            val chatHistoryId = JsonUtils.getString("_id", act)
-            val existingChatHistory = mRealm.where(RealmChatHistory::class.java).equalTo("_id", chatHistoryId).findFirst()
-            existingChatHistory?.deleteFromRealm()
-            val chatHistory = mRealm.createObject(RealmChatHistory::class.java, chatHistoryId)
-            chatHistory._rev = JsonUtils.getString("_rev", act)
-            chatHistory._id = JsonUtils.getString("_id", act)
-            chatHistory.title = JsonUtils.getString("title", act)
-            chatHistory.createdDate = JsonUtils.getString("createdDate", act)
-            chatHistory.updatedDate = JsonUtils.getString("updatedDate", act)
-            chatHistory.user = JsonUtils.getString("user", act)
-            chatHistory.aiProvider = JsonUtils.getString("aiProvider", act)
-            chatHistory.conversations = parseConversations(mRealm, JsonUtils.getJsonArray("conversations", act))
-            chatHistory.lastUsed = Date().time
-            mRealm.commitTransaction()
+        suspend fun insert(realm: Realm, act: JsonObject?) {
+            realm.write {
+                val chatHistoryId = JsonUtils.getString("_id", act)
 
-            val csvRow = arrayOf(
-                JsonUtils.getString("_id", act),
-                JsonUtils.getString("_rev", act),
-                JsonUtils.getString("title", act),
-                JsonUtils.getString("createdDate", act),
-                JsonUtils.getString("updatedDate", act),
-                JsonUtils.getString("user", act),
-                JsonUtils.getString("aiProvider", act),
-                JsonUtils.getJsonArray("conversations", act).toString()
-            )
-            chatDataList.add(csvRow)
-        }
+                query(RealmChatHistory::class)
+                    .query("_id == $0", chatHistoryId)
+                    .first()
+                    .find()
+                    ?.let { findLatest(it)?.let { obj -> delete(obj) } }
 
-        private fun parseConversations(realm: Realm, jsonArray: JsonArray): RealmList<Conversation> {
-            val conversations = RealmList<Conversation>()
-            for (element in jsonArray) {
-                val conversation = Gson().fromJson(element, Conversation::class.java)
-                val realmConversation = realm.copyToRealm(conversation)
-                conversations.add(realmConversation)
-            }
-            return conversations
-        }
-
-        fun addConversationToChatHistory(mRealm: Realm, chatHistoryId: String?, query: String?, response: String?) {
-            val chatHistory = mRealm.where(RealmChatHistory::class.java).equalTo("_id", chatHistoryId).findFirst()
-            if (chatHistory != null) {
-                if (!mRealm.isInTransaction) {
-                    mRealm.beginTransaction()
+                val chatHistory = RealmChatHistory().apply {
+                    id = chatHistoryId
+                    _rev = JsonUtils.getString("_rev", act)
+                    _id = JsonUtils.getString("_id", act)
+                    title = JsonUtils.getString("title", act)
+                    createdDate = JsonUtils.getString("createdDate", act)
+                    updatedDate = JsonUtils.getString("updatedDate", act)
+                    user = JsonUtils.getString("user", act)
+                    aiProvider = JsonUtils.getString("aiProvider", act)
+                    conversations = parseConversations(act)
+                    lastUsed = Date().time
                 }
-                try {
-                    val conversation = Conversation()
-                    conversation.query = query
-                    conversation.response = response
-                    if (chatHistory.conversations == null) {
-                        chatHistory.conversations = RealmList()
+
+                this.copyToRealm(chatHistory)
+
+                val csvRow = arrayOf(
+                    JsonUtils.getString("_id", act),
+                    JsonUtils.getString("_rev", act),
+                    JsonUtils.getString("title", act),
+                    JsonUtils.getString("createdDate", act),
+                    JsonUtils.getString("updatedDate", act),
+                    JsonUtils.getString("user", act),
+                    JsonUtils.getString("aiProvider", act),
+                    JsonUtils.getJsonArray("conversations", act).toString()
+                )
+                chatDataList.add(csvRow)
+            }
+        }
+
+        private fun parseConversations(act: JsonObject?): RealmList<Conversation>? {
+            val jsonArray = JsonUtils.getJsonArray("conversations", act)
+            return if (jsonArray.isEmpty) null else realmListOf<Conversation>().apply {
+                jsonArray.forEach { element ->
+                    add(Gson().fromJson(element, Conversation::class.java))
+                }
+            }
+        }
+
+        suspend fun addConversationToChatHistory(realm: Realm, chatHistoryId: String?, query: String?, response: String?) {
+            realm.write {
+                val chatHistory = query(RealmChatHistory::class)
+                    .query("_id == $0", chatHistoryId)
+                    .first()
+                    .find()
+
+                if (chatHistory != null) {
+                    try {
+                        val conversation = Conversation().apply {
+                            this.query = query
+                            this.response = response
+                        }
+
+                        if (chatHistory.conversations == null) {
+                            chatHistory.conversations = realmListOf()
+                        }
+                        chatHistory.conversations?.add(conversation)
+                        chatHistory.lastUsed = Date().time
+
+                        findLatest(chatHistory)?.let { latest ->
+                            latest.conversations = chatHistory.conversations
+                            latest.lastUsed = chatHistory.lastUsed
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
                     }
-                    chatHistory.conversations?.add(conversation)
-                    chatHistory.lastUsed = Date().time
-                    mRealm.copyToRealmOrUpdate(chatHistory)
-                } catch (e: Exception) {
-                    mRealm.cancelTransaction()
-                    e.printStackTrace()
                 }
             }
         }
@@ -100,19 +117,19 @@ open class RealmChatHistory : RealmObject() {
             try {
                 val file = File(filePath)
                 file.parentFile?.mkdirs()
-                val writer = CSVWriter(FileWriter(file))
-                writer.writeNext(arrayOf("chatHistoryId", "chatHistory_rev", "title", "createdDate", "updatedDate", "user", "aiProvider", "conversations"))
-                for (row in data) {
-                    writer.writeNext(row)
+                CSVWriter(FileWriter(file)).use { writer ->
+                    writer.writeNext(arrayOf("chatHistoryId", "chatHistory_rev", "title", "createdDate", "updatedDate", "user", "aiProvider", "conversations"))
+                    for (row in data) {
+                        writer.writeNext(row)
+                    }
                 }
-                writer.close()
             } catch (e: IOException) {
                 e.printStackTrace()
             }
         }
 
         fun chatWriteCsv() {
-            writeCsv("${context.getExternalFilesDir(null)}/ole/chatHistory.csv", chatDataList)
+            writeCsv("${MainApplication.context.getExternalFilesDir(null)}/ole/chatHistory.csv", chatDataList)
         }
     }
 }

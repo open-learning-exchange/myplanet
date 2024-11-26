@@ -1,12 +1,12 @@
 package org.ole.planet.myplanet.model
 
 import com.google.gson.JsonObject
-import io.realm.RealmObject
-import io.realm.annotations.PrimaryKey
+import io.realm.kotlin.types.RealmObject
+import io.realm.kotlin.types.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utilities.NetworkUtils
 
-open class RealmNewsLog : RealmObject() {
+class RealmNewsLog : RealmObject {
     @PrimaryKey
     var id: String? = null
     var _id: String? = null
@@ -16,8 +16,9 @@ open class RealmNewsLog : RealmObject() {
     var userId: String? = null
     var androidId: String? = null
 
+    constructor()
+
     companion object {
-        @JvmStatic
         fun serialize(log: RealmNewsLog): JsonObject {
             val ob = JsonObject()
             ob.addProperty("user", log.userId)
@@ -25,9 +26,7 @@ open class RealmNewsLog : RealmObject() {
             ob.addProperty("time", log.time)
             ob.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
             ob.addProperty("deviceName", NetworkUtils.getDeviceName())
-            ob.addProperty(
-                "customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context)
-            )
+            ob.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
             return ob
         }
     }
