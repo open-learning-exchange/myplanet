@@ -19,6 +19,7 @@ import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import io.realm.Realm
+import io.realm.Sort
 import org.ole.planet.myplanet.utilities.Utilities
 
 class AdapterJoinedMember(private val context: Context, private val list: List<RealmUserModel>, private val mRealm: Realm, private val teamId: String) : RecyclerView.Adapter<AdapterJoinedMember.ViewHolderUser>() {
@@ -102,7 +103,13 @@ class AdapterJoinedMember(private val context: Context, private val list: List<R
                                 if (currentUser.id != list[position].id) {
                                     reject(list[position], position)
                                 } else {
-                                    Toast.makeText(context, R.string.cannot_remove_user, Toast.LENGTH_SHORT).show()
+                                    val nextOfKin= getNextOfKin()
+                                    if(nextOfKin!=null){
+                                        makeLeader(nextOfKin)
+                                    }
+                                    else {
+                                        Toast.makeText(context, R.string.cannot_remove_user, Toast.LENGTH_SHORT).show()
+                                    }
                                 }
                             }
                             1 -> {
@@ -122,7 +129,29 @@ class AdapterJoinedMember(private val context: Context, private val list: List<R
         }
     }
 
+    private fun getNextOfKin(): RealmUserModel? {
+        val members: List<RealmMyTeam> = mRealm.where(RealmMyTeam::class.java)
+            .equalTo("teamId", teamId)
+            .equalTo("isLeader", false)
+            .notEqualTo("status","archived")
+            .sort("createdDate", Sort.DESCENDING)
+            .findAll()
+        val successor =  if (members.isNotEmpty()) members?.first() else null
+        if(successor==null){
+            return null
+        }
+        else{
+            val user= mRealm.where(RealmUserModel::class.java).equalTo("id", successor.userId).findFirst()
+            return user
+        }
+        return null
+    }
+
     private fun makeLeader(userModel: RealmUserModel) {
+        if(userModel==null){
+            Utilities.toast(context, context.getString(R.string.cannot_remove_user))
+            return
+        }
         mRealm.executeTransaction { realm ->
             val team = realm.where(RealmMyTeam::class.java)
                 .equalTo("teamId", teamId)
