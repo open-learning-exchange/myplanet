@@ -122,7 +122,7 @@ class MarkdownDialog : DialogFragment() {
 
             text = buttonText
             setOnClickListener {
-                val courseId = "9517e3b45a5bb63e69bb8f269216974d"
+                val courseId = "4e6b78800b6ad18b4e8b0e1e38a98cac"
                 when (buttonText) {
                     context.getString(R.string.start), context.getString(R.string.continuation) -> {
                         val fragment = TakeCourseFragment().apply {
