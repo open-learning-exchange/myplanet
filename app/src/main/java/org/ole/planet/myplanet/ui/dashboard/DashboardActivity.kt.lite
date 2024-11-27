@@ -303,7 +303,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
         val courseData = MyProgressFragment.fetchCourseData(mRealm, user?.id)
 
-        val courseId = "9517e3b45a5bb63e69bb8f269216974d"
+        val courseId = "4e6b78800b6ad18b4e8b0e1e38a98cac"
         val progress = MyProgressFragment.getCourseProgress(courseData, courseId)
         val completedCount = MyProgressFragment.countUsersWhoCompletedCourse(mRealm, courseId)
 
