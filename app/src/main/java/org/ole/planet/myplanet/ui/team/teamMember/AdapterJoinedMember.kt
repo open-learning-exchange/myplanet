@@ -82,7 +82,11 @@ class AdapterJoinedMember(private val context: Context, private val list: List<R
             rowJoinedUserBinding.icMore.visibility = View.VISIBLE
             rowJoinedUserBinding.icMore.setOnClickListener {
                 val builder = AlertDialog.Builder(context, R.style.AlertDialogTheme)
-                val adapter = object : ArrayAdapter<CharSequence>(context, android.R.layout.simple_list_item_1, overflowMenuOptions) {
+                val adapter = object : ArrayAdapter<CharSequence>(
+                    context,
+                    android.R.layout.simple_list_item_1,
+                    overflowMenuOptions
+                ) {
                     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
                         val view = super.getView(position, convertView, parent) as TextView
                         val color = ContextCompat.getColor(context, R.color.daynight_textColor)
@@ -91,11 +95,22 @@ class AdapterJoinedMember(private val context: Context, private val list: List<R
                     }
                 }
                 builder.setAdapter(adapter) { _, i ->
-                    if (i >= 0 && i < list.size) {
-                        if (i == 0) {
-                            reject(list[i], i)
-                        } else {
-                            makeLeader(list[i])
+
+                    if (position >= 0 && position < list.size) {
+                        when (i) {
+                            0 -> {
+                                if (currentUser.id != list[position].id) {
+                                    reject(list[position], position)
+                                } else {
+                                    Toast.makeText(context, R.string.cannot_remove_user, Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                            1 -> {
+                                makeLeader(list[position])
+                            }
+                            else -> {
+                                Toast.makeText(context, R.string.cannot_remove_user, Toast.LENGTH_SHORT).show()
+                            }
                         }
                     } else {
                         Toast.makeText(context, R.string.cannot_remove_user, Toast.LENGTH_SHORT).show()
