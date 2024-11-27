@@ -19,6 +19,7 @@ import io.realm.Case
 import io.realm.Realm
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.filter
+import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentHomeBellBinding
 import org.ole.planet.myplanet.model.RealmCertification
@@ -77,37 +78,33 @@ class BellDashboardFragment : BaseDashboardFragment() {
         val primaryServer = settings?.getString("serverURL", "")
         val lastReachableServer = settings?.getString("last_reachable_server", "")
 
-        // Default server list
-        val defaultServers = listOf(
-            "http://example.com/server1",
-            "http://35.231.161.29",
-            "https://example.com/server3",
-            "http://example.com/server4",
-            "https://example.com/server5",
-            "https://example.com/server6",
-            "http://example.com/server7",
-            "https://example.com/server8",
-            "https://example.com/server9"
+        val serverMappings = mapOf(
+            "http://${BuildConfig.PLANET_URIUR_URL}" to "http://35.231.161.29",
+            "http://192.168.1.202" to "http://34.35.29.147",
+            "https://${BuildConfig.PLANET_GUATEMALA_URL}" to "http://guatemala.com/cloudserver",
+            "http://${BuildConfig.PLANET_XELA_URL}" to "http://xela.com/cloudserver",
+            "http://${BuildConfig.PLANET_SANPABLO_URL}" to "http://sanpablo.com/cloudserver",
+            "http://${BuildConfig.PLANET_EMBAKASI_URL}" to "http://embakasi.com/cloudserver",
+            "https://${BuildConfig.PLANET_VI_URL}" to "http://vi.com/cloudserver"
         )
 
-        // Create a prioritized list
         return buildList {
-            // First, try the last reachable server if it's different from primary
+            // Add last reachable server if different from primary
             if (lastReachableServer != null && lastReachableServer != primaryServer) {
                 add(lastReachableServer)
             }
 
-            // Then add the primary server
+            // Add primary server
             if (primaryServer != null) {
                 add(primaryServer)
             }
 
-            // Add remaining default servers, excluding already added servers
-            addAll(
-                defaultServers.filterNot {
-                    it == lastReachableServer || it == primaryServer
+            // Add ONLY the mapped fallback server for the primary server
+            serverMappings[primaryServer]?.let { fallbackServer ->
+                if (fallbackServer !in this) {
+                    add(fallbackServer)
                 }
-            )
+            }
         }
     }
 
@@ -131,52 +128,53 @@ class BellDashboardFragment : BaseDashboardFragment() {
         networkStatusJob = viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Default) {
             var lastEmittedStatus: NetworkStatus? = null
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.networkStatus
-                    .filter { status ->
-                        status != lastEmittedStatus.also {
-                            lastEmittedStatus = status
-                        }
+                viewModel.networkStatus.filter { status ->
+                    status != lastEmittedStatus.also {
+                        lastEmittedStatus = status
                     }
-                    .collect { status ->
-                        withContext(Dispatchers.Main) {
-                            updateNetworkIndicator(status)
-                        }
+                }.collect { status ->
+                    withContext(Dispatchers.Main) {
+                        updateNetworkIndicator(status)
                     }
+                }
             }
         }
     }
 
     private suspend fun updateNetworkIndicator(status: NetworkStatus) = coroutineScope {
-        // Validate fragment and context
         if (!isAdded || context == null) return@coroutineScope
 
-        // Get optimized server URLs
         val serverUrls = getOptimizedServerUrls()
 
-        // Set initial color to yellow while checking
-        fragmentHomeBellBinding.cardProfileBell.imageView.borderColor =
-            ContextCompat.getColor(requireContext(), R.color.md_yellow_600)
+        // Log the full list of servers being attempted
+        Log.d("NetworkIndicator", "Attempting to connect to servers in order: $serverUrls")
 
-        // Find reachable server with timeout
+        fragmentHomeBellBinding.cardProfileBell.imageView.borderColor = ContextCompat.getColor(requireContext(), R.color.md_yellow_600)
+
         val reachableServer = try {
             withTimeout(serverCheckTimeout) {
                 serverUrls.firstNotNullOfOrNull { url ->
                     async {
-                        if (checkServerWithCache(url)) url else null
+                        Log.d("NetworkIndicator", "Checking server connection to: $url")
+                        if (checkServerWithCache(url)) {
+                            Log.d("NetworkIndicator", "Server successful: $url")
+                            url
+                        } else {
+                            Log.d("NetworkIndicator", "Server failed: $url")
+                            null
+                        }
                     }.await()
                 }
             }
         } catch (e: TimeoutCancellationException) {
-            e.printStackTrace()
+            Log.e("NetworkIndicator", "Server connection timeout", e)
             null
         }
 
-        // Update last reachable server in settings
         reachableServer?.let {
             editor?.putString("last_reachable_server", it)?.apply()
         }
 
-        // Determine color based on server reachability
         if (isAdded && view?.isAttachedToWindow == true) {
             val colorRes = when {
                 reachableServer != null -> {
