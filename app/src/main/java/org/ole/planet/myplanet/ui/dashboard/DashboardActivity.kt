@@ -367,7 +367,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             editor.putBoolean("has_shown_congrats", true).apply()
             val markdownContent = """
                 Ingresos totales de la comunidad: **$${calculateCommunityProgress(allVoiceCount, hasValidSync, completedCount)}**
-                
+
                 Tus ganancias totales: **$${calculateIndividualProgress(voiceCount, courseStatus, hasValidSync)}**
                 ### ¡Felicidades! Reto Completado <br/>
                 """.trimIndent()
@@ -380,7 +380,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
             val markdownContent = """
                 Ingresos totales de la comunidad: **$${calculateCommunityProgress(allVoiceCount, hasValidSync, completedCount)}**
-                
+
                 Tus ganancias totales: **$${calculateIndividualProgress(voiceCount, courseStatus, hasValidSync)}**
                 ### $courseTaskDone <br/>
                 ### $voiceTaskDone Comparte tu opinión en Nuestras Voces. $voicesText <br/>
