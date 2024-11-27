@@ -78,7 +78,7 @@ class AdapterJoinedMember(private val context: Context, private val list: List<R
         overflowMenuOptions: Array<String>,
         isLoggedInUserTeamLeader: Boolean
     ) {
-        if (isLoggedInUserTeamLeader) {
+        if (isLoggedInUserTeamLeader  && list.size>1) {
             rowJoinedUserBinding.icMore.visibility = View.VISIBLE
             rowJoinedUserBinding.icMore.setOnClickListener {
                 val builder = AlertDialog.Builder(context, R.style.AlertDialogTheme)
