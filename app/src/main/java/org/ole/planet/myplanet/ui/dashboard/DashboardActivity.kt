@@ -245,11 +245,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
         })
 
-        val voiceCount = mRealm.where(RealmUserChallengeActions::class.java)
-            .equalTo("userId", user?.id)
-            .equalTo("actionType", "voice")
-            .findAll().count()
-
         val startTime = 1730408400
         val commVoiceResults = mRealm.where(RealmNews::class.java)
             .equalTo("userId", user?.id)
@@ -351,8 +346,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     fun challengeDialog(voiceCount: Int, courseStatus: String, allVoiceCount: Int) {
         val voiceTaskDone = if (voiceCount >= 5) "✅" else "[ ]"
         val prereqsMet = courseStatus.contains("terminado", ignoreCase = true) && voiceCount >= 5
+        var hasValidSync = false
         val syncTaskDone = if (prereqsMet) {
-            val hasValidSync = mRealm.where(RealmUserChallengeActions::class.java)
+            hasValidSync = mRealm.where(RealmUserChallengeActions::class.java)
                 .equalTo("userId", user?.id)
                 .equalTo("actionType", "sync")
                 .count() > 0
@@ -370,11 +366,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         if (isCompleted && !hasShownCongrats) {
             editor.putBoolean("has_shown_congrats", true).apply()
             val markdownContent = """
-                Ganancias totales: **$${calculateProgress(allVoiceCount)}**
+                Ganancias totales: **$${calculateProgress(allVoiceCount, courseStatus, hasValidSync)}**
                 ### ¡Felicidades! Reto Completado <br/>
                 """.trimIndent()
-            MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount, allVoiceCount)
-                .show(supportFragmentManager, "markdown_dialog")
+            MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount, allVoiceCount, hasValidSync).show(supportFragmentManager, "markdown_dialog")
         } else {
             val voicesText = if (voiceCount > 0) {
                 "$voiceCount de 5 Voces diarias"
@@ -382,18 +377,22 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 ""
             }
             val markdownContent = """
-                Ganancias totales: **$${calculateProgress(allVoiceCount)}**
+                Ganancias totales: **$${calculateProgress(allVoiceCount,courseStatus, hasValidSync)}**
                 ### $courseTaskDone <br/>
                 ### $voiceTaskDone Comparte tu opinión en Nuestras Voces. $voicesText <br/>
                 ### $syncTaskDone Recuerda sincronizar la aplicación móvil. <br/>
                 """.trimIndent()
-            MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount, allVoiceCount)
+            MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount, allVoiceCount, hasValidSync)
                 .show(supportFragmentManager, "markdown_dialog")
         }
     }
 
-    private fun calculateProgress(allVoiceCount: Int): Int {
-        return (allVoiceCount * 5).coerceAtMost(500)
+    private fun calculateProgress(allVoiceCount: Int, courseStatus: String, hasValidSync: Boolean): Int {
+        val earnedDollarsVoice = allVoiceCount * 5
+        val earnedDollarsCourse = if (courseStatus.contains("terminado")) 5 else 0
+        val earnedDollarsSync = if (hasValidSync) 5 else 0
+        val total = earnedDollarsVoice + earnedDollarsCourse + earnedDollarsSync
+        return total.coerceAtMost(500)
     }
 
     private fun setupRealmListeners() {
