@@ -41,10 +41,10 @@ import io.realm.RealmResults
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.ole.planet.myplanet.BuildConfig
-import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 //import org.ole.planet.myplanet.base.BaseContainerFragment
-import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getLibraryList
+import org.ole.planet.myplanet.base.BaseResourceFragment
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.ActivityDashboardBinding
 import org.ole.planet.myplanet.databinding.CustomTabBinding
@@ -62,10 +62,9 @@ import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.chat.ChatHistoryListFragment
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
-import org.ole.planet.myplanet.ui.courses.MyProgressFragment.Companion.fetchCourseData
-import org.ole.planet.myplanet.ui.courses.MyProgressFragment.Companion.getCourseProgress
-import org.ole.planet.myplanet.ui.dashboard.notification.NotificationsFragment
+import org.ole.planet.myplanet.ui.courses.MyProgressFragment
 import org.ole.planet.myplanet.ui.dashboard.notification.NotificationListener
+import org.ole.planet.myplanet.ui.dashboard.notification.NotificationsFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
 import org.ole.planet.myplanet.ui.resources.ResourceDetailFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
@@ -231,7 +230,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     } else {
                         if (!doubleBackToExitPressedOnce) {
                             doubleBackToExitPressedOnce = true
-                            toast(context, getString(R.string.press_back_again_to_exit))
+                            toast(MainApplication.context, getString(R.string.press_back_again_to_exit))
                             Handler(Looper.getMainLooper()).postDelayed({ doubleBackToExitPressedOnce = false }, 2000)
                         } else {
 //                            val fragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
@@ -302,10 +301,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             .map { getDateFromTimestamp(it.time) }
             .distinct()
 
-        val courseData = fetchCourseData(mRealm, user?.id)
+        val courseData = MyProgressFragment.fetchCourseData(mRealm, user?.id)
 
         val courseId = "9517e3b45a5bb63e69bb8f269216974d"
-        val progress = getCourseProgress(courseData, courseId)
+        val progress = MyProgressFragment.getCourseProgress(courseData, courseId)
+        val completedCount = MyProgressFragment.countUsersWhoCompletedCourse(mRealm, courseId)
 
         val validUrls = listOf(
             "https://${BuildConfig.PLANET_GUATEMALA_URL}",
@@ -334,16 +334,16 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                         } else {
                             "Ingresa al curso $courseName completalo ($current de $max hecho)"
                         }
-                        challengeDialog(uniqueDates.size, courseStatus, allUniqueDates.size)
+                        challengeDialog(uniqueDates.size, courseStatus, allUniqueDates.size, completedCount)
                     } else {
-                        challengeDialog(uniqueDates.size, "$courseName no iniciado", allUniqueDates.size)
+                        challengeDialog(uniqueDates.size, "$courseName no iniciado", allUniqueDates.size, completedCount)
                     }
                 }
             }
         }
     }
 
-    fun challengeDialog(voiceCount: Int, courseStatus: String, allVoiceCount: Int) {
+    fun challengeDialog(voiceCount: Int, courseStatus: String, allVoiceCount: Int, completedCount: Int) {
         val voiceTaskDone = if (voiceCount >= 5) "✅" else "[ ]"
         val prereqsMet = courseStatus.contains("terminado", ignoreCase = true) && voiceCount >= 5
         var hasValidSync = false
@@ -366,7 +366,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         if (isCompleted && !hasShownCongrats) {
             editor.putBoolean("has_shown_congrats", true).apply()
             val markdownContent = """
-                Ganancias totales: **$${calculateProgress(allVoiceCount, courseStatus, hasValidSync)}**
+                Ingresos totales de la comunidad: **$${calculateCommunityProgress(allVoiceCount, hasValidSync, completedCount)}**
+
+                Tus ganancias totales: **$${calculateIndividualProgress(voiceCount, courseStatus, hasValidSync)}**
                 ### ¡Felicidades! Reto Completado <br/>
                 """.trimIndent()
             MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount, allVoiceCount, hasValidSync).show(supportFragmentManager, "markdown_dialog")
@@ -377,7 +379,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 ""
             }
             val markdownContent = """
-                Ganancias totales: **$${calculateProgress(allVoiceCount,courseStatus, hasValidSync)}**
+                Ingresos totales de la comunidad: **$${calculateCommunityProgress(allVoiceCount, hasValidSync, completedCount)}**
+
+                Tus ganancias totales: **$${calculateIndividualProgress(voiceCount, courseStatus, hasValidSync)}**
                 ### $courseTaskDone <br/>
                 ### $voiceTaskDone Comparte tu opinión en Nuestras Voces. $voicesText <br/>
                 ### $syncTaskDone Recuerda sincronizar la aplicación móvil. <br/>
@@ -387,12 +391,20 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-    private fun calculateProgress(allVoiceCount: Int, courseStatus: String, hasValidSync: Boolean): Int {
+    private fun calculateIndividualProgress(allVoiceCount: Int, courseStatus: String, hasValidSync: Boolean): Int {
         val earnedDollarsVoice = allVoiceCount * 5
         val earnedDollarsCourse = if (courseStatus.contains("terminado")) 5 else 0
         val earnedDollarsSync = if (hasValidSync) 5 else 0
         val total = earnedDollarsVoice + earnedDollarsCourse + earnedDollarsSync
         return total.coerceAtMost(500)
+    }
+
+    private fun calculateCommunityProgress (allVoiceCount: Int, hasValidSync: Boolean, completedCount: Int): Int {
+        val earnedDollarsVoice = allVoiceCount * 5
+        val earnedDollarsCourse = completedCount * 5
+        val earnedDollarsSync = if (hasValidSync) 5 else 0
+        val total = earnedDollarsVoice + earnedDollarsCourse + earnedDollarsSync
+        return total.coerceAtMost(35)
     }
 
     private fun setupRealmListeners() {
@@ -474,7 +486,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun updateResourceNotification() {
-        val resourceCount = getLibraryList(mRealm, user?.id).size
+        val resourceCount = BaseResourceFragment.getLibraryList(mRealm, user?.id).size
         if (resourceCount > 0) {
             val existingNotification = mRealm.where(RealmNotification::class.java)
                 .equalTo("userId", user?.id)
