@@ -106,6 +106,7 @@ class AdapterJoinedMember(private val context: Context, private val list: List<R
                                     val nextOfKin= getNextOfKin()
                                     if(nextOfKin!=null){
                                         makeLeader(nextOfKin)
+                                        reject(list[position], position)
                                     }
                                     else {
                                         Toast.makeText(context, R.string.cannot_remove_user, Toast.LENGTH_SHORT).show()
