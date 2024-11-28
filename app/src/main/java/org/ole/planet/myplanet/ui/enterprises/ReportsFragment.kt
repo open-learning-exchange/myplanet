@@ -8,6 +8,8 @@ import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.gson.JsonObject
@@ -24,7 +26,6 @@ import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
 import java.io.IOException
-import java.io.OutputStream
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -37,6 +38,7 @@ class ReportsFragment : BaseTeamFragment() {
     private var startTimeStamp: String? = null
     private var endTimeStamp: String? = null
     lateinit var teamType: String
+    private lateinit var createFileLauncher: ActivityResultLauncher<Intent>
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentReportsBinding = FragmentReportsBinding.inflate(inflater, container, false)
@@ -158,7 +160,7 @@ class ReportsFragment : BaseTeamFragment() {
                 type = "text/csv"
                 putExtra(Intent.EXTRA_TITLE, "Report_of_${teamName}_Financial_Report_Summary_on_${formattedDate}")
             }
-            startActivityForResult(intent, CREATE_FILE_REQUEST_CODE)
+            createFileLauncher.launch(intent)
         }
 
         list = mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId)
@@ -169,40 +171,10 @@ class ReportsFragment : BaseTeamFragment() {
             updatedReportsList(results)
         }
 
-        return fragmentReportsBinding.root
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        list = mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId)
-            .equalTo("docType", "report")
-            .sort("date", Sort.DESCENDING).findAll()
-        updatedReportsList(list as RealmResults<RealmMyTeam>)
-    }
-
-    override fun onNewsItemClick(news: RealmNews?) {}
-    override fun clearImages() {
-        imageList.clear()
-        llImage?.removeAllViews()
-    }
-
-    private fun updatedReportsList(results: RealmResults<RealmMyTeam>) {
-        activity?.runOnUiThread {
-            adapterReports = AdapterReports(requireContext(), results)
-            adapterReports.setNonTeamMember(!isMember())
-            fragmentReportsBinding.rvReports.layoutManager = LinearLayoutManager(activity)
-            fragmentReportsBinding.rvReports.adapter = adapterReports
-            adapterReports.notifyDataSetChanged()
-        }
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == CREATE_FILE_REQUEST_CODE) {
-            if (resultCode == Activity.RESULT_CANCELED) {
-                Utilities.toast(requireContext(), "export cancelled.")
-            } else if (resultCode == Activity.RESULT_OK) {
-                data?.data?.also { uri ->
+        createFileLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                val uri = result.data?.data
+                if (uri != null) {
                     try {
                         val reports = mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId)
                             .equalTo("docType", "report")
@@ -219,19 +191,44 @@ class ReportsFragment : BaseTeamFragment() {
                             csvBuilder.append("${dateFormat.format(report.startDate)}, ${dateFormat.format(report.endDate)}, ${dateFormat.format(report.createdDate)}, ${dateFormat.format(report.updatedDate)}, ${report.beginningBalance}, ${report.sales}, ${report.otherIncome}, ${report.wages}, ${report.otherExpenses}, $profitLoss, $endingBalance\n")
                         }
 
-                        val outputStream: OutputStream? = requireContext().contentResolver.openOutputStream(uri)
-                        outputStream?.write(csvBuilder.toString().toByteArray())
-                        outputStream?.close()
-                        Utilities.toast(requireContext(), "CSV file saved successfully.")
+                        requireContext().contentResolver.openOutputStream(uri)?.use { outputStream ->
+                            outputStream.write("$csvBuilder".toByteArray())
+                        }
+                        Utilities.toast(requireContext(), getString(R.string.csv_file_saved_successfully))
                     } catch (e: IOException) {
-                        Utilities.toast(requireContext(), "Failed to save CSV file.")
+                        e.printStackTrace()
+                        Utilities.toast(requireContext(), getString(R.string.failed_to_save_csv_file))
                     }
+                } else {
+                    Utilities.toast(requireContext(), getString(R.string.export_cancelled))
                 }
             }
         }
+        return fragmentReportsBinding.root
     }
 
-    companion object {
-        private const val CREATE_FILE_REQUEST_CODE = 1
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        list = mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId)
+            .equalTo("docType", "report")
+            .sort("date", Sort.DESCENDING).findAll()
+        updatedReportsList(list as RealmResults<RealmMyTeam>)
+    }
+
+    override fun onNewsItemClick(news: RealmNews?) {}
+
+    override fun clearImages() {
+        imageList.clear()
+        llImage?.removeAllViews()
+    }
+
+    private fun updatedReportsList(results: RealmResults<RealmMyTeam>) {
+        activity?.runOnUiThread {
+            adapterReports = AdapterReports(requireContext(), results)
+            adapterReports.setNonTeamMember(!isMember())
+            fragmentReportsBinding.rvReports.layoutManager = LinearLayoutManager(activity)
+            fragmentReportsBinding.rvReports.adapter = adapterReports
+            adapterReports.notifyDataSetChanged()
+        }
     }
 }

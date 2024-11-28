@@ -1203,5 +1203,8 @@
     <string name="start">start</string>
     <string name="continuation">continue</string>
     <string name="please_complete_survey">please complete the survey to finish the course</string>
+    <string name="export_cancelled">export cancelled.</string>
+    <string name="failed_to_save_csv_file">failed to save CSV file.</string>
+    <string name="csv_file_saved_successfully">CSV file saved successfully.</string>
 
 </resources>

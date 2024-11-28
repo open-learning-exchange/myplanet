@@ -1204,5 +1204,8 @@
     <string name="start">démarrer</string>
     <string name="continuation">continuer</string>
     <string name="please_complete_survey">veuillez compléter le sondage pour terminer le cours</string>
+    <string name="export_cancelled">exportation annulée.</string>
+    <string name="failed_to_save_csv_file">échec de l'enregistrement du fichier CSV.</string>
+    <string name="csv_file_saved_successfully">fichier CSV enregistré avec succès.</string>
 
 </resources>
