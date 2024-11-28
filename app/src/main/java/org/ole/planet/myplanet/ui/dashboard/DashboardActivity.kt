@@ -63,6 +63,7 @@ import org.ole.planet.myplanet.ui.chat.ChatHistoryListFragment
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.courses.MyProgressFragment
+import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.ui.dashboard.notification.NotificationListener
 import org.ole.planet.myplanet.ui.dashboard.notification.NotificationsFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
@@ -305,7 +306,12 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
         val courseId = "4e6b78800b6ad18b4e8b0e1e38a98cac"
         val progress = MyProgressFragment.getCourseProgress(courseData, courseId)
-        val completedCount = MyProgressFragment.countUsersWhoCompletedCourse(mRealm, courseId)
+
+        val hasUnfinishedSurvey = mRealm.where(RealmStepExam::class.java)
+            .equalTo("courseId", courseId)
+            .equalTo("type", "surveys")
+            .findAll()
+            .any { survey -> !TakeCourseFragment.existsSubmission(mRealm, survey.id, "survey") }
 
         val validUrls = listOf(
             "https://${BuildConfig.PLANET_GUATEMALA_URL}",
@@ -334,16 +340,16 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                         } else {
                             "Ingresa al curso $courseName completalo ($current de $max hecho)"
                         }
-                        challengeDialog(uniqueDates.size, courseStatus, allUniqueDates.size, completedCount)
+                        challengeDialog(uniqueDates.size, courseStatus, allUniqueDates.size, hasUnfinishedSurvey)
                     } else {
-                        challengeDialog(uniqueDates.size, "$courseName no iniciado", allUniqueDates.size, completedCount)
+                        challengeDialog(uniqueDates.size, "$courseName no iniciado", allUniqueDates.size, hasUnfinishedSurvey)
                     }
                 }
             }
         }
     }
 
-    fun challengeDialog(voiceCount: Int, courseStatus: String, allVoiceCount: Int, completedCount: Int) {
+    fun challengeDialog (voiceCount: Int, courseStatus: String, allVoiceCount: Int, hasUnfinishedSurvey: Boolean) {
         val voiceTaskDone = if (voiceCount >= 5) "✅" else "[ ]"
         val prereqsMet = courseStatus.contains("terminado", ignoreCase = true) && voiceCount >= 5
         var hasValidSync = false
@@ -366,12 +372,12 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         if (isCompleted && !hasShownCongrats) {
             editor.putBoolean("has_shown_congrats", true).apply()
             val markdownContent = """
-                Ingresos totales de la comunidad: **$${calculateCommunityProgress(allVoiceCount, hasValidSync, completedCount)}**
+                Ingresos totales de la comunidad: **$${calculateCommunityProgress(allVoiceCount, hasUnfinishedSurvey)}**
 
-                Tus ganancias totales: **$${calculateIndividualProgress(voiceCount, courseStatus, hasValidSync)}**
+                Tus ganancias totales: **$${calculateIndividualProgress(voiceCount, hasUnfinishedSurvey)}**
                 ### ¡Felicidades! Reto Completado <br/>
                 """.trimIndent()
-            MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount, allVoiceCount, hasValidSync).show(supportFragmentManager, "markdown_dialog")
+            MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount, allVoiceCount, hasUnfinishedSurvey).show(supportFragmentManager, "markdown_dialog")
         } else {
             val voicesText = if (voiceCount > 0) {
                 "$voiceCount de 5 Voces diarias"
@@ -379,32 +385,30 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 ""
             }
             val markdownContent = """
-                Ingresos totales de la comunidad: **$${calculateCommunityProgress(allVoiceCount, hasValidSync, completedCount)}**
+                Ingresos totales de la comunidad: **$${calculateCommunityProgress(allVoiceCount, hasUnfinishedSurvey)}**
 
-                Tus ganancias totales: **$${calculateIndividualProgress(voiceCount, courseStatus, hasValidSync)}**
+                Tus ganancias totales: **$${calculateIndividualProgress(voiceCount, hasUnfinishedSurvey)}**
                 ### $courseTaskDone <br/>
                 ### $voiceTaskDone Comparte tu opinión en Nuestras Voces. $voicesText <br/>
                 ### $syncTaskDone Recuerda sincronizar la aplicación móvil. <br/>
                 """.trimIndent()
-            MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount, allVoiceCount, hasValidSync)
+            MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount, allVoiceCount, hasUnfinishedSurvey)
                 .show(supportFragmentManager, "markdown_dialog")
         }
     }
 
-    private fun calculateIndividualProgress(allVoiceCount: Int, courseStatus: String, hasValidSync: Boolean): Int {
-        val earnedDollarsVoice = allVoiceCount * 5
-        val earnedDollarsCourse = if (courseStatus.contains("terminado")) 5 else 0
-        val earnedDollarsSync = if (hasValidSync) 5 else 0
-        val total = earnedDollarsVoice + earnedDollarsCourse + earnedDollarsSync
+    private fun calculateIndividualProgress(allVoiceCount: Int, hasUnfinishedSurvey: Boolean): Int {
+        val earnedDollarsVoice = allVoiceCount * 2
+        val earnedDollarsSurvey = if (!hasUnfinishedSurvey) 1 else 0
+        val total = earnedDollarsVoice + earnedDollarsSurvey
         return total.coerceAtMost(500)
     }
 
-    private fun calculateCommunityProgress (allVoiceCount: Int, hasValidSync: Boolean, completedCount: Int): Int {
-        val earnedDollarsVoice = allVoiceCount * 5
-        val earnedDollarsCourse = completedCount * 5
-        val earnedDollarsSync = if (hasValidSync) 5 else 0
-        val total = earnedDollarsVoice + earnedDollarsCourse + earnedDollarsSync
-        return total.coerceAtMost(35)
+    private fun calculateCommunityProgress (allVoiceCount: Int, hasUnfinishedSurvey: Boolean): Int {
+        val earnedDollarsVoice = allVoiceCount * 2
+        val earnedDollarsSurvey = if (!hasUnfinishedSurvey) 1 else 0
+        val total = earnedDollarsVoice + earnedDollarsSurvey
+        return total.coerceAtMost(11)
     }
 
     private fun setupRealmListeners() {
