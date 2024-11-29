@@ -164,6 +164,7 @@ class AdapterJoinedMember(private val context: Context, private val list: List<R
                 .findFirst()
             teamLeader?.isLeader = false
             team?.isLeader = true
+            team?.updated=true
         }
         notifyDataSetChanged()
         Utilities.toast(context, context.getString(R.string.leader_selected))
