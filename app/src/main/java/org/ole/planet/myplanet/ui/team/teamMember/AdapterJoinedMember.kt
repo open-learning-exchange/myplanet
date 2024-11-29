@@ -96,7 +96,6 @@ class AdapterJoinedMember(private val context: Context, private val list: List<R
                     }
                 }
                 builder.setAdapter(adapter) { _, i ->
-
                     if (position >= 0 && position < list.size) {
                         when (i) {
                             0 -> {
