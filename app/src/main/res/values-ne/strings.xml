@@ -1204,5 +1204,8 @@
     <string name="start">सुरु गर्नुहोस्</string>
     <string name="continuation">जारी राख्नुहोस्</string>
     <string name="please_complete_survey">कृपया कोर्स समाप्त गर्न सर्वेक्षण पूरा गर्नुहोस्</string>
+    <string name="export_cancelled">निर्यात रद्द गरियो।</string>
+    <string name="failed_to_save_csv_file">CSV फाइल सुरक्षित गर्न असफल।</string>
+    <string name="csv_file_saved_successfully">CSV फाइल सफलतापूर्वक सुरक्षित गरियो।</string>
 
 </resources>

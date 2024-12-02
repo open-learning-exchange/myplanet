@@ -1204,5 +1204,8 @@
     <string name="start">ابدأ</string>
     <string name="continuation">استمر</string>
     <string name="please_complete_survey">يرجى إكمال الاستبيان لإنهاء الدورة</string>
+    <string name="export_cancelled">تم إلغاء التصدير.</string>
+    <string name="failed_to_save_csv_file">فشل في حفظ ملف CSV.</string>
+    <string name="csv_file_saved_successfully">تم حفظ ملف CSV بنجاح.</string>
 
 </resources>
