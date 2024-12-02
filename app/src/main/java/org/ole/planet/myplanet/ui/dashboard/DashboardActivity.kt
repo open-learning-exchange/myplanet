@@ -10,7 +10,6 @@ import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
@@ -246,7 +245,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
         })
 
-        val startTime = 1730462548000
+        val startTime = 1733011200000
         val commVoiceResults = mRealm.where(RealmNews::class.java)
             .equalTo("userId", user?.id)
             .greaterThanOrEqualTo("time", startTime)
@@ -305,7 +304,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
         val courseData = MyProgressFragment.fetchCourseData(mRealm, user?.id)
 
-        val courseId = "9517e3b45a5bb63e69bb8f269216974d"
+        val courseId = "4e6b78800b6ad18b4e8b0e1e38a98cac"
         val progress = MyProgressFragment.getCourseProgress(courseData, courseId)
 
         val hasUnfinishedSurvey = mRealm.where(RealmStepExam::class.java)
@@ -323,14 +322,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             "https://${BuildConfig.PLANET_VI_URL}"
         )
 
-//        val today = LocalDate.now()
-        val today = LocalDate.of(2024, 11, 1)
+        val today = LocalDate.now()
         if (user?.id?.startsWith("guest") == false) {
-            val endDate = LocalDate.of(today.year, 12, 1)
-            Log.d("okuro", "today: $today, endDate: $endDate")
+            val endDate = LocalDate.of(today.year, 12, 31)
             if (today.isBefore(endDate)) {
-                Log.d("okuro", "okuro called")
-//                if (settings.getString("serverURL", "") in validUrls) {
+                if (settings.getString("serverURL", "") in validUrls) {
                     val course = mRealm.where(RealmMyCourse::class.java)
                         .equalTo("courseId", courseId)
                         .findFirst()
@@ -349,7 +345,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                         challengeDialog(uniqueDates.size, "$courseName no iniciado", allUniqueDates.size, hasUnfinishedSurvey)
                     }
                 }
-//            }
+            }
         }
     }
 

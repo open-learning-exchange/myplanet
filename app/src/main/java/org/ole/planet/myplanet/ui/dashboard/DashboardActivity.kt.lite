@@ -245,7 +245,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
         })
 
-        val startTime = 1730408400
+        val startTime = 1733011200000
         val commVoiceResults = mRealm.where(RealmNews::class.java)
             .equalTo("userId", user?.id)
             .greaterThanOrEqualTo("time", startTime)
@@ -324,7 +324,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
         val today = LocalDate.now()
         if (user?.id?.startsWith("guest") == false) {
-            val endDate = LocalDate.of(today.year, 12, 1)
+            val endDate = LocalDate.of(today.year, 12, 31)
             if (today.isBefore(endDate)) {
                 if (settings.getString("serverURL", "") in validUrls) {
                     val course = mRealm.where(RealmMyCourse::class.java)
@@ -379,8 +379,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 """.trimIndent()
             MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount, allVoiceCount, hasUnfinishedSurvey).show(supportFragmentManager, "markdown_dialog")
         } else {
-            val voicesText = if (voiceCount > 0) {
-                "$voiceCount de 5 Voces diarias"
+            val cappedVoiceCount = minOf(voiceCount, 5)
+            val voicesText = if (cappedVoiceCount > 0) {
+                "$cappedVoiceCount de 5 Voces diarias"
             } else {
                 ""
             }
@@ -397,15 +398,15 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-    private fun calculateIndividualProgress(allVoiceCount: Int, hasUnfinishedSurvey: Boolean): Int {
-        val earnedDollarsVoice = allVoiceCount * 2
+    private fun calculateIndividualProgress(voiceCount: Int, hasUnfinishedSurvey: Boolean): Int {
+        val earnedDollarsVoice = minOf(voiceCount, 5) * 2
         val earnedDollarsSurvey = if (!hasUnfinishedSurvey) 1 else 0
         val total = earnedDollarsVoice + earnedDollarsSurvey
         return total.coerceAtMost(500)
     }
 
     private fun calculateCommunityProgress (allVoiceCount: Int, hasUnfinishedSurvey: Boolean): Int {
-        val earnedDollarsVoice = allVoiceCount * 2
+        val earnedDollarsVoice = minOf(allVoiceCount, 5) * 2
         val earnedDollarsSurvey = if (!hasUnfinishedSurvey) 1 else 0
         val total = earnedDollarsVoice + earnedDollarsSurvey
         return total.coerceAtMost(11)
