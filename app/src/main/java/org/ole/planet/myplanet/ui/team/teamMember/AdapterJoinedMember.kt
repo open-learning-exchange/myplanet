@@ -22,7 +22,7 @@ import io.realm.Realm
 import io.realm.Sort
 import org.ole.planet.myplanet.utilities.Utilities
 
-class AdapterJoinedMember(private val context: Context, private val list: List<RealmUserModel>, private val mRealm: Realm, private val teamId: String) : RecyclerView.Adapter<AdapterJoinedMember.ViewHolderUser>() {
+class AdapterJoinedMember(private val context: Context, private val list: MutableList<RealmUserModel>, private val mRealm: Realm, private val teamId: String) : RecyclerView.Adapter<AdapterJoinedMember.ViewHolderUser>() {
     private lateinit var rowJoinedUserBinding: RowJoinedUserBinding
     private val currentUser: RealmUserModel = UserProfileDbHandler(context).userModel!!
     private val profileDbHandler = UserProfileDbHandler(context)
@@ -101,11 +101,15 @@ class AdapterJoinedMember(private val context: Context, private val list: List<R
                             0 -> {
                                 if (currentUser.id != list[position].id) {
                                     reject(list[position], position)
+                                    notifyItemChanged(position)
+                                    notifyItemRangeChanged(position, list.size)
                                 } else {
                                     val nextOfKin= getNextOfKin()
                                     if(nextOfKin!=null){
                                         makeLeader(nextOfKin)
                                         reject(list[position], position)
+                                        notifyItemChanged(position)
+                                        notifyItemRangeChanged(position, list.size)
                                     }
                                     else {
                                         Toast.makeText(context, R.string.cannot_remove_user, Toast.LENGTH_SHORT).show()
@@ -114,6 +118,7 @@ class AdapterJoinedMember(private val context: Context, private val list: List<R
                             }
                             1 -> {
                                 makeLeader(list[position])
+                                notifyItemChanged(position)
                             }
                             else -> {
                                 Toast.makeText(context, R.string.cannot_remove_user, Toast.LENGTH_SHORT).show()
@@ -177,9 +182,10 @@ class AdapterJoinedMember(private val context: Context, private val list: List<R
                 .findFirst()
             team?.deleteFromRealm()
         }
-        (list as MutableList).removeAt(position)
-        notifyDataSetChanged()
-        Utilities.toast(context, context.getString(R.string.user_removed_from_team))
+        list.removeAt(position)
+        notifyItemRemoved(position)
+        notifyItemRangeChanged(position, list.size)
+    //        Utilities.toast(context, context.getString(R.string.user_removed_from_team))
     }
 
     override fun getItemCount(): Int = list.size
