@@ -10,6 +10,7 @@ import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
@@ -245,7 +246,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
         })
 
-        val startTime = 1730408400
+        val startTime = 1730462548000
         val commVoiceResults = mRealm.where(RealmNews::class.java)
             .equalTo("userId", user?.id)
             .greaterThanOrEqualTo("time", startTime)
@@ -304,7 +305,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
         val courseData = MyProgressFragment.fetchCourseData(mRealm, user?.id)
 
-        val courseId = "4e6b78800b6ad18b4e8b0e1e38a98cac"
+        val courseId = "9517e3b45a5bb63e69bb8f269216974d"
         val progress = MyProgressFragment.getCourseProgress(courseData, courseId)
 
         val hasUnfinishedSurvey = mRealm.where(RealmStepExam::class.java)
@@ -322,11 +323,14 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             "https://${BuildConfig.PLANET_VI_URL}"
         )
 
-        val today = LocalDate.now()
+//        val today = LocalDate.now()
+        val today = LocalDate.of(2024, 11, 1)
         if (user?.id?.startsWith("guest") == false) {
             val endDate = LocalDate.of(today.year, 12, 1)
+            Log.d("okuro", "today: $today, endDate: $endDate")
             if (today.isBefore(endDate)) {
-                if (settings.getString("serverURL", "") in validUrls) {
+                Log.d("okuro", "okuro called")
+//                if (settings.getString("serverURL", "") in validUrls) {
                     val course = mRealm.where(RealmMyCourse::class.java)
                         .equalTo("courseId", courseId)
                         .findFirst()
@@ -345,7 +349,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                         challengeDialog(uniqueDates.size, "$courseName no iniciado", allUniqueDates.size, hasUnfinishedSurvey)
                     }
                 }
-            }
+//            }
         }
     }
 
@@ -379,8 +383,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 """.trimIndent()
             MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount, allVoiceCount, hasUnfinishedSurvey).show(supportFragmentManager, "markdown_dialog")
         } else {
-            val voicesText = if (voiceCount > 0) {
-                "$voiceCount de 5 Voces diarias"
+            val cappedVoiceCount = minOf(voiceCount, 5)
+            val voicesText = if (cappedVoiceCount > 0) {
+                "$cappedVoiceCount de 5 Voces diarias"
             } else {
                 ""
             }
@@ -397,15 +402,15 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-    private fun calculateIndividualProgress(allVoiceCount: Int, hasUnfinishedSurvey: Boolean): Int {
-        val earnedDollarsVoice = allVoiceCount * 2
+    private fun calculateIndividualProgress(voiceCount: Int, hasUnfinishedSurvey: Boolean): Int {
+        val earnedDollarsVoice = minOf(voiceCount, 5) * 2
         val earnedDollarsSurvey = if (!hasUnfinishedSurvey) 1 else 0
         val total = earnedDollarsVoice + earnedDollarsSurvey
         return total.coerceAtMost(500)
     }
 
     private fun calculateCommunityProgress (allVoiceCount: Int, hasUnfinishedSurvey: Boolean): Int {
-        val earnedDollarsVoice = allVoiceCount * 2
+        val earnedDollarsVoice = minOf(allVoiceCount, 5) * 2
         val earnedDollarsSurvey = if (!hasUnfinishedSurvey) 1 else 0
         val total = earnedDollarsVoice + earnedDollarsSurvey
         return total.coerceAtMost(11)
