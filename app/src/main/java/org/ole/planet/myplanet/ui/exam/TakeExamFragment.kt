@@ -189,7 +189,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         if (isRadio) {
             fragmentTakeExamBinding.groupChoices.addView(rdBtn)
         } else {
-            rdBtn.setTextColor(resources.getColor(R.color.daynight_textColor))
+            rdBtn.setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
             rdBtn.buttonTintList = ContextCompat.getColorStateList(requireContext(), R.color.daynight_textColor)
             fragmentTakeExamBinding.llCheckbox.addView(rdBtn)
         }
