@@ -372,9 +372,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         if (isCompleted && !hasShownCongrats) {
             editor.putBoolean("has_shown_congrats", true).apply()
             val markdownContent = """
-                Ingresos totales de la comunidad: **$${calculateCommunityProgress(allVoiceCount, hasUnfinishedSurvey)}**
+                Ingresos totales de la comunidad: **$${calculateCommunityProgress(allVoiceCount, hasUnfinishedSurvey)}** /$500
 
-                Tus ganancias totales: **$${calculateIndividualProgress(voiceCount, hasUnfinishedSurvey)}**
+                Tus ganancias totales: **$${calculateIndividualProgress(voiceCount, hasUnfinishedSurvey)}** /$11
                 ### ¡Felicidades! Reto Completado <br/>
                 """.trimIndent()
             MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount, allVoiceCount, hasUnfinishedSurvey).show(supportFragmentManager, "markdown_dialog")
@@ -386,11 +386,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 ""
             }
             val markdownContent = """
-                Ingresos totales de la comunidad: **$${calculateCommunityProgress(allVoiceCount, hasUnfinishedSurvey)}**
+                Ingresos totales de la comunidad: **$${calculateCommunityProgress(allVoiceCount, hasUnfinishedSurvey)}** /$500
 
-                Tus ganancias totales: **$${calculateIndividualProgress(voiceCount, hasUnfinishedSurvey)}**
-                ### $courseTaskDone <br/>
-                ### $voiceTaskDone Comparte tu opinión en Nuestras Voces. $voicesText <br/>
+                Tus ganancias totales: **$${calculateIndividualProgress(voiceCount, hasUnfinishedSurvey)}** /$11
+                ### $courseTaskDone $1 por encuesta <br/>
+                ### $voiceTaskDone Comparte tu opinión en Nuestras Voces.[$2/voz] $voicesText <br/>
                 ### $syncTaskDone Recuerda sincronizar la aplicación móvil. <br/>
                 """.trimIndent()
             MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount, allVoiceCount, hasUnfinishedSurvey)
