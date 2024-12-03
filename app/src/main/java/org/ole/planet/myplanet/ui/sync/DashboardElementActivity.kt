@@ -23,6 +23,8 @@ import com.google.android.material.bottomnavigation.BottomNavigationView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createAction
@@ -122,10 +124,17 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
 
     fun logSyncInSharedPrefs() {
         lifecycleScope.launch {
-            if (isServerReachable(Utilities.getUrl())) {
-                startUpload("dashboard")
-                createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
-            }
+            MainApplication.isServerReachable(
+                processedUrl = Utilities.getUrl(),
+                onSuccess = {
+                    startUpload("dashboard")
+                    createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
+                },
+                onFailure = { errorMessage ->
+                    // Handle failure case, for example, show a toast or log the error
+                    Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
+                }
+            )
         }
     }
 

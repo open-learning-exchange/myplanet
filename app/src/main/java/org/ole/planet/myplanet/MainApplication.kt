@@ -9,6 +9,7 @@ import android.os.Bundle
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
 import android.provider.Settings
+import android.util.Log
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.preference.PreferenceManager
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -28,6 +29,8 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
 import org.ole.planet.myplanet.callback.TeamPageListener
+import org.ole.planet.myplanet.datamanager.ApiClient.client
+import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.service.AutoSyncWorker
@@ -37,6 +40,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utilities.LocaleHelper
+import org.ole.planet.myplanet.utilities.NetworkUtils.extractProtocol
 import org.ole.planet.myplanet.utilities.NetworkUtils.initialize
 import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utilities.NetworkUtils.startListenNetworkState
@@ -119,33 +123,53 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             applyThemeMode(themeMode)
         }
 
-        suspend fun isServerReachable(urlString: String): Boolean {
-            return try {
-                if (urlString.isBlank()) return false
+        suspend fun isServerReachable(processedUrl: String?, onSuccess: (() -> Unit)? = null, onFailure: ((String) -> Unit)? = null): Boolean {
+            Log.d("MainApplication", "isServerReachable: $processedUrl")
+            return withContext(Dispatchers.IO) {
+                val apiInterface = client?.create(ApiInterface::class.java)
+                try {
+                    val response = apiInterface?.isPlanetAvailable("$processedUrl/_all_dbs")?.execute()
 
-                val formattedUrl = if (!urlString.startsWith("http://") && !urlString.startsWith("https://")) {
-                    "http://$urlString"
-                } else {
-                    urlString
+                    when {
+                        response?.isSuccessful == true -> {
+                            val ss = response.body()?.string()
+                            val myList = ss?.split(",")?.dropLastWhile { it.isEmpty() }
+
+                            if ((myList?.size ?: 0) < 8) {
+                                withContext(Dispatchers.Main) {
+                                    onFailure?.invoke(
+                                        context.getString(R.string.check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server)
+                                    )
+                                }
+                                false
+                            } else {
+                                withContext(Dispatchers.Main) {
+                                    onSuccess?.invoke()
+                                }
+                                true
+                            }
+                        }
+                        else -> {
+                            syncFailedCount++
+                            val protocol = extractProtocol("$processedUrl")
+                            val errorMessage = when (protocol) {
+                                context.getString(R.string.http_protocol) -> context.getString(R.string.device_couldn_t_reach_local_server)
+                                context.getString(R.string.https_protocol) -> context.getString(R.string.device_couldn_t_reach_nation_server)
+                                else -> ""
+                            }
+                            withContext(Dispatchers.Main) {
+                                onFailure?.invoke(errorMessage)
+                            }
+                            false
+                        }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    withContext(Dispatchers.Main) {
+                        onFailure?.invoke("failed to reach server")
+                    }
+                    false
                 }
-
-                val url = URL(formattedUrl)
-                val connection = withContext(Dispatchers.IO) {
-                    url.openConnection()
-                } as HttpURLConnection
-                connection.requestMethod = "GET"
-                connection.connectTimeout = 5000
-                connection.readTimeout = 5000
-                withContext(Dispatchers.IO) {
-                    connection.connect()
-                }
-                val responseCode = connection.responseCode
-                connection.disconnect()
-                responseCode in 200..299
-
-            } catch (e: Exception) {
-                e.printStackTrace()
-                false
             }
         }
 

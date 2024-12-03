@@ -15,6 +15,7 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
@@ -41,6 +42,7 @@ import io.realm.RealmResults
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.ole.planet.myplanet.BuildConfig
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
@@ -177,9 +179,16 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
         activityDashboardBinding.appBarBell.ivSync.setOnClickListener {
             lifecycleScope.launch {
-                if (isServerReachable(Utilities.getUrl())) {
-                    startUpload("dashboard")
-                }
+                MainApplication.isServerReachable(
+                    processedUrl = Utilities.getUrl(),
+                    onSuccess = {
+                        startUpload("dashboard")
+                    },
+                    onFailure = { errorMessage ->
+                        // Handle failure, e.g., show a Toast
+                        Toast.makeText(this@DashboardActivity, errorMessage, Toast.LENGTH_SHORT).show()
+                    }
+                )
             }
         }
         activityDashboardBinding.appBarBell.imgLogo.setOnClickListener { result?.openDrawer() }
