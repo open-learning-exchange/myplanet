@@ -41,7 +41,7 @@ class DashboardFragment : BaseDashboardFragment() {
         fragmentHomeBinding.cardProfile.tvAchievement.setOnClickListener {
             homeItemClickListener?.openCallFragment(AchievementFragment())
         }
-        databaseService = DatabaseService(requireActivity())
+        databaseService = DatabaseService()
         dRealm = databaseService.realmInstance
         user = UserProfileDbHandler(requireContext()).userModel
         onLoaded(view)

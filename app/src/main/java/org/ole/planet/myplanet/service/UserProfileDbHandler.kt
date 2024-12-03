@@ -27,7 +27,7 @@ class UserProfileDbHandler(context: Context) {
     init {
         try {
             val validContext = context.applicationContext ?: throw IllegalArgumentException("Invalid context provided")
-            realmService = DatabaseService(validContext)
+            realmService = DatabaseService()
             settings = validContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             fullName = Utilities.getUserName(settings)
             mRealm = realmService.realmInstance

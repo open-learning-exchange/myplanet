@@ -1,45 +1,54 @@
 package org.ole.planet.myplanet.model
 
-import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.opencsv.CSVWriter
-import io.realm.Realm
-import io.realm.RealmObject
-import io.realm.annotations.PrimaryKey
+import io.realm.kotlin.Realm
+import io.realm.kotlin.ext.query
+import io.realm.kotlin.types.RealmList
+import io.realm.kotlin.types.RealmObject
+import io.realm.kotlin.types.annotations.PrimaryKey
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utilities.JsonUtils
 import java.io.File
 import java.io.FileWriter
 import java.io.IOException
 
-open class RealmCertification : RealmObject() {
+class RealmCertification : RealmObject {
     @PrimaryKey
     var _id: String? = null
     var _rev: String? = null
     var name: String? = null
-    private var courseIds: String? = null
+    var courseIds: RealmList<String>? = null
 
     fun setCourseIds(courseIds: JsonArray?) {
-        this.courseIds = Gson().toJson(courseIds)
+        this.courseIds?.clear()
+        courseIds?.forEach { courseId ->
+            this.courseIds?.add(courseId.asString)
+        }
     }
 
     companion object {
         private val certificationDataList: MutableList<Array<String>> = mutableListOf()
 
         @JvmStatic
-        fun insert(mRealm: Realm, `object`: JsonObject?) {
-            if (!mRealm.isInTransaction) {
-                mRealm.beginTransaction()
-            }
+        suspend fun insert(realm: Realm, `object`: JsonObject?) {
             val id = JsonUtils.getString("_id", `object`)
-            var certification = mRealm.where(RealmCertification::class.java).equalTo("_id", id).findFirst()
-            if (certification == null) {
-                certification = mRealm.createObject(RealmCertification::class.java, id)
+            withContext(Dispatchers.IO) {
+                realm.write {
+                    var certification = query<RealmCertification>("_id == $0", id).first().find()
+                    if (certification == null) {
+                        certification = RealmCertification().apply { _id = id }
+                        copyToRealm(certification)
+                    }
+                    certification.apply {
+                        name = JsonUtils.getString("name", `object`)
+                        setCourseIds(JsonUtils.getJsonArray("courseIds", `object`))
+                    }
+                }
             }
-            certification?.name = JsonUtils.getString("name", `object`)
-            certification?.setCourseIds(JsonUtils.getJsonArray("courseIds", `object`))
-            mRealm.commitTransaction()
             val csvRow = arrayOf(
                 JsonUtils.getString("_id", `object`),
                 JsonUtils.getString("name", `object`),
@@ -50,13 +59,9 @@ open class RealmCertification : RealmObject() {
 
         @JvmStatic
         fun isCourseCertified(realm: Realm, courseId: String?): Boolean {
-            // FIXME
-            if (courseId == null) {
-                return false
-            }
-            val c =
-                realm.where(RealmCertification::class.java).contains("courseIds", courseId).count()
-            return c > 0
+            if (courseId == null) return false
+            val count = realm.query<RealmCertification>("courseIds CONTAINS $0", courseId).count().find()
+            return count > 0
         }
 
         @JvmStatic
@@ -64,12 +69,12 @@ open class RealmCertification : RealmObject() {
             try {
                 val file = File(filePath)
                 file.parentFile?.mkdirs()
-                val writer = CSVWriter(FileWriter(file))
-                writer.writeNext(arrayOf("certificationId", "name", "courseIds"))
-                for (row in data) {
-                    writer.writeNext(row)
+                CSVWriter(FileWriter(file)).use { writer ->
+                    writer.writeNext(arrayOf("certificationId", "name", "courseIds"))
+                    data.forEach { row ->
+                        writer.writeNext(row)
+                    }
                 }
-                writer.close()
             } catch (e: IOException) {
                 e.printStackTrace()
             }
@@ -81,3 +86,4 @@ open class RealmCertification : RealmObject() {
         }
     }
 }
+

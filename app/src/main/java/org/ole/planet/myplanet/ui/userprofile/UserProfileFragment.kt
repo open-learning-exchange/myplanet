@@ -91,7 +91,7 @@ class UserProfileFragment : Fragment() {
         fragmentUserProfileBinding = FragmentUserProfileBinding.inflate(inflater, container, false)
         settings = requireContext().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         handler = UserProfileDbHandler(requireContext())
-        realmService = DatabaseService(requireContext())
+        realmService = DatabaseService()
         mRealm = realmService.realmInstance
         fragmentUserProfileBinding.rvStat.layoutManager = LinearLayoutManager(activity)
         fragmentUserProfileBinding.rvStat.isNestedScrollingEnabled = false

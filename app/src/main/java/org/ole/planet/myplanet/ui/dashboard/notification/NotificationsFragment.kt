@@ -50,7 +50,7 @@ class NotificationsFragment : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentNotificationsBinding = FragmentNotificationsBinding.inflate(inflater, container, false)
-        databaseService = DatabaseService(requireActivity())
+        databaseService = DatabaseService()
         mRealm = databaseService.realmInstance
         userId = arguments?.getString("userId") ?: ""
 

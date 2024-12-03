@@ -45,7 +45,7 @@ class SyncManager private constructor(private val context: Context) {
     private val stringArray = arrayOfNulls<String>(4)
     private var shelfDoc: Rows? = null
     private var listener: SyncListener? = null
-    private val dbService: DatabaseService = DatabaseService(context)
+    private val dbService: DatabaseService = DatabaseService()
 
     fun start(listener: SyncListener?) {
         this.listener = listener

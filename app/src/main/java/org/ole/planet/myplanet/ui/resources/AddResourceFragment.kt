@@ -293,7 +293,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
                         return@setPositiveButton
                     }
                     val desc = etDesc.text.toString().trim { it <= ' ' }
-                    val realm = DatabaseService(context).realmInstance
+                    val realm = DatabaseService().realmInstance
                     realm.executeTransactionAsync(
                         Realm.Transaction { realm1: Realm -> val myPersonal = realm1.createObject(RealmMyPersonal::class.java, UUID.randomUUID().toString())
                             myPersonal.title = title
