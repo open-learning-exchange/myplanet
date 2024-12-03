@@ -6,6 +6,7 @@ import android.content.DialogInterface
 import android.content.SharedPreferences
 import android.net.Uri
 import android.text.TextUtils
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.realm.Realm
@@ -18,6 +19,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.MainApplication.Companion.applicationScope
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SuccessListener
@@ -35,6 +37,7 @@ import org.ole.planet.myplanet.utilities.Constants.KEY_UPGRADE_MAX
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.DialogUtils.CustomProgressDialog
+import org.ole.planet.myplanet.utilities.DialogUtils.showAlert
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
@@ -325,80 +328,117 @@ class Service(private val context: Context) {
             setText(context.getString(R.string.check_apk_version))
             show()
         }
+        Log.d("ServerCheck", "Checking server for min APK version: $url")
 
-        retrofitInterface?.getConfiguration("$url/versions")?.enqueue(object : Callback<JsonObject?> {
-            override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
-                if (response.isSuccessful) {
-                    response.body()?.let { jsonObject ->
-                        val currentVersion = "${context.resources.getText(R.string.app_version)}"
-                        val minApkVersion = jsonObject.get("minapk").asString
-                        if (isVersionAllowed(currentVersion, minApkVersion)) {
-                            customProgressDialog.setText(context.getString(R.string.checking_server))
-                            val uri = Uri.parse(url)
-                            val couchdbURL: String
-                            if (url.contains("@")) {
-                                getUserInfo(uri)
-                                couchdbURL = url
-                            } else {
-                                val urlUser = "satellite"
-                                couchdbURL = "${uri.scheme}://$urlUser:$pin@${uri.host}:${if (uri.port == -1) if (uri.scheme == "http") 80 else 443 else uri.port}"
-                            }
-                            retrofitInterface.getConfiguration("${getUrl(couchdbURL)}/configurations/_all_docs?include_docs=true").enqueue(object : Callback<JsonObject?> {
-                                override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
-                                    if (response.isSuccessful) {
-                                        val jsonObjectResponse = response.body()
-                                        val rows = jsonObjectResponse?.getAsJsonArray("rows")
-                                        if (rows != null && rows.size() > 0) {
-                                            val firstRow = rows.get(0).asJsonObject
-                                            val id = firstRow.getAsJsonPrimitive("id").asString
-                                            val doc = firstRow.getAsJsonObject("doc")
-                                            val code = doc.getAsJsonPrimitive("code").asString
-                                            listener?.onConfigurationIdReceived(id, code)
-                                            activity.setSyncFailed(false)
+        val uri = Uri.parse(url)
+        var couchdbURL: String
+        val urlUser: String
+        val urlPwd: String
+        if (url.contains("@")) {
+            val userinfo = ProcessUserDataActivity.Companion.getUserInfo(uri)
+            urlUser = userinfo[0]
+            urlPwd = userinfo[1]
+            couchdbURL = url
+        }  else {
+            urlUser = "satellite"
+            urlPwd = pin
+            couchdbURL = uri.scheme + "://" + urlUser + ":" + urlPwd + "@" + uri.host + ":" + if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port
+        }
+        Log.d("ServerCheck", "Checking server for min APK version: $couchdbURL")
+
+        // Perform server reachability check
+        applicationScope.launch {
+            val serverReachable = isServerReachable(couchdbURL,
+                onSuccess = {
+                    Log.d("ServerCheck", "Server is reachable")
+                },
+                onFailure = { errorMessage ->
+                    Log.d("ServerCheck", "Server is unreachable: $errorMessage")
+                    customProgressDialog.dismiss()
+                    activity.setSyncFailed(true)
+                    showAlertDialog(context.getString(R.string.device_couldn_t_reach_local_server), false)
+                }
+            )
+
+            if (!serverReachable) {
+                return@launch // Exit early if the server is not reachable
+            }
+
+            // Proceed if the server is reachable
+            retrofitInterface?.getConfiguration("$url/versions")?.enqueue(object : Callback<JsonObject?> {
+                override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
+                    if (response.isSuccessful) {
+                        response.body()?.let { jsonObject ->
+                            val currentVersion = "${context.resources.getText(R.string.app_version)}"
+                            val minApkVersion = jsonObject.get("minapk").asString
+                            if (isVersionAllowed(currentVersion, minApkVersion)) {
+                                customProgressDialog.setText(context.getString(R.string.checking_server))
+                                val uri = Uri.parse(url)
+                                val couchdbURL: String
+                                if (url.contains("@")) {
+                                    getUserInfo(uri)
+                                    couchdbURL = url
+                                } else {
+                                    val urlUser = "satellite"
+                                    couchdbURL = "${uri.scheme}://$urlUser:$pin@${uri.host}:${if (uri.port == -1) if (uri.scheme == "http") 80 else 443 else uri.port}"
+                                }
+                                retrofitInterface.getConfiguration("${getUrl(couchdbURL)}/configurations/_all_docs?include_docs=true").enqueue(object : Callback<JsonObject?> {
+                                    override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
+                                        if (response.isSuccessful) {
+                                            val jsonObjectResponse = response.body()
+                                            val rows = jsonObjectResponse?.getAsJsonArray("rows")
+                                            if (rows != null && rows.size() > 0) {
+                                                val firstRow = rows.get(0).asJsonObject
+                                                val id = firstRow.getAsJsonPrimitive("id").asString
+                                                val doc = firstRow.getAsJsonObject("doc")
+                                                val code = doc.getAsJsonPrimitive("code").asString
+                                                listener?.onConfigurationIdReceived(id, code)
+                                                activity.setSyncFailed(false)
+                                            } else {
+                                                activity.setSyncFailed(true)
+                                                showAlertDialog(context.getString(R.string.failed_to_get_configuration_id), false)
+                                            }
                                         } else {
                                             activity.setSyncFailed(true)
                                             showAlertDialog(context.getString(R.string.failed_to_get_configuration_id), false)
                                         }
-                                    } else {
-                                        activity.setSyncFailed(true)
-                                        showAlertDialog(context.getString(R.string.failed_to_get_configuration_id), false)
+                                        customProgressDialog.dismiss()
                                     }
-                                    customProgressDialog.dismiss()
-                                }
 
-                                override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
-                                    activity.setSyncFailed(true)
-                                    customProgressDialog.dismiss()
-                                    if (getUrl(couchdbURL) == context.getString(R.string.http_protocol)) {
-                                        showAlertDialog(context.getString(R.string.device_couldn_t_reach_local_server), false)
-                                    } else if (getUrl(couchdbURL) == context.getString(R.string.https_protocol)) {
-                                        showAlertDialog(context.getString(R.string.device_couldn_t_reach_nation_server), false)
+                                    override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
+                                        activity.setSyncFailed(true)
+                                        customProgressDialog.dismiss()
+                                        if (getUrl(couchdbURL) == context.getString(R.string.http_protocol)) {
+                                            showAlertDialog(context.getString(R.string.device_couldn_t_reach_local_server), false)
+                                        } else if (getUrl(couchdbURL) == context.getString(R.string.https_protocol)) {
+                                            showAlertDialog(context.getString(R.string.device_couldn_t_reach_nation_server), false)
+                                        }
                                     }
-                                }
-                            })
-                        } else {
-                            activity.setSyncFailed(true)
-                            customProgressDialog.dismiss()
-                            showAlertDialog(context.getString(R.string.below_min_apk), true)
+                                })
+                            } else {
+                                activity.setSyncFailed(true)
+                                customProgressDialog.dismiss()
+                                showAlertDialog(context.getString(R.string.below_min_apk), true)
+                            }
                         }
+                    } else {
+                        activity.setSyncFailed(true)
+                        customProgressDialog.dismiss()
+                        showAlertDialog(context.getString(R.string.device_couldn_t_reach_local_server), false)
                     }
-                } else {
+                }
+
+                override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
                     activity.setSyncFailed(true)
                     customProgressDialog.dismiss()
-                    showAlertDialog(context.getString(R.string.device_couldn_t_reach_local_server), false)
+                    if (extractProtocol(url) == context.getString(R.string.http_protocol)) {
+                        showAlertDialog(context.getString(R.string.device_couldn_t_reach_local_server), false)
+                    } else if (extractProtocol(url) == context.getString(R.string.https_protocol)) {
+                        showAlertDialog(context.getString(R.string.device_couldn_t_reach_nation_server), false)
+                    }
                 }
-            }
-
-            override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
-                activity.setSyncFailed(true)
-                customProgressDialog.dismiss()
-                if (extractProtocol(url) == context.getString(R.string.http_protocol)) {
-                    showAlertDialog(context.getString(R.string.device_couldn_t_reach_local_server), false)
-                } else if (extractProtocol(url) == context.getString(R.string.https_protocol)) {
-                    showAlertDialog(context.getString(R.string.device_couldn_t_reach_nation_server), false)
-                }
-            }
-        })
+            })
+        }
     }
 
     private fun isVersionAllowed(currentVersion: String, minApkVersion: String): Boolean {

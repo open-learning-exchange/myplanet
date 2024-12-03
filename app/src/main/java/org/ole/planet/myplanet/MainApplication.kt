@@ -5,6 +5,7 @@ import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.net.Uri
 import android.os.Bundle
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
@@ -37,6 +38,7 @@ import org.ole.planet.myplanet.service.AutoSyncWorker
 import org.ole.planet.myplanet.service.StayOnlineWorker
 import org.ole.planet.myplanet.service.TaskNotificationWorker
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.sync.ProcessUserDataActivity.Companion.getUserInfo
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utilities.LocaleHelper
@@ -123,53 +125,158 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             applyThemeMode(themeMode)
         }
 
+//        suspend fun isServerReachable(processedUrl: String?, onSuccess: (() -> Unit)? = null, onFailure: ((String) -> Unit)? = null): Boolean {
+//            Log.d("MainApplication", "isServerReachable: $processedUrl")
+//            return withContext(Dispatchers.IO) {
+//                val apiInterface = client?.create(ApiInterface::class.java)
+//                try {
+//                    val response = apiInterface?.isPlanetAvailable("$processedUrl/_all_dbs")?.execute()
+//
+//                    when {
+//                        response?.isSuccessful == true -> {
+//                            val ss = response.body()?.string()
+//                            val myList = ss?.split(",")?.dropLastWhile { it.isEmpty() }
+//
+//                            if ((myList?.size ?: 0) < 8) {
+//                                withContext(Dispatchers.Main) {
+//                                    onFailure?.invoke(
+//                                        context.getString(R.string.check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server)
+//                                    )
+//                                }
+//                                false
+//                            } else {
+//                                withContext(Dispatchers.Main) {
+//                                    onSuccess?.invoke()
+//                                }
+//                                true
+//                            }
+//                        }
+//                        else -> {
+//                            syncFailedCount++
+//                            val protocol = extractProtocol("$processedUrl")
+//                            val errorMessage = when (protocol) {
+//                                context.getString(R.string.http_protocol) -> context.getString(R.string.device_couldn_t_reach_local_server)
+//                                context.getString(R.string.https_protocol) -> context.getString(R.string.device_couldn_t_reach_nation_server)
+//                                else -> ""
+//                            }
+//                            withContext(Dispatchers.Main) {
+//                                onFailure?.invoke(errorMessage)
+//                            }
+//                            false
+//                        }
+//                    }
+//                } catch (e: Exception) {
+//                    e.printStackTrace()
+//                    withContext(Dispatchers.Main) {
+//                        onFailure?.invoke("failed to reach server")
+//                    }
+//                    false
+//                }
+//            }
+//        }
+
         suspend fun isServerReachable(processedUrl: String?, onSuccess: (() -> Unit)? = null, onFailure: ((String) -> Unit)? = null): Boolean {
             Log.d("MainApplication", "isServerReachable: $processedUrl")
+            if (processedUrl.isNullOrEmpty()) return false
+
             return withContext(Dispatchers.IO) {
                 val apiInterface = client?.create(ApiInterface::class.java)
-                try {
-                    val response = apiInterface?.isPlanetAvailable("$processedUrl/_all_dbs")?.execute()
 
-                    when {
-                        response?.isSuccessful == true -> {
-                            val ss = response.body()?.string()
-                            val myList = ss?.split(",")?.dropLastWhile { it.isEmpty() }
+                // Extract base URL (e.g., "http://192.168.1.202")
+                val uri = Uri.parse(processedUrl)
+                val baseUrl = "${uri.scheme}://${uri.host}"
 
-                            if ((myList?.size ?: 0) < 8) {
-                                withContext(Dispatchers.Main) {
-                                    onFailure?.invoke(
-                                        context.getString(R.string.check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server)
-                                    )
-                                }
-                                false
-                            } else {
-                                withContext(Dispatchers.Main) {
-                                    onSuccess?.invoke()
-                                }
-                                true
-                            }
-                        }
-                        else -> {
-                            syncFailedCount++
-                            val protocol = extractProtocol("$processedUrl")
-                            val errorMessage = when (protocol) {
-                                context.getString(R.string.http_protocol) -> context.getString(R.string.device_couldn_t_reach_local_server)
-                                context.getString(R.string.https_protocol) -> context.getString(R.string.device_couldn_t_reach_nation_server)
-                                else -> ""
-                            }
+                val userInfo = uri.userInfo?.split(":") ?: throw IllegalArgumentException("User info is missing in the URL")
+                if (userInfo.size != 2) throw IllegalArgumentException("Invalid user info format in the URL")
+
+                val username = userInfo[0]
+                val password = userInfo[1]
+
+                Log.d("Credentials", "Username: $username, Password: $password")
+
+                // Check primary server
+                if (checkServerAvailability(baseUrl)) {
+                    Log.d("MainApplication", "Primary server available: $baseUrl")
+                    val couchdbURL = constructCouchDbUrl(processedUrl, username, password)
+                    return@withContext proceedWithApiCall(apiInterface, couchdbURL, onSuccess, onFailure)
+                }
+
+                val serverMappings = mapOf(
+                    "http://${BuildConfig.PLANET_URIUR_URL}" to "http://35.231.161.29",
+                    "http://192.168.1.202" to "http://34.35.29.147",
+                )
+
+                // Check alternative server
+                val alternativeServer = serverMappings[baseUrl]
+                if (!alternativeServer.isNullOrEmpty() && checkServerAvailability(alternativeServer)) {
+                    Log.d("MainApplication", "Alternative server available: $alternativeServer")
+                    val alternativeUrl = processedUrl.replace(baseUrl, alternativeServer)
+                    val couchdbURL = constructCouchDbUrl(alternativeUrl, username, password)
+                    return@withContext proceedWithApiCall(apiInterface, couchdbURL, onSuccess, onFailure)
+                }
+
+                // Neither server is reachable
+                withContext(Dispatchers.Main) {
+                    onFailure?.invoke(context.getString(R.string.device_couldn_t_reach_local_server))
+                }
+                false
+            }
+        }
+
+        private fun checkServerAvailability(serverUrl: String): Boolean {
+            return try {
+                val apiInterface = client?.create(ApiInterface::class.java)
+                val response = apiInterface?.isPlanetAvailable("$serverUrl/_all_dbs")?.execute()
+                response?.isSuccessful == true
+            } catch (e: Exception) {
+                e.printStackTrace()
+                false
+            }
+        }
+
+        private fun constructCouchDbUrl(url: String, username: String, password: String): String {
+            val uri = Uri.parse(url)
+            val userInfo = if (url.contains("@")) {
+                getUserInfo(uri)
+            } else {
+                arrayOf("$username", "$password")
+            }
+            val user = userInfo[0]
+            val pwd = userInfo[1]
+
+            return "${uri.scheme}://$user:$pwd@${uri.host}:${uri.port.takeIf { it != -1 } ?: if (uri.scheme == "http") 80 else 443}${uri.path}"
+        }
+
+        private suspend fun proceedWithApiCall(apiInterface: ApiInterface?, couchdbURL: String, onSuccess: (() -> Unit)?, onFailure: ((String) -> Unit)?): Boolean {
+            return try {
+                val response = apiInterface?.isPlanetAvailable("$couchdbURL/_all_dbs")?.execute()
+                when {
+                    response?.isSuccessful == true -> {
+                        val ss = response.body()?.string()
+                        val myList = ss?.split(",")?.dropLastWhile { it.isEmpty() }
+                        if ((myList?.size ?: 0) < 8) {
                             withContext(Dispatchers.Main) {
-                                onFailure?.invoke(errorMessage)
+                                onFailure?.invoke(context.getString(R.string.check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server))
                             }
                             false
+                        } else {
+                            withContext(Dispatchers.Main) { onSuccess?.invoke() }
+                            true
                         }
                     }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    withContext(Dispatchers.Main) {
-                        onFailure?.invoke("failed to reach server")
+                    else -> {
+                        withContext(Dispatchers.Main) {
+                            onFailure?.invoke(context.getString(R.string.device_couldn_t_reach_local_server))
+                        }
+                        false
                     }
-                    false
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    onFailure?.invoke(context.getString(R.string.device_couldn_t_reach_local_server))
+                }
+                false
             }
         }
 
