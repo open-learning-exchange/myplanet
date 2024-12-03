@@ -180,9 +180,10 @@
     <string name="showing_reply_of">Showing reply of:</string>
     <string name="open_date">Open Date</string>
     <string name="my_survey">mySurvey</string>
-    <string name="cannot_remove_user">User couldnot be removed</string>
+    <string name="cannot_remove_user">User could not be removed</string>
     <string name="no_members_task">No Team members present to assign tasks</string>
     <string name="no_member_selected">No member selected. Please try again</string>
+
     <string-array name="level">
         <item>Beginner</item>
         <item>Intermediate</item>
@@ -1203,5 +1204,8 @@
     <string name="start">start</string>
     <string name="continuation">continue</string>
     <string name="please_complete_survey">please complete the survey to finish the course</string>
+    <string name="export_cancelled">export cancelled.</string>
+    <string name="failed_to_save_csv_file">failed to save CSV file.</string>
+    <string name="csv_file_saved_successfully">CSV file saved successfully.</string>
 
 </resources>
