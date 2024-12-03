@@ -1,18 +1,18 @@
 package org.ole.planet.myplanet.model
 
+import io.realm.kotlin.types.RealmObject
+import io.realm.kotlin.types.annotations.PrimaryKey
+import io.realm.kotlin.Realm
 import android.content.SharedPreferences
-import io.realm.Realm
-import io.realm.RealmObject
-import io.realm.annotations.PrimaryKey
 
-open class RealmMyLife : RealmObject {
+class RealmMyLife : RealmObject {
     @PrimaryKey
     var _id: String? = null
     var imageId: String? = null
     var userId: String? = null
     var title: String? = null
-    var isVisible = false
-    var weight = 0
+    var isVisible: Boolean = false
+    var weight: Int = 0
 
     constructor(imageId: String?, userId: String?, title: String?) {
         this.imageId = imageId
@@ -24,45 +24,35 @@ open class RealmMyLife : RealmObject {
     constructor()
 
     companion object {
-        fun getMyLifeByUserId(mRealm: Realm, settings: SharedPreferences?): List<RealmMyLife> {
+        fun getMyLifeByUserId(realm: Realm, settings: SharedPreferences?): List<RealmMyLife> {
             val userId = settings?.getString("userId", "--")
-            return getMyLifeByUserId(mRealm, userId)
+            return getMyLifeByUserId(realm, userId)
         }
 
-        @JvmStatic
-        fun getMyLifeByUserId(mRealm: Realm, userId: String?): List<RealmMyLife> {
-            return mRealm.where(RealmMyLife::class.java).equalTo("userId", userId).findAll()
-                .sort("weight")
+        fun getMyLifeByUserId(realm: Realm, userId: String?): List<RealmMyLife> {
+            return realm.query(RealmMyLife::class, "userId == $0", userId).find().sortedBy { it.weight }
         }
 
-        @JvmStatic
         fun updateWeight(weight: Int, id: String?, realm: Realm, userId: String?) {
-            realm.executeTransaction { mRealm ->
-                var currentWeight = -1
-                val myLifeList = getMyLifeByUserId(mRealm, userId)
-                for (item in myLifeList) {
-                    if (id?.let { item._id?.contains(it) } == true) {
-                        currentWeight = item.weight
-                        item.weight = weight
-                    }
-                }
-                for (item in myLifeList) {
-                    if (currentWeight != -1 && item.weight == weight && !id?.let { item._id?.contains(it) }!!) {
-                        item.weight = currentWeight
+            realm.writeBlocking {
+                val myLifeList = getMyLifeByUserId(realm, userId)
+                val targetItem = myLifeList.find { it._id?.contains(id ?: "") == true }
+
+                targetItem?.let { current ->
+                    val currentWeight = current.weight
+                    current.weight = weight
+
+                    myLifeList.filter { it._id != current._id && it.weight == weight }.forEach {
+                        it.weight = currentWeight
                     }
                 }
             }
         }
 
-        @JvmStatic
         fun updateVisibility(isVisible: Boolean, id: String?, realm: Realm, userId: String?) {
-            realm.executeTransaction { mRealm ->
-                val myLifeList = getMyLifeByUserId(mRealm, userId)
-                for (item in myLifeList) {
-                    if (id?.let { item._id?.contains(it) } == true) {
-                        item.isVisible = isVisible
-                    }
-                }
+            realm.writeBlocking {
+                val myLifeList = getMyLifeByUserId(realm, userId)
+                myLifeList.find { it._id?.contains(id ?: "") == true }?.isVisible = isVisible
             }
         }
     }
