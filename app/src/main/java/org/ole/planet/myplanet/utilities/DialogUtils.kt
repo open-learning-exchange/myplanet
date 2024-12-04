@@ -121,7 +121,7 @@ object DialogUtils {
 
     @JvmStatic
     fun showCloseAlert(context: Context, title: String?, message: String) {
-        AlertDialog.Builder(context)
+        AlertDialog.Builder(context, R.style.CustomAlertDialog)
             .setTitle(title)
             .setMessage(message)
             .setPositiveButton(R.string.close, null)
@@ -141,7 +141,7 @@ object DialogUtils {
 
     @JvmStatic
     fun getUpdateDialog(context: Context, info: MyPlanet?, progressDialog: CustomProgressDialog?): AlertDialog.Builder {
-        return AlertDialog.Builder(context)
+        return AlertDialog.Builder(context, R.style.CustomAlertDialog)
             .setTitle(R.string.new_version_of_my_planet_available)
             .setMessage(R.string.download_first_to_continue)
             .setNeutralButton(R.string.upgrade_local) { _, _ ->
