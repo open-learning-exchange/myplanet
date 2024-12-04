@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -18,6 +19,7 @@ import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import io.realm.Realm
+import io.realm.Sort
 import org.ole.planet.myplanet.utilities.Utilities
 
 class AdapterJoinedMember(private val context: Context, private val list: List<RealmUserModel>, private val mRealm: Realm, private val teamId: String) : RecyclerView.Adapter<AdapterJoinedMember.ViewHolderUser>() {
@@ -77,11 +79,15 @@ class AdapterJoinedMember(private val context: Context, private val list: List<R
         overflowMenuOptions: Array<String>,
         isLoggedInUserTeamLeader: Boolean
     ) {
-        if (isLoggedInUserTeamLeader) {
+        if (isLoggedInUserTeamLeader  && list.size>1) {
             rowJoinedUserBinding.icMore.visibility = View.VISIBLE
             rowJoinedUserBinding.icMore.setOnClickListener {
                 val builder = AlertDialog.Builder(context, R.style.AlertDialogTheme)
-                val adapter = object : ArrayAdapter<CharSequence>(context, android.R.layout.simple_list_item_1, overflowMenuOptions) {
+                val adapter = object : ArrayAdapter<CharSequence>(
+                    context,
+                    android.R.layout.simple_list_item_1,
+                    overflowMenuOptions
+                ) {
                     override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
                         val view = super.getView(position, convertView, parent) as TextView
                         val color = ContextCompat.getColor(context, R.color.daynight_textColor)
@@ -90,10 +96,31 @@ class AdapterJoinedMember(private val context: Context, private val list: List<R
                     }
                 }
                 builder.setAdapter(adapter) { _, i ->
-                    if (i == 0) {
-                        reject(list[position], position)
+                    if (position >= 0 && position < list.size) {
+                        when (i) {
+                            0 -> {
+                                if (currentUser.id != list[position].id) {
+                                    reject(list[position], position)
+                                } else {
+                                    val nextOfKin= getNextOfKin()
+                                    if(nextOfKin!=null){
+                                        makeLeader(nextOfKin)
+                                        reject(list[position], position)
+                                    }
+                                    else {
+                                        Toast.makeText(context, R.string.cannot_remove_user, Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            }
+                            1 -> {
+                                makeLeader(list[position])
+                            }
+                            else -> {
+                                Toast.makeText(context, R.string.cannot_remove_user, Toast.LENGTH_SHORT).show()
+                            }
+                        }
                     } else {
-                        makeLeader(list[position])
+                        Toast.makeText(context, R.string.cannot_remove_user, Toast.LENGTH_SHORT).show()
                     }
                 }.setNegativeButton(R.string.dismiss, null).show()
             }
@@ -102,7 +129,29 @@ class AdapterJoinedMember(private val context: Context, private val list: List<R
         }
     }
 
+    private fun getNextOfKin(): RealmUserModel? {
+        val members: List<RealmMyTeam> = mRealm.where(RealmMyTeam::class.java)
+            .equalTo("teamId", teamId)
+            .equalTo("isLeader", false)
+            .notEqualTo("status","archived")
+            .sort("createdDate", Sort.DESCENDING)
+            .findAll()
+        val successor =  if (members.isNotEmpty()) members?.first() else null
+        if(successor==null){
+            return null
+        }
+        else{
+            val user= mRealm.where(RealmUserModel::class.java).equalTo("id", successor.userId).findFirst()
+            return user
+        }
+        return null
+    }
+
     private fun makeLeader(userModel: RealmUserModel) {
+        if(userModel==null){
+            Utilities.toast(context, context.getString(R.string.cannot_remove_user))
+            return
+        }
         mRealm.executeTransaction { realm ->
             val team = realm.where(RealmMyTeam::class.java)
                 .equalTo("teamId", teamId)
@@ -114,6 +163,7 @@ class AdapterJoinedMember(private val context: Context, private val list: List<R
                 .findFirst()
             teamLeader?.isLeader = false
             team?.isLeader = true
+            team?.updated=true
         }
         notifyDataSetChanged()
         Utilities.toast(context, context.getString(R.string.leader_selected))

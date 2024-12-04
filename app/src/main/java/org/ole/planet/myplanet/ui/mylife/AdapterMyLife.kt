@@ -13,6 +13,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
@@ -81,10 +82,10 @@ class AdapterMyLife(private val context: Context, private val myLifeList: List<R
                     it, myLifeList[position].userId)
             }
         }, {
-                Handler(Looper.getMainLooper()).post {
-                    if (isVisible) {
-                        changeVisibility(holder, R.drawable.ic_visibility, hide)
-                        Utilities.toast(context, myLifeList[position].title + context.getString(R.string.is_now_hidden))
+            Handler(Looper.getMainLooper()).post {
+                if (isVisible) {
+                    changeVisibility(holder, R.drawable.ic_visibility, hide)
+                    Utilities.toast(context, myLifeList[position].title + context.getString(R.string.is_now_hidden))
                 } else {
                     changeVisibility(holder, R.drawable.ic_visibility_off, show)
                     Utilities.toast(context, myLifeList[position].title + context.getString(R.string.is_now_shown))
@@ -120,11 +121,11 @@ class AdapterMyLife(private val context: Context, private val myLifeList: List<R
         var rvItemContainer: LinearLayout = itemView.findViewById(R.id.rv_item_parent_layout)
 
         override fun onItemSelected() {
-            itemView.setBackgroundColor(context.resources.getColor(R.color.user_profile_background))
+            itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.user_profile_background))
         }
 
         override fun onItemClear(viewHolder: RecyclerView.ViewHolder?) {
-            itemView.setBackgroundColor(context.resources.getColor(R.color.daynight_grey))
+            itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.daynight_grey))
             if (viewHolder != null) {
                 if (!myLifeList[viewHolder.bindingAdapterPosition].isVisible) {
                     (viewHolder as ViewHolderMyLife?)?.rvItemContainer?.alpha = hide

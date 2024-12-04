@@ -41,10 +41,10 @@ import io.realm.RealmResults
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.ole.planet.myplanet.BuildConfig
-import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
-import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getLibraryList
+import org.ole.planet.myplanet.base.BaseResourceFragment
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.ActivityDashboardBinding
 import org.ole.planet.myplanet.databinding.CustomTabBinding
@@ -62,10 +62,10 @@ import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.chat.ChatHistoryListFragment
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
-import org.ole.planet.myplanet.ui.courses.MyProgressFragment.Companion.fetchCourseData
-import org.ole.planet.myplanet.ui.courses.MyProgressFragment.Companion.getCourseProgress
-import org.ole.planet.myplanet.ui.dashboard.notification.NotificationsFragment
+import org.ole.planet.myplanet.ui.courses.MyProgressFragment
+import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.ui.dashboard.notification.NotificationListener
+import org.ole.planet.myplanet.ui.dashboard.notification.NotificationsFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
 import org.ole.planet.myplanet.ui.resources.ResourceDetailFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
@@ -231,7 +231,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     } else {
                         if (!doubleBackToExitPressedOnce) {
                             doubleBackToExitPressedOnce = true
-                            toast(context, getString(R.string.press_back_again_to_exit))
+                            toast(MainApplication.context, getString(R.string.press_back_again_to_exit))
                             Handler(Looper.getMainLooper()).postDelayed({ doubleBackToExitPressedOnce = false }, 2000)
                         } else {
                             val fragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
@@ -245,12 +245,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
         })
 
-        val voiceCount = mRealm.where(RealmUserChallengeActions::class.java)
-            .equalTo("userId", user?.id)
-            .equalTo("actionType", "voice")
-            .findAll().count()
-
-        val startTime = 1730408400
+        val startTime = 1733011200000
         val commVoiceResults = mRealm.where(RealmNews::class.java)
             .equalTo("userId", user?.id)
             .greaterThanOrEqualTo("time", startTime)
@@ -307,10 +302,16 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             .map { getDateFromTimestamp(it.time) }
             .distinct()
 
-        val courseData = fetchCourseData(mRealm, user?.id)
+        val courseData = MyProgressFragment.fetchCourseData(mRealm, user?.id)
 
-        val courseId = "9517e3b45a5bb63e69bb8f269216974d"
-        val progress = getCourseProgress(courseData, courseId)
+        val courseId = "4e6b78800b6ad18b4e8b0e1e38a98cac"
+        val progress = MyProgressFragment.getCourseProgress(courseData, courseId)
+
+        val hasUnfinishedSurvey = mRealm.where(RealmStepExam::class.java)
+            .equalTo("courseId", courseId)
+            .equalTo("type", "surveys")
+            .findAll()
+            .any { survey -> !TakeCourseFragment.existsSubmission(mRealm, survey.id, "survey") }
 
         val validUrls = listOf(
             "https://${BuildConfig.PLANET_GUATEMALA_URL}",
@@ -323,7 +324,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
         val today = LocalDate.now()
         if (user?.id?.startsWith("guest") == false) {
-            val endDate = LocalDate.of(today.year, 12, 1)
+            val endDate = LocalDate.of(today.year, 12, 31)
             if (today.isBefore(endDate)) {
                 if (settings.getString("serverURL", "") in validUrls) {
                     val course = mRealm.where(RealmMyCourse::class.java)
@@ -339,20 +340,21 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                         } else {
                             "Ingresa al curso $courseName completalo ($current de $max hecho)"
                         }
-                        challengeDialog(uniqueDates.size, courseStatus, allUniqueDates.size)
+                        challengeDialog(uniqueDates.size, courseStatus, allUniqueDates.size, hasUnfinishedSurvey)
                     } else {
-                        challengeDialog(uniqueDates.size, "$courseName no iniciado", allUniqueDates.size)
+                        challengeDialog(uniqueDates.size, "$courseName no iniciado", allUniqueDates.size, hasUnfinishedSurvey)
                     }
                 }
             }
         }
     }
 
-    fun challengeDialog(voiceCount: Int, courseStatus: String, allVoiceCount: Int) {
+    fun challengeDialog (voiceCount: Int, courseStatus: String, allVoiceCount: Int, hasUnfinishedSurvey: Boolean) {
         val voiceTaskDone = if (voiceCount >= 5) "✅" else "[ ]"
         val prereqsMet = courseStatus.contains("terminado", ignoreCase = true) && voiceCount >= 5
+        var hasValidSync = false
         val syncTaskDone = if (prereqsMet) {
-            val hasValidSync = mRealm.where(RealmUserChallengeActions::class.java)
+            hasValidSync = mRealm.where(RealmUserChallengeActions::class.java)
                 .equalTo("userId", user?.id)
                 .equalTo("actionType", "sync")
                 .count() > 0
@@ -370,30 +372,44 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         if (isCompleted && !hasShownCongrats) {
             editor.putBoolean("has_shown_congrats", true).apply()
             val markdownContent = """
-                Ganancias totales: **$${calculateProgress(allVoiceCount)}**
+                Ingresos totales de la comunidad: **$${calculateCommunityProgress(allVoiceCount, hasUnfinishedSurvey)}** /$500
+
+                Tus ganancias totales: **$${calculateIndividualProgress(voiceCount, hasUnfinishedSurvey)}** /$11
                 ### ¡Felicidades! Reto Completado <br/>
                 """.trimIndent()
-            MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount, allVoiceCount)
-                .show(supportFragmentManager, "markdown_dialog")
+            MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount, allVoiceCount, hasUnfinishedSurvey).show(supportFragmentManager, "markdown_dialog")
         } else {
-            val voicesText = if (voiceCount > 0) {
-                "$voiceCount de 5 Voces diarias"
+            val cappedVoiceCount = minOf(voiceCount, 5)
+            val voicesText = if (cappedVoiceCount > 0) {
+                "$cappedVoiceCount de 5 Voces diarias"
             } else {
                 ""
             }
             val markdownContent = """
-                Ganancias totales: **$${calculateProgress(allVoiceCount)}**
-                ### $courseTaskDone <br/>
-                ### $voiceTaskDone Comparte tu opinión en Nuestras Voces. $voicesText <br/>
+                Ingresos totales de la comunidad: **$${calculateCommunityProgress(allVoiceCount, hasUnfinishedSurvey)}** /$500
+
+                Tus ganancias totales: **$${calculateIndividualProgress(voiceCount, hasUnfinishedSurvey)}** /$11
+                ### $courseTaskDone $1 por encuesta <br/>
+                ### $voiceTaskDone Comparte tu opinión en Nuestras Voces.[$2/voz] $voicesText <br/>
                 ### $syncTaskDone Recuerda sincronizar la aplicación móvil. <br/>
                 """.trimIndent()
-            MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount, allVoiceCount)
+            MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount, allVoiceCount, hasUnfinishedSurvey)
                 .show(supportFragmentManager, "markdown_dialog")
         }
     }
 
-    private fun calculateProgress(allVoiceCount: Int): Int {
-        return (allVoiceCount) * 5
+    private fun calculateIndividualProgress(voiceCount: Int, hasUnfinishedSurvey: Boolean): Int {
+        val earnedDollarsVoice = minOf(voiceCount, 5) * 2
+        val earnedDollarsSurvey = if (!hasUnfinishedSurvey) 1 else 0
+        val total = earnedDollarsVoice + earnedDollarsSurvey
+        return total.coerceAtMost(500)
+    }
+
+    private fun calculateCommunityProgress (allVoiceCount: Int, hasUnfinishedSurvey: Boolean): Int {
+        val earnedDollarsVoice = minOf(allVoiceCount, 5) * 2
+        val earnedDollarsSurvey = if (!hasUnfinishedSurvey) 1 else 0
+        val total = earnedDollarsVoice + earnedDollarsSurvey
+        return total.coerceAtMost(11)
     }
 
     private fun setupRealmListeners() {
@@ -475,7 +491,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun updateResourceNotification() {
-        val resourceCount = getLibraryList(mRealm, user?.id).size
+        val resourceCount = BaseResourceFragment.getLibraryList(mRealm, user?.id).size
         if (resourceCount > 0) {
             val existingNotification = mRealm.where(RealmNotification::class.java)
                 .equalTo("userId", user?.id)

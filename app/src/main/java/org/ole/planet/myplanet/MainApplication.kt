@@ -121,8 +121,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
         suspend fun isServerReachable(urlString: String?): Boolean {
             return try {
-                if (urlString.isNullOrBlank()) return false
-
+                if (urlString.isBlank()) return false
+              
                 val formattedUrl = if (!urlString.startsWith("http://") && !urlString.startsWith("https://")) {
                     "http://$urlString"
                 } else {
