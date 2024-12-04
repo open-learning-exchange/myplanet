@@ -191,7 +191,12 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         return withContext(Dispatchers.IO) {
             val apiInterface = client?.create(ApiInterface::class.java)
             try {
-                val response = apiInterface?.isPlanetAvailable("$processedUrl/_all_dbs")?.execute()
+                Log.d("SyncActivity", "isServerReachable: $processedUrl")
+                val response = if (settings.getBoolean("isAlternativeUrl", false)){
+                    apiInterface?.isPlanetAvailable("$processedUrl/db/_all_dbs")?.execute()
+                } else {
+                    apiInterface?.isPlanetAvailable("$processedUrl/_all_dbs")?.execute()
+                }
 
                 when {
                     response?.isSuccessful == true -> {
@@ -742,9 +747,15 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 urlPwd = password
                 couchdbURL = "${uri.scheme}://$urlUser:$urlPwd@${uri.host}:${if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port}"
             }
-            editor.putString("alternativeUrl", url).apply()
-            editor.putString("processedAlternativeUrl", couchdbURL).apply()
-            editor.putBoolean("isAlternativeUrl", true).apply()
+            editor.putString("serverPin", password)
+            editor.putString("url_user", urlUser)
+            editor.putString("url_pwd", urlPwd)
+            editor.putString("url_Scheme", uri.scheme)
+            editor.putString("url_Host", uri.host)
+            editor.putString("alternativeUrl", url)
+            editor.putString("processedAlternativeUrl", couchdbURL)
+            editor.putBoolean("isAlternativeUrl", true)
+            editor.apply()
 
             processedUrl = couchdbURL
         } else {
@@ -760,11 +771,13 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         Service(this).isPlanetAvailable(object : PlanetAvailableListener {
             override fun isAvailable() {
                 Service(context).checkVersion(this@SyncActivity, settings)
+                Log.d("SyncActivity", "isAvailable: true")
             }
             override fun notAvailable() {
                 if (!isFinishing) {
                     syncFailed = true
                     showAlert(context, "Error", getString(R.string.planet_server_not_reachable))
+                    Log.d("SyncActivity", "isAvailable: false")
                 }
             }
         })

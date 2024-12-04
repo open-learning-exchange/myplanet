@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import android.net.wifi.SupplicantState
 import android.net.wifi.WifiManager
 import android.text.TextUtils
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull
@@ -76,6 +77,7 @@ class SyncManager private constructor(private val context: Context) {
 
     private fun authenticateAndSync() {
         td = Thread {
+            Log.d("authenticateAndSync", "${TransactionSyncManager.authenticate()}")
             if (TransactionSyncManager.authenticate()) {
                 startSync()
             } else {
