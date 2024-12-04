@@ -111,6 +111,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     override fun onConfigurationIdReceived(id: String, code:String) {
+        Log.d("SyncActivity", "onConfigurationIdReceived: $id")
+        Log.d("SyncActivity", "onConfigurationIdReceived: $code")
         val savedId = settings.getString("configurationId", null)
         if (serverConfigAction == "sync") {
             if (savedId == null) {
@@ -721,6 +723,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     private fun continueSync(dialog: MaterialDialog) {
+        Log.d("SyncActivity", "continueSync: $processedUrl")
         processedUrl = saveConfigAndContinue(dialog)
         if (TextUtils.isEmpty(processedUrl)) return
         isSync = true
