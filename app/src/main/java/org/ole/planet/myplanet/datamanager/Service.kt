@@ -412,7 +412,8 @@ class Service(private val context: Context) {
                 // Handle the result
                 when (result) {
                     is UrlCheckResult.Success -> {
-                        listener?.onConfigurationIdReceived(result.id, result.code)
+                        val isAlternativeUrl = result.url != url
+                        listener?.onConfigurationIdReceived(result.id, result.code, result.url, isAlternativeUrl)
                         activity.setSyncFailed(false)
                         Log.d("Service", "Successfully connected to URL: ${result.url}")
                     }
@@ -607,6 +608,6 @@ class Service(private val context: Context) {
     }
 
     interface ConfigurationIdListener {
-        fun onConfigurationIdReceived(id: String, code: String)
+        fun onConfigurationIdReceived(id: String, code: String, url: String, isAlternativeUrl: Boolean)
     }
 }
