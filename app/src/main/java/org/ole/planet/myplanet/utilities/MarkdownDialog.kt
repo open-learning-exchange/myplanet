@@ -28,20 +28,23 @@ class MarkdownDialog : DialogFragment() {
     private var courseStatus: String = ""
     private var voiceCount: Int = 0
     private var allVoiceCount: Int = 0
+    private var hasUnfinishedSurvey: Boolean = false
 
     companion object {
         private const val ARG_MARKDOWN_CONTENT = "markdown_content"
         private const val ARG_COURSE_STATUS = "course_status"
         private const val ARG_VOICE_COUNT = "voice_count"
         private const val ARG_ALL_VOICE_COUNT = "all_voice_count"
+        private const val ARG_HAS_UNFINISHED_SURVEY = "has_unfinished_survey"
 
-        fun newInstance(markdownContent: String, courseStatus: String, voiceCount: Int, allVoiceCount: Int): MarkdownDialog {
+        fun newInstance(markdownContent: String, courseStatus: String, voiceCount: Int, allVoiceCount: Int, hasUnfinishedSurvey: Boolean): MarkdownDialog {
             val fragment = MarkdownDialog()
             val args = Bundle().apply {
                 putString(ARG_MARKDOWN_CONTENT, markdownContent)
                 putString(ARG_COURSE_STATUS, courseStatus)
                 putInt(ARG_VOICE_COUNT, voiceCount)
                 putInt(ARG_ALL_VOICE_COUNT, allVoiceCount)
+                putBoolean(ARG_HAS_UNFINISHED_SURVEY, hasUnfinishedSurvey)
             }
             fragment.arguments = args
             return fragment
@@ -54,6 +57,7 @@ class MarkdownDialog : DialogFragment() {
         courseStatus = arguments?.getString(ARG_COURSE_STATUS) ?: ""
         voiceCount = arguments?.getInt(ARG_VOICE_COUNT, 0) ?: 0
         allVoiceCount = arguments?.getInt(ARG_ALL_VOICE_COUNT, 0) ?: 0
+        hasUnfinishedSurvey = arguments?.getBoolean(ARG_HAS_UNFINISHED_SURVEY, false) == true
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -80,8 +84,10 @@ class MarkdownDialog : DialogFragment() {
         }
         setupCloseButton()
 
-        val earnedDollars = allVoiceCount * 5
-        val progressValue = ((earnedDollars.toDouble() / 500) * 100).toInt().coerceAtMost(100)
+        val earnedDollarsVoice = allVoiceCount * 2
+        val earnedDollarsSurvey = if (!hasUnfinishedSurvey) 1 else 0
+        val total = earnedDollarsVoice + earnedDollarsSurvey
+        val progressValue = ((total.toDouble() / 500) * 100).toInt().coerceAtMost(100)
         dialogCampaignChallengeBinding.progressBar.progress = progressValue
     }
 
@@ -101,8 +107,7 @@ class MarkdownDialog : DialogFragment() {
             val isCompleted = courseStatus.contains("terminado") && voiceCount >= 5 && (activity as? DashboardActivity)?.mRealm?.let { realm ->
                 realm.where(RealmUserChallengeActions::class.java)
                     .equalTo("userId", (activity as? DashboardActivity)?.user?.id)
-                    .equalTo("actionType", "sync")
-                    .count() > 0
+                    .equalTo("actionType", "sync").count() > 0
             } == true
 
             visibility = if (isCompleted) View.GONE else View.VISIBLE
@@ -116,7 +121,7 @@ class MarkdownDialog : DialogFragment() {
 
             text = buttonText
             setOnClickListener {
-                val courseId = "9517e3b45a5bb63e69bb8f269216974d"
+                val courseId = "4e6b78800b6ad18b4e8b0e1e38a98cac"
                 when (buttonText) {
                     context.getString(R.string.start), context.getString(R.string.continuation) -> {
                         val fragment = TakeCourseFragment().apply {
