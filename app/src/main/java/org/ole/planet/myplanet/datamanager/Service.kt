@@ -106,18 +106,24 @@ class Service(private val context: Context) {
     }
 
     fun checkVersion(callback: CheckVersionCallback, settings: SharedPreferences) {
-        if (settings.getString("couchdbURL", "")?.isEmpty() == true) {
-            callback.onError(context.getString(R.string.config_not_available), true)
-            return
+        Log.d("Service", "checkVersion: ${Utilities.getUpdateUrl(settings)}")
+        if (!settings.getBoolean("isAlternativeUrl", false)){
+            if (settings.getString("couchdbURL", "")?.isEmpty() == true) {
+                callback.onError(context.getString(R.string.config_not_available), true)
+                return
+            }
         }
+
         retrofitInterface?.checkVersion(Utilities.getUpdateUrl(settings))?.enqueue(object : Callback<MyPlanet?> {
             override fun onResponse(call: Call<MyPlanet?>, response: Response<MyPlanet?>) {
                 preferences.edit().putInt("LastWifiID", NetworkUtils.getCurrentNetworkId(context)).apply()
                 if (response.body() != null) {
                     val p = response.body()
                     preferences.edit().putString("versionDetail", Gson().toJson(response.body())).apply()
+                    Log.d("Service", "checkVersion onResponse: ${response.body()}")
                     retrofitInterface.getApkVersion(Utilities.getApkVersionUrl(settings)).enqueue(object : Callback<ResponseBody> {
                         override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+                            Log.d("Service", "getApkVersion onResponse: $response")
                             val responses: String?
                             try {
                                 responses = Gson().fromJson(response.body()?.string(), String::class.java)
@@ -144,6 +150,7 @@ class Service(private val context: Context) {
                                 if (p != null) {
                                     if (currentVersion < p.minapkcode && apkVersion < p.minapkcode) {
                                         callback.onUpdateAvailable(p, true)
+                                        Log.d("Service", "checkVersion: Planet up to date")
                                     } else {
                                         callback.onError("Planet up to date", false)
                                     }
@@ -168,12 +175,15 @@ class Service(private val context: Context) {
     }
 
     fun isPlanetAvailable(callback: PlanetAvailableListener?) {
+        Log.d("Service", "isPlanetAvailable: ${Utilities.getUpdateUrl(preferences)}")
         retrofitInterface?.isPlanetAvailable(Utilities.getUpdateUrl(preferences))?.enqueue(object : Callback<ResponseBody?> {
             override fun onResponse(call: Call<ResponseBody?>, response: Response<ResponseBody?>) {
                 if (callback != null && response.code() == 200) {
                     callback.isAvailable()
+                    Log.d("Service", "isAvailable: true")
                 } else {
                     callback?.notAvailable()
+                    Log.d("Service", "isAvailable: false")
                 }
             }
 
