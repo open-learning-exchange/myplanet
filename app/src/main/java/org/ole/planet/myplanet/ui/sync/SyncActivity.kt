@@ -188,13 +188,16 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     suspend fun isServerReachable(processedUrl: String?): Boolean {
+        Log.d("SyncActivity", "isServerReachable: $processedUrl")
         return withContext(Dispatchers.IO) {
             val apiInterface = client?.create(ApiInterface::class.java)
             try {
                 Log.d("SyncActivity", "isServerReachable: $processedUrl")
                 val response = if (settings.getBoolean("isAlternativeUrl", false)){
+                    Log.d("okuro", "isAlternativeUrl true: $processedUrl/db/_all_dbs")
                     apiInterface?.isPlanetAvailable("$processedUrl/db/_all_dbs")?.execute()
                 } else {
+                    Log.d("okuro", "isAlternativeUrl false: $processedUrl/db/_all_dbs")
                     apiInterface?.isPlanetAvailable("$processedUrl/_all_dbs")?.execute()
                 }
 
@@ -359,6 +362,12 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     createLog("synced successfully")
                 }
                 showSnack(findViewById(android.R.id.content), getString(R.string.sync_completed))
+                if (settings.getBoolean("isAlternativeUrl", false)) {
+                    editor.putString("alternativeUrl", "")
+                    editor.putString("processedAlternativeUrl", "")
+                    editor.putBoolean("isAlternativeUrl", false)
+                    editor.apply()
+                }
                 downloadAdditionalResources()
                 if (defaultPref.getBoolean("beta_auto_download", false)) {
                     backgroundDownload(downloadAllFiles(getAllLibraryList(mRealm)))

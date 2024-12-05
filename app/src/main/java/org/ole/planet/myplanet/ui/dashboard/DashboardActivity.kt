@@ -7,9 +7,11 @@ import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.drawable.Drawable
+import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
@@ -56,6 +58,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserChallengeActions
+import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createAction
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.SettingActivity
@@ -176,9 +179,107 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             activityDashboardBinding.appBarBell.bellToolbar.visibility = View.VISIBLE
         }
         activityDashboardBinding.appBarBell.ivSync.setOnClickListener {
+            val url = Utilities.getUrl()
+            val regex = Regex("^(https?://).*?@(.*?):")
+            val matchResult = regex.find(url)
+
+            val extractedUrl = if (matchResult != null) {
+                val protocol = matchResult.groupValues[1] // "http://"
+                val address = matchResult.groupValues[2]  // "192.168.1.202"
+                "$protocol$address"
+            } else {
+                null // Handle invalid URL
+            }
+
+            val serverMappings = mapOf(
+                "http://${BuildConfig.PLANET_URIUR_URL}" to "http://35.231.161.29",
+                "http://192.168.1.202" to "http://34.35.29.147",
+                "https://${BuildConfig.PLANET_GUATEMALA_URL}" to "http://guatemala.com/cloudserver",
+                "http://${BuildConfig.PLANET_XELA_URL}" to "http://xela.com/cloudserver",
+                "http://${BuildConfig.PLANET_SANPABLO_URL}" to "http://sanpablo.com/cloudserver",
+                "http://${BuildConfig.PLANET_EMBAKASI_URL}" to "http://embakasi.com/cloudserver",
+                "https://${BuildConfig.PLANET_VI_URL}" to "http://vi.com/cloudserver"
+            )
+
             lifecycleScope.launch {
-                if (isServerReachable(Utilities.getUrl())) {
+                // Log the original URL being processed
+                Log.d("URLSync", "Original URL being processed: $url")
+                Log.d("URLSync", "Extracted base URL: $extractedUrl")
+
+                // Find the first matching URL in serverMappings
+                val primaryUrlMapping = serverMappings.entries.find { it.key.contains(extractedUrl ?: "") }
+
+                if (primaryUrlMapping != null) {
+                    val primaryUrl = primaryUrlMapping.key
+                    val alternativeUrl = primaryUrlMapping.value
+
+                    // Log the mapped URLs
+                    Log.d("URLSync", "Mapped Primary URL: $primaryUrl")
+                    Log.d("URLSync", "Mapped Alternative URL: $alternativeUrl")
+
+                    // Check primary URL first
+                    Log.d("URLSync", "Attempting to reach primary URL: ${Utilities.getUrl()}")
+                    val isPrimaryReachable = isServerReachable(Utilities.getUrl())
+
+                    if (isPrimaryReachable) {
+                        Log.d("URLSync", "Successfully reached primary URL: ${Utilities.getUrl()}")
+//                    processUrlAndStartUpload(Utilities.getUrl())
+                        startUpload("dashboard")
+                        createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
+                    } else {
+                        Log.w("URLSync", "Failed to reach primary URL: ${Utilities.getUrl()}")
+
+                        val uri = Uri.parse(alternativeUrl)
+                        var couchdbURL: String
+                        val urlUser: String
+                        val urlPwd: String
+                        if (alternativeUrl.contains("@")) {
+                            val userinfo = getUserInfo(uri)
+                            urlUser = userinfo[0]
+                            urlPwd = userinfo[1]
+                            couchdbURL = alternativeUrl
+                        } else {
+                            urlUser = "satellite"
+                            urlPwd = settings.getString("serverPin", "") ?: ""
+                            couchdbURL = "${uri.scheme}://$urlUser:$urlPwd@${uri.host}:${if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port}"
+                        }
+                        editor.putString("url_user", urlUser)
+                        editor.putString("url_pwd", urlPwd)
+                        editor.putString("url_Scheme", uri.scheme)
+                        editor.putString("url_Host", uri.host)
+                        editor.putString("alternativeUrl", url)
+                        editor.putString("processedAlternativeUrl", couchdbURL)
+                        editor.putBoolean("isAlternativeUrl", true)
+                        editor.apply()
+
+                        // If primary URL is not reachable, try alternative URL
+                        Log.d("URLSync", "Attempting to reach alternative URL: $couchdbURL")
+                        val isAlternativeReachable = isServerReachable(couchdbURL)
+
+                        if (isAlternativeReachable) {
+//                        Log.d("URLSync", "Successfully reached alternative URL: $alternativeUrl")
+//
+//                        // Reconstruct URL with alternative base
+//                        val uri = Uri.parse(url)
+//                        val alternativeCouchdbUrl = reconstructUrlWithAlternative(uri, alternativeUrl)
+//
+//                        Log.d("URLSync", "Reconstructed alternative CouchDB URL: $alternativeCouchdbUrl")
+                            startUpload("dashboard")
+                            createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
+                        } else {
+                            // Neither primary nor alternative URL is reachable
+                            Log.e("URLSync", "Both primary and alternative URLs are unreachable")
+                            Log.e("URLSync", "Primary URL failed: $primaryUrl")
+                            Log.e("URLSync", "Alternative URL failed: $alternativeUrl")
+                        }
+                    }
+                } else {
+                    // If no mapping found, log and proceed with original URL
+                    Log.w("URLSync", "No URL mapping found for: $extractedUrl")
+                    Log.d("URLSync", "Proceeding with original URL")
+//                processUrlAndStartUpload(url)
                     startUpload("dashboard")
+                    createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
                 }
             }
         }
