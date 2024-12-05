@@ -119,7 +119,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             applyThemeMode(themeMode)
         }
 
-        suspend fun isServerReachable(urlString: String?): Boolean {
+        suspend fun isServerReachable(urlString: String): Boolean {
             return try {
                 if (urlString.isBlank()) return false
               
