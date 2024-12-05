@@ -8,10 +8,12 @@ import android.util.Log
 import android.view.View
 import android.webkit.CookieManager
 import android.webkit.WebChromeClient
+import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
 import org.ole.planet.myplanet.databinding.ActivityWebViewBinding
+import org.ole.planet.myplanet.utilities.Utilities
 
 class WebViewActivity : AppCompatActivity() {
     private lateinit var activityWebViewBinding: ActivityWebViewBinding
@@ -34,12 +36,24 @@ class WebViewActivity : AppCompatActivity() {
         activityWebViewBinding.contentWebView.pBar.max = 100
         activityWebViewBinding.contentWebView.pBar.progress = 0
         setListeners()
-        activityWebViewBinding.contentWebView.wv.settings.javaScriptEnabled = true
-        activityWebViewBinding.contentWebView.wv.settings.javaScriptCanOpenWindowsAutomatically = true
-        activityWebViewBinding.contentWebView.wv.loadUrl(link)
+        activityWebViewBinding.contentWebView.wv.settings.apply {
+            javaScriptEnabled = true
+            domStorageEnabled = true
+            javaScriptCanOpenWindowsAutomatically = true
+            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+            setSupportZoom(true)
+            builtInZoomControls = true
+        }
+
+        val headers = mapOf("Authorization" to Utilities.header)
+
+//        activityWebViewBinding.contentWebView.wv.settings.javaScriptEnabled = true
+//        activityWebViewBinding.contentWebView.wv.settings.javaScriptCanOpenWindowsAutomatically = true
+        activityWebViewBinding.contentWebView.wv.loadUrl(link, headers)
         activityWebViewBinding.contentWebView.finish.setOnClickListener { finish() }
         setWebClient()
     }
+
 
     private fun setWebClient() {
         activityWebViewBinding.contentWebView.wv.webViewClient = object : WebViewClient() {
@@ -64,7 +78,6 @@ class WebViewActivity : AppCompatActivity() {
         cookieManager.flush()
     }
 
-
     private fun setListeners() {
         activityWebViewBinding.contentWebView.wv.webChromeClient = object : WebChromeClient() {
             override fun onProgressChanged(view: WebView, newProgress: Int) {
@@ -84,4 +97,5 @@ class WebViewActivity : AppCompatActivity() {
             }
         }
     }
+
 }
