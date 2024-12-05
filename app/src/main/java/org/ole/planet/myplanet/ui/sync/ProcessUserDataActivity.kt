@@ -147,7 +147,7 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         } else {
             urlUser = "satellite"
             urlPwd = password
-            couchdbURL = uri.scheme + "://" + urlUser + ":" + urlPwd + "@" + uri.host + ":" + if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port
+            couchdbURL = "${uri.scheme}://$urlUser:$urlPwd@${uri.host}:${if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port}"
         }
         editor.putString("serverPin", password)
         saveUrlScheme(editor, uri, url, couchdbURL)
@@ -230,7 +230,7 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         alert11.show()
     }
 
-    private fun getUserInfo(uri: Uri): Array<String> {
+     fun getUserInfo(uri: Uri): Array<String> {
         val ar = arrayOf("", "")
         val info = uri.userInfo?.split(":".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()
         if ((info?.size ?: 0) > 1) {

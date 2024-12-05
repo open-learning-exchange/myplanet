@@ -104,6 +104,7 @@ object Utilities {
             imageView.setImageResource(R.drawable.ole_logo)
         }
     }
+
     fun <T> handleCheck(b: Boolean, i: Int, selectedItems: MutableList<T?>, list: List<T?>) {
         if (b) {
             selectedItems.add(list[i])
@@ -115,20 +116,25 @@ object Utilities {
     val header: String
         get() {
             val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            Log.d("Basic auth", "${settings.getString("url_user", "")}:${ settings.getString("url_pwd", "") }")
+
             return "Basic ${Base64.encodeToString(("${settings.getString("url_user", "")}:${ settings.getString("url_pwd", "") }").toByteArray(), Base64.NO_WRAP)}"
         }
 
     fun getUrl(): String {
         val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        if (settings.contains("couchdbURL")) {
-            var url = settings.getString("couchdbURL", "")
+        var url: String? = ""
 
-            if (!url?.endsWith("/db")!!) {
-                url += "/db"
-            }
-            return url
+        url = if (settings.getBoolean("isAlternativeUrl", false)) {
+            settings.getString("processedAlternativeUrl", "")
+        } else {
+            settings.getString("couchdbURL", "")
         }
-        return ""
+
+        if (!url?.endsWith("/db")!!) {
+            url += "/db"
+        }
+        return url
     }
 
     val hostUrl: String
@@ -149,12 +155,19 @@ object Utilities {
         }
 
     fun getUpdateUrl(settings: SharedPreferences): String {
-        var url = settings.getString("couchdbURL", "")
+        var url: String? = ""
+        url = if (settings.getBoolean("isAlternativeUrl", false)) {
+            settings.getString("processedAlternativeUrl", "")
+        } else {
+            settings.getString("couchdbURL", "")
+        }
+
         if (url != null) {
             if (url.endsWith("/db")) {
                 url = url.replace("/db", "")
             }
         }
+
         return "$url/versions"
     }
 
@@ -179,7 +192,13 @@ object Utilities {
     }
 
     fun getApkVersionUrl(settings: SharedPreferences): String {
-        var url = settings.getString("couchdbURL", "")
+        var url: String? = ""
+        url = if (settings.getBoolean("isAlternativeUrl", false)){
+            settings.getString("processedAlternativeUrl", "")
+        } else {
+            settings.getString("couchdbURL", "")
+        }
+
         if (url != null) {
             if (url.endsWith("/db")) {
                 url = url.replace("/db", "")
