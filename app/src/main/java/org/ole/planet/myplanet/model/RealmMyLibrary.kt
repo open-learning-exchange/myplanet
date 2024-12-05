@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.model
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
@@ -258,6 +259,7 @@ open class RealmMyLibrary : RealmObject() {
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
             }
+            logLargeString("insertMyLibrary", doc.toString())
             val resourceId = JsonUtils.getString("_id", doc)
             val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             var resource = mRealm.where(RealmMyLibrary::class.java).equalTo("id", resourceId).findFirst()
@@ -265,6 +267,7 @@ open class RealmMyLibrary : RealmObject() {
                 resource = mRealm.createObject(RealmMyLibrary::class.java, resourceId)
             }
             resource?.apply {
+
                 setUserId(userId)
                 _id = resourceId
                 if (!stepId.isNullOrBlank()) {
@@ -311,6 +314,8 @@ open class RealmMyLibrary : RealmObject() {
                 isPrivate = JsonUtils.getBoolean("private", doc)
                 setLanguages(JsonUtils.getJsonArray("languages", doc), this)
             }
+
+            logLargeString("insertMyLibrary resource", resource.id.toString() + " " + resource.resourceRemoteAddress)
             mRealm.commitTransaction()
 
             val csvRow = arrayOf(
@@ -408,6 +413,15 @@ open class RealmMyLibrary : RealmObject() {
         @JvmStatic
         fun getSubjects(libraries: List<RealmMyLibrary>): Set<String> {
             return libraries.flatMap { it.subject ?: emptyList() }.toSet()
+        }
+
+        fun logLargeString(tag: String, content: String) {
+            if (content.length > 3000) {
+                Log.d(tag, content.substring(0, 3000))
+                logLargeString(tag, content.substring(3000))
+            } else {
+                Log.d(tag, content)
+            }
         }
     }
 }

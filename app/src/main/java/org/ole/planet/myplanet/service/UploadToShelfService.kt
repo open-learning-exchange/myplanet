@@ -43,7 +43,7 @@ class UploadToShelfService(context: Context) {
             for (model in userModels) {
                 try {
                     val password = sharedPreferences.getString("loginUserPassword", "")
-                    val header = "Basic " + Base64.encodeToString(("${model.name}:${password}").toByteArray(), Base64.NO_WRAP)
+                    val header = "Basic ${Base64.encodeToString(("${ model.name }:${ password }").toByteArray(), Base64.NO_WRAP)}"
                     val res = apiInterface?.getJsonObject(header,  "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}")?.execute()
                     if (res?.body() == null) {
                         val obj = model.serialize()
