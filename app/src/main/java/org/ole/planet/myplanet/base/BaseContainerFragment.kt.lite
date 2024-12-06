@@ -209,11 +209,9 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 openHtmlResource(items)
             }
             "md" -> {
-                // Special handling for README.md
                 if (items.resourceLocalAddress?.contains("README.md", ignoreCase = true) == true) {
-                    // Optionally log or handle README.md differently
                     Log.d("FileExtension", "Detected README.md file")
-                    return // Or handle it specifically
+                    return
                 }
 
                 if (existingAction == null) {
