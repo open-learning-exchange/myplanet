@@ -3,28 +3,25 @@ package org.ole.planet.myplanet.model
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.opencsv.CSVWriter
-import io.realm.Realm
-import io.realm.RealmObject
-import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.NetworkUtils
+import io.realm.kotlin.Realm
+import io.realm.kotlin.ext.query
+import io.realm.kotlin.types.RealmObject
+import io.realm.kotlin.types.annotations.PrimaryKey
 import java.io.File
 import java.io.FileWriter
 import java.io.IOException
 
-open class RealmRating : RealmObject() {
+class RealmRating : RealmObject {
     @PrimaryKey
-    var id: String? = null
+    var id: String = ""
     var createdOn: String? = null
-    var _rev: String? = null
+    var rev: String? = null
     var time: Long = 0
     var title: String? = null
     var userId: String? = null
-    var isUpdated = false
-    var rate = 0
-    var _id: String? = null
-    var item: String? = null
+    var isUpdated: Boolean = false
+    var rate: Int = 0
+    var itemId: String? = null
     var comment: String? = null
     var parentCode: String? = null
     var planetCode: String? = null
@@ -33,102 +30,93 @@ open class RealmRating : RealmObject() {
 
     companion object {
         private val ratingDataList: MutableList<Array<String>> = mutableListOf()
-        @JvmStatic
-        fun getRatings(mRealm: Realm, type: String?, userId: String?): HashMap<String?, JsonObject> {
-            val r = mRealm.where(RealmRating::class.java).equalTo("type", type).findAll()
-            val map = HashMap<String?, JsonObject>()
-            for (rating in r) {
-                val `object` = getRatingsById(mRealm, rating.type, rating.item, userId)
-                if (`object` != null) map[rating.item] = `object`
+
+        suspend fun getRatings(realm: Realm, type: String?, userId: String?): Map<String?, JsonObject> {
+            val results = realm.query<RealmRating>("type == $0", type).find()
+            val map = mutableMapOf<String?, JsonObject>()
+
+            for (rating in results) {
+                val ratingObject = getRatingsById(realm, rating.type, rating.itemId, userId)
+                if (ratingObject != null) map[rating.itemId] = ratingObject
             }
+
             return map
         }
 
-        @JvmStatic
-        fun getRatingsById(mRealm: Realm, type: String?, id: String?, userid: String?): JsonObject? {
-            val r = mRealm.where(RealmRating::class.java).equalTo("type", type).equalTo("item", id).findAll()
-            if (r.size == 0) {
-                return null
-            }
-            val `object` = JsonObject()
-            var totalRating = 0
-            for (rating in r) {
-                totalRating += rating.rate
-            }
-            val ratingObject = mRealm.where(RealmRating::class.java).equalTo("type", type)
-                .equalTo("userId", userid).equalTo("item", id).findFirst()
-            if (ratingObject != null) {
-                `object`.addProperty("ratingByUser", ratingObject.rate)
-            }
-            `object`.addProperty("averageRating", totalRating.toFloat() / r.size)
-            `object`.addProperty("total", r.size)
-            return `object`
+        suspend fun getRatingsById(realm: Realm, type: String?, id: String?, userId: String?): JsonObject? {
+            val results = realm.query<RealmRating>("type == $0 && itemId == $1", type, id).find()
+            if (results.isEmpty()) return null
+
+            val totalRating = results.sumOf { it.rate }
+            val avgRating = totalRating.toFloat() / results.size
+
+            val userRating = results.firstOrNull { it.userId == userId }
+            val jsonObject = JsonObject()
+            jsonObject.addProperty("ratingByUser", userRating?.rate ?: 0)
+            jsonObject.addProperty("averageRating", avgRating)
+            jsonObject.addProperty("total", results.size)
+
+            return jsonObject
         }
 
-        @JvmStatic
         fun serializeRating(realmRating: RealmRating): JsonObject {
-            val ob = JsonObject()
-            if (realmRating._id != null) ob.addProperty("_id", realmRating._id)
-            if (realmRating._rev != null) ob.addProperty("_rev", realmRating._rev)
-            ob.add("user", Gson().fromJson(realmRating.user, JsonObject::class.java))
-            ob.addProperty("item", realmRating.item)
-            ob.addProperty("type", realmRating.type)
-            ob.addProperty("title", realmRating.title)
-            ob.addProperty("time", realmRating.time)
-            ob.addProperty("comment", realmRating.comment)
-            ob.addProperty("rate", realmRating.rate)
-            ob.addProperty("createdOn", realmRating.createdOn)
-            ob.addProperty("parentCode", realmRating.parentCode)
-            ob.addProperty("planetCode", realmRating.planetCode)
-            ob.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
-            ob.addProperty("deviceName", NetworkUtils.getDeviceName())
-            ob.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
-            return ob
+            val jsonObject = JsonObject()
+            jsonObject.addProperty("_id", realmRating.id)
+            jsonObject.addProperty("_rev", realmRating.rev)
+            jsonObject.add("user", Gson().fromJson(realmRating.user, JsonObject::class.java))
+            jsonObject.addProperty("item", realmRating.itemId)
+            jsonObject.addProperty("type", realmRating.type)
+            jsonObject.addProperty("title", realmRating.title)
+            jsonObject.addProperty("time", realmRating.time)
+            jsonObject.addProperty("comment", realmRating.comment)
+            jsonObject.addProperty("rate", realmRating.rate)
+            jsonObject.addProperty("createdOn", realmRating.createdOn)
+            jsonObject.addProperty("parentCode", realmRating.parentCode)
+            jsonObject.addProperty("planetCode", realmRating.planetCode)
+            return jsonObject
         }
 
-        @JvmStatic
-        fun insert(mRealm: Realm, act: JsonObject) {
-            if (!mRealm.isInTransaction) {
-                mRealm.beginTransaction()
-            }
-            var rating = mRealm.where(RealmRating::class.java).equalTo("_id", JsonUtils.getString("_id", act)).findFirst()
-            if (rating == null) {
-                rating = mRealm.createObject(RealmRating::class.java, JsonUtils.getString("_id", act))
-            }
-            if (rating != null) {
-                rating._rev = JsonUtils.getString("_rev", act)
-                rating._id = JsonUtils.getString("_id", act)
-                rating.time = JsonUtils.getLong("time", act)
-                rating.title = JsonUtils.getString("title", act)
-                rating.type = JsonUtils.getString("type", act)
-                rating.item = JsonUtils.getString("item", act)
-                rating.rate = JsonUtils.getInt("rate", act)
-                rating.isUpdated = false
-                rating.comment = JsonUtils.getString("comment", act)
-                rating.user = Gson().toJson(JsonUtils.getJsonObject("user", act))
-                rating.userId = JsonUtils.getString("_id", JsonUtils.getJsonObject("user", act))
-                rating.parentCode = JsonUtils.getString("parentCode", act)
-                rating.parentCode = JsonUtils.getString("planetCode", act)
-                rating.createdOn = JsonUtils.getString("createdOn", act)
-            }
-            mRealm.commitTransaction()
 
-            val csvRow = arrayOf(
-                JsonUtils.getString("_id", act),
-                JsonUtils.getString("_rev", act),
-                JsonUtils.getString("user", act),
-                JsonUtils.getString("item", act),
-                JsonUtils.getString("type", act),
-                JsonUtils.getString("title", act),
-                JsonUtils.getLong("time", act).toString(),
-                JsonUtils.getString("comment", act),
-                JsonUtils.getInt("rate", act).toString(),
-                JsonUtils.getString("createdOn", act),
-                JsonUtils.getString("parentCode", act),
-                JsonUtils.getString("planetCode", act)
-            )
+        suspend fun insert(realm: Realm, act: JsonObject) {
+            realm.writeBlocking {
+                val rating = query<RealmRating>("id == $0", act.get("_id").asString).first().find()
+                    ?: RealmRating().apply {
+                        id = act.get("_id").asString
+                    }.also { copyToRealm(it) }
 
-            ratingDataList.add(csvRow)
+                rating.apply {
+                    rev = act.get("_rev").asString
+                    time = act.get("time").asLong
+                    title = act.get("title").asString
+                    type = act.get("type").asString
+                    itemId = act.get("item").asString
+                    rate = act.get("rate").asInt
+                    isUpdated = false
+                    comment = act.get("comment").asString
+                    user = Gson().toJson(act.getAsJsonObject("user"))
+                    userId = act.getAsJsonObject("user").get("_id").asString
+                    parentCode = act.get("parentCode").asString
+                    planetCode = act.get("planetCode").asString
+                    createdOn = act.get("createdOn").asString
+                }
+
+                ratingDataList.add(
+                    arrayOf(
+                        act.get("_id").asString,
+                        act.get("_rev").asString,
+                        act.get("user").toString(),
+                        act.get("item").asString,
+                        act.get("type").asString,
+                        act.get("title").asString,
+                        act.get("time").asString,
+                        act.get("comment").asString,
+                        act.get("rate").asString,
+                        act.get("createdOn").asString,
+                        act.get("parentCode").asString,
+                        act.get("planetCode").asString
+                    )
+                )
+            }
         }
 
         fun writeCsv(filePath: String, data: List<Array<String>>) {
@@ -136,7 +124,12 @@ open class RealmRating : RealmObject() {
                 val file = File(filePath)
                 file.parentFile?.mkdirs()
                 val writer = CSVWriter(FileWriter(file))
-                writer.writeNext(arrayOf("_id", "_rev", "user", "item", "type", "title", "time", "comment", "rate", "createdOn", "parentCode", "planetCode"))
+                writer.writeNext(
+                    arrayOf(
+                        "_id", "_rev", "user", "item", "type", "title",
+                        "time", "comment", "rate", "createdOn", "parentCode", "planetCode"
+                    )
+                )
                 for (row in data) {
                     writer.writeNext(row)
                 }
@@ -146,8 +139,8 @@ open class RealmRating : RealmObject() {
             }
         }
 
-        fun ratingWriteCsv() {
-            writeCsv("${context.getExternalFilesDir(null)}/ole/ratings.csv", ratingDataList)
+        fun ratingWriteCsv(filePath: String) {
+            writeCsv(filePath, ratingDataList)
         }
     }
 }
