@@ -204,12 +204,25 @@ open class RealmSubmission : RealmObject() {
             }
         }
 
-        @JvmStatic
-        fun getNoOfSubmissionByUser(id: String?, userId: String?, mRealm: Realm): String {
-            if (id == null || userId == null) return "No Submissions Found"
+        fun generateParentId(courseId: String?, examId: String?): String? {
+            return if (!examId.isNullOrEmpty()) {
+                if (!courseId.isNullOrEmpty()) {
+                    "$examId@$courseId"
+                } else {
+                    examId
+                }
+            } else {
+                null
+            }
+        }
 
+        @JvmStatic
+        fun getNoOfSubmissionByUser(id: String?, courseId:String?, userId: String?, mRealm: Realm): String {
+            if (id == null || userId == null) return "No Submissions Found"
+            val submissionParentId= generateParentId(courseId, id)
+            if(submissionParentId.isNullOrEmpty())  return "No Submissions Found"
             val submissionCount = mRealm.where(RealmSubmission::class.java)
-                .equalTo("parentId", id)
+                .equalTo("parentId", submissionParentId)
                 .equalTo("userId", userId)
                 .equalTo("status", "complete")
                 .count().toInt()
@@ -230,15 +243,15 @@ open class RealmSubmission : RealmObject() {
         }
 
         @JvmStatic
-        fun getRecentSubmissionDate(id: String?, userId: String?, mRealm: Realm): String {
+        fun getRecentSubmissionDate(id: String?, courseId:String?, userId: String?, mRealm: Realm): String {
             if (id == null || userId == null) return ""
-
+            val submissionParentId= generateParentId(courseId, id)
+            if(submissionParentId.isNullOrEmpty())  return ""
             val recentSubmission = mRealm.where(RealmSubmission::class.java)
-                .equalTo("parentId", id)
+                .equalTo("parentId", submissionParentId)
                 .equalTo("userId", userId)
                 .sort("startTime", Sort.DESCENDING)
                 .findFirst()
-
             return recentSubmission?.startTime?.let { TimeUtils.getFormatedDateWithTime(it) } ?: ""
         }
 
