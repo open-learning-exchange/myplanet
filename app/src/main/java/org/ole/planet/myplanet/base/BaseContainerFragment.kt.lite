@@ -8,6 +8,7 @@ import android.net.Uri
 import android.os.Bundle
 //import android.provider.Settings
 import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -72,9 +73,8 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             AdapterCourses.showRating(`object`, rating, timesRated, ratingBar)
         }
     }
-    fun getUrlsAndStartDownload(
-        lib: List<RealmMyLibrary?>, urls: ArrayList<String>
-    ) {
+
+    fun getUrlsAndStartDownload(lib: List<RealmMyLibrary?>, urls: ArrayList<String>) {
         for (library in lib) {
             val url = Utilities.getUrl(library)
             if (!FileUtils.checkFileExist(url) && !TextUtils.isEmpty(url)) urls.add(url)
@@ -83,6 +83,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             activity, getString(R.string.no_images_to_download)
         )
     }
+
     fun initRatingView(type: String?, id: String?, title: String?, listener: OnRatingChangeListener?) {
         timesRated = requireView().findViewById(R.id.times_rated)
         rating = requireView().findViewById(R.id.tv_rating)
@@ -102,12 +103,14 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             }
         }
     }
+
     override fun onAttach(context: Context) {
         super.onAttach(context)
         if (context is OnHomeItemClickListener) {
             homeItemClickListener = context
         }
     }
+
     private fun openIntent(items: RealmMyLibrary, typeClass: Class<*>?) {
         val fileOpenIntent = Intent(activity, typeClass)
         if (items.resourceLocalAddress?.contains("ole/audio") == true || items.resourceLocalAddress?.contains("ole/video") == true) {
@@ -119,6 +122,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         }
         startActivity(fileOpenIntent)
     }
+
     private fun openPdf(item: RealmMyLibrary) {
         val fileOpenIntent = Intent(activity, PDFReaderActivity::class.java)
         fileOpenIntent.putExtra("TOUCHED_FILE", item.id + "/" + item.resourceLocalAddress)
@@ -149,10 +153,13 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
 
     private fun checkFileExtension(items: RealmMyLibrary) {
-        val filenameArray = items.resourceLocalAddress?.split("\\.".toRegex())?.toTypedArray()
-        val extension = filenameArray?.get(filenameArray.size - 1)
         val mimetype = Utilities.getMimeType(items.resourceLocalAddress)
         val userId = "${model?.id}"
+        Log.d("FileExtension", "Mimetype: ${items.resourceLocalAddress}")
+
+        val extension = items.resourceLocalAddress
+            ?.substringAfterLast('.', "")
+            ?.lowercase()
 
         val existingAction = mRealm.where(RealmUserChallengeActions::class.java)
             .equalTo("userId", userId)
@@ -195,7 +202,20 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 }
                 openIntent(items, TextFileViewerActivity::class.java)
             }
+            "html", "htm" -> {
+                if (existingAction == null) {
+                    createAction(mRealm, userId, items.resourceId, "resourceOpen")
+                }
+                openHtmlResource(items)
+            }
             "md" -> {
+                // Special handling for README.md
+                if (items.resourceLocalAddress?.contains("README.md", ignoreCase = true) == true) {
+                    // Optionally log or handle README.md differently
+                    Log.d("FileExtension", "Detected README.md file")
+                    return // Or handle it specifically
+                }
+
                 if (existingAction == null) {
                     createAction(mRealm, userId, items.resourceId, "resourceOpen")
                 }
@@ -270,6 +290,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             checkFileExtension(items)
         }
     }
+
     open fun playVideo(videoType: String, items: RealmMyLibrary) {
         val intent = Intent(activity, VideoPlayerActivity::class.java)
         val bundle = Bundle()
@@ -333,6 +354,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             }
         }
     }
+
     fun setResourceButton(resources: List<RealmMyLibrary>?, btnResources: Button) {
         if (resources.isNullOrEmpty()) {
             btnResources.visibility = View.GONE
@@ -345,6 +367,15 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 }
             }
         }
+    }
+
+    private fun openHtmlResource(items: RealmMyLibrary) {
+        val intent = Intent(activity, WebViewActivity::class.java).apply {
+            putExtra("TOUCHED_FILE", "${items.id}/${items.resourceLocalAddress}")
+            putExtra("title", items.title)
+            putExtra("isLocalFile", true)
+        }
+        startActivity(intent)
     }
 
 //    open fun handleBackPressed() {

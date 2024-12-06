@@ -153,8 +153,6 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
 
     private fun checkFileExtension(items: RealmMyLibrary) {
-//        val filenameArray = items.resourceLocalAddress?.split("\\.".toRegex())?.toTypedArray()
-//        val extension = filenameArray?.get(filenameArray.size - 1)
         val mimetype = Utilities.getMimeType(items.resourceLocalAddress)
         val userId = "${model?.id}"
         Log.d("FileExtension", "Mimetype: ${items.resourceLocalAddress}")
@@ -162,7 +160,6 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         val extension = items.resourceLocalAddress
             ?.substringAfterLast('.', "")
             ?.lowercase()
-
 
         val existingAction = mRealm.where(RealmUserChallengeActions::class.java)
             .equalTo("userId", userId)
@@ -212,11 +209,9 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 openHtmlResource(items)
             }
             "md" -> {
-                // Special handling for README.md
                 if (items.resourceLocalAddress?.contains("README.md", ignoreCase = true) == true) {
-                    // Optionally log or handle README.md differently
                     Log.d("FileExtension", "Detected README.md file")
-                    return // Or handle it specifically
+                    return
                 }
 
                 if (existingAction == null) {
@@ -224,12 +219,6 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 }
                 openIntent(items, MarkdownViewerActivity::class.java)
             }
-//            "md" -> {
-//                if (existingAction == null) {
-//                    createAction(mRealm, userId, items.resourceId, "resourceOpen")
-//                }
-//                openIntent(items, MarkdownViewerActivity::class.java)
-//            }
             "csv" -> {
                 if (existingAction == null) {
                     createAction(mRealm, userId, items.resourceId, "resourceOpen")
@@ -242,12 +231,6 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 }
                 installApk(items)
             }
-//            "html", "htm" -> {
-//                if (existingAction == null) {
-//                    createAction(mRealm, userId, items.resourceId, "resourceOpen")
-//                }
-//                openHtmlResource(items)
-//            }
             else -> Toast.makeText(activity, getString(R.string.this_file_type_is_currently_unsupported), Toast.LENGTH_LONG).show()
         }
     }
