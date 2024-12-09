@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.text.TextUtils
 import android.util.Base64
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -50,13 +51,16 @@ object TransactionSyncManager {
     fun authenticate(): Boolean {
         val apiInterface = client?.create(ApiInterface::class.java)
         try {
-            val response: Response<DocumentResponse>? = apiInterface?.getDocuments(Utilities.header, Utilities.getUrl() + "/tablet_users/_all_docs")?.execute()
+            Log.d("TransactionSyncManager", "header: ${Utilities.header}, authenticate: ${Utilities.getUrl()}/tablet_users/_all_docs")
+            val response: Response<DocumentResponse>? = apiInterface?.getDocuments(Utilities.header, "${Utilities.getUrl()}/tablet_users/_all_docs")?.execute()
+            Log.d("TransactionSyncManager", "response: $response")
             if (response != null) {
                 return response.code() == 200
             }
         } catch (e: IOException) {
             e.printStackTrace()
         }
+
         return false
     }
 
@@ -64,7 +68,7 @@ object TransactionSyncManager {
         listener.onSyncStarted()
         val userName = settings.getString("loginUserName", "")
         val password = settings.getString("loginUserPassword", "")
-        val header = "Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)
+        val header = "Basic ${Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)}"
         mRealm.executeTransactionAsync({ realm: Realm ->
             val users = realm.where(RealmUserModel::class.java).isNotEmpty("_id").findAll()
             for (userModel in users) {
@@ -76,7 +80,7 @@ object TransactionSyncManager {
     }
 
     private fun syncHealthData(userModel: RealmUserModel?, header: String) {
-        val table = "userdb-" + userModel?.planetCode?.let { Utilities.toHex(it) } + "-" + userModel?.name?.let { Utilities.toHex(it) }
+        val table = "userdb-${userModel?.planetCode?.let { Utilities.toHex(it) }}-${userModel?.name?.let { Utilities.toHex(it) }}"
         val apiInterface = client?.create(ApiInterface::class.java)
         val response: Response<DocumentResponse>?
         try {
