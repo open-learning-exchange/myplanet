@@ -1207,5 +1207,8 @@
     <string name="export_cancelled">exportation annulée.</string>
     <string name="failed_to_save_csv_file">échec de l\'enregistrement du fichier CSV.</string>
     <string name="csv_file_saved_successfully">fichier CSV enregistré avec succès.</string>
+    <string name="share_with_team_enterprise">partager avec l\'équipe/l\'entreprise</string>
+    <string name="teams">équipes</string>
+    <string name="community">communauté</string>
 
 </resources>
