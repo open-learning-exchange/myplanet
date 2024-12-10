@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.resources
 
 import android.content.Context
 import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -19,6 +20,7 @@ import org.ole.planet.myplanet.callback.OnLibraryItemSelected
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.RowLibraryBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.logLargeString
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -83,19 +85,67 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
                 }
             holder.rowLibraryBinding.tvDate.text = libraryList[position]?.createdDate?.let { formatDate(it, "MMM dd, yyyy") }
             displayTagCloud(holder.rowLibraryBinding.flexboxDrawable, position)
-            holder.itemView.setOnClickListener { openLibrary(libraryList[position]) }
+            holder.itemView.setOnClickListener {
+                openLibrary(libraryList[position])
+                val libraryItem = realm.where(RealmMyLibrary::class.java)
+                    .equalTo("id", libraryList[position]?.id)
+                    .findFirst()
+                Log.d("AdapterResource", "onBindViewHolder: $libraryItem")
+                libraryItem?.let { item ->
+                    val allDetails = """
+                        _id: ${item._id}
+                        _rev: ${item._rev}
+                        Title: ${item.title}
+                        Author: ${item.author}
+                        Year: ${item.year}
+                        Description: ${item.description}
+                        Language: ${item.language}
+                        Publisher: ${item.publisher}
+                        Link to License: ${item.linkToLicense}
+                        Subjects: ${item.subject?.joinToString()}
+                        Levels: ${item.level?.joinToString()}
+                        Resource Type: ${item.resourceType}
+                        Open With: ${item.openWith}
+                        Media Type: ${item.mediaType}
+                        Article Date: ${item.articleDate}
+                        Resource For: ${item.resourceFor?.joinToString()}
+                        Added By: ${item.addedBy}
+                        Upload Date: ${item.uploadDate}
+                        Created Date: ${item.createdDate}
+                        Resource Remote Address: ${item.resourceRemoteAddress}
+                        Resource Local Address: ${item.resourceLocalAddress}
+                        Resource Offline: ${item.resourceOffline}
+                        Resource ID: ${item.resourceId}
+                        Downloaded Rev: ${item.downloadedRev}
+                        Needs Optimization: ${item.needsOptimization}
+                        Tags: ${item.tag?.joinToString()}
+                        Languages: ${item.languages?.joinToString()}
+                        Course ID: ${item.courseId}
+                        Step ID: ${item.stepId}
+                        Is Private: ${item.isPrivate}
+                        User ID: ${item.userId?.joinToString()}
+                        Filename: ${item.filename}
+                        Translations Audio Path: ${item.translationAudioPath}
+                        Average Rating: ${item.averageRating}
+                        Times Rated: ${item.timesRated}
+                        Sum: ${item.sum}
+                        attachment: ${item.attachments?.joinToString()}                       
+                        """.trimIndent()
+
+                    logLargeString("AdapterResource", "Full Library Item Details:\n$allDetails")
+                }
+            }
             userModel = UserProfileDbHandler(context).userModel
             if (libraryList[position]?.isResourceOffline() == true) {
                 holder.rowLibraryBinding.ivDownloaded.visibility = View.INVISIBLE
             } else {
                 holder.rowLibraryBinding.ivDownloaded.visibility = View.VISIBLE
             }
-            holder.rowLibraryBinding.ivDownloaded.contentDescription =
-                if (libraryList[position]?.isResourceOffline() == true) {
-                    context.getString(R.string.view)
-                } else {
-                    context.getString(R.string.download)
-                }
+            holder.rowLibraryBinding.ivDownloaded.contentDescription = if (libraryList[position]?.isResourceOffline() == true) {
+                context.getString(R.string.view)
+            } else {
+                context.getString(R.string.download)
+            }
             if (ratingMap.containsKey(libraryList[position]?.resourceId)) {
                 val `object` = ratingMap[libraryList[position]?.resourceId]
                 AdapterCourses.showRating(`object`, holder.rowLibraryBinding.rating, holder.rowLibraryBinding.timesRated, holder.rowLibraryBinding.ratingBar)
@@ -105,8 +155,7 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
 
             if (userModel?.isGuest() == false) {
                 holder.rowLibraryBinding.checkbox.setOnClickListener { view: View ->
-                    holder.rowLibraryBinding.checkbox.contentDescription =
-                        context.getString(R.string.select_res_course, libraryList[position]?.title)
+                    holder.rowLibraryBinding.checkbox.contentDescription = context.getString(R.string.select_res_course, libraryList[position]?.title)
                     Utilities.handleCheck((view as CheckBox).isChecked, position, selectedItems, libraryList)
                     if (listener != null) listener?.onSelectedListChange(selectedItems)
                 }

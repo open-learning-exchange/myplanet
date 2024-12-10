@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.model
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
@@ -20,6 +21,7 @@ import java.io.FileWriter
 import java.io.IOException
 import java.util.Calendar
 import java.util.Date
+import java.util.UUID
 
 open class RealmMyLibrary : RealmObject() {
     @PrimaryKey
@@ -63,6 +65,8 @@ open class RealmMyLibrary : RealmObject() {
     var courseId: String? = null
     var stepId: String? = null
     var isPrivate: Boolean = false
+    var attachments: RealmList<RealmAttachment>? = null
+
     fun serializeResource(): JsonObject {
         return JsonObject().apply {
             addProperty("_id", _id)
@@ -258,6 +262,7 @@ open class RealmMyLibrary : RealmObject() {
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
             }
+            logLargeString("insertMyLibrary", doc.toString())
             val resourceId = JsonUtils.getString("_id", doc)
             val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             var resource = mRealm.where(RealmMyLibrary::class.java).equalTo("id", resourceId).findFirst()
@@ -265,6 +270,7 @@ open class RealmMyLibrary : RealmObject() {
                 resource = mRealm.createObject(RealmMyLibrary::class.java, resourceId)
             }
             resource?.apply {
+
                 setUserId(userId)
                 _id = resourceId
                 if (!stepId.isNullOrBlank()) {
@@ -279,7 +285,25 @@ open class RealmMyLibrary : RealmObject() {
                 description = JsonUtils.getString("description", doc)
                 if (doc.has("_attachments")) {
                     val attachments = doc["_attachments"].asJsonObject
-                    attachments.entrySet().forEach { (key, _) ->
+                    if (this.attachments == null) {
+                        this.attachments = RealmList()
+                    }
+
+                    attachments.entrySet().forEach { (key, attachmentValue) ->
+                        val attachmentObj = attachmentValue.asJsonObject
+
+                        val realmAttachment = mRealm.createObject(RealmAttachment::class.java, UUID.randomUUID().toString())
+                        realmAttachment.apply {
+                            name = key
+                            contentType = attachmentObj.get("content_type")?.asString
+                            length = attachmentObj.get("length")?.asLong ?: 0
+                            digest = attachmentObj.get("digest")?.asString
+                            isStub = attachmentObj.get("stub")?.asBoolean == true
+                            revpos = attachmentObj.get("revpos")?.asInt ?: 0
+                        }
+
+                        this.attachments?.add(realmAttachment)
+
                         if (key.indexOf("/") < 0) {
                             resourceRemoteAddress = "${settings.getString("couchdbURL", "http://")}/resources/$resourceId/$key"
                             resourceLocalAddress = key
@@ -311,6 +335,8 @@ open class RealmMyLibrary : RealmObject() {
                 isPrivate = JsonUtils.getBoolean("private", doc)
                 setLanguages(JsonUtils.getJsonArray("languages", doc), this)
             }
+
+            logLargeString("insertMyLibrary resource", resource.id.toString() + " " + resource.resourceRemoteAddress)
             mRealm.commitTransaction()
 
             val csvRow = arrayOf(
@@ -402,12 +428,32 @@ open class RealmMyLibrary : RealmObject() {
 
         @JvmStatic
         fun getArrayList(libraries: List<RealmMyLibrary>, type: String): Set<String?> {
-            return libraries.mapNotNull { if (type == "mediums") it.mediaType else it.language }.filterNot { it.isNullOrBlank() }.toSet()
+            return libraries.mapNotNull { if (type == "mediums") it.mediaType else it.language }.filterNot { it.isBlank() }.toSet()
         }
 
         @JvmStatic
         fun getSubjects(libraries: List<RealmMyLibrary>): Set<String> {
             return libraries.flatMap { it.subject ?: emptyList() }.toSet()
         }
+
+        fun logLargeString(tag: String, content: String) {
+            if (content.length > 3000) {
+                Log.d(tag, content.substring(0, 3000))
+                logLargeString(tag, content.substring(3000))
+            } else {
+                Log.d(tag, content)
+            }
+        }
     }
+}
+
+open class RealmAttachment : RealmObject() {
+    @PrimaryKey
+    var id: String? = null
+    var name: String? = null
+    var contentType: String? = null
+    var length: Long = 0
+    var digest: String? = null
+    var isStub: Boolean = false
+    var revpos: Int = 0
 }
