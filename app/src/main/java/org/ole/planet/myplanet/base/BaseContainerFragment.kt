@@ -131,25 +131,30 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
 
     fun openResource(items: RealmMyLibrary) {
-        val matchingItems = mRealm.where(RealmMyLibrary::class.java)
-            .equalTo("resourceLocalAddress", items.resourceLocalAddress)
-            .findAll()
-        val anyOffline = matchingItems.any { it.isResourceOffline() }
-        if (anyOffline) {
-            val offlineItem = matchingItems.first { it.isResourceOffline()}
-            openFileType(offlineItem, "offline")
-        } else {
-            if (items.isResourceOffline()) {
-                openFileType(items, "offline")
-            } else if (FileUtils.getFileExtension(items.resourceLocalAddress) == "mp4") {
-                openFileType(items,  "online")
-            } else {
-                val arrayList = ArrayList<String>()
-                arrayList.add(Utilities.getUrl(items))
-                startDownload(arrayList)
-                profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_DOWNLOAD)
-            }
+        val intent = Intent(context, WebViewActivity::class.java).apply {
+            putExtra("isLocalFile", true)
+            putExtra("RESOURCE_ID", "6f7b1d7a7c9c73e736b38657bc013556") // The _id from the library item
         }
+        startActivity(intent)
+//        val matchingItems = mRealm.where(RealmMyLibrary::class.java)
+//            .equalTo("resourceLocalAddress", items.resourceLocalAddress)
+//            .findAll()
+//        val anyOffline = matchingItems.any { it.isResourceOffline() }
+//        if (anyOffline) {
+//            val offlineItem = matchingItems.first { it.isResourceOffline()}
+//            openFileType(offlineItem, "offline")
+//        } else {
+//            if (items.isResourceOffline()) {
+//                openFileType(items, "offline")
+//            } else if (FileUtils.getFileExtension(items.resourceLocalAddress) == "mp4") {
+//                openFileType(items,  "online")
+//            } else {
+//                val arrayList = ArrayList<String>()
+//                arrayList.add(Utilities.getUrl(items))
+//                startDownload(arrayList)
+//                profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_DOWNLOAD)
+//            }
+//        }
     }
 
     private fun checkFileExtension(items: RealmMyLibrary) {
