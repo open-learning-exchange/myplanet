@@ -1207,5 +1207,8 @@
     <string name="export_cancelled">تم إلغاء التصدير.</string>
     <string name="failed_to_save_csv_file">فشل في حفظ ملف CSV.</string>
     <string name="csv_file_saved_successfully">تم حفظ ملف CSV بنجاح.</string>
+    <string name="share_with_team_enterprise">مشاركة مع الفريق/المؤسسة</string>
+    <string name="teams">فرق</string>
+    <string name="community">مجتمع</string>
 
 </resources>
