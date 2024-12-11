@@ -370,19 +370,18 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
 
     private fun openHtmlResource(items: RealmMyLibrary) {
-        //correct path found in emulator is : /storage/self/primary/Android/data/org.ole.planet.myplanet/files/ole/folder/index.html
-        val resourcePath = File(MainApplication.context.getExternalFilesDir(null), "ole/${items.id}/${items.resourceLocalAddress}")
-        if (resourcePath.exists()) {
-            Log.d("webview","THE FILE PATH IS:"+resourcePath.toURI().toString())
+        val externalUrl = "https://he-is-talha.github.io/html-css-javascript-games/13-Tic-Tac-Toe/"//"https://planet.vi.ole.org/db/resources/029d3479cecb2036fa4f38908442f126/index.html"//= items.resourceLocalAddress // Assuming this contains the external URL
+
+        if (externalUrl.startsWith("http://") || externalUrl.startsWith("https://")) {
+            Log.d("webview", "Opening external URL: $externalUrl")
             val intent = Intent(activity, WebViewActivity::class.java).apply {
-                putExtra("TOUCHED_FILE", resourcePath.toURI().toString()) // Use corrected path
+                putExtra("link", externalUrl)
                 putExtra("title", items.title)
-                putExtra("isLocalFile", true)
             }
             startActivity(intent)
         } else {
-            Log.e("BaseContainerFragment", "File not found: $resourcePath")
-            Toast.makeText(requireContext(), "NO QUERO FILE", Toast.LENGTH_LONG).show()
+            Log.e("webview", "Invalid URL: $externalUrl")
+            Toast.makeText(requireContext(), "Invalid external URL", Toast.LENGTH_LONG).show()
         }
     }
 

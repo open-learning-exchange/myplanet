@@ -3,22 +3,16 @@ package org.ole.planet.myplanet.ui.viewer
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
-import android.text.TextUtils
 import android.util.Log
 import android.view.View
 import android.webkit.*
 import androidx.appcompat.app.AppCompatActivity
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.databinding.ActivityWebViewBinding
-import org.ole.planet.myplanet.utilities.Utilities
-import java.io.File
 
 class WebViewActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityWebViewBinding
-    private var fromDeepLink = false
     private lateinit var link: String
-    private var isLocalFile = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -27,24 +21,17 @@ class WebViewActivity : AppCompatActivity() {
 
         extractIntentData()
         clearCookies()
-
         setupWebViewSettings()
         setupListeners()
-
-        if (isLocalFile) {
-            loadLocalFile()
-        } else {
-            loadRemoteUrl()
-        }
         setupWebClient()
+
+        // Load the URL directly
+        binding.contentWebView.wv.loadUrl(link)
     }
 
     private fun extractIntentData() {
-        fromDeepLink = !TextUtils.isEmpty(intent.dataString)
-        link = intent.getStringExtra("link") ?: ""
-        isLocalFile = intent.getBooleanExtra("isLocalFile", false)
-
-        Log.d("webview", "Intent Data - link: $link, isLocalFile: $isLocalFile, fromDeepLink: $fromDeepLink")
+        link = intent.getStringExtra("link") ?: "https://example.com" // Default URL
+        Log.d("webview", "Intent Data - link: $link")
 
         intent.getStringExtra("title")?.let {
             binding.contentWebView.webTitle.text = it
@@ -62,58 +49,19 @@ class WebViewActivity : AppCompatActivity() {
     private fun setupWebViewSettings() {
         with(binding.contentWebView.wv.settings) {
             javaScriptEnabled = true
-            javaScriptCanOpenWindowsAutomatically = true
-
             domStorageEnabled = true
-
-            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-
+            mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
             cacheMode = WebSettings.LOAD_DEFAULT
             databaseEnabled = true
-
             useWideViewPort = true
             loadWithOverviewMode = true
-
             setSupportZoom(true)
             builtInZoomControls = true
             displayZoomControls = false
-
-            allowFileAccess = true
+            allowFileAccess = false
             allowContentAccess = true
         }
         Log.d("webview", "WebView settings configured.")
-    }
-
-    private fun loadLocalFile() {
-        val touchedFile = intent.getStringExtra("TOUCHED_FILE")
-
-        if (!touchedFile.isNullOrEmpty()) {
-            val localFilePath = if (touchedFile.startsWith("file://")) {
-                touchedFile
-            } else {
-                File(MainApplication.context.getExternalFilesDir(null), touchedFile).absolutePath
-            }
-            binding.contentWebView.wv.webViewClient = object : WebViewClient() {
-                override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
-                    return false
-                }
-
-                override fun onPageFinished(view: WebView, url: String) {
-                    super.onPageFinished(view, url)
-                    Log.d("webview", "Page finished loading: $url")
-                }
-            }
-            binding.contentWebView.wv.loadUrl("file:///android_asset/index.html")
-            Log.d("webview", "Loaded local file: file:///android_asset/index.html")
-        } else {
-            Log.w("webview", "TOUCHED_FILE is null or empty.")
-        }
-    }
-
-    private fun loadRemoteUrl() {
-        val headers = mapOf("Authorization" to Utilities.header)
-        binding.contentWebView.wv.loadUrl("file:///android_asset/index.html") //link, headers
-        Log.d("webview", "Loaded remote URL: $link with headers.")
     }
 
     private fun setupWebClient() {
@@ -121,19 +69,14 @@ class WebViewActivity : AppCompatActivity() {
             override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
                 super.onPageStarted(view, url, favicon)
                 Log.d("webview", "Page started loading: $url")
-
-                if (url.endsWith("/eng/")) {
-                    Log.d("webview", "Finishing activity due to /eng/ URL.")
-                    finish()
-                }
-
-                val host = Uri.parse(url).host.orEmpty()
-                binding.contentWebView.webSource.text = host
+                binding.contentWebView.pBar.visibility = View.VISIBLE
+                binding.contentWebView.webSource.text = Uri.parse(url).host.orEmpty()
             }
 
             override fun onPageFinished(view: WebView, url: String) {
                 super.onPageFinished(view, url)
                 Log.d("webview", "Page finished loading: $url")
+                binding.contentWebView.pBar.visibility = View.GONE
             }
         }
 
@@ -142,6 +85,8 @@ class WebViewActivity : AppCompatActivity() {
                 binding.contentWebView.pBar.progress = newProgress
                 if (newProgress == 100) {
                     binding.contentWebView.pBar.visibility = View.GONE
+                } else {
+                    binding.contentWebView.pBar.visibility = View.VISIBLE
                 }
                 Log.d("webview", "Page loading progress: $newProgress%")
             }
