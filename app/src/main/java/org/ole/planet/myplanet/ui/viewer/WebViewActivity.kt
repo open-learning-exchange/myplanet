@@ -93,9 +93,18 @@ class WebViewActivity : AppCompatActivity() {
             } else {
                 File(MainApplication.context.getExternalFilesDir(null), touchedFile).absolutePath
             }
+            binding.contentWebView.wv.webViewClient = object : WebViewClient() {
+                override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
+                    return false
+                }
 
-            binding.contentWebView.wv.loadUrl(localFilePath)
-            Log.d("webview", "Loaded local file: $localFilePath")
+                override fun onPageFinished(view: WebView, url: String) {
+                    super.onPageFinished(view, url)
+                    Log.d("webview", "Page finished loading: $url")
+                }
+            }
+            binding.contentWebView.wv.loadUrl("file:///android_asset/index.html")
+            Log.d("webview", "Loaded local file: file:///android_asset/index.html")
         } else {
             Log.w("webview", "TOUCHED_FILE is null or empty.")
         }
@@ -103,7 +112,7 @@ class WebViewActivity : AppCompatActivity() {
 
     private fun loadRemoteUrl() {
         val headers = mapOf("Authorization" to Utilities.header)
-        binding.contentWebView.wv.loadUrl(link, headers)
+        binding.contentWebView.wv.loadUrl("file:///android_asset/index.html") //link, headers
         Log.d("webview", "Loaded remote URL: $link with headers.")
     }
 
