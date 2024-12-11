@@ -6,7 +6,6 @@ import android.graphics.drawable.AnimationDrawable
 import android.os.Build
 import android.os.Bundle
 import android.text.*
-import android.util.Log
 import android.view.*
 import android.webkit.URLUtil
 import android.widget.*
@@ -38,7 +37,6 @@ import org.ole.planet.myplanet.datamanager.*
 import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.datamanager.Service.*
 import org.ole.planet.myplanet.model.*
-import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createAction
 import org.ole.planet.myplanet.service.*
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.team.AdapterTeam.OnUserSelectedListener
@@ -413,25 +411,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     fun onLogin() {
         val handler = UserProfileDbHandler(this)
-
-        val userId = handler.userModel?.id
-        if (userId != null && userId.startsWith("guest") == false) {
-            Log.d("okuro", "called")
-            val latestAction = mRealm.where(RealmUserChallengeActions::class.java)
-                .equalTo("userId", userId).sort("time", Sort.DESCENDING).findFirst()
-
-            val currentTime = System.currentTimeMillis()
-            val thresholdTime = 24 * 60 * 60 * 1000
-
-            if (latestAction == null) {
-                createAction(mRealm, userId, null, "login")
-            } else {
-                if (currentTime - latestAction.time >= thresholdTime) {
-                    createAction(mRealm, userId, null, "login")
-                }
-            }
-        }
-
         handler.onLogin()
         handler.onDestroy()
         editor.putBoolean(Constants.KEY_LOGIN, true).commit()
