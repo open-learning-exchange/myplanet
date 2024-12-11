@@ -14,7 +14,7 @@ import androidx.preference.PreferenceManager
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
-import io.realm.Realm
+import io.realm.kotlin.Realm
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -22,9 +22,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
 import org.ole.planet.myplanet.callback.TeamPageListener
@@ -56,7 +54,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         private const val STAY_ONLINE_WORK_TAG = "stayOnlineWork"
         private const val TASK_NOTIFICATION_WORK_TAG = "taskNotificationWork"
         lateinit var context: Context 
-        lateinit var mRealm: Realm
+        lateinit var realm: Realm
         lateinit var service: DatabaseService
         var preferences: SharedPreferences? = null
         var syncFailedCount = 0
@@ -75,29 +73,27 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         lateinit var defaultPref: SharedPreferences
 
-        fun createLog(type: String) {
-            runBlocking {
-                withContext(Dispatchers.IO) {
-                    val realm = Realm.getDefaultInstance()
-                    try {
-                        realm.executeTransaction { r ->
-                            val log = r.createObject(RealmApkLog::class.java, "${UUID.randomUUID()}")
+        suspend fun createLog(type: String) {
+            withContext(Dispatchers.IO) {
+                try {
+                    realm.write {
+                        val log = RealmApkLog().apply {
+                            id = UUID.randomUUID().toString()
                             val model = UserProfileDbHandler(context).userModel
                             if (model != null) {
-                                log.parentCode = model.parentCode
-                                log.createdOn = model.planetCode
-                                log.userId = model.id
+                                parentCode = model.parentCode
+                                createdOn = model.planetCode
+                                userId = model.id
                             }
-                            log.time = "${Date().time}"
-                            log.page = ""
-                            log.version = getVersionName(context)
-                            log.type = type
+                            time = Date().time.toString()
+                            page = ""
+                            version = getVersionName(context)
+                            this.type = type
                         }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    } finally {
-                        realm.close()
+                        copyToRealm(log)
                     }
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
             }
         }
@@ -145,24 +141,22 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             e.printStackTrace()
             applicationScope.launch(Dispatchers.IO) {
                 try {
-                    val realm = Realm.getDefaultInstance()
-                    try {
-                        realm.executeTransaction { r ->
-                            val log = r.createObject(RealmApkLog::class.java, "${UUID.randomUUID()}")
+                    realm.write {
+                        val log = RealmApkLog().apply {
+                            id = UUID.randomUUID().toString()
                             val model = UserProfileDbHandler(context).userModel
                             if (model != null) {
-                                log.parentCode = model.parentCode
-                                log.createdOn = model.planetCode
-                                log.userId = model.id
+                                parentCode = model.parentCode
+                                createdOn = model.planetCode
+                                userId = model.id
                             }
-                            log.time = "${Date().time}"
-                            log.page = ""
-                            log.version = getVersionName(context)
-                            log.type = RealmApkLog.ERROR_TYPE_CRASH
-                            log.setError(e)
+                            time = Date().time.toString()
+                            page = ""
+                            version = getVersionName(context)
+                            type = RealmApkLog.ERROR_TYPE_CRASH
+                            setError(e)
                         }
-                    } finally {
-                        realm.close()
+                        copyToRealm(log)
                     }
                 } catch (ex: Exception) {
                     ex.printStackTrace()
@@ -188,7 +182,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
         preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         service = DatabaseService()
-        mRealm = service.realmInstance
+        realm = service.realmInstance
         defaultPref = PreferenceManager.getDefaultSharedPreferences(this)
 
         val builder = VmPolicy.Builder()
@@ -205,7 +199,9 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         scheduleTaskNotificationWork()
 
         Thread.setDefaultUncaughtExceptionHandler { _: Thread?, e: Throwable ->
-            handleUncaughtException(e)
+            applicationScope.launch {
+                handleUncaughtException(e)
+            }
         }
         registerActivityLifecycleCallbacks(this)
         onAppStarted()
@@ -225,7 +221,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                         }
                         if (canReachServer) {
                             if (defaultPref.getBoolean("beta_auto_download", false)) {
-                                backgroundDownload(downloadAllFiles(getAllLibraryList(mRealm)))
+                                backgroundDownload(downloadAllFiles(getAllLibraryList(realm)))
                             }
                         }
                     }
@@ -326,6 +322,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     override fun onTerminate() {
         super.onTerminate()
         onAppClosed()
+        realm.close()
         applicationScope.cancel()
     }
 }
