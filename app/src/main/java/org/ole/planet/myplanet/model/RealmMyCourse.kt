@@ -239,9 +239,9 @@ class RealmMyCourse : RealmObject {
             return realm.query<RealmMyCourse>("courseId == $0", id).first().find()
         }
 
-        fun createMyCourse(course: RealmMyCourse?, realm: Realm, id: String) {
+        fun createMyCourse(course: RealmMyCourse?, realm: Realm, id: String?) {
             realm.writeBlocking {
-                course?.addUserId(id)
+                course?.addUserId(id ?: "")
             }
         }
 

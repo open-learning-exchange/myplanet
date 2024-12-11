@@ -2,40 +2,37 @@ package org.ole.planet.myplanet.base
 
 import android.content.Context.MODE_PRIVATE
 import android.content.SharedPreferences
-import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import androidx.annotation.RequiresApi
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.common.reflect.TypeToken
 import com.google.gson.Gson
-import io.realm.Case
-import io.realm.RealmList
-import io.realm.RealmModel
-import io.realm.RealmObject
-import io.realm.RealmResults
+import io.realm.kotlin.ext.query
+import io.realm.kotlin.types.RealmObject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.MainApplication.Companion.realm
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.model.*
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.createMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourseByUserId
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getOurCourse
-import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.createFromResource
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getMyLibraryByUserId
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getOurLibrary
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onAdd
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Utilities.toast
@@ -59,20 +56,18 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     var courseLib: String? = null
 
     abstract fun getLayout(): Int
-
     abstract fun getAdapter(): RecyclerView.Adapter<*>
 
-    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arguments?.let {
             isMyCourseLib = it.getBoolean("isMyCourseLib")
             courseLib = it.getString("courseLib")
             val json = it.getString("resources")
-            resources = (json?.let {
+            resources = json?.let {
                 val type = object : TypeToken<ArrayList<RealmMyLibrary>>() {}.type
                 Gson().fromJson<ArrayList<RealmMyLibrary>>(json, type)
-            } ?: arrayListOf())
+            } ?: arrayListOf()
         }
     }
 
@@ -90,7 +85,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         selectedItems = mutableListOf()
         list = mutableListOf()
         realmService = DatabaseService()
-        mRealm = realmService.realmInstance
+        realm = realmService.realmInstance
         profileDbHandler = UserProfileDbHandler(requireActivity())
         model = profileDbHandler.userModel!!
         val adapter = getAdapter()
@@ -98,7 +93,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         if (isMyCourseLib && adapter.itemCount != 0 && courseLib == "courses") {
             resources?.let { showDownloadDialog(it) }
         } else if (isMyCourseLib && courseLib == null && !isSurvey) {
-            showDownloadDialog(getLibraryList(mRealm))
+            showDownloadDialog(getLibraryList(realm))
         }
         return v
     }
@@ -106,7 +101,11 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     private fun initDeleteButton() {
         tvDelete?.let {
             it.visibility = View.VISIBLE
-            it.setOnClickListener { deleteSelected(false) }
+            it.setOnClickListener {
+                lifecycleScope.launch {
+                    deleteSelected(false)
+                }
+            }
         }
     }
 
@@ -114,19 +113,18 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         recyclerView.adapter = getAdapter()
     }
 
-    fun addToMyList() {
+    suspend fun addToMyList() {
         for (i in selectedItems?.indices!!) {
             val `object` = selectedItems?.get(i) as RealmObject
             if (`object` is RealmMyLibrary) {
-                val myObject = mRealm.where(RealmMyLibrary::class.java)
-                    .equalTo("resourceId", `object`.resourceId).findFirst()
-                createFromResource(myObject, mRealm, model?.id)
-                onAdd(mRealm, "resources", profileDbHandler.userModel?.id, myObject?.resourceId)
+                val myObject = realm.query<RealmMyLibrary>("resourceId == $0", `object`.resourceId).first().find()
+                createFromResource(myObject, realm, model?.id)
+                onAdd(realm, "resources", profileDbHandler.userModel?.id, myObject?.resourceId)
                 toast(activity, getString(R.string.added_to_my_library))
             } else {
-                val myObject = getMyCourse(mRealm, (`object` as RealmMyCourse).courseId)
-                createMyCourse(myObject, mRealm, model?.id)
-                onAdd(mRealm, "courses", profileDbHandler.userModel?.id, myObject?.courseId)
+                val myObject = getMyCourse(realm, (`object` as RealmMyCourse).courseId)
+                createMyCourse(myObject, realm, model?.id)
+                onAdd(realm, "courses", profileDbHandler.userModel?.id, myObject?.courseId)
                 toast(activity, getString(R.string.added_to_my_courses))
             }
         }
@@ -134,12 +132,30 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         showNoData(tvMessage, getAdapter().itemCount, "")
     }
 
-    fun deleteSelected(deleteProgress: Boolean) {
-        for (i in selectedItems?.indices!!) {
-            if (!mRealm.isInTransaction()) mRealm.beginTransaction()
-            val `object` = selectedItems?.get(i) as RealmObject
-            deleteCourseProgress(deleteProgress, `object`)
-            removeFromShelf(`object`)
+    suspend fun deleteSelected(deleteProgress: Boolean) {
+        withContext(Dispatchers.IO) {
+            for (i in selectedItems?.indices!!) {
+                val `object` = selectedItems?.get(i) as RealmObject
+                if (deleteProgress && `object` is RealmMyCourse) {
+                    val courseProgress = realm.query<RealmCourseProgress>("courseId == $0", `object`.courseId).find()
+                    val examList = realm.query<RealmStepExam>("courseId == $0", `object`.courseId).find()
+                    val submissionsToDelete = examList.flatMap { exam ->
+                        realm.query<RealmSubmission>("parentId == $0 AND type != $1 AND uploaded == $2", exam.id, "survey", false).find()
+                    }
+
+                    realm.write {
+                        courseProgress.forEach { delete(it) }
+                        submissionsToDelete.forEach { delete(it) }
+                    }
+                }
+
+                realm.write {
+                    removeFromShelf(`object`)
+                }
+            }
+        }
+
+        withContext(Dispatchers.Main) {
             recyclerView.adapter = getAdapter()
             showNoData(tvMessage, getAdapter().itemCount, "")
         }
@@ -149,50 +165,38 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         return selectedItems?.size ?: 0
     }
 
-    private fun deleteCourseProgress(deleteProgress: Boolean, `object`: RealmObject) {
-        if (deleteProgress && `object` is RealmMyCourse) {
-            mRealm.where(RealmCourseProgress::class.java).equalTo("courseId", `object`.courseId).findAll().deleteAllFromRealm()
-            val examList: List<RealmStepExam> = mRealm.where(RealmStepExam::class.java).equalTo("courseId", `object`.courseId).findAll()
-            for (exam in examList) {
-                mRealm.where(RealmSubmission::class.java).equalTo("parentId", exam.id)
-                    .notEqualTo("type", "survey").equalTo("uploaded", false).findAll()
-                    .deleteAllFromRealm()
-            }
-        }
-    }
-
     override fun onDestroy() {
         super.onDestroy()
-        mRealm.close()
+        realm.close()
     }
 
     private fun checkAndAddToList(course: RealmMyCourse?, courses: MutableList<RealmMyCourse>, tags: List<RealmTag>) {
         for (tg in tags) {
-            val count = mRealm.where(RealmTag::class.java).equalTo("db", "courses").equalTo("tagId", tg.id)
-                .equalTo("linkId", course?.courseId).count()
+            val count = realm.query<RealmTag>("db == $0 AND tagId == $1 AND linkId == $2", "courses", tg.id, course?.courseId).count().find()
             if (count > 0 && !courses.contains(course)) {
                 course?.let { courses.add(it) }
             }
         }
     }
 
-    private fun <LI : RealmModel> getData(s: String, c: Class<LI>): List<LI> {
+    private inline fun <reified LI : RealmObject> getData(s: String, c: Class<LI>): List<LI> {
         val queryParts = s.split(" ").filterNot { it.isEmpty() }
         return if (s.contains(" ")) {
-            val data: RealmResults<LI> = mRealm.where(c).findAll()
+            val data = realm.query<LI>().find()
             data.filter { item ->
-                searchAndMatch(item, c, queryParts)
+                searchAndMatch(item, queryParts)
             }
         } else {
-            mRealm.where(c).contains(if (c == RealmMyLibrary::class.java) "title" else "courseTitle", s, Case.INSENSITIVE).findAll()
+            val field = if (c == RealmMyLibrary::class.java) "title" else "courseTitle"
+            realm.query<LI>("$field CONTAINS[c] $0", s).find()
         }
     }
 
-    private fun <LI : RealmModel> searchAndMatch(item: LI, c: Class<out RealmModel>, queryParts: List<String>): Boolean {
-        val title = if (c.isAssignableFrom(RealmMyLibrary::class.java)) {
-            (item as RealmMyLibrary).title
-        } else {
-            (item as RealmMyCourse).courseTitle
+    private fun <LI : RealmObject> searchAndMatch(item: LI, queryParts: List<String>): Boolean {
+        val title = when (item) {
+            is RealmMyLibrary -> item.title
+            is RealmMyCourse -> item.courseTitle
+            else -> null
         }
         return queryParts.all { queryPart ->
             title?.lowercase(Locale.getDefault())?.contains(queryPart.lowercase(Locale.getDefault())) == true
@@ -222,14 +226,14 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
         var list = getData(s, RealmMyCourse::class.java)
         list = if (isMyCourseLib) {
-            getMyCourseByUserId(model?.id, list)
+            getMyCourseByUserId(model?.id ?: "", list)
         } else {
-            getOurCourse(model?.id, list)
+            getOurCourse(model?.id ?: "", list)
         }
         if (tags.isEmpty()) {
             return list
         }
-        val courses = RealmList<RealmMyCourse>()
+        val courses = mutableListOf<RealmMyCourse>()
         list.forEach { course ->
             checkAndAddToList(course, courses, tags)
         }
@@ -242,8 +246,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
     private fun filter(tags: List<RealmTag>, library: RealmMyLibrary?, libraries: MutableList<RealmMyLibrary>) {
         for (tg in tags) {
-            val count = mRealm.where(RealmTag::class.java).equalTo("db", "resources")
-                .equalTo("tagId", tg.id).equalTo("linkId", library?.id).count()
+            val count = realm.query<RealmTag>("db == $0 AND tagId == $1 AND linkId == $2", "resources", tg.id, library?.id).count().find()
             if (count > 0 && !libraries.contains(library)) {
                 library?.let { libraries.add(it) }
             }
@@ -251,30 +254,19 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     fun applyFilter(libraries: List<RealmMyLibrary>): List<RealmMyLibrary> {
-        val newList: MutableList<RealmMyLibrary> = ArrayList()
-        for (l in libraries) {
-            if (isValidFilter(l)) newList.add(l)
-        }
-        return newList
+        return libraries.filter { isValidFilter(it) }
     }
 
     private fun applyCourseFilter(courses: List<RealmMyCourse>): List<RealmMyCourse> {
         if (TextUtils.isEmpty(subjectLevel) && TextUtils.isEmpty(gradeLevel)) return courses
-        val newList: MutableList<RealmMyCourse> = ArrayList()
-        for (l in courses) {
-            if (TextUtils.equals(l.gradeLevel, gradeLevel) || TextUtils.equals(
-                    l.subjectLevel, subjectLevel
-                )
-            ) {
-                newList.add(l)
-            }
+        return courses.filter { course ->
+            TextUtils.equals(course.gradeLevel, gradeLevel) || TextUtils.equals(course.subjectLevel, subjectLevel)
         }
-        return newList
     }
 
     private fun isValidFilter(l: RealmMyLibrary): Boolean {
-        val sub = subjects.isEmpty() || subjects.let { l.subject?.containsAll(it) } == true
-        val lev = levels.isEmpty() || l.level!!.containsAll(levels)
+        val sub = subjects.isEmpty() || subjects.let { l.subject.containsAll(it) } == true
+        val lev = levels.isEmpty() || l.level.containsAll(levels)
         val lan = languages.isEmpty() || languages.contains(l.language)
         val med = mediums.isEmpty() || mediums.contains(l.mediaType)
         return sub && lev && lan && med
@@ -285,28 +277,24 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
         fun showNoData(v: View?, count: Int?, source: String) {
             v ?: return
-            v.visibility = if (count == 0) {
-                View.VISIBLE
-            } else {
-                View.GONE
-            }
-            when (source) {
-                "courses" -> (v as TextView).setText(R.string.no_courses)
-                "resources" -> (v as TextView).setText(R.string.no_resources)
-                "finances" -> (v as TextView).setText(R.string.no_finance_record)
-                "news" -> (v as TextView).setText(R.string.no_voices_available)
-                "teamCourses" -> (v as TextView).setText(R.string.no_team_courses)
-                "teamResources" -> (v as TextView).setText(R.string.no_team_resources)
-                "tasks" -> (v as TextView).setText(R.string.no_tasks)
-                "members" -> (v as TextView).setText(R.string.no_join_request_available)
-                "discussions" -> (v as TextView).setText(R.string.no_news)
-                "survey" -> (v as TextView).setText(R.string.no_surveys)
-                "submission" -> (v as TextView).setText(R.string.no_submissions)
-                "teams" -> (v as TextView).setText(R.string.no_teams)
-                "chatHistory" -> (v as TextView).setText(R.string.no_chats)
-                "feedback" -> (v as TextView).setText(R.string.no_feedback)
-                else -> (v as TextView).setText(R.string.no_data_available_please_check_and_try_again)
-            }
+            v.visibility = if (count == 0) View.VISIBLE else View.GONE
+            (v as TextView).setText(when (source) {
+                "courses" -> R.string.no_courses
+                "resources" -> R.string.no_resources
+                "finances" -> R.string.no_finance_record
+                "news" -> R.string.no_voices_available
+                "teamCourses" -> R.string.no_team_courses
+                "teamResources" -> R.string.no_team_resources
+                "tasks" -> R.string.no_tasks
+                "members" -> R.string.no_join_request_available
+                "discussions" -> R.string.no_news
+                "survey" -> R.string.no_surveys
+                "submission" -> R.string.no_submissions
+                "teams" -> R.string.no_teams
+                "chatHistory" -> R.string.no_chats
+                "feedback" -> R.string.no_feedback
+                else -> R.string.no_data_available_please_check_and_try_again
+            })
         }
 
         fun showNoFilter(v: View?, count: Int) {
