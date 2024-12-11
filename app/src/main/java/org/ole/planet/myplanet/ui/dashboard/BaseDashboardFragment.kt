@@ -102,7 +102,22 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             .equalTo("type", KEY_LOGIN)
             .findAllAsync()
         v.findViewById<TextView>(R.id.txtRole).text = getString(R.string.user_role, model?.getRoleAsString())
-        v.findViewById<TextView>(R.id.txtFullName).text =getString(R.string.user_name, fullName, profileDbHandler.offlineVisits)
+        val truncatedName = if (!fullName.isNullOrEmpty()) {
+            if (fullName!!.length > 15) {
+                fullName!!.take(15) + ".."
+            } else {
+                fullName
+            }
+        } else {
+            "Unknown"
+        }
+
+        v.findViewById<TextView>(R.id.txtFullName).text = getString(
+            R.string.user_name,
+            truncatedName,
+            profileDbHandler.offlineVisits
+        )
+
     }
 
     override fun forceDownloadNewsImages() {
