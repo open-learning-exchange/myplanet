@@ -225,8 +225,8 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 throw RuntimeException("Failed to create directory: " + directory.absolutePath)
             }
         }
-        val apkFile = items.resourceLocalAddress?.let { File(directory, it) }
-        if (apkFile != null) {
+        val apkFile = File(directory, items.resourceLocalAddress)
+        if (true) {
             if (!apkFile.exists()) {
                 Utilities.toast(activity,"APK file not found")
                 return
