@@ -180,6 +180,9 @@
     <string name="showing_reply_of">mostrando la respuesta de:</string>
     <string name="open_date">Fecha de apertura</string>
     <string name="my_survey">miEncuesta</string>
+    <string name="cannot_remove_user">No se pudo eliminar al usuario</string>
+    <string name="no_members_task">No hay miembros del equipo presentes para asignar tareas</string>
+    <string name="no_member_selected">No se seleccionó ningún miembro. Por favor, inténtalo de nuevo</string>
 
     <string-array name="level">
         <item>Principiante</item>
@@ -1201,5 +1204,11 @@
     <string name="start">iniciar</string>
     <string name="continuation">continuar</string>
     <string name="please_complete_survey">por favor complete la encuesta para terminar el curso</string>
+    <string name="export_cancelled">exportación cancelada.</string>
+    <string name="failed_to_save_csv_file">error al guardar el archivo CSV.</string>
+    <string name="csv_file_saved_successfully">archivo CSV guardado con éxito.</string>
+    <string name="share_with_team_enterprise">compartir con el equipo/empresa</string>
+    <string name="teams">equipos</string>
+    <string name="community">comunidad</string>
 
 </resources>

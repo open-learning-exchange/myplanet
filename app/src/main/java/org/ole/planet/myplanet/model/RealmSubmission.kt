@@ -187,7 +187,7 @@ class RealmSubmission : RealmObject {
             } else {
                 apiInterface?.putDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/submissions/${sub._id}", serializedResult)?.execute()?.body()
             }
-
+            
             if (response != null) {
                 realm.write {
                     findLatest(sub)?.apply {
