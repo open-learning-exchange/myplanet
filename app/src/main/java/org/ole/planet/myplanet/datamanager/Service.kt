@@ -8,7 +8,7 @@ import android.net.Uri
 import android.text.TextUtils
 import com.google.gson.Gson
 import com.google.gson.JsonObject
-import io.realm.Realm
+import io.realm.kotlin.Realm
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -190,7 +190,9 @@ class Service(private val context: Context) {
                                 override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
                                     if (response.body() != null && response.body()!!.has("id")) {
                                         uploadToShelf(obj)
-                                        saveUserToDb(realm, response.body()!!.get("id").asString, obj, callback)
+                                        serviceScope.launch {
+                                            saveUserToDb(realm, response.body()!!.get("id").asString, obj, callback)
+                                        }
                                     } else {
                                         callback.onSuccess("Unable to create user")
                                     }
@@ -211,21 +213,27 @@ class Service(private val context: Context) {
 
             override fun notAvailable() {
                 val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                if (isUserExists(realm, obj["name"].asString)) {
-                    callback.onSuccess("User already exists")
-                    return
+                serviceScope.launch {
+                    if (isUserExists(realm, obj["name"].asString)) {
+                        callback.onSuccess("User already exists")
+                        return@launch
+                    }
+
+                    val model = populateUsersTable(obj, realm, settings)
+                    realm.write {
+                        val keyString = generateKey()
+                        val iv = generateIv()
+                        if (model != null) {
+                            findLatest(model)?.apply {
+                                key = keyString
+                                this.iv = iv
+                            }
+                        }
+                    }
+
+                    Utilities.toast(MainApplication.context, "Not connected to planet, created user offline.")
+                    callback.onSuccess("Not connected to planet, created user offline.")
                 }
-                realm.beginTransaction()
-                val model = populateUsersTable(obj, realm, settings)
-                val keyString = generateKey()
-                val iv = generateIv()
-                if (model != null) {
-                    model.key = keyString
-                    model.iv = iv
-                }
-                realm.commitTransaction()
-                Utilities.toast(MainApplication.context, "Not connected to planet, created user offline.")
-                callback.onSuccess("Not connected to planet, created user offline.")
             }
         })
     }
@@ -238,86 +246,81 @@ class Service(private val context: Context) {
         })
     }
 
-    private fun saveUserToDb(realm: Realm, id: String, obj: JsonObject, callback: CreateUserCallback) {
+    private suspend fun saveUserToDb(realm: Realm, id: String, obj: JsonObject, callback: CreateUserCallback) {
         val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        realm.executeTransactionAsync({ realm1: Realm? ->
-            try {
+        try {
+            withContext(Dispatchers.IO) {
                 val res = retrofitInterface?.getJsonObject(Utilities.header, Utilities.getUrl() + "/_users/" + id)?.execute()
                 if (res?.body() != null) {
-                    val model = populateUsersTable(res.body(), realm1, settings)
-                    if (model != null) {
-                        UploadToShelfService(MainApplication.context).saveKeyIv(retrofitInterface, model, obj)
+                    val model = populateUsersTable(res.body(), realm, settings)
+                    realm.write {
+                        if (model != null) {
+                            UploadToShelfService(MainApplication.context).saveKeyIv(retrofitInterface, model, obj)
+                        }
                     }
                 }
-            } catch (e: IOException) {
-                e.printStackTrace()
             }
-        }, {
             callback.onSuccess("User created successfully")
             isNetworkConnectedFlow.onEach { isConnected ->
                 if (isConnected) {
                     val serverUrl = settings.getString("serverURL", "")
                     if (!serverUrl.isNullOrEmpty()) {
-                        serviceScope.launch {
-                            val canReachServer = withContext(Dispatchers.IO) {
-                                isServerReachable(serverUrl)
-                            }
-                            if (canReachServer) {
-                                if (context is ProcessUserDataActivity) {
-                                    context.runOnUiThread {
-                                        context.startUpload("becomeMember")
-                                    }
+                        val canReachServer = withContext(Dispatchers.IO) {
+                            isServerReachable(serverUrl)
+                        }
+                        if (canReachServer) {
+                            if (context is ProcessUserDataActivity) {
+                                withContext(Dispatchers.Main) {
+                                    context.startUpload("becomeMember")
                                 }
-                                TransactionSyncManager.syncDb(realm, "tablet_users")
                             }
+                            TransactionSyncManager.syncDb(realm, "tablet_users")
                         }
                     }
                 }
             }.launchIn(serviceScope)
-        }) { error: Throwable ->
+        } catch (error: Exception) {
             error.printStackTrace()
             callback.onSuccess("Unable to save user please sync")
         }
     }
 
-    fun syncPlanetServers(realm: Realm, callback: SuccessListener) {
-        retrofitInterface?.getJsonObject("", "https://planet.earth.ole.org/db/communityregistrationrequests/_all_docs?include_docs=true")?.enqueue(object : Callback<JsonObject?> {
-            override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
-                if (response.body() != null) {
-                    val arr = JsonUtils.getJsonArray("rows", response.body())
-                    if (!realm.isClosed) {
-                        realm.executeTransactionAsync({ realm1: Realm ->
-                            realm1.delete(RealmCommunity::class.java)
-                            for (j in arr) {
-                                var jsonDoc = j.asJsonObject
-                                jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-                                val id = JsonUtils.getString("_id", jsonDoc)
-                                val community = realm1.createObject(RealmCommunity::class.java, id)
-                                if (JsonUtils.getString("name", jsonDoc) == "learning") {
-                                    community.weight = 0
-                                }
-                                community.localDomain = JsonUtils.getString("localDomain", jsonDoc)
-                                community.name = JsonUtils.getString("name", jsonDoc)
-                                community.parentDomain = JsonUtils.getString("parentDomain", jsonDoc)
-                                community.registrationRequest = JsonUtils.getString("registrationRequest", jsonDoc)
-                            }
-                        }, {
-                            realm.close()
-                            callback.onSuccess("Server sync successfully")
-                        }) { error: Throwable ->
-                            realm.close()
-                            error.printStackTrace()
-                            callback.onSuccess("Unable to connect to planet earth")
-                        }
-                    }
-                }
+    suspend fun syncPlanetServers(realm: Realm, callback: SuccessListener) {
+        try {
+            val response = withContext(Dispatchers.IO) {
+                retrofitInterface?.getJsonObject("", "https://planet.earth.ole.org/db/communityregistrationrequests/_all_docs?include_docs=true")?.execute()
             }
 
-            override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
-                realm.close()
-                callback.onSuccess("Unable to connect to planet earth")
+            if (response?.body() != null) {
+                val arr = JsonUtils.getJsonArray("rows", response.body())
+                realm.write {
+                    // Delete existing communities
+                    query<RealmCommunity>(RealmCommunity::class).find().forEach { delete(it) }
+                    // Add new communities
+                    arr.forEach { j ->
+                        var jsonDoc = j.asJsonObject
+                        jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
+                        val id = JsonUtils.getString("_id", jsonDoc)
+
+                        val community = RealmCommunity().apply {
+                            this.id = id
+                            if (JsonUtils.getString("name", jsonDoc) == "learning") {
+                                weight = 0
+                            }
+                            localDomain = JsonUtils.getString("localDomain", jsonDoc)
+                            name = JsonUtils.getString("name", jsonDoc)
+                            parentDomain = JsonUtils.getString("parentDomain", jsonDoc)
+                            registrationRequest = JsonUtils.getString("registrationRequest", jsonDoc)
+                        }
+                        copyToRealm(community)
+                    }
+                }
+                callback.onSuccess("Server sync successfully")
             }
-        })
+        } catch (error: Exception) {
+            error.printStackTrace()
+            callback.onSuccess("Unable to connect to planet earth")
+        }
     }
 
     fun getMinApk(listener: ConfigurationIdListener?, url: String, pin: String, activity: SyncActivity) {
