@@ -20,10 +20,12 @@ import android.widget.ListView
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import io.realm.kotlin.Realm
 import io.realm.kotlin.types.RealmObject
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
@@ -99,7 +101,7 @@ abstract class BaseResourceFragment : Fragment() {
         }
     }
 
-    protected fun showDownloadDialog(dbMyLibrary: List<RealmMyLibrary?>) {
+    protected fun showDownloadDialog(dbMyLibrary: List<RealmMyLibrary>) {
         if (isAdded) {
             Service(MainApplication.context).isPlanetAvailable(object : PlanetAvailableListener {
                 override fun isAvailable() {
@@ -114,12 +116,16 @@ abstract class BaseResourceFragment : Fragment() {
                         alertDialogBuilder.setView(convertView).setTitle(R.string.download_suggestion)
                         alertDialogBuilder.setPositiveButton(R.string.download_selected) { _: DialogInterface?, _: Int ->
                             lv?.selectedItemsList?.let {
-                                addToLibrary(dbMyLibrary, it)
+                                lifecycleScope.launch {
+                                    addToLibrary(dbMyLibrary, it)
+                                }
                                 downloadFiles(dbMyLibrary, it)
                             }?.let { startDownload(it) }
                         }.setNeutralButton(R.string.download_all) { _: DialogInterface?, _: Int ->
                             lv?.selectedItemsList?.let {
-                                addAllToLibrary(dbMyLibrary)
+                                lifecycleScope.launch {
+                                    addAllToLibrary(dbMyLibrary)
+                                }
                             }
                             startDownload(downloadAllFiles(dbMyLibrary))
                         }.setNegativeButton(R.string.txt_cancel, null)

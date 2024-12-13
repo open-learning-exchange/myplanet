@@ -5,7 +5,10 @@ import android.content.SharedPreferences
 import android.util.Base64
 import com.google.gson.Gson
 import com.google.gson.JsonObject
-import io.realm.Realm
+import io.realm.kotlin.Realm
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.populateUsersTable
@@ -22,6 +25,7 @@ class ManagerSync private constructor(context: Context) {
     private val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     private val dbService: DatabaseService = DatabaseService()
     private val mRealm: Realm = dbService.realmInstance
+    private val scope = CoroutineScope(Dispatchers.Main)
 
     fun login(userName: String?, password: String?, listener: SyncListener) {
         listener.onSyncStarted()
@@ -36,7 +40,9 @@ class ManagerSync private constructor(context: Context) {
                             val derivedKey = jsonDoc["derived_key"].asString
                             val salt = jsonDoc["salt"].asString
                             if (androidDecrypter(userName, password, derivedKey, salt)) {
-                                checkManagerAndInsert(jsonDoc, mRealm, listener)
+                                scope.launch(Dispatchers.IO) {
+                                    checkManagerAndInsert(jsonDoc, mRealm, listener)
+                                }
                             } else {
                                 listener.onSyncFailed("Name or password is incorrect.")
                             }
@@ -77,7 +83,7 @@ class ManagerSync private constructor(context: Context) {
         })
     }
 
-    private fun checkManagerAndInsert(jsonDoc: JsonObject?, realm: Realm, listener: SyncListener) {
+    private suspend fun checkManagerAndInsert(jsonDoc: JsonObject?, realm: Realm, listener: SyncListener) {
         if (isManager(jsonDoc)) {
             populateUsersTable(jsonDoc, realm, settings)
             listener.onSyncComplete()
