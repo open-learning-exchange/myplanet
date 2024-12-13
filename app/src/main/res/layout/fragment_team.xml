@@ -62,7 +62,7 @@
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:padding="@dimen/padding_small"
-                android:text="@string/typename"
+                android:text="Type"
                 android:textColor="@color/daynight_textColor"
                 android:textStyle="bold"
                 app:layout_constraintEnd_toStartOf="@id/no_of_visits"
