@@ -77,9 +77,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             val url = Utilities.getUrl(library)
             if (!FileUtils.checkFileExist(url) && !TextUtils.isEmpty(url)) urls.add(url)
         }
-        if (urls.isNotEmpty()) startDownload(urls) else Utilities.toast(
-            activity, getString(R.string.no_images_to_download)
-        )
+        if (urls.isNotEmpty()) startDownload(urls)
     }
     fun initRatingView(type: String?, id: String?, title: String?, listener: OnRatingChangeListener?) {
         timesRated = requireView().findViewById(R.id.times_rated)
