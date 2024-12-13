@@ -23,16 +23,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.*
-import org.ole.planet.myplanet.model.RealmCourseProgress
-import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.createMyCourse
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourse
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourseByUserId
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getOurCourse
-import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.createFromResource
-import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getMyLibraryByUserId
-import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getOurLibrary
-import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onAdd
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Utilities.toast
@@ -118,13 +108,13 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             val `object` = selectedItems?.get(i) as RealmObject
             if (`object` is RealmMyLibrary) {
                 val myObject = realm.query<RealmMyLibrary>("resourceId == $0", `object`.resourceId).first().find()
-                createFromResource(myObject, realm, model?.id)
-                onAdd(realm, "resources", profileDbHandler.userModel?.id, myObject?.resourceId)
+                RealmMyLibrary.createFromResource(myObject, realm, model?.id)
+                RealmRemovedLog.onAdd(realm, "resources", profileDbHandler.userModel?.id, myObject?.resourceId)
                 toast(activity, getString(R.string.added_to_my_library))
             } else {
-                val myObject = getMyCourse(realm, (`object` as RealmMyCourse).courseId)
-                createMyCourse(myObject, realm, model?.id)
-                onAdd(realm, "courses", profileDbHandler.userModel?.id, myObject?.courseId)
+                val myObject = RealmMyCourse.getMyCourse(realm, (`object` as RealmMyCourse).courseId)
+                RealmMyCourse.createMyCourse(myObject, realm, model?.id)
+                RealmRemovedLog.onAdd(realm, "courses", profileDbHandler.userModel?.id, myObject?.courseId)
                 toast(activity, getString(R.string.added_to_my_courses))
             }
         }
@@ -149,7 +139,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                     }
                 }
 
-                realm.write {
+                lifecycleScope.launch {
                     removeFromShelf(`object`)
                 }
             }
@@ -206,9 +196,9 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     fun filterLibraryByTag(s: String, tags: List<RealmTag>): List<RealmMyLibrary> {
         var list = getData(s, RealmMyLibrary::class.java)
         list = if (isMyCourseLib) {
-            getMyLibraryByUserId(model?.id, list)
+            RealmMyLibrary.getMyLibraryByUserId(model?.id, list)
         } else {
-            getOurLibrary(model?.id, list)
+            RealmMyLibrary.getOurLibrary(model?.id, list)
         }
         if (tags.isEmpty()) {
             return list
@@ -226,9 +216,9 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
         var list = getData(s, RealmMyCourse::class.java)
         list = if (isMyCourseLib) {
-            getMyCourseByUserId(model?.id ?: "", list)
+            RealmMyCourse.getMyCourseByUserId(model?.id ?: "", list)
         } else {
-            getOurCourse(model?.id ?: "", list)
+            RealmMyCourse.getOurCourse(model?.id ?: "", list)
         }
         if (tags.isEmpty()) {
             return list

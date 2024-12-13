@@ -15,9 +15,11 @@ import android.widget.Spinner
 import android.widget.TextView
 import androidx.appcompat.view.ContextThemeWrapper
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.callback.OnCourseItemSelected
@@ -68,15 +70,18 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
-        val map = getRatings(mRealm, "course", model?.id)
-        val progressMap = getCourseProgress(mRealm, model?.id)
-        val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>()
-        val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
-        adapterCourses = AdapterCourses(requireActivity(), sortedCourseList, map)
-        adapterCourses.setProgressMap(progressMap)
-        adapterCourses.setmRealm(mRealm)
-        adapterCourses.setListener(this)
-        adapterCourses.setRatingChangeListener(this)
+        lifecycleScope.launch {
+            val map = getRatings(mRealm, "course", model?.id)
+            val progressMap = getCourseProgress(mRealm, model?.id ?: "")
+            val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>()
+            val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
+            adapterCourses = AdapterCourses(requireActivity(), sortedCourseList, map)
+            adapterCourses.setProgressMap(progressMap)
+            adapterCourses.setmRealm(mRealm)
+            adapterCourses.setListener(this)
+            adapterCourses.setRatingChangeListener(this)
+        }
+
 
         if (isMyCourseLib) {
             val courseIds = courseList.mapNotNull { it?.id }
@@ -123,7 +128,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             }
             alertDialogBuilder.setMessage(message)
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                    deleteSelected(true)
+                    lifecycleScope.launch {
+                        deleteSelected(true)
+                    }
                     val newFragment = CoursesFragment()
                     recreateFragment(newFragment)
                     checkList()
@@ -139,7 +146,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             }
             alertDialogBuilder.setMessage(message)
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                    deleteSelected(true)
+                    lifecycleScope.launch {
+                        deleteSelected(true)
+                    }
                     val newFragment = CoursesFragment()
                     recreateFragment(newFragment)
                     checkList()
@@ -196,7 +205,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             if ((selectedItems?.size ?: 0) > 0) {
                 confirmation = createAlertDialog()
                 confirmation.show()
-                addToMyList()
+                lifecycleScope.launch {
+                    addToMyList()
+                }
                 selectedItems?.clear()
                 tvAddToLib.isEnabled = false
                 checkList()

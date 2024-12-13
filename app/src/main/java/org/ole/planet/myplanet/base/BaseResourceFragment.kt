@@ -21,11 +21,13 @@ import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
-import io.realm.Realm
-import io.realm.RealmObject
-import io.realm.RealmResults
+import io.realm.kotlin.Realm
+import io.realm.kotlin.types.RealmObject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.MainApplication.Companion.realm
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -142,14 +144,16 @@ abstract class BaseResourceFragment : Fragment() {
 
     fun showPendingSurveyDialog() {
         model = UserProfileDbHandler(requireContext()).userModel
-        val list: List<RealmSubmission> = mRealm.where(RealmSubmission::class.java)
-            .equalTo("userId", model?.id)
-            .equalTo("status", "pending").equalTo("type", "survey")
-            .findAll()
+        val list = realm.query<RealmSubmission>(RealmSubmission::class,
+            "userId == $0 AND status == $1 AND type == $2",
+            model?.id, "pending", "survey"
+        ).find()
+
         if (list.isEmpty()) {
             return
         }
-        val exams = getExamMap(mRealm, list)
+
+        val exams = getExamMap(realm, list)
         val arrayAdapter: ArrayAdapter<*> = object : ArrayAdapter<Any?>(requireActivity(), android.R.layout.simple_list_item_1, list) {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
                 var convertedView = convertView
@@ -164,6 +168,7 @@ abstract class BaseResourceFragment : Fragment() {
                 return convertedView!!
             }
         }
+
         AlertDialog.Builder(requireActivity()).setTitle("Pending Surveys")
             .setAdapter(arrayAdapter) { _: DialogInterface?, i: Int ->
                 AdapterMySubmission.openSurvey(homeItemClickListener, list[i].id, true)
@@ -239,13 +244,13 @@ abstract class BaseResourceFragment : Fragment() {
         LocalBroadcastManager.getInstance(MainApplication.context).registerReceiver(stateReceiver, intentFilter3)
     }
 
-    fun getLibraryList(mRealm: Realm): List<RealmMyLibrary> {
-        return getLibraryList(mRealm, settings?.getString("userId", "--"))
+    fun getLibraryList(realm: Realm): List<RealmMyLibrary> {
+        return getLibraryList(realm, settings?.getString("userId", "--"))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        mRealm = DatabaseService().realmInstance
+        realm = DatabaseService().realmInstance
         prgDialog = getProgressDialog(requireActivity())
         settings = requireActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         editor = settings?.edit()
@@ -258,19 +263,37 @@ abstract class BaseResourceFragment : Fragment() {
         LocalBroadcastManager.getInstance(requireActivity()).unregisterReceiver(stateReceiver)
     }
 
-    fun removeFromShelf(`object`: RealmObject) {
-        if (`object` is RealmMyLibrary) {
-            val myObject = mRealm.where(RealmMyLibrary::class.java).equalTo("resourceId", `object`.resourceId).findFirst()
-            myObject?.removeUserId(model?.id)
-            model?.id?.let { `object`.resourceId?.let { it1 ->
-                onRemove(mRealm, "resources", it, it1)
-            } }
-            Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
-        } else {
-            val myObject = getMyCourse(mRealm, (`object` as RealmMyCourse).courseId)
-            myObject?.removeUserId(model?.id)
-            model?.id?.let { `object`.courseId?.let { it1 -> onRemove(mRealm, "courses", it, it1) } }
-            Utilities.toast(activity, getString(R.string.removed_from_mycourse))
+    suspend fun removeFromShelf(`object`: RealmObject) {
+        when (`object`) {
+            is RealmMyLibrary -> {
+                val myObject = realm.query<RealmMyLibrary>(
+                    RealmMyLibrary::class,
+                    "resourceId == $0", `object`.resourceId
+                ).first().find()
+
+                realm.write {
+                    myObject?.removeUserId(model?.id)
+                }
+
+                model?.id?.let { userId ->
+                    `object`.resourceId?.let { resourceId ->
+                        onRemove(realm, "resources", userId, resourceId)
+                    }
+                }
+                withContext(Dispatchers.Main) {
+                    Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
+                }
+            }
+            is RealmMyCourse -> {
+                val myObject = getMyCourse(realm, `object`.courseId)
+                realm.write {
+                    myObject?.removeUserId(model?.id ?: "")
+                }
+                model?.id?.let { userId ->
+                    onRemove(realm, "courses", userId, `object`.courseId)
+                }
+                Utilities.toast(activity, getString(R.string.removed_from_mycourse))
+            }
         }
     }
 
@@ -287,25 +310,32 @@ abstract class BaseResourceFragment : Fragment() {
         tvSelected?.text = selected.subSequence(0, selected.length - 1)
     }
 
-    fun addToLibrary(libraryItems: List<RealmMyLibrary?>, selectedItems: ArrayList<Int>) {
-        for (i in selectedItems.indices) {
-            if (!libraryItems[selectedItems[i]]?.userId?.contains(profileDbHandler.userModel?.id)!!) {
-                if (!mRealm.isInTransaction) mRealm.beginTransaction()
-                libraryItems[selectedItems[i]]?.setUserId(profileDbHandler.userModel?.id)
-                RealmRemovedLog.onAdd(mRealm, "resources", profileDbHandler.userModel?.id, libraryItems[selectedItems[i]]?.resourceId)
+    suspend fun addToLibrary(libraryItems: List<RealmMyLibrary>, selectedItems: ArrayList<Int>) {
+        realm.write {
+            for (i in selectedItems.indices) {
+                if (!libraryItems[selectedItems[i]].userId.contains(profileDbHandler.userModel?.id)) {
+                    libraryItems[selectedItems[i]].setUserId(profileDbHandler.userModel?.id)
+                    RealmRemovedLog.onAdd(
+                        realm,
+                        "resources",
+                        profileDbHandler.userModel?.id,
+                        libraryItems[selectedItems[i]].resourceId
+                    )
+                }
             }
         }
         Utilities.toast(activity, getString(R.string.added_to_my_library))
     }
 
-    fun addAllToLibrary(libraryItems: List<RealmMyLibrary?>) {
-        for (libraryItem in libraryItems) {
-            if (!libraryItem?.userId?.contains(profileDbHandler.userModel?.id)!!) {
-                if (!mRealm.isInTransaction) {
-                    mRealm.beginTransaction()
+    suspend fun addAllToLibrary(libraryItems: List<RealmMyLibrary>) {
+        realm.write {
+            for (libraryItem in libraryItems) {
+                if (!libraryItem.userId.contains(profileDbHandler.userModel?.id)) {
+                    libraryItem.setUserId(profileDbHandler.userModel?.id)
+                    RealmRemovedLog.onAdd(
+                        realm, "resources", profileDbHandler.userModel?.id, libraryItem.resourceId
+                    )
                 }
-                libraryItem.setUserId(profileDbHandler.userModel?.id)
-                RealmRemovedLog.onAdd(mRealm, "resources", profileDbHandler.userModel?.id, libraryItem.resourceId)
             }
         }
         Utilities.toast(activity, getString(R.string.added_to_my_library))
@@ -315,9 +345,9 @@ abstract class BaseResourceFragment : Fragment() {
         var settings: SharedPreferences? = null
         var auth = ""
 
-        fun getAllLibraryList(mRealm: Realm): List<RealmMyLibrary> {
-            val l = mRealm.where(RealmMyLibrary::class.java).equalTo("resourceOffline", false).findAll()
-            val libList: MutableList<RealmMyLibrary> = ArrayList()
+        fun getAllLibraryList(realm: Realm): List<RealmMyLibrary> {
+            val l = realm.query<RealmMyLibrary>(RealmMyLibrary::class, "resourceOffline == $0", false).find()
+            val libList = mutableListOf<RealmMyLibrary>()
             val libraries = getLibraries(l)
             libList.addAll(libraries)
             return libList
@@ -335,26 +365,20 @@ abstract class BaseResourceFragment : Fragment() {
             })
         }
 
-        fun getLibraryList(mRealm: Realm, userId: String?): List<RealmMyLibrary> {
-            val l = mRealm.where(RealmMyLibrary::class.java).equalTo("isPrivate", false).findAll()
-            val libList: MutableList<RealmMyLibrary> = ArrayList()
+        fun getLibraryList(realm: Realm, userId: String?): List<RealmMyLibrary> {
+            val l = realm.query<RealmMyLibrary>(RealmMyLibrary::class, "isPrivate == $0", false).find()
+            val libList = mutableListOf<RealmMyLibrary>()
             val libraries = getLibraries(l)
             for (item in libraries) {
-                if (item.userId?.contains(userId) == true) {
+                if (item.userId.contains(userId)) {
                     libList.add(item)
                 }
             }
             return libList
         }
 
-        private fun getLibraries(l: RealmResults<RealmMyLibrary>): List<RealmMyLibrary> {
-            val libraries: MutableList<RealmMyLibrary> = ArrayList()
-            for (lib in l) {
-                if (lib.needToUpdate()) {
-                    libraries.add(lib)
-                }
-            }
-            return libraries
+        private fun getLibraries(l: List<RealmMyLibrary>): List<RealmMyLibrary> {
+            return l.filter { it.needToUpdate() }
         }
     }
 }
