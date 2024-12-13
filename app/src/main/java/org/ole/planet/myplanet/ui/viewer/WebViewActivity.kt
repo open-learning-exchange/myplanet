@@ -98,59 +98,54 @@ class WebViewActivity : AppCompatActivity() {
                     activityWebViewBinding.contentWebView.pBar.visibility = View.VISIBLE
                 }
 
-                ensureResourceDownloaded(resourceId)
+                // Create resource directory structure
+                val gamesDir = File(filesDir, "games")
+                val resourceDir = File(gamesDir, resourceId)
+                resourceDir.mkdirs()
 
+                // Create necessary directories
+                File(resourceDir, "js").mkdirs()
+                File(resourceDir, "style").mkdirs()
+                File(resourceDir, "style/fonts").mkdirs()
+                File(resourceDir, "meta").mkdirs()
+
+                // Copy all required files
+                copyJsFiles(resourceDir)
+                copyCssFiles(resourceDir)
+                copyFontFiles(resourceDir)
+                copyMetaFiles(resourceDir)
+
+                // Get HTML content and write to file
                 val htmlContent = retrieveHtmlContentFromRealm(resourceId)
-                Log.d("okuro", "html content: $htmlContent")
-
                 if (htmlContent != null) {
+                    val htmlFile = File(resourceDir, "index.html")
+                    htmlFile.writeText(htmlContent)
+
                     withContext(Dispatchers.Main) {
                         try {
-                            // Create games directory in app's files directory
-                            val gamesDir = File(filesDir, "games")
-                            gamesDir.mkdirs()
+                            // Load the file directly using file:// protocol
+                            val fileUrl = "file://${htmlFile.absolutePath}"
+                            Log.d("WebViewActivity", "Loading URL: $fileUrl")
 
-                            // Create resource-specific directory
-                            val resourceDir = File(gamesDir, resourceId)
-                            resourceDir.mkdirs()
+                            activityWebViewBinding.contentWebView.wv.settings.apply {
+                                allowFileAccess = true
+                                allowFileAccessFromFileURLs = true
+                                allowUniversalAccessFromFileURLs = true
+                                domStorageEnabled = true
+                                javaScriptEnabled = true
+                            }
 
-                            val htmlFile = File(resourceDir, "index.html")
-                            htmlFile.writeText(htmlContent)
-
-                            // Create necessary directories
-                            File(resourceDir, "js").mkdirs()
-                            File(resourceDir, "style").mkdirs()
-                            File(resourceDir, "style/fonts").mkdirs()
-                            File(resourceDir, "meta").mkdirs()
-
-                            // Copy all required files
-                            copyJsFiles(resourceDir)
-                            copyCssFiles(resourceDir)
-                            copyFontFiles(resourceDir)
-                            copyMetaFiles(resourceDir)
-
-                            // Create URI using FileProvider
-                            val contentUri = FileProvider.getUriForFile(
-                                this@WebViewActivity,
-                                "${packageName}.fileprovider",
-                                htmlFile
-                            )
-
-                            // Grant read permission to WebView
-                            activityWebViewBinding.contentWebView.wv.settings.allowFileAccess = true
-                            activityWebViewBinding.contentWebView.wv.settings.allowFileAccessFromFileURLs = true
-                            activityWebViewBinding.contentWebView.wv.loadUrl(contentUri.toString())
-                            Log.d("okuro", "Loading from: ${contentUri}")
+                            activityWebViewBinding.contentWebView.wv.loadUrl(fileUrl)
                         } catch (e: Exception) {
-                            Log.e("WebViewActivity", "Error preparing HTML content", e)
+                            Log.e("WebViewActivity", "Error loading HTML file", e)
                             e.printStackTrace()
-                        } finally {
-                            activityWebViewBinding.contentWebView.pBar.visibility = View.GONE
                         }
                     }
                 }
+
             } catch (e: Exception) {
-                Log.e("WebViewActivity", "Error loading local HTML", e)
+                Log.e("WebViewActivity", "Error in loadLocalHtmlResource", e)
+            } finally {
                 withContext(Dispatchers.Main) {
                     activityWebViewBinding.contentWebView.pBar.visibility = View.GONE
                 }
@@ -420,67 +415,31 @@ class WebViewActivity : AppCompatActivity() {
 
     private fun setWebClient() {
         activityWebViewBinding.contentWebView.wv.webViewClient = object : WebViewClient() {
-            @TargetApi(Build.VERSION_CODES.LOLLIPOP)
             override fun shouldInterceptRequest(view: WebView?, request: WebResourceRequest?): WebResourceResponse? {
                 if (request == null) return null
 
                 val url = request.url.toString()
+                Log.d("WebViewActivity", "Intercepting request: $url")
+
                 val gamesDir = File(filesDir, "games")
                 val resourceDir = File(gamesDir, resourceId)
 
                 try {
-                    // Handle JS files
-                    if (url.contains("/js/")) {
-                        val fileName = url.substringAfterLast("/")
-                        val file = File(resourceDir, "js/$fileName")
-                        if (file.exists()) {
-                            return WebResourceResponse(
-                                "application/javascript",
-                                "UTF-8",
-                                file.inputStream()
-                            )
-                        }
-                    }
+                    // Extract the path from the URL
+                    val path = url.substringAfter("file://")
+                    val file = File(path)
 
-                    // Handle CSS files
-                    if (url.contains("/style/") && !url.contains("/fonts/")) {
-                        val fileName = url.substringAfterLast("/")
-                        val file = File(resourceDir, "style/$fileName")
-                        if (file.exists()) {
-                            return WebResourceResponse(
-                                "text/css",
-                                "UTF-8",
-                                file.inputStream()
-                            )
+                    if (file.exists()) {
+                        val mimeType = when {
+                            url.endsWith(".js") -> "application/javascript"
+                            url.endsWith(".css") -> "text/css"
+                            url.endsWith(".woff") -> "application/font-woff"
+                            url.endsWith(".eot") -> "application/vnd.ms-fontobject"
+                            url.endsWith(".svg") -> "image/svg+xml"
+                            url.endsWith(".png") -> "image/png"
+                            else -> "text/plain"
                         }
-                    }
-
-                    // Handle font files
-                    if (url.contains("/fonts/")) {
-                        val fileName = url.substringAfterLast("/")
-                        val file = File(resourceDir, "style/fonts/$fileName")
-                        if (file.exists()) {
-                            val mimeType = when {
-                                fileName.endsWith(".woff") -> "application/font-woff"
-                                fileName.endsWith(".eot") -> "application/vnd.ms-fontobject"
-                                fileName.endsWith(".svg") -> "image/svg+xml"
-                                else -> "application/octet-stream"
-                            }
-                            return WebResourceResponse(mimeType, "UTF-8", file.inputStream())
-                        }
-                    }
-
-                    // Handle meta files
-                    if (url.contains("/meta/")) {
-                        val fileName = url.substringAfterLast("/")
-                        val file = File(resourceDir, "meta/$fileName")
-                        if (file.exists()) {
-                            return WebResourceResponse(
-                                "image/png",
-                                "UTF-8",
-                                file.inputStream()
-                            )
-                        }
+                        return WebResourceResponse(mimeType, "UTF-8", file.inputStream())
                     }
 
                     Log.d("WebViewActivity", "Resource not found: $url")
@@ -498,6 +457,12 @@ class WebViewActivity : AppCompatActivity() {
                 }
                 val i = Uri.parse(url)
                 activityWebViewBinding.contentWebView.webSource.text = i.host
+            }
+
+            override fun onPageFinished(view: WebView?, url: String?) {
+                super.onPageFinished(view, url)
+                Log.d("WebViewActivity", "Page finished loading: $url")
+                activityWebViewBinding.contentWebView.pBar.visibility = View.GONE
             }
         }
     }
