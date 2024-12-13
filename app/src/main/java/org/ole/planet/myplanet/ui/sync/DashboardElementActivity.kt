@@ -64,11 +64,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
             4 -> openEnterpriseFragment()
             3 -> openCallFragment(TeamFragment(), "survey")
             5 -> {
-                if (profileDbHandler.userModel?.isGuest() == true) {
-                    showGuestUserDialog()
-                } else {
-                    openCallFragment(CommunityTabFragment(), "community")
-                }
+                openCallFragment(CommunityTabFragment(), "community")
             }
         }
     }
