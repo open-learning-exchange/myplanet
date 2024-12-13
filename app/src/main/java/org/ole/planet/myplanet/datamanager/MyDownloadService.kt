@@ -8,11 +8,11 @@ import android.content.SharedPreferences
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
-import io.realm.Realm
+import io.realm.kotlin.Realm
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -26,7 +26,6 @@ import java.io.*
 import kotlin.math.roundToInt
 
 class MyDownloadService : Service() {
-    private var count = 0
     private var data = ByteArray(1024 * 4)
     private var outputFile: File? = null
     private var notificationBuilder: NotificationCompat.Builder? = null
@@ -36,9 +35,8 @@ class MyDownloadService : Service() {
     private lateinit var urls: Array<String>
     private var currentIndex = 0
     private var request: Call<ResponseBody>? = null
-    private var completeAll = false
     private var fromSync = false
-
+    private val serviceScope = CoroutineScope(Dispatchers.IO + Job())
     private val databaseService: DatabaseService by lazy { DatabaseService() }
     private val mRealm: Realm by lazy { databaseService.realmInstance }
 
@@ -59,7 +57,7 @@ class MyDownloadService : Service() {
         urls = urlSet.toTypedArray()
         fromSync = intent?.getBooleanExtra("fromSync", false) == true
 
-        CoroutineScope(Dispatchers.IO).launch {
+        serviceScope.launch {
             urls.forEachIndexed { index, url ->
                 currentIndex = index
                 initDownload(url, fromSync)
@@ -209,19 +207,17 @@ class MyDownloadService : Service() {
     }
 
     private fun changeOfflineStatus() {
-        CoroutineScope(Dispatchers.IO).launch {
+        serviceScope.launch {
             if (urls.isNotEmpty() && currentIndex >= 0 && currentIndex < urls.size) {
                 val currentFileName = getFileNameFromUrl(urls[currentIndex])
-                withContext(Dispatchers.Main) {
-                    mRealm.executeTransaction { realm ->
-                        realm.where(RealmMyLibrary::class.java)
-                            .equalTo("resourceLocalAddress", currentFileName)
-                            .findAll()
-                            ?.forEach {
-                                it.resourceOffline = true
-                                it.downloadedRev = it._rev
+                mRealm.write {
+                    query<RealmMyLibrary>(RealmMyLibrary::class, "resourceLocalAddress == $0", currentFileName)
+                        .find().forEach {
+                            findLatest(it)?.apply {
+                                resourceOffline = true
+                                downloadedRev = _rev
                             }
-                    }
+                        }
                 }
             }
         }
