@@ -31,6 +31,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     lateinit var mRealm: Realm
     private var submissions: RealmSubmission? = null
     var userModel: RealmUserModel? = null
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentUserInformationBinding = FragmentUserInformationBinding.inflate(inflater, container, false)
         mRealm = DatabaseService(requireActivity()).realmInstance
@@ -45,16 +46,8 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     private fun initViews() {
         val langArray = resources.getStringArray(R.array.language).toMutableList()
         val levelArray = resources.getStringArray(R.array.level).toMutableList()
-        val adapterLang = ArrayAdapter(
-            requireContext(),
-            R.layout.spinner_item_white,
-            langArray
-        )
-        val adapterLevel = ArrayAdapter(
-            requireContext(),
-            R.layout.spinner_item_white,
-            levelArray
-        )
+        val adapterLang = ArrayAdapter(requireContext(), R.layout.spinner_item_white, langArray)
+        val adapterLevel = ArrayAdapter(requireContext(), R.layout.spinner_item_white, levelArray)
         adapterLang.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         adapterLevel.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         fragmentUserInformationBinding.spnLang.adapter = adapterLang
