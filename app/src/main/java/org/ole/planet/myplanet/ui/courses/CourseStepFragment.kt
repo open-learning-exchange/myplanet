@@ -184,7 +184,12 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
 
         fragmentCourseStepBinding.btnTakeSurvey.setOnClickListener {
             if (stepSurvey.isNotEmpty()) {
-                AdapterMySubmission.openSurvey(homeItemClickListener, stepSurvey[0].id, false)
+                AdapterMySubmission.openSurvey(
+                    homeItemClickListener,
+                    stepSurvey[0].id,
+                    false,
+                    false
+                )
             }
         }
         val downloadedResources: List<RealmMyLibrary> = cRealm.where(RealmMyLibrary::class.java).equalTo("stepId", stepId).equalTo("resourceOffline", true).isNotNull("resourceLocalAddress").findAll()

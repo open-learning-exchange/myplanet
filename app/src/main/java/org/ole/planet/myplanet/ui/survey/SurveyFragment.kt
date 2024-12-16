@@ -17,6 +17,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>() {
     private lateinit var spn: CustomSpinner
     private var isTitleAscending = true
     private lateinit var adapter: AdapterSurvey
+    private var isTeam: Boolean = false
 
     override fun getLayout(): Int {
         return R.layout.fragment_survey
@@ -24,7 +25,8 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        adapter = AdapterSurvey(requireActivity(), mRealm, model?.id ?: "")
+        isTeam = arguments?.getBoolean("isTeam", false) ?: false
+        adapter = AdapterSurvey(requireActivity(), mRealm, model?.id ?: "", isTeam)
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {

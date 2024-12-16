@@ -54,7 +54,7 @@ class AdapterMySubmission(private val context: Context, private val list: List<R
             rowMySurveyBinding.title.text = examHashMap[list?.get(position)?.parentId]?.name
         holder.itemView.setOnClickListener {
             if (type == "survey")
-                openSurvey(listener, list?.get(position)?.id, true)
+                openSurvey(listener, list?.get(position)?.id, true, false)
             else
                 openSubmissionDetail(listener, list?.get(position)?.id)
         }
@@ -98,12 +98,18 @@ class AdapterMySubmission(private val context: Context, private val list: List<R
 
     companion object {
         @JvmStatic
-        fun openSurvey(listener: OnHomeItemClickListener?, id: String?, isMySurvey: Boolean) {
+        fun openSurvey(
+            listener: OnHomeItemClickListener?,
+            id: String?,
+            isMySurvey: Boolean,
+            isTeam: Boolean
+        ) {
             if (listener != null) {
                 val b = Bundle()
                 b.putString("type", "survey")
                 b.putString("id", id)
                 b.putBoolean("isMySurvey", isMySurvey)
+                b.putBoolean("isTeam", isTeam)
                 val f: Fragment = TakeExamFragment()
                 f.arguments = b
                 listener.openCallFragment(f)
