@@ -107,13 +107,8 @@ class NotificationsFragment : Fragment() {
             "survey" -> {
                 val currentStepExam = mRealm.where(RealmStepExam::class.java).equalTo("name", notification.relatedId)
                     .findFirst()
-                if(context is OnHomeItemClickListener) {
-                    AdapterMySubmission.openSurvey(
-                        context as OnHomeItemClickListener,
-                        currentStepExam?.id,
-                        false,
-                        false
-                    )
+                if (context is OnHomeItemClickListener) {
+                    AdapterMySubmission.openSurvey(context as OnHomeItemClickListener, currentStepExam?.id, false, false)
                 }
             }
             "task" -> {

@@ -98,12 +98,7 @@ class AdapterMySubmission(private val context: Context, private val list: List<R
 
     companion object {
         @JvmStatic
-        fun openSurvey(
-            listener: OnHomeItemClickListener?,
-            id: String?,
-            isMySurvey: Boolean,
-            isTeam: Boolean
-        ) {
+        fun openSurvey(listener: OnHomeItemClickListener?, id: String?, isMySurvey: Boolean, isTeam: Boolean) {
             if (listener != null) {
                 val b = Bundle()
                 b.putString("type", "survey")

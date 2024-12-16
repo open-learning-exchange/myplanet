@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.team
 
 import android.os.Bundle
 import android.text.TextUtils
-import android.util.Log
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.viewpager2.adapter.FragmentStateAdapter
@@ -28,7 +27,6 @@ class TeamPagerAdapter(fm: FragmentActivity, team: RealmMyTeam?, isInMyTeam: Boo
     private val isTeam: Boolean = TextUtils.equals(team?.type, "team")
 
     init {
-        Log.d("TeamPagerAdapter", "createFragment: ${team?.type}")
         list.add(context.getString(if (isEnterprise) R.string.mission else R.string.plan))
         list.add(context.getString(if (isEnterprise) R.string.team else R.string.members))
         if (isInMyTeam || team?.isPublic == true) {
@@ -64,7 +62,6 @@ class TeamPagerAdapter(fm: FragmentActivity, team: RealmMyTeam?, isInMyTeam: Boo
             context.getString(R.string.tasks) -> TeamTaskFragment()
             context.getString(R.string.calendar) -> EnterpriseCalendarFragment()
             context.getString(R.string.survey) -> SurveyFragment().apply {
-                Log.d("TeamPagerAdapter", "SurveyFragment: $isTeam")
                 arguments = Bundle().apply {
                     putBoolean("isTeam", isTeam)
                 }
