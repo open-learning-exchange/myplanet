@@ -10,8 +10,10 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
+import android.widget.ListView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.preference.Preference
 import androidx.preference.Preference.OnPreferenceChangeListener
@@ -272,17 +274,17 @@ class SettingActivity : AppCompatActivity() {
             fun darkMode(context: Context) {
                 val options = arrayOf(
                     context.getString(R.string.dark_mode_off),
-                     context.getString(R.string.dark_mode_on),
+                    context.getString(R.string.dark_mode_on),
                     context.getString(R.string.dark_mode_follow_system)
                 )
-                val currentMode = getCurrentThemeMode()
+                val currentMode = getCurrentThemeMode(context)
                 val checkedItem = when (currentMode) {
                     ThemeMode.LIGHT -> 0
                     ThemeMode.DARK -> 1
                     else -> 2
                 }
 
-                val builder = AlertDialog.Builder(context)
+                val builder = AlertDialog.Builder(context, R.style.CustomAlertDialogStyle)
                     .setTitle(context.getString(R.string.select_theme_mode))
                     .setSingleChoiceItems(
                         ArrayAdapter(
@@ -297,20 +299,38 @@ class SettingActivity : AppCompatActivity() {
                             2 -> ThemeMode.FOLLOW_SYSTEM
                             else -> ThemeMode.FOLLOW_SYSTEM
                         }
-                        setThemeMode(selectedMode)
+                        setThemeMode(context, selectedMode)
                         dialog.dismiss()
                     }
                     .setNegativeButton(R.string.cancel, null)
 
                 val dialog = builder.create()
                 dialog.show()
+
+                // Set the dialog window size
+                val window = dialog.window
+                window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
             }
 
-            private fun getCurrentThemeMode(): String {
-                val sharedPreferences =
-                    context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            private fun getCurrentThemeMode(context: Context): String {
+                val sharedPreferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
                 return sharedPreferences.getString("theme_mode", ThemeMode.FOLLOW_SYSTEM)
                     ?: ThemeMode.FOLLOW_SYSTEM
+            }
+
+            private fun setThemeMode(context: Context, themeMode: String) {
+                val sharedPreferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                with(sharedPreferences.edit()) {
+                    putString("theme_mode", themeMode)
+                    apply()
+                }
+                AppCompatDelegate.setDefaultNightMode(
+                    when (themeMode) {
+                        ThemeMode.LIGHT -> AppCompatDelegate.MODE_NIGHT_NO
+                        ThemeMode.DARK -> AppCompatDelegate.MODE_NIGHT_YES
+                        else -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+                    }
+                )
             }
         }
     }
