@@ -19,6 +19,7 @@ import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.databinding.*
 import org.ole.planet.myplanet.datamanager.*
 import org.ole.planet.myplanet.model.*
+import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.userprofile.*
@@ -110,6 +111,10 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                 }
             }
         })
+        val selectDarkModeButton = findViewById<Button>(R.id.select_dark_mode)
+        selectDarkModeButton?.setOnClickListener{
+            SettingActivity.SettingFragment.darkMode(this)
+        }
     }
 
     private fun declareElements() {
