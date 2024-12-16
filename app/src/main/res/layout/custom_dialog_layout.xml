@@ -14,10 +14,8 @@
         android:text="Dialog Title"
         android:textSize="18sp"
         android:textStyle="bold" />
-
     <ListView
         android:id="@+id/dialog_list"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
-
 </LinearLayout>
