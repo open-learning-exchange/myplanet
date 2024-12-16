@@ -6,6 +6,7 @@ import android.content.DialogInterface
 import android.content.SharedPreferences
 import android.net.Uri
 import android.text.TextUtils
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.realm.Realm
@@ -101,6 +102,7 @@ class Service(private val context: Context) {
     }
 
     fun checkVersion(callback: CheckVersionCallback, settings: SharedPreferences) {
+        Log.d("okuro", "${settings.getString("couchdbURL", "")?.isEmpty()}")
         if (settings.getString("couchdbURL", "")?.isEmpty() == true) {
             callback.onError(context.getString(R.string.config_not_available), true)
             return
