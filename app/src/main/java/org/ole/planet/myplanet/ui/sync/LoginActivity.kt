@@ -5,6 +5,7 @@ import android.graphics.drawable.AnimationDrawable
 import android.os.*
 import android.os.Build.VERSION_CODES.TIRAMISU
 import android.text.*
+import android.util.Log
 import android.view.*
 import android.view.inputmethod.EditorInfo
 import android.widget.*
@@ -111,7 +112,8 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                 }
             }
         })
-        if (settings.getBoolean("firstSync", false)) {
+        Log.d("LoginActivity", "onCreate: ${settings.getBoolean("firstSync", false)}")
+        if (!settings.getBoolean("firstSync", false)) {
             setupDefaultSync()
         }
     }

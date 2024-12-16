@@ -399,8 +399,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 syncIcon.invalidateDrawable(syncIconDrawable)
                 applicationScope.launch {
                     createLog("synced successfully")
-                    editor.putBoolean("firstSync", true).apply()
                 }
+                editor.putBoolean("firstSync", true).apply()
                 showSnack(findViewById(android.R.id.content), getString(R.string.sync_completed))
                 downloadAdditionalResources()
                 if (defaultPref.getBoolean("beta_auto_download", false)) {
