@@ -5,6 +5,7 @@ import android.graphics.drawable.AnimationDrawable
 import android.os.*
 import android.os.Build.VERSION_CODES.TIRAMISU
 import android.text.*
+import android.util.Log
 import android.view.*
 import android.view.inputmethod.EditorInfo
 import android.widget.*
@@ -59,6 +60,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         declareMoreElements()
         showWifiDialog()
         registerReceiver()
+
         forceSync = intent.getBooleanExtra("forceSync", false)
         processedUrl = getUrl()
         if (forceSync) {
@@ -110,6 +112,10 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                 }
             }
         })
+        Log.d("LoginActivity", "onCreate: ${settings.getBoolean("firstSync", false)}")
+        if (!settings.getBoolean("firstSync", false)) {
+            setupDefaultSync()
+        }
     }
 
     private fun declareElements() {
@@ -149,10 +155,10 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             becomeAMember()
         }
 
-        activityLoginBinding.imgBtnSetting.setOnClickListener {
-            activityLoginBinding.inputName.setText(R.string.empty_text)
-            settingDialog()
-        }
+//        activityLoginBinding.imgBtnSetting.setOnClickListener {
+//            activityLoginBinding.inputName.setText(R.string.empty_text)
+//            settingDialog()
+//        }
 
         activityLoginBinding.btnGuestLogin.setOnClickListener {
             if (getUrl().isNotEmpty()) {
@@ -160,7 +166,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                 showGuestLoginDialog()
             } else {
                 toast(this, getString(R.string.please_enter_server_url_first))
-                settingDialog()
+//                settingDialog()
             }
         }
     }
@@ -655,7 +661,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             startActivity(Intent(this, BecomeMemberActivity::class.java))
         } else {
             toast(this, getString(R.string.please_enter_server_url_first))
-            settingDialog()
+//            settingDialog()
         }
     }
 
