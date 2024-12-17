@@ -1207,5 +1207,8 @@
     <string name="export_cancelled">export cancelled.</string>
     <string name="failed_to_save_csv_file">failed to save CSV file.</string>
     <string name="csv_file_saved_successfully">CSV file saved successfully.</string>
+    <string name="share_with_team_enterprise">share with team/enterprise</string>
+    <string name="teams">teams</string>
+    <string name="community">community</string>
 
 </resources>

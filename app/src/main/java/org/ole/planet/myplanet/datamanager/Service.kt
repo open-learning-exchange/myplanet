@@ -322,7 +322,6 @@ class Service(private val context: Context) {
                         }) { error: Throwable ->
                             realm.close()
                             error.printStackTrace()
-                            callback.onSuccess("Unable to connect to planet earth")
                         }
                     }
                 }
@@ -330,7 +329,6 @@ class Service(private val context: Context) {
 
             override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
                 realm.close()
-                callback.onSuccess("Unable to connect to planet earth")
             }
         })
     }

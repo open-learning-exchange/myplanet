@@ -20,9 +20,12 @@ import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import io.realm.Realm
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createAction
@@ -71,11 +74,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
             4 -> openEnterpriseFragment()
             3 -> openCallFragment(TeamFragment(), "survey")
             5 -> {
-                if (profileDbHandler.userModel?.isGuest() == true) {
-                    showGuestUserDialog()
-                } else {
-                    openCallFragment(CommunityTabFragment(), "community")
-                }
+                openCallFragment(CommunityTabFragment(), "community")
             }
         }
     }

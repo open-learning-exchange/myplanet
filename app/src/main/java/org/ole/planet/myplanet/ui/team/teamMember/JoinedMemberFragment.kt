@@ -12,7 +12,7 @@ class JoinedMemberFragment : BaseMemberFragment() {
     override val list: List<RealmUserModel>
         get() = getJoinedMember(teamId, mRealm)
     override val adapter: RecyclerView.Adapter<*>
-        get() = AdapterJoinedMember(requireActivity(), list, mRealm, teamId)
+        get() = AdapterJoinedMember(requireActivity(), list.toMutableList(), mRealm, teamId)
 
     override val layoutManager: RecyclerView.LayoutManager
         get() {
