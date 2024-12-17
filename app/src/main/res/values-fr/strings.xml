@@ -29,8 +29,8 @@
     <string name="menu_surveys">Sondages</string>
     <string name="menu_logout">Déconnexion</string>
     <string name="menu_feedback">Retour d\'information</string>
-    <string name="system_name">Sélectionner</string>
-    <string name="select">Select</string>
+    <string name="system_name">myPlanet</string>
+    <string name="select">Sélectionner</string>
     <string name="txt_myLibrary">maBibliothèque</string>
     <string name="txt_myCourses">mesCours</string>
     <string name="txt_myMeetups">mesRencontres</string>
