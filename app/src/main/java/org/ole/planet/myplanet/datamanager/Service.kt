@@ -420,6 +420,7 @@ class Service(private val context: Context) {
                                             currentUrl
                                         } else {
                                             val urlUser = "satellite"
+                                            Log.d("okuro", "called")
                                             "${uri.scheme}://$urlUser:$pin@${uri.host}:${if (uri.port == -1) if (uri.scheme == "http") 80 else 443 else uri.port}"
                                         }
 

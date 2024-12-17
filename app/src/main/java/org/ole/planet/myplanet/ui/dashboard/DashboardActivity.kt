@@ -251,33 +251,21 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                         editor.putString("processedAlternativeUrl", couchdbURL)
                         editor.putBoolean("isAlternativeUrl", true)
                         editor.apply()
-
-                        // If primary URL is not reachable, try alternative URL
                         Log.d("URLSync", "Attempting to reach alternative URL: $couchdbURL")
                         val isAlternativeReachable = isServerReachable(couchdbURL)
 
                         if (isAlternativeReachable) {
-//                        Log.d("URLSync", "Successfully reached alternative URL: $alternativeUrl")
-//
-//                        // Reconstruct URL with alternative base
-//                        val uri = Uri.parse(url)
-//                        val alternativeCouchdbUrl = reconstructUrlWithAlternative(uri, alternativeUrl)
-//
-//                        Log.d("URLSync", "Reconstructed alternative CouchDB URL: $alternativeCouchdbUrl")
                             startUpload("dashboard")
                             createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
                         } else {
-                            // Neither primary nor alternative URL is reachable
                             Log.e("URLSync", "Both primary and alternative URLs are unreachable")
                             Log.e("URLSync", "Primary URL failed: $primaryUrl")
                             Log.e("URLSync", "Alternative URL failed: $alternativeUrl")
                         }
                     }
                 } else {
-                    // If no mapping found, log and proceed with original URL
                     Log.w("URLSync", "No URL mapping found for: $extractedUrl")
                     Log.d("URLSync", "Proceeding with original URL")
-//                processUrlAndStartUpload(url)
                     startUpload("dashboard")
                     createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
                 }

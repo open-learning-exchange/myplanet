@@ -11,7 +11,6 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
-import android.text.TextUtils
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
@@ -40,13 +39,12 @@ import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.dashboard.BellDashboardFragment
 import org.ole.planet.myplanet.ui.dashboard.DashboardFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
-import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.rating.RatingFragment.Companion.newInstance
+import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.team.TeamFragment
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
-import org.ole.planet.myplanet.utilities.DialogUtils.showAlert
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -156,23 +154,16 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
     }
 
     fun logSyncInSharedPrefs() {
-//        lifecycleScope.launch {
-//            if (isServerReachable(Utilities.getUrl())) {
-//                startUpload("dashboard")
-//                createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
-//            }
-//        }
-
         val url = Utilities.getUrl()
         val regex = Regex("^(https?://).*?@(.*?):")
         val matchResult = regex.find(url)
 
         val extractedUrl = if (matchResult != null) {
-            val protocol = matchResult.groupValues[1] // "http://"
-            val address = matchResult.groupValues[2]  // "192.168.1.202"
+            val protocol = matchResult.groupValues[1]
+            val address = matchResult.groupValues[2]
             "$protocol$address"
         } else {
-            null // Handle invalid URL
+            null
         }
 
         val serverMappings = mapOf(
@@ -186,7 +177,6 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         )
 
         lifecycleScope.launch {
-            // Log the original URL being processed
             Log.d("URLSync", "Original URL being processed: $url")
             Log.d("URLSync", "Extracted base URL: $extractedUrl")
 
@@ -241,14 +231,6 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
                     val isAlternativeReachable = isServerReachable(couchdbURL)
 
                     if (isAlternativeReachable) {
-
-//                        Log.d("URLSync", "Successfully reached alternative URL: $alternativeUrl")
-//
-//                        // Reconstruct URL with alternative base
-//                        val uri = Uri.parse(url)
-//                        val alternativeCouchdbUrl = reconstructUrlWithAlternative(uri, alternativeUrl)
-//
-//                        Log.d("URLSync", "Reconstructed alternative CouchDB URL: $alternativeCouchdbUrl")
                         startUpload("dashboard")
                         createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
                     } else {
@@ -267,48 +249,6 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
                 createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
             }
         }
-    }
-
-    // Helper function to process URL and start upload
-//    fun processUrlAndStartUpload(url: String) {
-//        val uri = Uri.parse(url)
-//        var couchdbURL: String
-//        val urlUser: String
-//        val urlPwd: String
-//
-//        if (url.contains("@")) {
-//            val userinfo = getUserInfo(uri)
-//            urlUser = userinfo[0]
-//            urlPwd = userinfo[1]
-//            couchdbURL = url
-//        } else {
-//            urlUser = "satellite"
-//            urlPwd = settings.getString("serverPin", "") ?: ""
-//            couchdbURL = "${uri.scheme}://$urlUser:$urlPwd@${uri.host}:${if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port}"
-//        }
-//
-//        // Log the final CouchDB URL
-//        Log.d("URLSync", "Final CouchDB URL for upload: $couchdbURL")
-//
-//        // Start upload with the processed URL
-//        startUpload("dashboard")
-//        createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
-//    }
-
-    // Helper function to reconstruct URL with alternative base
-    fun reconstructUrlWithAlternative(originalUri: Uri, alternativeBaseUrl: String): String {
-        val alternativeUri = Uri.parse(alternativeBaseUrl)
-
-        val reconstructedUrl = if (originalUri.userInfo != null) {
-            // If original URL had user credentials
-            "${alternativeUri.scheme}://${originalUri.userInfo}@${alternativeUri.host}:${alternativeUri.port}"
-        } else {
-            // If original URL did not have user credentials
-            "${alternativeUri.scheme}://satellite:${settings.getString("serverPin", "")}@${alternativeUri.host}:${alternativeUri.port}"
-        }
-
-        Log.d("URLSync", "Reconstructed alternative URL: $reconstructedUrl")
-        return reconstructedUrl
     }
 
     @SuppressLint("RestrictedApi")
