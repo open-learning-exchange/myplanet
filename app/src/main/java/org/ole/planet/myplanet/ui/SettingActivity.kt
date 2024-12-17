@@ -272,11 +272,8 @@ class SettingActivity : AppCompatActivity() {
 
         companion object {
             fun darkMode(context: Context) {
-                val options = arrayOf(
-                    context.getString(R.string.dark_mode_off),
-                    context.getString(R.string.dark_mode_on),
-                    context.getString(R.string.dark_mode_follow_system)
-                )
+                val options = arrayOf(context.getString(R.string.dark_mode_off),
+context.getString(R.string.dark_mode_on),context.getString(R.string.dark_mode_follow_system))
                 val currentMode = getCurrentThemeMode(context)
                 val checkedItem = when (currentMode) {
                     ThemeMode.LIGHT -> 0
