@@ -84,12 +84,10 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
     }
 
     fun openCallFragment(newFragment: Fragment, tag: String?) {
-        if (!isDestroyed && !isFinishing) {
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, newFragment, tag)
-                .addToBackStack(null)
-                .commitAllowingStateLoss()
-        }
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.fragment_container, newFragment, tag)
+            .addToBackStack(tag)
+            .commit()
     }
 
     override fun onPrepareOptionsMenu(menu: Menu): Boolean {

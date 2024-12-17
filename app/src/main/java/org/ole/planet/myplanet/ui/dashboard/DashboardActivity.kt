@@ -187,7 +187,14 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             when (item.itemId) {
                 R.id.action_chat -> {
                     if (user?.id?.startsWith("guest") == false) {
-                        openCallFragment(ChatHistoryListFragment())
+                        val fragmentManager = supportFragmentManager
+                        val existingFragment = fragmentManager.findFragmentByTag(ChatHistoryListFragment::class.java.simpleName)
+                        if (existingFragment == null) {
+                            openCallFragment(
+                                ChatHistoryListFragment(),
+                                ChatHistoryListFragment::class.java.simpleName
+                            )
+                        }
                     } else {
                         guestDialog(this)
                     }
