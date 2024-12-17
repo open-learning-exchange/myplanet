@@ -259,7 +259,7 @@
                     android:paddingStart="@dimen/_10dp"
                     android:paddingTop="6dp"
                     android:paddingEnd="@dimen/_10dp"
-                    app:srcCompat="@drawable/white_moon_24dp"
+                    app:srcCompat="@drawable/moon_35"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
 
