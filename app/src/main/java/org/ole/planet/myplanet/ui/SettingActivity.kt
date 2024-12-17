@@ -272,8 +272,7 @@ class SettingActivity : AppCompatActivity() {
 
         companion object {
             fun darkMode(context: Context) {
-                val options = arrayOf(context.getString(R.string.dark_mode_off),
-context.getString(R.string.dark_mode_on),context.getString(R.string.dark_mode_follow_system))
+                val options = arrayOf(context.getString(R.string.dark_mode_off), context.getString(R.string.dark_mode_on),context.getString(R.string.dark_mode_follow_system))
                 val currentMode = getCurrentThemeMode(context)
                 val checkedItem = when (currentMode) {
                     ThemeMode.LIGHT -> 0
@@ -283,13 +282,7 @@ context.getString(R.string.dark_mode_on),context.getString(R.string.dark_mode_fo
 
                 val builder = AlertDialog.Builder(context, R.style.CustomAlertDialogStyle)
                     .setTitle(context.getString(R.string.select_theme_mode))
-                    .setSingleChoiceItems(
-                        ArrayAdapter(
-                            context,
-                            R.layout.checked_list_item,
-                            options
-                        ), checkedItem
-                    ) { dialog, which ->
+                    .setSingleChoiceItems(ArrayAdapter(context, R.layout.checked_list_item, options), checkedItem) { dialog, which ->
                         val selectedMode = when (which) {
                             0 -> ThemeMode.LIGHT
                             1 -> ThemeMode.DARK
@@ -304,15 +297,13 @@ context.getString(R.string.dark_mode_on),context.getString(R.string.dark_mode_fo
                 val dialog = builder.create()
                 dialog.show()
 
-                // Set the dialog window size
                 val window = dialog.window
                 window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
             }
 
             private fun getCurrentThemeMode(context: Context): String {
                 val sharedPreferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-                return sharedPreferences.getString("theme_mode", ThemeMode.FOLLOW_SYSTEM)
-                    ?: ThemeMode.FOLLOW_SYSTEM
+                return sharedPreferences.getString("theme_mode", ThemeMode.FOLLOW_SYSTEM) ?: ThemeMode.FOLLOW_SYSTEM
             }
 
             private fun setThemeMode(context: Context, themeMode: String) {
