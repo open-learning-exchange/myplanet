@@ -30,6 +30,7 @@
     <string name="menu_logout">Déconnexion</string>
     <string name="menu_feedback">Retour d\'information</string>
     <string name="system_name">myPlanet</string>
+    <string name="select">Sélectionner</string>
     <string name="txt_myLibrary">maBibliothèque</string>
     <string name="txt_myCourses">mesCours</string>
     <string name="txt_myMeetups">mesRencontres</string>
@@ -1210,5 +1211,6 @@
     <string name="share_with_team_enterprise">partager avec l\'équipe/l\'entreprise</string>
     <string name="teams">équipes</string>
     <string name="community">communauté</string>
+    <string name="no_enterprise">entreprises non disponibles</string>
 
 </resources>
