@@ -245,37 +245,21 @@
 
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_marginTop="20dp">
-                <TextView
-                    android:id = "@+id/dark_mode_label"
+                android:layout_height="match_parent">
+
+                <ImageButton
+                    android:id="@+id/themeToggleButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_margin="10dp"
-                    android:contentDescription="@string/dark_mode"
-                    android:text="@string/dark_mode"
-                    android:textColor="@android:color/white"
-                    android:textSize="20sp"
-                    android:textStyle="bold"
+                    android:layout_alignParentEnd="true"
+                    android:background="@null"
+                    android:contentDescription="@string/select_theme_mode"
+                    android:paddingStart="@dimen/_10dp"
+                    android:paddingTop="6dp"
+                    android:paddingEnd="@dimen/_10dp"
+                    app:srcCompat="@drawable/sun_24dp"
                     app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
-
-                <Button
-                    android:id="@+id/select_dark_mode"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:text="@string/select"
-                    android:textColor="@android:color/white"
-                    android:theme="@style/PrimaryFlatButton"
-                    android:elevation="1dp"
-                    android:outlineProvider="bounds"
-                    android:strokeColor="@color/daynight_textColor"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/dark_mode_label" />
-
 
                 <ImageView
                     android:id="@+id/logoImageView"

@@ -111,7 +111,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                 }
             }
         })
-        val selectDarkModeButton = findViewById<Button>(R.id.select_dark_mode)
+        val selectDarkModeButton = findViewById<ImageButton>(R.id.themeToggleButton)
         selectDarkModeButton?.setOnClickListener{
             SettingActivity.SettingFragment.darkMode(this)
         }
