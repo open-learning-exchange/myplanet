@@ -5,6 +5,7 @@ import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.content.res.Configuration
 import android.os.Bundle
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
@@ -111,10 +112,10 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         }
 
         fun setThemeMode(themeMode: String) {
-            val sharedPreferences = context.getSharedPreferences("app_preferences", MODE_PRIVATE)
+            val sharedPreferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             with(sharedPreferences.edit()) {
                 putString("theme_mode", themeMode)
-                apply()
+                commit()
             }
             applyThemeMode(themeMode)
         }
@@ -272,13 +273,17 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
     override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
         super.onConfigurationChanged(newConfig)
-
+        val currentNightMode = context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+        val isSystemNight= when (currentNightMode) {
+            Configuration.UI_MODE_NIGHT_YES -> true
+            Configuration.UI_MODE_NIGHT_NO -> false
+            else -> false
+        }
         val savedThemeMode = getCurrentThemeMode()
         if (savedThemeMode != ThemeMode.FOLLOW_SYSTEM) {
             return
         }
 
-        val currentNightMode = newConfig.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
         when (currentNightMode) {
             android.content.res.Configuration.UI_MODE_NIGHT_NO -> {
                 applyThemeMode(ThemeMode.LIGHT)
