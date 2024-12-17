@@ -1210,5 +1210,6 @@
     <string name="share_with_team_enterprise">مشاركة مع الفريق/المؤسسة</string>
     <string name="teams">فرق</string>
     <string name="community">مجتمع</string>
+    <string name="no_enterprise">المؤسسات غير متوفرة</string>
 
 </resources>

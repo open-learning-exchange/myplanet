@@ -1210,5 +1210,6 @@
     <string name="share_with_team_enterprise">टोली/उद्यमसँग साझा गर्नुहोस्</string>
     <string name="teams">टोलीहरू</string>
     <string name="community">समुदाय</string>
+    <string name="no_enterprise">उद्यमहरू उपलब्ध छैनन्</string>
 
 </resources>

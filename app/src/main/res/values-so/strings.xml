@@ -1210,5 +1210,6 @@
     <string name="share_with_team_enterprise">la wadaag kooxda/ganacsiga</string>
     <string name="teams">kooxo</string>
     <string name="community">bulsho</string>
+    <string name="no_enterprise">ganacsiyo lama heli karo</string>
 
 </resources>

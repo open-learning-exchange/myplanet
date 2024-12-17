@@ -1210,5 +1210,6 @@
     <string name="share_with_team_enterprise">compartir con el equipo/empresa</string>
     <string name="teams">equipos</string>
     <string name="community">comunidad</string>
+    <string name="no_enterprise">empresas no disponibles</string>
 
 </resources>
