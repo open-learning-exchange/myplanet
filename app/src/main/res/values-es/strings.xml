@@ -30,6 +30,7 @@
     <string name="menu_logout">Cerrar sesión</string>
     <string name="menu_feedback">Retroalimentación</string>
     <string name="system_name">myPlanet</string>
+    <string name="select">Seleccionar</string>
     <string name="txt_myLibrary">miBiblioteca</string>
     <string name="txt_myCourses">misCursos</string>
     <string name="txt_myMeetups">misEncuentros</string>
