@@ -733,6 +733,7 @@
     <string name="return_to_the_home_tab_to_access_mylibrary">\n\nعودة إلى علامة التبويب الرئيسية للوصول إلى "مكتبتي".\n</string>
     <string name="note_you_may_still_need_to_download_the_newly_added_resources">\nملاحظة: قد تحتاج لاستكمال تنزيل الموارد المضافة حديثًا.</string>
     <string name="self_examination">%s\nالفحص الذاتي</string>
+    <string name="pending_survey_notification">لديك استطلاع قيد الانتظار:</string>
     <string name="vitals_format">
     درجة الحرارة: %1$s\n
     النبض: %2$s\n

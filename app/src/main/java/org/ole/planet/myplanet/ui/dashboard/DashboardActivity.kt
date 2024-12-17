@@ -10,6 +10,7 @@ import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
@@ -17,6 +18,7 @@ import android.view.View
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.MenuItemCompat
@@ -467,7 +469,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         val pendingSurveys = getPendingSurveys(user?.id)
         val surveyTitles = getSurveyTitlesFromSubmissions(pendingSurveys)
         surveyTitles.forEach { title ->
-            createNotificationIfNotExists("survey", "you have a pending survey: $title", title)
+            createNotificationIfNotExists("survey", "${getString(R.string.pending_survey_notification)} $title", title)
         }
 
         val tasks = mRealm.where(RealmTeamTask::class.java)
@@ -485,6 +487,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 createNotificationIfNotExists("storage", "${getString(R.string.storage_critically_low)} $storageRatio% ${getString(R.string.available_please_free_up_space)}", "storage")
             }
             storageRatio <= 40 -> {
+                Log.d("lang", "lang is "+getString(R.string.storage_running_low))
                 createNotificationIfNotExists("storage", "${getString(R.string.storage_running_low)} $storageRatio% ${getString(R.string.available)}", "storage")
             }
         }
@@ -529,11 +532,21 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun createNotificationIfNotExists(type: String, message: String, relatedId: String?) {
+        val currentLanguage = LocaleHelper.getLanguage(this)
+
         val existingNotification = mRealm.where(RealmNotification::class.java)
             .equalTo("userId", user?.id)
             .equalTo("type", type)
             .equalTo("relatedId", relatedId)
+            .equalTo("lang", currentLanguage)
             .findFirst()
+        if (existingNotification != null) {
+            Log.d(
+                "lang",
+                "existing notification has ${existingNotification?.message} v/s ${message}"
+            )
+        }
+
 
         if (existingNotification == null) {
             mRealm.createObject(RealmNotification::class.java, "${UUID.randomUUID()}").apply {
@@ -542,6 +555,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 this.message = message
                 this.relatedId = relatedId
                 this.createdAt = Date()
+                this.lang= currentLanguage
             }
         }
     }

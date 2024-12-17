@@ -733,6 +733,7 @@
     <string name="return_to_the_home_tab_to_access_mylibrary">Retournez à l\'onglet Accueil pour accéder à votre bibliothèque.</string>
     <string name="note_you_may_still_need_to_download_the_newly_added_resources">Note: Vous devrez peut-être toujours télécharger les nouvelles ressources ajoutées.</string>
     <string name="self_examination">%s\nAuto-examen</string>
+    <string name="pending_survey_notification">vous avez une enquête en attente :</string>
     <string name="vitals_format">
     Température : %1$s\n
     Pouls : %2$s\n

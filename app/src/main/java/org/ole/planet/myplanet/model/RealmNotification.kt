@@ -14,4 +14,5 @@ open class RealmNotification : RealmObject() {
     var createdAt: Date = Date()
     var type: String = ""
     var relatedId: String? = null
+    var lang: String? = null
 }

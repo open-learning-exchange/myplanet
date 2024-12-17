@@ -732,6 +732,7 @@
     <string name="return_to_the_home_tab_to_access_mylibrary">\n\nReturn to the Home tab to access myLibrary.\n</string>
     <string name="note_you_may_still_need_to_download_the_newly_added_resources">\nNote: You may still need to download the newly added resources.</string>
     <string name="self_examination">%s\nSelf Examination</string>
+    <string name="pending_survey_notification">you have a pending survey:</string>
     <string name="vitals_format">
         Temperature: %1$s\n
         Pulse: %2$s\n
