@@ -101,6 +101,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                 }
             }
         }
+        
         private fun applyThemeMode(themeMode: String?) {
             when (themeMode) {
                 ThemeMode.LIGHT -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
