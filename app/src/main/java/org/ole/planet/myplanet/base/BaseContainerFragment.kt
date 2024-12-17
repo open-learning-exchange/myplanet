@@ -8,6 +8,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -123,23 +124,32 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
 
     fun openResource(items: RealmMyLibrary) {
-        val matchingItems = mRealm.where(RealmMyLibrary::class.java)
-            .equalTo("resourceLocalAddress", items.resourceLocalAddress)
-            .findAll()
-        val anyOffline = matchingItems.any { it.isResourceOffline() }
-        if (anyOffline) {
-            val offlineItem = matchingItems.first { it.isResourceOffline()}
-            openFileType(offlineItem, "offline")
+        Log.d("okuro", "openResource: ${items.openWith}")
+        if (items.openWith == "HTML") {
+            val intent = Intent(activity, WebViewActivity::class.java)
+            intent.putExtra("RESOURCE_ID", items.id)
+            intent.putExtra("LOCAL_ADDRESS", items.resourceLocalAddress)
+            intent.putExtra("title", items.title)
+            startActivity(intent)
         } else {
-            if (items.isResourceOffline()) {
-                openFileType(items, "offline")
-            } else if (FileUtils.getFileExtension(items.resourceLocalAddress) == "mp4") {
-                openFileType(items,  "online")
+            val matchingItems = mRealm.where(RealmMyLibrary::class.java)
+                .equalTo("resourceLocalAddress", items.resourceLocalAddress)
+                .findAll()
+            val anyOffline = matchingItems.any { it.isResourceOffline() }
+            if (anyOffline) {
+                val offlineItem = matchingItems.first { it.isResourceOffline() }
+                openFileType(offlineItem, "offline")
             } else {
-                val arrayList = ArrayList<String>()
-                arrayList.add(Utilities.getUrl(items))
-                startDownload(arrayList)
-                profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_DOWNLOAD)
+                if (items.isResourceOffline()) {
+                    openFileType(items, "offline")
+                } else if (FileUtils.getFileExtension(items.resourceLocalAddress) == "mp4") {
+                    openFileType(items, "online")
+                } else {
+                    val arrayList = ArrayList<String>()
+                    arrayList.add(Utilities.getUrl(items))
+                    startDownload(arrayList)
+                    profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_DOWNLOAD)
+                }
             }
         }
     }

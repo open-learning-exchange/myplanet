@@ -2,31 +2,24 @@ package org.ole.planet.myplanet.ui.resources
 
 import android.content.Context
 import android.text.TextUtils
-import android.view.LayoutInflater
-import android.view.MotionEvent
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import android.widget.CheckBox
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.flexbox.FlexboxLayout
 import com.google.gson.JsonObject
-import fisk.chipcloud.ChipCloud
-import fisk.chipcloud.ChipCloudConfig
+import fisk.chipcloud.*
 import io.realm.Realm
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.OnHomeItemClickListener
-import org.ole.planet.myplanet.callback.OnLibraryItemSelected
-import org.ole.planet.myplanet.callback.OnRatingChangeListener
+import org.ole.planet.myplanet.callback.*
 import org.ole.planet.myplanet.databinding.RowLibraryBinding
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmTag
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.*
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.courses.AdapterCourses
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Locale
+import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.logLargeString
 
 class AdapterResource(private val context: Context, private var libraryList: List<RealmMyLibrary?>, private val ratingMap: HashMap<String?, JsonObject>, private val realm: Realm) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private val selectedItems: MutableList<RealmMyLibrary?> = ArrayList()
@@ -87,7 +80,53 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
                 }
             holder.rowLibraryBinding.tvDate.text = libraryList[position]?.createdDate?.let { formatDate(it, "MMM dd, yyyy") }
             displayTagCloud(holder.rowLibraryBinding.flexboxDrawable, position)
-            holder.itemView.setOnClickListener { openLibrary(libraryList[position]) }
+            holder.itemView.setOnClickListener {
+                openLibrary(libraryList[position])
+
+                libraryList[position]?.let { item ->
+                    val allDetails = """
+                        _id: ${item._id}
+                        _rev: ${item._rev}
+                        Title: ${item.title}
+                        Author: ${item.author}
+                        Year: ${item.year}
+                        Description: ${item.description}
+                        Language: ${item.language}
+                        Publisher: ${item.publisher}
+                        Link to License: ${item.linkToLicense}
+                        Subjects: ${item.subject?.joinToString()}
+                        Levels: ${item.level?.joinToString()}
+                        Resource Type: ${item.resourceType}
+                        Open With: ${item.openWith}
+                        Media Type: ${item.mediaType}
+                        Article Date: ${item.articleDate}
+                        Resource For: ${item.resourceFor?.joinToString()}
+                        Added By: ${item.addedBy}
+                        Upload Date: ${item.uploadDate}
+                        Created Date: ${item.createdDate}
+                        Resource Remote Address: ${item.resourceRemoteAddress}
+                        Resource Local Address: ${item.resourceLocalAddress}
+                        Resource Offline: ${item.resourceOffline}
+                        Resource ID: ${item.resourceId}
+                        Downloaded Rev: ${item.downloadedRev}
+                        Needs Optimization: ${item.needsOptimization}
+                        Tags: ${item.tag?.joinToString()}
+                        Languages: ${item.languages?.joinToString()}
+                        Course ID: ${item.courseId}
+                        Step ID: ${item.stepId}
+                        Is Private: ${item.isPrivate}
+                        User ID: ${item.userId?.joinToString()}
+                        Filename: ${item.filename}
+                        Translations Audio Path: ${item.translationAudioPath}
+                        Average Rating: ${item.averageRating}
+                        Times Rated: ${item.timesRated}
+                        Sum: ${item.sum}
+                        attachment: ${item.attachments?.joinToString()}                       
+                        """.trimIndent()
+
+                    logLargeString("AdapterResource", "Full Library Item Details:\n$allDetails")
+                }
+            }
             userModel = UserProfileDbHandler(context).userModel
             if (libraryList[position]?.isResourceOffline() == true) {
                 holder.rowLibraryBinding.ivDownloaded.visibility = View.INVISIBLE
@@ -151,6 +190,7 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
             try {
                 chipCloud.addChip(parent?.name)
             } catch (err: Exception) {
+                err.printStackTrace()
                 chipCloud.addChip("--")
             }
             chipCloud.setListener { _: Int, _: Boolean, b1: Boolean ->
