@@ -230,14 +230,17 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         alert11.show()
     }
 
-     fun getUserInfo(uri: Uri): Array<String> {
-        val ar = arrayOf("", "")
-        val info = uri.userInfo?.split(":".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()
-        if ((info?.size ?: 0) > 1) {
-            ar[0] = "${info?.get(0)}"
-            ar[1] = "${info?.get(1)}"
+    companion object {
+        fun getUserInfo(uri: Uri): Array<String> {
+            val ar = arrayOf("", "")
+            val info =
+                uri.userInfo?.split(":".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()
+            if ((info?.size ?: 0) > 1) {
+                ar[0] = "${info?.get(0)}"
+                ar[1] = "${info?.get(1)}"
+            }
+            return ar
         }
-        return ar
     }
 
     private fun saveUrlScheme(editor: SharedPreferences.Editor, uri: Uri, url: String?, couchdbURL: String?) {
