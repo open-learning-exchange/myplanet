@@ -3,27 +3,13 @@ package org.ole.planet.myplanet.model
 import com.google.gson.JsonObject
 import com.opencsv.CSVWriter
 import io.realm.kotlin.Realm
-import io.realm.kotlin.RealmConfiguration
 import io.realm.kotlin.ext.query
-import io.realm.kotlin.ext.realmListOf
-import io.realm.kotlin.query.Sort
 import io.realm.kotlin.types.RealmObject
 import io.realm.kotlin.types.annotations.PrimaryKey
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.toList
-import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getCourseSteps
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourseByUserId
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.isMyCourse
+import kotlinx.coroutines.flow.*
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utilities.JsonUtils
-import java.io.File
-import java.io.FileWriter
-import java.io.IOException
+import java.io.*
 
 class RealmCourseProgress : RealmObject {
     @PrimaryKey
@@ -55,18 +41,23 @@ class RealmCourseProgress : RealmObject {
             }
         }
 
-        suspend fun getCourseProgress(realm: Realm, userId: String): Flow<Map<String, JsonObject>> {
-            return getMyCourseByUserId(userId).map { courses ->
-                courses.map { course ->
-                    getCourseSteps(course.courseId).first().let { steps ->
-                        if (isMyCourse(userId, course.courseId)) {
-                            course.courseId to JsonObject().apply {
-                                addProperty("max", steps.size)
-                                addProperty("current", getCurrentProgress(steps, realm, userId, course.courseId))
-                            }
-                        } else null
-                    }
-                }.filterNotNull().toMap()
+        fun getCourseProgress(realm: Realm, userId: String): Flow<Map<String, JsonObject>> {
+            return flow {
+                val courses = realm.query<RealmMyCourse>().find()
+                val myCourses = RealmMyCourse.getMyCourseByUserId(userId, courses)
+
+                val progressMap = myCourses.mapNotNull { course ->
+                    val steps = RealmMyCourse.getCourseSteps(realm, course.courseId)
+
+                    if (RealmMyCourse.isMyCourse(userId, course.courseId, realm)) {
+                        course.courseId to JsonObject().apply {
+                            addProperty("max", steps.size)
+                            addProperty("current", getCurrentProgress(steps, realm, userId, course.courseId))
+                        }
+                    } else null
+                }.toMap()
+
+                emit(progressMap)
             }
         }
 
@@ -135,9 +126,8 @@ class RealmCourseProgress : RealmObject {
                 val file = File(filePath)
                 file.parentFile?.mkdirs()
                 CSVWriter(FileWriter(file)).use { writer ->
-                    writer.writeNext(arrayOf(
-                        "progressId", "progress_rev", "passed", "stepNum", "userId", "parentCode",
-                        "courseId", "createdOn", "createdDate", "updatedDate"
+                    writer.writeNext(arrayOf("progressId", "progress_rev", "passed", "stepNum",
+                        "userId", "parentCode", "courseId", "createdOn", "createdDate", "updatedDate"
                     ))
                     data.forEach { row ->
                         writer.writeNext(row)
@@ -149,7 +139,7 @@ class RealmCourseProgress : RealmObject {
         }
 
         fun progressWriteCsv() {
-            writeCsv("${context.getExternalFilesDir(null)}/ole/chatHistory.csv", progressDataList)
+            writeCsv("${MainApplication.context.getExternalFilesDir(null)}/ole/chatHistory.csv", progressDataList)
         }
     }
 }
