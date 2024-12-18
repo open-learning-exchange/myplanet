@@ -12,6 +12,10 @@ import io.realm.kotlin.ext.realmListOf
 import io.realm.kotlin.types.RealmList
 import io.realm.kotlin.types.RealmObject
 import io.realm.kotlin.types.annotations.PrimaryKey
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.FileUtils
@@ -242,8 +246,10 @@ class RealmMyLibrary : RealmObject {
             insertMyLibrary("", stepId, myCoursesID, res, realm)
         }
 
-        suspend fun insertMyLibrary(userId: String?, doc: JsonObject, realm: Realm) {
-            insertMyLibrary(userId, "", "", doc, realm)
+        fun insertMyLibrary(userId: String?, doc: JsonObject, realm: Realm) {
+            CoroutineScope(SupervisorJob() + Dispatchers.IO).launch{
+                insertMyLibrary(userId, "", "", doc, realm)
+            }
         }
 
         suspend fun createFromResource(resource: RealmMyLibrary?, realm: Realm, userId: String?) {

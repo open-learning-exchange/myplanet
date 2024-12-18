@@ -69,7 +69,7 @@ class RealmMyCourse : RealmObject {
         private val concatenatedLinks = ArrayList<String>()
         val courseDataList: MutableList<Array<String>> = mutableListOf()
 
-        fun insertMyCourses(userId: String, myCoursesDoc: JsonObject, realm: Realm) {
+        fun insertMyCourses(userId: String?, myCoursesDoc: JsonObject, realm: Realm) {
             CoroutineScope(Dispatchers.IO).launch {
                 val ID = JsonUtils.getString("_id", myCoursesDoc)
                 realm.writeBlocking {
@@ -81,7 +81,7 @@ class RealmMyCourse : RealmObject {
                     }
 
                     myMyCourseDB.apply {
-                        addUserId(userId)
+                        addUserId(userId ?: "")
                         courseId = JsonUtils.getString("_id", myCoursesDoc)
                         courseRev = JsonUtils.getString("_rev", myCoursesDoc)
                         languageOfInstruction = JsonUtils.getString("languageOfInstruction", myCoursesDoc)

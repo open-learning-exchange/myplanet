@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.service
 import android.content.Context
 import androidx.work.Worker
 import androidx.work.WorkerParameters
+import io.realm.kotlin.ext.query
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmTeamTask
@@ -14,23 +15,31 @@ class TaskNotificationWorker(private val context: Context, workerParams: WorkerP
     override fun doWork(): Result {
         val mRealm = DatabaseService().realmInstance
         val current = Calendar.getInstance().timeInMillis
-        val tomorrow = Calendar.getInstance()
-        tomorrow.add(Calendar.DAY_OF_YEAR, 1)
-        val user = UserProfileDbHandler(context).userModel
-        if (user != null) {
-            val tasks: List<RealmTeamTask> = mRealm.where(RealmTeamTask::class.java)
-                .equalTo("completed", false)
-                .equalTo("assignee", user.id)
-                .equalTo("isNotified", false)
-                .between("deadline", current, tomorrow.timeInMillis)
-                .findAll()
-            mRealm.beginTransaction()
-            for (`in` in tasks) {
-                create(context, R.drawable.ole_logo, `in`.title, "Task expires on " + formatDate(`in`.deadline, ""))
-                `in`.isNotified = true
-            }
-            mRealm.commitTransaction()
+        val tomorrow = Calendar.getInstance().apply {
+            add(Calendar.DAY_OF_YEAR, 1)
         }
-        return Result.success()
+
+        UserProfileDbHandler(context).userModel?.let { user ->
+            try {
+                val tasks = mRealm.query<RealmTeamTask>("completed == false AND assignee == $0 AND isNotified == false AND deadline BETWEEN {$1, $2}", user.id, current, tomorrow.timeInMillis).find()
+
+                mRealm.writeBlocking {
+                    tasks.forEach { task ->
+                        create(context, R.drawable.ole_logo, task.title, "Task expires on ${formatDate(task.deadline, "")}")
+                        findLatest(task)?.let { latestTask ->
+                            latestTask.isNotified = true
+                        }
+                    }
+                }
+                return Result.success()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                return Result.failure()
+            } finally {
+                mRealm.close()
+            }
+        }
+
+        return Result.failure()
     }
 }
