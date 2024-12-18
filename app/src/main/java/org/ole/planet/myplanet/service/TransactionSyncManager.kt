@@ -1,63 +1,29 @@
 package org.ole.planet.myplanet.service
 
-import android.content.Context
-import android.content.SharedPreferences
-import android.text.TextUtils
+import android.content.*
 import android.util.Base64
-import com.google.gson.Gson
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
-import io.realm.Realm
+import com.google.gson.*
+import io.realm.kotlin.Realm
+import kotlinx.coroutines.*
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.SyncListener
-import org.ole.planet.myplanet.datamanager.ApiClient.client
-import org.ole.planet.myplanet.datamanager.ApiInterface
-import org.ole.planet.myplanet.model.DocumentResponse
-import org.ole.planet.myplanet.model.RealmAchievement.Companion.achievementWriteCsv
-import org.ole.planet.myplanet.model.RealmCertification.Companion.certificationWriteCsv
-import org.ole.planet.myplanet.model.RealmChatHistory.Companion.chatWriteCsv
-import org.ole.planet.myplanet.model.RealmChatHistory.Companion.insert
-import org.ole.planet.myplanet.model.RealmCourseProgress.Companion.progressWriteCsv
-import org.ole.planet.myplanet.model.RealmFeedback.Companion.feedbackWriteCsv
-import org.ole.planet.myplanet.model.RealmMeetup.Companion.meetupWriteCsv
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.courseWriteCsv
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
-import org.ole.planet.myplanet.model.RealmMyHealthPojo.Companion.healthWriteCsv
-import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.libraryWriteCsv
-import org.ole.planet.myplanet.model.RealmMyTeam.Companion.teamWriteCsv
-import org.ole.planet.myplanet.model.RealmNews.Companion.newsWriteCsv
-import org.ole.planet.myplanet.model.RealmOfflineActivity.Companion.offlineWriteCsv
-import org.ole.planet.myplanet.model.RealmRating.Companion.ratingWriteCsv
-import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
-import org.ole.planet.myplanet.model.RealmStepExam.Companion.stepExamWriteCsv
-import org.ole.planet.myplanet.model.RealmSubmission.Companion.submissionWriteCsv
-import org.ole.planet.myplanet.model.RealmTag.Companion.tagWriteCsv
-import org.ole.planet.myplanet.model.RealmTeamLog.Companion.teamLogWriteCsv
-import org.ole.planet.myplanet.model.RealmTeamTask.Companion.teamTaskWriteCsv
-import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.model.RealmUserModel.Companion.populateUsersTable
-import org.ole.planet.myplanet.model.RealmUserModel.Companion.userWriteCsv
-import org.ole.planet.myplanet.utilities.Constants
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.JsonUtils.getJsonArray
-import org.ole.planet.myplanet.utilities.JsonUtils.getJsonObject
-import org.ole.planet.myplanet.utilities.JsonUtils.getString
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.datamanager.*
+import org.ole.planet.myplanet.model.*
+import org.ole.planet.myplanet.utilities.*
 import retrofit2.Response
 import java.io.IOException
 
 object TransactionSyncManager {
+    private val coroutineScope = CoroutineScope(Dispatchers.IO)
     fun authenticate(): Boolean {
-        val apiInterface = client?.create(ApiInterface::class.java)
-        try {
-            val response: Response<DocumentResponse>? = apiInterface?.getDocuments(Utilities.header, Utilities.getUrl() + "/tablet_users/_all_docs")?.execute()
-            if (response != null) {
-                return response.code() == 200
-            }
+        val apiInterface = ApiClient.client?.create(ApiInterface::class.java)
+        return try {
+            val response: Response<DocumentResponse>? = apiInterface?.getDocuments(Utilities.header, "${Utilities.getUrl()}/tablet_users/_all_docs")?.execute()
+            response?.code() == 200
         } catch (e: IOException) {
             e.printStackTrace()
+            false
         }
-        return false
     }
 
     fun syncAllHealthData(mRealm: Realm, settings: SharedPreferences, listener: SyncListener) {
@@ -65,28 +31,32 @@ object TransactionSyncManager {
         val userName = settings.getString("loginUserName", "")
         val password = settings.getString("loginUserPassword", "")
         val header = "Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)
-        mRealm.executeTransactionAsync({ realm: Realm ->
-            val users = realm.where(RealmUserModel::class.java).isNotEmpty("_id").findAll()
-            for (userModel in users) {
-                syncHealthData(userModel, header)
+
+        coroutineScope.launch {
+            try {
+                mRealm.write {
+                    val users = query<RealmUserModel>(RealmUserModel::class).find()
+                    users.forEach { userModel ->
+                        syncHealthData(userModel, header)
+                    }
+                }
+                listener.onSyncComplete()
+            } catch (error: Throwable) {
+                error.message?.let { listener.onSyncFailed(it) }
             }
-        }, { listener.onSyncComplete() }) { error: Throwable ->
-            error.message?.let { listener.onSyncFailed(it) }
         }
     }
 
     private fun syncHealthData(userModel: RealmUserModel?, header: String) {
-        val table = "userdb-" + userModel?.planetCode?.let { Utilities.toHex(it) } + "-" + userModel?.name?.let { Utilities.toHex(it) }
-        val apiInterface = client?.create(ApiInterface::class.java)
-        val response: Response<DocumentResponse>?
+        val table = "userdb-${userModel?.planetCode?.let { Utilities.toHex(it) }}-${userModel?.name?.let { Utilities.toHex(it) }}"
+        val apiInterface = ApiClient.client?.create(ApiInterface::class.java)
         try {
-            response = apiInterface?.getDocuments(header, Utilities.getUrl() + "/" + table + "/_all_docs")?.execute()
-            val ob = response?.body()
-            if (ob != null && ob.rows?.isNotEmpty() == true) {
-                val r = ob.rows!![0]
-                val jsonDoc = apiInterface?.getJsonObject(header, Utilities.getUrl() + "/" + table + "/" + r.id)?.execute()?.body()
-                userModel?.key = getString("key", jsonDoc)
-                userModel?.iv = getString("iv", jsonDoc)
+            val response = apiInterface?.getDocuments(header, "${Utilities.getUrl()}/$table/_all_docs")?.execute()
+
+            response?.body()?.rows?.firstOrNull()?.let { r ->
+                val jsonDoc = apiInterface.getJsonObject(header, "${Utilities.getUrl()}/$table/${r.id}").execute().body()
+                userModel?.key = JsonUtils.getString("key", jsonDoc)
+                userModel?.iv = JsonUtils.getString("iv", jsonDoc)
             }
         } catch (e: IOException) {
             e.printStackTrace()
@@ -98,40 +68,61 @@ object TransactionSyncManager {
         val model = UserProfileDbHandler(MainApplication.context).userModel
         val userName = settings.getString("loginUserName", "")
         val password = settings.getString("loginUserPassword", "")
-//        val table = "userdb-" + model?.planetCode?.let { Utilities.toHex(it) } + "-" + model?.name?.let { Utilities.toHex(it) }
-        val header = "Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)
-        val id = model?.id
-        mRealm.executeTransactionAsync({ realm: Realm ->
-            val userModel = realm.where(RealmUserModel::class.java).equalTo("id", id).findFirst()
-            syncHealthData(userModel, header)
-        }, { listener.onSyncComplete() }) { error: Throwable ->
-            error.message?.let { listener.onSyncFailed(it) }
+        val header = "Basic " + Base64.encodeToString(
+            "$userName:$password".toByteArray(),
+            Base64.NO_WRAP
+        )
+
+        coroutineScope.launch {
+            try {
+                mRealm.write {
+                    query<RealmUserModel>(RealmUserModel::class, "id == $0", model?.id)
+                        .first().find()?.let { userModel ->
+                            syncHealthData(userModel, header)
+                        }
+                }
+                listener.onSyncComplete()
+            } catch (error: Throwable) {
+                error.message?.let { listener.onSyncFailed(it) }
+            }
         }
     }
 
     fun syncDb(realm: Realm, table: String) {
-        realm.executeTransactionAsync { mRealm: Realm ->
-            val apiInterface = client?.create(ApiInterface::class.java)
-            val allDocs = apiInterface?.getJsonObject(Utilities.header, Utilities.getUrl() + "/" + table + "/_all_docs?include_doc=false")
+        coroutineScope.launch {
             try {
-                val all = allDocs?.execute()
-                val rows = getJsonArray("rows", all?.body())
-                val keys: MutableList<String> = ArrayList()
-                for (i in 0 until rows.size()) {
-                    val `object` = rows[i].asJsonObject
-                    if (!TextUtils.isEmpty(getString("id", `object`))) keys.add(getString("key", `object`))
-                    if (i == rows.size() - 1 || keys.size == 1000) {
-                        val obj = JsonObject()
-                        obj.add("keys", Gson().fromJson(Gson().toJson(keys), JsonArray::class.java))
-                        val response = apiInterface?.findDocs(Utilities.header, "application/json", Utilities.getUrl() + "/" + table + "/_all_docs?include_docs=true", obj)?.execute()
-                        if (response?.body() != null) {
-                            val arr = getJsonArray("rows", response.body())
-                            if (table == "chat_history") {
-                                insertToChat(arr, mRealm)
-                            }
-                            insertDocs(arr, mRealm, table)
+                realm.write {
+                    val apiInterface = ApiClient.client?.create(ApiInterface::class.java)
+                    val allDocs = apiInterface?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/$table/_all_docs?include_doc=false")
+
+                    val all = allDocs?.execute()
+                    val rows = JsonUtils.getJsonArray("rows", all?.body())
+                    val keys = mutableListOf<String>()
+
+                    rows.forEachIndexed { index, element ->
+                        val obj = element.asJsonObject
+                        JsonUtils.getString("id", obj).takeIf { it.isNotEmpty() }?.let {
+                            keys.add(JsonUtils.getString("key", obj))
                         }
-                        keys.clear()
+
+                        if (index == rows.size() - 1 || keys.size == 1000) {
+                            val requestObj = JsonObject().apply {
+                                add("keys", Gson().fromJson(Gson().toJson(keys), JsonArray::class.java))
+                            }
+
+                            val response = apiInterface?.findDocs(Utilities.header, "application/json", "${Utilities.getUrl()}/$table/_all_docs?include_docs=true", requestObj)?.execute()
+
+                            response?.body()?.let { body ->
+                                val arr = JsonUtils.getJsonArray("rows", body)
+                                coroutineScope.launch {
+                                    when (table) {
+                                        "chat_history" -> insertToChat(arr, realm)
+                                        else -> insertDocs(arr, realm, table)
+                                    }
+                                }
+                            }
+                            keys.clear()
+                        }
                     }
                 }
             } catch (e: IOException) {
@@ -140,90 +131,63 @@ object TransactionSyncManager {
         }
     }
 
-    private fun insertToChat(arr: JsonArray, mRealm: Realm) {
-        val chatHistoryList = mutableListOf<JsonObject>()
-        for (j in arr) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = getJsonObject("doc", jsonDoc)
-            chatHistoryList.add(jsonDoc)
+    private suspend fun insertToChat(arr: JsonArray, realm: Realm) {
+        arr.forEach { element ->
+            RealmChatHistory.insert(realm, JsonUtils.getJsonObject("doc", element.asJsonObject))
         }
+    }
 
-        mRealm.executeTransactionAsync { bgRealm ->
-            chatHistoryList.forEach { jsonDoc ->
-               insert(bgRealm, jsonDoc)
+    private suspend fun insertDocs(arr: JsonArray, realm: Realm, table: String) {
+        arr.forEach { element ->
+            element.asJsonObject.let { jsonDoc ->
+                JsonUtils.getJsonObject("doc", jsonDoc).let { doc ->
+                    JsonUtils.getString("_id", doc).takeIf { !it.startsWith("_design") }?.let {
+                        continueInsert(realm, table, doc)
+                    }
+                }
             }
         }
     }
 
-    private fun insertDocs(arr: JsonArray, mRealm: Realm, table: String) {
-        val documentList = mutableListOf<JsonObject>()
+    private suspend fun continueInsert(realm: Realm, table: String, jsonDoc: JsonObject) {
+        val settings = MainApplication.context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
 
-        for (j in arr) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = getJsonObject("doc", jsonDoc)
-            val id = getString("_id", jsonDoc)
-            if (!id.startsWith("_design")) {
-                documentList.add(jsonDoc)
-            }
-        }
-        mRealm.executeTransactionAsync { bgRealm ->
-            documentList.forEach { jsonDoc ->
-                continueInsert(bgRealm, table, jsonDoc)
-            }
-        }
-    }
-
-    private fun continueInsert(mRealm: Realm, table: String, jsonDoc: JsonObject) {
-        val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         when (table) {
-            "exams" -> {
-                insertCourseStepsExams("", "", jsonDoc, mRealm)
-            }
-            "tablet_users" -> {
-                populateUsersTable(jsonDoc, mRealm, settings)
-            }
-            else -> {
-                callMethod(mRealm, jsonDoc, table)
-            }
+            "exams" -> RealmStepExam.insertCourseStepsExams("", "", jsonDoc, realm)
+            "tablet_users" -> RealmUserModel.populateUsersTable(jsonDoc, realm, settings)
+            else -> callMethod(realm, jsonDoc, table)
         }
-        saveConcatenatedLinksToPrefs()
+
+        RealmMyCourse.saveConcatenatedLinksToPrefs()
 
         val syncFiles = settings.getBoolean("download_sync_files", false)
 
         if (syncFiles) {
-            meetupWriteCsv()
-            achievementWriteCsv()
-            certificationWriteCsv()
-            chatWriteCsv()
-            progressWriteCsv()
-            feedbackWriteCsv()
-            courseWriteCsv()
-            healthWriteCsv()
-            libraryWriteCsv()
-            teamLogWriteCsv()
-            teamWriteCsv()
-            newsWriteCsv()
-            offlineWriteCsv()
-            ratingWriteCsv()
-            stepExamWriteCsv()
-            submissionWriteCsv()
-            tagWriteCsv()
-            teamTaskWriteCsv()
-            userWriteCsv()
+            RealmMeetup.meetupWriteCsv()
+            RealmAchievement.achievementWriteCsv()
+            RealmCertification.certificationWriteCsv()
+            RealmChatHistory.chatWriteCsv()
+            RealmCourseProgress.progressWriteCsv()
+            RealmFeedback.feedbackWriteCsv()
+            RealmMyCourse.courseWriteCsv()
+            RealmMyHealthPojo.healthWriteCsv()
+            RealmMyLibrary.libraryWriteCsv()
+            RealmTeamLog.teamLogWriteCsv()
+            RealmMyTeam.teamWriteCsv()
+            RealmNews.newsWriteCsv()
+            RealmOfflineActivity.offlineWriteCsv()
+            RealmRating.ratingWriteCsv()
+            RealmStepExam.stepExamWriteCsv()
+            RealmSubmission.submissionWriteCsv()
+            RealmTag.tagWriteCsv()
+            RealmTeamTask.teamTaskWriteCsv()
+            RealmUserModel.userWriteCsv()
         }
     }
 
-    private fun callMethod(mRealm: Realm, jsonDoc: JsonObject, type: String) {
+    private fun callMethod(realm: Realm, jsonDoc: JsonObject, type: String) {
         try {
-            val methods = Constants.classList[type]?.methods
-            methods?.let {
-                for (m in it) {
-                    if ("insert" == m.name) {
-                        m.invoke(null, mRealm, jsonDoc)
-                        break
-                    }
-                }
-            }
+            Constants.classList[type]?.methods?.find { it.name == "insert" }?.invoke(null, realm, jsonDoc)
         } catch (e: Exception) {
             e.printStackTrace()
         }

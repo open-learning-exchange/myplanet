@@ -1,10 +1,12 @@
 package org.ole.planet.myplanet.model
 
 import com.google.gson.*
+import com.opencsv.CSVWriter
 import io.realm.kotlin.Realm
 import io.realm.kotlin.ext.query
 import io.realm.kotlin.types.RealmObject
 import io.realm.kotlin.types.annotations.PrimaryKey
+import org.ole.planet.myplanet.MainApplication
 import java.io.File
 import java.io.FileWriter
 import java.io.IOException
@@ -145,20 +147,21 @@ class RealmFeedback : RealmObject {
             try {
                 val file = File(filePath)
                 file.parentFile?.mkdirs()
-                val writer = FileWriter(file)
-                writer.write("feedbackId,title,source,status,priority,owner,openTime,type,url,parentCode,state,item,messages\n")
-                data.forEach { row ->
-                    writer.write(row.joinToString(","))
-                    writer.write("\n")
+                CSVWriter(FileWriter(file)).use { writer ->
+                    writer.writeNext(arrayOf(
+                        "feedbackId","title","source","status","priority","owner","openTime","type","url","parentCode","state","item","messages"
+                    ))
+                    data.forEach { row ->
+                        writer.writeNext(row)
+                    }
                 }
-                writer.close()
             } catch (e: IOException) {
                 e.printStackTrace()
             }
         }
 
-        fun feedbackWriteCsv(filePath: String) {
-            writeCsv(filePath, feedbacksDataList)
+        fun feedbackWriteCsv() {
+            writeCsv("${MainApplication.context.getExternalFilesDir(null)}/ole/feedback.csv", feedbacksDataList)
         }
     }
 }

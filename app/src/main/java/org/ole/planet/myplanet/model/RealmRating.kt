@@ -7,6 +7,7 @@ import io.realm.kotlin.Realm
 import io.realm.kotlin.ext.query
 import io.realm.kotlin.types.RealmObject
 import io.realm.kotlin.types.annotations.PrimaryKey
+import org.ole.planet.myplanet.MainApplication
 import java.io.File
 import java.io.FileWriter
 import java.io.IOException
@@ -31,7 +32,7 @@ class RealmRating : RealmObject {
     companion object {
         private val ratingDataList: MutableList<Array<String>> = mutableListOf()
 
-        suspend fun getRatings(realm: Realm, type: String?, userId: String?): Map<String?, JsonObject> {
+        fun getRatings(realm: Realm, type: String?, userId: String?): Map<String?, JsonObject> {
             val results = realm.query<RealmRating>("type == $0", type).find()
             val map = mutableMapOf<String?, JsonObject>()
 
@@ -43,7 +44,7 @@ class RealmRating : RealmObject {
             return map
         }
 
-        suspend fun getRatingsById(realm: Realm, type: String?, id: String?, userId: String?): JsonObject? {
+        fun getRatingsById(realm: Realm, type: String?, id: String?, userId: String?): JsonObject? {
             val results = realm.query<RealmRating>("type == $0 && itemId == $1", type, id).find()
             if (results.isEmpty()) return null
 
@@ -77,7 +78,7 @@ class RealmRating : RealmObject {
         }
 
 
-        suspend fun insert(realm: Realm, act: JsonObject) {
+        fun insert(realm: Realm, act: JsonObject) {
             realm.writeBlocking {
                 val rating = query<RealmRating>("id == $0", act.get("_id").asString).first().find()
                     ?: RealmRating().apply {
@@ -139,8 +140,8 @@ class RealmRating : RealmObject {
             }
         }
 
-        fun ratingWriteCsv(filePath: String) {
-            writeCsv(filePath, ratingDataList)
+        fun ratingWriteCsv() {
+            writeCsv("${MainApplication.context.getExternalFilesDir(null)}/ole/rating.csv", ratingDataList)
         }
     }
 }
