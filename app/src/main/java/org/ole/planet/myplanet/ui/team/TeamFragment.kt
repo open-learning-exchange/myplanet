@@ -242,7 +242,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         fragmentTeamBinding.rvTeamList.adapter = adapterTeamList
         listContentDescription(conditionApplied)
         val itemCount = adapterTeamList.itemCount
-        showNoData(fragmentTeamBinding.tvMessage, itemCount, "teams")
+        showNoData(fragmentTeamBinding.tvMessage, itemCount, "$type")
         if (itemCount == 0) {
             fragmentTeamBinding.etSearch.visibility = View.GONE
             fragmentTeamBinding.tableTitle.visibility = View.GONE

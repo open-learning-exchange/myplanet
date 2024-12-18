@@ -211,12 +211,25 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent">
 
+                <ImageButton
+                    android:id="@+id/themeToggleButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentEnd="true"
+                    android:background="@null"
+                    android:contentDescription="@string/select_theme_mode"
+                    android:paddingStart="@dimen/_10dp"
+                    android:paddingTop="6dp"
+                    android:paddingEnd="@dimen/_10dp"
+                    app:srcCompat="@drawable/sun_35"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
                 <ImageView
                     android:id="@+id/logoImageView"
                     android:layout_width="100dp"
                     android:layout_height="100dp"
                     android:layout_gravity="center|top"
-                    android:layout_marginTop="20dp"
+                    android:layout_marginTop="110dp"
                     android:contentDescription="@string/ole_logo"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"

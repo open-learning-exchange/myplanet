@@ -30,6 +30,7 @@
     <string name="menu_logout">تسجيل الخروج</string>
     <string name="menu_feedback">ملاحظات</string>
     <string name="system_name">myPlanet</string>
+    <string name="select">يختار</string>
     <string name="txt_myLibrary">مكتبتي</string>
     <string name="txt_myCourses">دوراتي</string>
     <string name="txt_myMeetups">تجمعاتي</string>
@@ -1210,5 +1211,6 @@
     <string name="share_with_team_enterprise">مشاركة مع الفريق/المؤسسة</string>
     <string name="teams">فرق</string>
     <string name="community">مجتمع</string>
+    <string name="no_enterprise">المؤسسات غير متوفرة</string>
 
 </resources>
