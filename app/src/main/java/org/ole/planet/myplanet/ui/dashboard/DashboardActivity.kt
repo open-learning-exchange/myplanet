@@ -187,32 +187,29 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             when (item.itemId) {
                 R.id.action_chat -> {
                     if (user?.id?.startsWith("guest") == false) {
-                        val fragmentManager = supportFragmentManager
-                        val existingFragment = fragmentManager.findFragmentByTag(ChatHistoryListFragment::class.java.simpleName)
-                        if (existingFragment == null) {
-                            openCallFragment(
-                                ChatHistoryListFragment(),
-                                ChatHistoryListFragment::class.java.simpleName
-                            )
-                        }
+                        openCallFragment(
+                            ChatHistoryListFragment(),
+                            ChatHistoryListFragment::class.java.simpleName
+                        )
                     } else {
                         guestDialog(this)
                     }
                 }
                 R.id.menu_goOnline -> wifiStatusSwitch()
-                R.id.action_sync -> {
-                    logSyncInSharedPrefs()
-                }
+                R.id.action_sync -> logSyncInSharedPrefs()
                 R.id.action_feedback -> {
                     if (user?.id?.startsWith("guest") == false) {
-                        openCallFragment(FeedbackListFragment())
+                        openCallFragment(
+                            FeedbackListFragment(),
+                            FeedbackListFragment::class.java.simpleName
+                        )
                     } else {
                         guestDialog(this)
                     }
                 }
                 R.id.action_settings -> startActivity(Intent(this@DashboardActivity, SettingActivity::class.java))
-                R.id.action_disclaimer -> openCallFragment(DisclaimerFragment())
-                R.id.action_about -> openCallFragment(AboutFragment())
+                R.id.action_disclaimer -> openCallFragment(DisclaimerFragment(), DisclaimerFragment::class.java.simpleName)
+                R.id.action_about -> openCallFragment(AboutFragment(), AboutFragment::class.java.simpleName)
                 R.id.action_logout -> logout()
                 else -> {}
             }
