@@ -6,7 +6,6 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.database.Cursor
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
 import android.text.TextUtils
@@ -17,14 +16,14 @@ import android.widget.LinearLayout
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.RequiresApi
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.google.gson.Gson
 import com.google.gson.JsonObject
-import io.realm.RealmList
+import io.realm.kotlin.ext.realmListOf
+import io.realm.kotlin.types.RealmList
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.model.RealmNews
@@ -39,7 +38,6 @@ import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import java.io.File
 import java.io.FileOutputStream
 
-@RequiresApi(api = Build.VERSION_CODES.O)
 abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListener {
     lateinit var imageList: RealmList<String>
     @JvmField
@@ -51,7 +49,7 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        imageList = RealmList()
+        imageList = realmListOf()
         profileDbHandler = UserProfileDbHandler(requireContext())
         openFolderLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
             if (result.resultCode == Activity.RESULT_OK) {
@@ -109,7 +107,7 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
         }
     }
 
-    abstract fun setData(list: List<RealmNews?>?)
+    abstract fun setData(list: List<RealmNews>?)
     fun showNoData(v: View?, count: Int?, source: String) {
         count?.let { BaseRecyclerFragment.showNoData(v, it, source) }
     }

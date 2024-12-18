@@ -51,7 +51,7 @@ class BecomeMemberActivity : BaseActivity() {
         setContentView(activityBecomeMemberBinding.root)
         supportActionBar?.setHomeButtonEnabled(true)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        val mRealm: Realm = DatabaseService(this).realmInstance
+        val mRealm: Realm = DatabaseService().realmInstance
         val languages = resources.getStringArray(R.array.language)
         val lnAadapter = ArrayAdapter(this, R.layout.become_a_member_spinner_layout, languages)
         activityBecomeMemberBinding.spnLang.adapter = lnAadapter

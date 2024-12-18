@@ -33,7 +33,7 @@ class UserDetailFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentUserDetailBinding = FragmentUserDetailBinding.inflate(inflater, container, false)
         fragmentUserDetailBinding.rvUserDetail.layoutManager = GridLayoutManager(activity, 2)
-        val mRealm = DatabaseService(requireActivity()).realmInstance
+        val mRealm = DatabaseService().realmInstance
         db = UserProfileDbHandler(requireActivity())
         user = mRealm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
         return fragmentUserDetailBinding.root

@@ -48,7 +48,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentTeamBinding = FragmentTeamBinding.inflate(inflater, container, false)
-        mRealm = DatabaseService(requireContext()).realmInstance
+        mRealm = DatabaseService().realmInstance
         user = UserProfileDbHandler(requireActivity()).userModel
 
         if (user?.isGuest() == true) {

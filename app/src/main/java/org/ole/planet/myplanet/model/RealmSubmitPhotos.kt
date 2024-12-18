@@ -1,10 +1,10 @@
 package org.ole.planet.myplanet.model
 
 import com.google.gson.JsonObject
-import io.realm.RealmObject
-import io.realm.annotations.PrimaryKey
+import io.realm.kotlin.types.RealmObject
+import io.realm.kotlin.types.annotations.PrimaryKey
 
-open class RealmSubmitPhotos : RealmObject() {
+class RealmSubmitPhotos : RealmObject {
     @PrimaryKey
     var id: String? = null
     var _id: String? = null
@@ -16,35 +16,22 @@ open class RealmSubmitPhotos : RealmObject() {
     var date: String? = null
     var uniqueId: String? = null
     var photoLocation: String? = null
-    var uploaded = false
+    var uploaded: Boolean = false
 
     companion object {
-        /**
-         * public static JsonArray serializeRealmSubmitPhotos(RealmList<RealmSubmitPhotos> submitPhotos)
-         * {
-         * JsonArray arr = new JsonArray();
-         * for(RealmSubmitPhotos sub: submitPhotos)
-         * {
-         * arr.add(createObject(sub));
-         * }
-         *
-         *
-         * return arr;
-         * }
-        </RealmSubmitPhotos> */
-        @JvmStatic
         fun serializeRealmSubmitPhotos(submit: RealmSubmitPhotos): JsonObject {
-            val obj = JsonObject()
-            obj.addProperty("id", submit.id)
-            obj.addProperty("submissionId", submit.submissionId)
-            obj.addProperty("type", "photo")
-            obj.addProperty("courseId", submit.courseId)
-            obj.addProperty("examId", submit.examId)
-            obj.addProperty("memberId", submit.memberId)
-            obj.addProperty("date", submit.date)
-            obj.addProperty("macAddress", submit.uniqueId)
-            obj.addProperty("photoLocation", submit.photoLocation)
-            return obj
+            return JsonObject().apply {
+                addProperty("id", submit.id)
+                addProperty("submissionId", submit.submissionId)
+                addProperty("type", "photo")
+                addProperty("courseId", submit.courseId)
+                addProperty("examId", submit.examId)
+                addProperty("memberId", submit.memberId)
+                addProperty("date", submit.date)
+                addProperty("macAddress", submit.uniqueId)
+                addProperty("photoLocation", submit.photoLocation)
+            }
         }
     }
 }
+

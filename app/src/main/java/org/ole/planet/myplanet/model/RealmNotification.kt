@@ -1,13 +1,13 @@
 package org.ole.planet.myplanet.model
 
-import io.realm.RealmObject
-import io.realm.annotations.PrimaryKey
+import io.realm.kotlin.types.RealmObject
+import io.realm.kotlin.types.annotations.PrimaryKey
 import java.util.Date
 import java.util.UUID
 
-open class RealmNotification : RealmObject() {
+class RealmNotification : RealmObject {
     @PrimaryKey
-    var id: String = UUID.randomUUID().toString()
+    var id: String = "${UUID.randomUUID()}"
     var userId: String = ""
     var message: String = ""
     var isRead: Boolean = false

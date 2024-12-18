@@ -69,7 +69,7 @@ class ChatHistoryListFragment : Fragment() {
     }
 
     fun refreshChatHistoryList() {
-        val mRealm = DatabaseService(requireActivity()).realmInstance
+        val mRealm = DatabaseService().realmInstance
         val list = mRealm.where(RealmChatHistory::class.java).equalTo("user", user?.name)
             .sort("id", Sort.DESCENDING)
             .findAll()

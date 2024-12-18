@@ -66,7 +66,7 @@ class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedL
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        mRealm = DatabaseService(requireActivity()).realmInstance
+        mRealm = DatabaseService().realmInstance
         fragmentAddLinkBinding.spnLink.onItemSelectedListener = this
         fragmentAddLinkBinding.btnSave.setOnClickListener {
             val type = fragmentAddLinkBinding.spnLink.selectedItem.toString()

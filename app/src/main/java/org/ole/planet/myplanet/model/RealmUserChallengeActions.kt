@@ -1,28 +1,28 @@
 package org.ole.planet.myplanet.model
 
-import io.realm.Realm
-import io.realm.RealmObject
-import io.realm.annotations.PrimaryKey
-import java.util.UUID
+import io.realm.kotlin.Realm
+import io.realm.kotlin.types.RealmObject
+import io.realm.kotlin.types.RealmUUID
+import io.realm.kotlin.types.annotations.PrimaryKey
 
-open class RealmUserChallengeActions : RealmObject() {
+class RealmUserChallengeActions : RealmObject {
     @PrimaryKey
-    var id: String = UUID.randomUUID().toString()
+    var id: String = RealmUUID.random().toString()
     var userId: String? = null
     var actionType: String? = null
     var resourceId: String? = null
     var time: Long = 0
 
     companion object {
-        fun createAction(realm: Realm, userId: String, resourceId: String?, actionType: String) {
-            realm.executeTransaction { transactionRealm ->
-                val action = transactionRealm.createObject(
-                    RealmUserChallengeActions::class.java, UUID.randomUUID().toString()
-                )
-                action.userId = userId
-                action.actionType = actionType
-                action.resourceId = resourceId
-                action.time = System.currentTimeMillis()
+        suspend fun createAction(realm: Realm, userId: String, resourceId: String?, actionType: String) {
+            realm.write {
+                copyToRealm(RealmUserChallengeActions().apply {
+                    this.id = RealmUUID.random().toString()
+                    this.userId = userId
+                    this.actionType = actionType
+                    this.resourceId = resourceId
+                    this.time = System.currentTimeMillis()
+                })
             }
         }
     }

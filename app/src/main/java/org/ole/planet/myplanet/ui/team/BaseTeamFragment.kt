@@ -22,7 +22,7 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
         val sParentCode = settings?.getString("parentCode", "")
         val communityName = settings?.getString("communityName", "")
         teamId = requireArguments().getString("id", "") ?: "$communityName@$sParentCode"
-        dbService = DatabaseService(requireActivity())
+        dbService = DatabaseService()
         mRealm = dbService.realmInstance
         user = profileDbHandler.userModel?.let { mRealm.copyFromRealm(it) }
         team = try {
