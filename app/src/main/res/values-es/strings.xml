@@ -734,6 +734,7 @@
     <string name="note_you_may_still_need_to_download_the_newly_added_resources">\nNota: Es posible que aún necesites descargar los recursos recién agregados.</string>
     <string name="self_examination">%s\nAutoexamen</string>
     <string name="pending_survey_notification">tienes una encuesta pendiente:</string>
+    <string name="task_notification">%1$s vence el %2$s</string>
     <string name="vitals_format">
     Temperatura: %1$s\n
     Pulso: %2$s\n

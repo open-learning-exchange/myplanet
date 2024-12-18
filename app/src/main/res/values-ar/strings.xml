@@ -734,6 +734,7 @@
     <string name="note_you_may_still_need_to_download_the_newly_added_resources">\nملاحظة: قد تحتاج لاستكمال تنزيل الموارد المضافة حديثًا.</string>
     <string name="self_examination">%s\nالفحص الذاتي</string>
     <string name="pending_survey_notification">لديك استطلاع قيد الانتظار:</string>
+    <string name="task_notification">%1$s مستحق في %2$s</string>
     <string name="vitals_format">
     درجة الحرارة: %1$s\n
     النبض: %2$s\n
