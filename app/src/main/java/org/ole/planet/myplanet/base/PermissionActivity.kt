@@ -83,11 +83,9 @@ abstract class PermissionActivity : AppCompatActivity() {
                 permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE)
             }
         }
-        if (permissions.isNotEmpty()) {
+        if (permissions.isNotEmpty() && !checkPermission(Manifest.permission.RECORD_AUDIO) &&!checkPermission(Manifest.permission.CAMERA)) {
             val permissionsArray = permissions.toTypedArray<String>()
             ActivityCompat.requestPermissions(this, permissionsArray, PERMISSION_REQUEST_CODE_FILE)
-        } else {
-            Toast.makeText(this, R.string.permissions_granted, Toast.LENGTH_SHORT).show()
         }
     }
 

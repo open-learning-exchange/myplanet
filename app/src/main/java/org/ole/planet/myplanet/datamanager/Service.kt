@@ -311,6 +311,12 @@ class Service(private val context: Context) {
                             name = JsonUtils.getString("name", jsonDoc)
                             parentDomain = JsonUtils.getString("parentDomain", jsonDoc)
                             registrationRequest = JsonUtils.getString("registrationRequest", jsonDoc)
+                        }, {
+                            realm.close()
+                            callback.onSuccess("Server sync successfully")
+                        }) { error: Throwable ->
+                            realm.close()
+                            error.printStackTrace()
                         }
                         copyToRealm(community)
                     }
@@ -321,6 +327,12 @@ class Service(private val context: Context) {
             error.printStackTrace()
             callback.onSuccess("Unable to connect to planet earth")
         }
+
+
+            override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
+                realm.close()
+            }
+        })
     }
 
     fun getMinApk(listener: ConfigurationIdListener?, url: String, pin: String, activity: SyncActivity) {
