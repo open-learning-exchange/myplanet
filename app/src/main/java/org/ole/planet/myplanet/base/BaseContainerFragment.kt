@@ -171,19 +171,27 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 
                 logLargeString("AdapterResource", "Full Library Item Details:\n$allDetails")
             }
-            val resource = mRealm.where(RealmMyLibrary::class.java).equalTo("_id", items.resourceId).findFirst()
-            val downloadUrls = ArrayList<String>()
-            resource?.attachments?.forEach { attachment ->
-                attachment.name?.let { name ->
-                    val url = Utilities.getUrl("${items.resourceId}", name)
-                    downloadUrls.add(url)
-                }
-            }
-
-            if (downloadUrls.isNotEmpty()) {
-                startDownload(downloadUrls)
+            if (items.resourceOffline) {
+                val intent = Intent(activity, WebViewActivity::class.java)
+                intent.putExtra("RESOURCE_ID", items.id)
+                intent.putExtra("LOCAL_ADDRESS", items.resourceLocalAddress)
+                intent.putExtra("title", items.title)
+                startActivity(intent)
             } else {
-                Log.w("ResourceExtractor", "No attachments to download")
+                val resource = mRealm.where(RealmMyLibrary::class.java).equalTo("_id", items.resourceId).findFirst()
+                val downloadUrls = ArrayList<String>()
+                resource?.attachments?.forEach { attachment ->
+                    attachment.name?.let { name ->
+                        val url = Utilities.getUrl("${items.resourceId}", name)
+                        downloadUrls.add(url)
+                    }
+                }
+
+                if (downloadUrls.isNotEmpty()) {
+                    startDownload(downloadUrls)
+                } else {
+                    Log.w("ResourceExtractor", "No attachments to download")
+                }
             }
         } else {
             val matchingItems = mRealm.where(RealmMyLibrary::class.java)
