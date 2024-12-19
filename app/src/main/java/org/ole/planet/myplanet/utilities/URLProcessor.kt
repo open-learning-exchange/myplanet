@@ -16,13 +16,8 @@ class URLProcessor(private val context: Context, private val lifecycleScope: Cor
         private const val TAG = "URLProcessor"
 
         private val serverMappings = mapOf(
-            "http://${BuildConfig.PLANET_URIUR_URL}" to "http://35.231.161.29",
-            "http://192.168.1.202" to "http://34.35.29.147",
-            "https://${BuildConfig.PLANET_GUATEMALA_URL}" to "http://guatemala.com/cloudserver",
-            "http://${BuildConfig.PLANET_XELA_URL}" to "http://xela.com/cloudserver",
-            "http://${BuildConfig.PLANET_SANPABLO_URL}" to "http://sanpablo.com/cloudserver",
-            "http://${BuildConfig.PLANET_EMBAKASI_URL}" to "http://embakasi.com/cloudserver",
-            "https://${BuildConfig.PLANET_VI_URL}" to "http://vi.com/cloudserver"
+            "https://${BuildConfig.PLANET_URIUR_URL}" to "https://${BuildConfig.PLANET_URIUR_CLONE_URL}",
+            "https://${BuildConfig.PLANET_EMBAKASI_URL}" to "https://${BuildConfig.PLANET_EMBAKASI_CLONE_URL}",
         )
     }
 
