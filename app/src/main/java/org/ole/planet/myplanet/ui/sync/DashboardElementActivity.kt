@@ -83,26 +83,55 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         goOnline = menu.findItem(R.id.menu_goOnline)
         return true
     }
-
+    var c = 0
     fun openCallFragment(newFragment: Fragment, tag: String?) {
         val fragmentManager = supportFragmentManager
+        Log.d("openCallFragment", "Opening fragment with tag $tag.")
+        if(c<2){
+            c=0
+        }
         val existingFragment = fragmentManager.findFragmentByTag(tag)
-
-        if (existingFragment != null && existingFragment.isVisible) {
-            // If the fragment exists and is already visible, do nothing
-            Log.d("openCallFragment", "Fragment with tag $tag is already visible.")
-        } else if (existingFragment != null) {
-            // If the fragment exists but is not visible, bring it to the front
-            Log.d("openCallFragment", "Bringing fragment with tag $tag to the front.")
-            fragmentManager.popBackStack(tag, 0)
+        if (tag == "") {
+            c++
+            Log.d("openCallFragment", "$c")
+            if(c>2){
+                c--
+                fragmentManager.popBackStack(tag, 0)
+            }else{
+                Log.d("openCallFragment", "Fragment with tag $tag if wala.")
+                fragmentManager.beginTransaction()
+                    .replace(R.id.fragment_container, newFragment, tag)
+                    .addToBackStack(tag)
+                    .commit()
+            }
         } else {
-            // If the fragment doesn't exist, add it
-            Log.d("openCallFragment", "Adding new fragment with tag $tag.")
-            Log.d("openCallFragment", "Its been called from ${newFragment.javaClass.simpleName}")
-            fragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, newFragment, tag)
-                .addToBackStack(tag)
-                .commit()
+            if (existingFragment != null && existingFragment.isVisible) {
+                // If the fragment exists and is already visible, do nothing
+                Log.d("openCallFragment", "Fragment with tag $tag is already visible.")
+            } else if (existingFragment != null) {
+                // If the fragment exists but is not visible, bring it to the front
+                if(c>0 && c>2){
+                    c=0
+                }
+                Log.d("openCallFragment", "Bringing fragment with tag $tag to the front.")
+                fragmentManager.popBackStack(tag, 0)
+            } else {
+                // If the fragment doesn't exist, add it
+                if(c>0 && c>2){
+                    c=0
+                }
+                if(tag!="") {
+                    Log.d("openCallFragment", "Adding new fragment with tag $tag.")
+                    Log.d(
+                        "openCallFragment",
+                        "Its been called from ${newFragment.javaClass.simpleName}"
+                    )
+                    fragmentManager.beginTransaction()
+                        .replace(R.id.fragment_container, newFragment, tag)
+                        .addToBackStack(tag)
+                        .commit()
+                }
+            }
         }
     }
     override fun onPrepareOptionsMenu(menu: Menu): Boolean {
