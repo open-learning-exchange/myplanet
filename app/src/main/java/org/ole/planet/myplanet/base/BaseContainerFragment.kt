@@ -36,7 +36,6 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_RESOUR
 import org.ole.planet.myplanet.ui.courses.AdapterCourses
 import org.ole.planet.myplanet.ui.viewer.*
 import org.ole.planet.myplanet.utilities.FileUtils
-import org.ole.planet.myplanet.utilities.FileUtils.extractAttachments
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
 import java.io.File
@@ -72,14 +71,16 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             AdapterCourses.showRating(`object`, rating, timesRated, ratingBar)
         }
     }
-    fun getUrlsAndStartDownload(
-        lib: List<RealmMyLibrary?>, urls: ArrayList<String>
-    ) {
+    fun getUrlsAndStartDownload(lib: List<RealmMyLibrary?>, urls: ArrayList<String>) {
         for (library in lib) {
             val url = Utilities.getUrl(library)
-            if (!FileUtils.checkFileExist(url) && !TextUtils.isEmpty(url)) urls.add(url)
+            if (!FileUtils.checkFileExist(url) && !TextUtils.isEmpty(url)) {
+                urls.add(url)
+            }
         }
-        if (urls.isNotEmpty()) startDownload(urls)
+        if (urls.isNotEmpty()) {
+            startDownload(urls)
+        }
     }
     fun initRatingView(type: String?, id: String?, title: String?, listener: OnRatingChangeListener?) {
         timesRated = requireView().findViewById(R.id.times_rated)
@@ -171,8 +172,18 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 logLargeString("AdapterResource", "Full Library Item Details:\n$allDetails")
             }
             val resource = mRealm.where(RealmMyLibrary::class.java).equalTo("_id", items.resourceId).findFirst()
-            resource?.let {
-                extractAttachments(it.attachments, items.resourceId)
+            val downloadUrls = ArrayList<String>()
+            resource?.attachments?.forEach { attachment ->
+                attachment.name?.let { name ->
+                    val url = Utilities.getUrl("${items.resourceId}", name)
+                    downloadUrls.add(url)
+                }
+            }
+
+            if (downloadUrls.isNotEmpty()) {
+                startDownload(downloadUrls)
+            } else {
+                Log.w("ResourceExtractor", "No attachments to download")
             }
         } else {
             val matchingItems = mRealm.where(RealmMyLibrary::class.java)
@@ -190,6 +201,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 } else {
                     val arrayList = ArrayList<String>()
                     arrayList.add(Utilities.getUrl(items))
+                    Log.d("okuro", Utilities.getUrl(items))
                     startDownload(arrayList)
                     profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_DOWNLOAD)
                 }
