@@ -177,7 +177,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                 b.putString("stepId", stepId)
                 b.putInt("stepNum", stepNumber)
                 takeExam.arguments = b
-                homeItemClickListener?.openCallFragment(takeExam)
+                homeItemClickListener?.openCallFragment(takeExam, "take_exam")
                 capturePhoto(this)
             }
         }

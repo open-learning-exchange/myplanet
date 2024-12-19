@@ -29,17 +29,17 @@ class DashboardFragment : BaseDashboardFragment() {
         fragmentHomeBinding = FragmentHomeBinding.inflate(inflater, container, false)
         val view: View = fragmentHomeBinding.root
         fragmentHomeBinding.cardProfile.tvSurveys.setOnClickListener {
-            homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("survey"))
+            homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("survey"), "survey")
         }
         fragmentHomeBinding.cardProfile.tvNews.setOnClickListener {
-            homeItemClickListener?.openCallFragment(NewsFragment())
+            homeItemClickListener?.openCallFragment(NewsFragment(), "news")
         }
         fragmentHomeBinding.cardProfile.tvSubmission.setOnClickListener {
-            homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("exam"))
+            homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("exam"), "exam")
         }
         fragmentHomeBinding.cardProfile.tvAchievement.visibility = View.VISIBLE
         fragmentHomeBinding.cardProfile.tvAchievement.setOnClickListener {
-            homeItemClickListener?.openCallFragment(AchievementFragment())
+            homeItemClickListener?.openCallFragment(AchievementFragment(), "achievement")
         }
         databaseService = DatabaseService(requireActivity())
         dRealm = databaseService.realmInstance

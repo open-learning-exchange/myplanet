@@ -127,7 +127,7 @@ class NotificationsFragment : Fragment() {
                         b.putBoolean("isMyTeam", true)
                         b.putInt("navigateToPage", 3)
                         f.arguments = b
-                        (context as OnHomeItemClickListener).openCallFragment(f)
+                        (context as OnHomeItemClickListener).openCallFragment(f, "team")
                     }
                 }
             }

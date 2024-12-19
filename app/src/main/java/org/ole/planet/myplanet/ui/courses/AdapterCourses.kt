@@ -150,7 +150,7 @@ class AdapterCourses(private val context: Context, private var courseList: List<
                                 putString("id", course.courseId)
                                 putInt("position", position)
                             }
-                        })
+                        }, "take_course")
                     }
                 }
 
@@ -291,7 +291,7 @@ class AdapterCourses(private val context: Context, private var courseList: List<
             b.putString("id", realmMyCourses?.courseId)
             b.putInt("position", i)
             f.arguments = b
-            homeItemClickListener?.openCallFragment(f)
+            homeItemClickListener?.openCallFragment(f, "open_course")
         }
     }
 

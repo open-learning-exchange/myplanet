@@ -45,7 +45,7 @@ class AchievementFragment : BaseContainerFragment() {
         aRealm = DatabaseService(MainApplication.context).realmInstance
         user = UserProfileDbHandler(MainApplication.context).userModel
         fragmentAchievementBinding.btnEdit.setOnClickListener {
-            if (listener != null) listener?.openCallFragment(EditAchievementFragment())
+            if (listener != null) listener?.openCallFragment(EditAchievementFragment(), "achievement")
         }
         return fragmentAchievementBinding.root
     }

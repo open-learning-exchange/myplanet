@@ -89,7 +89,7 @@ class ServicesFragment : BaseTeamFragment() {
                         c.putString("id", route[3])
                         teamObject?.isMyTeam(user?.id, mRealm)?.let { it1 -> c.putBoolean("isMyTeam", it1) }
                         f.arguments = c
-                        (context as OnHomeItemClickListener).openCallFragment(f)
+                        (context as OnHomeItemClickListener).openCallFragment(f, "team")
                     }
                 }
             }

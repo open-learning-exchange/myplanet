@@ -64,7 +64,7 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
                     b.putString("id", team._id)
                     b.putBoolean("isMyTeam", isMyTeam)
                     f.arguments = b
-                    (context as OnHomeItemClickListener).openCallFragment(f)
+                    (context as OnHomeItemClickListener).openCallFragment(f, "team")
                     prefData.setTeamName(team.name)
                 }
             }

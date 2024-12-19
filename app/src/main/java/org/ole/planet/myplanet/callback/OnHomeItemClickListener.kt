@@ -5,7 +5,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmStepExam
 
 interface OnHomeItemClickListener {
-    fun openCallFragment(f: Fragment)
+    fun openCallFragment(f: Fragment, tag: String?)
     fun openLibraryDetailFragment(library: RealmMyLibrary?)
     fun showRatingDialog(type: String?, resourceId: String?, title: String?, listener: OnRatingChangeListener?)
 

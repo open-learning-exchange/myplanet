@@ -212,7 +212,7 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
                 val b = Bundle()
                 b.putString("libraryId", libraries!![i]?.id)
                 f.arguments = b
-                homeItemClickListener?.openCallFragment(f)
+                homeItemClickListener?.openCallFragment(f, "resource")
             }
         }
     }
@@ -259,7 +259,7 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
         val b = Bundle()
         b.putString("id", id)
         f.arguments = b
-        homeItemClickListener?.openCallFragment(f)
+        homeItemClickListener?.openCallFragment(f, "user")
     }
 
     private fun getRequestedTeamList(req: String?): List<RealmUserModel> {

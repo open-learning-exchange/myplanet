@@ -172,7 +172,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 openMyFragment(FeedbackListFragment())
             }
         } else {
-            openCallFragment(BellDashboardFragment())
+            openCallFragment(BellDashboardFragment(), "bellDashboard")
             activityDashboardBinding.appBarBell.bellToolbar.visibility = View.VISIBLE
         }
         activityDashboardBinding.appBarBell.ivSync.setOnClickListener {
@@ -187,7 +187,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             when (item.itemId) {
                 R.id.action_chat -> {
                     if (user?.id?.startsWith("guest") == false) {
-                        openCallFragment(ChatHistoryListFragment())
+                        openCallFragment(ChatHistoryListFragment(), "chatHistoryList")
                     } else {
                         guestDialog(this)
                     }
@@ -198,14 +198,14 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 }
                 R.id.action_feedback -> {
                     if (user?.id?.startsWith("guest") == false) {
-                        openCallFragment(FeedbackListFragment())
+                        openCallFragment(FeedbackListFragment(), "feedbackList")
                     } else {
                         guestDialog(this)
                     }
                 }
                 R.id.action_settings -> startActivity(Intent(this@DashboardActivity, SettingActivity::class.java))
-                R.id.action_disclaimer -> openCallFragment(DisclaimerFragment())
-                R.id.action_about -> openCallFragment(AboutFragment())
+                R.id.action_disclaimer -> openCallFragment(DisclaimerFragment(), "disclaimer")
+                R.id.action_about -> openCallFragment(AboutFragment(), "about")
                 R.id.action_logout -> logout()
                 else -> {}
             }
@@ -519,7 +519,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
             setNotificationUpdateListener(this@DashboardActivity)
         }
-        openCallFragment(fragment)
+        openCallFragment(fragment, "notifications")
     }
 
     override fun onNotificationCountUpdated(unreadCount: Int) {
@@ -744,12 +744,12 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun menuAction(selectedMenuId: Int) {
         when (selectedMenuId) {
-            R.string.menu_myplanet -> openCallFragment(BellDashboardFragment())
-            R.string.menu_library -> openCallFragment(ResourcesFragment())
+            R.string.menu_myplanet -> openCallFragment(BellDashboardFragment(), "bellDashboard")
+            R.string.menu_library -> openCallFragment(ResourcesFragment(), "resources")
             R.string.menu_meetups -> {}
-            R.string.menu_surveys -> openCallFragment(SurveyFragment())
-            R.string.menu_courses -> openCallFragment(CoursesFragment())
-            R.string.menu_community -> openCallFragment(CommunityTabFragment())
+            R.string.menu_surveys -> openCallFragment(SurveyFragment(), "survey")
+            R.string.menu_courses -> openCallFragment(CoursesFragment(), "course")
+            R.string.menu_community -> openCallFragment(CommunityTabFragment(), "community")
             R.string.txt_myLibrary -> {
                 if (user?.id?.startsWith("guest") == true) {
                     guestDialog(this)
@@ -767,7 +767,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
             R.string.enterprises -> openEnterpriseFragment()
             R.string.menu_logout -> logout()
-            else -> openCallFragment(BellDashboardFragment())
+            else -> openCallFragment(BellDashboardFragment(), "bellDashboard")
         }
     }
 
@@ -786,8 +786,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         realmListeners.clear()
     }
 
-    override fun openCallFragment(f: Fragment) {
-        openCallFragment(f, "")
+    override fun openCallFragment(f: Fragment, tag: String?) {
+        openCallFragment(f, tag)
     }
 
     override fun openLibraryDetailFragment(library: RealmMyLibrary?) {
@@ -795,7 +795,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         val b = Bundle()
         b.putString("libraryId", library?.resourceId)
         f.arguments = b
-        openCallFragment(f)
+        openCallFragment(f, "libraryDetail")
     }
 
     override fun sendSurvey(current: RealmStepExam?) {
@@ -851,10 +851,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.menu_library -> {
-                openCallFragment(ResourcesFragment())
+                openCallFragment(ResourcesFragment(), "resources")
             }
             R.id.menu_courses -> {
-                openCallFragment(CoursesFragment())
+                openCallFragment(CoursesFragment(), "course")
             }
             R.id.menu_mycourses -> {
                 if (user?.id?.startsWith("guest") == true) {
@@ -874,7 +874,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 openEnterpriseFragment()
             }
             R.id.menu_home -> {
-                openCallFragment(BellDashboardFragment())
+                openCallFragment(BellDashboardFragment(), "bellDashboard")
             }
         }
         return true

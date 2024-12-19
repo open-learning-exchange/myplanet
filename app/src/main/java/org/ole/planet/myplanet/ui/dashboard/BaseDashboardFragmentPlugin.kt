@@ -43,7 +43,7 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
                 }
                 prefData.setTeamName(title)
                 f.arguments = b
-                homeItemClickListener?.openCallFragment(f)
+                homeItemClickListener?.openCallFragment(f, "team")
             }
         }
     }
@@ -53,39 +53,39 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
             if (homeItemClickListener != null) {
                 if (title == "mySubmissions") {
                     if (model?.id?.startsWith("guest") == false) {
-                        homeItemClickListener?.openCallFragment(MySubmissionFragment())
+                        homeItemClickListener?.openCallFragment(MySubmissionFragment(), "mySubmissions")
                     } else {
                         guestDialog(requireContext())
                     }
                 } else if (title == "Our News") {
-                    homeItemClickListener?.openCallFragment(NewsFragment())
+                    homeItemClickListener?.openCallFragment(NewsFragment(), "news")
                 } else if (title == "References") {
-                    homeItemClickListener?.openCallFragment(ReferenceFragment())
+                    homeItemClickListener?.openCallFragment(ReferenceFragment(), "reference")
                 } else if (title == "Calendar") {
-                    homeItemClickListener?.openCallFragment(CalendarFragment())
+                    homeItemClickListener?.openCallFragment(CalendarFragment(), "calendar")
                 } else if (title == "mySurvey") {
                     if (model?.id?.startsWith("guest") == false) {
-                        homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("survey"))
+                        homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("survey"), "mySurvey")
                     } else {
                         guestDialog(requireContext())
                     }
                 } else if (title == "myAchievements") {
                     if (model?.id?.startsWith("guest") == false) {
-                        homeItemClickListener?.openCallFragment(AchievementFragment())
+                        homeItemClickListener?.openCallFragment(AchievementFragment(), "myAchievements")
                     } else {
                         guestDialog(requireContext())
                     }
                 } else if (title == "myPersonals") {
                     if (model?.id?.startsWith("guest") == false) {
-                        homeItemClickListener?.openCallFragment(MyPersonalsFragment())
+                        homeItemClickListener?.openCallFragment(MyPersonalsFragment(), "myPersonals")
                     } else {
                         guestDialog(requireContext())
                     }
                 } else if (title == "Help Wanted") {
-                    homeItemClickListener?.openCallFragment(HelpWantedFragment())
+                    homeItemClickListener?.openCallFragment(HelpWantedFragment(), "helpWanted")
                 } else if (title == "myHealth") {
                     if (model?.id?.startsWith("guest") == false) {
-                        homeItemClickListener?.openCallFragment(MyHealthFragment())
+                        homeItemClickListener?.openCallFragment(MyHealthFragment(), "myHealth")
                     } else {
                         guestDialog(requireContext())
                     }

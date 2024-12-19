@@ -81,7 +81,7 @@ class AdapterMySubmission(private val context: Context, private val list: List<R
             b.putString("id", id)
             val f: Fragment = SubmissionDetailFragment()
             f.arguments = b
-            listener.openCallFragment(f)}
+            listener.openCallFragment(f, "submission")}
     }
 
     override fun getItemCount(): Int {
@@ -106,7 +106,7 @@ class AdapterMySubmission(private val context: Context, private val list: List<R
                 b.putBoolean("isMySurvey", isMySurvey)
                 val f: Fragment = TakeExamFragment()
                 f.arguments = b
-                listener.openCallFragment(f)
+                listener.openCallFragment(f, "survey")
             }
         }
     }

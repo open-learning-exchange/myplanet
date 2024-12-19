@@ -54,7 +54,7 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
         mRealm = DatabaseService(requireActivity()).realmInstance
         user = UserProfileDbHandler(requireActivity()).userModel
         fragmentCommunityBinding.btnLibrary.setOnClickListener {
-            homeItemClickListener?.openCallFragment(ResourcesFragment())
+            homeItemClickListener?.openCallFragment(ResourcesFragment(), "resources")
         }
         newList = mRealm.where(RealmNews::class.java).equalTo("docType", "message", Case.INSENSITIVE)
             .equalTo("viewableBy", "community", Case.INSENSITIVE)

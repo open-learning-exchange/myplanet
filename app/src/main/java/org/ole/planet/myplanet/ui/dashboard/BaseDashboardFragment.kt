@@ -316,10 +316,10 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
     fun initView(view: View) {
         view.findViewById<View>(R.id.imageView).setOnClickListener {
-            homeItemClickListener?.openCallFragment(UserProfileFragment())
+            homeItemClickListener?.openCallFragment(UserProfileFragment(),"userProfile")
         }
         view.findViewById<View>(R.id.txtFullName).setOnClickListener {
-            homeItemClickListener?.openCallFragment(UserProfileFragment())
+            homeItemClickListener?.openCallFragment(UserProfileFragment(), "userProfile")
         }
         dbService = DatabaseService(requireContext())
         mRealm = dbService.realmInstance

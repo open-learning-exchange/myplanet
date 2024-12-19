@@ -10,6 +10,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
+import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
@@ -83,8 +84,14 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         return true
     }
 
-    fun openCallFragment(newFragment: Fragment, tag: String?) {
+    open fun openCallFragment(newFragment: Fragment, tag: String?) {
+        Log.d("DashboardElementActivity", "openCallFragment: $tag")
         if (!isDestroyed && !isFinishing) {
+            // Don't add if a fragment with this tag already exists
+            if (tag != null && supportFragmentManager.findFragmentByTag(tag) != null) {
+                return
+            }
+
             supportFragmentManager.beginTransaction()
                 .replace(R.id.fragment_container, newFragment, tag)
                 .addToBackStack(null)

@@ -129,10 +129,10 @@ class MarkdownDialog : DialogFragment() {
                                 putString("id", courseId)
                             }
                         }
-                        (activity as? OnHomeItemClickListener)?.openCallFragment(fragment)
+                        (activity as? OnHomeItemClickListener)?.openCallFragment(fragment, "take_course")
                     }
                     context.getString(R.string.next) -> {
-                        (activity as DashboardActivity).openCallFragment(CommunityTabFragment())
+                        (activity as DashboardActivity).openCallFragment(CommunityTabFragment(), "community")
                     }
                     context.getString(R.string.sync) -> {
                         CoroutineScope(Dispatchers.IO).launch {

@@ -125,7 +125,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
                 .setTitle(getString(R.string.surveys_to_complete, pendingSurveys.size, if (pendingSurveys.size > 1) "surveys" else "survey"))
                 .setView(dialogView)
                 .setPositiveButton(getString(R.string.ok)) { dialog, _ ->
-                    homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("survey"))
+                    homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("survey"), "survey")
                     dialog.dismiss()
                 }
                 .create()
@@ -195,7 +195,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
             b.putString("id", realmMyCourses?.courseId)
             b.putInt("position", position)
             f.arguments = b
-            homeItemClickListener?.openCallFragment(f)
+            homeItemClickListener?.openCallFragment(f, "open_course")
         }
     }
 
@@ -208,7 +208,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
     }
 
     private fun declareElements() {
-        fragmentHomeBellBinding.homeCardTeams.llHomeTeam.setOnClickListener { homeItemClickListener?.openCallFragment(TeamFragment()) }
+        fragmentHomeBellBinding.homeCardTeams.llHomeTeam.setOnClickListener { homeItemClickListener?.openCallFragment(TeamFragment(), "team") }
         fragmentHomeBellBinding.homeCardLibrary.myLibraryImageButton.setOnClickListener {
             if (user?.id?.startsWith("guest") == true) {
                 guestDialog(requireContext())
@@ -225,14 +225,14 @@ class BellDashboardFragment : BaseDashboardFragment() {
         }
         fragmentHomeBellBinding.fabMyActivity.setOnClickListener { openHelperFragment(MyActivityFragment()) }
         fragmentHomeBellBinding.cardProfileBell.fabFeedback.setOnClickListener { openHelperFragment(FeedbackListFragment()) }
-        fragmentHomeBellBinding.homeCardMyLife.myLifeImageButton.setOnClickListener { homeItemClickListener?.openCallFragment(LifeFragment()) }
+        fragmentHomeBellBinding.homeCardMyLife.myLifeImageButton.setOnClickListener { homeItemClickListener?.openCallFragment(LifeFragment(), "life") }
     }
 
     private fun openHelperFragment(f: Fragment) {
         val b = Bundle()
         b.putBoolean("isMyCourseLib", true)
         f.arguments = b
-        homeItemClickListener?.openCallFragment(f)
+        homeItemClickListener?.openCallFragment(f, "helper")
     }
 
     override fun onDestroyView() {
