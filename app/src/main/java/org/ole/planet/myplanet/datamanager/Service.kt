@@ -341,13 +341,8 @@ class Service(private val context: Context) {
         val urlsToTry = mutableListOf(url)
 
         val serverMappings = mapOf(
-            "http://${BuildConfig.PLANET_URIUR_URL}" to "http://35.231.161.29",
-            "http://192.168.1.202" to "http://34.35.29.147",
-            "https://${BuildConfig.PLANET_GUATEMALA_URL}" to "http://guatemala.com/cloudserver",
-            "http://${BuildConfig.PLANET_XELA_URL}" to "http://xela.com/cloudserver",
-            "http://${BuildConfig.PLANET_SANPABLO_URL}" to "http://sanpablo.com/cloudserver",
-            "http://${BuildConfig.PLANET_EMBAKASI_URL}" to "http://embakasi.com/cloudserver",
-            "https://${BuildConfig.PLANET_VI_URL}" to "http://vi.com/cloudserver"
+            "https://${BuildConfig.PLANET_URIUR_URL}" to "https://${BuildConfig.PLANET_URIUR_CLONE_URL}",
+            "https://${BuildConfig.PLANET_EMBAKASI_URL}" to "https://${BuildConfig.PLANET_EMBAKASI_CLONE_URL}",
         )
 
         // Add alternative URL from serverMappings if available
@@ -476,13 +471,20 @@ class Service(private val context: Context) {
                             context.getString(R.string.https_protocol) -> context.getString(R.string.device_couldn_t_reach_nation_server)
                             else -> context.getString(R.string.device_couldn_t_reach_local_server)
                         }
-                        showAlertDialog(errorMessage, false)
+                        withContext(Dispatchers.Main) {
+                            showAlertDialog(errorMessage, false)
+                        }
                     }
                 }
             } catch (e: Exception) {
                 Log.e("PerformanceLog", "Exception in main process", e)
                 activity.setSyncFailed(true)
-                showAlertDialog(context.getString(R.string.device_couldn_t_reach_local_server), false)
+                withContext(Dispatchers.Main) {
+                    showAlertDialog(
+                        context.getString(R.string.device_couldn_t_reach_local_server),
+                        false
+                    )
+                }
             } finally {
                 customProgressDialog.dismiss()
                 Log.d("PerformanceLog", "Total process time: ${System.currentTimeMillis() - overallStartTime}ms")
@@ -638,18 +640,19 @@ class Service(private val context: Context) {
     }
 
     fun showAlertDialog(message: String?, playStoreRedirect: Boolean) {
-        val builder = AlertDialog.Builder(context, R.style.CustomAlertDialog)
-        builder.setMessage(message)
-        builder.setCancelable(true)
-        builder.setNegativeButton(R.string.okay) {
-            dialog: DialogInterface, _: Int ->
-            if (playStoreRedirect) {
-                Utilities.openPlayStore()
+        applicationScope.launch(Dispatchers.Main) {
+            val builder = AlertDialog.Builder(context, R.style.CustomAlertDialog)
+            builder.setMessage(message)
+            builder.setCancelable(true)
+            builder.setNegativeButton(R.string.okay) { dialog: DialogInterface, _: Int ->
+                if (playStoreRedirect) {
+                    Utilities.openPlayStore()
+                }
+                dialog.cancel()
             }
-            dialog.cancel()
+            val alert = builder.create()
+            alert.show()
         }
-        val alert = builder.create()
-        alert.show()
     }
 
     private fun getUrl(couchdbURL: String): String {
