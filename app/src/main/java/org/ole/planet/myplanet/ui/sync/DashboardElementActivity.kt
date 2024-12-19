@@ -20,9 +20,12 @@ import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import io.realm.Realm
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createAction
@@ -61,11 +64,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
             4 -> openEnterpriseFragment()
             3 -> openCallFragment(TeamFragment(), "survey")
             5 -> {
-                if (profileDbHandler.userModel?.isGuest() == true) {
-                    showGuestUserDialog()
-                } else {
-                    openCallFragment(CommunityTabFragment(), "community")
-                }
+                openCallFragment(CommunityTabFragment(), "community")
             }
         }
     }
@@ -121,10 +120,24 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
     }
 
     fun logSyncInSharedPrefs() {
-        lifecycleScope.launch {
-            if (isServerReachable(Utilities.getUrl())) {
-                startUpload("dashboard")
-                createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
+        lifecycleScope.launch(Dispatchers.IO + SupervisorJob()) {
+            try {
+                val isReachable = isServerReachable(Utilities.getUrl())
+                if (isReachable) {
+                    withContext(Dispatchers.Main) {
+                        startUpload("dashboard")
+                    }
+
+                    withContext(Dispatchers.IO) {
+                        Realm.getDefaultInstance().use { realm ->
+                            realm.executeTransaction {
+                                createAction(realm, "${profileDbHandler.userModel?.id}", null, "sync")
+                            }
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }

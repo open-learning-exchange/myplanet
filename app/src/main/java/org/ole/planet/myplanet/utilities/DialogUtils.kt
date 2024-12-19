@@ -34,7 +34,7 @@ object DialogUtils {
 
     fun guestDialog(context: Context) {
         val profileDbHandler = UserProfileDbHandler(context)
-        val builder = android.app.AlertDialog.Builder(context, R.style.AlertDialogTheme)
+        val builder = android.app.AlertDialog.Builder(context, R.style.CustomAlertDialog)
         builder.setTitle(context.getString(R.string.become_a_member))
         builder.setMessage(context.getString(R.string.to_access_this_feature_become_a_member))
         builder.setCancelable(false)
@@ -75,7 +75,7 @@ object DialogUtils {
 
     private fun showDialog(context: Context) {
         if (MainApplication.syncFailedCount > 3) {
-            val pd = AlertDialog.Builder(context)
+            val pd = AlertDialog.Builder(context, R.style.CustomAlertDialog)
             var message = if (NetworkUtils.isBluetoothEnabled()) "Bluetooth " else ""
             message += if (NetworkUtils.isWifiEnabled()) "Wifi " else ""
             message += context.getString(R.string.is_on_please_turn_of_to_save_battery)
@@ -101,7 +101,7 @@ object DialogUtils {
     @JvmStatic
     fun showAlert(context: Context?, title: String?, message: String?) {
         if (context is Activity && !context.isFinishing) {
-            AlertDialog.Builder(context, R.style.AlertDialogTheme)
+            AlertDialog.Builder(context, R.style.CustomAlertDialog)
                 .setTitle(title)
                 .setMessage(message)
                 .setPositiveButton(R.string.finish, null)
@@ -111,7 +111,7 @@ object DialogUtils {
 
     @JvmStatic
     fun getAlertDialog(context: Context, message: String, pos: String, listener: DialogInterface.OnClickListener?): AlertDialog {
-        return AlertDialog.Builder(ContextThemeWrapper(context, R.style.AlertDialogTheme))
+        return AlertDialog.Builder(ContextThemeWrapper(context, R.style.CustomAlertDialog))
             .setMessage(message)
             .setIcon(R.drawable.courses)
             .setPositiveButton(pos, listener)
@@ -130,7 +130,7 @@ object DialogUtils {
 
     @JvmStatic
     fun getAlertDialog(context: Context, title: String, v: View): AlertDialog {
-        return AlertDialog.Builder(ContextThemeWrapper(context, R.style.AlertDialogTheme))
+        return AlertDialog.Builder(ContextThemeWrapper(context, R.style.CustomAlertDialog))
             .setTitle(title)
             .setIcon(R.drawable.ic_edit)
             .setView(v)

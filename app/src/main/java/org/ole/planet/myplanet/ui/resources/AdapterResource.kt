@@ -74,6 +74,10 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
             holder.bind()
             holder.rowLibraryBinding.title.text = libraryList[position]?.title
             setMarkdownText(holder.rowLibraryBinding.description, libraryList[position]?.description!!)
+            holder.rowLibraryBinding.description.setOnClickListener {
+                val library = libraryList[position]
+                openLibrary(library)
+            }
             holder.rowLibraryBinding.timesRated.text = context.getString(R.string.num_total, libraryList[position]?.timesRated)
             holder.rowLibraryBinding.checkbox.isChecked = selectedItems.contains(libraryList[position])
             holder.rowLibraryBinding.checkbox.contentDescription = "${context.getString(R.string.selected)} ${libraryList[position]?.title}"

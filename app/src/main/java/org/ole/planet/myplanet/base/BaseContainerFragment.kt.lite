@@ -17,8 +17,8 @@ import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContracts
+//import androidx.activity.result.ActivityResultLauncher
+//import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.view.ContextThemeWrapper
 import androidx.appcompat.widget.AppCompatRatingBar
@@ -30,8 +30,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmUserChallengeActions
-import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createAction
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_RESOURCE_DOWNLOAD
 import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_RESOURCE_OPEN
@@ -79,9 +77,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             val url = Utilities.getUrl(library)
             if (!FileUtils.checkFileExist(url) && !TextUtils.isEmpty(url)) urls.add(url)
         }
-        if (urls.isNotEmpty()) startDownload(urls) else Utilities.toast(
-            activity, getString(R.string.no_images_to_download)
-        )
+        if (urls.isNotEmpty()) startDownload(urls)
     }
 
     fun initRatingView(type: String?, id: String?, title: String?, listener: OnRatingChangeListener?) {
@@ -154,34 +150,17 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 
     private fun checkFileExtension(items: RealmMyLibrary) {
         val mimetype = Utilities.getMimeType(items.resourceLocalAddress)
-        val userId = "${model?.id}"
-        Log.d("FileExtension", "Mimetype: ${items.resourceLocalAddress}")
-
         val extension = items.resourceLocalAddress
             ?.substringAfterLast('.', "")
             ?.lowercase()
 
-        val existingAction = mRealm.where(RealmUserChallengeActions::class.java)
-            .equalTo("userId", userId)
-            .equalTo("resourceId", items.resourceId)
-            .findFirst()
-
         if (mimetype != null) {
             if (mimetype.contains("image")) {
                 openIntent(items, ImageViewerActivity::class.java)
-                if (existingAction == null) {
-                    createAction(mRealm, userId, items.resourceId, "resourceOpen")
-                }
             } else if (mimetype.contains("pdf")) {
                 openPdf(items)
-                if (existingAction == null) {
-                    createAction(mRealm, userId, items.resourceId, "resourceOpen")
-                }
             } else if (mimetype.contains("audio")) {
                 openIntent(items, AudioPlayerActivity::class.java)
-                if (existingAction == null) {
-                    createAction(mRealm, userId, items.resourceId, "resourceOpen")
-                }
             } else {
                 checkMoreFileExtensions(extension, items)
             }
@@ -189,46 +168,20 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
 
     private fun checkMoreFileExtensions(extension: String?, items: RealmMyLibrary) {
-        val userId = "${model?.id}"
-        val existingAction = mRealm.where(RealmUserChallengeActions::class.java)
-            .equalTo("userId", userId)
-            .equalTo("resourceId", items.resourceId)
-            .findFirst()
-
         when (extension) {
             "txt" -> {
-                if (existingAction == null) {
-                    createAction(mRealm, userId, items.resourceId, "resourceOpen")
-                }
                 openIntent(items, TextFileViewerActivity::class.java)
             }
             "html", "htm" -> {
-                if (existingAction == null) {
-                    createAction(mRealm, userId, items.resourceId, "resourceOpen")
-                }
                 openHtmlResource(items)
             }
             "md" -> {
-                if (items.resourceLocalAddress?.contains("README.md", ignoreCase = true) == true) {
-                    Log.d("FileExtension", "Detected README.md file")
-                    return
-                }
-
-                if (existingAction == null) {
-                    createAction(mRealm, userId, items.resourceId, "resourceOpen")
-                }
                 openIntent(items, MarkdownViewerActivity::class.java)
             }
             "csv" -> {
-                if (existingAction == null) {
-                    createAction(mRealm, userId, items.resourceId, "resourceOpen")
-                }
                 openIntent(items, CSVViewerActivity::class.java)
             }
 //            "apk" -> {
-//                if (existingAction == null) {
-//                    createAction(mRealm, userId, items.resourceId, "resourceOpen")
-//                }
 //                installApk(items)
 //            }
             else -> Toast.makeText(activity, getString(R.string.this_file_type_is_currently_unsupported), Toast.LENGTH_LONG).show()
