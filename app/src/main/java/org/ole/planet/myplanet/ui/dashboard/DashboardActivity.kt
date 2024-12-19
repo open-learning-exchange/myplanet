@@ -10,6 +10,7 @@ import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
@@ -172,6 +173,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 openMyFragment(FeedbackListFragment())
             }
         } else {
+            Log.d("openCallFragment", "No fragment to open")
             openCallFragment(BellDashboardFragment())
             activityDashboardBinding.appBarBell.bellToolbar.visibility = View.VISIBLE
         }
@@ -187,25 +189,30 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             when (item.itemId) {
                 R.id.action_chat -> {
                     if (user?.id?.startsWith("guest") == false) {
-                        openCallFragment(ChatHistoryListFragment())
+                        Log.d("openCallFragment", "This is ${ChatHistoryListFragment::class.java.simpleName}")
+                        openCallFragment(
+                            ChatHistoryListFragment(),
+                            ChatHistoryListFragment::class.java.simpleName
+                        )
                     } else {
                         guestDialog(this)
                     }
                 }
                 R.id.menu_goOnline -> wifiStatusSwitch()
-                R.id.action_sync -> {
-                    logSyncInSharedPrefs()
-                }
+                R.id.action_sync -> logSyncInSharedPrefs()
                 R.id.action_feedback -> {
                     if (user?.id?.startsWith("guest") == false) {
-                        openCallFragment(FeedbackListFragment())
+                        openCallFragment(
+                            FeedbackListFragment(),
+                            FeedbackListFragment::class.java.simpleName
+                        )
                     } else {
                         guestDialog(this)
                     }
                 }
                 R.id.action_settings -> startActivity(Intent(this@DashboardActivity, SettingActivity::class.java))
-                R.id.action_disclaimer -> openCallFragment(DisclaimerFragment())
-                R.id.action_about -> openCallFragment(AboutFragment())
+                R.id.action_disclaimer -> openCallFragment(DisclaimerFragment(), DisclaimerFragment::class.java.simpleName)
+                R.id.action_about -> openCallFragment(AboutFragment(), AboutFragment::class.java.simpleName)
                 R.id.action_logout -> logout()
                 else -> {}
             }
@@ -788,6 +795,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     override fun openCallFragment(f: Fragment) {
+        Log.d("openCallFragment", "This is ${f::class.java.simpleName}")
         openCallFragment(f, "")
     }
 
