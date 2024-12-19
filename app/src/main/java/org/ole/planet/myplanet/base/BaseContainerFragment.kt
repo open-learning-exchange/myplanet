@@ -8,6 +8,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -70,15 +71,15 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             AdapterCourses.showRating(`object`, rating, timesRated, ratingBar)
         }
     }
-    fun getUrlsAndStartDownload(
-        lib: List<RealmMyLibrary?>, urls: ArrayList<String>
-    ) {
+
+    fun getUrlsAndStartDownload(lib: List<RealmMyLibrary?>, urls: ArrayList<String>) {
         for (library in lib) {
             val url = Utilities.getUrl(library)
             if (!FileUtils.checkFileExist(url) && !TextUtils.isEmpty(url)) urls.add(url)
         }
         if (urls.isNotEmpty()) startDownload(urls)
     }
+
     fun initRatingView(type: String?, id: String?, title: String?, listener: OnRatingChangeListener?) {
         timesRated = requireView().findViewById(R.id.times_rated)
         rating = requireView().findViewById(R.id.tv_rating)
@@ -98,12 +99,14 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             }
         }
     }
+
     override fun onAttach(context: Context) {
         super.onAttach(context)
         if (context is OnHomeItemClickListener) {
             homeItemClickListener = context
         }
     }
+
     private fun openIntent(items: RealmMyLibrary, typeClass: Class<*>?) {
         val fileOpenIntent = Intent(activity, typeClass)
         if (items.resourceLocalAddress?.contains("ole/audio") == true || items.resourceLocalAddress?.contains("ole/video") == true) {
@@ -115,6 +118,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         }
         startActivity(fileOpenIntent)
     }
+
     private fun openPdf(item: RealmMyLibrary) {
         val fileOpenIntent = Intent(activity, PDFReaderActivity::class.java)
         fileOpenIntent.putExtra("TOUCHED_FILE", item.id + "/" + item.resourceLocalAddress)
@@ -123,31 +127,37 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
 
     fun openResource(items: RealmMyLibrary) {
-        val matchingItems = mRealm.where(RealmMyLibrary::class.java)
-            .equalTo("resourceLocalAddress", items.resourceLocalAddress)
-            .findAll()
-        val anyOffline = matchingItems.any { it.isResourceOffline() }
-        if (anyOffline) {
-            val offlineItem = matchingItems.first { it.isResourceOffline()}
-            openFileType(offlineItem, "offline")
-        } else {
-            if (items.isResourceOffline()) {
-                openFileType(items, "offline")
-            } else if (FileUtils.getFileExtension(items.resourceLocalAddress) == "mp4") {
-                openFileType(items,  "online")
-            } else {
-                val arrayList = ArrayList<String>()
-                arrayList.add(Utilities.getUrl(items))
-                startDownload(arrayList)
-                profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_DOWNLOAD)
-            }
+        val intent = Intent(context, WebViewActivity::class.java).apply {
+            putExtra("isLocalFile", true)
+            putExtra("RESOURCE_ID", "6f7b1d7a7c9c73e736b38657bc013556") // The _id from the library item
         }
+        startActivity(intent)
+//        val matchingItems = mRealm.where(RealmMyLibrary::class.java)
+//            .equalTo("resourceLocalAddress", items.resourceLocalAddress)
+//            .findAll()
+//        val anyOffline = matchingItems.any { it.isResourceOffline() }
+//        if (anyOffline) {
+//            val offlineItem = matchingItems.first { it.isResourceOffline()}
+//            openFileType(offlineItem, "offline")
+//        } else {
+//            if (items.isResourceOffline()) {
+//                openFileType(items, "offline")
+//            } else if (FileUtils.getFileExtension(items.resourceLocalAddress) == "mp4") {
+//                openFileType(items,  "online")
+//            } else {
+//                val arrayList = ArrayList<String>()
+//                arrayList.add(Utilities.getUrl(items))
+//                startDownload(arrayList)
+//                profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_DOWNLOAD)
+//            }
+//        }
     }
 
     private fun checkFileExtension(items: RealmMyLibrary) {
-        val filenameArray = items.resourceLocalAddress?.split("\\.".toRegex())?.toTypedArray()
-        val extension = filenameArray?.get(filenameArray.size - 1)
         val mimetype = Utilities.getMimeType(items.resourceLocalAddress)
+        val extension = items.resourceLocalAddress
+            ?.substringAfterLast('.', "")
+            ?.lowercase()
 
         if (mimetype != null) {
             if (mimetype.contains("image")) {
@@ -166,6 +176,9 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         when (extension) {
             "txt" -> {
                 openIntent(items, TextFileViewerActivity::class.java)
+            }
+            "html", "htm" -> {
+                openHtmlResource(items)
             }
             "md" -> {
                 openIntent(items, MarkdownViewerActivity::class.java)
@@ -233,6 +246,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             checkFileExtension(items)
         }
     }
+
     open fun playVideo(videoType: String, items: RealmMyLibrary) {
         val intent = Intent(activity, VideoPlayerActivity::class.java)
         val bundle = Bundle()
@@ -296,6 +310,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             }
         }
     }
+
     fun setResourceButton(resources: List<RealmMyLibrary>?, btnResources: Button) {
         if (resources.isNullOrEmpty()) {
             btnResources.visibility = View.GONE
@@ -308,6 +323,15 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 }
             }
         }
+    }
+
+    private fun openHtmlResource(items: RealmMyLibrary) {
+        val intent = Intent(activity, WebViewActivity::class.java).apply {
+            putExtra("TOUCHED_FILE", "${items.id}/${items.resourceLocalAddress}")
+            putExtra("title", items.title)
+            putExtra("isLocalFile", true)
+        }
+        startActivity(intent)
     }
 
     open fun handleBackPressed() {
