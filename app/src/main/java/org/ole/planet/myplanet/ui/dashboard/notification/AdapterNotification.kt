@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.dashboard.notification
 
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -27,7 +28,14 @@ class AdapterNotification(var notificationList: List<RealmNotification>, private
 
     inner class ViewHolderNotifications(private val rowNotificationsBinding: RowNotificationsBinding) : RecyclerView.ViewHolder(rowNotificationsBinding.root) {
         fun bind(notification: RealmNotification, position: Int) {
+            Log.d("noti","current notification ${notification.type}")
             rowNotificationsBinding.title.text = notification.message
+            /*
+            * changes here gett the storage stuff and paste it herer
+            * types of notification types-   resource, storage, survey, sync
+            *
+            *
+            * */
             if (notification.isRead) {
                 rowNotificationsBinding.btnMarkAsRead.visibility = View.GONE
                 rowNotificationsBinding.root.alpha = 0.5f

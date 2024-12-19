@@ -10,6 +10,7 @@ import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
@@ -17,6 +18,7 @@ import android.view.View
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.MenuItemCompat
@@ -42,6 +44,7 @@ import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.base.BaseResourceFragment
@@ -309,7 +312,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
         val hasUnfinishedSurvey = mRealm.where(RealmStepExam::class.java)
             .equalTo("courseId", courseId)
-            .equalTo("type", "surveys")
+            .equalTo("type", "survey")
             .findAll()
             .any { survey -> !TakeCourseFragment.existsSubmission(mRealm, survey.id, "survey") }
 
@@ -466,8 +469,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
         val pendingSurveys = getPendingSurveys(user?.id)
         val surveyTitles = getSurveyTitlesFromSubmissions(pendingSurveys)
+        Log.d("noti","Found survey tiles : $surveyTitles")
         surveyTitles.forEach { title ->
-            createNotificationIfNotExists("survey", "you have a pending survey: $title", title)
+            createNotificationIfNotExists("survey", "${getString(R.string.pending_survey_notification)} $title", title)
         }
 
         val tasks = mRealm.where(RealmTeamTask::class.java)
@@ -475,8 +479,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             .equalTo("completed", false)
             .equalTo("assignee", user?.id)
             .findAll()
+
         tasks.forEach { task ->
-            createNotificationIfNotExists("task", "${task.title} is due in ${formatDate(task.deadline)}", task.id)
+            createNotificationIfNotExists("task", context.getString(R.string.task_notification, task.title, formatDate(task.deadline)), task.id)
         }
 
         val storageRatio = totalAvailableMemoryRatio
@@ -485,6 +490,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 createNotificationIfNotExists("storage", "${getString(R.string.storage_critically_low)} $storageRatio% ${getString(R.string.available_please_free_up_space)}", "storage")
             }
             storageRatio <= 40 -> {
+                Log.d("noti", "lang is "+getString(R.string.storage_running_low))
                 createNotificationIfNotExists("storage", "${getString(R.string.storage_running_low)} $storageRatio% ${getString(R.string.available)}", "storage")
             }
         }
@@ -534,6 +540,13 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             .equalTo("type", type)
             .equalTo("relatedId", relatedId)
             .findFirst()
+        if (existingNotification != null) {
+            Log.d(
+                "noti",
+                "existing notification has ${existingNotification?.message} v/s ${message}"
+            )
+        }
+
 
         if (existingNotification == null) {
             mRealm.createObject(RealmNotification::class.java, "${UUID.randomUUID()}").apply {
@@ -557,8 +570,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun getSurveyTitlesFromSubmissions(submissions: List<RealmSubmission>): List<String> {
         val titles = mutableListOf<String>()
         submissions.forEach { submission ->
+            val examId = submission.parentId?.split("@")?.firstOrNull() ?: ""
             val exam = mRealm.where(RealmStepExam::class.java)
-                .equalTo("id", submission.parentId)
+                .equalTo("id", examId)
                 .findFirst()
             exam?.name?.let { titles.add(it) }
         }
