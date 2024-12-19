@@ -12,7 +12,11 @@ import android.os.storage.StorageManager
 import android.provider.MediaStore
 import android.text.TextUtils
 import android.content.pm.PackageInstaller
+import android.util.Log
+import io.realm.RealmList
+import io.realm.RealmObject
 import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.model.RealmAttachment
 import java.io.BufferedReader
 import java.io.File
 import java.io.FileInputStream
@@ -67,7 +71,7 @@ object FileUtils {
 
     @JvmStatic
     fun getSDPathFromUrl(url: String?): File {
-        return createFilePath("/ole/" + getIdFromUrl(url), getFileNameFromUrl(url))
+        return createFilePath("/ole/${getIdFromUrl(url)}", getFileNameFromUrl(url))
     }
 
     @JvmStatic
@@ -363,6 +367,46 @@ object FileUtils {
         val nameWithExtension = extractFileName(fileName)
         val nameWithoutExtension = nameWithExtension?.substringBeforeLast(".")
         return nameWithoutExtension
+    }
+
+    fun extractAttachments(attachments: RealmList<RealmAttachment>?, resourceId: String?) {
+        attachments?.forEach { attachment ->
+            val url = createAttachmentUrl(resourceId ?: "", attachment.name)
+            val targetFile = getSDPathFromUrl(url)
+
+            try {
+                // Create parent directories if they don't exist
+                targetFile.parentFile?.mkdirs()
+
+                // Create the file if it doesn't exist
+                if (!targetFile.exists()) {
+                    targetFile.createNewFile()
+                }
+
+                // Get the attachment data from Realm
+                val attachmentData = getAttachmentDataFromRealm(attachment)
+
+                // Write the data to the file
+                FileOutputStream(targetFile).use { fos ->
+                    fos.write(attachmentData)
+                }
+
+                Log.d("ResourceExtractor", "Successfully saved attachment: ${attachment.name}")
+            } catch (e: Exception) {
+                Log.e("ResourceExtractor", "Failed to save attachment: ${attachment.name}", e)
+                throw RuntimeException("Failed to save attachment: ${attachment.name}", e)
+            }
+        }
+    }
+
+    private fun getAttachmentDataFromRealm(attachment: RealmAttachment): ByteArray {
+        // This is a placeholder - you'll need to implement how to get the actual attachment data
+        // For example, if you have a separate table or blob field storing the actual data
+        return ByteArray(0)
+    }
+
+    private fun createAttachmentUrl(resourceId: String, filename: String?): String {
+        return "/resources/$resourceId/${filename ?: ""}"
     }
 
 

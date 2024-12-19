@@ -20,6 +20,7 @@ import java.io.FileWriter
 import java.io.IOException
 import java.util.Calendar
 import java.util.Date
+import java.util.UUID
 
 open class RealmMyLibrary : RealmObject() {
     @PrimaryKey
@@ -63,6 +64,8 @@ open class RealmMyLibrary : RealmObject() {
     var courseId: String? = null
     var stepId: String? = null
     var isPrivate: Boolean = false
+    var attachments: RealmList<RealmAttachment>? = null
+
     fun serializeResource(): JsonObject {
         return JsonObject().apply {
             addProperty("_id", _id)
@@ -279,7 +282,25 @@ open class RealmMyLibrary : RealmObject() {
                 description = JsonUtils.getString("description", doc)
                 if (doc.has("_attachments")) {
                     val attachments = doc["_attachments"].asJsonObject
-                    attachments.entrySet().forEach { (key, _) ->
+                    if (this.attachments == null) {
+                        this.attachments = RealmList()
+                    }
+
+                    attachments.entrySet().forEach { (key, attachmentValue) ->
+                        val attachmentObj = attachmentValue.asJsonObject
+
+                        val realmAttachment = mRealm.createObject(RealmAttachment::class.java, UUID.randomUUID().toString())
+                        realmAttachment.apply {
+                            name = key
+                            contentType = attachmentObj.get("content_type")?.asString
+                            length = attachmentObj.get("length")?.asLong ?: 0
+                            digest = attachmentObj.get("digest")?.asString
+                            isStub = attachmentObj.get("stub")?.asBoolean == true
+                            revpos = attachmentObj.get("revpos")?.asInt ?: 0
+                        }
+
+                        this.attachments?.add(realmAttachment)
+
                         if (key.indexOf("/") < 0) {
                             resourceRemoteAddress = "${settings.getString("couchdbURL", "http://")}/resources/$resourceId/$key"
                             resourceLocalAddress = key
@@ -410,4 +431,15 @@ open class RealmMyLibrary : RealmObject() {
             return libraries.flatMap { it.subject ?: emptyList() }.toSet()
         }
     }
+}
+
+open class RealmAttachment : RealmObject() {
+    @PrimaryKey
+    var id: String? = null
+    var name: String? = null
+    var contentType: String? = null
+    var length: Long = 0
+    var digest: String? = null
+    var isStub: Boolean = false
+    var revpos: Int = 0
 }
