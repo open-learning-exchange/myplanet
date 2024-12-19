@@ -309,7 +309,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
         val hasUnfinishedSurvey = mRealm.where(RealmStepExam::class.java)
             .equalTo("courseId", courseId)
-            .equalTo("type", "surveys")
+            .equalTo("type", "survey")
             .findAll()
             .any { survey -> !TakeCourseFragment.existsSubmission(mRealm, survey.id, "survey") }
 
@@ -557,8 +557,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun getSurveyTitlesFromSubmissions(submissions: List<RealmSubmission>): List<String> {
         val titles = mutableListOf<String>()
         submissions.forEach { submission ->
+            val examId = submission.parentId?.split("@")?.firstOrNull() ?: ""
             val exam = mRealm.where(RealmStepExam::class.java)
-                .equalTo("id", submission.parentId)
+                .equalTo("id", examId)
                 .findFirst()
             exam?.name?.let { titles.add(it) }
         }
