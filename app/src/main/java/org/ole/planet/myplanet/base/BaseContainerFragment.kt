@@ -8,7 +8,6 @@ import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import android.text.TextUtils
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -127,50 +126,6 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 
     fun openResource(items: RealmMyLibrary) {
         if (items.openWith == "HTML") {
-            Log.d("FileExtension", "Opening HTML file: ${Utilities.getUrl()}")
-            items.let { item ->
-                val allDetails = """
-                    _id: ${item._id}
-                    _rev: ${item._rev}
-                    Title: ${item.title}
-                    Author: ${item.author}
-                    Year: ${item.year}
-                    Description: ${item.description}
-                    Language: ${item.language}
-                    Publisher: ${item.publisher}
-                    Link to License: ${item.linkToLicense}
-                    Subjects: ${item.subject?.joinToString()}
-                    Levels: ${item.level?.joinToString()}
-                    Resource Type: ${item.resourceType}
-                    Open With: ${item.openWith}
-                    Media Type: ${item.mediaType}
-                    Article Date: ${item.articleDate}
-                    Resource For: ${item.resourceFor?.joinToString()}
-                    Added By: ${item.addedBy}
-                    Upload Date: ${item.uploadDate}
-                    Created Date: ${item.createdDate}
-                    Resource Remote Address: ${item.resourceRemoteAddress}
-                    Resource Local Address: ${item.resourceLocalAddress}
-                    Resource Offline: ${item.resourceOffline}
-                    Resource ID: ${item.resourceId}
-                    Downloaded Rev: ${item.downloadedRev}
-                    Needs Optimization: ${item.needsOptimization}
-                    Tags: ${item.tag?.joinToString()}
-                    Languages: ${item.languages?.joinToString()}
-                    Course ID: ${item.courseId}
-                    Step ID: ${item.stepId}
-                    Is Private: ${item.isPrivate}
-                    User ID: ${item.userId?.joinToString()}
-                    Filename: ${item.filename}
-                    Translations Audio Path: ${item.translationAudioPath}
-                    Average Rating: ${item.averageRating}
-                    Times Rated: ${item.timesRated}
-                    Sum: ${item.sum}
-                    attachment: ${item.attachments?.joinToString()}                            
-                  """.trimIndent()
-
-                logLargeString("AdapterResource", "Full Library Item Details:\n$allDetails")
-            }
             if (items.resourceOffline) {
                 val intent = Intent(activity, WebViewActivity::class.java)
                 intent.putExtra("RESOURCE_ID", items.id)
@@ -184,13 +139,18 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                     attachment.name?.let { name ->
                         val url = Utilities.getUrl("${items.resourceId}", name)
                         downloadUrls.add(url)
+
+                        val baseDir = File(context?.getExternalFilesDir(null), "ole/${items.resourceId}")
+                        val lastSlashIndex = name.lastIndexOf('/')
+                        if (lastSlashIndex > 0) {
+                            val dirPath = name.substring(0, lastSlashIndex)
+                            File(baseDir, dirPath).mkdirs()
+                        }
                     }
                 }
 
                 if (downloadUrls.isNotEmpty()) {
                     startDownload(downloadUrls)
-                } else {
-                    Log.w("ResourceExtractor", "No attachments to download")
                 }
             }
         } else {
@@ -209,7 +169,6 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 } else {
                     val arrayList = ArrayList<String>()
                     arrayList.add(Utilities.getUrl(items))
-                    Log.d("okuro", Utilities.getUrl(items))
                     startDownload(arrayList)
                     profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_DOWNLOAD)
                 }
@@ -386,14 +345,5 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     open fun handleBackPressed() {
         val fragmentManager = parentFragmentManager
         fragmentManager.popBackStack()
-    }
-
-    fun logLargeString(tag: String, content: String) {
-        if (content.length > 3000) {
-            Log.d(tag, content.substring(0, 3000))
-            logLargeString(tag, content.substring(3000))
-        } else {
-            Log.d(tag, content)
-        }
     }
 }
