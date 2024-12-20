@@ -172,6 +172,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 openMyFragment(FeedbackListFragment())
             }
         } else {
+            Log.d("openCallFragment", "No fragment to open")
             openCallFragment(BellDashboardFragment())
             activityDashboardBinding.appBarBell.bellToolbar.visibility = View.VISIBLE
         }
