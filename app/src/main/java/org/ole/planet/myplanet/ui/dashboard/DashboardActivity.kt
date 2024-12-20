@@ -793,7 +793,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     override fun openCallFragment(f: Fragment) {
         val tag = f::class.java.simpleName
-        Log.d("openCallFragment", "This is $tag")
         openCallFragment(f,tag)
     }
 
