@@ -794,8 +794,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     override fun openCallFragment(f: Fragment) {
-        Log.d("openCallFragment", "This is ${f::class.java.simpleName}")
-        openCallFragment(f, "")
+        val tag = f::class.java.simpleName
+        Log.d("openCallFragment", "This is $tag")
+        openCallFragment(f,tag)
     }
 
     override fun openLibraryDetailFragment(library: RealmMyLibrary?) {
