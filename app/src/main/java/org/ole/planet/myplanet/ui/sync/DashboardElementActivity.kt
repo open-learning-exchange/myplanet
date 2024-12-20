@@ -36,24 +36,34 @@ import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.dashboard.BellDashboardFragment
 import org.ole.planet.myplanet.ui.dashboard.DashboardFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
-import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.rating.RatingFragment.Companion.newInstance
+import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.team.TeamFragment
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.SharedPrefManager
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.URLProcessor
 
 abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBackStackChangedListener {
     lateinit var navigationView: BottomNavigationView
     var doubleBackToExitPressedOnce = false
     private lateinit var goOnline: MenuItem
+    lateinit var urlProcessor: URLProcessor
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         profileDbHandler = UserProfileDbHandler(this)
         settings = applicationContext.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         prefData = SharedPrefManager(this)
+        urlProcessor = URLProcessor(
+            context = this,
+            lifecycleScope = lifecycleScope,
+            settings = settings,
+            editor = editor,
+            mRealm = mRealm,
+            profileDbHandler = profileDbHandler
+        )
     }
 
     fun onClickTabItems(position: Int) {
@@ -120,25 +130,15 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
     }
 
     fun logSyncInSharedPrefs() {
-        lifecycleScope.launch(Dispatchers.IO + SupervisorJob()) {
-            try {
-                val isReachable = isServerReachable(Utilities.getUrl())
-                if (isReachable) {
-                    withContext(Dispatchers.Main) {
-                        startUpload("dashboard")
-                    }
-
-                    withContext(Dispatchers.IO) {
-                        Realm.getDefaultInstance().use { realm ->
-                            realm.executeTransaction {
-                                createAction(realm, "${profileDbHandler.userModel?.id}", null, "sync")
-                            }
-                        }
-                    }
+        lifecycleScope.launch {
+            urlProcessor.processSyncURL(
+                onStartUpload = { source ->
+                    startUpload(source)
+                },
+                onCreateAction = { realm, id, type, action ->
+                    createAction(realm, "${profileDbHandler.userModel?.id}", type, action)
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+            )
         }
     }
 
