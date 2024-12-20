@@ -10,6 +10,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
+import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
@@ -82,16 +83,57 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         goOnline = menu.findItem(R.id.menu_goOnline)
         return true
     }
-
+    var c = 0
     fun openCallFragment(newFragment: Fragment, tag: String?) {
-        if (!isDestroyed && !isFinishing) {
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, newFragment, tag)
-                .addToBackStack(null)
-                .commitAllowingStateLoss()
+        val fragmentManager = supportFragmentManager
+        Log.d("openCallFragment", "Opening fragment with tag $tag.")
+        if(c<2){
+            c=0
+        }
+        val existingFragment = fragmentManager.findFragmentByTag(tag)
+        if (tag == "") {
+            c++
+            Log.d("openCallFragment", "$c")
+            if(c>2){
+                c--
+                fragmentManager.popBackStack(tag, 0)
+            }else{
+                Log.d("openCallFragment", "Fragment with tag $tag if wala.")
+                fragmentManager.beginTransaction()
+                    .replace(R.id.fragment_container, newFragment, tag)
+                    .addToBackStack(tag)
+                    .commit()
+            }
+        } else {
+            if (existingFragment != null && existingFragment.isVisible) {
+                // If the fragment exists and is already visible, do nothing
+                Log.d("openCallFragment", "Fragment with tag $tag is already visible.")
+            } else if (existingFragment != null) {
+                // If the fragment exists but is not visible, bring it to the front
+                if(c>0 && c>2){
+                    c=0
+                }
+                Log.d("openCallFragment", "Bringing fragment with tag $tag to the front.")
+                fragmentManager.popBackStack(tag, 0)
+            } else {
+                // If the fragment doesn't exist, add it
+                if(c>0 && c>2){
+                    c=0
+                }
+                if(tag!="") {
+                    Log.d("openCallFragment", "Adding new fragment with tag $tag.")
+                    Log.d(
+                        "openCallFragment",
+                        "Its been called from ${newFragment.javaClass.simpleName}"
+                    )
+                    fragmentManager.beginTransaction()
+                        .replace(R.id.fragment_container, newFragment, tag)
+                        .addToBackStack(tag)
+                        .commit()
+                }
+            }
         }
     }
-
     override fun onPrepareOptionsMenu(menu: Menu): Boolean {
         goOnline.isVisible = showBetaFeature(Constants.KEY_SYNC, this)
         return super.onPrepareOptionsMenu(menu)
@@ -240,5 +282,6 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         b.putString("type", "enterprise")
         fragment.arguments = b
         openCallFragment(fragment, "Enterprise")
+        Log.d("openEnterpriseFragment", "Opening Enterprise Fragment")
     }
 }
