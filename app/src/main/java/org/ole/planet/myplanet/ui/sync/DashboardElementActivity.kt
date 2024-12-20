@@ -10,7 +10,6 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
-import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
@@ -50,6 +49,8 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
     lateinit var navigationView: BottomNavigationView
     var doubleBackToExitPressedOnce = false
     private lateinit var goOnline: MenuItem
+    var c = 0
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         profileDbHandler = UserProfileDbHandler(this)
@@ -83,7 +84,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         goOnline = menu.findItem(R.id.menu_goOnline)
         return true
     }
-    var c = 0
+
     fun openCallFragment(newFragment: Fragment, tag: String?) {
         val fragmentManager = supportFragmentManager
         if(c<2){
@@ -103,15 +104,13 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
             }
         } else {
             if (existingFragment != null && existingFragment.isVisible) {
-                // If the fragment exists and is already visible, do nothing
+                return
             } else if (existingFragment != null) {
-                // If the fragment exists but is not visible, bring it to the front
                 if(c>0 && c>2){
                     c=0
                 }
                 fragmentManager.popBackStack(tag, 0)
             } else {
-                // If the fragment doesn't exist, add it
                 if(c>0 && c>2){
                     c=0
                 }
