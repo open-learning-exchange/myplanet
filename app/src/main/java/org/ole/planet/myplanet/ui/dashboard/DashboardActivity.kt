@@ -173,7 +173,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 openMyFragment(FeedbackListFragment())
             }
         } else {
-            Log.d("openCallFragment", "No fragment to open")
             openCallFragment(BellDashboardFragment())
             activityDashboardBinding.appBarBell.bellToolbar.visibility = View.VISIBLE
         }
@@ -189,7 +188,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             when (item.itemId) {
                 R.id.action_chat -> {
                     if (user?.id?.startsWith("guest") == false) {
-                        Log.d("openCallFragment", "This is ${ChatHistoryListFragment::class.java.simpleName}")
                         openCallFragment(
                             ChatHistoryListFragment(),
                             ChatHistoryListFragment::class.java.simpleName
