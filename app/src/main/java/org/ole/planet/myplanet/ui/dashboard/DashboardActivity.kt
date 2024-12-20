@@ -469,9 +469,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
         val pendingSurveys = getPendingSurveys(user?.id)
         val surveyTitles = getSurveyTitlesFromSubmissions(pendingSurveys)
-        Log.d("noti","Found survey tiles : $surveyTitles")
         surveyTitles.forEach { title ->
-            createNotificationIfNotExists("survey", "${getString(R.string.pending_survey_notification)} $title", title)
+            createNotificationIfNotExists("survey", "$title", title)
         }
 
         val tasks = mRealm.where(RealmTeamTask::class.java)
@@ -479,21 +478,12 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             .equalTo("completed", false)
             .equalTo("assignee", user?.id)
             .findAll()
-
         tasks.forEach { task ->
-            createNotificationIfNotExists("task", context.getString(R.string.task_notification, task.title, formatDate(task.deadline)), task.id)
+            createNotificationIfNotExists("task","${task.title} ${formatDate(task.deadline)}", task.id)
         }
 
         val storageRatio = totalAvailableMemoryRatio
-        when {
-            storageRatio <= 10 -> {
-                createNotificationIfNotExists("storage", "${getString(R.string.storage_critically_low)} $storageRatio% ${getString(R.string.available_please_free_up_space)}", "storage")
-            }
-            storageRatio <= 40 -> {
-                Log.d("noti", "lang is "+getString(R.string.storage_running_low))
-                createNotificationIfNotExists("storage", "${getString(R.string.storage_running_low)} $storageRatio% ${getString(R.string.available)}", "storage")
-            }
-        }
+        createNotificationIfNotExists("storage", "$storageRatio" , "storage")
     }
 
     private fun updateResourceNotification() {
@@ -505,10 +495,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 .findFirst()
 
             if (existingNotification != null) {
-                existingNotification.message = "you have $resourceCount resources not downloaded"
+                existingNotification.message = context.getString(R.string.resource_notification, resourceCount)//"you have $resourceCount resources not downloaded" //TODO : use the string to
                 existingNotification.relatedId = "$resourceCount"
             } else {
-                createNotificationIfNotExists("resource", "you have $resourceCount resources not downloaded", "$resourceCount")
+                createNotificationIfNotExists("resource", "$resourceCount", "$resourceCount")
             }
         } else {
             mRealm.where(RealmNotification::class.java)

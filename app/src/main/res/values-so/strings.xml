@@ -735,6 +735,7 @@
     <string name="self_examination">%s\nIs-imtixaanid</string>
     <string name="pending_survey_notification">waxaad leedahay su\'aal weydiin sugaya:</string>
     <string name="task_notification">%1$s waa inuu dhamaadaa %2$s</string>
+    <string name="resource_notification">Waxaad haysataa %1$ agab aan la soo dejisan</string>
     <string name="vitals_format">
     Heerkulka: %1$s\n
     Garaaca wadnaha: %2$s\n

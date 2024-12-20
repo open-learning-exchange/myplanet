@@ -734,6 +734,7 @@
     <string name="self_examination">%s\nSelf Examination</string>
     <string name="pending_survey_notification">you have a pending survey:</string>
     <string name="task_notification">%1$s is due in %2$s</string>
+    <string name="resource_notification">You have %1$ resources not downloaded</string>
     <string name="vitals_format">
         Temperature: %1$s\n
         Pulse: %2$s\n
