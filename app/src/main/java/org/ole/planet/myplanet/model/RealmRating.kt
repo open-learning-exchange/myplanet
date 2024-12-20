@@ -16,13 +16,14 @@ class RealmRating : RealmObject {
     @PrimaryKey
     var id: String = ""
     var createdOn: String? = null
-    var rev: String? = null
+    var _rev: String? = null
     var time: Long = 0
     var title: String? = null
     var userId: String? = null
     var isUpdated: Boolean = false
     var rate: Int = 0
-    var itemId: String? = null
+    var _id: String? = null
+    var item: String? = null
     var comment: String? = null
     var parentCode: String? = null
     var planetCode: String? = null
@@ -37,8 +38,8 @@ class RealmRating : RealmObject {
             val map = mutableMapOf<String?, JsonObject>()
 
             for (rating in results) {
-                val ratingObject = getRatingsById(realm, rating.type, rating.itemId, userId)
-                if (ratingObject != null) map[rating.itemId] = ratingObject
+                val ratingObject = getRatingsById(realm, rating.type, rating.item, userId)
+                if (ratingObject != null) map[rating.item] = ratingObject
             }
 
             return map
@@ -62,10 +63,10 @@ class RealmRating : RealmObject {
 
         fun serializeRating(realmRating: RealmRating): JsonObject {
             val jsonObject = JsonObject()
-            jsonObject.addProperty("_id", realmRating.id)
-            jsonObject.addProperty("_rev", realmRating.rev)
+            jsonObject.addProperty("_id", realmRating._id)
+            jsonObject.addProperty("_rev", realmRating._rev)
             jsonObject.add("user", Gson().fromJson(realmRating.user, JsonObject::class.java))
-            jsonObject.addProperty("item", realmRating.itemId)
+            jsonObject.addProperty("item", realmRating.item)
             jsonObject.addProperty("type", realmRating.type)
             jsonObject.addProperty("title", realmRating.title)
             jsonObject.addProperty("time", realmRating.time)
@@ -82,15 +83,15 @@ class RealmRating : RealmObject {
             realm.writeBlocking {
                 val rating = query<RealmRating>("id == $0", act.get("_id").asString).first().find()
                     ?: RealmRating().apply {
-                        id = act.get("_id").asString
+                        _id = act.get("_id").asString
                     }.also { copyToRealm(it) }
 
                 rating.apply {
-                    rev = act.get("_rev").asString
+                    _rev = act.get("_rev").asString
                     time = act.get("time").asLong
                     title = act.get("title").asString
                     type = act.get("type").asString
-                    itemId = act.get("item").asString
+                    item = act.get("item").asString
                     rate = act.get("rate").asInt
                     isUpdated = false
                     comment = act.get("comment").asString
