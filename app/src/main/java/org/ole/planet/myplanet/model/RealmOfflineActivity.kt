@@ -26,7 +26,7 @@ class RealmOfflineActivity : RealmObject {
     var description: String? = null
     var createdOn: String? = null
     var parentCode: String? = null
-    var loginTime: Long? = null
+    var loginTime: Long = 0L
     var logoutTime: Long? = null
     var androidId: String? = null
 

@@ -2,8 +2,13 @@ package org.ole.planet.myplanet.service
 
 import android.content.Context
 import android.content.SharedPreferences
-import io.realm.Realm
+import io.realm.kotlin.Realm
+import io.realm.kotlin.query.Sort
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -23,6 +28,7 @@ class UserProfileDbHandler(context: Context) {
     var mRealm: Realm
     private val realmService: DatabaseService
     private val fullName: String
+    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     init {
         try {
@@ -36,80 +42,79 @@ class UserProfileDbHandler(context: Context) {
         }
     }
 
-    val userModel: RealmUserModel? get() {
-        if (mRealm.isClosed) {
-            mRealm = realmService.realmInstance
+    val userModel: RealmUserModel?
+        get() {
+            if (mRealm.isClosed()) {
+                return realmService.realmInstance.query<RealmUserModel>(RealmUserModel::class).query("id == $0", settings.getString("userId", "")).first().find()
+            }
+            return mRealm.query<RealmUserModel>(RealmUserModel::class).query("id == $0", settings.getString("userId", "")).first().find()
         }
-        return mRealm.where(RealmUserModel::class.java)
-            .equalTo("id", settings.getString("userId", ""))
-            .findFirst()
-    }
 
     fun onLogin() {
-        if (!mRealm.isInTransaction) {
-            mRealm.beginTransaction()
+        scope.launch {
+            mRealm.write {
+                val offlineActivities = createUser()
+                copyToRealm(offlineActivities).apply {
+                    type = KEY_LOGIN
+                    _rev = null
+                    _id = null
+                    description = "Member login on offline application"
+                    loginTime = Date().time
+                }
+            }
         }
-        val offlineActivities = mRealm.copyToRealm(createUser())
-        offlineActivities.type = KEY_LOGIN
-        offlineActivities._rev = null
-        offlineActivities._id = null
-        offlineActivities.description = "Member login on offline application"
-        offlineActivities.loginTime = Date().time
-        mRealm.commitTransaction()
     }
 
     suspend fun onLogout() {
         withContext(Dispatchers.IO) {
-            val realm = realmService.realmInstance
-            try {
-                realm.executeTransaction {
-                    val offlineActivities = getRecentLogin(it)
-                    offlineActivities?.logoutTime = Date().time
+            mRealm.write {
+                val offlineActivities = getRecentLogin(mRealm)
+                offlineActivities?.let { activity ->
+                    findLatest(activity)?.apply {
+                        logoutTime = Date().time
+                    }
                 }
-            } finally {
-                realm.close()
             }
         }
     }
 
     fun onDestroy() {
-        if (!mRealm.isClosed) {
+        if (!mRealm.isClosed()) {
             mRealm.close()
         }
     }
 
     private fun createUser(): RealmOfflineActivity {
-        val offlineActivities = mRealm.createObject(RealmOfflineActivity::class.java, UUID.randomUUID().toString())
-        val model = userModel
-        offlineActivities.userId = model?.id
-        offlineActivities.userName = model?.name
-        offlineActivities.parentCode = model?.parentCode
-        offlineActivities.createdOn = model?.planetCode
-        return offlineActivities
-    }
-
-    val lastVisit: Long? get() = mRealm.where(RealmOfflineActivity::class.java).max("loginTime") as Long?
-    val offlineVisits: Int get() = getOfflineVisits(userModel)
-
-    fun getOfflineVisits(m: RealmUserModel?): Int { val dbUsers = mRealm.where(RealmOfflineActivity::class.java).equalTo("userName", m?.name).equalTo("type", KEY_LOGIN).findAll()
-        return if (!dbUsers.isEmpty()) {
-            dbUsers.size
-        } else {
-            0
+        return RealmOfflineActivity().apply {
+            this._id = UUID.randomUUID().toString()
+            this.userId = userModel?.id
+            this.userName = userModel?.name
+            this.parentCode = userModel?.parentCode
+            this.createdOn = userModel?.planetCode
         }
     }
 
-    fun getLastVisit(m: RealmUserModel): String {
-        val realm = Realm.getDefaultInstance()
-        realm.beginTransaction()
-        val lastLogoutTimestamp = realm.where(RealmOfflineActivity::class.java)
-            .equalTo("userName", m.name)
-            .max("loginTime") as Long?
-        realm.commitTransaction()
-        return if (lastLogoutTimestamp != null) {
-            val date = Date(lastLogoutTimestamp)
-            SimpleDateFormat("MMMM dd, yyyy hh:mm a", Locale.getDefault()).format(date)
-        } else {
+    val lastVisit: Long?
+        get() = mRealm.query<RealmOfflineActivity>(RealmOfflineActivity::class).sort("loginTime", Sort.DESCENDING).first().find()?.loginTime
+    val offlineVisits: Int get() = getOfflineVisits(userModel)
+
+    fun getOfflineVisits(m: RealmUserModel?): Int {
+        return mRealm.query<RealmOfflineActivity>(RealmOfflineActivity::class, "userName == $0 AND type == $1", m?.name, KEY_LOGIN).count().find().toInt()
+    }
+
+    fun getLastVisit(user: RealmUserModel): String {
+        return try {
+            val lastLogoutTimestamp = mRealm.query<RealmOfflineActivity>(RealmOfflineActivity::class, "userName == $0", user.name)
+                .sort("loginTime", Sort.DESCENDING).first().find()?.loginTime
+
+            if (lastLogoutTimestamp != null) {
+                val date = Date(lastLogoutTimestamp)
+                SimpleDateFormat("MMMM dd, yyyy hh:mm a", Locale.getDefault()).format(date)
+            } else {
+                "No logout record found"
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
             "No logout record found"
         }
     }
@@ -124,48 +129,55 @@ class UserProfileDbHandler(context: Context) {
             return
         }
 
-        if (!mRealm.isInTransaction) mRealm.beginTransaction()
-        val offlineActivities = mRealm.copyToRealm(createResourceUser(model))
-        offlineActivities.type = type
-        offlineActivities.title = item.title
-        offlineActivities.resourceId = item.resourceId
-        offlineActivities.time = Date().time
-        mRealm.commitTransaction()
+        scope.launch {
+            mRealm.write {
+                val offlineActivities = createResourceUser(model)
+                copyToRealm(offlineActivities).apply {
+                    this.type = type
+                    this.title = item.title
+                    this.resourceId = item.resourceId
+                    this.time = Date().time
+                }
+            }
+        }
     }
 
     private fun createResourceUser(model: RealmUserModel?): RealmResourceActivity {
-        val offlineActivities = mRealm.createObject(RealmResourceActivity::class.java, "${UUID.randomUUID()}")
-        offlineActivities.user = model?.name
-        offlineActivities.parentCode = model?.parentCode
-        offlineActivities.createdOn = model?.planetCode
-        return offlineActivities
-    }
-
-    val numberOfResourceOpen: String get() {
-        val count = mRealm.where(RealmResourceActivity::class.java).equalTo("user", fullName)
-            .equalTo("type", KEY_RESOURCE_OPEN).count()
-        return if (count == 0L) "" else "Resource opened $count times."
-    }
-
-    val maxOpenedResource: String get() {
-        val result = mRealm.where(RealmResourceActivity::class.java)
-            .equalTo("user", fullName).equalTo("type", KEY_RESOURCE_OPEN)
-            .findAll().where().distinct("resourceId").findAll()
-        var maxCount = 0L
-        var maxOpenedResource = ""
-        for (realmResourceActivities in result) {
-            val count = mRealm.where(RealmResourceActivity::class.java)
-                .equalTo("user", fullName)
-                .equalTo("type", KEY_RESOURCE_OPEN)
-                .equalTo("resourceId", realmResourceActivities.resourceId).count()
-
-            if (count > maxCount) {
-                maxCount = count
-                maxOpenedResource = "${realmResourceActivities.title}"
-            }
+        return RealmResourceActivity().apply {
+            this._id = UUID.randomUUID().toString()
+            this.user = model?.name
+            this.parentCode = model?.parentCode
+            this.createdOn = model?.planetCode
         }
-        return if (maxCount == 0L) "" else "$maxOpenedResource opened $maxCount times"
     }
+
+    val numberOfResourceOpen: String
+        get() {
+            val count = runBlocking {
+                mRealm.query<RealmResourceActivity>(RealmResourceActivity::class, "user == $0 AND type == $1", fullName, KEY_RESOURCE_OPEN).count().find()
+            }
+            return if (count == 0L) "" else "Resource opened $count times."
+        }
+
+    val maxOpenedResource: String
+        get() {
+            var maxCount = 0L
+            var maxOpenedResource = ""
+
+            runBlocking {
+                val result = mRealm.query<RealmResourceActivity>(RealmResourceActivity::class, "user == $0 AND type == $1", fullName, KEY_RESOURCE_OPEN).distinct("resourceId").find()
+
+                for (realmResourceActivities in result) {
+                    val count = mRealm.query<RealmResourceActivity>(RealmResourceActivity::class, "user == $0 AND type == $1 AND resourceId == $2", fullName, KEY_RESOURCE_OPEN, realmResourceActivities.resourceId).count().find()
+
+                    if (count > maxCount) {
+                        maxCount = count
+                        maxOpenedResource = "${realmResourceActivities.title}"
+                    }
+                }
+            }
+            return if (maxCount == 0L) "" else "$maxOpenedResource opened $maxCount times"
+        }
 
     companion object {
         const val KEY_LOGIN = "login"
