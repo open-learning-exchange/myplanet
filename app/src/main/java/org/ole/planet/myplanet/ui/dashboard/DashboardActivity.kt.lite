@@ -739,6 +739,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 .addDrawerItems(*drawerItems).addStickyDrawerItems(*drawerItemsFooter)
                 .withOnDrawerItemClickListener { _: View?, _: Int, drawerItem: IDrawerItem<*, *>? ->
                     if (drawerItem != null) {
+                        result?.setSelection(drawerItem.identifier, false) // Update selected state
                         menuAction((drawerItem as Nameable<*>).name.textRes)
                     }
                     false
@@ -821,7 +822,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             ResourcesCompat.getDrawable(resources, R.drawable.mycourses, null)?.let { menuImageList.add(it) }
             ResourcesCompat.getDrawable(resources, R.drawable.team, null)?.let { menuImageList.add(it) }
             ResourcesCompat.getDrawable(resources, R.drawable.business, null)?.let { menuImageList.add(it) }
-            ResourcesCompat.getDrawable(resources, R.drawable.survey, null)?.let { menuImageList.add(it) }
+            ResourcesCompat.getDrawable(resources, R.drawable.community, null)?.let { menuImageList.add(it) }
             ResourcesCompat.getDrawable(resources, R.drawable.survey, null)?.let { menuImageList.add(it) }
             return arrayOf(
                 changeUX(R.string.menu_myplanet, menuImageList[0]).withIdentifier(0),
@@ -854,6 +855,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
+        item.isChecked = true
         when (item.itemId) {
             R.id.menu_library -> {
                 openCallFragment(ResourcesFragment())
@@ -882,6 +884,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 openCallFragment(BellDashboardFragment())
             }
         }
+        item.isChecked = true
         return true
     }
 
