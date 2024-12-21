@@ -735,7 +735,7 @@
     <string name="self_examination">%s\nالفحص الذاتي</string>
     <string name="pending_survey_notification">لديك استطلاع قيد الانتظار:</string>
     <string name="task_notification">%1$s مستحق في %2$s</string>
-    <string name="resource_notification">لديك %1$ موارد لم يتم تنزيلها</string>
+    <string name="resource_notification">لديك %1$d موارد لم يتم تنزيلها</string>
     <string name="vitals_format">
     درجة الحرارة: %1$s\n
     النبض: %2$s\n

@@ -735,7 +735,7 @@
     <string name="self_examination">%s\nAutoexamen</string>
     <string name="pending_survey_notification">tienes una encuesta pendiente:</string>
     <string name="task_notification">%1$s vence el %2$s</string>
-    <string name="resource_notification">Tienes %1$ recursos no descargados</string>
+    <string name="resource_notification">Tienes %1$d recursos no descargados</string>
     <string name="vitals_format">
     Temperatura: %1$s\n
     Pulso: %2$s\n

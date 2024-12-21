@@ -164,8 +164,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         createDrawer()
         if (!(user?.id?.startsWith("guest") == true && profileDbHandler.offlineVisits >= 3) && resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
             result?.openDrawer()
-        } //Opens drawer by default
-        result?.stickyFooter?.setPadding(0, 0, 0, 0) // moves logout button to the very bottom of the drawer. Without it, the "logout" button suspends a little.
+        }
+        result?.stickyFooter?.setPadding(0, 0, 0, 0)
         result?.actionBarDrawerToggle?.isDrawerIndicatorEnabled = true
         dl = result?.drawerLayout
         topbarSetting()
@@ -493,9 +493,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 .equalTo("userId", user?.id)
                 .equalTo("type", "resource")
                 .findFirst()
-
             if (existingNotification != null) {
-                existingNotification.message = context.getString(R.string.resource_notification, resourceCount)//"you have $resourceCount resources not downloaded" //TODO : use the string to
+                existingNotification.message = "$resourceCount"
                 existingNotification.relatedId = "$resourceCount"
             } else {
                 createNotificationIfNotExists("resource", "$resourceCount", "$resourceCount")
@@ -530,13 +529,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             .equalTo("type", type)
             .equalTo("relatedId", relatedId)
             .findFirst()
-        if (existingNotification != null) {
-            Log.d(
-                "noti",
-                "existing notification has ${existingNotification?.message} v/s ${message}"
-            )
-        }
-
 
         if (existingNotification == null) {
             mRealm.createObject(RealmNotification::class.java, "${UUID.randomUUID()}").apply {

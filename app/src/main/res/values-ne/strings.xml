@@ -735,7 +735,7 @@
     <string name="self_examination">%s\nस्व-परिक्षण</string>
     <string name="pending_survey_notification">तपाईंको एउटा पेंडिङ सर्वेक्षण छ:</string>
     <string name="task_notification">%1$s %2$s मा समाप्त हुन्छ</string>
-    <string name="resource_notification">तपाईंसँग %1$ स्रोतहरू डाउनलोड गरिएको छैन</string>
+    <string name="resource_notification">तपाईंसँग %1$d स्रोतहरू डाउनलोड गरिएको छैन</string>
     <string name="vitals_format">
     तापमान: %1$s\n
     नाडी: %2$s\n
