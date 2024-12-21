@@ -234,10 +234,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                             toast(MainApplication.context, getString(R.string.press_back_again_to_exit))
                             Handler(Looper.getMainLooper()).postDelayed({ doubleBackToExitPressedOnce = false }, 2000)
                         } else {
-//                          val fragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
-//                          if (fragment is BaseContainerFragment) {
-//                              fragment.handleBackPressed()
-//                           }
+//                            val fragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
+//                            if (fragment is BaseContainerFragment) {
+//                                fragment.handleBackPressed()
+//                             }
                             finish()
                         }
                     }
