@@ -490,6 +490,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 .equalTo("userId", user?.id)
                 .equalTo("type", "resource")
                 .findFirst()
+
             if (existingNotification != null) {
                 existingNotification.message = "$resourceCount"
                 existingNotification.relatedId = "$resourceCount"
