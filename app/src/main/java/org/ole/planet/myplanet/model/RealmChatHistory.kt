@@ -83,32 +83,24 @@ class RealmChatHistory : RealmObject {
         }
 
         suspend fun addConversationToChatHistory(realm: Realm, chatHistoryId: String?, query: String?, response: String?) {
-            realm.write {
-                val chatHistory = query(RealmChatHistory::class)
-                    .query("_id == $0", chatHistoryId)
-                    .first()
-                    .find()
+            val chatHistory = realm.query(RealmChatHistory::class).query("_id == $0", chatHistoryId).first().find()
 
-                if (chatHistory != null) {
-                    try {
-                        val conversation = Conversation().apply {
-                            this.query = query
-                            this.response = response
-                        }
-
-                        if (chatHistory.conversations == null) {
-                            chatHistory.conversations = realmListOf()
-                        }
-                        chatHistory.conversations?.add(conversation)
-                        chatHistory.lastUsed = Date().time
-
-                        findLatest(chatHistory)?.let { latest ->
-                            latest.conversations = chatHistory.conversations
-                            latest.lastUsed = chatHistory.lastUsed
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
+            if (chatHistory != null) {
+                try {
+                    val conversation = Conversation().apply {
+                        this.query = query
+                        this.response = response
                     }
+
+                    realm.write {
+                        if (findLatest(chatHistory)?.conversations == null) {
+                            findLatest(chatHistory)?.conversations = realmListOf()
+                        }
+                        findLatest(chatHistory)?.conversations?.add(conversation)
+                        findLatest(chatHistory)?.lastUsed = Date().time
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
             }
         }

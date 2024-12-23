@@ -6,9 +6,12 @@ import android.view.*
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.*
 import com.google.gson.*
-import io.realm.Realm
+import io.realm.kotlin.Realm
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import okhttp3.*
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentChatDetailBinding
@@ -129,7 +132,7 @@ class ChatDetailFragment : Fragment() {
                 mAdapter.clearData()
                 fragmentChatDetailBinding.editGchatMessage.text.clear()
                 fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
-                if (conversations.isValid) {
+                if (conversations != null && conversations.isNotEmpty()) {
                     for (conversation in conversations) {
                         val query = conversation.query
                         val response = conversation.response
@@ -260,6 +263,7 @@ class ChatDetailFragment : Fragment() {
                                 fragmentChatDetailBinding.tvGemini.visibility = View.GONE
                             }
                         } catch (e: JsonSyntaxException) {
+                            e.printStackTrace()
                             onFailError()
                         }
                     }
@@ -313,10 +317,10 @@ class ChatDetailFragment : Fragment() {
 
                             jsonObject.add("conversations", conversationsArray)
 
-                            requireActivity().runOnUiThread {
+                            lifecycleScope.launch {
                                 RealmChatHistory.insert(mRealm, jsonObject)
+                                (requireActivity() as? DashboardActivity)?.refreshChatHistoryList()
                             }
-                            (requireActivity() as? DashboardActivity)?.refreshChatHistoryList()
                         }
                     } else {
                         fragmentChatDetailBinding.textGchatIndicator.visibility = View.VISIBLE
@@ -336,10 +340,10 @@ class ChatDetailFragment : Fragment() {
                         conversationsArray.add(conversationObject)
 
                         jsonObject.add("conversations", conversationsArray)
-                        requireActivity().runOnUiThread {
+                        lifecycleScope.launch {
                             RealmChatHistory.insert(mRealm, jsonObject)
+                            (requireActivity() as? DashboardActivity)?.refreshChatHistoryList()
                         }
-                        (requireActivity() as? DashboardActivity)?.refreshChatHistoryList()
                     }
                 } else {
                     fragmentChatDetailBinding.textGchatIndicator.visibility = View.VISIBLE
@@ -381,7 +385,9 @@ class ChatDetailFragment : Fragment() {
                             mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_NETWORK
                             mAdapter.addResponse(chatResponse)
                             _rev = "${response.body()?.couchDBResponse?.rev}"
-                            continueConversationRealm(id, query, chatResponse)
+                            lifecycleScope.launch {
+                                continueConversationRealm(id, query, chatResponse)
+                            }
                         }
                     } else {
                         fragmentChatDetailBinding.textGchatIndicator.visibility = View.VISIBLE
@@ -390,7 +396,9 @@ class ChatDetailFragment : Fragment() {
                 } else {
                     fragmentChatDetailBinding.textGchatIndicator.visibility = View.VISIBLE
                     fragmentChatDetailBinding.textGchatIndicator.text = getString(R.string.request_failed_please_retry)
-                    continueConversationRealm(id, query, "")
+                    lifecycleScope.launch {
+                        continueConversationRealm(id, query, "")
+                    }
                 }
 
                 fragmentChatDetailBinding.buttonGchatSend.isEnabled = true
@@ -399,7 +407,9 @@ class ChatDetailFragment : Fragment() {
             }
 
             override fun onFailure(call: Call<ChatModel>, t: Throwable) {
-                continueConversationRealm(id, query, "")
+                lifecycleScope.launch {
+                    continueConversationRealm(id, query, "")
+                }
                 fragmentChatDetailBinding.textGchatIndicator.visibility = View.VISIBLE
                 fragmentChatDetailBinding.textGchatIndicator.text = context?.getString(R.string.message_placeholder, t.message)
                 fragmentChatDetailBinding.buttonGchatSend.isEnabled = true
@@ -409,17 +419,13 @@ class ChatDetailFragment : Fragment() {
         })
     }
 
-    private fun continueConversationRealm(id:String, query:String, chatResponse:String) {
-        try {
-            addConversationToChatHistory(mRealm, id, query, chatResponse)
-            mRealm.commitTransaction()
-        } catch (e: Exception) {
-            e.printStackTrace()
-            if (mRealm.isInTransaction) {
-                mRealm.cancelTransaction()
+    private fun continueConversationRealm(id: String, query: String, chatResponse: String) {
+        lifecycleScope.launch(Dispatchers.Main) {
+            try {
+                addConversationToChatHistory(mRealm, id, query, chatResponse)
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-        } finally {
-            mRealm.close()
         }
     }
 
