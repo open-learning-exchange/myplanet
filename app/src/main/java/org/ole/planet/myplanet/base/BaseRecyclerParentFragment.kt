@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.base
 import com.google.gson.JsonArray
 import io.realm.kotlin.ext.query
 import io.realm.kotlin.query.Sort
-import org.ole.planet.myplanet.MainApplication.Companion.realm
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmStepExam
@@ -15,18 +14,18 @@ abstract class BaseRecyclerParentFragment<LI> : BaseResourceFragment() {
     fun getList(c: Class<*>): List<LI> {
         return when {
             c == RealmStepExam::class.java -> {
-                realm.query<RealmStepExam>("type == $0", "surveys").find() as List<LI>
+                mRealm.query<RealmStepExam>("type == $0", "surveys").find() as List<LI>
             }
             isMyCourseLib -> {
                 getMyLibItems(c)
             }
             c == RealmMyLibrary::class.java -> {
-                val results = realm.query<RealmMyLibrary>("isPrivate == $0", false).find()
+                val results = mRealm.query<RealmMyLibrary>("isPrivate == $0", false).find()
                 RealmMyLibrary.getOurLibrary(model?.id, results) as List<LI>
             }
             else -> {
                 val myLibItems = getMyLibItems(c)
-                val results = realm.query<RealmMyCourse>()
+                val results = mRealm.query<RealmMyCourse>()
                     .query("courseTitle != $0", "")
                     .find()
                 val ourCourseItems = RealmMyCourse.getOurCourse(model?.id ?: "", results)
@@ -58,7 +57,7 @@ abstract class BaseRecyclerParentFragment<LI> : BaseResourceFragment() {
     fun getList(c: Class<*>, orderBy: String? = null, sort: Sort = Sort.ASCENDING): List<LI> {
         return when {
             c == RealmStepExam::class.java -> {
-                realm.query<RealmStepExam>("type == $0", "surveys").apply {
+                mRealm.query<RealmStepExam>("type == $0", "surveys").apply {
                     orderBy?.let { sort(it, sort) }
                 }.find() as List<LI>
             }
@@ -66,13 +65,13 @@ abstract class BaseRecyclerParentFragment<LI> : BaseResourceFragment() {
                 getMyLibItems(c, orderBy)
             }
             c == RealmMyLibrary::class.java -> {
-                val results = realm.query<RealmMyLibrary>("isPrivate == $0", false).apply {
+                val results = mRealm.query<RealmMyLibrary>("isPrivate == $0", false).apply {
                     orderBy?.let { sort(it, sort) }
                 }.find()
                 RealmMyLibrary.getOurLibrary(model?.id, results) as List<LI>
             }
             else -> {
-                val results = realm.query<RealmMyCourse>().apply {
+                val results = mRealm.query<RealmMyCourse>().apply {
                     orderBy?.let { sort(it, sort) }
                 }.find()
                 RealmMyCourse.getOurCourse(model?.id ?: "", results) as List<LI>
@@ -84,13 +83,13 @@ abstract class BaseRecyclerParentFragment<LI> : BaseResourceFragment() {
     private fun getMyLibItems(c: Class<*>, orderBy: String? = null): List<LI> {
         return when (c) {
             RealmMyLibrary::class.java -> {
-                val results = realm.query<RealmMyLibrary>().apply {
+                val results = mRealm.query<RealmMyLibrary>().apply {
                     orderBy?.let { sort(it) }
                 }.find()
                 RealmMyLibrary.getMyLibraryByUserId(model?.id, results) as List<LI>
             }
             RealmMyCourse::class.java -> {
-                val results = realm.query<RealmMyCourse>().apply {
+                val results = mRealm.query<RealmMyCourse>().apply {
                     orderBy?.let { sort(it) }
                 }.find()
                 RealmMyCourse.getMyCourseByUserId(model?.id ?: "", results) as List<LI>

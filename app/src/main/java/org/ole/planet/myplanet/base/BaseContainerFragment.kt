@@ -124,7 +124,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
 
     fun openResource(items: RealmMyLibrary) {
-        val matchingItems = MainApplication.realm.query<RealmMyLibrary>(RealmMyLibrary::class, "resourceLocalAddress == $0", items.resourceLocalAddress).find()
+        val matchingItems = MainApplication.mRealm.query<RealmMyLibrary>(RealmMyLibrary::class, "resourceLocalAddress == $0", items.resourceLocalAddress).find()
         val anyOffline = matchingItems.any { it.isResourceOffline() }
         if (anyOffline) {
             val offlineItem = matchingItems.first { it.isResourceOffline() }

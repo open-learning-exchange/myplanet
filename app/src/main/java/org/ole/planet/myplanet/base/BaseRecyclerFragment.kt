@@ -18,7 +18,6 @@ import io.realm.kotlin.types.RealmObject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication.Companion.realm
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -75,7 +74,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         selectedItems = mutableListOf()
         list = mutableListOf()
         realmService = DatabaseService()
-        realm = realmService.realmInstance
+        mRealm = realmService.realmInstance
         profileDbHandler = UserProfileDbHandler(requireActivity())
         model = profileDbHandler.userModel!!
         val adapter = getAdapter()
@@ -83,7 +82,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         if (isMyCourseLib && adapter.itemCount != 0 && courseLib == "courses") {
             resources?.let { showDownloadDialog(it) }
         } else if (isMyCourseLib && courseLib == null && !isSurvey) {
-            showDownloadDialog(getLibraryList(realm))
+            showDownloadDialog(getLibraryList(mRealm))
         }
         return v
     }
@@ -107,14 +106,14 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         for (i in selectedItems?.indices!!) {
             val `object` = selectedItems?.get(i) as RealmObject
             if (`object` is RealmMyLibrary) {
-                val myObject = realm.query<RealmMyLibrary>("resourceId == $0", `object`.resourceId).first().find()
-                RealmMyLibrary.createFromResource(myObject, realm, model?.id)
-                RealmRemovedLog.onAdd(realm, "resources", profileDbHandler.userModel?.id, myObject?.resourceId)
+                val myObject = mRealm.query<RealmMyLibrary>("resourceId == $0", `object`.resourceId).first().find()
+                RealmMyLibrary.createFromResource(myObject, mRealm, model?.id)
+                RealmRemovedLog.onAdd(mRealm, "resources", profileDbHandler.userModel?.id, myObject?.resourceId)
                 toast(activity, getString(R.string.added_to_my_library))
             } else {
-                val myObject = RealmMyCourse.getMyCourse(realm, (`object` as RealmMyCourse).courseId)
-                RealmMyCourse.createMyCourse(myObject, realm, model?.id)
-                RealmRemovedLog.onAdd(realm, "courses", profileDbHandler.userModel?.id, myObject?.courseId)
+                val myObject = RealmMyCourse.getMyCourse(mRealm, (`object` as RealmMyCourse).courseId)
+                RealmMyCourse.createMyCourse(myObject, mRealm, model?.id)
+                RealmRemovedLog.onAdd(mRealm, "courses", profileDbHandler.userModel?.id, myObject?.courseId)
                 toast(activity, getString(R.string.added_to_my_courses))
             }
         }
@@ -127,13 +126,13 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             for (i in selectedItems?.indices!!) {
                 val `object` = selectedItems?.get(i) as RealmObject
                 if (deleteProgress && `object` is RealmMyCourse) {
-                    val courseProgress = realm.query<RealmCourseProgress>("courseId == $0", `object`.courseId).find()
-                    val examList = realm.query<RealmStepExam>("courseId == $0", `object`.courseId).find()
+                    val courseProgress = mRealm.query<RealmCourseProgress>("courseId == $0", `object`.courseId).find()
+                    val examList = mRealm.query<RealmStepExam>("courseId == $0", `object`.courseId).find()
                     val submissionsToDelete = examList.flatMap { exam ->
-                        realm.query<RealmSubmission>("parentId == $0 AND type != $1 AND uploaded == $2", exam.id, "survey", false).find()
+                        mRealm.query<RealmSubmission>("parentId == $0 AND type != $1 AND uploaded == $2", exam.id, "survey", false).find()
                     }
 
-                    realm.write {
+                    mRealm.write {
                         courseProgress.forEach { delete(it) }
                         submissionsToDelete.forEach { delete(it) }
                     }
@@ -157,12 +156,12 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
     override fun onDestroy() {
         super.onDestroy()
-        realm.close()
+        mRealm.close()
     }
 
     private fun checkAndAddToList(course: RealmMyCourse?, courses: MutableList<RealmMyCourse>, tags: List<RealmTag>) {
         for (tg in tags) {
-            val count = realm.query<RealmTag>("db == $0 AND tagId == $1 AND linkId == $2", "courses", tg.id, course?.courseId).count().find()
+            val count = mRealm.query<RealmTag>("db == $0 AND tagId == $1 AND linkId == $2", "courses", tg.id, course?.courseId).count().find()
             if (count > 0 && !courses.contains(course)) {
                 course?.let { courses.add(it) }
             }
@@ -172,13 +171,13 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     private inline fun <reified LI : RealmObject> getData(s: String, c: Class<LI>): List<LI> {
         val queryParts = s.split(" ").filterNot { it.isEmpty() }
         return if (s.contains(" ")) {
-            val data = realm.query<LI>().find()
+            val data = mRealm.query<LI>().find()
             data.filter { item ->
                 searchAndMatch(item, queryParts)
             }
         } else {
             val field = if (c == RealmMyLibrary::class.java) "title" else "courseTitle"
-            realm.query<LI>("$field CONTAINS[c] $0", s).find()
+            mRealm.query<LI>("$field CONTAINS[c] $0", s).find()
         }
     }
 
@@ -236,7 +235,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
     private fun filter(tags: List<RealmTag>, library: RealmMyLibrary?, libraries: MutableList<RealmMyLibrary>) {
         for (tg in tags) {
-            val count = realm.query<RealmTag>("db == $0 AND tagId == $1 AND linkId == $2", "resources", tg.id, library?.id).count().find()
+            val count = mRealm.query<RealmTag>("db == $0 AND tagId == $1 AND linkId == $2", "resources", tg.id, library?.id).count().find()
             if (count > 0 && !libraries.contains(library)) {
                 library?.let { libraries.add(it) }
             }

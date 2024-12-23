@@ -27,7 +27,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.MainApplication.Companion.realm
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -148,7 +147,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     fun showPendingSurveyDialog() {
         model = UserProfileDbHandler(requireContext()).userModel
-        val list = realm.query<RealmSubmission>(RealmSubmission::class,
+        val list = mRealm.query<RealmSubmission>(RealmSubmission::class,
             "userId == $0 AND status == $1 AND type == $2",
             model?.id, "pending", "survey"
         ).find()
@@ -157,7 +156,7 @@ abstract class BaseResourceFragment : Fragment() {
             return
         }
 
-        val exams = getExamMap(realm, list)
+        val exams = getExamMap(mRealm, list)
         val arrayAdapter: ArrayAdapter<*> = object : ArrayAdapter<Any?>(requireActivity(), android.R.layout.simple_list_item_1, list) {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
                 var convertedView = convertView
@@ -251,7 +250,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        realm = DatabaseService().realmInstance
+        mRealm = DatabaseService().realmInstance
         prgDialog = getProgressDialog(requireActivity())
         settings = requireActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         editor = settings?.edit()
@@ -267,31 +266,29 @@ abstract class BaseResourceFragment : Fragment() {
     suspend fun removeFromShelf(`object`: RealmObject) {
         when (`object`) {
             is RealmMyLibrary -> {
-                val myObject = realm.query<RealmMyLibrary>(
+                val myObject = mRealm.query<RealmMyLibrary>(
                     RealmMyLibrary::class,
                     "resourceId == $0", `object`.resourceId
                 ).first().find()
 
-                realm.write {
+                mRealm.write {
                     myObject?.removeUserId(model?.id)
                 }
 
                 model?.id?.let { userId ->
-                    `object`.resourceId?.let { resourceId ->
-                        onRemove(realm, "resources", userId, resourceId)
-                    }
+                    onRemove(mRealm, "resources", userId, `object`.resourceId)
                 }
                 withContext(Dispatchers.Main) {
                     Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
                 }
             }
             is RealmMyCourse -> {
-                val myObject = getMyCourse(realm, `object`.courseId)
-                realm.write {
+                val myObject = getMyCourse(mRealm, `object`.courseId)
+                mRealm.write {
                     myObject?.removeUserId(model?.id ?: "")
                 }
                 model?.id?.let { userId ->
-                    onRemove(realm, "courses", userId, `object`.courseId)
+                    onRemove(mRealm, "courses", userId, `object`.courseId)
                 }
                 Utilities.toast(activity, getString(R.string.removed_from_mycourse))
             }
@@ -312,16 +309,11 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     suspend fun addToLibrary(libraryItems: List<RealmMyLibrary>, selectedItems: ArrayList<Int>) {
-        realm.write {
+        mRealm.write {
             for (i in selectedItems.indices) {
                 if (!libraryItems[selectedItems[i]].userId.contains(profileDbHandler.userModel?.id)) {
                     libraryItems[selectedItems[i]].setUserId(profileDbHandler.userModel?.id)
-                    RealmRemovedLog.onAdd(
-                        realm,
-                        "resources",
-                        profileDbHandler.userModel?.id,
-                        libraryItems[selectedItems[i]].resourceId
-                    )
+                    RealmRemovedLog.onAdd(mRealm, "resources", profileDbHandler.userModel?.id, libraryItems[selectedItems[i]].resourceId)
                 }
             }
         }
@@ -329,13 +321,11 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     suspend fun addAllToLibrary(libraryItems: List<RealmMyLibrary>) {
-        realm.write {
+        mRealm.write {
             for (libraryItem in libraryItems) {
                 if (!libraryItem.userId.contains(profileDbHandler.userModel?.id)) {
                     libraryItem.setUserId(profileDbHandler.userModel?.id)
-                    RealmRemovedLog.onAdd(
-                        realm, "resources", profileDbHandler.userModel?.id, libraryItem.resourceId
-                    )
+                    RealmRemovedLog.onAdd(mRealm, "resources", profileDbHandler.userModel?.id, libraryItem.resourceId)
                 }
             }
         }

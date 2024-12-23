@@ -10,7 +10,6 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
-import android.widget.ListView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
@@ -21,13 +20,10 @@ import androidx.preference.Preference.OnPreferenceClickListener
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.PreferenceManager
 import androidx.preference.SwitchPreference
-import io.realRealm
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.MainApplication.Companion.mRealm
-import org.ole.planet.myplanet.MainApplication.Companion.setThemeMode
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
@@ -122,7 +118,7 @@ class SettingActivity : AppCompatActivity() {
 
             val autoDownload = findPreference<SwitchPreference>("beta_auto_download")
             autoDownload?.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, _: Any? ->
-                if (autoDownload?.isChecked == true) {
+                if (autoDownload.isChecked == true) {
                     defaultPref.edit().putBoolean("beta_auto_download", true).apply()
                     backgroundDownload(downloadAllFiles(getAllLibraryList(mRealm)))
                 } else {
@@ -153,17 +149,21 @@ class SettingActivity : AppCompatActivity() {
             val prefFreeUp = findPreference<Preference>("freeup_space")
             if (prefFreeUp != null) {
                 prefFreeUp.onPreferenceClickListener = OnPreferenceClickListener {
-                    AlertDialog.Builder(requireActivity()).setTitle(R.string.are_you_sure_want_to_delete_all_the_files)
-                        .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                            mRealm.executeTransactionAsync({ realm: Realm ->
-                                val libraries = realm.where(RealmMyLibrary::class.java).findAll()
-                                for (library in libraries) library.resourceOffline = false }, {
+                    AlertDialog.Builder(requireActivity())
+                        .setTitle(R.string.are_you_sure_want_to_delete_all_the_files)
+                        .setPositiveButton(R.string.yes) { _, _ ->
+                            CoroutineScope(Dispatchers.Main).launch {
+                                mRealm.write {
+                                    val libraries = this.query<RealmMyLibrary>(RealmMyLibrary::class).find()
+                                    libraries.forEach { it.resourceOffline = false }
+                                }
                                 val f = File(Utilities.SD_PATH)
                                 deleteRecursive(f)
-                                Utilities.toast(requireActivity(), R.string.data_cleared.toString()) }) {
-                                Utilities.toast(requireActivity(), R.string.unable_to_clear_files.toString())
+                                Utilities.toast(requireActivity(), getString(R.string.data_cleared))
                             }
-                        }.setNegativeButton("No", null).show()
+                        }
+                        .setNegativeButton(R.string.no, null)
+                        .show()
                     false
                 }
             }

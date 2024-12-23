@@ -54,7 +54,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         private const val STAY_ONLINE_WORK_TAG = "stayOnlineWork"
         private const val TASK_NOTIFICATION_WORK_TAG = "taskNotificationWork"
         lateinit var context: Context 
-        lateinit var realm: Realm
+        lateinit var mRealm: Realm
         lateinit var service: DatabaseService
         var preferences: SharedPreferences? = null
         var syncFailedCount = 0
@@ -76,7 +76,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         suspend fun createLog(type: String) {
             withContext(Dispatchers.IO) {
                 try {
-                    realm.write {
+                    mRealm.write {
                         val log = RealmApkLog().apply {
                             id = UUID.randomUUID().toString()
                             val model = UserProfileDbHandler(context).userModel
@@ -149,7 +149,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             e.printStackTrace()
             applicationScope.launch(Dispatchers.IO) {
                 try {
-                    realm.write {
+                    mRealm.write {
                         val log = RealmApkLog().apply {
                             id = UUID.randomUUID().toString()
                             val model = UserProfileDbHandler(context).userModel
@@ -190,7 +190,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
         preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         service = DatabaseService()
-        realm = service.realmInstance
+        mRealm = service.realmInstance
         defaultPref = PreferenceManager.getDefaultSharedPreferences(this)
 
         val builder = VmPolicy.Builder()
@@ -229,7 +229,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                         }
                         if (canReachServer) {
                             if (defaultPref.getBoolean("beta_auto_download", false)) {
-                                backgroundDownload(downloadAllFiles(getAllLibraryList(realm)))
+                                backgroundDownload(downloadAllFiles(getAllLibraryList(mRealm)))
                             }
                         }
                     }
@@ -330,7 +330,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     override fun onTerminate() {
         super.onTerminate()
         onAppClosed()
-        realm.close()
+        mRealm.close()
         applicationScope.cancel()
     }
 }
