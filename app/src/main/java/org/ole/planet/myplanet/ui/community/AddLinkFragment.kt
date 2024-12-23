@@ -11,7 +11,10 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import io.realm.Realm
+import io.realm.kotlin.Realm
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentAddLinkBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -23,17 +26,16 @@ import java.util.UUID
 
 class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedListener {
     private lateinit var fragmentAddLinkBinding: FragmentAddLinkBinding
-    override fun onNothingSelected(p0: AdapterView<*>?) {
-    }
-
     lateinit var mRealm: Realm
     var selectedTeam: RealmMyTeam? = null
 
+    override fun onNothingSelected(p0: AdapterView<*>?) {
+    }
+
     override fun onItemSelected(p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long) {
-        val query = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId").isNotEmpty("name").equalTo(             "type",
-            if (fragmentAddLinkBinding.spnLink.selectedItem.toString() == "Enterprises") "enterprise"
-            else ""
-        ).notEqualTo("status", "archived").findAll()
+        val query = mRealm.query<RealmMyTeam>(RealmMyTeam::class, "teamId == null AND name != null AND type == $0 AND status != $1",
+            if (fragmentAddLinkBinding.spnLink.selectedItem.toString() == "Enterprises") "enterprise" else "",
+            "archived").find()
         fragmentAddLinkBinding.rvList.layoutManager = LinearLayoutManager(requireActivity())
         val adapter = AdapterTeam(requireActivity(), query, mRealm)
         adapter.setTeamSelectedListener(object : AdapterTeam.OnTeamSelectedListener {
@@ -54,7 +56,7 @@ class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedL
                 dialog.findViewById<FrameLayout>(com.google.android.material.R.id.design_bottom_sheet)
             BottomSheetBehavior.from(bottomSheet!!).state = BottomSheetBehavior.STATE_EXPANDED
             BottomSheetBehavior.from(bottomSheet).skipCollapsed = true
-            BottomSheetBehavior.from(bottomSheet).setHideable(true)
+            BottomSheetBehavior.from(bottomSheet).isHideable = true
         }
         return bottomSheetDialog
     }
@@ -70,8 +72,8 @@ class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedL
         fragmentAddLinkBinding.spnLink.onItemSelectedListener = this
         fragmentAddLinkBinding.btnSave.setOnClickListener {
             val type = fragmentAddLinkBinding.spnLink.selectedItem.toString()
-            val title = fragmentAddLinkBinding.etName.text.toString()
-            if (title.isEmpty()) {
+            var titles = fragmentAddLinkBinding.etName.text.toString()
+            if (titles.isEmpty()) {
                 Utilities.toast(requireActivity(), getString(R.string.title_is_required))
                 return@setOnClickListener
             }
@@ -80,14 +82,22 @@ class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedL
                 return@setOnClickListener
             }
 
-            mRealm.executeTransaction {
-                val team = it.createObject(RealmMyTeam::class.java, UUID.randomUUID().toString())
-                team.docType = "link"
-                team.updated = true
-                team.title = title
-                team.route = """/${type.lowercase(Locale.ROOT)}/view/${selectedTeam!!._id}"""
-                dismiss()
-
+            CoroutineScope(Dispatchers.Main).launch {
+                try {
+                    mRealm.write {
+                        val team = RealmMyTeam().apply {
+                            _id = UUID.randomUUID().toString()
+                            docType = "link"
+                            updated = true
+                            title = titles
+                            route = """/${type.lowercase(Locale.ROOT)}/view/${selectedTeam?._id}"""
+                        }
+                        copyToRealm(team)
+                    }
+                    dismiss()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
             }
         }
     }
