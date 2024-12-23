@@ -226,7 +226,7 @@ class RealmNews : RealmObject {
             }
         }
 
-        suspend fun createNews(realm: Realm, map: Map<String?, String?>, realmUserModel: RealmUserModel?, imageUrl: RealmList<String>?): RealmNews {
+        suspend fun createNews(map: Map<String?, String?>, realm: Realm, realmUserModel: RealmUserModel?, imageUrl: RealmList<String>?): RealmNews {
             return realm.write {
                 val news = copyToRealm(RealmNews())
                 news.apply {

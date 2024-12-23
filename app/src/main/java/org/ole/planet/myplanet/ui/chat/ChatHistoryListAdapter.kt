@@ -7,10 +7,13 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.Gson
-import io.realm.Case
-import io.realm.Realm
-import io.realm.RealmList
-import io.realm.RealmResults
+import io.realm.kotlin.Realm
+import io.realm.kotlin.ext.query
+import io.realm.kotlin.query.RealmResults
+import io.realm.kotlin.types.RealmList
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AddNoteDialogBinding
 import org.ole.planet.myplanet.databinding.ChatShareDialogBinding
@@ -70,10 +73,7 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
         rowChatHistoryBinding = RowChatHistoryBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         mRealm = DatabaseService().realmInstance
         user = UserProfileDbHandler(context).userModel
-        newsList = mRealm.where(RealmNews::class.java)
-            .equalTo("docType", "message", Case.INSENSITIVE)
-            .equalTo("createdOn", user?.planetCode, Case.INSENSITIVE)
-            .findAll()
+        newsList = mRealm.query<RealmNews>("docType CONTAINS[c] $0 AND createdOn CONTAINS[c] $1", "message", user?.planetCode ?: "").find()
         return ViewHolderChat(rowChatHistoryBinding)
     }
 
@@ -127,13 +127,8 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
 
                 chatShareDialogBinding.listView.setOnChildClickListener { _, _, groupPosition, childPosition, _ ->
                     if (expandableTitleList[groupPosition] == context.getString(R.string.share_with_team_enterprise)) {
-                        val teamList = mRealm.where(RealmMyTeam::class.java)
-                            .isEmpty("teamId").notEqualTo("status", "archived")
-                            .equalTo("type", "team").findAll()
-
-                        val enterpriseList = mRealm.where(RealmMyTeam::class.java)
-                            .isEmpty("teamId").notEqualTo("status", "archived")
-                            .equalTo("type", "enterprise").findAll()
+                        val teamList = mRealm.query<RealmMyTeam>("teamId == null AND status != $0 AND type == $1", "archived", "team").find()
+                        val enterpriseList = mRealm.query<RealmMyTeam>("teamId == null AND status != $0 AND type == $1", "archived", "enterprise").find()
 
                         if (expandableDetailList[expandableTitleList[groupPosition]]?.get(childPosition) == context.getString(R.string.teams)) {
                             showGrandChildRecyclerView(teamList, context.getString(R.string.teams), filteredChatHistory[position])
@@ -145,7 +140,7 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
                         val sParentcode = settings?.getString("parentCode", "")
                         val communityName = settings?.getString("communityName", "")
                         val teamId = "$communityName@$sParentcode"
-                        val community = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
+                        val community = mRealm.query<RealmMyTeam>("_id == $0", teamId).first().find()
                         showEditTextAndShareButton(community, context.getString(R.string.community), filteredChatHistory[position])
                     }
                     dialog?.dismiss()
@@ -213,7 +208,9 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
             map["chat"] = "true"
             map["news"] = Gson().toJson(serializedMap)
 
-            createNews(map, mRealm, user, null)
+            CoroutineScope(Dispatchers.Main).launch {
+                createNews(map, mRealm, user, null)
+            }
 
             fragment.refreshChatHistoryList()
             dialog.dismiss()
