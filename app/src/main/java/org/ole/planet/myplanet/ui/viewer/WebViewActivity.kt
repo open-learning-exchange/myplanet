@@ -50,9 +50,15 @@ class WebViewActivity : AppCompatActivity() {
             when (nightModeFlags) {
                 android.content.res.Configuration.UI_MODE_NIGHT_YES -> {
                     webSettings.forceDark = WebSettings.FORCE_DARK_ON
+                    activityWebViewBinding.contentWebView.webTitle.setTextColor(resources.getColor(android.R.color.white))
+                    activityWebViewBinding.contentWebView.webSource.setTextColor(resources.getColor(android.R.color.white))
+                    activityWebViewBinding.contentWebView.contentWebView.setBackgroundColor(resources.getColor(android.R.color.black))
                 }
                 android.content.res.Configuration.UI_MODE_NIGHT_NO -> {
                     webSettings.forceDark = WebSettings.FORCE_DARK_OFF
+
+                    activityWebViewBinding.contentWebView.webTitle.setTextColor(resources.getColor(android.R.color.black))
+                    activityWebViewBinding.contentWebView.webSource.setTextColor(resources.getColor(android.R.color.black))
                 }
             }
         }
@@ -72,10 +78,8 @@ class WebViewActivity : AppCompatActivity() {
             override fun onPageFinished(view: WebView, url: String) {
                 super.onPageFinished(view, url)
 
-                // Detect if dark mode
                 val nightModeFlags = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
                 if (nightModeFlags == android.content.res.Configuration.UI_MODE_NIGHT_YES) {
-                    // Enable dark mode
                     view.evaluateJavascript(
                         """
             (function() {
@@ -93,7 +97,6 @@ class WebViewActivity : AppCompatActivity() {
                         null
                     )
                 } else {
-                    // Revert to light mode
                     view.evaluateJavascript(
                         """
             (function() {
@@ -115,7 +118,6 @@ class WebViewActivity : AppCompatActivity() {
 
         }
     }
-
 
     private fun clearCookie() {
         val cookieManager = CookieManager.getInstance()
