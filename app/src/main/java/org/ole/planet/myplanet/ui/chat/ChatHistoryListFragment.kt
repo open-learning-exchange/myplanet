@@ -7,7 +7,9 @@ import androidx.activity.OnBackPressedCallback
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.slidingpanelayout.widget.SlidingPaneLayout
-import io.realm.*
+import io.realm.kotlin.Realm
+import io.realm.kotlin.query.Sort
+import io.realm.kotlin.types.RealmList
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.databinding.FragmentChatHistoryListBinding
@@ -19,6 +21,7 @@ class ChatHistoryListFragment : Fragment() {
     private lateinit var fragmentChatHistoryListBinding: FragmentChatHistoryListBinding
     private lateinit var sharedViewModel: ChatViewModel
     var user: RealmUserModel? = null
+    private lateinit var mRealm: Realm
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,6 +31,7 @@ class ChatHistoryListFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentChatHistoryListBinding = FragmentChatHistoryListBinding.inflate(inflater, container, false)
         user = UserProfileDbHandler(requireContext()).userModel
+        mRealm = DatabaseService().realmInstance
         return fragmentChatHistoryListBinding.root
     }
 
@@ -69,10 +73,10 @@ class ChatHistoryListFragment : Fragment() {
     }
 
     fun refreshChatHistoryList() {
-        val mRealm = DatabaseService().realmInstance
-        val list = mRealm.where(RealmChatHistory::class.java).equalTo("user", user?.name)
+        val list = mRealm.query<RealmChatHistory>(RealmChatHistory::class, "user == $0", user?.name ?: "")
             .sort("id", Sort.DESCENDING)
-            .findAll()
+            .find()
+            .toList()
 
         val adapter = fragmentChatHistoryListBinding.recyclerView.adapter as? ChatHistoryListAdapter
         if (adapter == null) {

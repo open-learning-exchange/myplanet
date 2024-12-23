@@ -131,9 +131,9 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
                         val enterpriseList = mRealm.query<RealmMyTeam>("teamId == null AND status != $0 AND type == $1", "archived", "enterprise").find()
 
                         if (expandableDetailList[expandableTitleList[groupPosition]]?.get(childPosition) == context.getString(R.string.teams)) {
-                            showGrandChildRecyclerView(teamList, context.getString(R.string.teams), filteredChatHistory[position])
+                            showGrandChildRecyclerView(teamList.toList(), context.getString(R.string.teams), filteredChatHistory[position])
                         } else {
-                            showGrandChildRecyclerView(enterpriseList, context.getString(R.string.enterprises), filteredChatHistory[position])
+                            showGrandChildRecyclerView(enterpriseList.toList(), context.getString(R.string.enterprises), filteredChatHistory[position])
                         }
                     } else {
                         settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
