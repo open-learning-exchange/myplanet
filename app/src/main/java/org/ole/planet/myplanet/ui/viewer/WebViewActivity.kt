@@ -2,11 +2,13 @@ package org.ole.planet.myplanet.ui.viewer
 
 import android.graphics.Bitmap
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
 import android.view.View
 import android.webkit.CookieManager
 import android.webkit.WebChromeClient
+import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
@@ -32,11 +34,34 @@ class WebViewActivity : AppCompatActivity() {
         activityWebViewBinding.contentWebView.pBar.max = 100
         activityWebViewBinding.contentWebView.pBar.progress = 0
         setListeners()
-        activityWebViewBinding.contentWebView.wv.settings.javaScriptEnabled = true
-        activityWebViewBinding.contentWebView.wv.settings.javaScriptCanOpenWindowsAutomatically = true
+        setupWebView()
         activityWebViewBinding.contentWebView.wv.loadUrl(link)
         activityWebViewBinding.contentWebView.finish.setOnClickListener { finish() }
         setWebClient()
+    }
+
+    private fun setupWebView() {
+        val webSettings: WebSettings = activityWebViewBinding.contentWebView.wv.settings
+        webSettings.javaScriptEnabled = true
+        webSettings.javaScriptCanOpenWindowsAutomatically = true
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val nightModeFlags = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
+            when (nightModeFlags) {
+                android.content.res.Configuration.UI_MODE_NIGHT_YES -> {
+                    webSettings.forceDark = WebSettings.FORCE_DARK_ON
+                    activityWebViewBinding.contentWebView.webTitle.setTextColor(resources.getColor(android.R.color.white))
+                    activityWebViewBinding.contentWebView.webSource.setTextColor(resources.getColor(android.R.color.white))
+                    activityWebViewBinding.contentWebView.contentWebView.setBackgroundColor(resources.getColor(android.R.color.black))
+                }
+                android.content.res.Configuration.UI_MODE_NIGHT_NO -> {
+                    webSettings.forceDark = WebSettings.FORCE_DARK_OFF
+
+                    activityWebViewBinding.contentWebView.webTitle.setTextColor(resources.getColor(android.R.color.black))
+                    activityWebViewBinding.contentWebView.webSource.setTextColor(resources.getColor(android.R.color.black))
+                }
+            }
+        }
     }
 
     private fun setWebClient() {
@@ -52,7 +77,45 @@ class WebViewActivity : AppCompatActivity() {
 
             override fun onPageFinished(view: WebView, url: String) {
                 super.onPageFinished(view, url)
+
+                val nightModeFlags = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
+                if (nightModeFlags == android.content.res.Configuration.UI_MODE_NIGHT_YES) {
+                    view.evaluateJavascript(
+                        """
+            (function() {
+                document.documentElement.setAttribute('dark', 'true');
+                document.documentElement.style.backgroundColor = '#000';
+                document.documentElement.style.color = '#FFF';
+                const elements = document.querySelectorAll('*');
+                elements.forEach(el => {
+                    if (window.getComputedStyle(el).color === 'rgb(0, 0, 0)') {
+                        el.style.color = '#FFF';
+                    }
+                });
+            })();
+            """.trimIndent(),
+                        null
+                    )
+                } else {
+                    view.evaluateJavascript(
+                        """
+            (function() {
+                document.documentElement.removeAttribute('dark');
+                document.documentElement.style.backgroundColor = '#FFF';
+                document.documentElement.style.color = '#000';
+                const elements = document.querySelectorAll('*');
+                elements.forEach(el => {
+                    if (window.getComputedStyle(el).color === 'rgb(255, 255, 255)') {
+                        el.style.color = '#000';
+                    }
+                });
+            })();
+            """.trimIndent(),
+                        null
+                    )
+                }
             }
+
         }
     }
 
@@ -61,7 +124,6 @@ class WebViewActivity : AppCompatActivity() {
         cookieManager.removeAllCookies(null)
         cookieManager.flush()
     }
-
 
     private fun setListeners() {
         activityWebViewBinding.contentWebView.wv.webChromeClient = object : WebChromeClient() {
