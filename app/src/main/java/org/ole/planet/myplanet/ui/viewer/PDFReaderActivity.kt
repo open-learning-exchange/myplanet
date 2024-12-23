@@ -35,7 +35,7 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
         activityPdfReaderBinding = ActivityPdfreaderBinding.inflate(layoutInflater)
         setContentView(activityPdfReaderBinding.root)
         audioRecorderService = AudioRecorderService().setAudioRecordListener(this)
-        mRealm = DatabaseService(this).realmInstance
+        mRealm = DatabaseService().realmInstance
         if (intent.hasExtra("resourceId")) {
             val resourceID = intent.getStringExtra("resourceId")
             library = mRealm.where(RealmMyLibrary::class.java).equalTo("id", resourceID).findFirst()!!

@@ -36,7 +36,7 @@ class MyProgressFragment : Fragment() {
     }
 
     private fun initializeData() {
-        val realm = DatabaseService(requireActivity()).realmInstance
+        val realm = DatabaseService().realmInstance
         val user = UserProfileDbHandler(requireActivity()).userModel
         val courseData = fetchCourseData(realm, user?.id)
         fragmentMyProgressBinding.rvMyprogress.layoutManager = LinearLayoutManager(requireActivity())

@@ -39,7 +39,7 @@ class AddMyHealthActivity : AppCompatActivity() {
         setContentView(activityAddMyHealthBinding.root)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
-        realm = DatabaseService(this).realmInstance
+        realm = DatabaseService().realmInstance
         userId = intent.getStringExtra("userId")
         healthPojo = realm.where(RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
         if (healthPojo == null) {

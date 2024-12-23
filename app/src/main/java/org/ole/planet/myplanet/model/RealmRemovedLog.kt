@@ -1,54 +1,43 @@
 package org.ole.planet.myplanet.model
 
-import io.realm.Realm
-import io.realm.RealmObject
-import io.realm.annotations.PrimaryKey
-import java.util.UUID
+import io.realm.kotlin.Realm
+import io.realm.kotlin.types.RealmObject
+import io.realm.kotlin.types.annotations.PrimaryKey
+import io.realm.kotlin.ext.query
 
-open class RealmRemovedLog : RealmObject() {
+class RealmRemovedLog : RealmObject {
     @PrimaryKey
     var id: String? = null
-    private var userId: String? = null
-    private var type: String? = null
-    private var docId: String? = null
+    var userId: String? = null
+    var type: String? = null
+    var docId: String? = null
 
     companion object {
-        @JvmStatic
-        fun onAdd(mRealm: Realm, type: String?, userId: String?, docId: String?) {
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
-            mRealm.where(RealmRemovedLog::class.java)
-                .equalTo("type", type)
-                .equalTo("userId", userId)
-                .equalTo("docId", docId)
-                .findAll().deleteAllFromRealm()
-            mRealm.commitTransaction()
-        }
-
-        @JvmStatic
-        fun onRemove(mRealm: Realm, type: String, userId: String?, docId: String?) {
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
-            val log = mRealm.createObject(RealmRemovedLog::class.java, UUID.randomUUID().toString())
-            log.docId = docId
-            log.userId = userId
-            log.type = type
-            mRealm.commitTransaction()
-        }
-
-        @JvmStatic
-        fun removedIds(realm: Realm?, type: String, userId: String?): Array<String> {
-            val removedLibs = realm?.where(RealmRemovedLog::class.java)
-                ?.equalTo("userId", userId)
-                ?.equalTo("type", type)
-                ?.findAll()
-
-            if (removedLibs != null) {
-                val ids = Array(removedLibs.size) { "" }
-                for ((i, removed) in removedLibs.withIndex()) {
-                    ids[i] = removed.docId ?: ""
-                }
-                return ids
+        fun onAdd(realm: Realm, type: String?, userId: String?, docId: String?) {
+            realm.writeBlocking {
+                query<RealmRemovedLog>("type == $0 AND userId == $1 AND docId == $2",
+                    type ?: "",
+                    userId ?: "",
+                    docId ?: ""
+                ).find()
+                    .forEach { delete(it) }
             }
-            return arrayOf()
+        }
+
+        fun onRemove(realm: Realm, type: String, userId: String?, docId: String?) {
+            realm.writeBlocking {
+                copyToRealm(RealmRemovedLog().apply {
+                    this.docId = docId
+                    this.userId = userId
+                    this.type = type
+                })
+            }
+        }
+
+        fun removedIds(realm: Realm, type: String, userId: String?): Array<String> {
+            val removedLibs = realm.query<RealmRemovedLog>("userId == $0 AND type == $1", userId, type).find()
+
+            return removedLibs.mapNotNull { it.docId }.toTypedArray()
         }
     }
 }

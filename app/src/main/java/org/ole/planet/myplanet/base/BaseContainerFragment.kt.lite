@@ -15,15 +15,16 @@ import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.TextView
-import android.widget.Toast
 //import androidx.activity.result.ActivityResultLauncher
 //import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.view.ContextThemeWrapper
 import androidx.appcompat.widget.AppCompatRatingBar
 //import androidx.core.content.FileProvider
+import androidx.lifecycle.lifecycleScope
 import com.google.gson.JsonObject
-//import org.ole.planet.myplanet.MainApplication
+import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 //import org.ole.planet.myplanet.base.PermissionActivity.Companion.hasInstallPermission
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
@@ -106,35 +107,33 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
     private fun openIntent(items: RealmMyLibrary, typeClass: Class<*>?) {
         val fileOpenIntent = Intent(activity, typeClass)
-        if (items.resourceLocalAddress?.contains("ole/audio") == true || items.resourceLocalAddress?.contains("ole/video") == true) {
+        if (items.resourceLocalAddress.contains("ole/audio") == true || items.resourceLocalAddress.contains("ole/video") == true) {
             fileOpenIntent.putExtra("TOUCHED_FILE", items.resourceLocalAddress)
             fileOpenIntent.putExtra("RESOURCE_TITLE", items.title)
         } else {
-            fileOpenIntent.putExtra("TOUCHED_FILE", items.id + "/" + items.resourceLocalAddress)
+            fileOpenIntent.putExtra("TOUCHED_FILE", "${items.id}/${items.resourceLocalAddress}")
             fileOpenIntent.putExtra("RESOURCE_TITLE", items.title)
         }
         startActivity(fileOpenIntent)
     }
     private fun openPdf(item: RealmMyLibrary) {
         val fileOpenIntent = Intent(activity, PDFReaderActivity::class.java)
-        fileOpenIntent.putExtra("TOUCHED_FILE", item.id + "/" + item.resourceLocalAddress)
+        fileOpenIntent.putExtra("TOUCHED_FILE", "${item.id}/${item.resourceLocalAddress}")
         fileOpenIntent.putExtra("resourceId", item.id)
         startActivity(fileOpenIntent)
     }
 
     fun openResource(items: RealmMyLibrary) {
-        val matchingItems = mRealm.where(RealmMyLibrary::class.java)
-            .equalTo("resourceLocalAddress", items.resourceLocalAddress)
-            .findAll()
+        val matchingItems = MainApplication.realm.query<RealmMyLibrary>(RealmMyLibrary::class, "resourceLocalAddress == $0", items.resourceLocalAddress).find()
         val anyOffline = matchingItems.any { it.isResourceOffline() }
         if (anyOffline) {
-            val offlineItem = matchingItems.first { it.isResourceOffline()}
+            val offlineItem = matchingItems.first { it.isResourceOffline() }
             openFileType(offlineItem, "offline")
         } else {
             if (items.isResourceOffline()) {
                 openFileType(items, "offline")
             } else if (FileUtils.getFileExtension(items.resourceLocalAddress) == "mp4") {
-                openFileType(items,  "online")
+                openFileType(items, "online")
             } else {
                 val arrayList = ArrayList<String>()
                 arrayList.add(Utilities.getUrl(items))
@@ -145,38 +144,41 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
 
     private fun checkFileExtension(items: RealmMyLibrary) {
-        val filenameArray = items.resourceLocalAddress?.split("\\.".toRegex())?.toTypedArray()
-        val extension = filenameArray?.get(filenameArray.size - 1)
+        val filenameArray = items.resourceLocalAddress.split("\\.".toRegex()).toTypedArray()
+        val extension = filenameArray[filenameArray.size - 1]
         val mimetype = Utilities.getMimeType(items.resourceLocalAddress)
 
-        if (mimetype != null) {
-            if (mimetype.contains("image")) {
-                openIntent(items, ImageViewerActivity::class.java)
-            } else if (mimetype.contains("pdf")) {
-                openPdf(items)
-            } else if (mimetype.contains("audio")) {
-                openIntent(items, AudioPlayerActivity::class.java)
-            } else {
-                checkMoreFileExtensions(extension, items)
+        lifecycleScope.launch {
+            if (mimetype != null) {
+                if (mimetype.contains("image")) {
+                    openIntent(items, ImageViewerActivity::class.java)
+                } else if (mimetype.contains("pdf")) {
+                    openPdf(items)
+                } else if (mimetype.contains("audio")) {
+                    openIntent(items, AudioPlayerActivity::class.java)
+                } else {
+                    checkMoreFileExtensions(extension, items)
+                }
             }
         }
     }
 
     private fun checkMoreFileExtensions(extension: String?, items: RealmMyLibrary) {
-        when (extension) {
-            "txt" -> {
-                openIntent(items, TextFileViewerActivity::class.java)
+        lifecycleScope.launch {
+            when (extension) {
+                "txt" -> {
+                    openIntent(items, TextFileViewerActivity::class.java)
+                }
+                "md" -> {
+                    openIntent(items, MarkdownViewerActivity::class.java)
+                }
+                "csv" -> {
+                    openIntent(items, CSVViewerActivity::class.java)
+                }
+//                "apk" -> {
+//                    installApk(items)
+//                }
             }
-            "md" -> {
-                openIntent(items, MarkdownViewerActivity::class.java)
-            }
-            "csv" -> {
-                openIntent(items, CSVViewerActivity::class.java)
-            }
-//            "apk" -> {
-//                installApk(items)
-//            }
-            else -> Toast.makeText(activity, getString(R.string.this_file_type_is_currently_unsupported), Toast.LENGTH_LONG).show()
         }
     }
 
@@ -188,14 +190,14 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 //                throw RuntimeException("Failed to create directory: " + directory.absolutePath)
 //            }
 //        }
-//        val apkFile = items.resourceLocalAddress?.let { File(directory, it) }
-//        if (apkFile != null) {
+//        val apkFile = File(directory, items.resourceLocalAddress)
+//        if (true) {
 //            if (!apkFile.exists()) {
 //                Utilities.toast(activity,"APK file not found")
 //                return
 //            }
 //        }
-//        val uri = apkFile?.let {
+//        val uri = apkFile.let {
 //            FileProvider.getUriForFile(MainApplication.context, "${MainApplication.context.packageName}.fileprovider", it)
 //        }
 //        val intent = Intent(Intent.ACTION_VIEW).apply {
@@ -212,7 +214,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 //            Utilities.toast(activity,"No app to handle the installation")
 //        }
 //    }
-
+//
 //    private fun requestInstallPermission() {
 //        val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES)
 //        intent.data = Uri.parse("package:" + MainApplication.context.packageName)
@@ -241,7 +243,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             bundle.putString("videoURL", "" + Utilities.getUrl(items))
             bundle.putString("Auth", "" + auth)
         } else if (videoType == "offline") {
-            if (items.resourceRemoteAddress == null && items.resourceLocalAddress != null) {
+            if (false) {
                 bundle.putString("videoURL", items.resourceLocalAddress)
             } else {
                 bundle.putString("videoURL", "" + Uri.fromFile(File("" + FileUtils.getSDPathFromUrl(items.resourceRemoteAddress))))

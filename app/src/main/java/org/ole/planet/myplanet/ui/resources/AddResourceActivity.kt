@@ -50,7 +50,7 @@ class AddResourceActivity : AppCompatActivity() {
         levels = RealmList()
         subjects = RealmList()
         resourceFor = RealmList()
-        mRealm = DatabaseService(this).realmInstance
+        mRealm = DatabaseService().realmInstance
         initializeViews()
     }
 

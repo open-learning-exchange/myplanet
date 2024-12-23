@@ -51,7 +51,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         setContentView(activityReplyBinding.root)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
-        mRealm = DatabaseService(this).realmInstance
+        mRealm = DatabaseService().realmInstance
         title = "Reply"
         imageList = RealmList()
         id = intent.getStringExtra("id")

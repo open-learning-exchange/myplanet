@@ -100,7 +100,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         super.onCreate(savedInstanceState)
         settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         editor = settings.edit()
-        mRealm = DatabaseService(this).realmInstance
+        mRealm = DatabaseService().realmInstance
         mRealm = Realm.getDefaultInstance()
         requestAllPermissions()
         customProgressDialog = DialogUtils.getCustomProgressDialog(this)

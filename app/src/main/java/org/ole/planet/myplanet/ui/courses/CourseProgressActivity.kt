@@ -31,7 +31,7 @@ class CourseProgressActivity : BaseActivity() {
         setContentView(activityCourseProgressBinding.root)
         initActionBar()
         courseId = intent.getStringExtra("courseId").toString()
-        realm = DatabaseService(this).realmInstance
+        realm = DatabaseService().realmInstance
         user = UserProfileDbHandler(this).userModel
         val courseProgress = RealmCourseProgress.getCourseProgress(realm, user?.id)
         val progress = courseProgress[courseId]

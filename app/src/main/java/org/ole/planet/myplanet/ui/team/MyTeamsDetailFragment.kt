@@ -69,7 +69,7 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
         fragmentMyTeamsDetailBinding = FragmentMyTeamsDetailBinding.inflate(inflater, container, false)
         val v: View = fragmentMyTeamsDetailBinding.root
         initializeViews(v)
-        dbService = DatabaseService(requireActivity())
+        dbService = DatabaseService()
         mRealm = dbService.realmInstance
         user = profileDbHandler.userModel?.let { mRealm.copyFromRealm(it) }
         team = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()

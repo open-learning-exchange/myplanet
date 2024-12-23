@@ -8,7 +8,7 @@ import android.net.Uri
 import android.text.TextUtils
 import com.google.gson.Gson
 import com.google.gson.JsonObject
-import io.realm.Realm
+import io.realm.kotlin.Realm
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -52,7 +52,6 @@ import kotlin.math.min
 class Service(private val context: Context) {
     private val preferences: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     private val retrofitInterface: ApiInterface? = ApiClient.client?.create(ApiInterface::class.java)
-
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     fun healthAccess(listener: SuccessListener) {
@@ -211,21 +210,30 @@ class Service(private val context: Context) {
 
             override fun notAvailable() {
                 val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                if (isUserExists(realm, obj["name"].asString)) {
-                    callback.onSuccess("User already exists")
-                    return
+                serviceScope.launch(Dispatchers.IO) {
+                    if (isUserExists(realm, obj["name"].asString)) {
+                        withContext(Dispatchers.Main) {
+                            callback.onSuccess("User already exists")
+                        }
+                        return@launch
+                    }
+
+                    val model = populateUsersTable(obj, realm, settings)
+                    realm.write {
+                        val keyString = generateKey()
+                        val iv = generateIv()
+                        model?.let {
+                            it.key = keyString
+                            it.iv = iv
+                            copyToRealm(it)
+                        }
+                    }
+
+                    withContext(Dispatchers.Main) {
+                        Utilities.toast(MainApplication.context, "Not connected to planet, created user offline.")
+                        callback.onSuccess("Not connected to planet, created user offline.")
+                    }
                 }
-                realm.beginTransaction()
-                val model = populateUsersTable(obj, realm, settings)
-                val keyString = generateKey()
-                val iv = generateIv()
-                if (model != null) {
-                    model.key = keyString
-                    model.iv = iv
-                }
-                realm.commitTransaction()
-                Utilities.toast(MainApplication.context, "Not connected to planet, created user offline.")
-                callback.onSuccess("Not connected to planet, created user offline.")
             }
         })
     }
@@ -240,43 +248,46 @@ class Service(private val context: Context) {
 
     private fun saveUserToDb(realm: Realm, id: String, obj: JsonObject, callback: CreateUserCallback) {
         val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        realm.executeTransactionAsync({ realm1: Realm? ->
+        serviceScope.launch(Dispatchers.IO) {
             try {
-                val res = retrofitInterface?.getJsonObject(Utilities.header, Utilities.getUrl() + "/_users/" + id)?.execute()
+                val res = retrofitInterface?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/_users/$id")?.execute()
                 if (res?.body() != null) {
-                    val model = populateUsersTable(res.body(), realm1, settings)
-                    if (model != null) {
-                        UploadToShelfService(MainApplication.context).saveKeyIv(retrofitInterface, model, obj)
+                    val model = populateUsersTable(res.body(), realm, settings)
+                    realm.write {
+                        model?.let {
+                            copyToRealm(it)
+                            UploadToShelfService(MainApplication.context).saveKeyIv(retrofitInterface, it, obj)
+                        }
                     }
+                    withContext(Dispatchers.Main) {
+                        callback.onSuccess("User created successfully")
+                    }
+
+                    isNetworkConnectedFlow.onEach { isConnected ->
+                        if (isConnected) {
+                            val serverUrl = settings.getString("serverURL", "")
+                            if (!serverUrl.isNullOrEmpty()) {
+                                val canReachServer = withContext(Dispatchers.IO) {
+                                    isServerReachable(serverUrl)
+                                }
+                                if (canReachServer) {
+                                    if (context is ProcessUserDataActivity) {
+                                        withContext(Dispatchers.Main) {
+                                            context.startUpload("becomeMember")
+                                        }
+                                    }
+                                    TransactionSyncManager.syncDb(realm, "tablet_users")
+                                }
+                            }
+                        }
+                    }.launchIn(serviceScope)
                 }
             } catch (e: IOException) {
                 e.printStackTrace()
-            }
-        }, {
-            callback.onSuccess("User created successfully")
-            isNetworkConnectedFlow.onEach { isConnected ->
-                if (isConnected) {
-                    val serverUrl = settings.getString("serverURL", "")
-                    if (!serverUrl.isNullOrEmpty()) {
-                        serviceScope.launch {
-                            val canReachServer = withContext(Dispatchers.IO) {
-                                isServerReachable(serverUrl)
-                            }
-                            if (canReachServer) {
-                                if (context is ProcessUserDataActivity) {
-                                    context.runOnUiThread {
-                                        context.startUpload("becomeMember")
-                                    }
-                                }
-                                TransactionSyncManager.syncDb(realm, "tablet_users")
-                            }
-                        }
-                    }
+                withContext(Dispatchers.Main) {
+                    callback.onSuccess("Unable to save user please sync")
                 }
-            }.launchIn(serviceScope)
-        }) { error: Throwable ->
-            error.printStackTrace()
-            callback.onSuccess("Unable to save user please sync")
+            }
         }
     }
 
@@ -285,36 +296,39 @@ class Service(private val context: Context) {
             override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
                 if (response.body() != null) {
                     val arr = JsonUtils.getJsonArray("rows", response.body())
-                    if (!realm.isClosed) {
-                        realm.executeTransactionAsync({ realm1: Realm ->
-                            realm1.delete(RealmCommunity::class.java)
-                            for (j in arr) {
+                    serviceScope.launch(Dispatchers.IO) {
+                        realm.write {
+                            // Delete existing communities
+                            query<RealmCommunity>(RealmCommunity::class).find().forEach { delete(it) }
+
+                            // Add new communities
+                            arr.forEach { j ->
                                 var jsonDoc = j.asJsonObject
                                 jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
                                 val id = JsonUtils.getString("_id", jsonDoc)
-                                val community = realm1.createObject(RealmCommunity::class.java, id)
-                                if (JsonUtils.getString("name", jsonDoc) == "learning") {
-                                    community.weight = 0
+
+                                val community = RealmCommunity().apply {
+                                    this.id = id
+                                    if (JsonUtils.getString("name", jsonDoc) == "learning") {
+                                        this.weight = 0
+                                    }
+                                    this.localDomain = JsonUtils.getString("localDomain", jsonDoc)
+                                    this.name = JsonUtils.getString("name", jsonDoc)
+                                    this.parentDomain = JsonUtils.getString("parentDomain", jsonDoc)
+                                    this.registrationRequest = JsonUtils.getString("registrationRequest", jsonDoc)
                                 }
-                                community.localDomain = JsonUtils.getString("localDomain", jsonDoc)
-                                community.name = JsonUtils.getString("name", jsonDoc)
-                                community.parentDomain = JsonUtils.getString("parentDomain", jsonDoc)
-                                community.registrationRequest = JsonUtils.getString("registrationRequest", jsonDoc)
+                                copyToRealm(community)
                             }
-                        }, {
-                            realm.close()
+                        }
+
+                        withContext(Dispatchers.Main) {
                             callback.onSuccess("Server sync successfully")
-                        }) { error: Throwable ->
-                            realm.close()
-                            error.printStackTrace()
                         }
                     }
                 }
             }
 
-            override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
-                realm.close()
-            }
+            override fun onFailure(call: Call<JsonObject?>, t: Throwable) {}
         })
     }
 
