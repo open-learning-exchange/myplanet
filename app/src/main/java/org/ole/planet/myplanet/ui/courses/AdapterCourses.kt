@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.courses
 
 import android.content.Context
-import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -18,7 +17,8 @@ import com.google.android.flexbox.FlexboxLayout
 import com.google.gson.JsonObject
 import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
-import io.realm.Realm
+import io.realm.kotlin.Realm
+import io.realm.kotlin.query.RealmResults
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
@@ -81,9 +81,9 @@ class AdapterCourses(private val context: Context, private var courseList: List<
     private fun sortCourseListByTitle() {
         Collections.sort(courseList) { course1: RealmMyCourse?, course2: RealmMyCourse? ->
             if (isTitleAscending) {
-                return@sort course1!!.courseTitle!!.compareTo(course2!!.courseTitle!!, ignoreCase = true)
+                return@sort course1!!.courseTitle.compareTo(course2!!.courseTitle, ignoreCase = true)
             } else {
-                return@sort course2!!.courseTitle!!.compareTo(course1!!.courseTitle!!, ignoreCase = true)
+                return@sort course2!!.courseTitle.compareTo(course1!!.courseTitle, ignoreCase = true)
             }
         }
     }
@@ -154,7 +154,7 @@ class AdapterCourses(private val context: Context, private var courseList: List<
                     }
                 }
 
-                if (course.gradeLevel.isNullOrEmpty() && course.subjectLevel.isNullOrEmpty()) {
+                if (course.gradeLevel.isEmpty() && course.subjectLevel.isEmpty()) {
                     holder.rowCourseBinding.holder.visibility = View.VISIBLE
                     holder.rowCourseBinding.tvDate2.visibility = View.VISIBLE
                     holder.rowCourseBinding.tvDate.visibility = View.GONE
@@ -181,10 +181,7 @@ class AdapterCourses(private val context: Context, private var courseList: List<
                 if (!userModel?.isGuest()!!) {
                     holder.rowCourseBinding.ratingBar.setOnTouchListener { _: View?, event: MotionEvent ->
                         if (event.action == MotionEvent.ACTION_UP) homeItemClickListener?.showRatingDialog(
-                            "course",
-                            course.courseId,
-                            course.courseTitle,
-                            ratingChangeListener
+                            "course", course.courseId, course.courseTitle, ratingChangeListener
                         )
                         true
                     }
@@ -238,16 +235,18 @@ class AdapterCourses(private val context: Context, private var courseList: List<
     private fun displayTagCloud(flexboxDrawable: FlexboxLayout, position: Int) {
         flexboxDrawable.removeAllViews()
         val chipCloud = ChipCloud(context, flexboxDrawable, config)
-        val tags: List<RealmTag>? = mRealm?.where(RealmTag::class.java)?.equalTo("db", "courses")?.equalTo("linkId", courseList[position]!!.id)?.findAll()
-        showTags(tags, chipCloud)
+
+        mRealm?.let { realm ->
+            val tags = realm.query<RealmTag>(RealmTag::class, "db == $0 AND linkId == $1", "courses",
+                courseList[position]?.id ?: "").find()
+            showTags(tags, chipCloud)
+        }
     }
 
-    private fun showTags(tags: List<RealmTag>?, chipCloud: ChipCloud) {
-        if (tags != null) {
-            for (tag in tags) {
-                val parent = mRealm?.where(RealmTag::class.java)?.equalTo("id", tag.tagId)?.findFirst()
-                parent?.let { showChip(chipCloud, it) }
-            }
+    private fun showTags(tags: RealmResults<RealmTag>, chipCloud: ChipCloud) {
+        tags.forEach { tag ->
+            mRealm?.query<RealmTag>(RealmTag::class, "id == $0", tag.tagId)
+                ?.first()?.find()?.let { parent -> showChip(chipCloud, parent) }
         }
     }
 
@@ -255,7 +254,7 @@ class AdapterCourses(private val context: Context, private var courseList: List<
         chipCloud.addChip(if (parent != null) parent.name else "")
         chipCloud.setListener { _: Int, _: Boolean, b1: Boolean ->
             if (b1 && listener != null) {
-                listener!!.onTagClicked(parent)
+                listener?.onTagClicked(parent)
             }
         }
     }
@@ -263,8 +262,8 @@ class AdapterCourses(private val context: Context, private var courseList: List<
     private fun showProgressAndRating(position: Int, holder: RecyclerView.ViewHolder) {
         val viewHolder = holder as ViewHoldercourse
         showProgress(position)
-        if (map.containsKey(courseList[position]!!.courseId)) {
-            val `object` = map[courseList[position]!!.courseId]
+        if (map.containsKey(courseList[position]?.courseId)) {
+            val `object` = map[courseList[position]?.courseId]
             showRating(`object`, viewHolder.rowCourseBinding.rating, viewHolder.rowCourseBinding.timesRated, viewHolder.rowCourseBinding.ratingBar)
         } else {
             viewHolder.rowCourseBinding.ratingBar.rating = 0f
