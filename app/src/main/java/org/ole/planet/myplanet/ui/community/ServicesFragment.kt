@@ -1,25 +1,18 @@
 package org.ole.planet.myplanet.ui.community
 
-import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.os.*
+import android.view.*
 import android.widget.TextView
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import io.realm.RealmResults
-import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.R
+import io.realm.kotlin.query.RealmResults
+import org.ole.planet.myplanet.*
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentServicesBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.*
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.courses.CourseStepFragment
-import org.ole.planet.myplanet.ui.team.BaseTeamFragment
-import org.ole.planet.myplanet.ui.team.TeamDetailFragment
+import org.ole.planet.myplanet.ui.team.*
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 
 class ServicesFragment : BaseTeamFragment() {
@@ -31,12 +24,11 @@ class ServicesFragment : BaseTeamFragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-
         super.onViewCreated(view, savedInstanceState)
         mRealm = DatabaseService().realmInstance
         user = UserProfileDbHandler(requireActivity()).userModel
 
-        val links = mRealm.where(RealmMyTeam::class.java)?.equalTo("docType", "link")?.findAll()
+        val links = mRealm.query<RealmMyTeam>(RealmMyTeam::class, "docType == $0", "link").find()
 
         fragmentServicesBinding.fab.setOnClickListener {
             val bottomSheetDialog: BottomSheetDialogFragment = AddLinkFragment()
@@ -48,7 +40,7 @@ class ServicesFragment : BaseTeamFragment() {
             }, 1000)
         }
 
-        if (links?.size == 0) {
+        if (links.isEmpty()) {
             fragmentServicesBinding.llServices.visibility = View.GONE
         }
 
@@ -66,6 +58,8 @@ class ServicesFragment : BaseTeamFragment() {
         }
     }
 
+    override fun setData(list: List<RealmNews>?) {}
+
     override fun onNewsItemClick(news: RealmNews?) {}
 
     override fun clearImages() {
@@ -73,24 +67,24 @@ class ServicesFragment : BaseTeamFragment() {
         llImage?.removeAllViews()
     }
 
-    private fun setRecyclerView(links: RealmResults<RealmMyTeam>?) {
+    private fun setRecyclerView(links: RealmResults<RealmMyTeam>) {
         fragmentServicesBinding.llServices.removeAllViews()
-        links?.forEach { team ->
+        links.forEach { team ->
             val b: TextView = LayoutInflater.from(activity).inflate(R.layout.button_single, fragmentServicesBinding.llServices, false) as TextView
             b.setPadding(8, 8, 8, 8)
             b.text = team.title
             b.setOnClickListener {
-                val route = team.route?.split("/")
-                if (route != null) {
-                    if (route.size >= 3) {
-                        val f = TeamDetailFragment()
-                        val c = Bundle()
-                        val teamObject = mRealm.where(RealmMyTeam::class.java)?.equalTo("_id", route[3])?.findFirst()
-                        c.putString("id", route[3])
-                        teamObject?.isMyTeam(user?.id, mRealm)?.let { it1 -> c.putBoolean("isMyTeam", it1) }
-                        f.arguments = c
-                        (context as OnHomeItemClickListener).openCallFragment(f)
+                val route = team.route.split("/")
+                if (route.size >= 3) {
+                    val f = TeamDetailFragment()
+                    val c = Bundle()
+                    val teamObject = mRealm.query<RealmMyTeam>(RealmMyTeam::class, "_id == $0", route[3]).first().find()
+                    c.putString("id", route[3])
+                    teamObject?.isMyTeam(user?.id ?: "", mRealm)?.let { isTeamMember ->
+                        c.putBoolean("isMyTeam", isTeamMember)
                     }
+                    f.arguments = c
+                    (context as OnHomeItemClickListener).openCallFragment(f)
                 }
             }
             fragmentServicesBinding.llServices.addView(b)
