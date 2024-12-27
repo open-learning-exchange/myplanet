@@ -9,9 +9,15 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
-import io.realm.Case
-import io.realm.RealmResults
-import io.realm.Sort
+import io.realm.kotlin.notifications.InitialResults
+import io.realm.kotlin.notifications.UpdatedResults
+import io.realm.kotlin.query.RealmResults
+import io.realm.kotlin.query.Sort
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.databinding.FragmentCommunityBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -25,6 +31,7 @@ import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickListener {
     private lateinit var fragmentCommunityBinding: FragmentCommunityBinding
     private var newList: RealmResults<RealmNews>? = null
+    private val scope = CoroutineScope(Dispatchers.Main + Job())
     override fun addImage(llImage: LinearLayout?) {}
     override fun onNewsItemClick(news: RealmNews?) {}
     override fun clearImages() {}
@@ -38,14 +45,20 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
     var user: RealmUserModel? = null
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentCommunityBinding = FragmentCommunityBinding.inflate(inflater, container, false)
-        newList = mRealm.where(RealmNews::class.java).equalTo("docType", "message", Case.INSENSITIVE)
-            .equalTo("viewableBy", "community", Case.INSENSITIVE)
-            .equalTo("createdOn", user?.planetCode, Case.INSENSITIVE).isEmpty("replyTo")
-            .sort("time", Sort.DESCENDING).findAll()
 
-        newList?.addChangeListener { results ->
-            updatedNewsList(results)
+        newList = mRealm.query<RealmNews>(RealmNews::class,
+            "docType LIKE[c] $0 AND viewableBy LIKE[c] $1 AND createdOn LIKE[c] $2 AND replyTo == null",
+            "message", "community", user?.planetCode ?: "").sort("time", Sort.DESCENDING).find()
+
+        scope.launch {
+            newList?.asFlow()?.collect { changes ->
+                when(changes) {
+                    is InitialResults<RealmNews> -> updatedNewsList(changes.list)
+                    is UpdatedResults<RealmNews> -> updatedNewsList(changes.list)
+                }
+            }
         }
+
         return fragmentCommunityBinding.root
     }
 
@@ -56,10 +69,9 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
         fragmentCommunityBinding.btnLibrary.setOnClickListener {
             homeItemClickListener?.openCallFragment(ResourcesFragment())
         }
-        newList = mRealm.where(RealmNews::class.java).equalTo("docType", "message", Case.INSENSITIVE)
-            .equalTo("viewableBy", "community", Case.INSENSITIVE)
-            .equalTo("createdOn", user?.planetCode, Case.INSENSITIVE).isEmpty("replyTo")
-            .sort("time", Sort.DESCENDING).findAll()
+        newList = mRealm.query<RealmNews>(RealmNews::class,
+            "docType LIKE[c] $0 AND viewableBy LIKE[c] $1 AND createdOn LIKE[c] $2 AND replyTo == null",
+            "message", "community", user?.planetCode ?: "").sort("time", Sort.DESCENDING).find()
         val orientation = resources.configuration.orientation
         changeLayoutManager(orientation)
         updatedNewsList(newList)
