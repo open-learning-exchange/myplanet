@@ -175,7 +175,7 @@ class RealmMyCourse : RealmObject {
             settings.edit().putString("concatenated_links", gson.toJson(existingConcatenatedLinks)).apply()
         }
 
-        fun getCourseSteps(realm: Realm, courseId: String): List<RealmCourseStep> {
+        fun getCourseSteps(realm: Realm, courseId: String?): List<RealmCourseStep> {
             return realm.query<RealmMyCourse>("id == $0", courseId).first().find()?.courseSteps?.toList()
                 ?: emptyList()
         }
