@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="resource_not_found">स्रोत फेला परेन</string>
+    <string name="resource_not_found_message">अनुरोध गरिएको स्रोत फेला पार्न सकिएन</string>
     <string name="app_name">My Planet</string>
     <string name="planet">ग्रह</string>
     <string name="app_project_name">myPlanet</string>

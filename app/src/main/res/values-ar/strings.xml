@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="resource_not_found">لم يتم العثور على المورد</string>
+    <string name="resource_not_found_message">لا يمكن العثور على المورد المطلوب.</string>
     <string name="app_name">My Planet</string>
     <string name="planet">كوكب</string>
     <string name="app_project_name">myPlanet</string>

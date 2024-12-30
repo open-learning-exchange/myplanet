@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="resource_not_found">Recurso no encontrado</string>
+    <string name="resource_not_found_message">No se pudo encontrar el recurso solicitado</string>
     <string name="app_name">My Planet</string>
     <string name="planet">Planeta</string>
     <string name="app_project_name">myPlanet</string>
