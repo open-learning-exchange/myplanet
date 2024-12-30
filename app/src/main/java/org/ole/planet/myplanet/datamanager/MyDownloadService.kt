@@ -106,7 +106,13 @@ class MyDownloadService : Service() {
             this.message = message
         }
         sendIntent(download, fromSync)
+
+        if (message == "File Not Found") {
+            val intent = Intent(RESOURCE_NOT_FOUND_ACTION)
+            LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
+        }
     }
+
 
     @Throws(IOException::class)
     private fun downloadFile(body: ResponseBody, url: String) {
@@ -231,7 +237,7 @@ class MyDownloadService : Service() {
     companion object {
         const val PREFS_NAME = "MyPrefsFile"
         const val MESSAGE_PROGRESS = "message_progress"
-
+        const val RESOURCE_NOT_FOUND_ACTION = "resource_not_found_action"
         fun startService(context: Context, urlsKey: String, fromSync: Boolean) {
             val intent = Intent(context, MyDownloadService::class.java).apply {
                 putExtra("urls_key", urlsKey)
