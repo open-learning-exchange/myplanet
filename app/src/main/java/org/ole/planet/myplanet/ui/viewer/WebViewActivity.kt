@@ -2,11 +2,13 @@ package org.ole.planet.myplanet.ui.viewer
 
 import android.graphics.Bitmap
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
 import android.view.View
 import android.webkit.*
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityWebViewBinding
 import java.io.File
@@ -25,7 +27,6 @@ class WebViewActivity : AppCompatActivity() {
         val title: String? = intent.getStringExtra("title")
         link = intent.getStringExtra("link") ?: ""
         val resourceId = intent.getStringExtra("RESOURCE_ID")
-        val localAddress = intent.getStringExtra("LOCAL_ADDRESS")
 
         clearCookie()
         if (!TextUtils.isEmpty(title)) {
@@ -62,6 +63,24 @@ class WebViewActivity : AppCompatActivity() {
             allowFileAccessFromFileURLs = true
             allowUniversalAccessFromFileURLs = true
             defaultTextEncodingName = "utf-8"
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val nightModeFlags = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
+                when (nightModeFlags) {
+                    android.content.res.Configuration.UI_MODE_NIGHT_YES -> {
+                        forceDark = WebSettings.FORCE_DARK_ON
+                        activityWebViewBinding.contentWebView.webTitle.setTextColor(ContextCompat.getColor(this@WebViewActivity, R.color.md_white_1000))
+                        activityWebViewBinding.contentWebView.webSource.setTextColor(ContextCompat.getColor(this@WebViewActivity, R.color.md_white_1000))
+                        activityWebViewBinding.contentWebView.contentWebView.setBackgroundColor(ContextCompat.getColor(this@WebViewActivity, R.color.md_black_1000))
+                    }
+
+                    android.content.res.Configuration.UI_MODE_NIGHT_NO -> {
+                        forceDark = WebSettings.FORCE_DARK_OFF
+                        activityWebViewBinding.contentWebView.webTitle.setTextColor(ContextCompat.getColor(this@WebViewActivity, R.color.md_black_1000))
+                        activityWebViewBinding.contentWebView.webSource.setTextColor(ContextCompat.getColor(this@WebViewActivity, R.color.md_black_1000))
+                    }
+                }
+            }
         }
     }
 
@@ -82,6 +101,43 @@ class WebViewActivity : AppCompatActivity() {
 
             override fun onPageFinished(view: WebView, url: String) {
                 super.onPageFinished(view, url)
+
+                val nightModeFlags = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
+                if (nightModeFlags == android.content.res.Configuration.UI_MODE_NIGHT_YES) {
+                    view.evaluateJavascript(
+                        """
+                            (function() {
+                                document.documentElement.setAttribute('dark', 'true');
+                                document.documentElement.style.backgroundColor = '#000';
+                                document.documentElement.style.color = '#FFF';
+                                const elements = document.querySelectorAll('*');
+                                elements.forEach(el => {
+                                    if (window.getComputedStyle(el).color === 'rgb(0, 0, 0)') {
+                                        el.style.color = '#FFF';
+                                    }
+                                });
+                            })();
+                            """.trimIndent(),
+                        null
+                    )
+                } else {
+                    view.evaluateJavascript(
+                        """
+                            (function() {
+                                document.documentElement.removeAttribute('dark');
+                                document.documentElement.style.backgroundColor = '#FFF';
+                                document.documentElement.style.color = '#000';
+                                const elements = document.querySelectorAll('*');
+                                elements.forEach(el => {
+                                    if (window.getComputedStyle(el).color === 'rgb(255, 255, 255)') {
+                                        el.style.color = '#000';
+                                    }
+                                });
+                            })();
+                            """.trimIndent(),
+                        null
+                    )
+                }
             }
 
             override fun onReceivedError(view: WebView?, errorCode: Int, description: String?, failingUrl: String?) {
