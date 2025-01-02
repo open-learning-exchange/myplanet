@@ -214,7 +214,7 @@ class RealmMyCourse : RealmObject {
             return realm.query<RealmMyCourse>("userId == $0", userId).find()
         }
 
-        fun getMyCourseByUserId(userId: String, courses: List<RealmMyCourse>): List<RealmMyCourse> {
+        fun getMyCourseByUserId(userId: String?, courses: List<RealmMyCourse>): List<RealmMyCourse> {
             return courses.filter { course -> course.userId.contains(userId) }
         }
 
@@ -222,7 +222,7 @@ class RealmMyCourse : RealmObject {
             return courses.filter { course -> !course.userId.contains(userId) }
         }
 
-        fun isMyCourse(userId: String, courseId: String, realm: Realm): Boolean {
+        fun isMyCourse(userId: String?, courseId: String?, realm: Realm): Boolean {
             val courses = realm.query<RealmMyCourse>("courseId == $0", courseId).find()
             return getMyCourseByUserId(userId, courses).isNotEmpty()
         }

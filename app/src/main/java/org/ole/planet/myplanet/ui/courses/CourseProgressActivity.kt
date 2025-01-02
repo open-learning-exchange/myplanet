@@ -7,7 +7,7 @@ import io.realm.kotlin.Realm
 import io.realm.kotlin.query.RealmResults
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
-import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.*
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.databinding.ActivityCourseProgressBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -19,7 +19,7 @@ class CourseProgressActivity : BaseActivity() {
     lateinit var realm: Realm
     var user: RealmUserModel? = null
     lateinit var courseId: String
-    private val scope = CoroutineScope(Dispatchers.Main + Job())
+    private val scope = MainApplication.applicationScope
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
