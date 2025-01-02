@@ -25,7 +25,7 @@
             android:layout_height="@dimen/_30dp"
             android:layout_gravity="center"
             android:padding="@dimen/padding_small"
-            app:tint="@color/md_black_1000" />
+            app:tint="@color/daynight_textColor" />
 
 
         <TextView
@@ -36,7 +36,7 @@
             android:ellipsize="end"
             android:lines="1"
             android:padding="@dimen/padding_normal"
-            android:textColor="@color/md_black_1000" />
+            android:textColor="@color/daynight_textColor" />
     </LinearLayout>
 
     <TextView
@@ -47,7 +47,7 @@
         android:layout_margin="@dimen/padding_normal"
         android:background="@drawable/oval_primary"
         android:gravity="center"
-        android:textColor="@color/colorPrimaryDark"
+        android:textColor="@color/daynight_textColor"
         android:textSize="12sp"
         android:visibility="gone" />
 </FrameLayout>

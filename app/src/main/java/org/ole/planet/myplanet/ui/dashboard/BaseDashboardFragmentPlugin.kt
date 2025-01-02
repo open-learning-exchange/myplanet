@@ -119,7 +119,7 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
     }
 
     fun setTextColor(textView: TextView, itemCnt: Int) {
-        textView.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
+        textView.setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
         setBackgroundColor(textView, itemCnt)
     }
 
@@ -166,7 +166,7 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         if (count % 2 == 0) {
             v.setBackgroundResource(R.drawable.light_rect)
         } else {
-            v.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.dashboard_item_alternative))
+            v.setBackgroundResource(R.color.dashboard_item_alternative)
         }
     }
 }
