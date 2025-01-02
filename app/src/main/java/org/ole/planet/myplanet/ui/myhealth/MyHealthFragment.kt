@@ -92,7 +92,6 @@ class MyHealthFragment : Fragment() {
             startActivity(Intent(activity, BecomeMemberActivity::class.java))
         }
 
-        // Set the initial text for DOB field
         fragmentVitalSignBinding.txtDob.text = if (TextUtils.isEmpty(userModel?.dob)) getString(R.string.birth_date) else getFormatedDate(userModel?.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
     }
 
