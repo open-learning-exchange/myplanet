@@ -1,11 +1,13 @@
 package org.ole.planet.myplanet.ui.myhealth
 
+import android.app.DatePickerDialog
 import android.os.Bundle
 import android.text.TextUtils
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
+import android.widget.ImageView
 import android.widget.Spinner
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -22,7 +24,8 @@ import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.decrypt
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.encrypt
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateKey
 import org.ole.planet.myplanet.utilities.Utilities
-
+import java.util.Calendar
+import java.util.Locale
 
 class AddMyHealthActivity : AppCompatActivity() {
     private lateinit var activityAddMyHealthBinding: ActivityAddMyHealthBinding
@@ -71,6 +74,16 @@ class AddMyHealthActivity : AppCompatActivity() {
         spinner.adapter = adapter
 
         initViews()
+        val datePickerClickListener = View.OnClickListener {
+            val now = Calendar.getInstance()
+            val dpd = DatePickerDialog(this, { _, year, month, dayOfMonth ->
+                val selectedDate = String.format(Locale.US, "%04d-%02d-%02d", year, month + 1, dayOfMonth)
+                activityAddMyHealthBinding.etBirthdateLayout.editText?.setText(selectedDate)
+            }, now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH))
+            dpd.show()
+        }
+        activityAddMyHealthBinding.etBirthdateLayout.editText?.setOnClickListener(datePickerClickListener)
+        findViewById<ImageView>(R.id.iv_date_picker).setOnClickListener(datePickerClickListener)
     }
 
     private fun createMyHealth() {
@@ -80,7 +93,7 @@ class AddMyHealthActivity : AppCompatActivity() {
         userModelB?.middleName = "${activityAddMyHealthBinding.etMname.editText?.text}".trim { it <= ' ' }
         userModelB?.lastName = "${activityAddMyHealthBinding.etLname.editText?.text}".trim { it <= ' ' }
         userModelB?.email = "${activityAddMyHealthBinding.etEmail.editText?.text}".trim { it <= ' ' }
-        userModelB?.dob = "${activityAddMyHealthBinding.etBirthdate.editText?.text}".trim { it <= ' ' }
+        userModelB?.dob = "${activityAddMyHealthBinding.etBirthdateLayout.editText?.text}".trim { it <= ' ' }
         userModelB?.birthPlace = "${activityAddMyHealthBinding.etBirthplace.editText?.text}".trim { it <= ' ' }
         userModelB?.phoneNumber = "${activityAddMyHealthBinding.etPhone.editText?.text}".trim { it <= ' ' }
         health.emergencyContactName = "${activityAddMyHealthBinding.etEmergency.editText?.text}".trim { it <= ' ' }
@@ -130,7 +143,7 @@ class AddMyHealthActivity : AppCompatActivity() {
             activityAddMyHealthBinding.etLname.editText?.setText(userModelB?.lastName)
             activityAddMyHealthBinding.etEmail.editText?.setText(userModelB?.email)
             activityAddMyHealthBinding.etPhone.editText?.setText(userModelB?.phoneNumber)
-            activityAddMyHealthBinding.etBirthdate.editText?.setText(userModelB?.dob)
+            activityAddMyHealthBinding.etBirthdateLayout.editText?.setText(userModelB?.dob)
             activityAddMyHealthBinding.etBirthplace.editText?.setText(userModelB?.birthPlace)
         }
     }
