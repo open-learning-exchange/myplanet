@@ -95,9 +95,4 @@ class CourseProgressActivity : BaseActivity() {
             }
         }
     }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        scope.cancel()
-    }
 }
