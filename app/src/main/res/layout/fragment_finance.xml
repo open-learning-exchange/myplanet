@@ -22,18 +22,25 @@
                 android:id="@+id/btn_filter"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:background="@color/colorPrimary"
                 android:layout_gravity="left"
                 android:padding="@dimen/padding_normal"
                 android:text="@string/filter_by_date"
+                android:textColor="@android:color/white"
                 android:textSize="18sp"
                 android:theme="@style/GuestStyle" />
             <Button
                 android:id="@+id/btn_reset"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:layout_marginStart="16dp"
+                android:background="@color/colorPrimary"
                 android:layout_gravity="left"
                 android:padding="@dimen/padding_normal"
                 android:text="@string/date_reset"
+                android:textColor="@android:color/white"
                 android:textSize="18sp"
                 android:theme="@style/GuestStyle" />
         </LinearLayout>
