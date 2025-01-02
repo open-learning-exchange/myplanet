@@ -41,7 +41,7 @@ class RealmCourseProgress : RealmObject {
             }
         }
 
-        fun getCourseProgress(realm: Realm, userId: String): Flow<Map<String, JsonObject>> {
+        fun getCourseProgress(realm: Realm, userId: String?): Flow<Map<String, JsonObject>> {
             return flow {
                 val courses = realm.query<RealmMyCourse>().find()
                 val myCourses = RealmMyCourse.getMyCourseByUserId(userId, courses)
@@ -73,7 +73,7 @@ class RealmCourseProgress : RealmObject {
 //                }
 //        }
 
-        fun getCurrentProgress(steps: List<RealmCourseStep>, realm: Realm, userId: String, courseId: String): Int {
+        fun getCurrentProgress(steps: List<RealmCourseStep>, realm: Realm, userId: String?, courseId: String?): Int {
             var currentStep = 0
             while (currentStep < steps.size) {
                 val progress = realm.query<RealmCourseProgress>(

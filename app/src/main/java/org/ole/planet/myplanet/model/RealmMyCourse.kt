@@ -46,7 +46,7 @@ class RealmMyCourse : RealmObject {
     @Transient
     var isMyCourse: Boolean = false
 
-    fun addUserId(userId: String) {
+    fun setUserId(userId: String) {
         if (!TextUtils.isEmpty(userId) && !this.userId.contains(userId)) {
             this.userId.add(userId)
         }
@@ -81,7 +81,7 @@ class RealmMyCourse : RealmObject {
                     }
 
                     myMyCourseDB.apply {
-                        addUserId(userId ?: "")
+                        setUserId(userId ?: "")
                         courseId = JsonUtils.getString("_id", myCoursesDoc)
                         courseRev = JsonUtils.getString("_rev", myCoursesDoc)
                         languageOfInstruction = JsonUtils.getString("languageOfInstruction", myCoursesDoc)
@@ -241,7 +241,7 @@ class RealmMyCourse : RealmObject {
 
         fun createMyCourse(course: RealmMyCourse?, realm: Realm, id: String?) {
             realm.writeBlocking {
-                course?.addUserId(id ?: "")
+                course?.setUserId(id ?: "")
             }
         }
 
