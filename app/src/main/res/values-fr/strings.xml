@@ -1221,5 +1221,6 @@
     <string name="teams">équipes</string>
     <string name="community">communauté</string>
     <string name="no_enterprise">entreprises non disponibles</string>
+    <string name="local_resource">ressource locale</string>
 
 </resources>

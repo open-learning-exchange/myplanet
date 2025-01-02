@@ -1221,5 +1221,6 @@
     <string name="teams">فرق</string>
     <string name="community">مجتمع</string>
     <string name="no_enterprise">المؤسسات غير متوفرة</string>
+    <string name="local_resource">مورد محلي</string>
 
 </resources>

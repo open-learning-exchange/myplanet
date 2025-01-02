@@ -1221,5 +1221,6 @@
     <string name="teams">टोलीहरू</string>
     <string name="community">समुदाय</string>
     <string name="no_enterprise">उद्यमहरू उपलब्ध छैनन्</string>
+    <string name="local_resource">स्थानीय स्रोत</string>
 
 </resources>
