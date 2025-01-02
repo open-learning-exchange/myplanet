@@ -340,13 +340,13 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                         val max = progress.get("max").asInt
                         val current = progress.get("current").asInt
                         val courseStatus = if (current == max) {
-                            "$courseName terminado!"
+                            getString(R.string.course_completed, courseName)
                         } else {
-                            "Ingresa al curso $courseName completalo ($current de $max hecho)"
+                            getString(R.string.course_in_progress, courseName, current, max)
                         }
                         challengeDialog(uniqueDates.size, courseStatus, allUniqueDates.size, hasUnfinishedSurvey)
                     } else {
-                        challengeDialog(uniqueDates.size, "$courseName no iniciado", allUniqueDates.size, hasUnfinishedSurvey)
+                        challengeDialog(uniqueDates.size, getString(R.string.course_not_started, courseName), allUniqueDates.size, hasUnfinishedSurvey)
                     }
                 }
             }
@@ -376,27 +376,25 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         if (isCompleted && !hasShownCongrats) {
             editor.putBoolean("has_shown_congrats", true).apply()
             val markdownContent = """
-                Ingresos totales de la comunidad: **$${calculateCommunityProgress(allVoiceCount, hasUnfinishedSurvey)}** /$500
-
-                Tus ganancias totales: **$${calculateIndividualProgress(voiceCount, hasUnfinishedSurvey)}** /$11
-                ### ¡Felicidades! Reto Completado <br/>
-                """.trimIndent()
+        ${getString(R.string.community_earnings, calculateCommunityProgress(allVoiceCount, hasUnfinishedSurvey))}
+        ${getString(R.string.your_earnings, calculateIndividualProgress(voiceCount, hasUnfinishedSurvey))}
+        ### ${getString(R.string.congratulations)} <br/>
+    """.trimIndent()
             MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount, allVoiceCount, hasUnfinishedSurvey).show(supportFragmentManager, "markdown_dialog")
         } else {
             val cappedVoiceCount = minOf(voiceCount, 5)
             val voicesText = if (cappedVoiceCount > 0) {
-                "$cappedVoiceCount de 5 Voces diarias"
+                "$cappedVoiceCount ${getString(R.string.daily_voices)}"
             } else {
                 ""
             }
             val markdownContent = """
-                Ingresos totales de la comunidad: **$${calculateCommunityProgress(allVoiceCount, hasUnfinishedSurvey)}** /$500
-
-                Tus ganancias totales: **$${calculateIndividualProgress(voiceCount, hasUnfinishedSurvey)}** /$11
-                ### $courseTaskDone $1 por encuesta <br/>
-                ### $voiceTaskDone Comparte tu opinión en Nuestras Voces.[$2/voz] $voicesText <br/>
-                ### $syncTaskDone Recuerda sincronizar la aplicación móvil. <br/>
-                """.trimIndent()
+        ${getString(R.string.community_earnings, calculateCommunityProgress(allVoiceCount, hasUnfinishedSurvey))}
+        ${getString(R.string.your_earnings, calculateIndividualProgress(voiceCount, hasUnfinishedSurvey))}
+        ### ${getString(R.string.per_survey, courseTaskDone)} <br/>
+        ### ${getString(R.string.share_opinion)} $voicesText <br/>
+        ### ${getString(R.string.remember_sync)} <br/>
+    """.trimIndent()
             MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount, allVoiceCount, hasUnfinishedSurvey)
                 .show(supportFragmentManager, "markdown_dialog")
         }
