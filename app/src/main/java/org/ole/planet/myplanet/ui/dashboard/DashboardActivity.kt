@@ -10,10 +10,7 @@ import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.view.LayoutInflater
-import android.view.Menu
-import android.view.MenuItem
-import android.view.View
+import android.view.*
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatDelegate
@@ -56,6 +53,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserChallengeActions
+import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createAction
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.SettingActivity
@@ -83,7 +81,7 @@ import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.MarkdownDialog
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.URLProcessor
 import org.ole.planet.myplanet.utilities.Utilities.toast
 import java.text.SimpleDateFormat
 import java.time.LocalDate
@@ -129,6 +127,15 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         disableShiftMode(navigationView)
         activityDashboardBinding.appBarBell.bellToolbar.inflateMenu(R.menu.menu_bell_dashboard)
         tl = findViewById(R.id.tab_layout)
+        urlProcessor = URLProcessor(
+            context = this,
+            lifecycleScope = lifecycleScope,
+            settings = settings,
+            editor = editor,
+            mRealm = mRealm,
+            profileDbHandler = profileDbHandler
+        )
+
         try {
             val userProfileModel = profileDbHandler.userModel
             if (userProfileModel != null) {
@@ -175,13 +182,20 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             openCallFragment(BellDashboardFragment())
             activityDashboardBinding.appBarBell.bellToolbar.visibility = View.VISIBLE
         }
+
         activityDashboardBinding.appBarBell.ivSync.setOnClickListener {
             lifecycleScope.launch {
-                if (isServerReachable(Utilities.getUrl())) {
-                    startUpload("dashboard")
-                }
+                urlProcessor.processSyncURL(
+                    onStartUpload = { source ->
+                        startUpload(source)
+                    },
+                    onCreateAction = { realm, id, type, action ->
+                        createAction(realm, "${profileDbHandler.userModel?.id}", type, action)
+                    }
+                )
             }
         }
+
         activityDashboardBinding.appBarBell.imgLogo.setOnClickListener { result?.openDrawer() }
         activityDashboardBinding.appBarBell.bellToolbar.setOnMenuItemClickListener { item ->
             when (item.itemId) {
