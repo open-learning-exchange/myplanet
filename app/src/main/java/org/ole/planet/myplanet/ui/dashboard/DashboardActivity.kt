@@ -161,8 +161,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         createDrawer()
         if (!(user?.id?.startsWith("guest") == true && profileDbHandler.offlineVisits >= 3) && resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
             result?.openDrawer()
-        } //Opens drawer by default
-        result?.stickyFooter?.setPadding(0, 0, 0, 0) // moves logout button to the very bottom of the drawer. Without it, the "logout" button suspends a little.
+        }
+        result?.stickyFooter?.setPadding(0, 0, 0, 0)
         result?.actionBarDrawerToggle?.isDrawerIndicatorEnabled = true
         dl = result?.drawerLayout
         topbarSetting()
@@ -469,7 +469,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         val pendingSurveys = getPendingSurveys(user?.id)
         val surveyTitles = getSurveyTitlesFromSubmissions(pendingSurveys)
         surveyTitles.forEach { title ->
-            createNotificationIfNotExists("survey", "you have a pending survey: $title", title)
+            createNotificationIfNotExists("survey", "$title", title)
         }
 
         val tasks = mRealm.where(RealmTeamTask::class.java)
@@ -478,18 +478,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             .equalTo("assignee", user?.id)
             .findAll()
         tasks.forEach { task ->
-            createNotificationIfNotExists("task", "${task.title} is due in ${formatDate(task.deadline)}", task.id)
+            createNotificationIfNotExists("task","${task.title} ${formatDate(task.deadline)}", task.id)
         }
 
         val storageRatio = totalAvailableMemoryRatio
-        when {
-            storageRatio <= 10 -> {
-                createNotificationIfNotExists("storage", "${getString(R.string.storage_critically_low)} $storageRatio% ${getString(R.string.available_please_free_up_space)}", "storage")
-            }
-            storageRatio <= 40 -> {
-                createNotificationIfNotExists("storage", "${getString(R.string.storage_running_low)} $storageRatio% ${getString(R.string.available)}", "storage")
-            }
-        }
+        createNotificationIfNotExists("storage", "$storageRatio" , "storage")
     }
 
     private fun updateResourceNotification() {
@@ -501,10 +494,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 .findFirst()
 
             if (existingNotification != null) {
-                existingNotification.message = "you have $resourceCount resources not downloaded"
+                existingNotification.message = "$resourceCount"
                 existingNotification.relatedId = "$resourceCount"
             } else {
-                createNotificationIfNotExists("resource", "you have $resourceCount resources not downloaded", "$resourceCount")
+                createNotificationIfNotExists("resource", "$resourceCount", "$resourceCount")
             }
         } else {
             mRealm.where(RealmNotification::class.java)

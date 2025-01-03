@@ -744,6 +744,9 @@
     <string name="return_to_the_home_tab_to_access_mylibrary">\n\nमेरो पुस्तकालयमा पहुँचका लागि होम ट्याबमा फर्कनुहोस्।\n</string>
     <string name="note_you_may_still_need_to_download_the_newly_added_resources">\nनोट: तपाईंले अहिले थपिएका स्रोतहरू डाउनलोड गर्न अझै सक्छ।</string>
     <string name="self_examination">%s\nस्व-परिक्षण</string>
+    <string name="pending_survey_notification">तपाईंको एउटा पेंडिङ सर्वेक्षण छ:</string>
+    <string name="task_notification">%1$s %2$s मा समाप्त हुन्छ</string>
+    <string name="resource_notification">तपाईंसँग %1$d स्रोतहरू डाउनलोड गरिएको छैन</string>
     <string name="vitals_format">
     तापमान: %1$s\n
     नाडी: %2$s\n
