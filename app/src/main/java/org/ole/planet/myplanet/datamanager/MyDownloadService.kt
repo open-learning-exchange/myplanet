@@ -113,7 +113,6 @@ class MyDownloadService : Service() {
         }
     }
 
-
     @Throws(IOException::class)
     private fun downloadFile(body: ResponseBody, url: String) {
         val fileSize = body.contentLength()
