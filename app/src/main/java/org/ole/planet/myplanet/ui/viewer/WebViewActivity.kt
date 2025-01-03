@@ -6,7 +6,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
-import android.util.Log
 import android.view.View
 import android.webkit.*
 import androidx.appcompat.app.AppCompatActivity
@@ -27,21 +26,8 @@ class WebViewActivity : AppCompatActivity() {
         val dataFromDeepLink = intent.dataString
         fromDeepLink = !TextUtils.isEmpty(dataFromDeepLink)
         val title: String? = intent.getStringExtra("title")
-        Log.d("WebViewActivity", "onCreate: $title")
         link = intent.getStringExtra("link") ?: ""
         val resourceId = intent.getStringExtra("RESOURCE_ID")
-
-        val hasIndexHtml = resourceId?.let {
-            val directory = File(getExternalFilesDir(null), "ole/$resourceId")
-            File(directory, "index.html").exists()
-        } ?: false
-
-        requestedOrientation = if (hasIndexHtml) {
-            ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-        } else {
-            ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-        }
-
         clearCookie()
         if (!TextUtils.isEmpty(title)) {
             activityWebViewBinding.contentWebView.webTitle.text = title
@@ -57,6 +43,7 @@ class WebViewActivity : AppCompatActivity() {
             val indexFile = File(directory, "index.html")
 
             if (indexFile.exists()) {
+                requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
                 activityWebViewBinding.contentWebView.wv.loadUrl("file://${indexFile.absolutePath}")
             }
         } else {
