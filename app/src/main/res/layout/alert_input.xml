@@ -16,7 +16,6 @@
             android:id="@+id/alert_icon"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
-
         <TextView
             android:id="@+id/cust_msg"
             android:layout_width="wrap_content"
@@ -27,7 +26,6 @@
             android:textColor="@color/daynight_textColor"
             android:layout_marginStart="8dp" />
     </LinearLayout>
-
 
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/tl_input"
