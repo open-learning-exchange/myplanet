@@ -2,6 +2,16 @@
 <resources>
     <string name="resource_not_found">स्रोत फेला परेन</string>
     <string name="resource_not_found_message">अनुरोध गरिएको स्रोत फेला पार्न सकिएन</string>
+    <string name="community_earnings">समुदायको कुल आम्दानी: **$%1$d** /$500</string>
+    <string name="your_earnings">तपाईंको कुल आम्दानी: **$%1$d** /$11</string>
+    <string name="congratulations">बधाई छ! चुनौती पूरा भयो</string>
+    <string name="daily_voices">५ दैनिक आवाजहरू</string>
+    <string name="share_opinion">हाम्रो आवाजमा आफ्नो विचार साझा गर्नुहोस्।[$2/आवाज]</string>
+    <string name="remember_sync">मोबाइल एप्लिकेसनलाई समक्रमण गर्न सम्झनुहोस्।</string>
+    <string name="per_survey">%1$s प्रति सर्वेक्षण</string>
+    <string name="course_completed">%1$s समाप्त!</string>
+    <string name="course_in_progress">कोर्स %1$s मा प्रवेश गर्नुहोस् यसलाई पूरा गर्नुहोस् (%2$d को %3$d गरियो)</string>
+    <string name="course_not_started">%1$s सुरु भएको छैन</string>
     <string name="app_name">My Planet</string>
     <string name="planet">ग्रह</string>
     <string name="app_project_name">myPlanet</string>
@@ -1213,5 +1223,6 @@
     <string name="teams">टोलीहरू</string>
     <string name="community">समुदाय</string>
     <string name="no_enterprise">उद्यमहरू उपलब्ध छैनन्</string>
+    <string name="local_resource">स्थानीय स्रोत</string>
 
 </resources>
