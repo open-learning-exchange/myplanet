@@ -18,7 +18,7 @@
     <color name="mainColor">@color/md_blue_700</color>
     <color name="mainColorLight">@color/md_blue_500</color>
     <color name="dashboard_item">#b0b3b8</color>
-    <color name="dashboard_item_alternative">#7a7b7c</color>
+    <color name="dashboard_item_alternative">#2E2E2E</color>
     <color name="total_color">@color/md_blue_900</color>
 
     <color name="black_overlay">#66000000</color>

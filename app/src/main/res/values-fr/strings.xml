@@ -1,5 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="community_earnings">Revenus totaux de la communauté: **$%1$d** /$500</string>
+    <string name="your_earnings">Vos gains totaux: **$%1$d** /$11</string>
+    <string name="congratulations">Félicitations! Défi terminé</string>
+    <string name="daily_voices">de 5 Voix quotidiennes</string>
+    <string name="share_opinion">Partagez votre opinion dans Nos Voix.[$2/voix]</string>
+    <string name="remember_sync">N\'oubliez pas de synchroniser l\'application mobile.</string>
+    <string name="per_survey">%1$s par enquête</string>
+    <string name="course_completed">%1$s terminé!</string>
+    <string name="course_in_progress">Entrez dans le cours %1$s complétez-le (%2$d de %3$d fait)</string>
+    <string name="course_not_started">%1$s non commencé</string>
     <string name="app_name">My Planet</string>
     <string name="planet">planète</string>
     <string name="app_project_name">myPlanet</string>
@@ -1211,5 +1221,6 @@
     <string name="teams">équipes</string>
     <string name="community">communauté</string>
     <string name="no_enterprise">entreprises non disponibles</string>
+    <string name="local_resource">ressource locale</string>
 
 </resources>
