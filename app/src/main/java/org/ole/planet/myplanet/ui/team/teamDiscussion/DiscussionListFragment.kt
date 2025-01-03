@@ -189,7 +189,6 @@ class DiscussionListFragment : BaseTeamFragment() {
             .create()
 
         dialog.show()
-
     }
 
     override fun setData(list: List<RealmNews?>?) {
