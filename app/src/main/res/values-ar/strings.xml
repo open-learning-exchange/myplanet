@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="resource_not_found">لم يتم العثور على المورد</string>
+    <string name="resource_not_found_message">لا يمكن العثور على المورد المطلوب.</string>
     <string name="community_earnings">إجمالي أرباح المجتمع: **$%1$d** /$500</string>
     <string name="your_earnings">أرباحك الإجمالية: **$%1$d** /$11</string>
     <string name="congratulations">تهانينا! التحدي مكتمل</string>

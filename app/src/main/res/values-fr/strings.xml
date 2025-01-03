@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="resource_not_found">Ressource introuvable</string>
+    <string name="resource_not_found_message">La ressource demandée est introuvable</string>
     <string name="community_earnings">Revenus totaux de la communauté: **$%1$d** /$500</string>
     <string name="your_earnings">Vos gains totaux: **$%1$d** /$11</string>
     <string name="congratulations">Félicitations! Défi terminé</string>

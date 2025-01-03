@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="resource_not_found">Ilaha lama helin</string>
+    <string name="resource_not_found_message">Ilaha la codsaday waa la heli waayay</string>
     <string name="community_earnings">Dakhliga guud ee bulshada: **$%1$d** /$500</string>
     <string name="your_earnings">Dakhligaaga guud: **$%1$d** /$11</string>
     <string name="congratulations">Hambalyo! Tartanka waa la dhameeyay</string>

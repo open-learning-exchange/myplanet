@@ -27,6 +27,7 @@ import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.datamanager.MyDownloadService
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.datamanager.Service.PlanetAvailableListener
 import org.ole.planet.myplanet.model.Download
@@ -89,6 +90,7 @@ abstract class BaseResourceFragment : Fragment() {
                 if (!download?.failed!!) {
                     setProgress(download)
                 } else {
+                    prgDialog.dismiss()
                     download.message?.let { showError(prgDialog, it) }
                 }
             }
@@ -168,6 +170,27 @@ abstract class BaseResourceFragment : Fragment() {
             }.setPositiveButton(R.string.dismiss, null).show()
     }
 
+    private val resourceNotFoundReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            showResourceNotFoundDialog()
+        }
+    }
+
+    private fun showResourceNotFoundDialog() {
+        if (isAdded) {
+            if (prgDialog.isShowing()) {
+                prgDialog.dismiss()
+            }
+            AlertDialog.Builder(requireContext())
+                .setTitle(R.string.resource_not_found)
+                .setMessage(R.string.resource_not_found_message)
+                .setNegativeButton(R.string.close) { dialog, _ ->
+                    dialog.dismiss()
+                }
+                .show()
+        }
+    }
+
     fun startDownload(urls: ArrayList<String>) {
         if (isAdded) {
             Service(requireActivity()).isPlanetAvailable(object : PlanetAvailableListener {
@@ -221,17 +244,21 @@ abstract class BaseResourceFragment : Fragment() {
 
     private fun registerReceiver() {
         val bManager = LocalBroadcastManager.getInstance(requireActivity())
+
         val intentFilter = IntentFilter()
         intentFilter.addAction(DashboardActivity.MESSAGE_PROGRESS)
         bManager.registerReceiver(broadcastReceiver, intentFilter)
 
         val intentFilter2 = IntentFilter()
         intentFilter2.addAction("ACTION_NETWORK_CHANGED")
-        LocalBroadcastManager.getInstance(MainApplication.context).registerReceiver(receiver, intentFilter2)
+        bManager.registerReceiver(receiver, intentFilter2)
 
         val intentFilter3 = IntentFilter()
         intentFilter3.addAction("SHOW_WIFI_ALERT")
-        LocalBroadcastManager.getInstance(MainApplication.context).registerReceiver(stateReceiver, intentFilter3)
+        bManager.registerReceiver(stateReceiver, intentFilter3)
+
+        val resourceNotFoundFilter = IntentFilter(MyDownloadService.RESOURCE_NOT_FOUND_ACTION)
+        bManager.registerReceiver(resourceNotFoundReceiver, resourceNotFoundFilter)
     }
 
     fun getLibraryList(mRealm: Realm): List<RealmMyLibrary> {
@@ -248,9 +275,11 @@ abstract class BaseResourceFragment : Fragment() {
 
     override fun onPause() {
         super.onPause()
-        LocalBroadcastManager.getInstance(requireActivity()).unregisterReceiver(receiver)
-        LocalBroadcastManager.getInstance(requireActivity()).unregisterReceiver(broadcastReceiver)
-        LocalBroadcastManager.getInstance(requireActivity()).unregisterReceiver(stateReceiver)
+        val bManager = LocalBroadcastManager.getInstance(requireActivity())
+        bManager.unregisterReceiver(receiver)
+        bManager.unregisterReceiver(broadcastReceiver)
+        bManager.unregisterReceiver(stateReceiver)
+        bManager.unregisterReceiver(resourceNotFoundReceiver)
     }
 
     fun removeFromShelf(`object`: RealmObject) {
