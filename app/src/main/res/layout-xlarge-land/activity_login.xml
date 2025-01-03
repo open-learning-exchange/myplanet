@@ -18,6 +18,7 @@
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:orientation="vertical"
+            android:background="@color/light_dark"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
@@ -43,7 +44,8 @@
                 android:textAlignment="center"
                 app:layout_constraintEnd_toStartOf="@+id/imgBtnSetting"
                 app:layout_constraintStart_toEndOf="@+id/syncIcon"
-                app:layout_constraintTop_toTopOf="parent" />
+                app:layout_constraintTop_toTopOf="parent"
+                android:textColor="@color/daynight_textColor" />
             <ImageButton
                 android:id="@+id/imgBtnSetting"
                 android:layout_width="wrap_content"
@@ -57,7 +59,8 @@
                 android:paddingEnd="10dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
-                app:srcCompat="@drawable/ic_settings_black_24dp" />
+                app:srcCompat="@drawable/ic_settings_black_24dp"
+                app:tint="@color/daynight_textColor"/>
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -81,6 +84,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
                     android:hint="@string/hint_name"
+                    android:textColorHint="@color/hint_color"
                     app:boxBackgroundColor="@color/md_white_1000"
                     app:boxStrokeColor="@color/md_white_1000"
                     app:boxStrokeWidth="0dp"
@@ -99,11 +103,11 @@
                         android:drawablePadding="12dp"
                         android:contentDescription="@string/hint_name"
                         android:hint="@string/hint_name"
-                        android:textColorHint="@color/hint_color"
+                        android:textColorHint="@color/daynight_textColor"
                         android:inputType="text"
                         android:paddingStart="10dp"
                         android:paddingEnd="8dp"
-                        android:textColor="@color/md_black_1000" />
+                        android:textColor="@color/daynight_textColor" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
@@ -112,6 +116,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
                     android:hint="@string/password"
+                    android:textColorHint="@color/hint_color"
                     app:boxBackgroundColor="@color/md_white_1000"
                     app:boxStrokeColor="@color/md_white_1000"
                     app:boxStrokeWidth="0dp"
@@ -119,7 +124,8 @@
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/ltInputName"
-                    app:passwordToggleEnabled="true">
+                    app:passwordToggleEnabled="true"
+                    app:passwordToggleTint="@color/daynight_textColor">
 
                     <EditText
                         android:id="@+id/input_password"
@@ -128,13 +134,14 @@
                         android:layout_centerHorizontal="true"
                         android:layout_centerVertical="true"
                         android:autofillHints=""
+                        android:backgroundTint="@color/daynight_textColor"
                         android:drawablePadding="12dp"
                         android:hint="password"
-                        android:textColorHint="@color/hint_color"
+                        android:textColorHint="@color/daynight_textColor"
                         android:inputType="textPassword"
                         android:paddingStart="10dp"
                         android:paddingEnd="8dp"
-                        android:textColor="@color/md_black_1000" />
+                        android:textColor="@color/daynight_textColor"/>
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <Button
@@ -142,7 +149,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
-                    android:background="@color/colorPrimary"
+                    android:background="@color/mainColor"
                     android:contentDescription="@string/btn_sign_in"
                     android:text="@string/btn_sign_in"
                     android:textColor="@android:color/white"
@@ -166,6 +173,7 @@
                     android:layout_margin="@dimen/padding_normal"
                     android:contentDescription="@string/btn_guest_login"
                     android:text="@string/btn_guest_login"
+                    android:textColor="@color/daynight_textColor"
                     android:textSize="14sp"
                     android:theme="@style/PrimaryFlatButton" />
                 <Button
@@ -176,6 +184,7 @@
                     android:layout_margin="@dimen/padding_normal"
                     android:contentDescription="@string/become_a_member"
                     android:text="@string/become_a_member"
+                    android:textColor="@color/daynight_textColor"
                     android:theme="@style/PrimaryFlatButton" />
                 <Button
                     android:id="@+id/btn_feedback"
@@ -185,6 +194,7 @@
                     android:layout_margin="@dimen/padding_normal"
                     android:contentDescription="@string/feedback"
                     android:text="@string/feedback"
+                    android:textColor="@color/daynight_textColor"
                     android:theme="@style/PrimaryFlatButton" />
             </LinearLayout>
 
@@ -196,6 +206,7 @@
                 android:layout_marginEnd="10dp"
                 android:contentDescription="@string/open_community"
                 android:text="@string/open_community"
+                android:textColor="@color/daynight_textColor"
                 android:textSize="14sp"
                 android:theme="@style/PrimaryFlatButton"
                 app:layout_constraintBottom_toBottomOf="parent"
@@ -226,7 +237,7 @@
                     android:paddingStart="@dimen/_10dp"
                     android:paddingTop="6dp"
                     android:paddingEnd="@dimen/_10dp"
-                    app:srcCompat="@drawable/sun_35"
+                    app:srcCompat="@drawable/moon_35"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
                 <ImageView
