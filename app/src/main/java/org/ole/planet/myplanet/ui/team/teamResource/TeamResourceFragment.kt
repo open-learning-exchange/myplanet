@@ -47,8 +47,14 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener {
     }
 
     private fun showLibraryList() {
-        val libraries: List<RealmMyLibrary> = mRealm.where(RealmMyLibrary::class.java).`in`("id", getResourceIds(teamId, mRealm).toTypedArray<String>()).findAll()
-        adapterLibrary = settings?.let { AdapterTeamResource(requireActivity(), libraries, mRealm, teamId, it) }!!
+        val libraries: MutableList<RealmMyLibrary> = mRealm.where(RealmMyLibrary::class.java)
+            .`in`("id", getResourceIds(teamId, mRealm).toTypedArray())
+            .findAll()
+            .toMutableList()
+
+        adapterLibrary = settings?.let {
+            AdapterTeamResource(requireActivity(), libraries, mRealm, teamId, it)
+        }!!
         fragmentTeamResourceBinding.rvResource.layoutManager = GridLayoutManager(activity, 3)
         fragmentTeamResourceBinding.rvResource.adapter = adapterLibrary
         showNoData(fragmentTeamResourceBinding.tvNodata, adapterLibrary.itemCount, "teamResources")
