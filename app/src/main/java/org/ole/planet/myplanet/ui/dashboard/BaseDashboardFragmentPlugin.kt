@@ -1,21 +1,15 @@
 package org.ole.planet.myplanet.ui.dashboard
 
 import android.os.Bundle
-import android.view.Gravity
-import android.view.LayoutInflater
-import android.view.View
+import android.view.*
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import io.realm.RealmObject
+import io.realm.kotlin.types.RealmObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.databinding.ItemMyLifeBinding
-import org.ole.planet.myplanet.model.RealmMeetup
-import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmMyLife
-import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.*
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
@@ -136,7 +130,7 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         if (title == getString(R.string.my_survey)) {
             itemMyLifeBinding.tvCount.visibility = View.VISIBLE
             val noOfSurvey = RealmSubmission.getNoOfSurveySubmissionByUser(user?.id, mRealm)
-            itemMyLifeBinding.tvCount.text = noOfSurvey.toString()
+            itemMyLifeBinding.tvCount.text = "$noOfSurvey"
         } else {
             itemMyLifeBinding.tvCount.visibility = View.GONE
         }

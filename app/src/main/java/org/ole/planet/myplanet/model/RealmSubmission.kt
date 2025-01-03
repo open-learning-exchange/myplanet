@@ -12,6 +12,7 @@ import io.realm.kotlin.types.RealmList
 import io.realm.kotlin.types.RealmObject
 import io.realm.kotlin.types.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
@@ -198,8 +199,28 @@ class RealmSubmission : RealmObject {
             }
         }
 
-        fun getNoOfSubmissionByUser(realm: Realm, id: String?, userId: String?): Int {
-            return if (id == null || userId == null) 0 else realm.query<RealmSubmission>("parentId == $0 AND userId == $1 AND status == 'complete'", id, userId).count().find().toInt()
+        @JvmStatic
+        fun getNoOfSubmissionByUser(id: String?, courseId: String?, userId: String?, mRealm: Realm): String {
+            if (id == null || userId == null) return "No Submissions Found"
+            val submissionParentId = generateParentId(courseId, id)
+            if(submissionParentId.isNullOrEmpty()) return "No Submissions Found"
+
+            val submissionCount = mRealm.query<RealmSubmission>(
+                "parentId == $0 AND userId == $1 AND status == $2",
+                submissionParentId, userId, "complete"
+            ).count().find().toInt()
+
+            val pluralizedString = if (submissionCount == 1) "time" else "times"
+            return MainApplication.context.getString(R.string.survey_taken) + " " + submissionCount + " " + pluralizedString
+        }
+
+        @JvmStatic
+        fun getNoOfSurveySubmissionByUser(userId: String?, mRealm: Realm): Int {
+            if (userId == null) return 0
+            return mRealm.query<RealmSubmission>(
+                "userId == $0 AND type == $1 AND status CONTAINS[c] $2",
+                userId, "survey", "pending"
+            ).count().find().toInt()
         }
 
         fun getRecentSubmissionDate(realm: Realm, id: String?, userId: String?): String {
