@@ -18,7 +18,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textAllCaps="false"
-            android:text="@string/new_voice" />
+            android:text="@string/new_voice"
+            android:background="@color/mainColor"
+            android:textColor="@android:color/white" />
         <LinearLayout
             android:id="@+id/ll_add_news"
             android:layout_width="match_parent"
@@ -43,7 +45,8 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:minHeight="@dimen/profile_card_bell"
-                        android:textColor="@color/daynight_textColor" />
+                        android:textColor="@color/daynight_textColor"
+                        android:backgroundTint="@color/daynight_textColor" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <LinearLayout
