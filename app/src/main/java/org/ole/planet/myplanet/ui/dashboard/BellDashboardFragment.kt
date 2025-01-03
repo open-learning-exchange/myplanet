@@ -14,9 +14,9 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import io.realm.Case
-import io.realm.Realm
+import io.realm.kotlin.Realm
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.first
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentHomeBellBinding
 import org.ole.planet.myplanet.model.RealmCertification
@@ -141,21 +141,24 @@ class BellDashboardFragment : BaseDashboardFragment() {
         }
     }
 
+//    private fun getPendingSurveys(userId: String?, realm: Realm): List<RealmSubmission> {
+//        return realm.where(RealmSubmission::class.java)
+//            .equalTo("userId", userId)
+//            .equalTo("type", "survey")
+//            .equalTo("status", "pending", Case.INSENSITIVE)
+//            .findAll()
+//    }
+
     private fun getPendingSurveys(userId: String?, realm: Realm): List<RealmSubmission> {
-        return realm.where(RealmSubmission::class.java)
-            .equalTo("userId", userId)
-            .equalTo("type", "survey")
-            .equalTo("status", "pending", Case.INSENSITIVE)
-            .findAll()
+        return realm.query<RealmSubmission>(RealmSubmission::class, "userId == $0 AND type == $1 AND status CONTAINS[c] $2",
+            userId, "survey", "pending").find()
     }
 
     private fun getSurveyTitlesFromSubmissions(submissions: List<RealmSubmission>, realm: Realm): List<String> {
         val titles = mutableListOf<String>()
         submissions.forEach { submission ->
             val examId = submission.parentId?.split("@")?.firstOrNull() ?: ""
-            val exam = realm.where(RealmStepExam::class.java)
-                .equalTo("id", examId)
-                .findFirst()
+            val exam = realm.query<RealmStepExam>(RealmStepExam::class, "id == $0", examId).first().find()
             exam?.name?.let { titles.add(it) }
         }
         return titles
@@ -177,14 +180,14 @@ class BellDashboardFragment : BaseDashboardFragment() {
     }
 
     private fun getCompletedCourses(realm: Realm, userId: String?): List<RealmMyCourse> {
-        val myCourses = RealmMyCourse.getMyCourseByUserId(userId, realm.where(RealmMyCourse::class.java).findAll())
-        val courseProgress = RealmCourseProgress.getCourseProgress(realm, userId)
-
-        return myCourses.filter { course ->
-            val progress = courseProgress[course.id]
-            progress?.let {
-                it.asJsonObject["current"].asInt == it.asJsonObject["max"].asInt
-            } == true
+        val myCourses = realm.query<RealmMyCourse>(RealmMyCourse::class).find()
+        return runBlocking {
+            val progressMap = RealmCourseProgress.getCourseProgress(realm, userId).first()
+            myCourses.filter { course ->
+                progressMap[course.courseId]?.let { progress ->
+                    progress.get("current").asInt == progress.get("max").asInt && progress.get("max").asInt > 0
+                } == true
+            }
         }
     }
 
