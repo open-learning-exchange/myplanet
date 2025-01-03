@@ -15,7 +15,6 @@
         android:gravity="center"
         android:padding="@dimen/padding_normal"
         android:textColor="@color/daynight_textColor" />
-
     <ImageView
         android:id="@+id/detail"
         android:layout_width="@dimen/menu_item_icon_size"
