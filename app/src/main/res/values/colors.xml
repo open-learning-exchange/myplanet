@@ -47,4 +47,5 @@
     <color name="multi_select_grey">@color/md_grey_300</color>
     <color name="background_color">#FFFFFF</color>
     <color name="text_color">#000000</color>
+    <color name="teams_heading">#000000</color>
 </resources>
