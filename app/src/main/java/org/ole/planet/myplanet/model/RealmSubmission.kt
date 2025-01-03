@@ -199,7 +199,18 @@ class RealmSubmission : RealmObject {
             }
         }
 
-        @JvmStatic
+        fun generateParentId(courseId: String?, examId: String?): String? {
+            return if (!examId.isNullOrEmpty()) {
+                if (!courseId.isNullOrEmpty()) {
+                    "$examId@$courseId"
+                } else {
+                    examId
+                }
+            } else {
+                null
+            }
+        }
+
         fun getNoOfSubmissionByUser(id: String?, courseId: String?, userId: String?, mRealm: Realm): String {
             if (id == null || userId == null) return "No Submissions Found"
             val submissionParentId = generateParentId(courseId, id)
@@ -214,7 +225,6 @@ class RealmSubmission : RealmObject {
             return MainApplication.context.getString(R.string.survey_taken) + " " + submissionCount + " " + pluralizedString
         }
 
-        @JvmStatic
         fun getNoOfSurveySubmissionByUser(userId: String?, mRealm: Realm): Int {
             if (userId == null) return 0
             return mRealm.query<RealmSubmission>(
