@@ -132,7 +132,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
             val adapter = SurveyAdapter(surveyTitles, { position ->
                 val selectedSurvey = pendingSurveys[position].id
-                AdapterMySubmission.openSurvey(homeItemClickListener, selectedSurvey, true)
+                AdapterMySubmission.openSurvey(homeItemClickListener, selectedSurvey, true, false)
             }, alertDialog)
 
             recyclerView.adapter = adapter
