@@ -1,5 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="resource_not_found">Resource not found</string>
+    <string name="resource_not_found_message">The requested resource could not be found</string>
+    <string name="community_earnings">Community total earnings: **$%1$d** /$500</string>
+    <string name="your_earnings">Your total earnings: **$%1$d** /$11</string>
+    <string name="congratulations">Congratulations! Challenge Completed</string>
+    <string name="daily_voices">of 5 Daily Voices</string>
+    <string name="share_opinion">Share your opinion in Our Voices.[$2/voice]</string>
+    <string name="remember_sync">Remember to sync the mobile app.</string>
+    <string name="per_survey">%1$s per survey</string>
+    <string name="course_completed">%1$s completed!</string>
+    <string name="course_in_progress">Enter the course %1$s and complete it (%2$d of %3$d done)</string>
+    <string name="course_not_started">%1$s not started</string>
     <string name="app_name">My Planet</string>
     <string name="planet">Planet</string>
     <string name="app_project_name">myPlanet</string>
@@ -1210,5 +1222,7 @@
     <string name="share_with_team_enterprise">share with team/enterprise</string>
     <string name="teams">teams</string>
     <string name="community">community</string>
+    <string name="no_enterprise">enteprises not available</string>
+    <string name="local_resource">local resource</string>
 
 </resources>
