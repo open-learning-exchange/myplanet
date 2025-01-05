@@ -27,23 +27,24 @@ class TeamPagerAdapter(fm: FragmentActivity, team: RealmMyTeam?, isInMyTeam: Boo
     private val isTeam: Boolean = TextUtils.equals(team?.type, "team")
 
     init {
-        list.add(context.getString(if (isEnterprise) R.string.mission else R.string.plan))
-        list.add(context.getString(if (isEnterprise) R.string.team else R.string.members))
         if (isInMyTeam || team?.isPublic == true) {
             list.add(context.getString(R.string.chat))
+            list.add(context.getString(if (isEnterprise) R.string.mission else R.string.plan))
+            list.add(context.getString(if (isEnterprise) R.string.team else R.string.members))
             list.add(context.getString(R.string.tasks))
             list.add(context.getString(R.string.calendar))
             if (!isEnterprise) {
                 list.add(context.getString(R.string.survey))
             }
             list.add(context.getString(if (isEnterprise) R.string.finances else R.string.courses))
-            if (isEnterprise) list.add(context.getString(R.string.reports))
+            if (isEnterprise) {
+                list.add(context.getString(R.string.reports))
+            }
             list.add(context.getString(if (isEnterprise) R.string.documents else R.string.resources))
             list.add(context.getString(if (isEnterprise) R.string.applicants else R.string.join_requests))
-            list.removeAt(0)
-            list.removeAt(0)
-            list.add(1, context.getString(if (isEnterprise) R.string.mission else R.string.plan))
-            list.add(2, context.getString(if (isEnterprise) R.string.team else R.string.members))
+        } else {
+            list.add(context.getString(if (isEnterprise) R.string.mission else R.string.plan))
+            list.add(context.getString(if (isEnterprise) R.string.team else R.string.members))
         }
     }
 
@@ -74,9 +75,9 @@ class TeamPagerAdapter(fm: FragmentActivity, team: RealmMyTeam?, isInMyTeam: Boo
             else -> throw IllegalArgumentException("Invalid fragment type for position: $position")
         }
         if (fragment.arguments == null) {
-            val bundle = Bundle()
-            bundle.putString("id", teamId)
-            fragment.arguments = bundle
+            fragment.arguments = Bundle().apply {
+                putString("id", teamId)
+            }
         }
         return fragment
     }
