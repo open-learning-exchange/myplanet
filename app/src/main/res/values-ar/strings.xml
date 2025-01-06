@@ -1,5 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="resource_not_found">لم يتم العثور على المورد</string>
+    <string name="resource_not_found_message">لا يمكن العثور على المورد المطلوب.</string>
+    <string name="community_earnings">إجمالي أرباح المجتمع: **$%1$d** /$500</string>
+    <string name="your_earnings">أرباحك الإجمالية: **$%1$d** /$11</string>
+    <string name="congratulations">تهانينا! التحدي مكتمل</string>
+    <string name="daily_voices">من 5 أصوات يومية</string>
+    <string name="share_opinion">شارك رأيك في أصواتنا.[$2/صوت]</string>
+    <string name="remember_sync">تذكر مزامنة التطبيق المحمول.</string>
+    <string name="per_survey">%1$s لكل استبيان</string>
+    <string name="course_completed">%1$s مكتمل!</string>
+    <string name="course_in_progress">أدخل الدورة %1$s أكملها (%2$d من %3$d تم)</string>
+    <string name="course_not_started">%1$s لم يبدأ</string>
     <string name="app_name">My Planet</string>
     <string name="planet">كوكب</string>
     <string name="app_project_name">myPlanet</string>
@@ -732,6 +744,9 @@
     <string name="return_to_the_home_tab_to_access_mylibrary">\n\nعودة إلى علامة التبويب الرئيسية للوصول إلى "مكتبتي".\n</string>
     <string name="note_you_may_still_need_to_download_the_newly_added_resources">\nملاحظة: قد تحتاج لاستكمال تنزيل الموارد المضافة حديثًا.</string>
     <string name="self_examination">%s\nالفحص الذاتي</string>
+    <string name="pending_survey_notification">لديك استطلاع قيد الانتظار:</string>
+    <string name="task_notification">%1$s مستحق في %2$s</string>
+    <string name="resource_notification">لديك %1$d موارد لم يتم تنزيلها</string>
     <string name="vitals_format">
     درجة الحرارة: %1$s\n
     النبض: %2$s\n
@@ -1211,5 +1226,6 @@
     <string name="teams">فرق</string>
     <string name="community">مجتمع</string>
     <string name="no_enterprise">المؤسسات غير متوفرة</string>
+    <string name="local_resource">مورد محلي</string>
 
 </resources>
