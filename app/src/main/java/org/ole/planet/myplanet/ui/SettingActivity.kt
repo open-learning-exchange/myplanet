@@ -280,7 +280,7 @@ class SettingActivity : AppCompatActivity() {
                     else -> 2
                 }
 
-                val builder = AlertDialog.Builder(context, R.style.CustomAlertDialogStyle)
+                val builder = AlertDialog.Builder(context, R.style.AlertDialogTheme)
                     .setTitle(context.getString(R.string.select_theme_mode))
                     .setSingleChoiceItems(ArrayAdapter(context, R.layout.checked_list_item, options), checkedItem) { dialog, which ->
                         val selectedMode = when (which) {

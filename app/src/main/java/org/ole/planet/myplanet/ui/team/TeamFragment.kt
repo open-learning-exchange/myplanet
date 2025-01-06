@@ -58,7 +58,11 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         }
 
         fragmentTeamBinding.addTeam.setOnClickListener { createTeamAlert(null) }
-
+        fragmentTeamBinding.tvFragmentInfo.text = if (TextUtils.equals(type, "enterprise")) {
+            getString(R.string.enterprises)
+        } else {
+            getString(R.string.team)
+        }
         teamList = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId")
             .notEqualTo("status", "archived").findAllAsync()
 
