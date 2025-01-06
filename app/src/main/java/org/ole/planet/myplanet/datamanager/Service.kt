@@ -341,8 +341,8 @@ class Service(private val context: Context) {
         val urlsToTry = mutableListOf(url)
 
         val serverMappings = mapOf(
-            "https://${BuildConfig.PLANET_URIUR_URL}" to "https://${BuildConfig.PLANET_URIUR_CLONE_URL}",
-            "https://${BuildConfig.PLANET_EMBAKASI_URL}" to "https://${BuildConfig.PLANET_EMBAKASI_CLONE_URL}",
+            "http://${BuildConfig.PLANET_URIUR_URL}" to "https://${BuildConfig.PLANET_URIUR_CLONE_URL}",
+            "http://${BuildConfig.PLANET_EMBAKASI_URL}" to "https://${BuildConfig.PLANET_EMBAKASI_CLONE_URL}",
         )
 
         // Add alternative URL from serverMappings if available
