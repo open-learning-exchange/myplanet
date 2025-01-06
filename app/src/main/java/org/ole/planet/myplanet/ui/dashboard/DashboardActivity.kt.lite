@@ -7,9 +7,11 @@ import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.drawable.Drawable
+import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.*
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
@@ -80,8 +82,9 @@ import org.ole.planet.myplanet.utilities.FileUtils.totalAvailableMemoryRatio
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.MarkdownDialog
+import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
-import org.ole.planet.myplanet.utilities.URLProcessor
+import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.Utilities.toast
 import java.text.SimpleDateFormat
 import java.time.LocalDate
@@ -127,14 +130,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         disableShiftMode(navigationView)
         activityDashboardBinding.appBarBell.bellToolbar.inflateMenu(R.menu.menu_bell_dashboard)
         tl = findViewById(R.id.tab_layout)
-        urlProcessor = URLProcessor(
-            context = this,
-            lifecycleScope = lifecycleScope,
-            settings = settings,
-            editor = editor,
-            mRealm = mRealm,
-            profileDbHandler = profileDbHandler
-        )
 
         try {
             val userProfileModel = profileDbHandler.userModel
@@ -184,15 +179,38 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
 
         activityDashboardBinding.appBarBell.ivSync.setOnClickListener {
+            val serverUrlMapper = ServerUrlMapper(this)
+            val url = Utilities.getUrl()
+            val mapping = serverUrlMapper.processUrl(url)
+
             lifecycleScope.launch {
-                urlProcessor.processSyncURL(
-                    onStartUpload = { source ->
-                        startUpload(source)
-                    },
-                    onCreateAction = { realm, id, type, action ->
-                        createAction(realm, "${profileDbHandler.userModel?.id}", type, action)
+                val isPrimaryReachable = isServerReachable(Utilities.getUrl())
+
+                if (isPrimaryReachable) {
+                    Log.d("URLSync", "Successfully reached primary URL: ${Utilities.getUrl()}")
+                    startUpload("dashboard")
+                    createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
+                } else if (mapping.alternativeUrl != null) {
+                    Log.w("URLSync", "Failed to reach primary URL: ${Utilities.getUrl()}")
+                    val uri = Uri.parse(mapping.alternativeUrl)
+
+                    serverUrlMapper.updateUrlPreferences(editor, uri, mapping.alternativeUrl, url, settings)
+                    val processedUrl = settings.getString("processedAlternativeUrl", "")
+
+                    Log.d("URLSync", "Attempting to reach alternative URL: $processedUrl")
+                    val isAlternativeReachable = isServerReachable(processedUrl ?: "")
+
+                    if (isAlternativeReachable) {
+                        startUpload("dashboard")
+                        createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
+                    } else {
+                        Log.e("URLSync", "Both primary and alternative URLs are unreachable")
                     }
-                )
+                } else {
+                    Log.d("URLSync", "Proceeding with original URL")
+                    startUpload("dashboard")
+                    createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
+                }
             }
         }
 

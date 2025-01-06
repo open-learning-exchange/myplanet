@@ -10,6 +10,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
+import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
@@ -20,9 +21,12 @@ import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import io.realm.Realm
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createAction
@@ -39,29 +43,21 @@ import org.ole.planet.myplanet.ui.team.TeamFragment
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
+import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
-import org.ole.planet.myplanet.utilities.URLProcessor
+import org.ole.planet.myplanet.utilities.Utilities
 
 abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBackStackChangedListener {
     lateinit var navigationView: BottomNavigationView
     var doubleBackToExitPressedOnce = false
     private lateinit var goOnline: MenuItem
     var c = 0
-    lateinit var urlProcessor: URLProcessor
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         profileDbHandler = UserProfileDbHandler(this)
         settings = applicationContext.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         prefData = SharedPrefManager(this)
-        urlProcessor = URLProcessor(
-            context = this,
-            lifecycleScope = lifecycleScope,
-            settings = settings,
-            editor = editor,
-            mRealm = mRealm,
-            profileDbHandler = profileDbHandler
-        )
     }
 
     fun onClickTabItems(position: Int) {
@@ -157,15 +153,26 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
     }
 
     fun logSyncInSharedPrefs() {
+        val serverUrlMapper = ServerUrlMapper(this, settings, editor)
+        val url = Utilities.getUrl()
+
         lifecycleScope.launch {
-            urlProcessor.processSyncURL(
-                onStartUpload = { source ->
-                    startUpload(source)
-                },
-                onCreateAction = { realm, id, type, action ->
-                    createAction(realm, "${profileDbHandler.userModel?.id}", type, action)
+            when (val result = serverUrlMapper.performUrlSync(
+                url = url,
+                onStartSync = { startUpload("dashboard") },
+                onLogSync = {
+                    createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
                 }
-            )
+            )) {
+                is ServerUrlMapper.ConnectionResult.Success -> {
+                    // Connection successful, sync operations completed
+                }
+                is ServerUrlMapper.ConnectionResult.Failure -> {
+                    Log.e("URLSync", "Both primary and alternative URLs are unreachable")
+                    Log.e("URLSync", "Primary URL failed: ${result.primaryUrl}")
+                    Log.e("URLSync", "Alternative URL failed: ${result.alternativeUrl}")
+                }
+            }
         }
     }
 

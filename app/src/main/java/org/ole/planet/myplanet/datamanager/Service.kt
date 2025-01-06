@@ -20,7 +20,6 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
-import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.applicationScope
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
@@ -45,6 +44,7 @@ import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils.extractProtocol
 import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
+import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.Sha256Utils
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils
@@ -337,19 +337,12 @@ class Service(private val context: Context) {
         val overallStartTime = System.currentTimeMillis()
         Log.d("PerformanceLog", "Starting getMinApk process")
 
-        // Create a list of URLs to try, starting with the original URL
+        val serverUrlMapper = ServerUrlMapper(context)
+        val mapping = serverUrlMapper.processUrl(url)
+
+        // Create list of URLs to try
         val urlsToTry = mutableListOf(url)
-
-        val serverMappings = mapOf(
-            "http://${BuildConfig.PLANET_URIUR_URL}" to "https://${BuildConfig.PLANET_URIUR_CLONE_URL}",
-            "http://${BuildConfig.PLANET_EMBAKASI_URL}" to "https://${BuildConfig.PLANET_EMBAKASI_CLONE_URL}",
-        )
-
-        // Add alternative URL from serverMappings if available
-        serverMappings[url]?.let { alternativeUrl ->
-            urlsToTry.add(alternativeUrl)
-            Log.d("PerformanceLog", "Added alternative URL: $alternativeUrl")
-        }
+        mapping.alternativeUrl?.let { urlsToTry.add(it) }
 
         // Use coroutine scope to perform concurrent URL checks
         applicationScope.launch {
@@ -471,19 +464,14 @@ class Service(private val context: Context) {
                             context.getString(R.string.https_protocol) -> context.getString(R.string.device_couldn_t_reach_nation_server)
                             else -> context.getString(R.string.device_couldn_t_reach_local_server)
                         }
-                        withContext(Dispatchers.Main) {
-                            showAlertDialog(errorMessage, false)
-                        }
+                        showAlertDialog(errorMessage, false)
                     }
                 }
             } catch (e: Exception) {
                 Log.e("PerformanceLog", "Exception in main process", e)
                 activity.setSyncFailed(true)
                 withContext(Dispatchers.Main) {
-                    showAlertDialog(
-                        context.getString(R.string.device_couldn_t_reach_local_server),
-                        false
-                    )
+                    showAlertDialog(context.getString(R.string.device_couldn_t_reach_local_server), false)
                 }
             } finally {
                 customProgressDialog.dismiss()
