@@ -1,5 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="resource_not_found">Ressource introuvable</string>
+    <string name="resource_not_found_message">La ressource demandée est introuvable</string>
+    <string name="community_earnings">Revenus totaux de la communauté: **$%1$d** /$500</string>
+    <string name="your_earnings">Vos gains totaux: **$%1$d** /$11</string>
+    <string name="congratulations">Félicitations! Défi terminé</string>
+    <string name="daily_voices">de 5 Voix quotidiennes</string>
+    <string name="share_opinion">Partagez votre opinion dans Nos Voix.[$2/voix]</string>
+    <string name="remember_sync">N\'oubliez pas de synchroniser l\'application mobile.</string>
+    <string name="per_survey">%1$s par enquête</string>
+    <string name="course_completed">%1$s terminé!</string>
+    <string name="course_in_progress">Entrez dans le cours %1$s complétez-le (%2$d de %3$d fait)</string>
+    <string name="course_not_started">%1$s non commencé</string>
     <string name="app_name">My Planet</string>
     <string name="planet">planète</string>
     <string name="app_project_name">myPlanet</string>
@@ -30,7 +42,6 @@
     <string name="menu_logout">Déconnexion</string>
     <string name="menu_feedback">Retour d\'information</string>
     <string name="system_name">myPlanet</string>
-    <string name="select">Sélectionner</string>
     <string name="txt_myLibrary">maBibliothèque</string>
     <string name="txt_myCourses">mesCours</string>
     <string name="txt_myMeetups">mesRencontres</string>
@@ -733,6 +744,9 @@
     <string name="return_to_the_home_tab_to_access_mylibrary">Retournez à l\'onglet Accueil pour accéder à votre bibliothèque.</string>
     <string name="note_you_may_still_need_to_download_the_newly_added_resources">Note: Vous devrez peut-être toujours télécharger les nouvelles ressources ajoutées.</string>
     <string name="self_examination">%s\nAuto-examen</string>
+    <string name="pending_survey_notification">vous avez une enquête en attente :</string>
+    <string name="task_notification">%1$s est dû le %2$s</string>
+    <string name="resource_notification">Vous avez %1$d ressources non téléchargées</string>
     <string name="vitals_format">
     Température : %1$s\n
     Pouls : %2$s\n
@@ -1212,5 +1226,6 @@
     <string name="teams">équipes</string>
     <string name="community">communauté</string>
     <string name="no_enterprise">entreprises non disponibles</string>
+    <string name="local_resource">ressource locale</string>
 
 </resources>
