@@ -6,13 +6,12 @@ import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
 import android.view.View
-import android.webkit.CookieManager
-import android.webkit.WebChromeClient
-import android.webkit.WebSettings
-import android.webkit.WebView
-import android.webkit.WebViewClient
+import android.webkit.*
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityWebViewBinding
+import java.io.File
 
 class WebViewActivity : AppCompatActivity() {
     private lateinit var activityWebViewBinding: ActivityWebViewBinding
@@ -27,38 +26,59 @@ class WebViewActivity : AppCompatActivity() {
         fromDeepLink = !TextUtils.isEmpty(dataFromDeepLink)
         val title: String? = intent.getStringExtra("title")
         link = intent.getStringExtra("link") ?: ""
+        val resourceId = intent.getStringExtra("RESOURCE_ID")
+
         clearCookie()
         if (!TextUtils.isEmpty(title)) {
             activityWebViewBinding.contentWebView.webTitle.text = title
         }
         activityWebViewBinding.contentWebView.pBar.max = 100
         activityWebViewBinding.contentWebView.pBar.progress = 0
-        setListeners()
+
         setupWebView()
-        activityWebViewBinding.contentWebView.wv.loadUrl(link)
+        setListeners()
+
+        if (resourceId != null) {
+            val directory = File(getExternalFilesDir(null), "ole/$resourceId")
+            val indexFile = File(directory, "index.html")
+
+            if (indexFile.exists()) {
+                activityWebViewBinding.contentWebView.wv.loadUrl("file://${indexFile.absolutePath}")
+            }
+        } else {
+            activityWebViewBinding.contentWebView.wv.loadUrl(link)
+        }
+
         activityWebViewBinding.contentWebView.finish.setOnClickListener { finish() }
         setWebClient()
     }
 
     private fun setupWebView() {
-        val webSettings: WebSettings = activityWebViewBinding.contentWebView.wv.settings
-        webSettings.javaScriptEnabled = true
-        webSettings.javaScriptCanOpenWindowsAutomatically = true
+        activityWebViewBinding.contentWebView.wv.settings.apply {
+            javaScriptEnabled = true
+            javaScriptCanOpenWindowsAutomatically = true
+            allowFileAccess = true
+            domStorageEnabled = true
+            allowContentAccess = true
+            allowFileAccessFromFileURLs = true
+            allowUniversalAccessFromFileURLs = true
+            defaultTextEncodingName = "utf-8"
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            val nightModeFlags = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
-            when (nightModeFlags) {
-                android.content.res.Configuration.UI_MODE_NIGHT_YES -> {
-                    webSettings.forceDark = WebSettings.FORCE_DARK_ON
-                    activityWebViewBinding.contentWebView.webTitle.setTextColor(resources.getColor(android.R.color.white))
-                    activityWebViewBinding.contentWebView.webSource.setTextColor(resources.getColor(android.R.color.white))
-                    activityWebViewBinding.contentWebView.contentWebView.setBackgroundColor(resources.getColor(android.R.color.black))
-                }
-                android.content.res.Configuration.UI_MODE_NIGHT_NO -> {
-                    webSettings.forceDark = WebSettings.FORCE_DARK_OFF
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val nightModeFlags = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
+                when (nightModeFlags) {
+                    android.content.res.Configuration.UI_MODE_NIGHT_YES -> {
+                        forceDark = WebSettings.FORCE_DARK_ON
+                        activityWebViewBinding.contentWebView.webTitle.setTextColor(ContextCompat.getColor(this@WebViewActivity, R.color.md_white_1000))
+                        activityWebViewBinding.contentWebView.webSource.setTextColor(ContextCompat.getColor(this@WebViewActivity, R.color.md_white_1000))
+                        activityWebViewBinding.contentWebView.contentWebView.setBackgroundColor(ContextCompat.getColor(this@WebViewActivity, R.color.md_black_1000))
+                    }
 
-                    activityWebViewBinding.contentWebView.webTitle.setTextColor(resources.getColor(android.R.color.black))
-                    activityWebViewBinding.contentWebView.webSource.setTextColor(resources.getColor(android.R.color.black))
+                    android.content.res.Configuration.UI_MODE_NIGHT_NO -> {
+                        forceDark = WebSettings.FORCE_DARK_OFF
+                        activityWebViewBinding.contentWebView.webTitle.setTextColor(ContextCompat.getColor(this@WebViewActivity, R.color.md_black_1000))
+                        activityWebViewBinding.contentWebView.webSource.setTextColor(ContextCompat.getColor(this@WebViewActivity, R.color.md_black_1000))
+                    }
                 }
             }
         }
@@ -68,11 +88,15 @@ class WebViewActivity : AppCompatActivity() {
         activityWebViewBinding.contentWebView.wv.webViewClient = object : WebViewClient() {
             override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
                 super.onPageStarted(view, url, favicon)
-                if (url.endsWith("/eng/")) {
+                if (!url.startsWith("file://") && url.endsWith("/eng/")) {
                     finish()
                 }
-                val i = Uri.parse(url)
-                activityWebViewBinding.contentWebView.webSource.text = i.host
+                if (url.startsWith("file://")) {
+                    activityWebViewBinding.contentWebView.webSource.text = getString(R.string.local_resource)
+                } else {
+                    val i = Uri.parse(url)
+                    activityWebViewBinding.contentWebView.webSource.text = i.host
+                }
             }
 
             override fun onPageFinished(view: WebView, url: String) {
@@ -82,40 +106,47 @@ class WebViewActivity : AppCompatActivity() {
                 if (nightModeFlags == android.content.res.Configuration.UI_MODE_NIGHT_YES) {
                     view.evaluateJavascript(
                         """
-            (function() {
-                document.documentElement.setAttribute('dark', 'true');
-                document.documentElement.style.backgroundColor = '#000';
-                document.documentElement.style.color = '#FFF';
-                const elements = document.querySelectorAll('*');
-                elements.forEach(el => {
-                    if (window.getComputedStyle(el).color === 'rgb(0, 0, 0)') {
-                        el.style.color = '#FFF';
-                    }
-                });
-            })();
-            """.trimIndent(),
+                            (function() {
+                                document.documentElement.setAttribute('dark', 'true');
+                                document.documentElement.style.backgroundColor = '#000';
+                                document.documentElement.style.color = '#FFF';
+                                const elements = document.querySelectorAll('*');
+                                elements.forEach(el => {
+                                    if (window.getComputedStyle(el).color === 'rgb(0, 0, 0)') {
+                                        el.style.color = '#FFF';
+                                    }
+                                });
+                            })();
+                            """.trimIndent(),
                         null
                     )
                 } else {
                     view.evaluateJavascript(
                         """
-            (function() {
-                document.documentElement.removeAttribute('dark');
-                document.documentElement.style.backgroundColor = '#FFF';
-                document.documentElement.style.color = '#000';
-                const elements = document.querySelectorAll('*');
-                elements.forEach(el => {
-                    if (window.getComputedStyle(el).color === 'rgb(255, 255, 255)') {
-                        el.style.color = '#000';
-                    }
-                });
-            })();
-            """.trimIndent(),
+                            (function() {
+                                document.documentElement.removeAttribute('dark');
+                                document.documentElement.style.backgroundColor = '#FFF';
+                                document.documentElement.style.color = '#000';
+                                const elements = document.querySelectorAll('*');
+                                elements.forEach(el => {
+                                    if (window.getComputedStyle(el).color === 'rgb(255, 255, 255)') {
+                                        el.style.color = '#000';
+                                    }
+                                });
+                            })();
+                            """.trimIndent(),
                         null
                     )
                 }
             }
 
+            override fun onReceivedError(view: WebView?, errorCode: Int, description: String?, failingUrl: String?) {
+                super.onReceivedError(view, errorCode, description, failingUrl)
+            }
+
+            override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
+                return super.shouldInterceptRequest(view, request)
+            }
         }
     }
 
@@ -129,7 +160,7 @@ class WebViewActivity : AppCompatActivity() {
         activityWebViewBinding.contentWebView.wv.webChromeClient = object : WebChromeClient() {
             override fun onProgressChanged(view: WebView, newProgress: Int) {
                 activityWebViewBinding.contentWebView.pBar.progress = newProgress
-                if (view.url?.endsWith("/eng/") == true) {
+                if (view.url?.startsWith("file://") == false && view.url?.endsWith("/eng/") == true) {
                     finish()
                 }
                 activityWebViewBinding.contentWebView.pBar.incrementProgressBy(newProgress)
@@ -141,6 +172,10 @@ class WebViewActivity : AppCompatActivity() {
             override fun onReceivedTitle(view: WebView, title: String) {
                 activityWebViewBinding.contentWebView.webTitle.text = title
                 super.onReceivedTitle(view, title)
+            }
+
+            override fun onConsoleMessage(message: String?, lineNumber: Int, sourceID: String?) {
+                super.onConsoleMessage(message, lineNumber, sourceID)
             }
         }
     }
