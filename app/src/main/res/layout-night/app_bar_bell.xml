@@ -4,7 +4,7 @@
     android:id="@+id/bell_toolbar"
     android:layout_width="match_parent"
     android:layout_height="?android:attr/actionBarSize"
-    android:background="?attr/colorPrimary"
+    android:background="@color/mainColor"
     android:theme="@style/ThemeOverlay.AppCompat.Dark"
     app:elevation="4dp"
     app:popupTheme="@style/AppTheme">
@@ -20,7 +20,8 @@
             android:layout_gravity="center"
             android:padding="@dimen/padding_normal"
             android:src="@drawable/ole_logo"
-            android:contentDescription="@string/menu" />
+            android:contentDescription="@string/menu"
+            app:tint="@color/bg_white" />
         <TextView
             android:id="@+id/app_title_name"
             android:minWidth="150dp"
