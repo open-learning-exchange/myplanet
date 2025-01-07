@@ -39,6 +39,8 @@
         android:layout_gravity="center_vertical"
         android:layout_margin="@dimen/_4dp"
         android:padding="@dimen/padding_normal"
+        android:background="@color/mainColor"
+        android:textColor="@color/bg_white"
         android:text="@string/mark_as_read"
         android:textAllCaps="false" />
 </LinearLayout>
