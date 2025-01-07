@@ -250,9 +250,12 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         })
 
         val startTime = 1733011200000
+        val endTime = 1734307200000
+
         val commVoiceResults = mRealm.where(RealmNews::class.java)
             .equalTo("userId", user?.id)
             .greaterThanOrEqualTo("time", startTime)
+            .lessThanOrEqualTo("time", endTime)
             .findAll()
 
         val commVoice = commVoiceResults.filter { realmNews ->
@@ -274,6 +277,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
         val allCommVoiceResults = mRealm.where(RealmNews::class.java)
             .greaterThanOrEqualTo("time", startTime)
+            .lessThanOrEqualTo("time", endTime)
             .findAll()
 
         val allCommVoice = allCommVoiceResults.filter { realmNews ->
