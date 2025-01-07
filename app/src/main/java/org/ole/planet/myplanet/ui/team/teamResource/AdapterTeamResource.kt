@@ -48,11 +48,9 @@ class AdapterTeamResource(
         holder.rowTeamResourceBinding.ivRemove.setOnClickListener {
             removeResource(resource, position)
         }
-
-        holder.rowTeamResourceBinding.ivRemove.visibility = if (settings.getString("userId", "--") == teamCreator) {
-            View.VISIBLE
-        } else {
-            View.GONE
+        val isLeader =settings.getString("userId", "--").equals(teamCreator, ignoreCase = true)
+        if (!isLeader) {
+            holder.rowTeamResourceBinding.ivRemove.visibility = View.GONE
         }
     }
 
