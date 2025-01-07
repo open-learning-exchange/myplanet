@@ -33,9 +33,7 @@ class TeamPagerAdapter(fm: FragmentActivity, team: RealmMyTeam?, isInMyTeam: Boo
             list.add(context.getString(if (isEnterprise) R.string.team else R.string.members))
             list.add(context.getString(R.string.tasks))
             list.add(context.getString(R.string.calendar))
-            if (!isEnterprise) {
-                list.add(context.getString(R.string.survey))
-            }
+            list.add(context.getString(R.string.survey))
             list.add(context.getString(if (isEnterprise) R.string.finances else R.string.courses))
             if (isEnterprise) {
                 list.add(context.getString(R.string.reports))
