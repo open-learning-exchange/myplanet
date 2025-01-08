@@ -28,7 +28,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>() {
         super.onCreate(savedInstanceState)
         isTeam = arguments?.getBoolean("isTeam", false) == true
         teamId = arguments?.getString("teamId", null)
-        adapter = AdapterSurvey(requireActivity(), mRealm, model?.id ?: "", isTeam)
+        adapter = AdapterSurvey(requireActivity(), mRealm, model?.id ?: "", isTeam, teamId)
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {

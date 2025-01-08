@@ -166,7 +166,7 @@ abstract class BaseResourceFragment : Fragment() {
         }
         AlertDialog.Builder(requireActivity()).setTitle("Pending Surveys")
             .setAdapter(arrayAdapter) { _: DialogInterface?, i: Int ->
-                AdapterMySubmission.openSurvey(homeItemClickListener, list[i].id, true, false)
+                AdapterMySubmission.openSurvey(homeItemClickListener, list[i].id, true, false, "")
             }.setPositiveButton(R.string.dismiss, null).show()
     }
 

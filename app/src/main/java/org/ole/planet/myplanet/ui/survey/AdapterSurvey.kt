@@ -14,12 +14,10 @@ import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.getNoOfSubmissionByUser
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.getRecentSubmissionDate
-import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
-class AdapterSurvey(private val context: Context, private val mRealm: Realm, private val userId: String, private val isTeam: Boolean) : RecyclerView.Adapter<AdapterSurvey.ViewHolderSurvey>() {
+class AdapterSurvey(private val context: Context, private val mRealm: Realm, private val userId: String, private val isTeam: Boolean, val teamId: String?) : RecyclerView.Adapter<AdapterSurvey.ViewHolderSurvey>() {
     private var examList: List<RealmStepExam> = emptyList()
     private var listener: OnHomeItemClickListener? = null
 
@@ -61,7 +59,7 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
             binding.apply {
                 tvTitle.text = exam.name
                 startSurvey.setOnClickListener {
-                    AdapterMySubmission.openSurvey(listener, exam.id, false, isTeam)
+                    AdapterMySubmission.openSurvey(listener, exam.id, false, isTeam, teamId)
                 }
 
                 val questions = mRealm.where(RealmExamQuestion::class.java)

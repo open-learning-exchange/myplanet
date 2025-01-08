@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
+import android.util.Log
 import android.view.View
 import android.widget.CompoundButton
 import android.widget.EditText
@@ -53,6 +54,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     private var photoPath: String? = ""
     var submitId = ""
     private var isTeam: Boolean = false
+    private var teamId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,6 +65,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
             stepNumber = requireArguments().getInt("stepNum")
             isMySurvey = requireArguments().getBoolean("isMySurvey")
             isTeam = requireArguments().getBoolean("isTeam", false)
+            teamId = requireArguments().getString("teamId")
             checkId()
             checkType()
         }
@@ -112,6 +115,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
         if (currentIndex < (questions?.size ?: 0)) {
             startExam(questions?.get(currentIndex))
         } else if (isTeam == true && type?.startsWith("survey") == true) {
+            Log.d("okuro", "$teamId")
             showUserInfoDialog()
         } else {
             saveCourseProgress()
@@ -136,7 +140,8 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
 
     private fun showUserInfoDialog() {
         if (!isMySurvey && !exam?.isFromNation!!) {
-            UserInformationFragment.getInstance(sub?.id).show(childFragmentManager, "")
+            Log.d("called1", "exam called")
+            UserInformationFragment.getInstance(sub?.id, teamId).show(childFragmentManager, "")
         } else {
             if (!mRealm.isInTransaction) mRealm.beginTransaction()
             sub?.status = "complete"
