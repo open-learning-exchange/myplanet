@@ -8,6 +8,7 @@ import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNotificationsBinding
 import org.ole.planet.myplanet.model.RealmNotification
+import java.util.regex.Pattern
 
 class AdapterNotification(
     var notificationList: List<RealmNotification>,
@@ -59,10 +60,12 @@ class AdapterNotification(
             return when (notification.type.lowercase()) {
                 "survey" -> context.getString(R.string.pending_survey_notification) + " ${notification.message}"
                 "task" -> {
-                    val parts = notification.message.split(" ")
-                    if (parts.size >= 2) {
-                        val taskTitle = parts[0]
-                        val dateValue = parts.subList(1, parts.size).joinToString(" ")
+                    val datePattern = Pattern.compile("\\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\\s\\d{1,2},\\s\\w+\\s\\d{4}\\b")
+                    val matcher = datePattern.matcher(notification.message)
+
+                    if (matcher.find()) {
+                        val taskTitle = notification.message.substring(0, matcher.start()).trim()
+                        val dateValue = notification.message.substring(matcher.start()).trim()
                         context.getString(R.string.task_notification, taskTitle, dateValue)
                     } else {
                         "INVALID"
