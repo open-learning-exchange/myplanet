@@ -77,6 +77,8 @@ android {
     def planetGuatemalaPin = project.findProperty('PLANET_GUATEMALA_PIN') ?: ""
     def planetSanPabloUrl = project.findProperty('PLANET_SANPABLO_URL') ?: ""
     def planetSanPabloPin = project.findProperty('PLANET_SANPABLO_PIN') ?: ""
+    def planetSanPabloCloneUrl = project.findProperty('PLANET_SANPABLO_CLONE_URL') ?: ""
+    def planetSanPabloClonePin = project.findProperty('PLANET_SANPABLO_CLONE_PIN') ?: ""
     def planetEarthUrl = project.findProperty('PLANET_EARTH_URL') ?: ""
     def planetEarthPin = project.findProperty('PLANET_EARTH_PIN') ?: ""
     def planetSomaliaUrl = project.findProperty('PLANET_SOMALIA_URL') ?: ""
