@@ -817,7 +817,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             ResourcesCompat.getDrawable(resources, R.drawable.mycourses, null)?.let { menuImageList.add(it) }
             ResourcesCompat.getDrawable(resources, R.drawable.team, null)?.let { menuImageList.add(it) }
             ResourcesCompat.getDrawable(resources, R.drawable.business, null)?.let { menuImageList.add(it) }
-            ResourcesCompat.getDrawable(resources, R.drawable.survey, null)?.let { menuImageList.add(it) }
+            ResourcesCompat.getDrawable(resources, R.drawable.community, null)?.let { menuImageList.add(it) }
             ResourcesCompat.getDrawable(resources, R.drawable.survey, null)?.let { menuImageList.add(it) }
             return arrayOf(
                 changeUX(R.string.menu_myplanet, menuImageList[0]).withIdentifier(0),
