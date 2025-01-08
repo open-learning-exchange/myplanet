@@ -111,6 +111,8 @@ android {
         it.buildConfigField 'String', 'PLANET_GUATEMALA_PIN', "\"${planetGuatemalaPin}\""
         it.buildConfigField 'String', 'PLANET_SANPABLO_URL', "\"${planetSanPabloUrl}\""
         it.buildConfigField 'String', 'PLANET_SANPABLO_PIN', "\"${planetSanPabloPin}\""
+        it.buildConfigField 'String', 'PLANET_SANPABLO_CLONE_URL', "\"${planetSanPabloCloneUrl}\""
+        it.buildConfigField 'String', 'PLANET_SANPABLO_CLONE_PIN', "\"${planetSanPabloClonePin}\""
         it.buildConfigField 'String', 'PLANET_EARTH_URL', "\"${planetEarthUrl}\""
         it.buildConfigField 'String', 'PLANET_EARTH_PIN', "\"${planetEarthPin}\""
         it.buildConfigField 'String', 'PLANET_SOMALIA_URL', "\"${planetSomaliaUrl}\""
