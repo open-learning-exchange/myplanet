@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.viewer
 
+import android.content.pm.ActivityInfo
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Build
@@ -27,7 +28,6 @@ class WebViewActivity : AppCompatActivity() {
         val title: String? = intent.getStringExtra("title")
         link = intent.getStringExtra("link") ?: ""
         val resourceId = intent.getStringExtra("RESOURCE_ID")
-
         clearCookie()
         if (!TextUtils.isEmpty(title)) {
             activityWebViewBinding.contentWebView.webTitle.text = title
@@ -43,6 +43,7 @@ class WebViewActivity : AppCompatActivity() {
             val indexFile = File(directory, "index.html")
 
             if (indexFile.exists()) {
+                requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
                 activityWebViewBinding.contentWebView.wv.loadUrl("file://${indexFile.absolutePath}")
             }
         } else {

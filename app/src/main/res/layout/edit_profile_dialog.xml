@@ -127,24 +127,23 @@
         android:layout_height="wrap_content"
         android:layout_margin="@dimen/_10dp"
         android:orientation="horizontal"
+        android:weightSum="3"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/lt1">
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/ltEmail"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
-            android:layout_weight="1"
+            android:layout_weight="1.2"
+            android:layout_marginEnd="4dp"
             android:textColorHint="@color/hint_color"
             app:boxBackgroundColor="@color/md_white_1000"
             app:boxStrokeColor="@color/md_white_1000"
             app:boxStrokeWidth="0dp"
-            app:boxStrokeWidthFocused="0dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/userProfile">
+            app:boxStrokeWidthFocused="0dp">
 
             <EditText
                 android:id="@+id/email"
@@ -164,18 +163,16 @@
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/ltPhoneNumber"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
             android:layout_weight="1"
+            android:layout_marginHorizontal="4dp"
             android:textColorHint="@color/hint_color"
             app:boxBackgroundColor="@color/md_white_1000"
             app:boxStrokeColor="@color/md_white_1000"
             app:boxStrokeWidth="0dp"
-            app:boxStrokeWidthFocused="0dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/userProfile">
+            app:boxStrokeWidthFocused="0dp">
 
             <EditText
                 android:id="@+id/phoneNumber"
@@ -195,18 +192,16 @@
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/ltInputName"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:layout_marginTop="10dp"
-            android:layout_weight="1"
+            android:layout_weight="0.8"
+            android:layout_marginStart="4dp"
             app:boxBackgroundColor="@color/md_white_1000"
             app:boxStrokeColor="@color/md_white_1000"
             app:boxStrokeWidth="0dp"
-            app:boxStrokeWidthFocused="0dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/ltNames">
+            app:boxStrokeWidthFocused="0dp">
 
             <TextView
                 android:id="@+id/dateOfBirth"
