@@ -735,8 +735,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 .addDrawerItems(*drawerItems).addStickyDrawerItems(*drawerItemsFooter)
                 .withOnDrawerItemClickListener { _: View?, _: Int, drawerItem: IDrawerItem<*, *>? ->
                     if (drawerItem != null) {
-                        menuAction((drawerItem as Nameable<*>).name.textRes)
                         result?.setSelection(drawerItem.identifier, false)
+                        menuAction((drawerItem as Nameable<*>).name.textRes)
                     }
                     false
                 }.withDrawerWidthDp(200).build()
