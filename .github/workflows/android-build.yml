@@ -45,7 +45,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: 8.7
-          cache-disabled: true
+          cache-disabled: false
           cache-read-only: false
           cache-write-only: false
 
