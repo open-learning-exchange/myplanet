@@ -116,8 +116,6 @@ object Utilities {
     val header: String
         get() {
             val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            Log.d("Basic auth", "${settings.getString("url_user", "")}:${ settings.getString("url_pwd", "") }")
-
             return "Basic ${Base64.encodeToString(("${settings.getString("url_user", "")}:${ settings.getString("url_pwd", "") }").toByteArray(), Base64.NO_WRAP)}"
         }
 

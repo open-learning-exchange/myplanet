@@ -10,7 +10,6 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
-import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
@@ -21,12 +20,9 @@ import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.android.material.bottomnavigation.BottomNavigationView
-import io.realm.Realm
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createAction
@@ -168,9 +164,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
                     // Connection successful, sync operations completed
                 }
                 is ServerUrlMapper.ConnectionResult.Failure -> {
-                    Log.e("URLSync", "Both primary and alternative URLs are unreachable")
-                    Log.e("URLSync", "Primary URL failed: ${result.primaryUrl}")
-                    Log.e("URLSync", "Alternative URL failed: ${result.alternativeUrl}")
+                    // Both primary and alternative URLs are unreachable
                 }
             }
         }

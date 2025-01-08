@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.text.TextUtils
 import android.util.Base64
-import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -51,16 +50,13 @@ object TransactionSyncManager {
     fun authenticate(): Boolean {
         val apiInterface = client?.create(ApiInterface::class.java)
         try {
-            Log.d("TransactionSyncManager", "header: ${Utilities.header}, authenticate: ${Utilities.getUrl()}/tablet_users/_all_docs")
             val response: Response<DocumentResponse>? = apiInterface?.getDocuments(Utilities.header, "${Utilities.getUrl()}/tablet_users/_all_docs")?.execute()
-            Log.d("TransactionSyncManager", "response: $response")
             if (response != null) {
                 return response.code() == 200
             }
         } catch (e: IOException) {
             e.printStackTrace()
         }
-
         return false
     }
 

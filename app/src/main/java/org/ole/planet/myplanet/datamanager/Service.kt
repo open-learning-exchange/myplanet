@@ -6,7 +6,6 @@ import android.content.DialogInterface
 import android.content.SharedPreferences
 import android.net.Uri
 import android.text.TextUtils
-import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.realm.Realm
@@ -21,7 +20,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.MainApplication.Companion.applicationScope
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SuccessListener
@@ -106,7 +104,6 @@ class Service(private val context: Context) {
     }
 
     fun checkVersion(callback: CheckVersionCallback, settings: SharedPreferences) {
-        Log.d("Service", "checkVersion: ${Utilities.getUpdateUrl(settings)}")
         if (!settings.getBoolean("isAlternativeUrl", false)){
             if (settings.getString("couchdbURL", "")?.isEmpty() == true) {
                 callback.onError(context.getString(R.string.config_not_available), true)
@@ -120,10 +117,8 @@ class Service(private val context: Context) {
                 if (response.body() != null) {
                     val p = response.body()
                     preferences.edit().putString("versionDetail", Gson().toJson(response.body())).apply()
-                    Log.d("Service", "checkVersion onResponse: ${response.body()}")
                     retrofitInterface.getApkVersion(Utilities.getApkVersionUrl(settings)).enqueue(object : Callback<ResponseBody> {
                         override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
-                            Log.d("Service", "getApkVersion onResponse: $response")
                             val responses: String?
                             try {
                                 responses = Gson().fromJson(response.body()?.string(), String::class.java)
@@ -150,7 +145,6 @@ class Service(private val context: Context) {
                                 if (p != null) {
                                     if (currentVersion < p.minapkcode && apkVersion < p.minapkcode) {
                                         callback.onUpdateAvailable(p, true)
-                                        Log.d("Service", "checkVersion: Planet up to date")
                                     } else {
                                         callback.onError("Planet up to date", false)
                                     }
@@ -175,15 +169,12 @@ class Service(private val context: Context) {
     }
 
     fun isPlanetAvailable(callback: PlanetAvailableListener?) {
-        Log.d("Service", "isPlanetAvailable: ${Utilities.getUpdateUrl(preferences)}")
         retrofitInterface?.isPlanetAvailable(Utilities.getUpdateUrl(preferences))?.enqueue(object : Callback<ResponseBody?> {
             override fun onResponse(call: Call<ResponseBody?>, response: Response<ResponseBody?>) {
                 if (callback != null && response.code() == 200) {
                     callback.isAvailable()
-                    Log.d("Service", "isAvailable: true")
                 } else {
                     callback?.notAvailable()
-                    Log.d("Service", "isAvailable: false")
                 }
             }
 
@@ -334,81 +325,52 @@ class Service(private val context: Context) {
     }
 
     fun getMinApk(listener: ConfigurationIdListener?, url: String, pin: String, activity: SyncActivity) {
-        val overallStartTime = System.currentTimeMillis()
-        Log.d("PerformanceLog", "Starting getMinApk process")
-
         val serverUrlMapper = ServerUrlMapper(context)
         val mapping = serverUrlMapper.processUrl(url)
 
-        // Create list of URLs to try
         val urlsToTry = mutableListOf(url)
         mapping.alternativeUrl?.let { urlsToTry.add(it) }
 
-        // Use coroutine scope to perform concurrent URL checks
-        applicationScope.launch {
-            val dialogStartTime = System.currentTimeMillis()
+        MainApplication.applicationScope.launch {
             val customProgressDialog = withContext(Dispatchers.Main) {
                 CustomProgressDialog(context).apply {
                     setText(context.getString(R.string.check_apk_version))
                     show()
                 }
             }
-            Log.d("PerformanceLog", "Dialog creation took: ${System.currentTimeMillis() - dialogStartTime}ms")
 
             try {
-                // Use withContext(Dispatchers.IO) for network operations
-                val networkStartTime = System.currentTimeMillis()
                 val result = withContext(Dispatchers.IO) {
-                    // Create a list of deferred jobs for concurrent network calls
                     val deferredResults = urlsToTry.map { currentUrl ->
                         async {
                             try {
-                                val urlStartTime = System.currentTimeMillis()
-                                Log.d("PerformanceLog", "Starting check for URL: $currentUrl")
-
-                                // Check versions concurrently
-                                val versionCheckStartTime = System.currentTimeMillis()
-                                val versionsResponse = try {
-                                    Log.d("NetworkLog", "Attempting to connect to $currentUrl/versions")
-                                    val response = retrofitInterface?.getConfiguration("$currentUrl/versions")?.execute()
-                                    val checkDuration = System.currentTimeMillis() - versionCheckStartTime
-                                    Log.d("PerformanceLog", "Version check for $currentUrl took: ${checkDuration}ms")
-
-                                    if (checkDuration >= 60000) {
-                                        Log.w("NetworkLog", "Connection to $currentUrl took excessive time (${checkDuration}ms)")
+                                val versionsResponse =
+                                    try {
+                                        val response = retrofitInterface?.getConfiguration("$currentUrl/versions")?.execute()
+                                        response
+                                    } catch (e: java.net.ConnectException) {
+                                        e.printStackTrace()
+                                        null
+                                    } catch (e: java.net.SocketTimeoutException) {
+                                        e.printStackTrace()
+                                        null
+                                    } catch (e: Exception) {
+                                        e.printStackTrace()
+                                        null
                                     }
-                                    response
-                                } catch (e: java.net.ConnectException) {
-                                    Log.e("NetworkLog", "Connection failed for $currentUrl: ${e.message}")
-                                    Log.d("NetworkLog", "Moving to next URL in fallback list")
-                                    null
-                                } catch (e: java.net.SocketTimeoutException) {
-                                    Log.e("NetworkLog", "Connection timed out for $currentUrl: ${e.message}")
-                                    Log.d("NetworkLog", "Moving to next URL in fallback list")
-                                    null
-                                } catch (e: Exception) {
-                                    Log.e("NetworkLog", "Unexpected error connecting to $currentUrl", e)
-                                    Log.d("NetworkLog", "Moving to next URL in fallback list")
-                                    null
-                                }
 
                                 if (versionsResponse?.isSuccessful == true) {
                                     val jsonObject = versionsResponse.body()
                                     val currentVersion = "${context.resources.getText(R.string.app_version)}"
                                     val minApkVersion = jsonObject?.get("minapk")?.asString
-                                    Log.d("PerformanceLog", "Version parsing successful for $currentUrl")
 
-                                    // Version check
                                     if (minApkVersion != null && isVersionAllowed(currentVersion, minApkVersion)) {
-                                        // Perform configuration check for this URL
-                                        val configStartTime = System.currentTimeMillis()
                                         val uri = Uri.parse(currentUrl)
                                         val couchdbURL = if (currentUrl.contains("@")) {
                                             getUserInfo(uri)
                                             currentUrl
                                         } else {
                                             val urlUser = "satellite"
-                                            Log.d("okuro", "called")
                                             "${uri.scheme}://$urlUser:$pin@${uri.host}:${if (uri.port == -1) if (uri.scheme == "http") 80 else 443 else uri.port}"
                                         }
 
@@ -417,7 +379,6 @@ class Service(private val context: Context) {
                                         }
 
                                         val configResponse = retrofitInterface?.getConfiguration("${getUrl(couchdbURL)}/configurations/_all_docs?include_docs=true")?.execute()
-                                        Log.d("PerformanceLog", "Configuration check for $currentUrl took: ${System.currentTimeMillis() - configStartTime}ms")
 
                                         if (configResponse?.isSuccessful == true) {
                                             val rows = configResponse.body()?.getAsJsonArray("rows")
@@ -426,36 +387,27 @@ class Service(private val context: Context) {
                                                 val id = firstRow.getAsJsonPrimitive("id").asString
                                                 val doc = firstRow.getAsJsonObject("doc")
                                                 val code = doc.getAsJsonPrimitive("code").asString
-                                                Log.d("PerformanceLog", "Total processing time for successful URL $currentUrl: ${System.currentTimeMillis() - urlStartTime}ms")
                                                 return@async UrlCheckResult.Success(id, code, currentUrl)
                                             }
                                         }
                                     }
                                 }
-                                Log.d("PerformanceLog", "URL $currentUrl failed after ${System.currentTimeMillis() - urlStartTime}ms")
                                 return@async UrlCheckResult.Failure(currentUrl)
                             } catch (e: Exception) {
-                                Log.e("PerformanceLog", "Exception while processing $currentUrl", e)
+                                e.printStackTrace()
                                 return@async UrlCheckResult.Failure(currentUrl)
                             }
                         }
                     }
-
-                    // Wait for the first successful result
-                    val awaitStartTime = System.currentTimeMillis()
                     val result = deferredResults.awaitFirst { it is UrlCheckResult.Success }
-                    Log.d("PerformanceLog", "Awaiting first successful result took: ${System.currentTimeMillis() - awaitStartTime}ms")
                     result
                 }
-                Log.d("PerformanceLog", "Total network operations took: ${System.currentTimeMillis() - networkStartTime}ms")
 
-                // Handle the result
                 when (result) {
                     is UrlCheckResult.Success -> {
                         val isAlternativeUrl = result.url != url
                         listener?.onConfigurationIdReceived(result.id, result.code, result.url, isAlternativeUrl)
                         activity.setSyncFailed(false)
-                        Log.d("PerformanceLog", "Successfully connected to URL: ${result.url}")
                     }
                     is UrlCheckResult.Failure -> {
                         activity.setSyncFailed(true)
@@ -468,131 +420,16 @@ class Service(private val context: Context) {
                     }
                 }
             } catch (e: Exception) {
-                Log.e("PerformanceLog", "Exception in main process", e)
+                e.printStackTrace()
                 activity.setSyncFailed(true)
                 withContext(Dispatchers.Main) {
                     showAlertDialog(context.getString(R.string.device_couldn_t_reach_local_server), false)
                 }
             } finally {
                 customProgressDialog.dismiss()
-                Log.d("PerformanceLog", "Total process time: ${System.currentTimeMillis() - overallStartTime}ms")
             }
         }
     }
-
-//    fun getMinApk(listener: ConfigurationIdListener?, url: String, pin: String, activity: SyncActivity) {
-//        // Create a list of URLs to try, starting with the original URL
-//        val urlsToTry = mutableListOf(url)
-//
-//        val serverMappings = mapOf(
-//            "http://${BuildConfig.PLANET_URIUR_URL}" to "http://35.231.161.29",
-//            "http://192.168.1.202" to "http://34.35.29.147",
-//            "https://${BuildConfig.PLANET_GUATEMALA_URL}" to "http://guatemala.com/cloudserver",
-//            "http://${BuildConfig.PLANET_XELA_URL}" to "http://xela.com/cloudserver",
-//            "http://${BuildConfig.PLANET_SANPABLO_URL}" to "http://sanpablo.com/cloudserver",
-//            "http://${BuildConfig.PLANET_EMBAKASI_URL}" to "http://embakasi.com/cloudserver",
-//            "https://${BuildConfig.PLANET_VI_URL}" to "http://vi.com/cloudserver"
-//        )
-//
-//        // Add alternative URL from serverMappings if available
-//        serverMappings[url]?.let { alternativeUrl ->
-//            urlsToTry.add(alternativeUrl)
-//        }
-//
-//        // Use coroutine scope to perform concurrent URL checks
-//        applicationScope.launch {
-//            val customProgressDialog = withContext(Dispatchers.Main) {
-//                CustomProgressDialog(context).apply {
-//                    setText(context.getString(R.string.check_apk_version))
-//                    show()
-//                }
-//            }
-//
-//            try {
-//                // Use withContext(Dispatchers.IO) for network operations
-//                val result = withContext(Dispatchers.IO) {
-//                    // Create a list of deferred jobs for concurrent network calls
-//                    val deferredResults = urlsToTry.map { currentUrl ->
-//                        async {
-//                            try {
-//                                Log.d("Service", "Checking URL: $currentUrl")
-//                                // Check versions concurrently
-//                                val versionsResponse = retrofitInterface?.getConfiguration("$currentUrl/versions")?.execute()
-//
-//                                if (versionsResponse?.isSuccessful == true) {
-//                                    val jsonObject = versionsResponse.body()
-//                                    val currentVersion = "${context.resources.getText(R.string.app_version)}"
-//                                    val minApkVersion = jsonObject?.get("minapk")?.asString
-//                                    Log.d("okuro", "first config check is successful")
-//
-//                                    // Version check
-//                                    if (minApkVersion != null && isVersionAllowed(currentVersion, minApkVersion)) {
-//                                        // Perform configuration check for this URL
-//                                        val uri = Uri.parse(currentUrl)
-//                                        val couchdbURL = if (currentUrl.contains("@")) {
-//                                            getUserInfo(uri)
-//                                            currentUrl
-//                                        } else {
-//                                            val urlUser = "satellite"
-//                                            "${uri.scheme}://$urlUser:$pin@${uri.host}:${if (uri.port == -1) if (uri.scheme == "http") 80 else 443 else uri.port}"
-//                                        }
-//                                        withContext(Dispatchers.Main) {
-//                                            customProgressDialog.setText(context.getString(R.string.checking_server))
-//                                        }
-//                                        val configResponse = retrofitInterface.getConfiguration("${getUrl(couchdbURL)}/configurations/_all_docs?include_docs=true").execute()
-//
-//                                        if (configResponse.isSuccessful) {
-//                                            Log.d("okuro", "second config check is successful")
-//                                            val rows = configResponse.body()?.getAsJsonArray("rows")
-//                                            if (rows != null && rows.size() > 0) {
-//                                                val firstRow = rows.get(0).asJsonObject
-//                                                val id = firstRow.getAsJsonPrimitive("id").asString
-//                                                val doc = firstRow.getAsJsonObject("doc")
-//                                                val code = doc.getAsJsonPrimitive("code").asString
-//                                                return@async UrlCheckResult.Success(id, code, currentUrl)
-//                                            }
-//                                        }
-//                                    }
-//                                }
-//                                return@async UrlCheckResult.Failure(currentUrl)
-//                            } catch (e: Exception) {
-//                                e.printStackTrace()
-//                                return@async UrlCheckResult.Failure(currentUrl)
-//                            }
-//                        }
-//                    }
-//
-//                    // Wait for the first successful result
-//                    deferredResults.awaitFirst { it is UrlCheckResult.Success }
-//                }
-//
-//                // Handle the result
-//                when (result) {
-//                    is UrlCheckResult.Success -> {
-//                        val isAlternativeUrl = result.url != url
-//                        listener?.onConfigurationIdReceived(result.id, result.code, result.url, isAlternativeUrl)
-//                        activity.setSyncFailed(false)
-//                        Log.d("Service", "Successfully connected to URL: ${result.url}")
-//                    }
-//                    is UrlCheckResult.Failure -> {
-//                        activity.setSyncFailed(true)
-//                        val errorMessage = when (extractProtocol(url)) {
-//                            context.getString(R.string.http_protocol) -> context.getString(R.string.device_couldn_t_reach_local_server)
-//                            context.getString(R.string.https_protocol) -> context.getString(R.string.device_couldn_t_reach_nation_server)
-//                            else -> context.getString(R.string.device_couldn_t_reach_local_server)
-//                        }
-//                        showAlertDialog(errorMessage, false)
-//                    }
-//                }
-//            } catch (e: Exception) {
-//                e.printStackTrace()
-//                activity.setSyncFailed(true)
-//                showAlertDialog(context.getString(R.string.device_couldn_t_reach_local_server), false)
-//            } finally {
-//                customProgressDialog.dismiss()
-//            }
-//        }
-//    }
 
     sealed class UrlCheckResult {
         data class Success(val id: String, val code: String, val url: String) : UrlCheckResult()
@@ -628,7 +465,7 @@ class Service(private val context: Context) {
     }
 
     fun showAlertDialog(message: String?, playStoreRedirect: Boolean) {
-        applicationScope.launch(Dispatchers.Main) {
+        MainApplication.applicationScope.launch(Dispatchers.Main) {
             val builder = AlertDialog.Builder(context, R.style.CustomAlertDialog)
             builder.setMessage(message)
             builder.setCancelable(true)

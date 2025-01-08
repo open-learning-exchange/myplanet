@@ -11,7 +11,6 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import android.view.*
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
@@ -130,7 +129,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         disableShiftMode(navigationView)
         activityDashboardBinding.appBarBell.bellToolbar.inflateMenu(R.menu.menu_bell_dashboard)
         tl = findViewById(R.id.tab_layout)
-
         try {
             val userProfileModel = profileDbHandler.userModel
             if (userProfileModel != null) {
@@ -187,27 +185,21 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 val isPrimaryReachable = isServerReachable(Utilities.getUrl())
 
                 if (isPrimaryReachable) {
-                    Log.d("URLSync", "Successfully reached primary URL: ${Utilities.getUrl()}")
                     startUpload("dashboard")
                     createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
                 } else if (mapping.alternativeUrl != null) {
-                    Log.w("URLSync", "Failed to reach primary URL: ${Utilities.getUrl()}")
                     val uri = Uri.parse(mapping.alternativeUrl)
 
                     serverUrlMapper.updateUrlPreferences(editor, uri, mapping.alternativeUrl, url, settings)
                     val processedUrl = settings.getString("processedAlternativeUrl", "")
 
-                    Log.d("URLSync", "Attempting to reach alternative URL: $processedUrl")
                     val isAlternativeReachable = isServerReachable(processedUrl ?: "")
 
                     if (isAlternativeReachable) {
                         startUpload("dashboard")
                         createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
-                    } else {
-                        Log.e("URLSync", "Both primary and alternative URLs are unreachable")
                     }
                 } else {
-                    Log.d("URLSync", "Proceeding with original URL")
                     startUpload("dashboard")
                     createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
                 }

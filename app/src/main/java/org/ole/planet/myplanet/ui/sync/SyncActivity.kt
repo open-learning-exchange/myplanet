@@ -7,7 +7,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.text.*
-import android.util.Log
 import android.view.*
 import android.webkit.URLUtil
 import android.widget.*
@@ -113,10 +112,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     override fun onConfigurationIdReceived(id: String, code: String, url: String, isAlternativeUrl: Boolean) {
-        Log.d("SyncActivity", "onConfigurationIdReceived: $id")
-        Log.d("SyncActivity", "onConfigurationIdReceived: $code")
-        Log.d("SyncActivity", "onConfigurationIdReceived: $url")
-        Log.d("SyncActivity", "onConfigurationIdReceived: $isAlternativeUrl")
         val savedId = settings.getString("configurationId", null)
         if (serverConfigAction == "sync") {
             if (savedId == null) {
@@ -189,16 +184,12 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     suspend fun isServerReachable(processedUrl: String?): Boolean {
-        Log.d("SyncActivity", "isServerReachable: $processedUrl")
         return withContext(Dispatchers.IO) {
             val apiInterface = client?.create(ApiInterface::class.java)
             try {
-                Log.d("SyncActivity", "isServerReachable: $processedUrl")
                 val response = if (settings.getBoolean("isAlternativeUrl", false)){
-                    Log.d("okuro", "isAlternativeUrl true: $processedUrl/db/_all_dbs")
                     apiInterface?.isPlanetAvailable("$processedUrl/db/_all_dbs")?.execute()
                 } else {
-                    Log.d("okuro", "isAlternativeUrl false: $processedUrl/db/_all_dbs")
                     apiInterface?.isPlanetAvailable("$processedUrl/_all_dbs")?.execute()
                 }
 
@@ -771,7 +762,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         } else {
             processedUrl = saveConfigAndContinue(dialog)
         }
-        Log.d("SyncActivity", "continueSync: $processedUrl")
 
         if (TextUtils.isEmpty(processedUrl)) return
         isSync = true
@@ -781,13 +771,11 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         Service(this).isPlanetAvailable(object : PlanetAvailableListener {
             override fun isAvailable() {
                 Service(context).checkVersion(this@SyncActivity, settings)
-                Log.d("SyncActivity", "isAvailable: true")
             }
             override fun notAvailable() {
                 if (!isFinishing) {
                     syncFailed = true
                     showAlert(context, "Error", getString(R.string.planet_server_not_reachable))
-                    Log.d("SyncActivity", "isAvailable: false")
                 }
             }
         })
