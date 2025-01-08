@@ -39,7 +39,6 @@ class AdapterNotification(
             val context = rowNotificationsBinding.root.context
             val currentNotification = formatNotificationMessage(notification, context)
             rowNotificationsBinding.title.text = currentNotification
-
             if (notification.isRead) {
                 rowNotificationsBinding.btnMarkAsRead.visibility = View.GONE
                 rowNotificationsBinding.root.alpha = 0.5f
@@ -81,7 +80,7 @@ class AdapterNotification(
                         when {
                             it <= 10 -> context.getString(R.string.storage_running_low) +" ${it}%"
                             it <= 40 -> context.getString(R.string.storage_running_low)+ " ${it}%"
-                            else -> "INVALID"
+                            else -> context.getString(R.string.storage_available)+ " ${it}%"
                         }
                     } ?: "INVALID"
                 }
