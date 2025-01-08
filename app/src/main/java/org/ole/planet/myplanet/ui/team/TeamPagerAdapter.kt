@@ -24,7 +24,7 @@ class TeamPagerAdapter(fm: FragmentActivity, team: RealmMyTeam?, isInMyTeam: Boo
     private val teamId: String? = team?._id
     private val list: MutableList<String> = ArrayList()
     private val isEnterprise: Boolean = TextUtils.equals(team?.type, "enterprise")
-    private val isTeam: Boolean = TextUtils.equals(team?.type, "team")
+
 
     init {
         if (isInMyTeam || team?.isPublic == true) {
@@ -62,7 +62,8 @@ class TeamPagerAdapter(fm: FragmentActivity, team: RealmMyTeam?, isInMyTeam: Boo
             context.getString(R.string.calendar) -> EnterpriseCalendarFragment()
             context.getString(R.string.survey) -> SurveyFragment().apply {
                 arguments = Bundle().apply {
-                    putBoolean("isTeam", isTeam)
+                    putBoolean("isTeam", true)
+                    putString("teamId", teamId)
                 }
             }
             context.getString(R.string.courses) -> TeamCourseFragment()

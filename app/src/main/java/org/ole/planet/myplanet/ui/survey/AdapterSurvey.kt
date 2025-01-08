@@ -22,13 +22,11 @@ import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 class AdapterSurvey(private val context: Context, private val mRealm: Realm, private val userId: String, private val isTeam: Boolean) : RecyclerView.Adapter<AdapterSurvey.ViewHolderSurvey>() {
     private var examList: List<RealmStepExam> = emptyList()
     private var listener: OnHomeItemClickListener? = null
-    private var user: RealmUserModel? = null
 
     init {
         if (context is OnHomeItemClickListener) {
             listener = context
         }
-        user = UserProfileDbHandler(context).userModel
     }
 
     fun updateData(newList: List<RealmStepExam>) {
@@ -81,12 +79,12 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
                     context.getString(R.string.record_survey)
                 }
 
-                if (user?.id?.startsWith("guest") == true) {
+                if (userId.startsWith("guest") == true) {
                     startSurvey.visibility = View.GONE
                 }
 
-                tvNoSubmissions.text = getNoOfSubmissionByUser(exam.id, exam.courseId, user?.id, mRealm)
-                tvDateCompleted.text = getRecentSubmissionDate(exam.id, exam.courseId, user?.id, mRealm)
+                tvNoSubmissions.text = getNoOfSubmissionByUser(exam.id, exam.courseId, userId, mRealm)
+                tvDateCompleted.text = getRecentSubmissionDate(exam.id, exam.courseId, userId, mRealm)
                 tvDate.text = formatDate(RealmStepExam.getSurveyCreationTime(exam.id!!, mRealm)!!, "MMM dd, yyyy")
             }
         }

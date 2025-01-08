@@ -18,6 +18,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>() {
     private var isTitleAscending = true
     private lateinit var adapter: AdapterSurvey
     private var isTeam: Boolean = false
+    private var teamId: String? = null
 
     override fun getLayout(): Int {
         return R.layout.fragment_survey
@@ -25,7 +26,8 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        isTeam = arguments?.getBoolean("isTeam", false) ?: false
+        isTeam = arguments?.getBoolean("isTeam", false) == true
+        teamId = arguments?.getString("teamId", null)
         adapter = AdapterSurvey(requireActivity(), mRealm, model?.id ?: "", isTeam)
     }
 
@@ -80,8 +82,18 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>() {
     }
 
     private fun updateAdapterData(sort: Sort = Sort.ASCENDING, field: String = "name") {
-        val newList = getList(RealmStepExam::class.java, field, sort)
-        adapter.updateData(safeCastList(newList, RealmStepExam::class.java))
+        val query = mRealm.where(RealmStepExam::class.java)
+
+        val surveys = if (teamId != null && isTeam) {
+            query.equalTo("teamId", teamId)
+                .sort(field, sort)
+                .findAll()
+        } else {
+            query.sort(field, sort)
+                .findAll()
+        }
+
+        adapter.updateData(safeCastList(surveys, RealmStepExam::class.java))
         updateUIState()
     }
 
@@ -96,6 +108,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>() {
         val sort = if (isTitleAscending) Sort.ASCENDING else Sort.DESCENDING
         updateAdapterData(sort, "name")
     }
+
 
     private fun <T> safeCastList(items: List<Any?>, clazz: Class<T>): List<T> {
         return items.mapNotNull { it?.takeIf(clazz::isInstance)?.let(clazz::cast) }
