@@ -249,10 +249,13 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
         })
 
-        val startTime = 1733011200000
+        val startTime = 1730419200000
+        val endTime = 1734307200000
+
         val commVoiceResults = mRealm.where(RealmNews::class.java)
             .equalTo("userId", user?.id)
             .greaterThanOrEqualTo("time", startTime)
+            .lessThanOrEqualTo("time", endTime)
             .findAll()
 
         val commVoice = commVoiceResults.filter { realmNews ->
@@ -274,6 +277,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
         val allCommVoiceResults = mRealm.where(RealmNews::class.java)
             .greaterThanOrEqualTo("time", startTime)
+            .lessThanOrEqualTo("time", endTime)
             .findAll()
 
         val allCommVoice = allCommVoiceResults.filter { realmNews ->
@@ -328,8 +332,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
         val today = LocalDate.now()
         if (user?.id?.startsWith("guest") == false) {
-            val endDate = LocalDate.of(today.year, 12, 31)
-            if (today.isBefore(endDate)) {
+            val endDate = LocalDate.of(2025, 1, 16)
+            if (today.isAfter(LocalDate.of(2024, 11, 30)) && today.isBefore(endDate)) {
                 if (settings.getString("serverURL", "") in validUrls) {
                     val course = mRealm.where(RealmMyCourse::class.java)
                         .equalTo("courseId", courseId)
