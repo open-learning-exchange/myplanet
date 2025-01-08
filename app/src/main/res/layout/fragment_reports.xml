@@ -25,6 +25,8 @@
             android:padding="@dimen/padding_normal"
             android:text="@string/add_reports"
             android:textSize="16sp"
+            android:background="@color/mainColor"
+            android:textColor="@color/md_white_1000"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
         <Button
@@ -37,6 +39,8 @@
             android:padding="@dimen/padding_normal"
             android:text="@string/export_csv"
             android:textSize="16sp"
+            android:textColor="@color/md_white_1000"
+            android:background="@color/mainColor"
             app:layout_constraintStart_toEndOf="@+id/addReports"
             app:layout_constraintTop_toTopOf="parent" />
     </LinearLayout>
