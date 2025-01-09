@@ -30,12 +30,13 @@
                     android:layout_height="wrap_content"
                     android:text="@string/open_resource"
                     android:theme="@style/AccentButton" />
+
                 <Button
                     android:id="@+id/btn_resources"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="10dp"
-                    android:theme="@style/AccentButton" />
+                    android:theme="@style/AppThemeButton"/>
             </LinearLayout>
 
             <LinearLayout
