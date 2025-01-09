@@ -735,6 +735,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 .addDrawerItems(*drawerItems).addStickyDrawerItems(*drawerItemsFooter)
                 .withOnDrawerItemClickListener { _: View?, _: Int, drawerItem: IDrawerItem<*, *>? ->
                     if (drawerItem != null) {
+                        result?.setSelection(drawerItem.identifier, false)
                         menuAction((drawerItem as Nameable<*>).name.textRes)
                     }
                     false
@@ -850,6 +851,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
+        item.isChecked = true
         when (item.itemId) {
             R.id.menu_library -> {
                 openCallFragment(ResourcesFragment())
@@ -878,6 +880,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 openCallFragment(BellDashboardFragment())
             }
         }
+        item.isChecked = true
         return true
     }
 
