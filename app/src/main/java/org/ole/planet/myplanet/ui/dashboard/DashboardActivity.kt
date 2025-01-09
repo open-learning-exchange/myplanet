@@ -178,7 +178,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         activityDashboardBinding.appBarBell.ivSync.setOnClickListener {
             lifecycleScope.launch {
                 if (isServerReachable(Utilities.getUrl())) {
-                    startUpload("dashboard")
+                    startUpload("")
                 }
             }
         }
