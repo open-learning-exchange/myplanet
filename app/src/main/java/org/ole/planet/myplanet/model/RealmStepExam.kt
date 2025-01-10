@@ -29,6 +29,7 @@ open class RealmStepExam : RealmObject() {
     var passingPercentage: String? = null
     var noOfQuestions = 0
     var isFromNation = false
+    var teamId: String? = null
 
     companion object {
         val examDataList: MutableList<Array<String>> = mutableListOf()
@@ -66,6 +67,7 @@ open class RealmStepExam : RealmObject() {
             myExam?.totalMarks = JsonUtils.getInt("totalMarks", exam)
             myExam?.noOfQuestions = JsonUtils.getJsonArray("questions", exam).size()
             myExam?.isFromNation = !TextUtils.isEmpty(parentId)
+            myExam.teamId = JsonUtils.getString("teamId", exam)
             val oldQuestions: RealmResults<*>? = mRealm.where(RealmExamQuestion::class.java).equalTo("examId", JsonUtils.getString("_id", exam)).findAll()
             if (oldQuestions == null || oldQuestions.isEmpty()) {
                 RealmExamQuestion.insertExamQuestions(JsonUtils.getJsonArray("questions", exam), JsonUtils.getString("_id", exam), mRealm)
@@ -84,8 +86,10 @@ open class RealmStepExam : RealmObject() {
                 JsonUtils.getString("updatedDate", exam),
                 JsonUtils.getString("totalMarks", exam),
                 JsonUtils.getString("noOfQuestions", exam),
-                JsonUtils.getString("isFromNation", exam)
+                JsonUtils.getString("isFromNation", exam),
+                JsonUtils.getString("teamId", exam)
             )
+
             examDataList.add(csvRow)
         }
 
@@ -94,7 +98,7 @@ open class RealmStepExam : RealmObject() {
                 val file = File(filePath)
                 file.parentFile?.mkdirs()
                 val writer = CSVWriter(FileWriter(file))
-                writer.writeNext(arrayOf("_id", "_rev", "name", "passingPercentage", "type", "createdBy", "sourcePlanet", "createdDate", "updatedDate", "totalMarks", "noOfQuestions", "isFromNation"))
+                writer.writeNext(arrayOf("_id", "_rev", "name", "passingPercentage", "type", "createdBy", "sourcePlanet", "createdDate", "updatedDate", "totalMarks", "noOfQuestions", "isFromNation", "teamId"))
                 for (row in data) {
                     writer.writeNext(row)
                 }
