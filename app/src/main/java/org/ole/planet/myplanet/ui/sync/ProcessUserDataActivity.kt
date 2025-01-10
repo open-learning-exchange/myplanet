@@ -147,7 +147,7 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         } else {
             urlUser = "satellite"
             urlPwd = password
-            couchdbURL = uri.scheme + "://" + urlUser + ":" + urlPwd + "@" + uri.host + ":" + if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port
+            couchdbURL = "${uri.scheme}://$urlUser:$urlPwd@${uri.host}:${if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port}"
         }
         editor.putString("serverPin", password)
         saveUrlScheme(editor, uri, url, couchdbURL)
@@ -175,6 +175,8 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
             UploadToShelfService.instance?.uploadUserData {
                 UploadToShelfService.instance?.uploadHealth()
             }
+        } else if (source == "login") {
+            UploadManager.instance?.uploadUserActivities(this@ProcessUserDataActivity)
         } else {
             customProgressDialog?.setText(context.getString(R.string.uploading_data_to_server_please_wait))
             customProgressDialog?.show()
@@ -230,14 +232,17 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         alert11.show()
     }
 
-    private fun getUserInfo(uri: Uri): Array<String> {
-        val ar = arrayOf("", "")
-        val info = uri.userInfo?.split(":".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()
-        if ((info?.size ?: 0) > 1) {
-            ar[0] = "${info?.get(0)}"
-            ar[1] = "${info?.get(1)}"
+    companion object {
+        fun getUserInfo(uri: Uri): Array<String> {
+            val ar = arrayOf("", "")
+            val info =
+                uri.userInfo?.split(":".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()
+            if ((info?.size ?: 0) > 1) {
+                ar[0] = "${info?.get(0)}"
+                ar[1] = "${info?.get(1)}"
+            }
+            return ar
         }
-        return ar
     }
 
     private fun saveUrlScheme(editor: SharedPreferences.Editor, uri: Uri, url: String?, couchdbURL: String?) {
