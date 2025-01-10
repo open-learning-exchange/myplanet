@@ -167,7 +167,15 @@ class AdapterReports(private val context: Context, private var list: RealmResult
                 builder.setTitle("Delete Report")
                     .setMessage(R.string.delete_record)
                     .setPositiveButton(R.string.ok) { _, _ ->
-                        RealmMyTeam.deleteReport(reportId, mRealm)
+                        mRealm.executeTransaction { realm ->
+                            realm.where(RealmMyTeam::class.java)
+                                .equalTo("_id", reportId)
+                                .findFirst()?.apply {
+                                    status = "archived"
+                                    updated = true
+                                }
+                        }
+                        notifyDataSetChanged()
                     }
                     .setNegativeButton("Cancel", null)
                     .show()
