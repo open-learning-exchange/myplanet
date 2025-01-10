@@ -107,7 +107,7 @@ object JsonUtils {
         return try {
             if (jsonObject?.has(fieldName) == true) {
                 val el: JsonElement = jsonObject.get(fieldName)
-                if (el is JsonNull) 0f else el.asFloat
+                if (el is JsonNull || el.asString.isEmpty()) 0f else el.asFloat
             } else {
                 getInt(fieldName, jsonObject).toFloat()
             }
