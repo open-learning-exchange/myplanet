@@ -65,9 +65,11 @@ class AdapterTeamResource(
             val itemToDelete = realm.where(RealmMyTeam::class.java)
                 .equalTo("resourceId", resource.id)
                 .findFirst()
-            itemToDelete?.resourceId=""
-            itemToDelete?.updated= true
 
+            if (itemToDelete != null) {
+                itemToDelete.resourceId = ""
+                itemToDelete.updated = true
+            }
         }
 
         list.removeAt(position)
