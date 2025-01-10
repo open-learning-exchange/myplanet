@@ -10,6 +10,7 @@ import io.realm.Realm
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.RowTeamResourceBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getTeamCreator
 
 class AdapterTeamResource(
@@ -63,10 +64,12 @@ class AdapterTeamResource(
         if (position < 0 || position >= list.size) return
 
         mRealm.executeTransaction { realm ->
-            val itemToDelete = realm.where(RealmMyLibrary::class.java)
-                .equalTo("id", resource.id)
+            val itemToDelete = realm.where(RealmMyTeam::class.java)
+                .equalTo("resourceId", resource.id)
                 .findFirst()
-            itemToDelete?.deleteFromRealm()
+            itemToDelete?.resourceId=""
+            itemToDelete?.updated= true
+
         }
 
         list.removeAt(position)
