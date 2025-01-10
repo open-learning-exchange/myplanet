@@ -2,25 +2,16 @@ package org.ole.planet.myplanet.utilities
 
 import android.app.PendingIntent
 import android.app.usage.StorageStatsManager
-import android.content.Context
-import android.content.Intent
+import android.content.*
+import android.content.pm.PackageInstaller
 import android.database.Cursor
 import android.net.Uri
-import android.os.Environment
-import android.os.StatFs
+import android.os.*
 import android.os.storage.StorageManager
 import android.provider.MediaStore
 import android.text.TextUtils
-import android.content.pm.PackageInstaller
 import org.ole.planet.myplanet.MainApplication
-import java.io.BufferedReader
-import java.io.File
-import java.io.FileInputStream
-import java.io.FileOutputStream
-import java.io.IOException
-import java.io.InputStream
-import java.io.InputStreamReader
-import java.io.OutputStream
+import java.io.*
 import java.util.UUID
 import kotlin.math.roundToInt
 
@@ -51,22 +42,38 @@ object FileUtils {
     }
 
     private fun createFilePath(folder: String, filename: String): File {
-        val directory = File(MainApplication.context.getExternalFilesDir(null), folder)
-        if (!directory.exists()) {
+        val baseDirectory = File(MainApplication.context.getExternalFilesDir(null), folder)
+
+        if (filename.contains("/")) {
+            val subDirPath = filename.substring(0, filename.lastIndexOf('/'))
+            val fullDir = File(baseDirectory, subDirPath)
+
             try {
-                if (!directory.mkdirs()) {
-                    throw IOException("Failed to create directory: ${directory.absolutePath}")
+                if (!fullDir.exists() && !fullDir.mkdirs()) {
+                    throw IOException("Failed to create directory: ${fullDir.absolutePath}")
                 }
             } catch (e: IOException) {
                 e.printStackTrace()
-                throw RuntimeException("Failed to create directory: ${directory.absolutePath}", e)
+                throw RuntimeException("Failed to create directory: ${fullDir.absolutePath}", e)
             }
+
+            val actualFilename = filename.substring(filename.lastIndexOf('/') + 1)
+            return File(fullDir, actualFilename)
+        } else {
+            try {
+                if (!baseDirectory.exists() && !baseDirectory.mkdirs()) {
+                    throw IOException("Failed to create directory: ${baseDirectory.absolutePath}")
+                }
+            } catch (e: IOException) {
+                e.printStackTrace()
+                throw RuntimeException("Failed to create directory: ${baseDirectory.absolutePath}", e)
+            }
+            return File(baseDirectory, filename)
         }
-        return File(directory, filename)
     }
 
     fun getSDPathFromUrl(url: String?): File {
-        return createFilePath("/ole/" + getIdFromUrl(url), getFileNameFromUrl(url))
+        return createFilePath("/ole/${getIdFromUrl(url)}", getFileNameFromUrl(url))
     }
 
     fun checkFileExist(url: String?): Boolean {
@@ -78,7 +85,8 @@ object FileUtils {
     fun getFileNameFromUrl(url: String?): String {
         try {
             if (url != null) {
-                return url.substring(url.lastIndexOf("/") + 1)
+                val parts = url.split("/resources/${getIdFromUrl(url)}/")
+                return if (parts.size > 1) parts[1] else ""
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -88,9 +96,7 @@ object FileUtils {
 
     fun getIdFromUrl(url: String?): String {
         try {
-            val sp = url?.substring(url.indexOf("resources/"))?.split("/".toRegex())
-                ?.dropLastWhile { it.isEmpty() }
-                ?.toTypedArray()
+            val sp = url?.substring(url.indexOf("resources/"))?.split("/".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()
             return sp?.get(1) ?: ""
         } catch (e: Exception) {
             e.printStackTrace()
@@ -345,6 +351,4 @@ object FileUtils {
         val nameWithoutExtension = nameWithExtension?.substringBeforeLast(".")
         return nameWithoutExtension
     }
-
-
 }

@@ -15,6 +15,7 @@ import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.PopupMenu
+import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.view.ContextThemeWrapper
@@ -342,10 +343,15 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         v.findViewById<View>(R.id.ll_image).visibility = if (showBetaFeature(Constants.KEY_NEWSADDIMAGE, context)) View.VISIBLE else View.GONE
         val llImage = v.findViewById<LinearLayout>(R.id.ll_alert_image)
         v.findViewById<View>(R.id.add_news_image).setOnClickListener { listener?.addImage(llImage) }
+        val message = v.findViewById<TextView>(R.id.cust_msg)
+        message.text = context.getString(if (isEdit) R.string.edit_post else R.string.reply)
+        val icon = v.findViewById<ImageView>(R.id.alert_icon)
+        icon.setImageResource(R.drawable.ic_edit)
+
         val news = mRealm.where(RealmNews::class.java).equalTo("id", id).findFirst()
         if (isEdit) et.setText(context.getString(R.string.message_placeholder, news?.message))
-        val dialog = AlertDialog.Builder(context, R.style.AlertDialogTheme).setTitle(if (isEdit) R.string.edit_post else R.string.reply)
-            .setIcon(R.drawable.ic_edit).setView(v)
+        val dialog = AlertDialog.Builder(context, R.style.CustomAlertDialog)
+            .setView(v)
             .setPositiveButton(R.string.button_submit) { _: DialogInterface?, _: Int ->
                 val s = et.text.toString()
                 if (isEdit) {
@@ -360,8 +366,6 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
             .create()
 
         dialog.show()
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(ContextCompat.getColor(context, R.color.colorPrimaryWhite))
-        dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(ContextCompat.getColor(context, R.color.colorPrimaryWhite))
     }
 
     private fun postReply(s: String?, news: RealmNews?) {

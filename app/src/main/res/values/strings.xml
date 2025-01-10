@@ -1,5 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="resource_not_found">Resource not found</string>
+    <string name="resource_not_found_message">The requested resource could not be found</string>
+    <string name="community_earnings">Community total earnings: **$%1$d** /$500</string>
+    <string name="your_earnings">Your total earnings: **$%1$d** /$11</string>
+    <string name="congratulations">Congratulations! Challenge Completed</string>
+    <string name="daily_voices">of 5 Daily Voices</string>
+    <string name="share_opinion">Share your opinion in Our Voices.[$2/voice]</string>
+    <string name="remember_sync">Remember to sync the mobile app.</string>
+    <string name="per_survey">%1$s per survey</string>
+    <string name="course_completed">%1$s completed!</string>
+    <string name="course_in_progress">Enter the course %1$s and complete it (%2$d of %3$d done)</string>
+    <string name="course_not_started">%1$s not started</string>
     <string name="app_name">My Planet</string>
     <string name="planet">Planet</string>
     <string name="app_project_name">myPlanet</string>
@@ -180,6 +192,9 @@
     <string name="showing_reply_of">Showing reply of:</string>
     <string name="open_date">Open Date</string>
     <string name="my_survey">mySurvey</string>
+    <string name="cannot_remove_user">User could not be removed</string>
+    <string name="no_members_task">No Team members present to assign tasks</string>
+    <string name="no_member_selected">No member selected. Please try again</string>
 
     <string-array name="level">
         <item>Beginner</item>
@@ -729,6 +744,9 @@
     <string name="return_to_the_home_tab_to_access_mylibrary">\n\nReturn to the Home tab to access myLibrary.\n</string>
     <string name="note_you_may_still_need_to_download_the_newly_added_resources">\nNote: You may still need to download the newly added resources.</string>
     <string name="self_examination">%s\nSelf Examination</string>
+    <string name="pending_survey_notification">you have a pending survey:</string>
+    <string name="task_notification">%1$s is due in %2$s</string>
+    <string name="resource_notification">You have %1$d resources not downloaded</string>
     <string name="vitals_format">
         Temperature: %1$s\n
         Pulse: %2$s\n
@@ -1201,5 +1219,13 @@
     <string name="start">start</string>
     <string name="continuation">continue</string>
     <string name="please_complete_survey">please complete the survey to finish the course</string>
+    <string name="export_cancelled">export cancelled.</string>
+    <string name="failed_to_save_csv_file">failed to save CSV file.</string>
+    <string name="csv_file_saved_successfully">CSV file saved successfully.</string>
+    <string name="share_with_team_enterprise">share with team/enterprise</string>
+    <string name="teams">teams</string>
+    <string name="community">community</string>
+    <string name="no_enterprise">enteprises not available</string>
+    <string name="local_resource">local resource</string>
 
 </resources>

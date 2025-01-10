@@ -156,9 +156,10 @@ class DiscussionListFragment : BaseTeamFragment() {
         binding.llImage.visibility = if (showBetaFeature(Constants.KEY_NEWSADDIMAGE, requireContext())) View.VISIBLE else View.GONE
         layout.hint = getString(R.string.enter_message)
         layout.editText?.setHintTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
+        binding.custMsg.text = getString(R.string.add_message)
+
         val dialog = AlertDialog.Builder(requireActivity(), R.style.CustomAlertDialog)
             .setView(binding.root)
-            .setTitle(getString(R.string.add_message))
             .setPositiveButton(getString(R.string.save)) { _: DialogInterface?, _: Int ->
                 val msg = "${layout.editText?.text}".trim { it <= ' ' }
                 if (msg.isEmpty()) {
@@ -187,8 +188,6 @@ class DiscussionListFragment : BaseTeamFragment() {
             .create()
 
         dialog.show()
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(ContextCompat.getColor(requireContext(), R.color.colorPrimaryWhite))
-        dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(ContextCompat.getColor(requireContext(), R.color.colorPrimaryWhite))
     }
 
     override fun setData(list: List<RealmNews?>?) {

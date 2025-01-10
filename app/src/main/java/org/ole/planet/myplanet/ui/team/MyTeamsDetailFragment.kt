@@ -94,8 +94,10 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
     private fun showAddMessage() {
         val alertInputBinding = AlertInputBinding.inflate(layoutInflater)
         alertInputBinding.tlInput.hint = getString(R.string.enter_message)
-        AlertDialog.Builder(requireActivity()).setView(alertInputBinding.root)
-            .setTitle(R.string.add_message)
+        alertInputBinding.custMsg.text = getString(R.string.add_message)
+
+        val dialog = AlertDialog.Builder(requireActivity(), R.style.CustomAlertDialog)
+            .setView(alertInputBinding.root)
             .setPositiveButton(R.string.save) { _: DialogInterface?, _: Int ->
                 val msg = "${alertInputBinding.tlInput.editText?.text}".trim { it <= ' ' }
                 if (msg.isEmpty()) {
@@ -110,7 +112,8 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
                 map["messagePlanetCode"] = team?.teamPlanetCode!!
                 RealmNews.createNews(map, mRealm, user, imageList)
                 rvDiscussion.adapter?.notifyItemInserted(0)
-            }.setNegativeButton(R.string.cancel, null).show()
+            }.setNegativeButton(R.string.cancel, null).create()
+        dialog.show()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

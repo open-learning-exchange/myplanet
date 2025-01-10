@@ -137,8 +137,8 @@ class AdapterCourses(private val context: Context, private var courseList: List<
                 holder.rowCourseBinding.title.text = course.courseTitle
                 holder.rowCourseBinding.description.apply {
                     text = course.description
-                    val markdownContentWithLocalPaths = AdapterCourses.prependBaseUrlToImages(
-                        course.description, "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/"
+                    val markdownContentWithLocalPaths = prependBaseUrlToImages(
+                        course.description, "file://${MainApplication.context.getExternalFilesDir(null)}/ole/"
                     )
                     setMarkdownText(this, markdownContentWithLocalPaths)
 

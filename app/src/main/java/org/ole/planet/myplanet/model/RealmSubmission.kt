@@ -2,28 +2,16 @@ package org.ole.planet.myplanet.model
 
 import android.content.Context
 import android.text.TextUtils
-import com.google.gson.Gson
-import com.google.gson.JsonObject
-import com.google.gson.JsonParser
+import com.google.gson.*
 import com.opencsv.CSVWriter
-import io.realm.Case
-import io.realm.Realm
-import io.realm.RealmList
-import io.realm.RealmObject
-import io.realm.Sort
+import io.realm.*
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.datamanager.ApiInterface
-import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.NetworkUtils
-import org.ole.planet.myplanet.utilities.TimeUtils
-import org.ole.planet.myplanet.utilities.Utilities
-import java.io.File
-import java.io.FileWriter
-import java.io.IOException
-import java.util.Date
-import java.util.UUID
+import org.ole.planet.myplanet.utilities.*
+import java.io.*
+import java.util.*
 
 open class RealmSubmission : RealmObject() {
     @PrimaryKey
@@ -182,7 +170,7 @@ open class RealmSubmission : RealmObject() {
             var submission = sub
             if (submission == null || submission.status == "complete" && (submission.type == "exam" || submission.type == "survey"))
                 submission = mRealm.createObject(RealmSubmission::class.java, UUID.randomUUID().toString())
-            submission!!.lastUpdateTime = Date().time
+            submission?.lastUpdateTime = Date().time
             return submission
         }
 
@@ -200,11 +188,25 @@ open class RealmSubmission : RealmObject() {
             }
         }
 
-        fun getNoOfSubmissionByUser(id: String?, userId: String?, mRealm: Realm): String {
-            if (id == null || userId == null) return "No Submissions Found"
+        fun generateParentId(courseId: String?, examId: String?): String? {
+            return if (!examId.isNullOrEmpty()) {
+                if (!courseId.isNullOrEmpty()) {
+                    "$examId@$courseId"
+                } else {
+                    examId
+                }
+            } else {
+                null
+            }
+        }
 
+
+        fun getNoOfSubmissionByUser(id: String?, courseId:String?, userId: String?, mRealm: Realm): String {
+            if (id == null || userId == null) return "No Submissions Found"
+            val submissionParentId= generateParentId(courseId, id)
+            if(submissionParentId.isNullOrEmpty())  return "No Submissions Found"
             val submissionCount = mRealm.where(RealmSubmission::class.java)
-                .equalTo("parentId", id)
+                .equalTo("parentId", submissionParentId)
                 .equalTo("userId", userId)
                 .equalTo("status", "complete")
                 .count().toInt()
@@ -223,15 +225,15 @@ open class RealmSubmission : RealmObject() {
                 .count().toInt()
         }
 
-        fun getRecentSubmissionDate(id: String?, userId: String?, mRealm: Realm): String {
+        fun getRecentSubmissionDate(id: String?, courseId:String?, userId: String?, mRealm: Realm): String {
             if (id == null || userId == null) return ""
-
+            val submissionParentId= generateParentId(courseId, id)
+            if(submissionParentId.isNullOrEmpty())  return ""
             val recentSubmission = mRealm.where(RealmSubmission::class.java)
-                .equalTo("parentId", id)
+                .equalTo("parentId", submissionParentId)
                 .equalTo("userId", userId)
                 .sort("startTime", Sort.DESCENDING)
                 .findFirst()
-
             return recentSubmission?.startTime?.let { TimeUtils.getFormatedDateWithTime(it) } ?: ""
         }
 

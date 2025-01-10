@@ -84,8 +84,13 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
                     startSurvey.visibility = View.GONE
                 }
 
-                tvNoSubmissions.text = RealmSubmission.getNoOfSubmissionByUser(exam.id, user?.id, mRealm)
-                tvDateCompleted.text = RealmSubmission.getRecentSubmissionDate(exam.id, user?.id, mRealm)
+//<<<<<<< HEAD
+//                tvNoSubmissions.text = RealmSubmission.getNoOfSubmissionByUser(exam.id, user?.id, mRealm)
+//                tvDateCompleted.text = RealmSubmission.getRecentSubmissionDate(exam.id, user?.id, mRealm)
+//=======
+                tvNoSubmissions.text = RealmSubmission.getNoOfSubmissionByUser(exam.id, exam.courseId, user?.id, mRealm)
+                tvDateCompleted.text = RealmSubmission.getRecentSubmissionDate(exam.id, exam.courseId, user?.id, mRealm)
+//>>>>>>> master
                 tvDate.text = formatDate(RealmStepExam.getSurveyCreationTime(exam.id!!, mRealm)!!, "MMM dd, yyyy")
             }
         }

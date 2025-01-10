@@ -28,7 +28,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.courses.AdapterCourses
 import org.ole.planet.myplanet.ui.viewer.*
@@ -68,16 +67,16 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             AdapterCourses.showRating(`object`, rating, timesRated, ratingBar)
         }
     }
-    fun getUrlsAndStartDownload(
-        lib: List<RealmMyLibrary?>, urls: ArrayList<String>
-    ) {
+    fun getUrlsAndStartDownload(lib: List<RealmMyLibrary?>, urls: ArrayList<String>) {
         for (library in lib) {
             val url = Utilities.getUrl(library)
-            if (!FileUtils.checkFileExist(url) && !TextUtils.isEmpty(url)) urls.add(url)
+            if (!FileUtils.checkFileExist(url) && !TextUtils.isEmpty(url)) {
+                urls.add(url)
+            }
         }
-        if (urls.isNotEmpty()) startDownload(urls) else Utilities.toast(
-            activity, getString(R.string.no_images_to_download)
-        )
+        if (urls.isNotEmpty()) {
+            startDownload(urls)
+        }
     }
     fun initRatingView(type: String?, id: String?, title: String?, listener: OnRatingChangeListener?) {
         timesRated = requireView().findViewById(R.id.times_rated)
@@ -123,23 +122,53 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
 
     fun openResource(items: RealmMyLibrary) {
-        val matchingItems = mRealm.where(RealmMyLibrary::class.java)
-            .equalTo("resourceLocalAddress", items.resourceLocalAddress)
-            .findAll()
-        val anyOffline = matchingItems.any { it.isResourceOffline() }
-        if (anyOffline) {
-            val offlineItem = matchingItems.first { it.isResourceOffline()}
-            openFileType(offlineItem, "offline")
-        } else {
-            if (items.isResourceOffline()) {
-                openFileType(items, "offline")
-            } else if (FileUtils.getFileExtension(items.resourceLocalAddress) == "mp4") {
-                openFileType(items,  "online")
+        if (items.openWith == "HTML") {
+            if (items.resourceOffline) {
+                val intent = Intent(activity, WebViewActivity::class.java)
+                intent.putExtra("RESOURCE_ID", items.id)
+                intent.putExtra("LOCAL_ADDRESS", items.resourceLocalAddress)
+                intent.putExtra("title", items.title)
+                startActivity(intent)
             } else {
-                val arrayList = ArrayList<String>()
-                arrayList.add(Utilities.getUrl(items))
-                startDownload(arrayList)
-                profileDbHandler.setResourceOpenCount(items, UserProfileDbHandler.KEY_RESOURCE_DOWNLOAD)
+                val resource = mRealm.where(RealmMyLibrary::class.java).equalTo("_id", items.resourceId).findFirst()
+                val downloadUrls = ArrayList<String>()
+                resource?.attachments?.forEach { attachment ->
+                    attachment.name?.let { name ->
+                        val url = Utilities.getUrl("${items.resourceId}", name)
+                        downloadUrls.add(url)
+
+                        val baseDir = File(context?.getExternalFilesDir(null), "ole/${items.resourceId}")
+                        val lastSlashIndex = name.lastIndexOf('/')
+                        if (lastSlashIndex > 0) {
+                            val dirPath = name.substring(0, lastSlashIndex)
+                            File(baseDir, dirPath).mkdirs()
+                        }
+                    }
+                }
+
+                if (downloadUrls.isNotEmpty()) {
+                    startDownload(downloadUrls)
+                }
+            }
+        } else {
+            val matchingItems = mRealm.where(RealmMyLibrary::class.java)
+                .equalTo("resourceLocalAddress", items.resourceLocalAddress)
+                .findAll()
+            val anyOffline = matchingItems.any { it.isResourceOffline() }
+            if (anyOffline) {
+                val offlineItem = matchingItems.first { it.isResourceOffline() }
+                openFileType(offlineItem, "offline")
+            } else {
+                if (items.isResourceOffline()) {
+                    openFileType(items, "offline")
+                } else if (FileUtils.getFileExtension(items.resourceLocalAddress) == "mp4") {
+                    openFileType(items, "online")
+                } else {
+                    val arrayList = ArrayList<String>()
+                    arrayList.add(Utilities.getUrl(items))
+                    startDownload(arrayList)
+                    profileDbHandler.setResourceOpenCount(items, UserProfileDbHandler.KEY_RESOURCE_DOWNLOAD)
+                }
             }
         }
     }
@@ -148,29 +177,14 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         val filenameArray = items.resourceLocalAddress?.split("\\.".toRegex())?.toTypedArray()
         val extension = filenameArray?.get(filenameArray.size - 1)
         val mimetype = Utilities.getMimeType(items.resourceLocalAddress)
-        val userId = "${model?.id}"
-
-        val existingAction = mRealm.where(RealmUserChallengeActions::class.java)
-            .equalTo("userId", userId)
-            .equalTo("resourceId", items.resourceId)
-            .findFirst()
 
         if (mimetype != null) {
             if (mimetype.contains("image")) {
                 openIntent(items, ImageViewerActivity::class.java)
-                if (existingAction == null) {
-                    RealmUserChallengeActions.createAction(mRealm, userId, items.resourceId, "resourceOpen")
-                }
             } else if (mimetype.contains("pdf")) {
                 openPdf(items)
-                if (existingAction == null) {
-                    RealmUserChallengeActions.createAction(mRealm, userId, items.resourceId, "resourceOpen")
-                }
             } else if (mimetype.contains("audio")) {
                 openIntent(items, AudioPlayerActivity::class.java)
-                if (existingAction == null) {
-                    RealmUserChallengeActions.createAction(mRealm, userId, items.resourceId, "resourceOpen")
-                }
             } else {
                 checkMoreFileExtensions(extension, items)
             }
@@ -178,35 +192,17 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
 
     private fun checkMoreFileExtensions(extension: String?, items: RealmMyLibrary) {
-        val userId = "${model?.id}"
-        val existingAction = mRealm.where(RealmUserChallengeActions::class.java)
-            .equalTo("userId", userId)
-            .equalTo("resourceId", items.resourceId)
-            .findFirst()
-
         when (extension) {
             "txt" -> {
-                if (existingAction == null) {
-                    RealmUserChallengeActions.createAction(mRealm, userId, items.resourceId, "resourceOpen")
-                }
                 openIntent(items, TextFileViewerActivity::class.java)
             }
             "md" -> {
-                if (existingAction == null) {
-                    RealmUserChallengeActions.createAction(mRealm, userId, items.resourceId, "resourceOpen")
-                }
                 openIntent(items, MarkdownViewerActivity::class.java)
             }
             "csv" -> {
-                if (existingAction == null) {
-                    RealmUserChallengeActions.createAction(mRealm, userId, items.resourceId, "resourceOpen")
-                }
                 openIntent(items, CSVViewerActivity::class.java)
             }
             "apk" -> {
-                if (existingAction == null) {
-                    RealmUserChallengeActions.createAction(mRealm, userId, items.resourceId, "resourceOpen")
-                }
                 installApk(items)
             }
             else -> Toast.makeText(activity, getString(R.string.this_file_type_is_currently_unsupported), Toast.LENGTH_LONG).show()

@@ -5,36 +5,14 @@ import android.content.SharedPreferences
 import android.text.TextUtils
 import com.google.gson.Gson
 import com.google.gson.JsonObject
-import io.realm.Realm
-import io.realm.RealmResults
+import io.realm.*
 import okhttp3.MediaType
 import okhttp3.RequestBody
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.datamanager.ApiClient.client
-import org.ole.planet.myplanet.datamanager.ApiInterface
-import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.datamanager.FileUploadService
-import org.ole.planet.myplanet.model.MyPlanet
-import org.ole.planet.myplanet.model.RealmAchievement
-import org.ole.planet.myplanet.model.RealmApkLog
-import org.ole.planet.myplanet.model.RealmCourseActivity
-import org.ole.planet.myplanet.model.RealmCourseProgress
-import org.ole.planet.myplanet.model.RealmFeedback
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmMyPersonal
-import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmNewsLog
-import org.ole.planet.myplanet.model.RealmOfflineActivity
-import org.ole.planet.myplanet.model.RealmRating
-import org.ole.planet.myplanet.model.RealmResourceActivity
-import org.ole.planet.myplanet.model.RealmSearchActivity
-import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmSubmitPhotos
-import org.ole.planet.myplanet.model.RealmTeamLog
-import org.ole.planet.myplanet.model.RealmTeamTask
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.datamanager.*
+import org.ole.planet.myplanet.model.*
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.FileUtils.fullyReadFileToBytes
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
@@ -44,11 +22,8 @@ import org.ole.planet.myplanet.utilities.NetworkUtils.getDeviceName
 import org.ole.planet.myplanet.utilities.NetworkUtils.getUniqueIdentifier
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils.getAndroidId
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
-import java.io.File
-import java.io.IOException
+import retrofit2.*
+import java.io.*
 import java.util.Date
 
 class UploadManager(var context: Context) : FileUploadService() {
@@ -80,11 +55,11 @@ class UploadManager(var context: Context) : FileUploadService() {
         val model = UserProfileDbHandler(MainApplication.context).userModel ?: return
         if (model.isManager()) return
         try {
-            apiInterface?.postDoc(Utilities.header, "application/json", Utilities.getUrl() + "/myplanet_activities", MyPlanet.getNormalMyPlanetActivities(MainApplication.context, pref, model))?.enqueue(object : Callback<JsonObject?> {
+            apiInterface?.postDoc(Utilities.header, "application/json",  "${Utilities.getUrl()}/myplanet_activities", MyPlanet.getNormalMyPlanetActivities(MainApplication.context, pref, model))?.enqueue(object : Callback<JsonObject?> {
                 override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {}
                 override fun onFailure(call: Call<JsonObject?>, t: Throwable) {}
             })
-            apiInterface?.getJsonObject(Utilities.header, Utilities.getUrl() + "/myplanet_activities/" + getAndroidId(MainApplication.context) + "@" + getUniqueIdentifier())?.enqueue(object : Callback<JsonObject?> {
+            apiInterface?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/myplanet_activities/${getAndroidId(MainApplication.context)}@${getUniqueIdentifier()}")?.enqueue(object : Callback<JsonObject?> {
                 override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
                     var `object` = response.body()
                     if (`object` != null) {
@@ -94,7 +69,7 @@ class UploadManager(var context: Context) : FileUploadService() {
                     } else {
                         `object` = MyPlanet.getMyPlanetActivities(context, pref, model)
                     }
-                    apiInterface.postDoc(Utilities.header, "application/json", Utilities.getUrl() + "/myplanet_activities", `object`).enqueue(object : Callback<JsonObject?> {
+                    apiInterface.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/myplanet_activities", `object`).enqueue(object : Callback<JsonObject?> {
                         override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
                             listener?.onSuccess("My planet activities uploaded successfully")
                         }

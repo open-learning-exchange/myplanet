@@ -33,7 +33,7 @@ object DialogUtils {
 
     fun guestDialog(context: Context) {
         val profileDbHandler = UserProfileDbHandler(context)
-        val builder = android.app.AlertDialog.Builder(context, R.style.AlertDialogTheme)
+        val builder = android.app.AlertDialog.Builder(context, R.style.CustomAlertDialog)
         builder.setTitle(context.getString(R.string.become_a_member))
         builder.setMessage(context.getString(R.string.to_access_this_feature_become_a_member))
         builder.setCancelable(false)
@@ -72,7 +72,7 @@ object DialogUtils {
 
     private fun showDialog(context: Context) {
         if (MainApplication.syncFailedCount > 3) {
-            val pd = AlertDialog.Builder(context)
+            val pd = AlertDialog.Builder(context, R.style.CustomAlertDialog)
             var message = if (NetworkUtils.isBluetoothEnabled()) "Bluetooth " else ""
             message += if (NetworkUtils.isWifiEnabled()) "Wifi " else ""
             message += context.getString(R.string.is_on_please_turn_of_to_save_battery)
@@ -96,7 +96,7 @@ object DialogUtils {
 
     fun showAlert(context: Context?, title: String?, message: String?) {
         if (context is Activity && !context.isFinishing) {
-            AlertDialog.Builder(context, R.style.AlertDialogTheme)
+            AlertDialog.Builder(context, R.style.CustomAlertDialog)
                 .setTitle(title)
                 .setMessage(message)
                 .setPositiveButton(R.string.finish, null)
@@ -105,7 +105,7 @@ object DialogUtils {
     }
 
     fun getAlertDialog(context: Context, message: String, pos: String, listener: DialogInterface.OnClickListener?): AlertDialog {
-        return AlertDialog.Builder(ContextThemeWrapper(context, R.style.AlertDialogTheme))
+        return AlertDialog.Builder(ContextThemeWrapper(context, R.style.CustomAlertDialog))
             .setMessage(message)
             .setIcon(R.drawable.courses)
             .setPositiveButton(pos, listener)
@@ -114,7 +114,7 @@ object DialogUtils {
     }
 
     fun showCloseAlert(context: Context, title: String?, message: String) {
-        AlertDialog.Builder(context)
+        AlertDialog.Builder(context, R.style.CustomAlertDialog)
             .setTitle(title)
             .setMessage(message)
             .setPositiveButton(R.string.close, null)
@@ -122,7 +122,7 @@ object DialogUtils {
     }
 
     fun getAlertDialog(context: Context, title: String, v: View): AlertDialog {
-        return AlertDialog.Builder(ContextThemeWrapper(context, R.style.AlertDialogTheme))
+        return AlertDialog.Builder(ContextThemeWrapper(context, R.style.CustomAlertDialog))
             .setTitle(title)
             .setIcon(R.drawable.ic_edit)
             .setView(v)
@@ -132,7 +132,7 @@ object DialogUtils {
     }
 
     fun getUpdateDialog(context: Context, info: MyPlanet?, progressDialog: CustomProgressDialog?): AlertDialog.Builder {
-        return AlertDialog.Builder(context)
+        return AlertDialog.Builder(context, R.style.CustomAlertDialog)
             .setTitle(R.string.new_version_of_my_planet_available)
             .setMessage(R.string.download_first_to_continue)
             .setNeutralButton(R.string.upgrade_local) { _, _ ->

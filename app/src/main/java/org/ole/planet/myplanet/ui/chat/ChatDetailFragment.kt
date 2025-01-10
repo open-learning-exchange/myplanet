@@ -340,8 +340,6 @@ class ChatDetailFragment : Fragment() {
                         }
                         (requireActivity() as? DashboardActivity)?.refreshChatHistoryList()
                     }
-
-                    RealmUserChallengeActions.createAction(mRealm, "${user?.id}", "${response.body()?.couchDBResponse?.id}", "ai research")
                 } else {
                     fragmentChatDetailBinding.textGchatIndicator.visibility = View.VISIBLE
                     fragmentChatDetailBinding.textGchatIndicator.text = if (response.message() == "null"){

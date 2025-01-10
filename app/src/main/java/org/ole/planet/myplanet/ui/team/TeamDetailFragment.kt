@@ -41,8 +41,34 @@ class TeamDetailFragment : BaseTeamFragment() {
         fragmentTeamDetailBinding.subtitle.text = team?.type
 
         if (!isMyTeam) {
-            fragmentTeamDetailBinding.llActionButtons.visibility = View.GONE
+            fragmentTeamDetailBinding.btnAddDoc.isEnabled = false
+            fragmentTeamDetailBinding.btnAddDoc.visibility = View.GONE
+            val currentTeam = team
+            if (currentTeam != null && !currentTeam._id.isNullOrEmpty()) {
+
+                val isUserRequested = currentTeam.requested(user?.id, mRealm)
+
+                if (isUserRequested) {
+                    fragmentTeamDetailBinding.btnLeave.text = getString(R.string.requested)
+                    fragmentTeamDetailBinding.btnLeave.isEnabled = false
+                } else {
+                    fragmentTeamDetailBinding.btnLeave.text = getString(R.string.join)
+                    fragmentTeamDetailBinding.btnLeave.setOnClickListener {
+                        RealmMyTeam.requestToJoin(currentTeam._id!!, user, mRealm)
+                        fragmentTeamDetailBinding.btnLeave.text = getString(R.string.requested)
+                        fragmentTeamDetailBinding.btnLeave.isEnabled = false
+                    }
+                }
+            } else {
+                throw IllegalStateException("Team or team ID is null, cannot proceed.")
+            }
+
         } else {
+
+            fragmentTeamDetailBinding.btnAddDoc.isEnabled = true
+            fragmentTeamDetailBinding.btnAddDoc.visibility = View.VISIBLE
+            fragmentTeamDetailBinding.btnLeave.isEnabled = true
+            fragmentTeamDetailBinding.btnLeave.visibility = View.VISIBLE
             fragmentTeamDetailBinding.btnLeave.setOnClickListener {
                 AlertDialog.Builder(requireContext()).setMessage(R.string.confirm_exit)
                     .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->

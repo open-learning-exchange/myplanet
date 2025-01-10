@@ -20,9 +20,12 @@ import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import io.realm.Realm
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.model.RealmUserChallengeActions
@@ -46,6 +49,8 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
     lateinit var navigationView: BottomNavigationView
     var doubleBackToExitPressedOnce = false
     private lateinit var goOnline: MenuItem
+    var c = 0
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         profileDbHandler = UserProfileDbHandler(this)
@@ -61,11 +66,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
             4 -> openEnterpriseFragment()
             3 -> openCallFragment(TeamFragment(), "survey")
             5 -> {
-                if (profileDbHandler.userModel?.isGuest() == true) {
-                    showGuestUserDialog()
-                } else {
-                    openCallFragment(CommunityTabFragment(), "community")
-                }
+                openCallFragment(CommunityTabFragment(), "community")
             }
         }
     }
@@ -85,14 +86,43 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
     }
 
     fun openCallFragment(newFragment: Fragment, tag: String?) {
-        if (!isDestroyed && !isFinishing) {
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, newFragment, tag)
-                .addToBackStack(null)
-                .commitAllowingStateLoss()
+        val fragmentManager = supportFragmentManager
+        if(c<2){
+            c=0
+        }
+        val existingFragment = fragmentManager.findFragmentByTag(tag)
+        if (tag == "") {
+            c++
+            if(c>2){
+                c--
+                fragmentManager.popBackStack(tag, 0)
+            }else{
+                fragmentManager.beginTransaction()
+                    .replace(R.id.fragment_container, newFragment, tag)
+                    .addToBackStack(tag)
+                    .commit()
+            }
+        } else {
+            if (existingFragment != null && existingFragment.isVisible) {
+                return
+            } else if (existingFragment != null) {
+                if(c>0 && c>2){
+                    c=0
+                }
+                fragmentManager.popBackStack(tag, 0)
+            } else {
+                if(c>0 && c>2){
+                    c=0
+                }
+                if(tag!="") {
+                    fragmentManager.beginTransaction()
+                        .replace(R.id.fragment_container, newFragment, tag)
+                        .addToBackStack(tag)
+                        .commit()
+                }
+            }
         }
     }
-
     override fun onPrepareOptionsMenu(menu: Menu): Boolean {
         goOnline.isVisible = showBetaFeature(Constants.KEY_SYNC, this)
         return super.onPrepareOptionsMenu(menu)
@@ -121,10 +151,24 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
     }
 
     fun logSyncInSharedPrefs() {
-        lifecycleScope.launch {
-            if (isServerReachable(Utilities.getUrl())) {
-                startUpload("dashboard")
-                RealmUserChallengeActions.createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
+        lifecycleScope.launch(Dispatchers.IO + SupervisorJob()) {
+            try {
+                val isReachable = isServerReachable(Utilities.getUrl())
+                if (isReachable) {
+                    withContext(Dispatchers.Main) {
+                        startUpload("")
+                    }
+
+                    withContext(Dispatchers.IO) {
+                        Realm.getDefaultInstance().use { realm ->
+                            realm.executeTransaction {
+                                RealmUserChallengeActions.createAction(realm, "${profileDbHandler.userModel?.id}", null, "sync")
+                            }
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }

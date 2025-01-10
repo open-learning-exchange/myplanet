@@ -54,7 +54,7 @@
                                 android:layout_height="wrap_content"
                                 android:layout_gravity="center_vertical"
                                 android:padding="@dimen/padding_normal"
-                                android:textColor="@color/md_black_1000"
+                                android:textColor="@color/daynight_textColor"
                                 android:textSize="@dimen/text_size_large"
                                 android:textStyle="bold" />
                             <TextView
@@ -63,7 +63,7 @@
                                 android:layout_height="wrap_content"
                                 android:layout_gravity="center_vertical"
                                 android:padding="@dimen/padding_normal"
-                                android:textColor="@color/md_black_1000"
+                                android:textColor="@color/daynight_textColor"
                                 android:textSize="16sp"
                                 android:textStyle="bold" />
                         </LinearLayout>
@@ -71,7 +71,7 @@
                         <View
                             android:layout_width="@dimen/_1dp"
                             android:layout_height="wrap_content"
-                            android:background="@color/colorPrimaryDark"
+                            android:background="@color/daynight_textColor"
                             android:visibility="gone" />
                         <View
                             android:layout_width="@dimen/_1dp"
@@ -84,7 +84,7 @@
                             android:layout_gravity="center_vertical"
                             android:gravity="center"
                             android:padding="@dimen/padding_normal"
-                            android:textColor="@color/md_black_1000"
+                            android:textColor="@color/daynight_textColor"
                             android:textSize="16sp"
                             android:textStyle="bold"
                             android:visibility="gone" />
@@ -100,7 +100,7 @@
                             android:layout_gravity="center_vertical"
                             android:gravity="center"
                             android:padding="@dimen/padding_normal"
-                            android:textColor="@color/md_black_1000"
+                            android:textColor="@color/daynight_textColor"
                             android:textSize="16sp"
                             android:textStyle="bold" />
                     </LinearLayout>
