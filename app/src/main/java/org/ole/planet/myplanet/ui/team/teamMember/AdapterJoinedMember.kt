@@ -72,8 +72,13 @@ class AdapterJoinedMember(
 
         holder.itemView.setOnClickListener {
             val activity = it.context as AppCompatActivity
+            val userName = if ("${member.firstName} ${member.lastName}".trim().isBlank()) {
+                member.name
+            } else {
+                "${member.firstName} ${member.lastName}".trim()
+            }
             val fragment = MemberDetailFragment.newInstance(
-                "${member.firstName} ${member.lastName}",
+                userName.toString(),
                 member.email.toString(),
                 member.dob.toString().substringBefore("T"),
                 member.language.toString(),
