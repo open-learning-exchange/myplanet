@@ -10,8 +10,10 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
+import android.widget.ListView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.preference.Preference
 import androidx.preference.Preference.OnPreferenceChangeListener
@@ -23,6 +25,7 @@ import io.realm.Realm
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.MainApplication.Companion.mRealm
 import org.ole.planet.myplanet.MainApplication.Companion.setThemeMode
 import org.ole.planet.myplanet.R
@@ -107,7 +110,7 @@ class SettingActivity : AppCompatActivity() {
 
             val darkMode = findPreference<Preference>("dark_mode")
             darkMode?.setOnPreferenceClickListener {
-                darkMode()
+                darkMode(requireActivity())
                 true
             }
 
@@ -267,36 +270,56 @@ class SettingActivity : AppCompatActivity() {
             dialog.show()
         }
 
-        private fun darkMode() {
-            val options = arrayOf(getString(R.string.dark_mode_off), getString(R.string.dark_mode_on), getString(R.string.dark_mode_follow_system))
-            val currentMode = getCurrentThemeMode()
-            val checkedItem = when (currentMode) {
-                ThemeMode.LIGHT -> 0
-                ThemeMode.DARK -> 1
-                else -> 2
+        companion object {
+            fun darkMode(context: Context) {
+                val options = arrayOf(context.getString(R.string.dark_mode_off), context.getString(R.string.dark_mode_on),context.getString(R.string.dark_mode_follow_system))
+                val currentMode = getCurrentThemeMode(context)
+                val checkedItem = when (currentMode) {
+                    ThemeMode.LIGHT -> 0
+                    ThemeMode.DARK -> 1
+                    else -> 2
+                }
+
+                val builder = AlertDialog.Builder(context, R.style.AlertDialogTheme)
+                    .setTitle(context.getString(R.string.select_theme_mode))
+                    .setSingleChoiceItems(ArrayAdapter(context, R.layout.checked_list_item, options), checkedItem) { dialog, which ->
+                        val selectedMode = when (which) {
+                            0 -> ThemeMode.LIGHT
+                            1 -> ThemeMode.DARK
+                            2 -> ThemeMode.FOLLOW_SYSTEM
+                            else -> ThemeMode.FOLLOW_SYSTEM
+                        }
+                        setThemeMode(context, selectedMode)
+                        dialog.dismiss()
+                    }
+                    .setNegativeButton(R.string.cancel, null)
+
+                val dialog = builder.create()
+                dialog.show()
+
+                val window = dialog.window
+                window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
             }
 
-            val builder = AlertDialog.Builder(requireContext())
-                .setTitle(getString(R.string.select_theme_mode))
-                .setSingleChoiceItems(ArrayAdapter(requireContext(), R.layout.checked_list_item, options), checkedItem) { dialog, which ->
-                    val selectedMode = when (which) {
-                        0 -> ThemeMode.LIGHT
-                        1 -> ThemeMode.DARK
-                        2 -> ThemeMode.FOLLOW_SYSTEM
-                        else -> ThemeMode.FOLLOW_SYSTEM
-                    }
-                    setThemeMode(selectedMode)
-                    dialog.dismiss()
+            private fun getCurrentThemeMode(context: Context): String {
+                val sharedPreferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                return sharedPreferences.getString("theme_mode", ThemeMode.FOLLOW_SYSTEM) ?: ThemeMode.FOLLOW_SYSTEM
+            }
+
+            private fun setThemeMode(context: Context, themeMode: String) {
+                val sharedPreferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                with(sharedPreferences.edit()) {
+                    putString("theme_mode", themeMode)
+                    apply()
                 }
-                .setNegativeButton(R.string.cancel, null)
-
-            val dialog = builder.create()
-            dialog.show()
-        }
-
-        private fun getCurrentThemeMode(): String {
-            val sharedPreferences = requireContext().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-            return sharedPreferences.getString("theme_mode", ThemeMode.FOLLOW_SYSTEM) ?: ThemeMode.FOLLOW_SYSTEM
+                AppCompatDelegate.setDefaultNightMode(
+                    when (themeMode) {
+                        ThemeMode.LIGHT -> AppCompatDelegate.MODE_NIGHT_NO
+                        ThemeMode.DARK -> AppCompatDelegate.MODE_NIGHT_YES
+                        else -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+                    }
+                )
+            }
         }
     }
 

@@ -63,7 +63,7 @@
                     <Button
                         android:id="@+id/btn_leave"
                         style="@style/YellowButtons"
-                        android:layout_width="59dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
                         android:text="@string/leave" />
