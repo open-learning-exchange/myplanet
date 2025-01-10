@@ -5,6 +5,7 @@ import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.content.res.Configuration
 import android.os.Bundle
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
@@ -55,7 +56,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         private const val AUTO_SYNC_WORK_TAG = "autoSyncWork"
         private const val STAY_ONLINE_WORK_TAG = "stayOnlineWork"
         private const val TASK_NOTIFICATION_WORK_TAG = "taskNotificationWork"
-        lateinit var context: Context 
+        lateinit var context: Context
         lateinit var mRealm: Realm
         lateinit var service: DatabaseService
         var preferences: SharedPreferences? = null
@@ -111,10 +112,10 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         }
 
         fun setThemeMode(themeMode: String) {
-            val sharedPreferences = context.getSharedPreferences("app_preferences", MODE_PRIVATE)
+            val sharedPreferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             with(sharedPreferences.edit()) {
                 putString("theme_mode", themeMode)
-                apply()
+                commit()
             }
             applyThemeMode(themeMode)
         }
@@ -218,10 +219,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         registerActivityLifecycleCallbacks(this)
         onAppStarted()
 
-        val sharedPreferences = getSharedPreferences("app_preferences", MODE_PRIVATE)
-        val themeMode = sharedPreferences.getString("theme_mode", ThemeMode.FOLLOW_SYSTEM)
-
-        applyThemeMode(themeMode)
+        val savedThemeMode = getCurrentThemeMode()
+        applyThemeMode(savedThemeMode)
 
         isNetworkConnectedFlow.onEach { isConnected ->
             if (isConnected) {
@@ -274,8 +273,17 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
     override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
         super.onConfigurationChanged(newConfig)
-        LocaleHelper.onAttach(this)
-        val currentNightMode = newConfig.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
+        val currentNightMode = context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+        val isSystemNight= when (currentNightMode) {
+            Configuration.UI_MODE_NIGHT_YES -> true
+            Configuration.UI_MODE_NIGHT_NO -> false
+            else -> false
+        }
+        val savedThemeMode = getCurrentThemeMode()
+        if (savedThemeMode != ThemeMode.FOLLOW_SYSTEM) {
+            return
+        }
+
         when (currentNightMode) {
             android.content.res.Configuration.UI_MODE_NIGHT_NO -> {
                 applyThemeMode(ThemeMode.LIGHT)
@@ -284,6 +292,11 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                 applyThemeMode(ThemeMode.DARK)
             }
         }
+    }
+
+    private fun getCurrentThemeMode(): String {
+        val sharedPreferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        return sharedPreferences.getString("theme_mode", ThemeMode.FOLLOW_SYSTEM) ?: ThemeMode.FOLLOW_SYSTEM
     }
 
     override fun onActivityCreated(activity: Activity, bundle: Bundle?) {}
@@ -320,7 +333,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             }
         }
     }
-    
+
     private fun onAppBackgrounded() {}
 
     private fun onAppStarted() {

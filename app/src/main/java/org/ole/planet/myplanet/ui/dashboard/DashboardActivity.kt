@@ -161,8 +161,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         createDrawer()
         if (!(user?.id?.startsWith("guest") == true && profileDbHandler.offlineVisits >= 3) && resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
             result?.openDrawer()
-        } //Opens drawer by default
-        result?.stickyFooter?.setPadding(0, 0, 0, 0) // moves logout button to the very bottom of the drawer. Without it, the "logout" button suspends a little.
+        }
+        result?.stickyFooter?.setPadding(0, 0, 0, 0)
         result?.actionBarDrawerToggle?.isDrawerIndicatorEnabled = true
         dl = result?.drawerLayout
         topbarSetting()
@@ -178,7 +178,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         activityDashboardBinding.appBarBell.ivSync.setOnClickListener {
             lifecycleScope.launch {
                 if (isServerReachable(Utilities.getUrl())) {
-                    startUpload("dashboard")
+                    startUpload("")
                 }
             }
         }
@@ -187,25 +187,29 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             when (item.itemId) {
                 R.id.action_chat -> {
                     if (user?.id?.startsWith("guest") == false) {
-                        openCallFragment(ChatHistoryListFragment())
+                        openCallFragment(
+                            ChatHistoryListFragment(),
+                            ChatHistoryListFragment::class.java.simpleName
+                        )
                     } else {
                         guestDialog(this)
                     }
                 }
                 R.id.menu_goOnline -> wifiStatusSwitch()
-                R.id.action_sync -> {
-                    logSyncInSharedPrefs()
-                }
+                R.id.action_sync -> logSyncInSharedPrefs()
                 R.id.action_feedback -> {
                     if (user?.id?.startsWith("guest") == false) {
-                        openCallFragment(FeedbackListFragment())
+                        openCallFragment(
+                            FeedbackListFragment(),
+                            FeedbackListFragment::class.java.simpleName
+                        )
                     } else {
                         guestDialog(this)
                     }
                 }
                 R.id.action_settings -> startActivity(Intent(this@DashboardActivity, SettingActivity::class.java))
-                R.id.action_disclaimer -> openCallFragment(DisclaimerFragment())
-                R.id.action_about -> openCallFragment(AboutFragment())
+                R.id.action_disclaimer -> openCallFragment(DisclaimerFragment(), DisclaimerFragment::class.java.simpleName)
+                R.id.action_about -> openCallFragment(AboutFragment(), AboutFragment::class.java.simpleName)
                 R.id.action_logout -> logout()
                 else -> {}
             }
@@ -245,10 +249,13 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
         })
 
-        val startTime = 1733011200000
+        val startTime = 1730419200000
+        val endTime = 1734307200000
+
         val commVoiceResults = mRealm.where(RealmNews::class.java)
             .equalTo("userId", user?.id)
             .greaterThanOrEqualTo("time", startTime)
+            .lessThanOrEqualTo("time", endTime)
             .findAll()
 
         val commVoice = commVoiceResults.filter { realmNews ->
@@ -270,6 +277,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
         val allCommVoiceResults = mRealm.where(RealmNews::class.java)
             .greaterThanOrEqualTo("time", startTime)
+            .lessThanOrEqualTo("time", endTime)
             .findAll()
 
         val allCommVoice = allCommVoiceResults.filter { realmNews ->
@@ -309,7 +317,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
         val hasUnfinishedSurvey = mRealm.where(RealmStepExam::class.java)
             .equalTo("courseId", courseId)
-            .equalTo("type", "surveys")
+            .equalTo("type", "survey")
             .findAll()
             .any { survey -> !TakeCourseFragment.existsSubmission(mRealm, survey.id, "survey") }
 
@@ -324,8 +332,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
         val today = LocalDate.now()
         if (user?.id?.startsWith("guest") == false) {
-            val endDate = LocalDate.of(today.year, 12, 31)
-            if (today.isBefore(endDate)) {
+            val endDate = LocalDate.of(2025, 1, 16)
+            if (today.isAfter(LocalDate.of(2024, 11, 30)) && today.isBefore(endDate)) {
                 if (settings.getString("serverURL", "") in validUrls) {
                     val course = mRealm.where(RealmMyCourse::class.java)
                         .equalTo("courseId", courseId)
@@ -336,13 +344,13 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                         val max = progress.get("max").asInt
                         val current = progress.get("current").asInt
                         val courseStatus = if (current == max) {
-                            "$courseName terminado!"
+                            getString(R.string.course_completed, courseName)
                         } else {
-                            "Ingresa al curso $courseName completalo ($current de $max hecho)"
+                            getString(R.string.course_in_progress, courseName, current, max)
                         }
                         challengeDialog(uniqueDates.size, courseStatus, allUniqueDates.size, hasUnfinishedSurvey)
                     } else {
-                        challengeDialog(uniqueDates.size, "$courseName no iniciado", allUniqueDates.size, hasUnfinishedSurvey)
+                        challengeDialog(uniqueDates.size, getString(R.string.course_not_started, courseName), allUniqueDates.size, hasUnfinishedSurvey)
                     }
                 }
             }
@@ -372,27 +380,25 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         if (isCompleted && !hasShownCongrats) {
             editor.putBoolean("has_shown_congrats", true).apply()
             val markdownContent = """
-                Ingresos totales de la comunidad: **$${calculateCommunityProgress(allVoiceCount, hasUnfinishedSurvey)}** /$500
-
-                Tus ganancias totales: **$${calculateIndividualProgress(voiceCount, hasUnfinishedSurvey)}** /$11
-                ### ¡Felicidades! Reto Completado <br/>
-                """.trimIndent()
+        ${getString(R.string.community_earnings, calculateCommunityProgress(allVoiceCount, hasUnfinishedSurvey))}
+        ${getString(R.string.your_earnings, calculateIndividualProgress(voiceCount, hasUnfinishedSurvey))}
+        ### ${getString(R.string.congratulations)} <br/>
+    """.trimIndent()
             MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount, allVoiceCount, hasUnfinishedSurvey).show(supportFragmentManager, "markdown_dialog")
         } else {
             val cappedVoiceCount = minOf(voiceCount, 5)
             val voicesText = if (cappedVoiceCount > 0) {
-                "$cappedVoiceCount de 5 Voces diarias"
+                "$cappedVoiceCount ${getString(R.string.daily_voices)}"
             } else {
                 ""
             }
             val markdownContent = """
-                Ingresos totales de la comunidad: **$${calculateCommunityProgress(allVoiceCount, hasUnfinishedSurvey)}** /$500
-
-                Tus ganancias totales: **$${calculateIndividualProgress(voiceCount, hasUnfinishedSurvey)}** /$11
-                ### $courseTaskDone $1 por encuesta <br/>
-                ### $voiceTaskDone Comparte tu opinión en Nuestras Voces.[$2/voz] $voicesText <br/>
-                ### $syncTaskDone Recuerda sincronizar la aplicación móvil. <br/>
-                """.trimIndent()
+        ${getString(R.string.community_earnings, calculateCommunityProgress(allVoiceCount, hasUnfinishedSurvey))}
+        ${getString(R.string.your_earnings, calculateIndividualProgress(voiceCount, hasUnfinishedSurvey))}
+        ### ${getString(R.string.per_survey, courseTaskDone)} <br/>
+        ### ${getString(R.string.share_opinion)} $voicesText <br/>
+        ### ${getString(R.string.remember_sync)} <br/>
+    """.trimIndent()
             MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount, allVoiceCount, hasUnfinishedSurvey)
                 .show(supportFragmentManager, "markdown_dialog")
         }
@@ -467,7 +473,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         val pendingSurveys = getPendingSurveys(user?.id)
         val surveyTitles = getSurveyTitlesFromSubmissions(pendingSurveys)
         surveyTitles.forEach { title ->
-            createNotificationIfNotExists("survey", "you have a pending survey: $title", title)
+            createNotificationIfNotExists("survey", "$title", title)
         }
 
         val tasks = mRealm.where(RealmTeamTask::class.java)
@@ -476,18 +482,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             .equalTo("assignee", user?.id)
             .findAll()
         tasks.forEach { task ->
-            createNotificationIfNotExists("task", "${task.title} is due in ${formatDate(task.deadline)}", task.id)
+            createNotificationIfNotExists("task","${task.title} ${formatDate(task.deadline)}", task.id)
         }
 
         val storageRatio = totalAvailableMemoryRatio
-        when {
-            storageRatio <= 10 -> {
-                createNotificationIfNotExists("storage", "${getString(R.string.storage_critically_low)} $storageRatio% ${getString(R.string.available_please_free_up_space)}", "storage")
-            }
-            storageRatio <= 40 -> {
-                createNotificationIfNotExists("storage", "${getString(R.string.storage_running_low)} $storageRatio% ${getString(R.string.available)}", "storage")
-            }
-        }
+        createNotificationIfNotExists("storage", "$storageRatio" , "storage")
     }
 
     private fun updateResourceNotification() {
@@ -499,10 +498,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 .findFirst()
 
             if (existingNotification != null) {
-                existingNotification.message = "you have $resourceCount resources not downloaded"
+                existingNotification.message = "$resourceCount"
                 existingNotification.relatedId = "$resourceCount"
             } else {
-                createNotificationIfNotExists("resource", "you have $resourceCount resources not downloaded", "$resourceCount")
+                createNotificationIfNotExists("resource", "$resourceCount", "$resourceCount")
             }
         } else {
             mRealm.where(RealmNotification::class.java)
@@ -557,8 +556,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun getSurveyTitlesFromSubmissions(submissions: List<RealmSubmission>): List<String> {
         val titles = mutableListOf<String>()
         submissions.forEach { submission ->
+            val examId = submission.parentId?.split("@")?.firstOrNull() ?: ""
             val exam = mRealm.where(RealmStepExam::class.java)
-                .equalTo("id", submission.parentId)
+                .equalTo("id", examId)
                 .findFirst()
             exam?.name?.let { titles.add(it) }
         }
@@ -735,6 +735,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 .addDrawerItems(*drawerItems).addStickyDrawerItems(*drawerItemsFooter)
                 .withOnDrawerItemClickListener { _: View?, _: Int, drawerItem: IDrawerItem<*, *>? ->
                     if (drawerItem != null) {
+                        result?.setSelection(drawerItem.identifier, false)
                         menuAction((drawerItem as Nameable<*>).name.textRes)
                     }
                     false
@@ -787,7 +788,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     override fun openCallFragment(f: Fragment) {
-        openCallFragment(f, "")
+        val tag = f::class.java.simpleName
+        openCallFragment(f,tag)
     }
 
     override fun openLibraryDetailFragment(library: RealmMyLibrary?) {
@@ -816,7 +818,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             ResourcesCompat.getDrawable(resources, R.drawable.mycourses, null)?.let { menuImageList.add(it) }
             ResourcesCompat.getDrawable(resources, R.drawable.team, null)?.let { menuImageList.add(it) }
             ResourcesCompat.getDrawable(resources, R.drawable.business, null)?.let { menuImageList.add(it) }
-            ResourcesCompat.getDrawable(resources, R.drawable.survey, null)?.let { menuImageList.add(it) }
+            ResourcesCompat.getDrawable(resources, R.drawable.community, null)?.let { menuImageList.add(it) }
             ResourcesCompat.getDrawable(resources, R.drawable.survey, null)?.let { menuImageList.add(it) }
             return arrayOf(
                 changeUX(R.string.menu_myplanet, menuImageList[0]).withIdentifier(0),
@@ -849,6 +851,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
+        item.isChecked = true
         when (item.itemId) {
             R.id.menu_library -> {
                 openCallFragment(ResourcesFragment())
@@ -877,6 +880,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 openCallFragment(BellDashboardFragment())
             }
         }
+        item.isChecked = true
         return true
     }
 

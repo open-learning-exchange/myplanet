@@ -49,6 +49,8 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
     lateinit var navigationView: BottomNavigationView
     var doubleBackToExitPressedOnce = false
     private lateinit var goOnline: MenuItem
+    var c = 0
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         profileDbHandler = UserProfileDbHandler(this)
@@ -84,14 +86,43 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
     }
 
     fun openCallFragment(newFragment: Fragment, tag: String?) {
-        if (!isDestroyed && !isFinishing) {
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, newFragment, tag)
-                .addToBackStack(null)
-                .commitAllowingStateLoss()
+        val fragmentManager = supportFragmentManager
+        if(c<2){
+            c=0
+        }
+        val existingFragment = fragmentManager.findFragmentByTag(tag)
+        if (tag == "") {
+            c++
+            if(c>2){
+                c--
+                fragmentManager.popBackStack(tag, 0)
+            }else{
+                fragmentManager.beginTransaction()
+                    .replace(R.id.fragment_container, newFragment, tag)
+                    .addToBackStack(tag)
+                    .commit()
+            }
+        } else {
+            if (existingFragment != null && existingFragment.isVisible) {
+                return
+            } else if (existingFragment != null) {
+                if(c>0 && c>2){
+                    c=0
+                }
+                fragmentManager.popBackStack(tag, 0)
+            } else {
+                if(c>0 && c>2){
+                    c=0
+                }
+                if(tag!="") {
+                    fragmentManager.beginTransaction()
+                        .replace(R.id.fragment_container, newFragment, tag)
+                        .addToBackStack(tag)
+                        .commit()
+                }
+            }
         }
     }
-
     override fun onPrepareOptionsMenu(menu: Menu): Boolean {
         goOnline.isVisible = showBetaFeature(Constants.KEY_SYNC, this)
         return super.onPrepareOptionsMenu(menu)
@@ -125,7 +156,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
                 val isReachable = isServerReachable(Utilities.getUrl())
                 if (isReachable) {
                     withContext(Dispatchers.Main) {
-                        startUpload("dashboard")
+                        startUpload("")
                     }
 
                     withContext(Dispatchers.IO) {

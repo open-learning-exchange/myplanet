@@ -98,11 +98,11 @@ class UploadManager(var context: Context) : FileUploadService() {
         val model = UserProfileDbHandler(MainApplication.context).userModel ?: return
         if (model.isManager()) return
         try {
-            apiInterface?.postDoc(Utilities.header, "application/json", Utilities.getUrl() + "/myplanet_activities", getNormalMyPlanetActivities(MainApplication.context, pref, model))?.enqueue(object : Callback<JsonObject?> {
+            apiInterface?.postDoc(Utilities.header, "application/json",  "${Utilities.getUrl()}/myplanet_activities", getNormalMyPlanetActivities(MainApplication.context, pref, model))?.enqueue(object : Callback<JsonObject?> {
                 override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {}
                 override fun onFailure(call: Call<JsonObject?>, t: Throwable) {}
             })
-            apiInterface?.getJsonObject(Utilities.header, Utilities.getUrl() + "/myplanet_activities/" + getAndroidId(MainApplication.context) + "@" + getUniqueIdentifier())?.enqueue(object : Callback<JsonObject?> {
+            apiInterface?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/myplanet_activities/${getAndroidId(MainApplication.context)}@${getUniqueIdentifier()}")?.enqueue(object : Callback<JsonObject?> {
                 override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
                     var `object` = response.body()
                     if (`object` != null) {
@@ -112,7 +112,7 @@ class UploadManager(var context: Context) : FileUploadService() {
                     } else {
                         `object` = getMyPlanetActivities(context, pref, model)
                     }
-                    apiInterface.postDoc(Utilities.header, "application/json", Utilities.getUrl() + "/myplanet_activities", `object`).enqueue(object : Callback<JsonObject?> {
+                    apiInterface.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/myplanet_activities", `object`).enqueue(object : Callback<JsonObject?> {
                         override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
                             listener?.onSuccess("My planet activities uploaded successfully")
                         }

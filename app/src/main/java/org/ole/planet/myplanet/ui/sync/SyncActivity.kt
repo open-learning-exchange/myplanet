@@ -22,11 +22,12 @@ import com.afollestad.materialdialogs.*
 import io.realm.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import org.ole.planet.myplanet.BuildConfig
-import org.ole.planet.myplanet.MainApplication.Companion.applicationScope
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
@@ -52,6 +53,7 @@ import org.ole.planet.myplanet.utilities.DialogUtils.showWifiSettingDialog
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utilities.NetworkUtils.extractProtocol
 import org.ole.planet.myplanet.utilities.NetworkUtils.getCustomDeviceName
+import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
 import org.ole.planet.myplanet.utilities.Utilities.getRelativeTime
 import org.ole.planet.myplanet.utilities.Utilities.openDownloadService
@@ -397,7 +399,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 syncIconDrawable.stop()
                 syncIconDrawable.selectDrawable(0)
                 syncIcon.invalidateDrawable(syncIconDrawable)
-                applicationScope.launch {
+                MainApplication.applicationScope.launch {
                     createLog("synced successfully")
                 }
                 editor.putBoolean("firstSync", true).apply()
@@ -468,6 +470,30 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         handler.onDestroy()
         editor.putBoolean(Constants.KEY_LOGIN, true).commit()
         openDashboard()
+
+        isNetworkConnectedFlow.onEach { isConnected ->
+            if (isConnected) {
+                val serverUrl = settings.getString("serverURL", "")
+                if (!serverUrl.isNullOrEmpty()) {
+                    MainApplication.applicationScope.launch(Dispatchers.IO) {
+                        val canReachServer = MainApplication.Companion.isServerReachable(serverUrl)
+                        if (canReachServer) {
+                            withContext(Dispatchers.Main) {
+                                startUpload("login")
+                            }
+                            withContext(Dispatchers.Default) {
+                                val backgroundRealm = Realm.getDefaultInstance()
+                                try {
+                                    TransactionSyncManager.syncDb(backgroundRealm, "login_activities")
+                                } finally {
+                                    backgroundRealm.close()
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }.launchIn(MainApplication.applicationScope)
     }
 
 //    fun settingDialog() {
@@ -853,7 +879,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     isServerReachable(processedUrl)
                 } else if (forceSync) {
                     isServerReachable(processedUrl)
-                    startUpload("login")
+                    startUpload("")
                 }
             }
         } catch (e: Exception) {

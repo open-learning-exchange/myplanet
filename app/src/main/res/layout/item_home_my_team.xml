@@ -48,6 +48,6 @@
             android:layout_gravity="center"
             android:gravity="center"
             android:padding="@dimen/padding_normal"
-            android:textColor="@color/md_black_1000" />
+            android:textColor="@color/daynight_textColor" />
     </LinearLayout>
 </FrameLayout>

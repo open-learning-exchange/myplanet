@@ -1,5 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="resource_not_found">Ilaha lama helin</string>
+    <string name="resource_not_found_message">Ilaha la codsaday waa la heli waayay</string>
+    <string name="community_earnings">Dakhliga guud ee bulshada: **$%1$d** /$500</string>
+    <string name="your_earnings">Dakhligaaga guud: **$%1$d** /$11</string>
+    <string name="congratulations">Hambalyo! Tartanka waa la dhameeyay</string>
+    <string name="daily_voices">5 Cod maalinle ah</string>
+    <string name="share_opinion">La wadaag fikradaada Codkayaga.[$2/cod]</string>
+    <string name="remember_sync">Xusuusnow inaad la socodsiiso codsiga mobilka.</string>
+    <string name="per_survey">%1$s halkii sahamin</string>
+    <string name="course_completed">%1$s dhameystiran!</string>
+    <string name="course_in_progress">Geli koorsada %1$s dhameystir (%2$d ka %3$d la sameeyay)</string>
+    <string name="course_not_started">%1$s lama bilaabin</string>
     <string name="app_name">My Planet</string>
     <string name="planet">Meerah</string>
     <string name="app_project_name">myPlanet</string>
@@ -732,6 +744,9 @@
     <string name="return_to_the_home_tab_to_access_mylibrary">\n\nKu noqo tabka Home si aad uga heli karto maktabaddaaga.\n</string>
     <string name="note_you_may_still_need_to_download_the_newly_added_resources">\nNote: Amaan waxaad u baahan tahay inaad ku diyaariyey khadkaan cusub ee la soo kiciyey.</string>
     <string name="self_examination">%s\nIs-imtixaanid</string>
+    <string name="pending_survey_notification">waxaad leedahay su\'aal weydiin sugaya:</string>
+    <string name="task_notification">%1$s waa inuu dhamaadaa %2$s</string>
+    <string name="resource_notification">Waxaad haysataa %1$d agab aan la soo dejisan</string>
     <string name="vitals_format">
     Heerkulka: %1$s\n
     Garaaca wadnaha: %2$s\n
@@ -1210,5 +1225,7 @@
     <string name="share_with_team_enterprise">la wadaag kooxda/ganacsiga</string>
     <string name="teams">kooxo</string>
     <string name="community">bulsho</string>
+    <string name="no_enterprise">ganacsiyo lama heli karo</string>
+    <string name="local_resource">kheyraadka deegaanka</string>
 
 </resources>

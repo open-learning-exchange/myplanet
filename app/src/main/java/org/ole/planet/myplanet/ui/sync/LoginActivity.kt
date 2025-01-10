@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.databinding.*
 import org.ole.planet.myplanet.datamanager.*
 import org.ole.planet.myplanet.model.*
+import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.userprofile.*
@@ -112,6 +113,11 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                 }
             }
         })
+        val selectDarkModeButton = findViewById<ImageButton>(R.id.themeToggleButton)
+        selectDarkModeButton?.setOnClickListener{
+            SettingActivity.SettingFragment.darkMode(this)
+        }
+
         Log.d("LoginActivity", "onCreate: ${settings.getBoolean("firstSync", false)}")
         if (!settings.getBoolean("firstSync", false)) {
             setupDefaultSync()
