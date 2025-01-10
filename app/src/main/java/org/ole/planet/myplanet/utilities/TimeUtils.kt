@@ -10,7 +10,6 @@ object TimeUtils {
     private val defaultLocale: Locale
         get() = Locale.getDefault()
 
-    @JvmStatic
     fun getFormatedDate(date: Long?): String {
         try {
             val d = date?.let { Date(it) } ?: Date()
@@ -23,20 +22,17 @@ object TimeUtils {
         return "N/A"
     }
 
-    @JvmStatic
     fun getFormatedDateWithTime(date: Long): String {
         val d = Date(date)
         val dateFormat = SimpleDateFormat("EEE dd, MMMM yyyy , hh:mm aa")
         return dateFormat.format(d)
     }
 
-    @JvmStatic
     fun formatDateTZ(data: Long): String {
         val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
         return dateFormat.format(data)
     }
 
-    @JvmStatic
     fun getAge(date: String): Int {
         val dateFormatTimeIncluded = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
         val dateFormat = SimpleDateFormat("yyyy-MM-dd")
@@ -64,7 +60,6 @@ object TimeUtils {
         return age
     }
 
-    @JvmStatic
     fun getFormatedDate(stringDate: String?, pattern: String?): String {
         return try {
             val sf = SimpleDateFormat(pattern, defaultLocale)
@@ -77,20 +72,17 @@ object TimeUtils {
         }
     }
 
-    @JvmStatic
     fun currentDate(): String {
         val c = Calendar.getInstance()
         val dateFormat = SimpleDateFormat("EEE dd, MMMM yyyy")
         return dateFormat.format(c.time)
     }
 
-    @JvmStatic
     fun formatDate(date: Long): String {
         val dateFormat = SimpleDateFormat("EEE dd, MMMM yyyy")
         return dateFormat.format(date)
     }
 
-    @JvmStatic
     fun formatDate(date: Long, format: String?): String {
         val dateFormat = SimpleDateFormat(format)
         return dateFormat.format(date)

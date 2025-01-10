@@ -10,7 +10,6 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
-import android.widget.ListView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
@@ -25,20 +24,15 @@ import io.realm.Realm
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.MainApplication.Companion.mRealm
-import org.ole.planet.myplanet.MainApplication.Companion.setThemeMode
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
-import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
+import org.ole.planet.myplanet.base.BaseResourceFragment
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
-import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.clearRealmDb
-import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.clearSharedPref
-import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.restartApp
+import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
@@ -122,9 +116,9 @@ class SettingActivity : AppCompatActivity() {
 
             val autoDownload = findPreference<SwitchPreference>("beta_auto_download")
             autoDownload?.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, _: Any? ->
-                if (autoDownload?.isChecked == true) {
+                if (autoDownload.isChecked == true) {
                     defaultPref.edit().putBoolean("beta_auto_download", true).apply()
-                    backgroundDownload(downloadAllFiles(getAllLibraryList(mRealm)))
+                    BaseResourceFragment.backgroundDownload(downloadAllFiles(BaseResourceFragment.getAllLibraryList(MainApplication.mRealm)))
                 } else {
                     defaultPref.edit().putBoolean("beta_auto_download", false).apply()
                 }
@@ -142,9 +136,9 @@ class SettingActivity : AppCompatActivity() {
                     AlertDialog.Builder(requireActivity()).setTitle(R.string.are_you_sure)
                         .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
                             CoroutineScope(Dispatchers.Main).launch {
-                                clearRealmDb()
-                                clearSharedPref()
-                                restartApp()
+                                SyncActivity.clearRealmDb()
+                                SyncActivity.clearSharedPref()
+                                SyncActivity.restartApp()
                             }
                         }.setNegativeButton(R.string.no, null).show()
                     false

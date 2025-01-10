@@ -10,12 +10,12 @@ import android.os.*
 import android.os.storage.StorageManager
 import android.provider.MediaStore
 import android.text.TextUtils
-import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.MainApplication
 import java.io.*
 import java.util.UUID
+import kotlin.math.roundToInt
 
 object FileUtils {
-    @JvmStatic
     @Throws(IOException::class)
     fun fullyReadFileToBytes(f: File): ByteArray {
         val size = f.length().toInt()
@@ -42,7 +42,7 @@ object FileUtils {
     }
 
     private fun createFilePath(folder: String, filename: String): File {
-        val baseDirectory = File(context.getExternalFilesDir(null), folder)
+        val baseDirectory = File(MainApplication.context.getExternalFilesDir(null), folder)
 
         if (filename.contains("/")) {
             val subDirPath = filename.substring(0, filename.lastIndexOf('/'))
@@ -72,19 +72,16 @@ object FileUtils {
         }
     }
 
-    @JvmStatic
     fun getSDPathFromUrl(url: String?): File {
         return createFilePath("/ole/${getIdFromUrl(url)}", getFileNameFromUrl(url))
     }
 
-    @JvmStatic
     fun checkFileExist(url: String?): Boolean {
         if (url.isNullOrEmpty()) return false
         val f = getSDPathFromUrl(url)
         return f.exists()
     }
 
-    @JvmStatic
     fun getFileNameFromUrl(url: String?): String {
         try {
             if (url != null) {
@@ -97,7 +94,6 @@ object FileUtils {
         return ""
     }
 
-    @JvmStatic
     fun getIdFromUrl(url: String?): String {
         try {
             val sp = url?.substring(url.indexOf("resources/"))?.split("/".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()
@@ -108,14 +104,12 @@ object FileUtils {
         return ""
     }
 
-    @JvmStatic
     fun getFileExtension(address: String?): String {
         if (TextUtils.isEmpty(address)) return ""
         val filenameArray = address?.split("\\.".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()
         return filenameArray?.get(filenameArray.size - 1) ?: ""
     }
 
-    @JvmStatic
     fun installApk(activity: Context, file: String?) {
         if (!file?.endsWith("apk")!!) return
         val toInstall = File(file)
@@ -153,7 +147,6 @@ object FileUtils {
         }
     }
 
-    @JvmStatic
     fun copyAssets(context: Context) {
         val tiles = arrayOf("dhulikhel.mbtiles", "somalia.mbtiles")
         val assetManager = context.assets
@@ -181,7 +174,6 @@ object FileUtils {
         }
     }
 
-    @JvmStatic
     fun getRealPathFromURI(context: Context, contentUri: Uri?): String? {
         var cursor: Cursor? = null
         return try {
@@ -195,7 +187,6 @@ object FileUtils {
         }
     }
 
-    @JvmStatic
     @Throws(Exception::class)
     fun convertStreamToString(`is`: InputStream?): String {
         val reader = BufferedReader(InputStreamReader(`is`))
@@ -208,7 +199,6 @@ object FileUtils {
         return sb.toString()
     }
 
-    @JvmStatic
     @Throws(Exception::class)
     fun getStringFromFile(fl: File?): String {
         val fin = FileInputStream(fl)
@@ -217,7 +207,6 @@ object FileUtils {
         return ret
     }
 
-    @JvmStatic
     fun openOleFolder(): Intent {
         val intent = Intent(Intent.ACTION_GET_CONTENT)
         val uri = Uri.parse(Utilities.SD_PATH)  // Ensure org.ole.planet.myplanet.utilities.Utilities.SD_PATH is the correct path
@@ -225,7 +214,6 @@ object FileUtils {
         return Intent.createChooser(intent, "Open folder")
     }
 
-    @JvmStatic
     fun getImagePath(context: Context, uri: Uri?): String? {
         if (uri == null) return null
         val projection = arrayOf(MediaStore.Images.Media._ID, MediaStore.Images.Media.DATA)
@@ -264,12 +252,10 @@ object FileUtils {
         return null
     }
 
-    @JvmStatic
     fun externalMemoryAvailable(): Boolean {
         return Environment.getExternalStorageState() == Environment.MEDIA_MOUNTED
     }
 
-    @JvmStatic
     val availableExternalMemorySize: Long
         /**
          * Find space left in the external memory.
@@ -292,7 +278,6 @@ object FileUtils {
      * @param size
      * @return A string with size followed by an appropriate suffix
      */
-    @JvmStatic
     fun formatSize(size: Long): String {
         var formattedSize = size
         var suffix: String? = null
@@ -318,23 +303,19 @@ object FileUtils {
         return resultBuffer.toString()
     }
 
-    @JvmStatic
     val totalMemoryCapacity: Long
-        get() = getStorageStats(context).first
+        get() = getStorageStats(MainApplication.context).first
 
-    @JvmStatic
     val totalAvailableMemory: Long
-        get() = getStorageStats(context).second
+        get() = getStorageStats(MainApplication.context).second
 
-    @JvmStatic
-    val totalAvailableMemoryRatio: Long
+    val totalAvailableMemoryRatio: Int
         get() {
             val total = totalMemoryCapacity
             val available = totalAvailableMemory
-            return Math.round(available.toDouble() / total.toDouble() * 100)
+            return (available.toDouble() / total.toDouble() * 100).roundToInt()
         }
 
-    @JvmStatic
     val availableOverTotalMemoryFormattedString: String
         get() {
             val available = totalAvailableMemory

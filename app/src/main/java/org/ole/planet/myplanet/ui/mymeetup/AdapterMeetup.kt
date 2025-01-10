@@ -2,7 +2,7 @@ package org.ole.planet.myplanet.ui.mymeetup
 
 import android.view.*
 import androidx.recyclerview.widget.RecyclerView
-import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemMeetupBinding
 import org.ole.planet.myplanet.model.RealmMeetup
@@ -18,13 +18,13 @@ class AdapterMeetup(private val list: List<RealmMeetup>) : RecyclerView.Adapter<
 
     override fun onBindViewHolder(holder: ViewHolderMeetup, position: Int) {
         val meetup = list[position]
-        itemMeetupBinding.tvTitle.text = context.getString(R.string.message_placeholder, meetup.title)
-        itemMeetupBinding.tvDescription.text = context.getString(R.string.message_placeholder, meetup.description)
+        itemMeetupBinding.tvTitle.text = MainApplication.context.getString(R.string.message_placeholder, meetup.title)
+        itemMeetupBinding.tvDescription.text = MainApplication.context.getString(R.string.message_placeholder, meetup.description)
         itemMeetupBinding.tvDateFrom.text = formatDate(meetup.startDate)
         itemMeetupBinding.tvDateTo.text = formatDate(meetup.endDate)
-        itemMeetupBinding.tvLocation.text = context.getString(R.string.message_placeholder, meetup.meetupLocation)
-        itemMeetupBinding.tvRecurring.text = context.getString(R.string.message_placeholder, meetup.recurring)
-        itemMeetupBinding.tvCreator.text = context.getString(R.string.message_placeholder, meetup.creator)
+        itemMeetupBinding.tvLocation.text = MainApplication.context.getString(R.string.message_placeholder, meetup.meetupLocation)
+        itemMeetupBinding.tvRecurring.text = MainApplication.context.getString(R.string.message_placeholder, meetup.recurring)
+        itemMeetupBinding.tvCreator.text = MainApplication.context.getString(R.string.message_placeholder, meetup.creator)
     }
 
     override fun getItemCount(): Int {

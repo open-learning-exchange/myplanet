@@ -14,10 +14,8 @@ import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.FragmentLibraryDetailBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.listToString
-import org.ole.planet.myplanet.model.RealmRating.Companion.getRatingsById
-import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onAdd
-import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onRemove
+import org.ole.planet.myplanet.model.RealmRating
+import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.FileUtils.getFileExtension
@@ -43,7 +41,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         if (!library.userId?.contains(profileDbHandler.userModel?.id)!!) {
             if (!lRealm.isInTransaction) lRealm.beginTransaction()
             library.setUserId(profileDbHandler.userModel?.id)
-            onAdd(lRealm, "resources", profileDbHandler.userModel?.id, libraryId)
+            RealmRemovedLog.onAdd(lRealm, "resources", profileDbHandler.userModel?.id, libraryId)
             Utilities.toast(activity, getString(R.string.added_to_my_library))
             fragmentLibraryDetailBinding.btnRemove.setImageResource(R.drawable.close_x)
         }
@@ -75,7 +73,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             setTextViewVisibility(tvSubject, llSubject, library.subjectsAsString)
             setTextViewVisibility(tvLanguage, llLanguage, library.language)
             setTextViewVisibility(tvLicense, llLicense, library.linkToLicense)
-            setTextViewVisibility(tvResource, llResource, listToString(library.resourceFor))
+            setTextViewVisibility(tvResource, llResource, RealmMyLibrary.listToString(library.resourceFor))
             setTextViewVisibility(tvType, llType, library.resourceType)
         }
         profileDbHandler.setResourceOpenCount(library)
@@ -143,10 +141,10 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             if (!lRealm.isInTransaction) lRealm.beginTransaction()
             if (isAdd) {
                 library.setUserId(profileDbHandler.userModel?.id)
-                onAdd(lRealm, "resources", profileDbHandler.userModel?.id, libraryId)
+                RealmRemovedLog.onAdd(lRealm, "resources", profileDbHandler.userModel?.id, libraryId)
             } else {
                 library.removeUserId(profileDbHandler.userModel?.id)
-                onRemove(lRealm, "resources", profileDbHandler.userModel?.id, libraryId)
+                RealmRemovedLog.onRemove(lRealm, "resources", profileDbHandler.userModel?.id, libraryId)
             }
             Utilities.toast(activity, getString(R.string.resources) +" " + if (isAdd) getString(R.string.added_to) + getString(R.string.my_library) else getString(R.string.removed_from) + getString(R.string.my_library))
             setLibraryData()
@@ -158,7 +156,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     }
 
     override fun onRatingChanged() {
-        val `object` = getRatingsById(lRealm, "resource", library.resourceId, userModel?.id)
+        val `object` = RealmRating.getRatingsById(lRealm, "resource", library.resourceId, userModel?.id)
         setRatings(`object`)
     }
 }

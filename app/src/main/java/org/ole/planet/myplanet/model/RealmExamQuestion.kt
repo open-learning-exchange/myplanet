@@ -43,7 +43,6 @@ open class RealmExamQuestion : RealmObject() {
         }
 
     companion object {
-        @JvmStatic
         fun insertExamQuestions(questions: JsonArray, examId: String?, mRealm: Realm) {
             for (i in 0 until questions.size()) {
                 val question = questions[i].asJsonObject
@@ -78,7 +77,6 @@ open class RealmExamQuestion : RealmObject() {
             }
         }
 
-        @JvmStatic
         fun serializeQuestions(question: RealmResults<RealmExamQuestion>): JsonArray {
             val array = JsonArray()
             for (que in question) {

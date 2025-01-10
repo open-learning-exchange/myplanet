@@ -6,7 +6,7 @@ import com.opencsv.CSVWriter
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import java.io.File
@@ -33,7 +33,6 @@ open class RealmRating : RealmObject() {
 
     companion object {
         private val ratingDataList: MutableList<Array<String>> = mutableListOf()
-        @JvmStatic
         fun getRatings(mRealm: Realm, type: String?, userId: String?): HashMap<String?, JsonObject> {
             val r = mRealm.where(RealmRating::class.java).equalTo("type", type).findAll()
             val map = HashMap<String?, JsonObject>()
@@ -44,7 +43,6 @@ open class RealmRating : RealmObject() {
             return map
         }
 
-        @JvmStatic
         fun getRatingsById(mRealm: Realm, type: String?, id: String?, userid: String?): JsonObject? {
             val r = mRealm.where(RealmRating::class.java).equalTo("type", type).equalTo("item", id).findAll()
             if (r.size == 0) {
@@ -65,7 +63,6 @@ open class RealmRating : RealmObject() {
             return `object`
         }
 
-        @JvmStatic
         fun serializeRating(realmRating: RealmRating): JsonObject {
             val ob = JsonObject()
             if (realmRating._id != null) ob.addProperty("_id", realmRating._id)
@@ -80,13 +77,12 @@ open class RealmRating : RealmObject() {
             ob.addProperty("createdOn", realmRating.createdOn)
             ob.addProperty("parentCode", realmRating.parentCode)
             ob.addProperty("planetCode", realmRating.planetCode)
-            ob.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
+            ob.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
             ob.addProperty("deviceName", NetworkUtils.getDeviceName())
             ob.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
             return ob
         }
 
-        @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject) {
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
@@ -147,7 +143,7 @@ open class RealmRating : RealmObject() {
         }
 
         fun ratingWriteCsv() {
-            writeCsv("${context.getExternalFilesDir(null)}/ole/ratings.csv", ratingDataList)
+            writeCsv("${MainApplication.context.getExternalFilesDir(null)}/ole/ratings.csv", ratingDataList)
         }
     }
 }

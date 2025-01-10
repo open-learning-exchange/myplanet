@@ -17,7 +17,7 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmExamQuestion
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.isMyCourse
+import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
@@ -100,7 +100,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         val markdownContentWithLocalPaths = prependBaseUrlToImages(step.description, "file://${MainApplication.context.getExternalFilesDir(null)}/ole/")
         setMarkdownText(fragmentCourseStepBinding.description, markdownContentWithLocalPaths)
         fragmentCourseStepBinding.description.movementMethod = LinkMovementMethod.getInstance()
-        if (!isMyCourse(user?.id, step.courseId, cRealm)) {
+        if (!RealmMyCourse.isMyCourse(user?.id, step.courseId, cRealm)) {
             fragmentCourseStepBinding.btnTakeTest.visibility = View.GONE
             fragmentCourseStepBinding.btnTakeSurvey.visibility = View.GONE
         }
@@ -116,7 +116,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                 textWithSpans.removeSpan(urlSpan)
             }
         }
-        if (isVisible && isMyCourse(user?.id, step.courseId, cRealm)) {
+        if (isVisible && RealmMyCourse.isMyCourse(user?.id, step.courseId, cRealm)) {
             saveCourseProgress()
         }
     }
@@ -159,7 +159,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     override fun setMenuVisibility(visible: Boolean) {
         super.setMenuVisibility(visible)
         try {
-            if (visible && isMyCourse(user?.id, step.courseId, cRealm)) {
+            if (visible && RealmMyCourse.isMyCourse(user?.id, step.courseId, cRealm)) {
                 saveCourseProgress()
             }
         } catch (e: Exception) {

@@ -28,7 +28,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
-import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createAction
+import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
@@ -36,8 +36,8 @@ import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.dashboard.BellDashboardFragment
 import org.ole.planet.myplanet.ui.dashboard.DashboardFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
+import org.ole.planet.myplanet.ui.rating.RatingFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
-import org.ole.planet.myplanet.ui.rating.RatingFragment.Companion.newInstance
 import org.ole.planet.myplanet.ui.team.TeamFragment
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
@@ -162,7 +162,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
                     withContext(Dispatchers.IO) {
                         Realm.getDefaultInstance().use { realm ->
                             realm.executeTransaction {
-                                createAction(realm, "${profileDbHandler.userModel?.id}", null, "sync")
+                                RealmUserChallengeActions.createAction(realm, "${profileDbHandler.userModel?.id}", null, "sync")
                             }
                         }
                     }
@@ -240,7 +240,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
     }
 
     fun showRatingDialog(type: String?, resourceId: String?, title: String?, listener: OnRatingChangeListener?) {
-        val f = newInstance(type, resourceId, title)
+        val f = RatingFragment.newInstance(type, resourceId, title)
         f.setListener(listener)
         f.show(supportFragmentManager, "")
     }

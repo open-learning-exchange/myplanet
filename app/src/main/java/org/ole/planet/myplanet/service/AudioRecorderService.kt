@@ -5,7 +5,6 @@ import android.os.Build
 import android.os.Environment
 import androidx.annotation.RequiresApi
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.MainApplication.Companion.context
 import java.io.File
 import java.util.UUID
 
@@ -32,7 +31,7 @@ class AudioRecorderService {
     fun startRecording() {
         outputFile = createAudioFile()
         myAudioRecorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            MediaRecorder(context)
+            MediaRecorder(MainApplication.context)
         } else {
             @Suppress("DEPRECATION")
             MediaRecorder()

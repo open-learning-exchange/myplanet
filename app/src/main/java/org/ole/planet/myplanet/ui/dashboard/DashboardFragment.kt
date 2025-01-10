@@ -9,7 +9,7 @@ import io.realm.Realm
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentHomeBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.model.RealmSubmission.Companion.getNoOfSurveySubmissionByUser
+import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.resources.AddResourceFragment
@@ -52,7 +52,7 @@ class DashboardFragment : BaseDashboardFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val noOfSurvey = getNoOfSurveySubmissionByUser(settings?.getString("userId", "--"), dRealm)
+        val noOfSurvey = RealmSubmission.getNoOfSurveySubmissionByUser(settings?.getString("userId", "--"), dRealm)
         fragmentHomeBinding.cardProfile.imgSurveyWarn.visibility = if (noOfSurvey == 0) View.VISIBLE else View.GONE
         fragmentHomeBinding.addResource.setOnClickListener {
             if (user?.id?.startsWith("guest") == false) {

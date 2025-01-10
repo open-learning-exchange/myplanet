@@ -24,7 +24,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertTaskBinding
 import org.ole.planet.myplanet.databinding.AlertUsersSpinnerBinding
 import org.ole.planet.myplanet.databinding.FragmentTeamTaskBinding
-import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMember
+import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -253,7 +253,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
 
     override fun onClickMore(realmTeamTask: RealmTeamTask?) {
         val alertUsersSpinnerBinding = AlertUsersSpinnerBinding.inflate(LayoutInflater.from(requireActivity()))
-        val userList: List<RealmUserModel> = getJoinedMember(teamId, mRealm)
+        val userList: List<RealmUserModel> = RealmMyTeam.getJoinedMember(teamId, mRealm)
         val filteredUserList = userList.filter { user -> user.getFullName().isNotBlank() }
         if (filteredUserList.isEmpty()) {
             Toast.makeText(context, R.string.no_members_task, Toast.LENGTH_SHORT).show()

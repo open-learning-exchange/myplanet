@@ -18,19 +18,16 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmCommunity
-import org.ole.planet.myplanet.model.RealmUserModel.Companion.isUserExists
-import org.ole.planet.myplanet.model.RealmUserModel.Companion.populateUsersTable
+import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.TransactionSyncManager
 import org.ole.planet.myplanet.service.UploadToShelfService
 import org.ole.planet.myplanet.ui.sync.ProcessUserDataActivity
 import org.ole.planet.myplanet.ui.sync.SyncActivity
-import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateIv
-import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateKey
+import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.Constants.KEY_UPGRADE_MAX
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
@@ -211,14 +208,14 @@ class Service(private val context: Context) {
 
             override fun notAvailable() {
                 val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                if (isUserExists(realm, obj["name"].asString)) {
+                if (RealmUserModel.isUserExists(realm, obj["name"].asString)) {
                     callback.onSuccess("User already exists")
                     return
                 }
                 realm.beginTransaction()
-                val model = populateUsersTable(obj, realm, settings)
-                val keyString = generateKey()
-                val iv = generateIv()
+                val model = RealmUserModel.populateUsersTable(obj, realm, settings)
+                val keyString = AndroidDecrypter.generateKey()
+                val iv = AndroidDecrypter.generateIv()
                 if (model != null) {
                     model.key = keyString
                     model.iv = iv
@@ -244,7 +241,7 @@ class Service(private val context: Context) {
             try {
                 val res = retrofitInterface?.getJsonObject(Utilities.header, Utilities.getUrl() + "/_users/" + id)?.execute()
                 if (res?.body() != null) {
-                    val model = populateUsersTable(res.body(), realm1, settings)
+                    val model = RealmUserModel.populateUsersTable(res.body(), realm1, settings)
                     if (model != null) {
                         UploadToShelfService(MainApplication.context).saveKeyIv(retrofitInterface, model, obj)
                     }
@@ -260,7 +257,7 @@ class Service(private val context: Context) {
                     if (!serverUrl.isNullOrEmpty()) {
                         serviceScope.launch {
                             val canReachServer = withContext(Dispatchers.IO) {
-                                isServerReachable(serverUrl)
+                                MainApplication.isServerReachable(serverUrl)
                             }
                             if (canReachServer) {
                                 if (context is ProcessUserDataActivity) {

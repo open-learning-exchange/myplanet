@@ -2,28 +2,16 @@ package org.ole.planet.myplanet.model
 
 import android.content.Context
 import android.text.TextUtils
-import com.google.gson.Gson
-import com.google.gson.JsonObject
-import com.google.gson.JsonParser
+import com.google.gson.*
 import com.opencsv.CSVWriter
-import io.realm.Case
-import io.realm.Realm
-import io.realm.RealmList
-import io.realm.RealmObject
-import io.realm.Sort
+import io.realm.*
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.datamanager.ApiInterface
-import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.NetworkUtils
-import org.ole.planet.myplanet.utilities.TimeUtils
-import org.ole.planet.myplanet.utilities.Utilities
-import java.io.File
-import java.io.FileWriter
-import java.io.IOException
-import java.util.Date
-import java.util.UUID
+import org.ole.planet.myplanet.utilities.*
+import java.io.*
+import java.util.*
 
 open class RealmSubmission : RealmObject() {
     @PrimaryKey
@@ -48,7 +36,6 @@ open class RealmSubmission : RealmObject() {
     companion object {
         private val submissionDataList: MutableList<Array<String>> = mutableListOf()
 
-        @JvmStatic
         fun insert(mRealm: Realm, submission: JsonObject) {
             if (!mRealm.isInTransaction) {
                 mRealm.executeTransaction { realm ->
@@ -130,7 +117,7 @@ open class RealmSubmission : RealmObject() {
         }
 
         fun submissionWriteCsv() {
-            writeCsv("${context.getExternalFilesDir(null)}/ole/submission.csv", submissionDataList)
+            writeCsv("${MainApplication.context.getExternalFilesDir(null)}/ole/submission.csv", submissionDataList)
         }
 
         private fun serializeExamResult(mRealm: Realm, sub: RealmSubmission, context: Context): JsonObject {
@@ -171,7 +158,6 @@ open class RealmSubmission : RealmObject() {
             return `object`
         }
 
-        @JvmStatic
         fun isStepCompleted(realm: Realm, id: String?, userId: String?): Boolean {
             val exam = realm.where(RealmStepExam::class.java).equalTo("stepId", id).findFirst() ?: return true
             return exam.id?.let {
@@ -180,16 +166,14 @@ open class RealmSubmission : RealmObject() {
             } != null
         }
 
-        @JvmStatic
         fun createSubmission(sub: RealmSubmission?, mRealm: Realm): RealmSubmission {
             var submission = sub
             if (submission == null || submission.status == "complete" && (submission.type == "exam" || submission.type == "survey"))
                 submission = mRealm.createObject(RealmSubmission::class.java, UUID.randomUUID().toString())
-            submission!!.lastUpdateTime = Date().time
+            submission?.lastUpdateTime = Date().time
             return submission
         }
 
-        @JvmStatic
         @Throws(IOException::class)
         fun continueResultUpload(sub: RealmSubmission, apiInterface: ApiInterface?, realm: Realm, context: Context) {
             if (!TextUtils.isEmpty(sub.userId) && sub.userId?.startsWith("guest") == true) return
@@ -216,7 +200,7 @@ open class RealmSubmission : RealmObject() {
             }
         }
 
-        @JvmStatic
+
         fun getNoOfSubmissionByUser(id: String?, courseId:String?, userId: String?, mRealm: Realm): String {
             if (id == null || userId == null) return "No Submissions Found"
             val submissionParentId= generateParentId(courseId, id)
@@ -228,10 +212,9 @@ open class RealmSubmission : RealmObject() {
                 .count().toInt()
 
             val pluralizedString = if (submissionCount == 1) "time" else "times"
-            return context.getString(R.string.survey_taken) + " " + submissionCount + " " + pluralizedString
+            return MainApplication.context.getString(R.string.survey_taken) + " " + submissionCount + " " + pluralizedString
         }
 
-        @JvmStatic
         fun getNoOfSurveySubmissionByUser(userId: String?, mRealm: Realm): Int {
             if (userId == null) return 0
 
@@ -242,7 +225,6 @@ open class RealmSubmission : RealmObject() {
                 .count().toInt()
         }
 
-        @JvmStatic
         fun getRecentSubmissionDate(id: String?, courseId:String?, userId: String?, mRealm: Realm): String {
             if (id == null || userId == null) return ""
             val submissionParentId= generateParentId(courseId, id)
@@ -255,7 +237,6 @@ open class RealmSubmission : RealmObject() {
             return recentSubmission?.startTime?.let { TimeUtils.getFormatedDateWithTime(it) } ?: ""
         }
 
-        @JvmStatic
         fun getExamMap(mRealm: Realm, submissions: List<RealmSubmission>?): HashMap<String?, RealmStepExam> {
             val exams = HashMap<String?, RealmStepExam>()
             for (sub in submissions ?: emptyList()){

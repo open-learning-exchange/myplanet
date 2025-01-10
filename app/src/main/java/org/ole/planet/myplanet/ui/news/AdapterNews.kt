@@ -39,7 +39,6 @@ import org.ole.planet.myplanet.databinding.RowNewsBinding
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
@@ -379,7 +378,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         map["messageType"] = news?.messageType ?: ""
         map["messagePlanetCode"] = news?.messagePlanetCode ?: ""
 
-        currentUser?.let { createNews(map, mRealm, it, imageList) }
+        currentUser?.let { RealmNews.createNews(map, mRealm, it, imageList) }
         notifyDataSetChanged()
         listener?.clearImages()
     }

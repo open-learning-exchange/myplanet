@@ -23,7 +23,6 @@ import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.RealmResults
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -32,12 +31,9 @@ import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.datamanager.Service.PlanetAvailableListener
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmRemovedLog
-import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onRemove
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmSubmission.Companion.getExamMap
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -75,7 +71,7 @@ abstract class BaseResourceFragment : Fragment() {
                 .setPositiveButton(R.string.yes, null)
                 .setNegativeButton(R.string.no) { _: DialogInterface?, _: Int ->
                     val wifi = MainApplication.context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-                    wifi.setWifiEnabled(false)
+                    wifi.isWifiEnabled = false
                 }.show()
         }
     }
@@ -154,7 +150,7 @@ abstract class BaseResourceFragment : Fragment() {
         if (list.isEmpty()) {
             return
         }
-        val exams = getExamMap(mRealm, list)
+        val exams = RealmSubmission.getExamMap(mRealm, list)
         val arrayAdapter: ArrayAdapter<*> = object : ArrayAdapter<Any?>(requireActivity(), android.R.layout.simple_list_item_1, list) {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
                 var convertedView = convertView
@@ -303,13 +299,13 @@ abstract class BaseResourceFragment : Fragment() {
             val myObject = mRealm.where(RealmMyLibrary::class.java).equalTo("resourceId", `object`.resourceId).findFirst()
             myObject?.removeUserId(model?.id)
             model?.id?.let { `object`.resourceId?.let { it1 ->
-                onRemove(mRealm, "resources", it, it1)
+                RealmRemovedLog.onRemove(mRealm, "resources", it, it1)
             } }
             Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
         } else {
-            val myObject = getMyCourse(mRealm, (`object` as RealmMyCourse).courseId)
+            val myObject = RealmMyCourse.getMyCourse(mRealm, (`object` as RealmMyCourse).courseId)
             myObject?.removeUserId(model?.id)
-            model?.id?.let { `object`.courseId?.let { it1 -> onRemove(mRealm, "courses", it, it1) } }
+            model?.id?.let { `object`.courseId?.let { it1 -> RealmRemovedLog.onRemove(mRealm, "courses", it, it1) } }
             Utilities.toast(activity, getString(R.string.removed_from_mycourse))
         }
     }
@@ -364,10 +360,10 @@ abstract class BaseResourceFragment : Fragment() {
         }
 
         fun backgroundDownload(urls: ArrayList<String>) {
-            Service(context).isPlanetAvailable(object : PlanetAvailableListener {
+            Service(MainApplication.context).isPlanetAvailable(object : PlanetAvailableListener {
                 override fun isAvailable() {
                     if (urls.isNotEmpty()) {
-                        Utilities.openDownloadService(context, urls, false)
+                        Utilities.openDownloadService(MainApplication.context, urls, false)
                     }
                 }
 

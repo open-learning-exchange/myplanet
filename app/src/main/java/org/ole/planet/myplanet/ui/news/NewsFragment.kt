@@ -18,7 +18,6 @@ import org.ole.planet.myplanet.databinding.FragmentNewsBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
@@ -114,7 +113,7 @@ class NewsFragment : BaseNewsFragment() {
             map["messageType"] = "sync"
             map["messagePlanetCode"] = user?.planetCode ?: ""
 
-            val n = user?.let { it1 -> createNews(map, mRealm, it1, imageList) }
+            val n = user?.let { it1 -> RealmNews.createNews(map, mRealm, it1, imageList) }
             imageList.clear()
             llImage?.removeAllViews()
             adapterNews?.addItem(n)

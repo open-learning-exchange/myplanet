@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit
 object ApiClient {
     private const val BASE_URL = "https://vi.media.mit.edu/"
     private var retrofit: Retrofit? = null
-    @JvmStatic
+
     val client: Retrofit?
         get() {
             val client = OkHttpClient.Builder().connectTimeout(1, TimeUnit.MINUTES)

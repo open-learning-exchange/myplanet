@@ -25,13 +25,10 @@ import androidx.core.content.FileProvider
 import com.google.gson.JsonObject
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.base.PermissionActivity.Companion.hasInstallPermission
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_RESOURCE_DOWNLOAD
-import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_RESOURCE_OPEN
 import org.ole.planet.myplanet.ui.courses.AdapterCourses
 import org.ole.planet.myplanet.ui.viewer.*
 import org.ole.planet.myplanet.utilities.FileUtils
@@ -44,7 +41,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     var rating: TextView? = null
     private var ratingBar: AppCompatRatingBar? = null
     private val installUnknownSourcesRequestCode = 112
-    var hasInstallPermission = hasInstallPermission(MainApplication.context)
+    var hasInstallPermission = PermissionActivity.hasInstallPermission(MainApplication.context)
     private var currentLibrary: RealmMyLibrary? = null
     private lateinit var installApkLauncher: ActivityResultLauncher<Intent>
     lateinit var prefData: SharedPrefManager
@@ -170,7 +167,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                     val arrayList = ArrayList<String>()
                     arrayList.add(Utilities.getUrl(items))
                     startDownload(arrayList)
-                    profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_DOWNLOAD)
+                    profileDbHandler.setResourceOpenCount(items, UserProfileDbHandler.KEY_RESOURCE_DOWNLOAD)
                 }
             }
         }
@@ -235,7 +232,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK
         }
         if (intent.resolveActivity(requireActivity().packageManager) != null) {
-            if (hasInstallPermission(MainApplication.context)) {
+            if (PermissionActivity.hasInstallPermission(MainApplication.context)) {
                 startActivity(intent)
             } else {
                 requestInstallPermission()
@@ -258,7 +255,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             return
         }
         profileDbHandler = UserProfileDbHandler(requireContext())
-        profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_OPEN)
+        profileDbHandler.setResourceOpenCount(items, UserProfileDbHandler.KEY_RESOURCE_OPEN)
         if (mimetype.startsWith("video")) {
             playVideo(videoType, items)
         } else {

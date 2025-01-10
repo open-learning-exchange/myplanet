@@ -22,13 +22,12 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.callback.OnCourseItemSelected
 import org.ole.planet.myplanet.callback.TagClickListener
-import org.ole.planet.myplanet.model.RealmCourseProgress.Companion.getCourseProgress
+import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmRating.Companion.getRatings
+import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTag
-import org.ole.planet.myplanet.model.RealmTag.Companion.getTagsArray
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.resources.CollectionsFragment
@@ -68,8 +67,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
-        val map = getRatings(mRealm, "course", model?.id)
-        val progressMap = getCourseProgress(mRealm, model?.id)
+        val map = RealmRating.getRatings(mRealm, "course", model?.id)
+        val progressMap = RealmCourseProgress.getCourseProgress(mRealm, model?.id)
         val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>()
         val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
         adapterCourses = AdapterCourses(requireActivity(), sortedCourseList, map)
@@ -389,7 +388,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             activity.type = "courses"
             val filter = JsonObject()
 
-            filter.add("tags", getTagsArray(searchTags.toList()))
+            filter.add("tags", RealmTag.getTagsArray(searchTags.toList()))
             filter.addProperty("doc.gradeLevel", gradeLevel)
             filter.addProperty("doc.subjectLevel", subjectLevel)
             activity.filter = Gson().toJson(filter)

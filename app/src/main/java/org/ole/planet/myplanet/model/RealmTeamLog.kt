@@ -7,7 +7,7 @@ import com.opencsv.CSVWriter
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import java.io.File
@@ -31,19 +31,16 @@ open class RealmTeamLog : RealmObject() {
     companion object {
         private val teamLogDataList: MutableList<Array<String>> = mutableListOf()
 
-        @JvmStatic
         fun getVisitCount(realm: Realm, userName: String?, teamId: String?): Long {
             return realm.where(RealmTeamLog::class.java).equalTo("type", "teamVisit").equalTo("user", userName).equalTo("teamId", teamId).count()
         }
 
-        @JvmStatic
         fun getVisitByTeam(realm: Realm, teamId: String?): Long {
             val calendar = Calendar.getInstance()
             calendar.add(Calendar.DAY_OF_YEAR, -30)
             return realm.where(RealmTeamLog::class.java).equalTo("type", "teamVisit").equalTo("teamId", teamId).greaterThan("time", calendar.timeInMillis).count()
         }
 
-        @JvmStatic
         fun serializeTeamActivities(log: RealmTeamLog, context: Context): JsonObject {
             val ob = JsonObject()
             ob.addProperty("user", log.user)
@@ -63,7 +60,6 @@ open class RealmTeamLog : RealmObject() {
             return ob
         }
 
-        @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject?) {
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
@@ -115,7 +111,7 @@ open class RealmTeamLog : RealmObject() {
         }
 
         fun teamLogWriteCsv() {
-            writeCsv("${context.getExternalFilesDir(null)}/ole/teamLog.csv", teamLogDataList)
+            writeCsv("${MainApplication.context.getExternalFilesDir(null)}/ole/teamLog.csv", teamLogDataList)
         }
 
     }

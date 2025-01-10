@@ -7,7 +7,7 @@ import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.Sort
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
@@ -38,7 +38,6 @@ open class RealmOfflineActivity : RealmObject() {
 
     companion object {
         private val offlineDataList: MutableList<Array<String>> = mutableListOf()
-        @JvmStatic
         fun serializeLoginActivities(realmOfflineActivities: RealmOfflineActivity, context: Context): JsonObject {
             val ob = JsonObject()
             ob.addProperty("user", realmOfflineActivities.userName)
@@ -59,14 +58,12 @@ open class RealmOfflineActivity : RealmObject() {
             return ob
         }
 
-        @JvmStatic
         fun getRecentLogin(mRealm: Realm): RealmOfflineActivity? {
             return mRealm.where(RealmOfflineActivity::class.java)
                 .equalTo("type", UserProfileDbHandler.KEY_LOGIN).sort("loginTime", Sort.DESCENDING)
                 .findFirst()
         }
 
-        @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject?) {
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
@@ -121,7 +118,7 @@ open class RealmOfflineActivity : RealmObject() {
         }
 
         fun offlineWriteCsv() {
-            writeCsv("${context.getExternalFilesDir(null)}/ole/offlineActivity.csv", offlineDataList)
+            writeCsv("${MainApplication.context.getExternalFilesDir(null)}/ole/offlineActivity.csv", offlineDataList)
         }
     }
 }
