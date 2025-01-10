@@ -102,7 +102,7 @@ class MyHealthFragment : Fragment() {
 
     private fun selectPatient() {
         userModelList = mRealm.where(RealmUserModel::class.java).sort("joinDate", Sort.DESCENDING).findAll()
-        adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, userModelList)
+        adapter = UserListArrayAdapter(requireActivity(), R.layout.list_item, userModelList)
         alertHealthListBinding = AlertHealthListBinding.inflate(LayoutInflater.from(context))
         alertHealthListBinding.btnAddMember.setOnClickListener {
             startActivity(Intent(requireContext(), BecomeMemberActivity::class.java))
@@ -110,16 +110,22 @@ class MyHealthFragment : Fragment() {
 
         setTextWatcher(alertHealthListBinding.etSearch, alertHealthListBinding.btnAddMember, alertHealthListBinding.list)
         alertHealthListBinding.list.adapter = adapter
-        alertHealthListBinding.list.onItemClickListener = OnItemClickListener { _: AdapterView<*>?, _: View, i: Int, _: Long ->
+        alertHealthListBinding.list.choiceMode = ListView.CHOICE_MODE_SINGLE
+        alertHealthListBinding.list.onItemClickListener = OnItemClickListener { _: AdapterView<*>?, view: View, i: Int, _: Long ->
             val selected = alertHealthListBinding.list.adapter.getItem(i) as RealmUserModel
             userId = if (selected._id.isNullOrEmpty()) selected.id else selected._id
             getHealthRecords(userId)
+            view.isActivated = true
             dialog?.dismiss()
         }
         sortList(alertHealthListBinding.spnSort, alertHealthListBinding.list)
         dialog = AlertDialog.Builder(requireActivity())
             .setTitle(getString(R.string.select_health_member)).setView(alertHealthListBinding.root)
             .setCancelable(false).setNegativeButton(R.string.dismiss, null).create()
+
+        dialog!!.setOnShowListener{
+            dialog!!.window?.setBackgroundDrawableResource(R.color.secondary_bg)
+        }
         dialog?.show()
     }
 

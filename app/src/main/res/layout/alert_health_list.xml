@@ -4,26 +4,33 @@
     android:layout_width="match_parent"
     android:layout_height="fill_parent"
     android:gravity="center"
+    android:background="@color/secondary_bg"
     android:orientation="vertical">
 
     <LinearLayout
+        android:background="@color/secondary_bg"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
         <androidx.appcompat.widget.AppCompatSpinner
             android:id="@+id/spn_sort"
+            android:background="@color/secondary_bg"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:entries="@array/sort_member"
             android:minWidth="150dp"
-            android:padding="8dp" />
+            android:padding="8dp"
+            android:popupBackground="@color/secondary_bg"
+            android:theme="@style/CustomAlertDialog"/>
 
         <Button
             android:id="@+id/btn_add_member"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="right"
+            android:textColor="@color/daynight_textColor"
+            android:background="@color/secondary_bg"
             android:minWidth="150dp"
             android:padding="8dp"
             android:text="@string/add_member"
@@ -36,7 +43,9 @@
         android:id="@+id/et_search"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:textColorHint="@color/daynight_textColor"
         android:hint="@string/search_dots"
+        android:textColor="@color/daynight_textColor"
         android:inputType="text"
         android:maxLines="1" />
 
