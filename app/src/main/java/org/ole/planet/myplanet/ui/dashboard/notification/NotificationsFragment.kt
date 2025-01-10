@@ -81,7 +81,11 @@ class NotificationsFragment : Fragment() {
             fragmentNotificationsBinding.emptyData.visibility = View.VISIBLE
         }
 
-        adapter = AdapterNotification(notifications,
+        val filteredNotifications = notifications.filter { notification ->
+             !notification.message.isNullOrEmpty() && notification.message != "INVALID"
+        }
+
+        adapter = AdapterNotification(filteredNotifications,
             onMarkAsReadClick = { position ->
                 markAsRead(position) },
             onNotificationClick = { notification ->
