@@ -33,15 +33,14 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.DialogUtils.getAlertDialog
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Locale
+import kotlin.collections.isNotEmpty
 
 class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnClickListener {
     private lateinit var fragmentTakeCourseBinding: FragmentTakeCourseBinding
     lateinit var dbService: DatabaseService
     lateinit var mRealm: Realm
-    var courseId: String? = null
     private var currentCourse: RealmMyCourse? = null
     lateinit var steps: List<RealmCourseStep?>
-    var userModel: RealmUserModel? = null
     var position = 0
     private var currentStep = 0
 
@@ -250,12 +249,10 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                 .equalTo("stepId", step?.id)
                 .equalTo("type", "surveys")
                 .findAll()
-            stepSurvey.any { survey ->
-                !existsSubmission(survey.id, "survey")
-            }
+            stepSurvey.any { survey -> !existsSubmission(mRealm, survey.id, "survey") }
         }
 
-        if (hasUnfinishedSurvey && courseId == "9517e3b45a5bb63e69bb8f269216974d") {
+        if (hasUnfinishedSurvey && courseId == "4e6b78800b6ad18b4e8b0e1e38a98cac") {
             fragmentTakeCourseBinding.finishStep.setOnClickListener {
                 Toast.makeText(context, getString(R.string.please_complete_survey), Toast.LENGTH_SHORT).show() }
         } else {
@@ -267,38 +264,39 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         }
     }
 
-    private fun existsSubmission(firstStepId: String?, submissionType: String): Boolean {
-        val questions = mRealm.where(RealmExamQuestion::class.java)
-            .equalTo("examId", firstStepId)
-            .findAll()
-
-        var isPresent = false
-        if (questions != null && questions.isNotEmpty()) {
-            val examId = questions[0]?.examId
-            val isSubmitted = courseId?.let { courseId ->
-                val parentId = "$examId@$courseId"
-                mRealm.where(RealmSubmission::class.java)
-                    .equalTo("userId", userModel?.id)
-                    .equalTo("parentId", parentId)
-                    .equalTo("type", submissionType)
-                    .findFirst() != null
-            } == true
-            isPresent = isSubmitted
-        }
-        return isPresent
-    }
-
-    private val isValidClickRight: Boolean
-        get() = fragmentTakeCourseBinding.viewPager2.adapter != null && fragmentTakeCourseBinding.viewPager2.currentItem < fragmentTakeCourseBinding.viewPager2.adapter?.itemCount!!
-    private val isValidClickLeft: Boolean
-        get() = fragmentTakeCourseBinding.viewPager2.adapter != null && fragmentTakeCourseBinding.viewPager2.currentItem > 0
+    private val isValidClickRight: Boolean get() = fragmentTakeCourseBinding.viewPager2.adapter != null && fragmentTakeCourseBinding.viewPager2.currentItem < fragmentTakeCourseBinding.viewPager2.adapter?.itemCount!!
+    private val isValidClickLeft: Boolean get() = fragmentTakeCourseBinding.viewPager2.adapter != null && fragmentTakeCourseBinding.viewPager2.currentItem > 0
 
     companion object {
+        var courseId: String? = null
+        var userModel: RealmUserModel? = null
+
         @JvmStatic
         fun newInstance(b: Bundle?): TakeCourseFragment {
             val takeCourseFragment = TakeCourseFragment()
             takeCourseFragment.arguments = b
             return takeCourseFragment
+        }
+
+        fun existsSubmission(mRealm: Realm, firstStepId: String?, submissionType: String): Boolean {
+            val questions = mRealm.where(RealmExamQuestion::class.java)
+                .equalTo("examId", firstStepId)
+                .findAll()
+
+            var isPresent = false
+            if (questions != null && questions.isNotEmpty()) {
+                val examId = questions[0]?.examId
+                val isSubmitted = courseId?.let { courseId ->
+                    val parentId = "$examId@$courseId"
+                    mRealm.where(RealmSubmission::class.java)
+                        .equalTo("userId", userModel?.id)
+                        .equalTo("parentId", parentId)
+                        .equalTo("type", submissionType)
+                        .findFirst() != null
+                } == true
+                isPresent = isSubmitted
+            }
+            return isPresent
         }
     }
 }

@@ -58,7 +58,11 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         }
 
         fragmentTeamBinding.addTeam.setOnClickListener { createTeamAlert(null) }
-
+        fragmentTeamBinding.tvFragmentInfo.text = if (TextUtils.equals(type, "enterprise")) {
+            getString(R.string.enterprises)
+        } else {
+            getString(R.string.team)
+        }
         teamList = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId")
             .notEqualTo("status", "archived").findAllAsync()
 
@@ -199,8 +203,9 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
                     .notEqualTo("status", "archived")
                     .contains("name", charSequence.toString(), Case.INSENSITIVE)
                 val (list, conditionApplied) = getList(query)
+                val sortedList = sortTeams(list)
                 val adapterTeamList = AdapterTeamList(
-                    activity as Context, list, mRealm, childFragmentManager
+                    activity as Context, sortedList, mRealm, childFragmentManager
                 )
                 adapterTeamList.setTeamListener(this@TeamFragment)
                 fragmentTeamBinding.rvTeamList.adapter = adapterTeamList
@@ -242,11 +247,22 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         fragmentTeamBinding.rvTeamList.adapter = adapterTeamList
         listContentDescription(conditionApplied)
         val itemCount = adapterTeamList.itemCount
-        showNoData(fragmentTeamBinding.tvMessage, itemCount, "teams")
+        showNoData(fragmentTeamBinding.tvMessage, itemCount, "$type")
         if (itemCount == 0) {
             fragmentTeamBinding.etSearch.visibility = View.GONE
             fragmentTeamBinding.tableTitle.visibility = View.GONE
         }
+    }
+
+    private fun sortTeams(list: List<RealmMyTeam>): List<RealmMyTeam> {
+        val user = user?.id
+        return list.sortedWith(compareByDescending<RealmMyTeam> { team ->
+            when {
+                RealmMyTeam.isTeamLeader(team.teamId, user, mRealm) -> 3
+                team.isMyTeam(user, mRealm) -> 2
+                else -> 1
+            }
+        })
     }
 
     override fun onEditTeam(team: RealmMyTeam?) {
@@ -257,7 +273,8 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         activity?.runOnUiThread {
             val query = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId").notEqualTo("status", "archived")
             val (filteredList, conditionApplied) = getList(query)
-            val adapterTeamList = AdapterTeamList(activity as Context, filteredList, mRealm, childFragmentManager).apply {
+            val sortedList = sortTeams(filteredList)
+            val adapterTeamList = AdapterTeamList(activity as Context, sortedList, mRealm, childFragmentManager).apply {
                 setType(type)
                 setTeamListener(this@TeamFragment)
             }

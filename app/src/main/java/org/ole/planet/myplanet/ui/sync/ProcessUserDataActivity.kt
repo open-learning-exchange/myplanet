@@ -175,6 +175,8 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
             UploadToShelfService.instance?.uploadUserData {
                 UploadToShelfService.instance?.uploadHealth()
             }
+        } else if (source == "login") {
+            UploadManager.instance?.uploadUserActivities(this@ProcessUserDataActivity)
         } else {
             customProgressDialog?.setText(context.getString(R.string.uploading_data_to_server_please_wait))
             customProgressDialog?.show()
