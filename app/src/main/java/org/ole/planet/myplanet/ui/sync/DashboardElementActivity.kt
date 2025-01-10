@@ -156,7 +156,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
                 val isReachable = isServerReachable(Utilities.getUrl())
                 if (isReachable) {
                     withContext(Dispatchers.Main) {
-                        startUpload("dashboard")
+                        startUpload("")
                     }
 
                     withContext(Dispatchers.IO) {
