@@ -221,7 +221,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
         spnGrade.onItemSelectedListener = itemSelectedListener
         spnSubject.onItemSelectedListener = itemSelectedListener
-        selectAll = requireView().findViewById(R.id.selectAll)
+        selectAll = requireView().findViewById(R.id.selectAllCourse)
         if (userModel?.isGuest() == true) {
             tvAddToLib.visibility = View.GONE
             btnRemove.visibility = View.GONE
@@ -229,17 +229,18 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             selectAll.visibility = View.GONE
         }
         checkList()
-        selectAll.setOnClickListener {
-            val allSelected = selectedItems?.size == adapterCourses.getCourseList().size
-            adapterCourses.selectAllItems(!allSelected)
-            if (allSelected) {
-                selectAll.isChecked = false
-                selectAll.text = getString(R.string.select_all)
-            } else {
-                selectAll.isChecked = true
+        selectAll.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) {
+                // If the checkbox is now checked, select all items.
+                adapterCourses.selectAllItems(true)
                 selectAll.text = getString(R.string.unselect_all)
+            } else {
+                // If the checkbox is unchecked, unselect all items.
+                adapterCourses.selectAllItems(false)
+                selectAll.text = getString(R.string.select_all)
             }
         }
+
         checkList()
     }
 
@@ -327,6 +328,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
     override fun onSelectedListChange(list: MutableList<RealmMyCourse?>) {
         selectedItems = list
+        println(selectedItems)
         changeButtonStatus()
     }
 
