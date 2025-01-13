@@ -94,7 +94,7 @@
 
     <style name="AccentButton" parent="Theme.AppCompat">
         <item name="android:textColor">@color/md_white_1000</item>
-        <item name="colorButtonNormal">@color/colorPrimaryDark</item>
+        <item name="colorButtonNormal">@color/mainColor</item>
         <item name="colorControlHighlight">@color/colorPrimary</item>
     </style>
 

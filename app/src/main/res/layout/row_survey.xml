@@ -84,8 +84,6 @@
                 android:id="@+id/start_survey"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:background="@color/mainColor"
-                android:padding="@dimen/_4dp"
                 android:text="@string/take_survey"
                 android:theme="@style/AccentButton" />
         </LinearLayout>
