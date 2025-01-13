@@ -146,7 +146,6 @@
                         android:src="@drawable/ic_calendar"
                         android:padding="2dp"
                         app:tint="@color/daynight_textColor" />
-
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/et_birthdate_layout"
                         android:layout_width="match_parent"
