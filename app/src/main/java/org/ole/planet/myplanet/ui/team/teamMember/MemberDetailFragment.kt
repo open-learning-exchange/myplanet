@@ -19,22 +19,26 @@ class MemberDetailFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
         arguments?.let { args ->
+            val fullName = args.getString("member_name")?.trim()
+            val username = args.getString("username")?.trim()
             val imageUrl = args.getString("profile_photo_url")
+            binding.tvProfileName.text = if (fullName.isNullOrEmpty()) username else fullName
             Glide.with(requireContext())
                 .load(imageUrl)
                 .placeholder(R.drawable.profile)
                 .error(R.drawable.profile)
                 .into(binding.memberImage)
-            binding.tvProfileName.text = args.getString("member_name")
-            binding.tvFullName.text = args.getString("member_name")
-            binding.tvProfileEmail.text = args.getString("profile_email")
-            binding.tvDetailDob.text = args.getString("detail_dob")
-            binding.tvDetailLanguage.text = args.getString("detail_language")
-            binding.tvProfilePhone.text = args.getString("profile_phone")
-            binding.tvNumberOfVisits.text = args.getString("number_of_visits")
-            binding.tvLastLogin.text = args.getString("last_login")
-            binding.tvLevel.text = args.getString("user_level")
+
+            setFieldOrHide(binding.tvFullName, fullName)
+            setFieldOrHide(binding.tvProfileEmail, args.getString("profile_email"))
+            setFieldOrHide(binding.tvDetailDob, args.getString("detail_dob"))
+            setFieldOrHide(binding.tvDetailLanguage, args.getString("detail_language"))
+            setFieldOrHide(binding.tvProfilePhone, args.getString("profile_phone"))
+            setFieldOrHide(binding.tvNumberOfVisits, args.getString("number_of_visits"))
+            setFieldOrHide(binding.tvLastLogin, args.getString("last_login"))
+            setFieldOrHide(binding.tvLevel, args.getString("user_level"))
         }
 
         binding.btnClose.setOnClickListener {
@@ -42,9 +46,33 @@ class MemberDetailFragment : Fragment() {
         }
     }
 
+    private fun setFieldOrHide(view: View, value: String?) {
+        if (!value.isNullOrEmpty()) {
+            when (view) {
+                is androidx.appcompat.widget.AppCompatTextView -> view.text = value
+            }
+            view.visibility = View.VISIBLE
+            (view.parent as? View)?.visibility = View.VISIBLE
+        } else {
+            (view.parent as? View)?.visibility = View.GONE
+        }
+    }
+
+
     companion object {
         @JvmStatic
-        fun newInstance(name: String, email: String, dob: String, language: String, phone: String, visits: String, lastLogin: String, username: String, memberLevel: String, imageUrl: String?) = MemberDetailFragment().apply {
+        fun newInstance(
+            name: String,
+            email: String,
+            dob: String,
+            language: String,
+            phone: String,
+            visits: String,
+            lastLogin: String,
+            username: String,
+            memberLevel: String,
+            imageUrl: String?
+        ) = MemberDetailFragment().apply {
             arguments = Bundle().apply {
                 putString("member_name", name)
                 putString("profile_email", email)
