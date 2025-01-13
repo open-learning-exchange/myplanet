@@ -11,5 +11,7 @@
         android:id="@+id/tv_disclaimer"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:textColor="@color/daynight_textColor" />
+        android:textColor="@color/daynight_textColor"
+        android:autoLink="web"
+        android:linksClickable="true"/>
 </androidx.core.widget.NestedScrollView>
