@@ -193,7 +193,7 @@ dependencies {
     implementation 'com.borax12.materialdaterangepicker:library:2.0'
     implementation 'com.nex3z:toggle-button-group:1.2.3'
     implementation 'com.caverock:androidsvg-aar:1.4'
-    implementation('com.opencsv:opencsv:5.9') {
+    implementation('com.opencsv:opencsv:5.10') {
         exclude group: 'commons-logging', module: 'commons-logging'
     }
 
