@@ -21,25 +21,18 @@ class ServerUrlMapper(private val context: Context, private val settings: Shared
     )
 
     private fun extractBaseUrl(url: String): String? {
-        val regex = Regex("^(https?://).*?@(.*?):")
-        return regex.find(url)?.let {
-            val protocol = it.groupValues[1]
-            val address = it.groupValues[2]
-            "$protocol$address"
+        return try {
+            val uri = Uri.parse(url)
+            "${uri.scheme}://${uri.host}${if (uri.port != -1) ":${uri.port}" else ""}"
+        } catch (e: Exception) {
+            null
         }
     }
 
     fun processUrl(url: String): UrlMapping {
         val extractedUrl = extractBaseUrl(url)
-
-        val primaryUrlMapping = serverMappings.entries.find { it.key.contains(extractedUrl ?: "") }
-
-        return if (primaryUrlMapping != null) {
-            val alternativeUrl = primaryUrlMapping.value
-            UrlMapping(url, alternativeUrl, extractedUrl)
-        } else {
-            UrlMapping(url, null, extractedUrl)
-        }
+        val alternativeUrl = extractedUrl?.let { serverMappings[it] }
+        return UrlMapping(url, alternativeUrl, extractedUrl)
     }
 
     fun updateUrlPreferences(editor: SharedPreferences.Editor, uri: Uri, alternativeUrl: String, url: String, settings: SharedPreferences) {
