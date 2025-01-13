@@ -5,7 +5,6 @@ import android.app.DatePickerDialog
 import android.content.Intent
 import android.os.Bundle
 import android.text.TextUtils
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -213,10 +212,6 @@ class ReportsFragment : BaseTeamFragment() {
         list = mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId)
             .equalTo("docType", "report")
             .sort("date", Sort.DESCENDING).findAll()
-
-        val listing = mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId)
-            .sort("date", Sort.DESCENDING).findAll()
-        Log.d("ReportsFragment", "onViewCreated: $listing , teamId: $teamId")
         updatedReportsList(list as RealmResults<RealmMyTeam>)
     }
 

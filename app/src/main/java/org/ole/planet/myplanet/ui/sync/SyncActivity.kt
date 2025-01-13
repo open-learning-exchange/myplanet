@@ -7,7 +7,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.text.*
-import android.util.Log
 import android.view.*
 import android.webkit.URLUtil
 import android.widget.*
@@ -118,7 +117,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         val savedId = settings.getString("configurationId", null)
         if (serverConfigAction == "sync") {
             if (savedId == null) {
-                Log.d("okuro", "communityName: $code")
                 editor.putString("configurationId", id).apply()
                 editor.putString("communityName", code).apply()
                 currentDialog?.let { continueSync(it, url, isAlternativeUrl) }
