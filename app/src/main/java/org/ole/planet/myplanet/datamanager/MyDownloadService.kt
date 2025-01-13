@@ -12,7 +12,6 @@ import io.realm.Realm
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -23,7 +22,6 @@ import org.ole.planet.myplanet.utilities.FileUtils.getSDPathFromUrl
 import org.ole.planet.myplanet.utilities.Utilities.header
 import retrofit2.Call
 import java.io.*
-import kotlin.math.pow
 import kotlin.math.roundToInt
 
 class MyDownloadService : Service() {
@@ -218,16 +216,20 @@ class MyDownloadService : Service() {
         CoroutineScope(Dispatchers.IO).launch {
             if (urls.isNotEmpty() && currentIndex >= 0 && currentIndex < urls.size) {
                 val currentFileName = getFileNameFromUrl(urls[currentIndex])
-                withContext(Dispatchers.Main) {
-                    mRealm.executeTransaction { realm ->
-                        realm.where(RealmMyLibrary::class.java)
-                            .equalTo("resourceLocalAddress", currentFileName)
-                            .findAll()
-                            ?.forEach {
-                                it.resourceOffline = true
-                                it.downloadedRev = it._rev
-                            }
+                try {
+                    val backgroundRealm = Realm.getDefaultInstance()
+                    backgroundRealm.use { realm ->
+                        realm.executeTransaction {
+                            realm.where(RealmMyLibrary::class.java)
+                                .equalTo("resourceLocalAddress", currentFileName).findAll()
+                                ?.forEach {
+                                    it.resourceOffline = true
+                                    it.downloadedRev = it._rev
+                                }
+                        }
                     }
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
             }
         }
