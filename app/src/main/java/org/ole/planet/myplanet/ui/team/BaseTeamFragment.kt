@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.team
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Bundle
+import android.util.Log
 import org.ole.planet.myplanet.base.BaseNewsFragment
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
@@ -21,6 +22,7 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
         settings = requireActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val sParentCode = settings?.getString("parentCode", "")
         val communityName = settings?.getString("communityName", "")
+        Log.d("okuro", "onCreate: $communityName@$sParentCode")
         teamId = requireArguments().getString("id", "") ?: "$communityName@$sParentCode"
         dbService = DatabaseService(requireActivity())
         mRealm = dbService.realmInstance
@@ -29,10 +31,12 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
             mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
                 ?: throw IllegalArgumentException("Team not found for ID: $teamId")
         } catch (e: IllegalArgumentException) {
+            e.printStackTrace()
             try {
                 mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId).findFirst()
                     ?: throw IllegalArgumentException("Team not found for ID: $teamId")
             } catch (e: IllegalArgumentException) {
+                e.printStackTrace()
                 return
             }
         }

@@ -224,9 +224,9 @@ open class RealmUserModel : RealmObject() {
                 if (!TextUtils.isEmpty(JsonUtils.getString("planetCode", jsonDoc))) {
                     settings.edit().putString("planetCode", JsonUtils.getString("planetCode", jsonDoc)).apply()
                 }
-                if (!TextUtils.isEmpty(JsonUtils.getString("parentCode", jsonDoc))) {
-                    settings.edit().putString("parentCode", JsonUtils.getString("parentCode", jsonDoc)).apply()
-                }
+//                if (!TextUtils.isEmpty(JsonUtils.getString("parentCode", jsonDoc))) {
+//                    settings.edit().putString("parentCode", JsonUtils.getString("parentCode", jsonDoc)).apply()
+//                }
 
                 val csvRow = arrayOf(
                     user.userAdmin.toString(),

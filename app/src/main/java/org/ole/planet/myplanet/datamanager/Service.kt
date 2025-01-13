@@ -6,6 +6,7 @@ import android.content.DialogInterface
 import android.content.SharedPreferences
 import android.net.Uri
 import android.text.TextUtils
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.realm.Realm
@@ -55,8 +56,8 @@ import kotlin.math.min
 class Service(private val context: Context) {
     private val preferences: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     private val retrofitInterface: ApiInterface? = ApiClient.client?.create(ApiInterface::class.java)
-
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    var callCount = 0
 
     fun healthAccess(listener: SuccessListener) {
         retrofitInterface?.healthAccess(Utilities.getHealthAccessUrl(preferences))?.enqueue(object : Callback<ResponseBody> {
@@ -325,6 +326,8 @@ class Service(private val context: Context) {
     }
 
     fun getMinApk(listener: ConfigurationIdListener?, url: String, pin: String, activity: SyncActivity) {
+        callCount++
+        Log.d("okuro", "getMinApk called $callCount times")
         val serverUrlMapper = ServerUrlMapper(context)
         val mapping = serverUrlMapper.processUrl(url)
 
@@ -382,11 +385,16 @@ class Service(private val context: Context) {
 
                                         if (configResponse?.isSuccessful == true) {
                                             val rows = configResponse.body()?.getAsJsonArray("rows")
+                                            Log.d("okuro", "config response: $rows")
                                             if (rows != null && rows.size() > 0) {
                                                 val firstRow = rows.get(0).asJsonObject
                                                 val id = firstRow.getAsJsonPrimitive("id").asString
                                                 val doc = firstRow.getAsJsonObject("doc")
                                                 val code = doc.getAsJsonPrimitive("code").asString
+                                                val parentCode = doc.getAsJsonPrimitive("parentCode").asString
+                                                preferences.edit().putString("parentCode", parentCode).apply()
+                                                Log.d("okuro", "parentCode: $parentCode")
+                                                Log.d("okuro", "getMinApk id: $id, code: $code, url: $currentUrl")
                                                 return@async UrlCheckResult.Success(id, code, currentUrl)
                                             }
                                         }
@@ -406,6 +414,7 @@ class Service(private val context: Context) {
                 when (result) {
                     is UrlCheckResult.Success -> {
                         val isAlternativeUrl = result.url != url
+                        Log.d("okuro", "result code: ${result.code}, url: ${result.url}, isAlternativeUrl: $isAlternativeUrl")
                         listener?.onConfigurationIdReceived(result.id, result.code, result.url, isAlternativeUrl)
                         activity.setSyncFailed(false)
                     }
