@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import android.widget.LinearLayout
 import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
@@ -23,6 +24,8 @@ import org.ole.planet.myplanet.utilities.IntentUtils.openAudioFile
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormatedDate
 import org.ole.planet.myplanet.utilities.Utilities
 import java.io.File
+import android.widget.TextView
+import androidx.core.content.ContextCompat
 
 class AdapterMyPersonal(private val context: Context, private val list: List<RealmMyPersonal>) : RecyclerView.Adapter<ViewHolderMyPersonal>() {
     private lateinit var rowMyPersonalBinding: RowMyPersonalBinding
@@ -103,10 +106,14 @@ class AdapterMyPersonal(private val context: Context, private val list: List<Rea
         val alertMyPersonalBinding = AlertMyPersonalBinding.inflate(LayoutInflater.from(context))
         alertMyPersonalBinding.etDescription.setText(personal.description)
         alertMyPersonalBinding.etTitle.setText(personal.title)
-        AlertDialog.Builder(context)
-            .setTitle(R.string.edit_personal)
+
+        val customView = LayoutInflater.from(context).inflate(R.layout.custom_alert_dialog, null)
+        val dialogTitle = customView.findViewById<TextView>(R.id.dialogTitle)
+        dialogTitle.text = context.getString(R.string.edit_personal)
+
+        val dialog = AlertDialog.Builder(context, R.style.CustomAlertDialog)
+            .setView(customView)
             .setIcon(R.drawable.ic_edit)
-            .setView(alertMyPersonalBinding.root)
             .setPositiveButton(R.string.button_submit) { _: DialogInterface?, _: Int ->
                 val title = alertMyPersonalBinding.etDescription.text.toString().trim { it <= ' ' }
                 val desc = alertMyPersonalBinding.etTitle.text.toString().trim { it <= ' ' }
@@ -122,9 +129,19 @@ class AdapterMyPersonal(private val context: Context, private val list: List<Rea
                 listener?.onAddedResource()
             }
             .setNegativeButton(R.string.cancel, null)
-            .show()
-    }
+            .create()
 
+        dialog.setOnShowListener {
+            val bottomArea = (dialog.window?.decorView as? ViewGroup)?.findViewById<ViewGroup>(R.id.parentPanel)
+            bottomArea?.getChildAt(3)?.setBackgroundColor(ContextCompat.getColor(context, R.color.secondary_bg))
+
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(ContextCompat.getColor(context, R.color.colorAccent))
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(ContextCompat.getColor(context, R.color.colorAccent))
+        }
+
+        dialog.window?.setBackgroundDrawableResource(R.color.secondary_bg)
+        dialog.show()
+    }
     override fun getItemCount(): Int {
         return list.size
     }
