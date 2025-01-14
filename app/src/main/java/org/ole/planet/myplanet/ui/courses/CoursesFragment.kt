@@ -63,6 +63,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     lateinit var spnSubject: Spinner
     lateinit var searchTags: MutableList<RealmTag>
     private lateinit var confirmation: AlertDialog
+    private var isProgrammaticChange = false
     override fun getLayout(): Int {
         return R.layout.fragment_my_course
     }
@@ -156,7 +157,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         clearTags()
         showNoData(tvMessage, adapterCourses.itemCount, "courses")
         setupUI(requireView().findViewById(R.id.my_course_parent_layout), requireActivity())
-        changeButtonStatus()
+
         if (!isMyCourseLib) tvFragmentInfo.setText(R.string.our_courses)
         additionalSetup()
 
@@ -230,12 +231,14 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         }
         checkList()
         selectAll.setOnCheckedChangeListener { _, isChecked ->
+            if (isProgrammaticChange) {
+                isProgrammaticChange = false
+                return@setOnCheckedChangeListener
+            }
             if (isChecked) {
-                // If the checkbox is now checked, select all items.
                 adapterCourses.selectAllItems(true)
                 selectAll.text = getString(R.string.unselect_all)
             } else {
-                // If the checkbox is unchecked, unselect all items.
                 adapterCourses.selectAllItems(false)
                 selectAll.text = getString(R.string.select_all)
             }
@@ -328,7 +331,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
     override fun onSelectedListChange(list: MutableList<RealmMyCourse?>) {
         selectedItems = list
-        println(selectedItems)
         changeButtonStatus()
     }
 
@@ -340,16 +342,20 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         showTagText(searchTags, tvSelected)
         showNoData(tvMessage, adapterCourses.itemCount, "courses")
     }
-
+    private fun updateCheckBoxState(programmaticState: Boolean) {
+        isProgrammaticChange = true
+        selectAll.isChecked = programmaticState
+        isProgrammaticChange = false
+    }
     private fun changeButtonStatus() {
         tvAddToLib.isEnabled = (selectedItems?.size ?: 0) > 0
         btnRemove.isEnabled = (selectedItems?.size ?: 0) > 0
         btnArchive.isEnabled = (selectedItems?.size ?: 0) > 0
         if (adapterCourses.areAllSelected()) {
-            selectAll.isChecked = true
+            updateCheckBoxState(true)
             selectAll.text = getString(R.string.unselect_all)
         } else {
-            selectAll.isChecked = false
+            updateCheckBoxState(false)
             selectAll.text = getString(R.string.select_all)
         }
     }
