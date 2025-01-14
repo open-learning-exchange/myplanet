@@ -12,14 +12,14 @@ import org.ole.planet.myplanet.databinding.FragmentDisclaimerBinding
 
 class DisclaimerFragment : Fragment() {
 
-    private var _binding: FragmentDisclaimerBinding? = null
-    private val binding get() = _binding!!
+    private var fragmentDisclaimerBinding: FragmentDisclaimerBinding? = null
+    private val binding get() = fragmentDisclaimerBinding!!
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentDisclaimerBinding.inflate(inflater, container, false)
+        fragmentDisclaimerBinding = FragmentDisclaimerBinding.inflate(inflater, container, false)
         return binding.root
     }
 
@@ -33,6 +33,6 @@ class DisclaimerFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        _binding = null
+        fragmentDisclaimerBinding = null
     }
 }
