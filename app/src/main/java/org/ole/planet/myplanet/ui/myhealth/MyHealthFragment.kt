@@ -119,8 +119,9 @@ class MyHealthFragment : Fragment() {
             dialog?.dismiss()
         }
         sortList(alertHealthListBinding.spnSort, alertHealthListBinding.list)
+        val titleView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_title, null)
         dialog = AlertDialog.Builder(requireActivity())
-            .setTitle(getString(R.string.select_health_member)).setView(alertHealthListBinding.root)
+            .setCustomTitle(titleView).setView(alertHealthListBinding.root)
             .setCancelable(false).setNegativeButton(R.string.dismiss, null).create()
 
         dialog!!.setOnShowListener{
