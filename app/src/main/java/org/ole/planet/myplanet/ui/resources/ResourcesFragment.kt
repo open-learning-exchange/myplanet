@@ -57,6 +57,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     private lateinit var filter: ImageButton
     private lateinit var adapterLibrary: AdapterResource
     private lateinit var addResourceButton: FloatingActionButton
+    private var isProgrammaticChange = false
     var userModel: RealmUserModel ?= null
     var map: HashMap<String?, JsonObject>? = null
     private var confirmation: AlertDialog? = null
@@ -147,22 +148,22 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         showNoData(tvMessage, adapterLibrary.itemCount, "resources")
         clearTagsButton()
         setupUI(view.findViewById(R.id.my_library_parent_layout), requireActivity())
-        changeButtonStatus()
         additionalSetup()
         tvFragmentInfo = view.findViewById(R.id.tv_fragment_info)
         if (isMyCourseLib) tvFragmentInfo.setText(R.string.txt_myLibrary)
         checkList()
-
-        selectAll.setOnClickListener {
+        selectAll.setOnCheckedChangeListener { _, isChecked ->
+            if (isProgrammaticChange) {
+                isProgrammaticChange = false
+                return@setOnCheckedChangeListener
+            }
             updateTvDelete()
-            val allSelected = selectedItems?.size == adapterLibrary.getLibraryList().size
-            adapterLibrary.selectAllItems(!allSelected)
-            if (allSelected) {
-                selectAll.isChecked = false
-                selectAll.text = getString(R.string.select_all)
-            } else {
-                selectAll.isChecked = true
+            if (isChecked) {
+                adapterLibrary.selectAllItems(true)
                 selectAll.text = getString(R.string.unselect_all)
+            } else {
+                adapterLibrary.selectAllItems(false)
+                selectAll.text = getString(R.string.select_all)
             }
         }
 
@@ -174,7 +175,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             }
         }
     }
-
     private fun updateTvDelete(){
         tvDelete?.isEnabled = selectedItems?.size!! != 0
     }
@@ -277,14 +277,19 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             }
         }
     }
+    private fun updateCheckBoxState(programmaticState: Boolean) {
+        isProgrammaticChange = true
+        selectAll.isChecked = programmaticState
+        isProgrammaticChange = false
+    }
 
     private fun changeButtonStatus() {
         tvAddToLib.isEnabled = (selectedItems?.size ?: 0) > 0
         if (adapterLibrary.areAllSelected()) {
-            selectAll.isChecked = true
+            updateCheckBoxState(true)
             selectAll.text = getString(R.string.unselect_all)
         } else {
-            selectAll.isChecked = false
+            updateCheckBoxState(false)
             selectAll.text = getString(R.string.select_all)
         }
     }
