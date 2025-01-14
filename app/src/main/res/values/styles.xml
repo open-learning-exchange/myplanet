@@ -98,6 +98,12 @@
         <item name="colorControlHighlight">@color/colorPrimary</item>
     </style>
 
+    <style name="AppThemeButton" parent="Theme.AppCompat">
+        <item name="android:textColor">@color/md_white_1000</item>
+        <item name="colorButtonNormal">@color/mainColor</item>
+        <item name="colorControlHighlight">@color/total_color</item>
+    </style>
+
     <style name="BlueButton" parent="Theme.AppCompat">
         <item name="android:textColor">@color/md_white_1000</item>
         <item name="android:background">@color/colorPrimaryDark</item>
