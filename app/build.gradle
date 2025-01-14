@@ -77,6 +77,8 @@ android {
     def planetGuatemalaPin = project.findProperty('PLANET_GUATEMALA_PIN') ?: ""
     def planetSanPabloUrl = project.findProperty('PLANET_SANPABLO_URL') ?: ""
     def planetSanPabloPin = project.findProperty('PLANET_SANPABLO_PIN') ?: ""
+    def planetSanPabloCloneUrl = project.findProperty('PLANET_SANPABLO_CLONE_URL') ?: ""
+    def planetSanPabloClonePin = project.findProperty('PLANET_SANPABLO_CLONE_PIN') ?: ""
     def planetEarthUrl = project.findProperty('PLANET_EARTH_URL') ?: ""
     def planetEarthPin = project.findProperty('PLANET_EARTH_PIN') ?: ""
     def planetSomaliaUrl = project.findProperty('PLANET_SOMALIA_URL') ?: ""
@@ -87,17 +89,20 @@ android {
     def planetXelaPin = project.findProperty('PLANET_XELA_PIN') ?: ""
     def planetUriurUrl = project.findProperty('PLANET_URIUR_URL') ?: ""
     def planetUriurPin = project.findProperty('PLANET_URIUR_PIN') ?: ""
+    def planetUriurCloneUrl = project.findProperty('PLANET_URIUR_CLONE_URL') ?: ""
+    def planetUriurClonePin = project.findProperty('PLANET_URIUR_CLONE_PIN') ?: ""
     def planetRuiruUrl = project.findProperty('PLANET_RUIRU_URL') ?: ""
     def planetRuiruPin = project.findProperty('PLANET_RUIRU_PIN') ?: ""
     def planetEmbakasiUrl = project.findProperty('PLANET_EMBAKASI_URL') ?: ""
     def planetEmbakasiPin = project.findProperty('PLANET_EMBAKASI_PIN') ?: ""
+    def planetEmbakasiCloneUrl = project.findProperty('PLANET_EMBAKASI_CLONE_URL') ?: ""
+    def planetEmbakasiClonePin = project.findProperty('PLANET_EMBAKASI_CLONE_PIN') ?: ""
     def planetCambridgeUrl = project.findProperty('PLANET_CAMBRIDGE_URL') ?: ""
     def planetCambridgePin = project.findProperty('PLANET_CAMBRIDGE_PIN') ?: ""
     //def planetEgdirbmacUrl = project.findProperty('PLANET_EGDIRBMAC_URL') ?: ""
     //def planetEgdirbmacPin = project.findProperty('PLANET_EGDIRBMAC_PIN') ?: ""
     def planetPalmBayUrl = project.findProperty('PLANET_PALMBAY_URL') ?: ""
     def planetPalmBayPin = project.findProperty('PLANET_PALMBAY_PIN') ?: ""
-
 
     buildTypes.each {
         it.buildConfigField 'String', 'PLANET_LEARNING_URL', "\"$planetLearningUrl\""
@@ -106,6 +111,8 @@ android {
         it.buildConfigField 'String', 'PLANET_GUATEMALA_PIN', "\"${planetGuatemalaPin}\""
         it.buildConfigField 'String', 'PLANET_SANPABLO_URL', "\"${planetSanPabloUrl}\""
         it.buildConfigField 'String', 'PLANET_SANPABLO_PIN', "\"${planetSanPabloPin}\""
+        it.buildConfigField 'String', 'PLANET_SANPABLO_CLONE_URL', "\"${planetSanPabloCloneUrl}\""
+        it.buildConfigField 'String', 'PLANET_SANPABLO_CLONE_PIN', "\"${planetSanPabloClonePin}\""
         it.buildConfigField 'String', 'PLANET_EARTH_URL', "\"${planetEarthUrl}\""
         it.buildConfigField 'String', 'PLANET_EARTH_PIN', "\"${planetEarthPin}\""
         it.buildConfigField 'String', 'PLANET_SOMALIA_URL', "\"${planetSomaliaUrl}\""
@@ -116,10 +123,14 @@ android {
         it.buildConfigField 'String', 'PLANET_XELA_PIN', "\"${planetXelaPin}\""
         it.buildConfigField 'String', 'PLANET_URIUR_URL', "\"${planetUriurUrl}\""
         it.buildConfigField 'String', 'PLANET_URIUR_PIN', "\"${planetUriurPin}\""
+        it.buildConfigField 'String', 'PLANET_URIUR_CLONE_URL', "\"${planetUriurCloneUrl}\""
+        it.buildConfigField 'String', 'PLANET_URIUR_CLONE_PIN', "\"${planetUriurClonePin}\""
         it.buildConfigField 'String', 'PLANET_RUIRU_URL', "\"${planetRuiruUrl}\""
         it.buildConfigField 'String', 'PLANET_RUIRU_PIN', "\"${planetRuiruPin}\""
         it.buildConfigField 'String', 'PLANET_EMBAKASI_URL', "\"${planetEmbakasiUrl}\""
         it.buildConfigField 'String', 'PLANET_EMBAKASI_PIN', "\"${planetEmbakasiPin}\""
+        it.buildConfigField 'String', 'PLANET_EMBAKASI_CLONE_URL', "\"${planetEmbakasiCloneUrl}\""
+        it.buildConfigField 'String', 'PLANET_EMBAKASI_CLONE_PIN', "\"${planetEmbakasiClonePin}\""
         it.buildConfigField 'String', 'PLANET_CAMBRIDGE_URL', "\"${planetCambridgeUrl}\""
         it.buildConfigField 'String', 'PLANET_CAMBRIDGE_PIN', "\"${planetCambridgePin}\""
         //it.buildConfigField 'String', 'PLANET_EGDIRBMAC_URL', "\"${planetEgdirbmacUrl}\""
@@ -182,7 +193,7 @@ dependencies {
     implementation 'com.borax12.materialdaterangepicker:library:2.0'
     implementation 'com.nex3z:toggle-button-group:1.2.3'
     implementation 'com.caverock:androidsvg-aar:1.4'
-    implementation('com.opencsv:opencsv:5.9') {
+    implementation('com.opencsv:opencsv:5.10') {
         exclude group: 'commons-logging', module: 'commons-logging'
     }
 
@@ -191,7 +202,7 @@ dependencies {
     implementation 'org.osmdroid:osmdroid-android:6.1.20'
     implementation 'org.jetbrains:annotations:26.0.1'
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-    implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3"
+    implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0"
     implementation 'pl.droidsonroids.gif:android-gif-drawable:1.2.29'
 
     implementation 'com.mikepenz:google-material-typeface:3.0.1.1.original@aar'
@@ -208,7 +219,7 @@ dependencies {
     implementation "androidx.camera:camera-lifecycle:$camera_version"
     implementation "androidx.camera:camera-view:$camera_version"
 
-    def dagger_hilt_version = "2.54"
+    def dagger_hilt_version = "2.55"
     implementation "com.google.dagger:hilt-android:$dagger_hilt_version"
     kapt "com.google.dagger:hilt-android-compiler:$dagger_hilt_version"
 

@@ -50,7 +50,7 @@ object TransactionSyncManager {
     fun authenticate(): Boolean {
         val apiInterface = client?.create(ApiInterface::class.java)
         try {
-            val response: Response<DocumentResponse>? = apiInterface?.getDocuments(Utilities.header, Utilities.getUrl() + "/tablet_users/_all_docs")?.execute()
+            val response: Response<DocumentResponse>? = apiInterface?.getDocuments(Utilities.header, "${Utilities.getUrl()}/tablet_users/_all_docs")?.execute()
             if (response != null) {
                 return response.code() == 200
             }
@@ -64,7 +64,7 @@ object TransactionSyncManager {
         listener.onSyncStarted()
         val userName = settings.getString("loginUserName", "")
         val password = settings.getString("loginUserPassword", "")
-        val header = "Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)
+        val header = "Basic ${Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)}"
         mRealm.executeTransactionAsync({ realm: Realm ->
             val users = realm.where(RealmUserModel::class.java).isNotEmpty("_id").findAll()
             for (userModel in users) {
@@ -76,7 +76,7 @@ object TransactionSyncManager {
     }
 
     private fun syncHealthData(userModel: RealmUserModel?, header: String) {
-        val table = "userdb-" + userModel?.planetCode?.let { Utilities.toHex(it) } + "-" + userModel?.name?.let { Utilities.toHex(it) }
+        val table = "userdb-${userModel?.planetCode?.let { Utilities.toHex(it) }}-${userModel?.name?.let { Utilities.toHex(it) }}"
         val apiInterface = client?.create(ApiInterface::class.java)
         val response: Response<DocumentResponse>?
         try {

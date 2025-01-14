@@ -131,21 +131,39 @@
                         android:textColor="@color/daynight_textColor" />
                 </com.google.android.material.textfield.TextInputLayout>
 
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/et_birthdate"
+                <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:textColorHint="@color/hint_color">
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
 
-                    <EditText
+                    <ImageView
+                        android:id="@+id/iv_date_picker"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_marginEnd="8dp"
+                        android:src="@drawable/ic_calendar"
+                        android:padding="2dp"
+                        app:tint="@color/daynight_textColor" />
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/et_birthdate_layout"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="@string/birth_date"
-                        android:padding="@dimen/padding_normal"
-                        android:backgroundTint="@color/daynight_textColor"
-                        android:textColor="@color/daynight_textColor" />
-                </com.google.android.material.textfield.TextInputLayout>
+                        android:textColorHint="@color/hint_color">
+
+                        <EditText
+                            android:id="@+id/et_birthdate"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="@string/birth_date"
+                            android:padding="@dimen/padding_normal"
+                            android:backgroundTint="@color/daynight_textColor"
+                            android:textColor="@color/daynight_textColor"
+                            android:focusable="false"
+                            android:clickable="true" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                </LinearLayout>
             </LinearLayout>
 
             <LinearLayout

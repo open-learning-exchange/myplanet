@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/md_amber_500"
+    android:background="@color/card_bg"
     android:orientation="horizontal">
 
     <TextView
@@ -14,13 +14,12 @@
         android:layout_weight="1"
         android:gravity="center"
         android:padding="@dimen/padding_normal"
-        android:textColor="@color/dialog_sync_labels" />
-
+        android:textColor="@color/daynight_textColor" />
     <ImageView
         android:id="@+id/detail"
         android:layout_width="@dimen/menu_item_icon_size"
         android:layout_height="@dimen/menu_item_icon_size"
         android:layout_gravity="top"
         android:layout_margin="@dimen/padding_small"
-        app:srcCompat="@drawable/ic_more" />
+        app:srcCompat="@drawable/ic_more"/>
 </LinearLayout>
