@@ -25,7 +25,6 @@ class TeamPagerAdapter(fm: FragmentActivity, team: RealmMyTeam?, isInMyTeam: Boo
     private val list: MutableList<String> = ArrayList()
     private val isEnterprise: Boolean = TextUtils.equals(team?.type, "enterprise")
 
-
     init {
         if (isInMyTeam || team?.isPublic == true) {
             list.add(context.getString(R.string.chat))
