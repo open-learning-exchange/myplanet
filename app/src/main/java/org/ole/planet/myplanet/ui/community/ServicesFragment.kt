@@ -76,8 +76,9 @@ class ServicesFragment : BaseTeamFragment() {
     private fun setRecyclerView(links: RealmResults<RealmMyTeam>?) {
         fragmentServicesBinding.llServices.removeAllViews()
         if (links.isNullOrEmpty()) {
-            val placeholderView = LayoutInflater.from(activity).inflate(R.layout.placeholder_services, fragmentServicesBinding.llServices, false)
-            fragmentServicesBinding.llServices.addView(placeholderView)
+            fragmentServicesBinding.tvDescription.visibility = View.GONE
+            fragmentServicesBinding.tvNoDescription.visibility = View.VISIBLE
+            fragmentServicesBinding.tvNoLinks.visibility = View.VISIBLE
         } else {
             links.forEach { team ->
                 val b: TextView = LayoutInflater.from(activity).inflate(R.layout.button_single, fragmentServicesBinding.llServices, false) as TextView
