@@ -57,7 +57,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     private lateinit var filter: ImageButton
     private lateinit var adapterLibrary: AdapterResource
     private lateinit var addResourceButton: FloatingActionButton
-    private var isProgrammaticChange = false
+    private var isCheckboxChangedByCode = false
     var userModel: RealmUserModel ?= null
     var map: HashMap<String?, JsonObject>? = null
     private var confirmation: AlertDialog? = null
@@ -153,8 +153,8 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         if (isMyCourseLib) tvFragmentInfo.setText(R.string.txt_myLibrary)
         checkList()
         selectAll.setOnCheckedChangeListener { _, isChecked ->
-            if (isProgrammaticChange) {
-                isProgrammaticChange = false
+            if (isCheckboxChangedByCode) {
+                isCheckboxChangedByCode = false
                 return@setOnCheckedChangeListener
             }
             updateTvDelete()
@@ -278,9 +278,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
     }
     private fun updateCheckBoxState(programmaticState: Boolean) {
-        isProgrammaticChange = true
+        isCheckboxChangedByCode = true
         selectAll.isChecked = programmaticState
-        isProgrammaticChange = false
+        isCheckboxChangedByCode = false
     }
 
     private fun changeButtonStatus() {
