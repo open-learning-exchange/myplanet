@@ -105,7 +105,6 @@
                 android:textColor="@color/daynight_textColor"
                 android:textSize="@dimen/text_size_mid"
                 android:textStyle="bold" />
-
             <TextView
                 android:id="@+id/credit"
                 android:layout_width="0dp"
@@ -116,7 +115,6 @@
                 android:textColor="@color/daynight_textColor"
                 android:textSize="@dimen/text_size_mid"
                 android:textStyle="bold" />
-
             <TextView
                 android:id="@+id/debit"
                 android:layout_width="0dp"
@@ -127,8 +125,6 @@
                 android:textColor="@color/daynight_textColor"
                 android:textSize="@dimen/text_size_mid"
                 android:textStyle="bold" />
-
-
             <TextView
                 android:id="@+id/balance"
                 android:layout_width="0dp"
