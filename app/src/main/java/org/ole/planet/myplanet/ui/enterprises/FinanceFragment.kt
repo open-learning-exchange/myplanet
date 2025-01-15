@@ -53,7 +53,6 @@ class FinanceFragment : BaseTeamFragment() {
         list = fRealm.where(RealmMyTeam::class.java).notEqualTo("status", "archived")
             .equalTo("teamId", teamId).equalTo("docType", "transaction")
             .sort("date", Sort.DESCENDING).findAllAsync()
-
         list?.addChangeListener { results ->
             updatedFinanceList(results)
         }
@@ -191,11 +190,19 @@ class FinanceFragment : BaseTeamFragment() {
 
     private fun updatedFinanceList(results: RealmResults<RealmMyTeam>) {
         activity?.runOnUiThread {
-            adapterFinance = AdapterFinance(requireActivity(), results)
-            fragmentFinanceBinding.rvFinance.layoutManager = LinearLayoutManager(activity)
-            fragmentFinanceBinding.rvFinance.adapter = adapterFinance
-            adapterFinance?.notifyDataSetChanged()
-            calculateTotal(results)
+            if (!results.isEmpty()) {
+                adapterFinance = AdapterFinance(requireActivity(), results)
+                fragmentFinanceBinding.rvFinance.layoutManager = LinearLayoutManager(activity)
+                fragmentFinanceBinding.rvFinance.adapter = adapterFinance
+                adapterFinance?.notifyDataSetChanged()
+                calculateTotal(results)
+            } else {
+                fragmentFinanceBinding.rvFinance.adapter = null
+                fragmentFinanceBinding.dataLayout.visibility= View.GONE
+                fragmentFinanceBinding.tvNodata.visibility= View.VISIBLE
+
+            }
         }
     }
+
 }
