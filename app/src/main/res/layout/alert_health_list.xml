@@ -8,29 +8,26 @@
     android:orientation="vertical">
 
     <LinearLayout
-        android:background="@color/secondary_bg"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
-        <androidx.appcompat.widget.AppCompatSpinner
+        <org.ole.planet.myplanet.utilities.CustomSpinner
             android:id="@+id/spn_sort"
-            android:background="@color/secondary_bg"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:entries="@array/sort_member"
             android:minWidth="150dp"
-            android:padding="8dp"
             android:popupBackground="@color/secondary_bg"
-            android:theme="@style/CustomAlertDialog"/>
+            android:backgroundTint="@color/daynight_textColor"
+            android:theme="@style/SpinnerItemStyle"
+            android:padding="8dp" />
 
         <Button
             android:id="@+id/btn_add_member"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="right"
-            android:textColor="@color/daynight_textColor"
-            android:background="@color/secondary_bg"
             android:minWidth="150dp"
             android:padding="8dp"
             android:text="@string/add_member"
@@ -39,15 +36,21 @@
             android:visibility="gone" />
     </LinearLayout>
 
-    <EditText
-        android:id="@+id/et_search"
+    <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:textColorHint="@color/daynight_textColor"
-        android:hint="@string/search_dots"
-        android:textColor="@color/daynight_textColor"
-        android:inputType="text"
-        android:maxLines="1" />
+        android:layout_height="wrap_content"
+        android:labelFor="@+id/et_search"
+        android:padding="@dimen/padding_normal"
+        android:textColorHint="@color/hint_color">
+
+        <EditText
+            android:id="@+id/et_search"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:backgroundTint="@color/hint_color"
+            android:hint="@string/search"
+            android:textColor="@color/daynight_textColor" />
+    </com.google.android.material.textfield.TextInputLayout>
 
     <ListView
         android:id="@+id/list"
