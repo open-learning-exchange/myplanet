@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.enterprises
 
 import android.content.DialogInterface
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -21,6 +22,8 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDateTZ
 import org.ole.planet.myplanet.utilities.Utilities
+import java.text.ParseException
+import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import java.util.UUID
@@ -49,7 +52,23 @@ class FinanceFragment : BaseTeamFragment() {
         fragmentFinanceBinding = FragmentFinanceBinding.inflate(inflater, container, false)
         fRealm = DatabaseService(requireActivity()).realmInstance
         date = Calendar.getInstance()
-        fragmentFinanceBinding.btnFilter.setOnClickListener { showDatePickerDialog() }
+        fragmentFinanceBinding.tvFromDateCalendar.setOnClickListener {
+            showDatePickerDialog(isFromDate = true)
+        }
+
+        fragmentFinanceBinding.tvFromDateCalendarIcon.setOnClickListener {
+            showDatePickerDialog(isFromDate = true)
+        }
+
+        fragmentFinanceBinding.etToDate.setOnClickListener {
+            showDatePickerDialog(isFromDate = false)
+        }
+
+        fragmentFinanceBinding.tvToDateCalendarIcon.setOnClickListener {
+            showDatePickerDialog(isFromDate = false)
+        }
+
+
         list = fRealm.where(RealmMyTeam::class.java).notEqualTo("status", "archived")
             .equalTo("teamId", teamId).equalTo("docType", "transaction")
             .sort("date", Sort.DESCENDING).findAllAsync()
@@ -67,6 +86,8 @@ class FinanceFragment : BaseTeamFragment() {
             isAsc = !isAsc
         }
         fragmentFinanceBinding.btnReset.setOnClickListener {
+            fragmentFinanceBinding.tvFromDateCalendar.setText("")
+            fragmentFinanceBinding.etToDate.setText("")
             list = fRealm.where(RealmMyTeam::class.java).notEqualTo("status", "archived")
                 .equalTo("teamId", teamId).equalTo("docType", "transaction")
                 .sort("date", Sort.DESCENDING).findAll()
@@ -75,29 +96,71 @@ class FinanceFragment : BaseTeamFragment() {
         return fragmentFinanceBinding.root
     }
 
-    private fun showDatePickerDialog() {
+    private fun showDatePickerDialog(isFromDate: Boolean) {
         val now = Calendar.getInstance()
 
         val dpd = DatePickerDialog.newInstance(
-            { _: DatePickerDialog?, year: Int, monthOfYear: Int, dayOfMonth: Int, yearEnd: Int, monthOfYearEnd: Int, dayOfMonthEnd: Int ->
-                val start = Calendar.getInstance()
-                val end = Calendar.getInstance()
-                start[year, monthOfYear] = dayOfMonth
-                end[yearEnd, monthOfYearEnd] = dayOfMonthEnd
-                val list = fRealm.where(RealmMyTeam::class.java)
-                    .equalTo("teamId", teamId)
-                    .equalTo("docType", "transaction")
-                    .between("date", start.timeInMillis, end.timeInMillis)
-                    .sort("date", Sort.DESCENDING)
-                    .findAll()
-                updatedFinanceList(list)
+            { _, year, monthOfYear, dayOfMonth, _, _, _ ->
+                val selectedDate = Calendar.getInstance().apply {
+                    set(year, monthOfYear, dayOfMonth)
+                }
+                val formattedDate = selectedDate.formatToString("yyyy-MM-dd")
+
+                if (isFromDate) {
+                    fragmentFinanceBinding.tvFromDateCalendar.setText(formattedDate)
+                } else {
+                    fragmentFinanceBinding.etToDate.setText(formattedDate)
+                }
+
+                filterIfBothDatesSelected()
             },
             now[Calendar.YEAR],
             now[Calendar.MONTH],
             now[Calendar.DAY_OF_MONTH]
         )
+
         dpd.show(requireActivity().fragmentManager, "DATE_PICKER")
     }
+
+
+    private fun Calendar.formatToString(pattern: String): String {
+        val dateFormat = SimpleDateFormat(pattern, Locale.getDefault())
+        return dateFormat.format(this.time)
+    }
+
+
+    private fun filterIfBothDatesSelected() {
+        val fromDate = fragmentFinanceBinding.tvFromDateCalendar.text.toString()
+        val toDate = fragmentFinanceBinding.etToDate.text.toString()
+        if (fromDate.isNotEmpty() && toDate.isNotEmpty()) {
+            filterDataByDateRange(fromDate, toDate)
+        }
+    }
+
+
+    private fun filterDataByDateRange(fromDate: String, toDate: String) {
+        try {
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+
+            val start = dateFormat.parse(fromDate)?.time ?: throw IllegalArgumentException("Invalid fromDate format")
+            val end = dateFormat.parse(toDate)?.time ?: throw IllegalArgumentException("Invalid toDate format")
+
+            val list = fRealm.where(RealmMyTeam::class.java)
+                .equalTo("teamId", teamId)
+                .equalTo("docType", "transaction")
+                .between("date", start, end)
+                .sort("date", Sort.DESCENDING)
+                .findAll()
+
+            updatedFinanceList(list)
+
+        } catch (e: ParseException) {
+            e.printStackTrace()
+        } catch (e: IllegalArgumentException) {
+            e.printStackTrace()
+        }
+    }
+
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
