@@ -1,6 +1,8 @@
 package org.ole.planet.myplanet.ui.dashboard
 
+import android.content.DialogInterface
 import android.os.Bundle
+import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -17,6 +19,7 @@ import androidx.recyclerview.widget.RecyclerView
 import io.realm.Case
 import io.realm.Realm
 import kotlinx.coroutines.*
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentHomeBellBinding
 import org.ole.planet.myplanet.model.RealmCertification
@@ -62,6 +65,15 @@ class BellDashboardFragment : BaseDashboardFragment() {
         (activity as DashboardActivity?)?.supportActionBar?.hide()
         showBadges()
         checkPendingSurveys()
+
+        if (model?.id?.startsWith("guest") == false && TextUtils.isEmpty(model?.key) && MainApplication.showHealthDialog) {
+            AlertDialog.Builder(requireActivity())
+                .setMessage(getString(R.string.health_record_not_available_sync_health_data))
+                .setPositiveButton(getString(R.string.sync)) { _: DialogInterface?, _: Int ->
+                    syncKeyId()
+                    MainApplication.showHealthDialog = false
+                }.setNegativeButton(getString(R.string.cancel), null).show()
+        }
     }
 
     private fun setupNetworkStatusMonitoring() {

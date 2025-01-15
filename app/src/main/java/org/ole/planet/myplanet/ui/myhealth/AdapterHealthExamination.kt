@@ -61,7 +61,7 @@ class AdapterHealthExamination(private val context: Context, private val list: L
         rowExaminationBinding.txtPulse.text = list?.get(position)?.let { checkEmptyInt(it.pulse) }
         rowExaminationBinding.txtBp.text = list?.get(position)?.bp
         rowExaminationBinding.txtHearing.text = list?.get(position)?.hearing
-        rowExaminationBinding.txtHearing.text = list?.get(position)?.let { checkEmpty(it.height) }
+        rowExaminationBinding.txtHeight.text = list?.get(position)?.let { checkEmpty(it.height) }
         rowExaminationBinding.txtWeight.text = list?.get(position)?.let { checkEmpty(it.weight) }
         rowExaminationBinding.txtVision.text = list?.get(position)?.vision
         holder.itemView.setOnClickListener {
@@ -97,7 +97,7 @@ class AdapterHealthExamination(private val context: Context, private val list: L
         if (realmExamination != null) {
             if (realmExamination.date >= time) { dialog.setButton(DialogInterface.BUTTON_NEUTRAL, context.getString(R.string.edit)) { _: DialogInterface?, _: Int ->
                 context.startActivity(Intent(context, AddExaminationActivity::class.java)
-                    .putExtra("id", list?.get(position)?._id)
+                    .putExtra("id", list[position]._id)
                     .putExtra("userId", mh._id))
             }
             }
