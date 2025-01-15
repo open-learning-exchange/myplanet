@@ -109,7 +109,6 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>() {
         updateAdapterData(sort, "name")
     }
 
-
     private fun <T> safeCastList(items: List<Any?>, clazz: Class<T>): List<T> {
         return items.mapNotNull { it?.takeIf(clazz::isInstance)?.let(clazz::cast) }
     }
