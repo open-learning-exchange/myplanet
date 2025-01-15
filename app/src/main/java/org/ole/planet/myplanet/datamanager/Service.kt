@@ -55,7 +55,6 @@ import kotlin.math.min
 class Service(private val context: Context) {
     private val preferences: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     private val retrofitInterface: ApiInterface? = ApiClient.client?.create(ApiInterface::class.java)
-
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     fun healthAccess(listener: SuccessListener) {
@@ -387,6 +386,8 @@ class Service(private val context: Context) {
                                                 val id = firstRow.getAsJsonPrimitive("id").asString
                                                 val doc = firstRow.getAsJsonObject("doc")
                                                 val code = doc.getAsJsonPrimitive("code").asString
+                                                val parentCode = doc.getAsJsonPrimitive("parentCode").asString
+                                                preferences.edit().putString("parentCode", parentCode).apply()
                                                 return@async UrlCheckResult.Success(id, code, currentUrl)
                                             }
                                         }
