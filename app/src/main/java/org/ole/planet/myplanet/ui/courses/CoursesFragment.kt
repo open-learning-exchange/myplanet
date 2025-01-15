@@ -63,7 +63,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     lateinit var spnSubject: Spinner
     lateinit var searchTags: MutableList<RealmTag>
     private lateinit var confirmation: AlertDialog
-    private var isProgrammaticChange = false
+    private var isCheckboxChangedByCode = false
     override fun getLayout(): Int {
         return R.layout.fragment_my_course
     }
@@ -231,8 +231,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         }
         checkList()
         selectAll.setOnCheckedChangeListener { _, isChecked ->
-            if (isProgrammaticChange) {
-                isProgrammaticChange = false
+            if (isCheckboxChangedByCode) {
+                isCheckboxChangedByCode = false
                 return@setOnCheckedChangeListener
             }
             if (isChecked) {
@@ -343,9 +343,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         showNoData(tvMessage, adapterCourses.itemCount, "courses")
     }
     private fun updateCheckBoxState(programmaticState: Boolean) {
-        isProgrammaticChange = true
+        isCheckboxChangedByCode = true
         selectAll.isChecked = programmaticState
-        isProgrammaticChange = false
+        isCheckboxChangedByCode = false
     }
     private fun changeButtonStatus() {
         tvAddToLib.isEnabled = (selectedItems?.size ?: 0) > 0
