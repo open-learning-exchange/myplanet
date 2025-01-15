@@ -212,7 +212,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         requireView().findViewById<View>(R.id.tl_tags).visibility = View.GONE
         tvFragmentInfo = requireView().findViewById(R.id.tv_fragment_info)
         val gradeAdapter = ArrayAdapter.createFromResource(requireContext(), R.array.grade_level, R.layout.spinner_item)
-        gradeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        gradeAdapter.setDropDownViewResource(R.layout.custom_simple_list_item_1)
         spnGrade.adapter = gradeAdapter
 
         val subjectAdapter = ArrayAdapter.createFromResource(requireContext(), R.array.subject_level, R.layout.spinner_item)
