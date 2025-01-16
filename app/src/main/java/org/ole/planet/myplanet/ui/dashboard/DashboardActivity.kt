@@ -7,13 +7,11 @@ import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.drawable.Drawable
+import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.view.LayoutInflater
-import android.view.Menu
-import android.view.MenuItem
-import android.view.View
+import android.view.*
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatDelegate
@@ -56,6 +54,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserChallengeActions
+import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createAction
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.SettingActivity
@@ -82,6 +81,7 @@ import org.ole.planet.myplanet.utilities.FileUtils.totalAvailableMemoryRatio
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.MarkdownDialog
+import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.Utilities.toast
@@ -175,13 +175,37 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             openCallFragment(BellDashboardFragment())
             activityDashboardBinding.appBarBell.bellToolbar.visibility = View.VISIBLE
         }
+
         activityDashboardBinding.appBarBell.ivSync.setOnClickListener {
+            val serverUrlMapper = ServerUrlMapper(this)
+            val url = Utilities.getUrl()
+            val mapping = serverUrlMapper.processUrl(url)
+
             lifecycleScope.launch {
-                if (isServerReachable(Utilities.getUrl())) {
-                    startUpload("")
+                val isPrimaryReachable = isServerReachable(Utilities.getUrl())
+
+                if (isPrimaryReachable) {
+                    startUpload("dashboard")
+                    createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
+                } else if (mapping.alternativeUrl != null) {
+                    val uri = Uri.parse(mapping.alternativeUrl)
+
+                    serverUrlMapper.updateUrlPreferences(editor, uri, mapping.alternativeUrl, url, settings)
+                    val processedUrl = settings.getString("processedAlternativeUrl", "")
+
+                    val isAlternativeReachable = isServerReachable(processedUrl ?: "")
+
+                    if (isAlternativeReachable) {
+                        startUpload("dashboard")
+                        createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
+                    }
+                } else {
+                    startUpload("dashboard")
+                    createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
                 }
             }
         }
+
         activityDashboardBinding.appBarBell.imgLogo.setOnClickListener { result?.openDrawer() }
         activityDashboardBinding.appBarBell.bellToolbar.setOnMenuItemClickListener { item ->
             when (item.itemId) {
@@ -812,9 +836,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         get() {
             val menuImageList = ArrayList<Drawable>()
             ResourcesCompat.getDrawable(resources, R.drawable.myplanet, null)?.let { menuImageList.add(it) }
-            ResourcesCompat.getDrawable(resources, R.drawable.mylibrary, null)?.let { menuImageList.add(it) }
-            ResourcesCompat.getDrawable(resources, R.drawable.ourcourses, null)?.let { menuImageList.add(it) }
             ResourcesCompat.getDrawable(resources, R.drawable.ourlibrary, null)?.let { menuImageList.add(it) }
+            ResourcesCompat.getDrawable(resources, R.drawable.ourcourses, null)?.let { menuImageList.add(it) }
+            ResourcesCompat.getDrawable(resources, R.drawable.mylibrary, null)?.let { menuImageList.add(it) }
             ResourcesCompat.getDrawable(resources, R.drawable.mycourses, null)?.let { menuImageList.add(it) }
             ResourcesCompat.getDrawable(resources, R.drawable.team, null)?.let { menuImageList.add(it) }
             ResourcesCompat.getDrawable(resources, R.drawable.business, null)?.let { menuImageList.add(it) }

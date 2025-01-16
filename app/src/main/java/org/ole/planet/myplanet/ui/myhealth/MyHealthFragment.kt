@@ -67,7 +67,7 @@ class MyHealthFragment : Fragment() {
             val now = Calendar.getInstance()
             val dpd = DatePickerDialog(requireContext(), { _, year, month, dayOfMonth ->
                 val selectedDate = String.format(Locale.US, "%04d-%02d-%02dT00:00:00.000Z", year, month + 1, dayOfMonth)
-                fragmentVitalSignBinding.txtDob.setText(selectedDate)
+                fragmentVitalSignBinding.txtDob.text = selectedDate
             }, now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH))
             dpd.show()
         }
@@ -205,11 +205,11 @@ class MyHealthFragment : Fragment() {
                 return
             }
             val myHealths = mm.profile
-            fragmentVitalSignBinding.txtOtherNeed.text = Utilities.checkNA(myHealths?.notes!!)
-            fragmentVitalSignBinding.txtSpecialNeeds.text = Utilities.checkNA(myHealths.specialNeeds)
-            fragmentVitalSignBinding.txtBirthPlace.text = Utilities.checkNA(userModel?.birthPlace!!)
-            fragmentVitalSignBinding.txtEmergencyContact.text = getString(R.string.emergency_contact_details, Utilities.checkNA(myHealths.emergencyContactName),
-                Utilities.checkNA(myHealths.emergencyContactName), Utilities.checkNA(myHealths.emergencyContact)).trimIndent()
+            fragmentVitalSignBinding.txtOtherNeed.text = Utilities.checkNA("${myHealths?.notes}")
+            fragmentVitalSignBinding.txtSpecialNeeds.text = Utilities.checkNA("${myHealths?.specialNeeds}")
+            fragmentVitalSignBinding.txtBirthPlace.text = Utilities.checkNA("${userModel?.birthPlace}")
+            fragmentVitalSignBinding.txtEmergencyContact.text = getString(R.string.emergency_contact_details, Utilities.checkNA("${myHealths?.emergencyContactName}"),
+                Utilities.checkNA("${myHealths?.emergencyContactName}"), Utilities.checkNA("${myHealths?.emergencyContact}")).trimIndent()
             val list = getExaminations(mm)
 
             val adap = AdapterHealthExamination(requireActivity(), list, mh, userModel)
