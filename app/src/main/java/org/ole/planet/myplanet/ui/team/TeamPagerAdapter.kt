@@ -12,6 +12,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.ui.enterprises.EnterpriseCalendarFragment
 import org.ole.planet.myplanet.ui.enterprises.FinanceFragment
 import org.ole.planet.myplanet.ui.enterprises.ReportsFragment
+import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.ui.team.teamCourse.TeamCourseFragment
 import org.ole.planet.myplanet.ui.team.teamDiscussion.DiscussionListFragment
 import org.ole.planet.myplanet.ui.team.teamMember.JoinedMemberFragment
@@ -25,20 +26,22 @@ class TeamPagerAdapter(fm: FragmentActivity, team: RealmMyTeam?, isInMyTeam: Boo
     private val isEnterprise: Boolean = TextUtils.equals(team?.type, "enterprise")
 
     init {
-        list.add(context.getString(if (isEnterprise) R.string.mission else R.string.plan))
-        list.add(context.getString(if (isEnterprise) R.string.team else R.string.members))
         if (isInMyTeam || team?.isPublic == true) {
             list.add(context.getString(R.string.chat))
+            list.add(context.getString(if (isEnterprise) R.string.mission else R.string.plan))
+            list.add(context.getString(if (isEnterprise) R.string.team else R.string.members))
             list.add(context.getString(R.string.tasks))
             list.add(context.getString(R.string.calendar))
+            list.add(context.getString(R.string.survey))
             list.add(context.getString(if (isEnterprise) R.string.finances else R.string.courses))
-            if (isEnterprise) list.add(context.getString(R.string.reports))
+            if (isEnterprise) {
+                list.add(context.getString(R.string.reports))
+            }
             list.add(context.getString(if (isEnterprise) R.string.documents else R.string.resources))
             list.add(context.getString(if (isEnterprise) R.string.applicants else R.string.join_requests))
-            list.removeAt(0)
-            list.removeAt(0)
-            list.add(1, context.getString(if (isEnterprise) R.string.mission else R.string.plan))
-            list.add(2, context.getString(if (isEnterprise) R.string.team else R.string.members))
+        } else {
+            list.add(context.getString(if (isEnterprise) R.string.mission else R.string.plan))
+            list.add(context.getString(if (isEnterprise) R.string.team else R.string.members))
         }
     }
 
@@ -56,6 +59,12 @@ class TeamPagerAdapter(fm: FragmentActivity, team: RealmMyTeam?, isInMyTeam: Boo
             context.getString(R.string.members), context.getString(R.string.team) -> JoinedMemberFragment()
             context.getString(R.string.tasks) -> TeamTaskFragment()
             context.getString(R.string.calendar) -> EnterpriseCalendarFragment()
+            context.getString(R.string.survey) -> SurveyFragment().apply {
+                arguments = Bundle().apply {
+                    putBoolean("isTeam", true)
+                    putString("teamId", teamId)
+                }
+            }
             context.getString(R.string.courses) -> TeamCourseFragment()
             context.getString(R.string.finances) -> FinanceFragment()
             context.getString(R.string.reports) -> ReportsFragment()
@@ -63,10 +72,11 @@ class TeamPagerAdapter(fm: FragmentActivity, team: RealmMyTeam?, isInMyTeam: Boo
             context.getString(R.string.join_requests), context.getString(R.string.applicants) -> MembersFragment()
             else -> throw IllegalArgumentException("Invalid fragment type for position: $position")
         }
-
-        val bundle = Bundle()
-        bundle.putString("id", teamId)
-        fragment.arguments = bundle
+        if (fragment.arguments == null) {
+            fragment.arguments = Bundle().apply {
+                putString("id", teamId)
+            }
+        }
         return fragment
     }
 
