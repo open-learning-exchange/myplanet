@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.community
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -50,11 +51,19 @@ class ServicesFragment : BaseTeamFragment() {
 
         if (links?.size == 0) {
             fragmentServicesBinding.llServices.visibility = View.GONE
+            fragmentServicesBinding.tvNoLinks.visibility = View.VISIBLE
+        }else{
+            fragmentServicesBinding.llServices.visibility = View.VISIBLE
         }
 
         val description = team?.description ?: ""
-        fragmentServicesBinding.llServices.visibility = View.VISIBLE
-        fragmentServicesBinding.tvDescription.visibility = View.VISIBLE
+        if(description.isEmpty()){
+            fragmentServicesBinding.tvDescription.visibility = View.GONE
+            fragmentServicesBinding.tvNoDescription.visibility = View.VISIBLE
+        }else{
+            Log.d("ServicesFragment", "onViewCreated: $description")
+            fragmentServicesBinding.tvDescription.visibility = View.VISIBLE
+        }
         val markdownContentWithLocalPaths = CourseStepFragment.prependBaseUrlToImages(description, "file://${MainApplication.context.getExternalFilesDir(null)}/ole/")
         setMarkdownText(fragmentServicesBinding.tvDescription, markdownContentWithLocalPaths)
         setRecyclerView(links)
@@ -75,11 +84,7 @@ class ServicesFragment : BaseTeamFragment() {
 
     private fun setRecyclerView(links: RealmResults<RealmMyTeam>?) {
         fragmentServicesBinding.llServices.removeAllViews()
-        if (links.isNullOrEmpty()) {
-            fragmentServicesBinding.tvDescription.visibility = View.GONE
-            fragmentServicesBinding.tvNoDescription.visibility = View.VISIBLE
-            fragmentServicesBinding.tvNoLinks.visibility = View.VISIBLE
-        } else {
+        if (links != null) {
             links.forEach { team ->
                 val b: TextView = LayoutInflater.from(activity).inflate(R.layout.button_single, fragmentServicesBinding.llServices, false) as TextView
                 b.setPadding(8, 8, 8, 8)
