@@ -50,11 +50,19 @@ class ServicesFragment : BaseTeamFragment() {
 
         if (links?.size == 0) {
             fragmentServicesBinding.llServices.visibility = View.GONE
+            fragmentServicesBinding.tvNoLinks.visibility = View.VISIBLE
+        } else {
+            fragmentServicesBinding.llServices.visibility = View.VISIBLE
         }
 
         val description = team?.description ?: ""
-        fragmentServicesBinding.llServices.visibility = View.VISIBLE
-        fragmentServicesBinding.tvDescription.visibility = View.VISIBLE
+        if (description.isEmpty()) {
+            fragmentServicesBinding.tvDescription.visibility = View.GONE
+            fragmentServicesBinding.tvNoDescription.visibility = View.VISIBLE
+        } else {
+            fragmentServicesBinding.tvDescription.visibility = View.VISIBLE
+            fragmentServicesBinding.tvNoDescription.visibility = View.GONE
+        }
         val markdownContentWithLocalPaths = CourseStepFragment.prependBaseUrlToImages(description, "file://${MainApplication.context.getExternalFilesDir(null)}/ole/")
         setMarkdownText(fragmentServicesBinding.tvDescription, markdownContentWithLocalPaths)
         setRecyclerView(links)
@@ -75,25 +83,27 @@ class ServicesFragment : BaseTeamFragment() {
 
     private fun setRecyclerView(links: RealmResults<RealmMyTeam>?) {
         fragmentServicesBinding.llServices.removeAllViews()
-        links?.forEach { team ->
-            val b: TextView = LayoutInflater.from(activity).inflate(R.layout.button_single, fragmentServicesBinding.llServices, false) as TextView
-            b.setPadding(8, 8, 8, 8)
-            b.text = team.title
-            b.setOnClickListener {
-                val route = team.route?.split("/")
-                if (route != null) {
-                    if (route.size >= 3) {
-                        val f = TeamDetailFragment()
-                        val c = Bundle()
-                        val teamObject = mRealm.where(RealmMyTeam::class.java)?.equalTo("_id", route[3])?.findFirst()
-                        c.putString("id", route[3])
-                        teamObject?.isMyTeam(user?.id, mRealm)?.let { it1 -> c.putBoolean("isMyTeam", it1) }
-                        f.arguments = c
-                        (context as OnHomeItemClickListener).openCallFragment(f)
+        if (links != null) {
+            links.forEach { team ->
+                val b: TextView = LayoutInflater.from(activity).inflate(R.layout.button_single, fragmentServicesBinding.llServices, false) as TextView
+                b.setPadding(8, 8, 8, 8)
+                b.text = team.title
+                b.setOnClickListener {
+                    val route = team.route?.split("/")
+                    if (route != null) {
+                        if (route.size >= 3) {
+                            val f = TeamDetailFragment()
+                            val c = Bundle()
+                            val teamObject = mRealm.where(RealmMyTeam::class.java)?.equalTo("_id", route[3])?.findFirst()
+                            c.putString("id", route[3])
+                            teamObject?.isMyTeam(user?.id, mRealm)?.let { it1 -> c.putBoolean("isMyTeam", it1) }
+                            f.arguments = c
+                            (context as OnHomeItemClickListener).openCallFragment(f)
+                        }
                     }
                 }
+                fragmentServicesBinding.llServices.addView(b)
             }
-            fragmentServicesBinding.llServices.addView(b)
         }
     }
 }
