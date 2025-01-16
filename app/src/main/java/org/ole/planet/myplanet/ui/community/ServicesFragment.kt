@@ -63,6 +63,7 @@ class ServicesFragment : BaseTeamFragment() {
         }else{
             Log.d("ServicesFragment", "onViewCreated: $description")
             fragmentServicesBinding.tvDescription.visibility = View.VISIBLE
+            fragmentServicesBinding.tvNoDescription.visibility = View.GONE
         }
         val markdownContentWithLocalPaths = CourseStepFragment.prependBaseUrlToImages(description, "file://${MainApplication.context.getExternalFilesDir(null)}/ole/")
         setMarkdownText(fragmentServicesBinding.tvDescription, markdownContentWithLocalPaths)

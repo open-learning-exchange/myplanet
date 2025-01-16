@@ -6,7 +6,7 @@
     android:background="@drawable/border"
     android:orientation="vertical"
     android:padding="@dimen/padding_large"
-    android:textColor="@color/md_black_1000"
+    android:textColor="@color/daynight_textColor"
     android:textSize="18sp">
 
 </TextView>
