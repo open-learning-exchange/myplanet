@@ -8,5 +8,4 @@
     android:padding="@dimen/padding_large"
     android:textColor="@color/daynight_textColor"
     android:textSize="18sp">
-
 </TextView>
