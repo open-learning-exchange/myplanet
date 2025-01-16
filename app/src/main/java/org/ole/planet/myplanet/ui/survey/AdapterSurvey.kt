@@ -14,21 +14,17 @@ import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.getNoOfSubmissionByUser
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.getRecentSubmissionDate
-import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
-class AdapterSurvey(private val context: Context, private val mRealm: Realm, private val userId: String) : RecyclerView.Adapter<AdapterSurvey.ViewHolderSurvey>() {
+class AdapterSurvey(private val context: Context, private val mRealm: Realm, private val userId: String, private val isTeam: Boolean, val teamId: String?) : RecyclerView.Adapter<AdapterSurvey.ViewHolderSurvey>() {
     private var examList: List<RealmStepExam> = emptyList()
     private var listener: OnHomeItemClickListener? = null
-    private var user: RealmUserModel? = null
 
     init {
         if (context is OnHomeItemClickListener) {
             listener = context
         }
-        user = UserProfileDbHandler(context).userModel
     }
 
     fun updateData(newList: List<RealmStepExam>) {
@@ -63,7 +59,7 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
             binding.apply {
                 tvTitle.text = exam.name
                 startSurvey.setOnClickListener {
-                    AdapterMySubmission.openSurvey(listener, exam.id, false)
+                    AdapterMySubmission.openSurvey(listener, exam.id, false, isTeam, teamId)
                 }
 
                 val questions = mRealm.where(RealmExamQuestion::class.java)
@@ -81,12 +77,12 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
                     context.getString(R.string.record_survey)
                 }
 
-                if (user?.id?.startsWith("guest") == true) {
+                if (userId.startsWith("guest") == true) {
                     startSurvey.visibility = View.GONE
                 }
 
-                tvNoSubmissions.text = getNoOfSubmissionByUser(exam.id, exam.courseId, user?.id, mRealm)
-                tvDateCompleted.text = getRecentSubmissionDate(exam.id, exam.courseId, user?.id, mRealm)
+                tvNoSubmissions.text = getNoOfSubmissionByUser(exam.id, exam.courseId, userId, mRealm)
+                tvDateCompleted.text = getRecentSubmissionDate(exam.id, exam.courseId, userId, mRealm)
                 tvDate.text = formatDate(RealmStepExam.getSurveyCreationTime(exam.id!!, mRealm)!!, "MMM dd, yyyy")
             }
         }

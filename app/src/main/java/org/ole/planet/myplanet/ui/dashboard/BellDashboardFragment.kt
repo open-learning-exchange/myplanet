@@ -67,7 +67,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         checkPendingSurveys()
 
         if (model?.id?.startsWith("guest") == false && TextUtils.isEmpty(model?.key) && MainApplication.showHealthDialog) {
-            AlertDialog.Builder(requireActivity())
+            AlertDialog.Builder(requireActivity(), R.style.CustomAlertDialog)
                 .setMessage(getString(R.string.health_record_not_available_sync_health_data))
                 .setPositiveButton(getString(R.string.sync)) { _: DialogInterface?, _: Int ->
                     syncKeyId()
@@ -144,7 +144,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
             val adapter = SurveyAdapter(surveyTitles, { position ->
                 val selectedSurvey = pendingSurveys[position].id
-                AdapterMySubmission.openSurvey(homeItemClickListener, selectedSurvey, true)
+                AdapterMySubmission.openSurvey(homeItemClickListener, selectedSurvey, true, false, "")
             }, alertDialog)
 
             recyclerView.adapter = adapter

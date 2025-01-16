@@ -117,7 +117,7 @@ class MyHealthFragment : Fragment() {
             dialog?.dismiss()
         }
         sortList(alertHealthListBinding.spnSort, alertHealthListBinding.list)
-        dialog = AlertDialog.Builder(requireActivity())
+        dialog = AlertDialog.Builder(requireActivity(),R.style.AlertDialogTheme)
             .setTitle(getString(R.string.select_health_member)).setView(alertHealthListBinding.root)
             .setCancelable(false).setNegativeButton(R.string.dismiss, null).create()
         dialog?.show()
