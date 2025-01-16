@@ -52,6 +52,9 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     var date = Date().toString()
     private var photoPath: String? = ""
     var submitId = ""
+    private var isTeam: Boolean = false
+    private var teamId: String? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         db = DatabaseService(requireActivity())
@@ -60,6 +63,8 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
             stepId = requireArguments().getString("stepId")
             stepNumber = requireArguments().getInt("stepNum")
             isMySurvey = requireArguments().getBoolean("isMySurvey")
+            isTeam = requireArguments().getBoolean("isTeam", false)
+            teamId = requireArguments().getString("teamId")
             checkId()
             checkType()
         }
@@ -108,6 +113,8 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     private fun continueExam() {
         if (currentIndex < (questions?.size ?: 0)) {
             startExam(questions?.get(currentIndex))
+        } else if (isTeam == true && type?.startsWith("survey") == true) {
+            showUserInfoDialog()
         } else {
             saveCourseProgress()
             AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
@@ -131,7 +138,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
 
     private fun showUserInfoDialog() {
         if (!isMySurvey && !exam?.isFromNation!!) {
-            UserInformationFragment.getInstance(sub?.id).show(childFragmentManager, "")
+            UserInformationFragment.getInstance(sub?.id, teamId).show(childFragmentManager, "")
         } else {
             if (!mRealm.isInTransaction) mRealm.beginTransaction()
             sub?.status = "complete"
