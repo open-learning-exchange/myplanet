@@ -4,6 +4,7 @@ import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
+import kotlinx.coroutines.*
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import java.util.Date
 import java.util.UUID
@@ -22,17 +23,23 @@ open class RealmCourseActivity : RealmObject() {
     var user: String? = null
 
     companion object {
-        fun createActivity(realm: Realm, userModel: RealmUserModel?, course: RealmMyCourse?) {
-            if (!realm.isInTransaction) {
-                realm.executeTransaction {
-                    val activity = it.createObject(RealmCourseActivity::class.java, UUID.randomUUID().toString())
-                    activity.type = "visit"
-                    activity.title = course?.courseTitle
-                    activity.courseId = course?.courseId
-                    activity.time = Date().time
-                    activity.parentCode = userModel?.parentCode
-                    activity.createdOn = userModel?.planetCode
-                    activity.user = userModel?.name
+        suspend fun createActivity(realm: Realm, userModel: RealmUserModel?, course: RealmMyCourse?) {
+            withContext(Dispatchers.IO) {
+                try {
+                    if (!realm.isInTransaction) {
+                        realm.executeTransaction { realmInstance ->
+                            val activity = realmInstance.createObject(RealmCourseActivity::class.java, UUID.randomUUID().toString())
+                            activity.type = "visit"
+                            activity.title = course?.courseTitle
+                            activity.courseId = course?.courseId
+                            activity.time = Date().time
+                            activity.parentCode = userModel?.parentCode
+                            activity.createdOn = userModel?.planetCode
+                            activity.user = userModel?.name
+                        }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
             }
         }

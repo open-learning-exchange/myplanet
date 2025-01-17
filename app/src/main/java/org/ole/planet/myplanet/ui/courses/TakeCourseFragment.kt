@@ -10,8 +10,10 @@ import android.widget.SeekBar.OnSeekBarChangeListener
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.viewpager.widget.ViewPager
 import io.realm.Realm
+import kotlinx.coroutines.*
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentTakeCourseBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -117,24 +119,47 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private fun setCourseData() {
-        if (userModel?.isGuest() != true && currentCourse?.userId?.contains(userModel?.id) != true) {
-            fragmentTakeCourseBinding.btnRemove.visibility = View.VISIBLE
-            fragmentTakeCourseBinding.btnRemove.text = getString(R.string.join)
-            getAlertDialog(requireActivity(), getString(R.string.do_you_want_to_join_this_course), getString(R.string.join_this_course)) { _: DialogInterface?, _: Int -> addRemoveCourse() }
-        } else {
-            fragmentTakeCourseBinding.btnRemove.visibility = View.GONE
-        }
-        RealmCourseActivity.createActivity(mRealm, userModel, currentCourse)
-        fragmentTakeCourseBinding.courseProgress.max = steps.size
-        updateStepDisplay(fragmentTakeCourseBinding.viewPager2.currentItem)
+        val isGuest = userModel?.isGuest() == true
+        val containsUserId = currentCourse?.userId?.contains(userModel?.id) == true
+        val stepsSize = steps.size
+        val currentItem = fragmentTakeCourseBinding.viewPager2.currentItem
 
-        if (currentCourse?.userId?.contains(userModel?.id) == true) {
-            fragmentTakeCourseBinding.nextStep.visibility = View.VISIBLE
-            fragmentTakeCourseBinding.courseProgress.visibility = View.VISIBLE
-        } else {
-            fragmentTakeCourseBinding.nextStep.visibility = View.GONE
-            fragmentTakeCourseBinding.previousStep.visibility = View.GONE
-            fragmentTakeCourseBinding.courseProgress.visibility = View.GONE
+        lifecycleScope.launch {
+            withContext(Dispatchers.Main) {
+                if (!isGuest && !containsUserId) {
+                    fragmentTakeCourseBinding.btnRemove.visibility = View.VISIBLE
+                    fragmentTakeCourseBinding.btnRemove.text = getString(R.string.join)
+                    getAlertDialog(requireActivity(), getString(R.string.do_you_want_to_join_this_course), getString(R.string.join_this_course)) { _: DialogInterface?, _: Int ->
+                        addRemoveCourse()
+                    }
+                } else {
+                    fragmentTakeCourseBinding.btnRemove.visibility = View.GONE
+                }
+            }
+
+            withContext(Dispatchers.IO) {
+                try {
+                    Realm.getDefaultInstance().use { backgroundRealm ->
+                        RealmCourseActivity.createActivity(backgroundRealm, userModel?.let { backgroundRealm.copyFromRealm(it) }, currentCourse?.let { backgroundRealm.copyFromRealm(it) })
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+
+            withContext(Dispatchers.Main) {
+                fragmentTakeCourseBinding.courseProgress.max = stepsSize
+                updateStepDisplay(currentItem)
+
+                if (containsUserId) {
+                    fragmentTakeCourseBinding.nextStep.visibility = View.VISIBLE
+                    fragmentTakeCourseBinding.courseProgress.visibility = View.VISIBLE
+                } else {
+                    fragmentTakeCourseBinding.nextStep.visibility = View.GONE
+                    fragmentTakeCourseBinding.previousStep.visibility = View.GONE
+                    fragmentTakeCourseBinding.courseProgress.visibility = View.GONE
+                }
+            }
         }
     }
 

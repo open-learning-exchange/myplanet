@@ -45,7 +45,7 @@ object TransactionSyncManager {
     fun authenticate(): Boolean {
         val apiInterface = client?.create(ApiInterface::class.java)
         try {
-            val response: Response<DocumentResponse>? = apiInterface?.getDocuments(Utilities.header, Utilities.getUrl() + "/tablet_users/_all_docs")?.execute()
+            val response: Response<DocumentResponse>? = apiInterface?.getDocuments(Utilities.header, "${Utilities.getUrl()}/tablet_users/_all_docs")?.execute()
             if (response != null) {
                 return response.code() == 200
             }
@@ -59,7 +59,7 @@ object TransactionSyncManager {
         listener.onSyncStarted()
         val userName = settings.getString("loginUserName", "")
         val password = settings.getString("loginUserPassword", "")
-        val header = "Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)
+        val header = "Basic ${Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)}"
         mRealm.executeTransactionAsync({ realm: Realm ->
             val users = realm.where(RealmUserModel::class.java).isNotEmpty("_id").findAll()
             for (userModel in users) {
@@ -71,15 +71,16 @@ object TransactionSyncManager {
     }
 
     private fun syncHealthData(userModel: RealmUserModel?, header: String) {
-        val table = "userdb-" + userModel?.planetCode?.let { Utilities.toHex(it) } + "-" + userModel?.name?.let { Utilities.toHex(it) }
+        val table = "userdb-${userModel?.planetCode?.let { Utilities.toHex(it) }}-${userModel?.name?.let { Utilities.toHex(it) }}"
         val apiInterface = client?.create(ApiInterface::class.java)
         val response: Response<DocumentResponse>?
         try {
-            response = apiInterface?.getDocuments(header, Utilities.getUrl() + "/" + table + "/_all_docs")?.execute()
+            response = apiInterface?.getDocuments(header, "${Utilities.getUrl()}/$table/_all_docs")?.execute()
             val ob = response?.body()
             if (ob != null && ob.rows?.isNotEmpty() == true) {
                 val r = ob.rows!![0]
-                val jsonDoc = apiInterface?.getJsonObject(header, Utilities.getUrl() + "/" + table + "/" + r.id)?.execute()?.body()
+                val jsonDoc = apiInterface.getJsonObject(header, "${Utilities.getUrl()}/$table/${r.id}")
+                    .execute().body()
                 userModel?.key = getString("key", jsonDoc)
                 userModel?.iv = getString("iv", jsonDoc)
             }

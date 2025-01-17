@@ -10,8 +10,10 @@ import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.realm.Realm
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -37,6 +39,7 @@ import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils.extractProtocol
 import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
+import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.Sha256Utils
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils
@@ -49,7 +52,6 @@ import kotlin.math.min
 class Service(private val context: Context) {
     private val preferences: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     private val retrofitInterface: ApiInterface? = ApiClient.client?.create(ApiInterface::class.java)
-
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     fun healthAccess(listener: SuccessListener) {
@@ -98,10 +100,13 @@ class Service(private val context: Context) {
     }
 
     fun checkVersion(callback: CheckVersionCallback, settings: SharedPreferences) {
-        if (settings.getString("couchdbURL", "")?.isEmpty() == true) {
-            callback.onError(context.getString(R.string.config_not_available), true)
-            return
+        if (!settings.getBoolean("isAlternativeUrl", false)){
+            if (settings.getString("couchdbURL", "")?.isEmpty() == true) {
+                callback.onError(context.getString(R.string.config_not_available), true)
+                return
+            }
         }
+
         retrofitInterface?.checkVersion(Utilities.getUpdateUrl(settings))?.enqueue(object : Callback<MyPlanet?> {
             override fun onResponse(call: Call<MyPlanet?>, response: Response<MyPlanet?>) {
                 preferences.edit().putInt("LastWifiID", NetworkUtils.getCurrentNetworkId(context)).apply()
@@ -316,84 +321,129 @@ class Service(private val context: Context) {
     }
 
     fun getMinApk(listener: ConfigurationIdListener?, url: String, pin: String, activity: SyncActivity) {
-        val customProgressDialog = CustomProgressDialog(context).apply {
-            setText(context.getString(R.string.check_apk_version))
-            show()
-        }
+        val serverUrlMapper = ServerUrlMapper(context)
+        val mapping = serverUrlMapper.processUrl(url)
 
-        retrofitInterface?.getConfiguration("$url/versions")?.enqueue(object : Callback<JsonObject?> {
-            override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
-                if (response.isSuccessful) {
-                    response.body()?.let { jsonObject ->
-                        val currentVersion = "${context.resources.getText(R.string.app_version)}"
-                        val minApkVersion = jsonObject.get("minapk").asString
-                        if (isVersionAllowed(currentVersion, minApkVersion)) {
-                            customProgressDialog.setText(context.getString(R.string.checking_server))
-                            val uri = Uri.parse(url)
-                            val couchdbURL: String
-                            if (url.contains("@")) {
-                                getUserInfo(uri)
-                                couchdbURL = url
-                            } else {
-                                val urlUser = "satellite"
-                                couchdbURL = "${uri.scheme}://$urlUser:$pin@${uri.host}:${if (uri.port == -1) if (uri.scheme == "http") 80 else 443 else uri.port}"
-                            }
-                            retrofitInterface.getConfiguration("${getUrl(couchdbURL)}/configurations/_all_docs?include_docs=true").enqueue(object : Callback<JsonObject?> {
-                                override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
-                                    if (response.isSuccessful) {
-                                        val jsonObjectResponse = response.body()
-                                        val rows = jsonObjectResponse?.getAsJsonArray("rows")
-                                        if (rows != null && rows.size() > 0) {
-                                            val firstRow = rows.get(0).asJsonObject
-                                            val id = firstRow.getAsJsonPrimitive("id").asString
-                                            val doc = firstRow.getAsJsonObject("doc")
-                                            val code = doc.getAsJsonPrimitive("code").asString
-                                            listener?.onConfigurationIdReceived(id, code)
-                                            activity.setSyncFailed(false)
+        val urlsToTry = mutableListOf(url)
+        mapping.alternativeUrl?.let { urlsToTry.add(it) }
+
+        MainApplication.applicationScope.launch {
+            val customProgressDialog = withContext(Dispatchers.Main) {
+                CustomProgressDialog(context).apply {
+                    setText(context.getString(R.string.check_apk_version))
+                    show()
+                }
+            }
+
+            try {
+                val result = withContext(Dispatchers.IO) {
+                    val deferredResults = urlsToTry.map { currentUrl ->
+                        async {
+                            try {
+                                val versionsResponse =
+                                    try {
+                                        val response = retrofitInterface?.getConfiguration("$currentUrl/versions")?.execute()
+                                        response
+                                    } catch (e: java.net.ConnectException) {
+                                        e.printStackTrace()
+                                        null
+                                    } catch (e: java.net.SocketTimeoutException) {
+                                        e.printStackTrace()
+                                        null
+                                    } catch (e: Exception) {
+                                        e.printStackTrace()
+                                        null
+                                    }
+
+                                if (versionsResponse?.isSuccessful == true) {
+                                    val jsonObject = versionsResponse.body()
+                                    val currentVersion = "${context.resources.getText(R.string.app_version)}"
+                                    val minApkVersion = jsonObject?.get("minapk")?.asString
+
+                                    if (minApkVersion != null && isVersionAllowed(currentVersion, minApkVersion)) {
+                                        val uri = Uri.parse(currentUrl)
+                                        val couchdbURL = if (currentUrl.contains("@")) {
+                                            getUserInfo(uri)
+                                            currentUrl
                                         } else {
-                                            activity.setSyncFailed(true)
-                                            showAlertDialog(context.getString(R.string.failed_to_get_configuration_id), false)
+                                            val urlUser = "satellite"
+                                            "${uri.scheme}://$urlUser:$pin@${uri.host}:${if (uri.port == -1) if (uri.scheme == "http") 80 else 443 else uri.port}"
                                         }
-                                    } else {
-                                        activity.setSyncFailed(true)
-                                        showAlertDialog(context.getString(R.string.failed_to_get_configuration_id), false)
-                                    }
-                                    customProgressDialog.dismiss()
-                                }
 
-                                override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
-                                    activity.setSyncFailed(true)
-                                    customProgressDialog.dismiss()
-                                    if (getUrl(couchdbURL) == context.getString(R.string.http_protocol)) {
-                                        showAlertDialog(context.getString(R.string.device_couldn_t_reach_local_server), false)
-                                    } else if (getUrl(couchdbURL) == context.getString(R.string.https_protocol)) {
-                                        showAlertDialog(context.getString(R.string.device_couldn_t_reach_nation_server), false)
+                                        withContext(Dispatchers.Main) {
+                                            customProgressDialog.setText(context.getString(R.string.checking_server))
+                                        }
+
+                                        val configResponse = retrofitInterface?.getConfiguration("${getUrl(couchdbURL)}/configurations/_all_docs?include_docs=true")?.execute()
+
+                                        if (configResponse?.isSuccessful == true) {
+                                            val rows = configResponse.body()?.getAsJsonArray("rows")
+                                            if (rows != null && rows.size() > 0) {
+                                                val firstRow = rows.get(0).asJsonObject
+                                                val id = firstRow.getAsJsonPrimitive("id").asString
+                                                val doc = firstRow.getAsJsonObject("doc")
+                                                val code = doc.getAsJsonPrimitive("code").asString
+                                                val parentCode = doc.getAsJsonPrimitive("parentCode").asString
+                                                preferences.edit().putString("parentCode", parentCode).apply()
+                                                return@async UrlCheckResult.Success(id, code, currentUrl)
+                                            }
+                                        }
                                     }
                                 }
-                            })
-                        } else {
-                            activity.setSyncFailed(true)
-                            customProgressDialog.dismiss()
-                            showAlertDialog(context.getString(R.string.below_min_apk), true)
+                                return@async UrlCheckResult.Failure(currentUrl)
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                                return@async UrlCheckResult.Failure(currentUrl)
+                            }
                         }
                     }
-                } else {
-                    activity.setSyncFailed(true)
-                    customProgressDialog.dismiss()
-                    showAlertDialog(context.getString(R.string.device_couldn_t_reach_local_server), false)
+                    val result = deferredResults.awaitFirst { it is UrlCheckResult.Success }
+                    result
                 }
-            }
 
-            override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
-                activity.setSyncFailed(true)
-                customProgressDialog.dismiss()
-                if (extractProtocol(url) == context.getString(R.string.http_protocol)) {
-                    showAlertDialog(context.getString(R.string.device_couldn_t_reach_local_server), false)
-                } else if (extractProtocol(url) == context.getString(R.string.https_protocol)) {
-                    showAlertDialog(context.getString(R.string.device_couldn_t_reach_nation_server), false)
+                when (result) {
+                    is UrlCheckResult.Success -> {
+                        val isAlternativeUrl = result.url != url
+                        listener?.onConfigurationIdReceived(result.id, result.code, result.url, isAlternativeUrl)
+                        activity.setSyncFailed(false)
+                    }
+                    is UrlCheckResult.Failure -> {
+                        activity.setSyncFailed(true)
+                        val errorMessage = when (extractProtocol(url)) {
+                            context.getString(R.string.http_protocol) -> context.getString(R.string.device_couldn_t_reach_local_server)
+                            context.getString(R.string.https_protocol) -> context.getString(R.string.device_couldn_t_reach_nation_server)
+                            else -> context.getString(R.string.device_couldn_t_reach_local_server)
+                        }
+                        showAlertDialog(errorMessage, false)
+                    }
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                activity.setSyncFailed(true)
+                withContext(Dispatchers.Main) {
+                    showAlertDialog(context.getString(R.string.device_couldn_t_reach_local_server), false)
+                }
+            } finally {
+                customProgressDialog.dismiss()
             }
-        })
+        }
+    }
+
+    sealed class UrlCheckResult {
+        data class Success(val id: String, val code: String, val url: String) : UrlCheckResult()
+        data class Failure(val url: String) : UrlCheckResult()
+    }
+
+    private suspend fun <T> List<Deferred<T>>.awaitFirst(predicate: (T) -> Boolean): T {
+        return firstOrNull { job ->
+            try {
+                val result = job.await()
+                predicate(result)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                false
+            }
+        }?.await() ?: throw NoSuchElementException("No matching result found")
     }
 
     private fun isVersionAllowed(currentVersion: String, minApkVersion: String): Boolean {
@@ -413,18 +463,19 @@ class Service(private val context: Context) {
     }
 
     fun showAlertDialog(message: String?, playStoreRedirect: Boolean) {
-        val builder = AlertDialog.Builder(context, R.style.CustomAlertDialog)
-        builder.setMessage(message)
-        builder.setCancelable(true)
-        builder.setNegativeButton(R.string.okay) {
-            dialog: DialogInterface, _: Int ->
-            if (playStoreRedirect) {
-                Utilities.openPlayStore()
+        MainApplication.applicationScope.launch(Dispatchers.Main) {
+            val builder = AlertDialog.Builder(context, R.style.CustomAlertDialog)
+            builder.setMessage(message)
+            builder.setCancelable(true)
+            builder.setNegativeButton(R.string.okay) { dialog: DialogInterface, _: Int ->
+                if (playStoreRedirect) {
+                    Utilities.openPlayStore()
+                }
+                dialog.cancel()
             }
-            dialog.cancel()
+            val alert = builder.create()
+            alert.show()
         }
-        val alert = builder.create()
-        alert.show()
     }
 
     private fun getUrl(couchdbURL: String): String {
@@ -467,6 +518,6 @@ class Service(private val context: Context) {
     }
 
     interface ConfigurationIdListener {
-        fun onConfigurationIdReceived(id: String, code: String)
+        fun onConfigurationIdReceived(id: String, code: String, url: String, isAlternativeUrl: Boolean)
     }
 }

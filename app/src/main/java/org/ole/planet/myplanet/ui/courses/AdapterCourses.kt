@@ -47,7 +47,7 @@ class AdapterCourses(private val context: Context, private var courseList: List<
     private val config: ChipCloudConfig
     private var isAscending = true
     private var isTitleAscending = false
-    private var areAllSelected = true
+    private var areAllSelected = false
     var userModel: RealmUserModel?= null
 
     init {
