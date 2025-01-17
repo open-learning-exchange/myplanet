@@ -61,6 +61,7 @@ abstract class BaseResourceFragment : Fragment() {
     var lv: CheckboxListView? = null
     var convertView: View? = null
     private lateinit var prgDialog: DialogUtils.CustomProgressDialog
+    private var resourceNotFoundDialog: AlertDialog? = null
 
     private var receiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -170,7 +171,7 @@ abstract class BaseResourceFragment : Fragment() {
         }
         AlertDialog.Builder(requireActivity()).setTitle("Pending Surveys")
             .setAdapter(arrayAdapter) { _: DialogInterface?, i: Int ->
-                AdapterMySubmission.openSurvey(homeItemClickListener, list[i].id, true)
+                AdapterMySubmission.openSurvey(homeItemClickListener, list[i].id, true, false, "")
             }.setPositiveButton(R.string.dismiss, null).show()
     }
 
@@ -185,13 +186,24 @@ abstract class BaseResourceFragment : Fragment() {
             if (prgDialog.isShowing()) {
                 prgDialog.dismiss()
             }
-            AlertDialog.Builder(requireContext())
+
+            if (resourceNotFoundDialog?.isShowing == true) {
+                return
+            }
+
+            resourceNotFoundDialog = AlertDialog.Builder(requireContext())
                 .setTitle(R.string.resource_not_found)
                 .setMessage(R.string.resource_not_found_message)
                 .setNegativeButton(R.string.close) { dialog, _ ->
                     dialog.dismiss()
                 }
-                .show()
+                .create()
+
+            resourceNotFoundDialog?.setOnDismissListener {
+                resourceNotFoundDialog = null
+            }
+
+            resourceNotFoundDialog?.show()
         }
     }
 
