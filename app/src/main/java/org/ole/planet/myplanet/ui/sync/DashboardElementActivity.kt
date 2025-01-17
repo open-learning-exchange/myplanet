@@ -157,7 +157,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
                 url = url,
                 onStartSync = { startUpload("dashboard") },
                 onLogSync = {
-                    createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
+                    RealmUserChallengeActions.createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
                 }
             )) {
                 is ServerUrlMapper.ConnectionResult.Success -> {
