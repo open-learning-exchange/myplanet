@@ -712,6 +712,7 @@
     <string name="date_is_required">La date est requise</string>
     <string name="transaction_added">Transaction ajoutée</string>
     <string name="thank_you_for_taking_this">Merci d\'avoir pris ce(s) "</string>
+    <string name="view_your_mySubmissions">Voir vos soumissions</string>
     <string name="we_wish_you_all_the_best">. Nous vous souhaitons tout le meilleur</string>
     <string name="thank_you_for_taking_this_survey">Merci d\'avoir participé à cette enquête.</string>
     <string name="complete">complète</string>

@@ -26,8 +26,11 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmitPhotos
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.ui.courses.TakeCourseFragment.Companion.userModel
+import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
 import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
+import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils.getUniqueIdentifier
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Date
@@ -117,14 +120,28 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
             showUserInfoDialog()
         } else {
             saveCourseProgress()
-            AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
+            AlertDialog.Builder(requireActivity(), R.style.CustomAlertDialog)
                 .setTitle(getString(R.string.thank_you_for_taking_this) + type + getString(R.string.we_wish_you_all_the_best))
-                .setPositiveButton("Finish") { _: DialogInterface?, _: Int ->
+                .setNegativeButton("Finish") { _: DialogInterface?, _: Int ->
                     parentFragmentManager.popBackStack()
+                }
+                .setPositiveButton(R.string.view_your_mySubmissions) { dialog: DialogInterface, _: Int ->
+                    if (userModel?.id?.startsWith("guest") == true) {
+                        DialogUtils.guestDialog(requireContext())
+                    } else {
+                        redirectToMySubmissions();
+                    }
                 }.show()
         }
     }
+    private  fun redirectToMySubmissions(){
+        val fragment = MySubmissionFragment.newInstance("exam")
 
+        parentFragmentManager.beginTransaction()
+            .replace(R.id.fragment_container, fragment)
+            .addToBackStack(null)
+            .commit()
+    }
     private fun saveCourseProgress() {
         val progress = mRealm.where(RealmCourseProgress::class.java)
             .equalTo("courseId", exam?.courseId)

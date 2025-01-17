@@ -711,6 +711,7 @@
     <string name="date_is_required">Se requiere una fecha</string>
     <string name="transaction_added">Transacción agregada</string>
     <string name="thank_you_for_taking_this">"Gracias por realizar este "</string>
+    <string name="view_your_mySubmissions">Ver tus envíos</string>
     <string name="we_wish_you_all_the_best">. Te deseamos lo mejor</string>
     <string name="thank_you_for_taking_this_survey">Gracias por completar esta encuesta.</string>
     <string name="complete">completa</string>
