@@ -25,7 +25,6 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
 import org.ole.planet.myplanet.callback.TeamPageListener
@@ -64,7 +63,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         var isCollectionSwitchOn = false
         var showDownload = false
         var isSyncRunning = false
-        var showHealthDialog = true
         var listener: TeamPageListener? = null
         val androidId: String get() {
             try {
