@@ -44,22 +44,36 @@ object ApiClient {
 
         override fun intercept(chain: Interceptor.Chain): Response {
             var attempt = 0
-            var response: Response
-            var lastException: IOException? = null
+            var response: Response? = null
+            val request = chain.request()
+            val url = request.url().toString()
 
             while (true) {
                 try {
-                    response = chain.proceed(chain.request())
-                    if (response.isSuccessful) {
-                        return response
-                    } else {
-                        throw IOException("Response unsuccessful: ${response.code()}")
+                    response?.close()
+                    response = chain.proceed(request)
+
+                    when (response.code()) {
+                        in 200..299 -> {
+                            return response
+                        }
+                        404 -> {
+                            return response
+                        }
+                        401, 403 -> {
+                            response.close()
+                            throw IOException("Authentication failed: ${response.code()}")
+                        }
+                        else -> {
+                            response.close()
+                            throw IOException("Response unsuccessful: ${response.code()}")
+                        }
                     }
                 } catch (e: IOException) {
                     attempt++
-                    lastException = e
+
                     if (attempt >= maxRetryCount) {
-                        throw e
+                        throw IOException("Failed after $maxRetryCount attempts: $url", e)
                     }
 
                     val delayMillis = retryDelayMillis * 2.0.pow((attempt - 1).toDouble()).toLong()
