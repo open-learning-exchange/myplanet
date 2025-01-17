@@ -122,7 +122,7 @@
             android:background="@color/secondary_bg">
 
             <CheckBox
-                android:id="@+id/selectAll"
+                android:id="@+id/selectAllCourse"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="10.5dp"
@@ -133,7 +133,8 @@
                 android:textColor="@color/daynight_textColor"
                 android:textSize="@dimen/text_size_mid"
                 android:buttonTint="@color/daynight_textColor"
-                android:maxWidth="0dp" />
+                android:maxWidth="0dp"
+                android:checked="false" />
             <include
                 layout="@layout/layout_search"
                 android:layout_width="0dp"
