@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.dashboard
 
 import android.os.Bundle
+import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -62,6 +63,10 @@ class BellDashboardFragment : BaseDashboardFragment() {
         (activity as DashboardActivity?)?.supportActionBar?.hide()
         showBadges()
         checkPendingSurveys()
+
+        if (model?.id?.startsWith("guest") == false && TextUtils.isEmpty(model?.key)) {
+            syncKeyId()
+        }
     }
 
     private fun setupNetworkStatusMonitoring() {
@@ -132,7 +137,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
             val adapter = SurveyAdapter(surveyTitles, { position ->
                 val selectedSurvey = pendingSurveys[position].id
-                AdapterMySubmission.openSurvey(homeItemClickListener, selectedSurvey, true)
+                AdapterMySubmission.openSurvey(homeItemClickListener, selectedSurvey, true, false, "")
             }, alertDialog)
 
             recyclerView.adapter = adapter

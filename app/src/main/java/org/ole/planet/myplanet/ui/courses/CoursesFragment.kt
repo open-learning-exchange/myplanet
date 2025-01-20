@@ -63,6 +63,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     lateinit var spnSubject: Spinner
     lateinit var searchTags: MutableList<RealmTag>
     private lateinit var confirmation: AlertDialog
+    private var isCheckboxChangedByCode = false
     override fun getLayout(): Int {
         return R.layout.fragment_my_course
     }
@@ -156,7 +157,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         clearTags()
         showNoData(tvMessage, adapterCourses.itemCount, "courses")
         setupUI(requireView().findViewById(R.id.my_course_parent_layout), requireActivity())
-        changeButtonStatus()
+
         if (!isMyCourseLib) tvFragmentInfo.setText(R.string.our_courses)
         additionalSetup()
 
@@ -212,16 +213,16 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         requireView().findViewById<View>(R.id.tl_tags).visibility = View.GONE
         tvFragmentInfo = requireView().findViewById(R.id.tv_fragment_info)
         val gradeAdapter = ArrayAdapter.createFromResource(requireContext(), R.array.grade_level, R.layout.spinner_item)
-        gradeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        gradeAdapter.setDropDownViewResource(R.layout.custom_simple_list_item_1)
         spnGrade.adapter = gradeAdapter
 
         val subjectAdapter = ArrayAdapter.createFromResource(requireContext(), R.array.subject_level, R.layout.spinner_item)
-        subjectAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        subjectAdapter.setDropDownViewResource(R.layout.custom_simple_list_item_1)
         spnSubject.adapter = subjectAdapter
 
         spnGrade.onItemSelectedListener = itemSelectedListener
         spnSubject.onItemSelectedListener = itemSelectedListener
-        selectAll = requireView().findViewById(R.id.selectAll)
+        selectAll = requireView().findViewById(R.id.selectAllCourse)
         if (userModel?.isGuest() == true) {
             tvAddToLib.visibility = View.GONE
             btnRemove.visibility = View.GONE
@@ -229,17 +230,20 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             selectAll.visibility = View.GONE
         }
         checkList()
-        selectAll.setOnClickListener {
-            val allSelected = selectedItems?.size == adapterCourses.getCourseList().size
-            adapterCourses.selectAllItems(!allSelected)
-            if (allSelected) {
-                selectAll.isChecked = false
-                selectAll.text = getString(R.string.select_all)
-            } else {
-                selectAll.isChecked = true
+        selectAll.setOnCheckedChangeListener { _, isChecked ->
+            if (isCheckboxChangedByCode) {
+                isCheckboxChangedByCode = false
+                return@setOnCheckedChangeListener
+            }
+            if (isChecked) {
+                adapterCourses.selectAllItems(true)
                 selectAll.text = getString(R.string.unselect_all)
+            } else {
+                adapterCourses.selectAllItems(false)
+                selectAll.text = getString(R.string.select_all)
             }
         }
+
         checkList()
     }
 
@@ -338,16 +342,20 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         showTagText(searchTags, tvSelected)
         showNoData(tvMessage, adapterCourses.itemCount, "courses")
     }
-
+    private fun updateCheckBoxState(programmaticState: Boolean) {
+        isCheckboxChangedByCode = true
+        selectAll.isChecked = programmaticState
+        isCheckboxChangedByCode = false
+    }
     private fun changeButtonStatus() {
         tvAddToLib.isEnabled = (selectedItems?.size ?: 0) > 0
         btnRemove.isEnabled = (selectedItems?.size ?: 0) > 0
         btnArchive.isEnabled = (selectedItems?.size ?: 0) > 0
         if (adapterCourses.areAllSelected()) {
-            selectAll.isChecked = true
+            updateCheckBoxState(true)
             selectAll.text = getString(R.string.unselect_all)
         } else {
-            selectAll.isChecked = false
+            updateCheckBoxState(false)
             selectAll.text = getString(R.string.select_all)
         }
     }

@@ -78,7 +78,7 @@ object Utilities {
             .uncheckedTextColor(Color.parseColor("#000000"))
     }
 
-    fun checkNA(s: String?): String? {
+    fun checkNA(s: String): String {
         return if (TextUtils.isEmpty(s)) "N/A" else s
     }
 
