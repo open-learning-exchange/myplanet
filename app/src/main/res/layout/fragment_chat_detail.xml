@@ -7,7 +7,6 @@
     android:background="@color/secondary_bg"
     android:fitsSystemWindows="true"
     tools:context=".ui.chat.ChatDetailFragment">
-
     <View
         android:id="@+id/hView"
         android:layout_width="1dp"
@@ -22,26 +21,22 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
+        app:layout_constraintTop_toTopOf="parent">
 
         <TableRow
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:gravity="center_horizontal">
+            android:layout_height="wrap_content">
 
             <Button
                 android:id="@+id/tvOpenai"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
                 android:text="@string/openai"
                 android:textAllCaps="false"
                 android:textColor="@color/md_black_1000"
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:visibility="gone" />
-
             <View
                 android:id="@+id/view1"
                 android:layout_width="1dp"
@@ -49,20 +44,20 @@
                 android:layout_marginStart="2dp"
                 android:layout_marginEnd="2dp"
                 android:background="#e0e0e0"
-                android:visibility="gone" />
-
+                android:visibility="gone"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
             <Button
                 android:id="@+id/tvPerplexity"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
                 android:text="@string/perplexity"
                 android:textAllCaps="false"
                 android:textColor="@color/md_black_1000"
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:visibility="gone" />
-
             <View
                 android:id="@+id/view2"
                 android:layout_width="1dp"
@@ -70,13 +65,14 @@
                 android:layout_marginStart="@dimen/_2dp"
                 android:layout_marginEnd="@dimen/_2dp"
                 android:background="#e0e0e0"
-                android:visibility="gone" />
-
+                android:visibility="gone"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
             <Button
                 android:id="@+id/tvGemini"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
                 android:text="@string/gemini"
                 android:textAllCaps="false"
                 android:textColor="@color/md_black_1000"
@@ -85,6 +81,7 @@
                 android:visibility="gone" />
         </TableRow>
     </TableLayout>
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler_gchat"
         android:layout_width="0dp"
@@ -125,7 +122,6 @@
         android:padding="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent">
-
         <EditText
             android:id="@+id/edit_gchat_message"
             android:layout_width="match_parent"
