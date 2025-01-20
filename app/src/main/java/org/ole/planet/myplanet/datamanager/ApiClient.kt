@@ -18,12 +18,9 @@ object ApiClient {
     val client: Retrofit?
         get() {
             val client = OkHttpClient.Builder().connectTimeout(1, TimeUnit.MINUTES).readTimeout(30, TimeUnit.SECONDS)
-                .writeTimeout(30, TimeUnit.SECONDS).addInterceptor { chain ->
-                    val request = chain.request().newBuilder()
-                        .addHeader("Accept-Encoding", "gzip").build()
-                    chain.proceed(request)
-                }
-                .retryOnConnectionFailure(true).addInterceptor(RetryInterceptor()).build()
+                .writeTimeout(30, TimeUnit.SECONDS).retryOnConnectionFailure(true).addInterceptor(RetryInterceptor())
+                .build()
+
             if (retrofit == null) {
                 retrofit = Retrofit.Builder()
                     .baseUrl(BASE_URL).client(client)
@@ -31,6 +28,7 @@ object ApiClient {
                         GsonBuilder()
                             .excludeFieldsWithModifiers(Modifier.FINAL, Modifier.TRANSIENT, Modifier.STATIC)
                             .serializeNulls()
+                            .setLenient()
                             .create()
                         )
                     ).build()
@@ -53,25 +51,17 @@ object ApiClient {
                     response?.close()
                     response = chain.proceed(request)
 
-                    when (response.code()) {
-                        in 200..299 -> {
-                            return response
-                        }
-                        404 -> {
-                            return response
-                        }
-                        401, 403 -> {
-                            response.close()
-                            throw IOException("Authentication failed: ${response.code()}")
-                        }
-                        else -> {
-                            response.close()
-                            throw IOException("Response unsuccessful: ${response.code()}")
-                        }
+                    if (response.isSuccessful || response.code() == 404) {
+                        return response
+                    } else if (response.code() in listOf(401, 403)) {
+                        response.close()
+                        throw IOException("Authentication failed with status code: ${response.code()}")
+                    } else {
+                        response.close()
+                        throw IOException("Unexpected status code: ${response.code()}")
                     }
                 } catch (e: IOException) {
                     attempt++
-
                     if (attempt >= maxRetryCount) {
                         throw IOException("Failed after $maxRetryCount attempts: $url", e)
                     }
