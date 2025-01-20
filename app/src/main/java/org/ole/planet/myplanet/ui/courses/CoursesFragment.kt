@@ -217,7 +217,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         spnGrade.adapter = gradeAdapter
 
         val subjectAdapter = ArrayAdapter.createFromResource(requireContext(), R.array.subject_level, R.layout.spinner_item)
-        subjectAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        subjectAdapter.setDropDownViewResource(R.layout.custom_simple_list_item_1)
         spnSubject.adapter = subjectAdapter
 
         spnGrade.onItemSelectedListener = itemSelectedListener

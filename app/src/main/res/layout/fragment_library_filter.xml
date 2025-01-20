@@ -25,6 +25,8 @@
                 android:layout_width="@dimen/_40dp"
                 android:layout_height="@dimen/_40dp"
                 android:layout_gravity="right"
+                android:layout_marginEnd="35dp"
+                app:tint="@color/daynight_textColor"
                 android:src="@drawable/close_x" />
         </LinearLayout>
 
