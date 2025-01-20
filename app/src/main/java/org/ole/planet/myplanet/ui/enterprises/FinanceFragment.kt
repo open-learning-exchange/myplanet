@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.enterprises
 
 import android.content.DialogInterface
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -96,10 +95,15 @@ class FinanceFragment : BaseTeamFragment() {
     }
 
     private fun showDatePickerDialog(isFromDate: Boolean) {
-        val now = Calendar.getInstance()
-
-        val dpd = DatePickerDialog.newInstance(
-            { _, year, monthOfYear, dayOfMonth, _, _, _ ->
+        val now = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        val datePickerDialog = android.app.DatePickerDialog(
+            requireContext(),
+            { _, year, monthOfYear, dayOfMonth ->
                 val selectedDate = Calendar.getInstance().apply {
                     set(year, monthOfYear, dayOfMonth)
                 }
@@ -117,8 +121,7 @@ class FinanceFragment : BaseTeamFragment() {
             now[Calendar.MONTH],
             now[Calendar.DAY_OF_MONTH]
         )
-
-        dpd.show(requireActivity().fragmentManager, "DATE_PICKER")
+        datePickerDialog.show()
     }
 
 
