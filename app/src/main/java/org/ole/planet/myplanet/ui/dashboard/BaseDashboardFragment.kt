@@ -385,8 +385,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     override fun syncKeyId() {
-        di = DialogUtils.CustomProgressDialog(requireContext())
-        di?.setText(getString(R.string.syncing_health_please_wait))
         if (model?.getRoleAsString()?.contains("health") == true) {
             settings?.let { TransactionSyncManager.syncAllHealthData(mRealm, it, this) }
         } else {
@@ -400,12 +398,10 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
     override fun onSyncComplete() {
         di?.dismiss()
-        Utilities.toast(activity, getString(R.string.myhealth_synced_successfully))
     }
 
     override fun onSyncFailed(msg: String?) {
         di?.dismiss()
-        Utilities.toast(activity, getString(R.string.myhealth_synced_failed))
     }
 
     override fun showTaskListDialog() {
