@@ -800,7 +800,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         val b = Bundle()
         b.putBoolean("isMyCourseLib", true)
         f.arguments = b
-        openCallFragment(f, "shelf")
+        val fragmentName = f::class.java.simpleName
+        val tag = "My$fragmentName"
+        openCallFragment(f, tag)
     }
 
     override fun onDestroy() {
