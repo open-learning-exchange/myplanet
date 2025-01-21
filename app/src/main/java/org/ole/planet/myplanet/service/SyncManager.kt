@@ -144,111 +144,50 @@ class SyncManager private constructor(private val context: Context) {
         }
     }
 
+    @Throws(IOException::class)
     private fun syncResource(dbClient: ApiInterface?) {
         val newIds: MutableList<String?> = ArrayList()
-        try {
-            val allDocs = dbClient?.getJsonObject(Utilities.header,  "${Utilities.getUrl()}/resources/_all_docs?include_doc=false")
-            val all = allDocs?.execute()
-            if (all?.isSuccessful != true) {
-                return
-            }
-
-            val rows = getJsonArray("rows", all.body())
-            val keys: MutableList<String> = ArrayList()
-            val failedIds: MutableList<String> = ArrayList()
-
-            for (i in 0 until rows.size()) {
-                val `object` = rows[i].asJsonObject
-                if (!TextUtils.isEmpty(getString("id", `object`))) {
-                    keys.add(getString("key", `object`))
+        val allDocs = dbClient?.getJsonObject(Utilities.header, Utilities.getUrl() + "/resources/_all_docs?include_doc=false")
+        val all = allDocs?.execute()
+        val rows = getJsonArray("rows", all?.body())
+        val keys: MutableList<String> = ArrayList()
+        for (i in 0 until rows.size()) {
+            val `object` = rows[i].asJsonObject
+            if (!TextUtils.isEmpty(getString("id", `object`))) keys.add(getString("key", `object`))
+            if (i == rows.size() - 1 || keys.size == 1000) {
+                val obj = JsonObject()
+                obj.add("keys", Gson().fromJson(Gson().toJson(keys), JsonArray::class.java))
+                val response = dbClient?.findDocs(Utilities.header, "application/json", Utilities.getUrl() + "/resources/_all_docs?include_docs=true", obj)?.execute()
+                if (response?.body() != null) {
+                    val ids: List<String?> = save(getJsonArray("rows", response.body()), mRealm)
+                    newIds.addAll(ids)
                 }
-
-                if (i == rows.size() - 1 || keys.size == 1000) {
-                    val obj = JsonObject()
-                    obj.add("keys", Gson().fromJson(Gson().toJson(keys), JsonArray::class.java))
-                    val response = dbClient.findDocs(Utilities.header, "application/json", "${Utilities.getUrl()}/resources/_all_docs?include_docs=true", obj).execute()
-
-                    when {
-                        response.isSuccessful == true -> {
-                            response.body()?.let { body ->
-                                val ids: List<String?> = save(getJsonArray("rows", body), mRealm)
-                                newIds.addAll(ids)
-                            }
-                        }
-                        response.code() == 404 -> {
-                            failedIds.addAll(keys)
-                        }
-                        else -> {
-                            val errorMessage = "Failed to sync resources: ${response.code()}"
-                            handleException(errorMessage)
-
-                            when (response.code()) {
-                                in 500..599 -> {
-                                    addToRetryQueue(keys)
-                                }
-                                401, 403 -> {
-                                    handleAuthenticationError()
-                                }
-                                else -> {
-                                    failedIds.addAll(keys)
-                                }
-                            }
-                        }
-                    }
-                    keys.clear()
-                }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        } finally {
-            try {
-                removeDeletedResource(newIds, mRealm)
-            } catch (e: Exception) {
-                e.printStackTrace()
+                keys.clear()
             }
         }
-    }
-
-    private fun addToRetryQueue(keys: List<String>) {
-        settings.edit().apply {
-            val existingQueue = settings.getStringSet("retry_queue", setOf()) ?: setOf()
-            putStringSet("retry_queue", existingQueue + keys)
-            apply()
-        }
-    }
-
-    private fun handleAuthenticationError() {
-        settings.edit().remove("credentials").apply()
-        handleException("Authentication failed.")
+        removeDeletedResource(newIds, mRealm)
     }
 
     private fun myLibraryTransactionSync() {
         val apiInterface = client?.create(ApiInterface::class.java)
         try {
-            val response = apiInterface?.getDocuments(Utilities.header, "${Utilities.getUrl()}/shelf/_all_docs")?.execute()
-
-            val res = response?.body()
-            res?.rows?.let { rows ->
-                for (i in rows.indices) {
-                    shelfDoc = rows[i]
-                    populateShelfItems(apiInterface)
-                }
+            val res = apiInterface?.getDocuments(Utilities.header, "${Utilities.getUrl()}/shelf/_all_docs")?.execute()?.body()
+            for (i in res?.rows!!.indices) {
+                shelfDoc = res.rows!![i]
+                populateShelfItems(apiInterface)
             }
         } catch (e: IOException) {
             e.printStackTrace()
         }
     }
 
-    private fun populateShelfItems(apiInterface: ApiInterface?) {
+    private fun populateShelfItems(apiInterface: ApiInterface) {
         try {
-            val response = apiInterface?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/shelf/${shelfDoc?.id}")?.execute()
-
-            response?.body()?.let { jsonDoc ->
-                for (i in Constants.shelfDataList.indices) {
-                    val shelfData = Constants.shelfDataList[i]
-                    val array = getJsonArray(shelfData.key, jsonDoc)
-                    memberShelfData(array, shelfData)
-                }
+            val jsonDoc = apiInterface.getJsonObject(Utilities.header, "${Utilities.getUrl()}/shelf/${shelfDoc?.id}").execute().body()
+            for (i in Constants.shelfDataList.indices) {
+                val shelfData = Constants.shelfDataList[i]
+                val array = getJsonArray(shelfData.key, jsonDoc)
+                memberShelfData(array, shelfData)
             }
         } catch (err: Exception) {
             err.printStackTrace()
@@ -278,27 +217,10 @@ class SyncManager private constructor(private val context: Context) {
     }
 
     private fun validateDocument(arrayCategoryIds: JsonArray, x: Int) {
-        val apiInterface = client?.create(ApiInterface::class.java)
+        val apiInterface = client!!.create(ApiInterface::class.java)
         try {
-            val response = apiInterface?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/${stringArray[2]}/${arrayCategoryIds[x].asString}")?.execute()
-
-            when {
-                response?.isSuccessful == true -> {
-                    response.body()?.let { resourceDoc ->
-                        triggerInsert(stringArray, resourceDoc)
-                    }
-                }
-                response?.code() == 404 -> {
-                    return
-                }
-                else -> {
-                    val errorMessage = "Failed to validate document: ${response?.code()}"
-                    handleException(errorMessage)
-                    if (response?.code() in 500..599) {
-                        throw IOException(errorMessage)
-                    }
-                }
-            }
+            val resourceDoc = apiInterface.getJsonObject(Utilities.header, "${Utilities.getUrl()}/${stringArray[2]}/${arrayCategoryIds[x].asString}").execute().body()
+            resourceDoc?.let { triggerInsert(stringArray, it) }
         } catch (e: IOException) {
             e.printStackTrace()
         }
