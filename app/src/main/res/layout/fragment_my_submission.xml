@@ -55,61 +55,62 @@
             android:orientation="vertical"
             android:padding="10dp">
 
-                <RadioGroup
+            <RadioGroup
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/submission_toggle"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:padding="10dp">
+
+                <RadioButton
+                    android:id="@+id/rb_exam"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
+                    android:layout_marginEnd="5dp"
+                    android:background="@drawable/bg_submission_toggle_button"
+                    android:button="@null"
                     android:gravity="center"
-                    android:background="@drawable/submission_toggle"
-                    android:padding="10dp">
+                    android:paddingHorizontal="30dp"
+                    android:paddingVertical="3dp"
+                    android:text="@string/exams"
+                    android:textColor="@color/toggle_text_color"
+                    android:textSize="18sp" />
 
-                    <RadioButton
-                        android:id="@+id/rb_exam"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:button="@null"
-                        android:background="@drawable/bg_submission_toggle_button"
-                        android:gravity="center"
-                        android:text="@string/exams"
-                        android:textColor="@color/toggle_text_color"
-                        android:textSize="18sp"
-                        android:paddingVertical="3dp"
-                        android:paddingHorizontal="30dp"
-                        android:layout_marginEnd="5dp" />
-                    <RadioButton
-                        android:id="@+id/rb_survey"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:button="@null"
-                        android:background="@drawable/bg_submission_toggle_button"
-                        android:gravity="center"
-                        android:text="@string/survey"
-                        android:textColor="@color/toggle_text_color"
-                        android:textSize="18sp"
-                        android:paddingVertical="3dp"
-                        android:paddingHorizontal="30dp"
-                        android:layout_marginStart="5dp" />
-                </RadioGroup>
+                <RadioButton
+                    android:id="@+id/rb_survey"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="5dp"
+                    android:background="@drawable/bg_submission_toggle_button"
+                    android:button="@null"
+                    android:gravity="center"
+                    android:paddingHorizontal="30dp"
+                    android:paddingVertical="3dp"
+                    android:text="@string/survey"
+                    android:textColor="@color/toggle_text_color"
+                    android:textSize="18sp" />
+            </RadioGroup>
 
-                <com.google.android.material.textfield.TextInputLayout
+            <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/tl_search"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
                     android:textColorHint="@color/hint_color">
 
-                    <EditText
-                        android:id="@+id/et_search"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:drawableLeft="@drawable/ic_search"
-                        android:drawableTint="@color/daynight_textColor"
-                        android:hint="@string/search"
-                        android:inputType="text"
-                        android:maxLines="1"
-                        android:backgroundTint="@color/hint_color"
-                        android:textColor="@color/daynight_textColor" />
-                </com.google.android.material.textfield.TextInputLayout>
+                <EditText
+                    android:id="@+id/et_search"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:backgroundTint="@color/hint_color"
+                    android:drawableLeft="@drawable/ic_search"
+                    android:drawableTint="@color/daynight_textColor"
+                    android:hint="@string/search"
+                    android:inputType="text"
+                    android:maxLines="1"
+                    android:textColor="@color/daynight_textColor" />
+            </com.google.android.material.textfield.TextInputLayout>
     </LinearLayout>
 
     <LinearLayout
