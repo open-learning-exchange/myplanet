@@ -54,6 +54,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         profileDbHandler = UserProfileDbHandler(this)
         settings = applicationContext.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         prefData = SharedPrefManager(this)
+        supportFragmentManager.addOnBackStackChangedListener(this)
     }
 
     fun onClickTabItems(position: Int) {
@@ -246,13 +247,13 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         val f = supportFragmentManager.findFragmentById(R.id.fragment_container)
         val fragmentTag = f?.tag
         if (f is CoursesFragment) {
-            if ("shelf" == fragmentTag) {
+            if ("MyCoursesFragment" == fragmentTag) {
                 navigationView.menu.findItem(R.id.menu_mycourses).isChecked = true
             } else {
                 navigationView.menu.findItem(R.id.menu_courses).isChecked = true
             }
         } else if (f is ResourcesFragment) {
-            if ("shelf" == fragmentTag) {
+            if ("MyResourcesFragment" == fragmentTag) {
                 navigationView.menu.findItem(R.id.menu_mylibrary).isChecked = true
             } else {
                 navigationView.menu.findItem(R.id.menu_library).isChecked = true

@@ -37,6 +37,8 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     }
 
     override fun onDownloadComplete() {
+        super.onDownloadComplete()
+
         fragmentLibraryDetailBinding.btnDownload.setImageResource(R.drawable.ic_play)
         if (!library.userId?.contains(profileDbHandler.userModel?.id)!!) {
             if (!lRealm.isInTransaction) lRealm.beginTransaction()

@@ -102,11 +102,13 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
 
         val adapter = AdapterMySubmission(requireActivity(), submissions, exams)
         val itemCount = adapter.itemCount
-        BaseRecyclerFragment.showNoData(fragmentMySubmissionBinding.tvMessage, itemCount, "submission")
 
-        if (itemCount == 0) {
-            fragmentMySubmissionBinding.llSearch.visibility = View.GONE
-            fragmentMySubmissionBinding.title.visibility = View.GONE
+        if (s.isEmpty()) {
+            BaseRecyclerFragment.showNoData(fragmentMySubmissionBinding.tvMessage, itemCount, "submission")
+                if (itemCount == 0) {
+                fragmentMySubmissionBinding.llSearch.visibility = View.GONE
+                fragmentMySubmissionBinding.title.visibility = View.GONE
+            }
         }
         adapter.setmRealm(mRealm)
         adapter.setType(type)

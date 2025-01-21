@@ -62,7 +62,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         var isCollectionSwitchOn = false
         var showDownload = false
         var isSyncRunning = false
-        var showHealthDialog = true
         var listener: TeamPageListener? = null
         val androidId: String get() {
             try {

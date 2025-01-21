@@ -84,7 +84,11 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         selectAll = view.findViewById(R.id.selectAll)
         filter = view.findViewById(R.id.filter)
         addResourceButton = view.findViewById(R.id.addResource)
-
+        if (tvSelected.text.isNullOrEmpty()) {
+            tvSelected.visibility = View.GONE
+        } else {
+            tvSelected.visibility = View.VISIBLE
+        }
         initArrays()
         updateTvDelete()
 
@@ -237,6 +241,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     override fun onTagClicked(realmTag: RealmTag) {
+        tvSelected.visibility = View.VISIBLE
         flexBoxTags.removeAllViews()
         val chipCloud = ChipCloud(activity, flexBoxTags, config)
         chipCloud.setDeleteListener(this)
@@ -248,6 +253,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     override fun onTagSelected(tag: RealmTag) {
+        tvSelected.visibility = View.VISIBLE
         val li: MutableList<RealmTag> = ArrayList()
         li.add(tag)
         searchTags = li
