@@ -262,11 +262,14 @@ class FinanceFragment : BaseTeamFragment() {
                 fragmentFinanceBinding.rvFinance.adapter = adapterFinance
                 adapterFinance?.notifyDataSetChanged()
                 calculateTotal(results)
-            } else if(fragmentFinanceBinding.tvFromDateCalendar.text.isNullOrEmpty() && fragmentFinanceBinding.etToDate.text.isNullOrEmpty()) {
+            } else if(fragmentFinanceBinding.tvFromDateCalendar.text.isNullOrEmpty()
+                && fragmentFinanceBinding.etToDate.text.isNullOrEmpty()) {
                 fragmentFinanceBinding.rvFinance.adapter = null
                 fragmentFinanceBinding.dataLayout.visibility= View.GONE
                 fragmentFinanceBinding.tvNodata.visibility= View.VISIBLE
             }else{
+                fragmentFinanceBinding.dataLayout.visibility= View.VISIBLE
+                fragmentFinanceBinding.tvNodata.visibility= View.VISIBLE
                 fragmentFinanceBinding.rvFinance.adapter = null
 
             }
