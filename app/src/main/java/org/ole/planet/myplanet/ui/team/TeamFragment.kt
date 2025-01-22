@@ -257,12 +257,17 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         val user = user?.id
         return list.sortedWith(compareBy<RealmMyTeam> { team ->
             when {
-                RealmMyTeam.isTeamLeader(team.teamId, user, mRealm) -> 3
-                team.isMyTeam(user, mRealm) -> 2
+                team.isMyTeam(user, mRealm) -> 0
                 else -> 1
             }
-        }.thenByDescending { team ->
-            team.name?.lowercase()?.startsWith(searchQuery.lowercase()) ?: false
+        }.thenBy { team ->
+            val teamName = team.name?.lowercase() ?: ""
+            val query = searchQuery.lowercase()
+            if (query.isNotEmpty() && teamName.firstOrNull() == query.firstOrNull()) {
+                0
+            } else {
+                1
+            }
         }.thenBy { team ->
             team.name?.lowercase() ?: ""
         })
