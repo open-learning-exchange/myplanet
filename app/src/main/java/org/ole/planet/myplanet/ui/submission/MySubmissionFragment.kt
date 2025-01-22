@@ -62,7 +62,6 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
             override fun afterTextChanged(editable: Editable) {}
         })
         showHideRadioButton()
-
     }
 
     private fun showHideRadioButton() {
