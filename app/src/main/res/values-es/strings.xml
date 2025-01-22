@@ -163,8 +163,6 @@
     <string name="search_user">Buscar usuario</string>
     <string name="get_started">EMPEZAR</string>
     <string name="enter_password">Ingresar contraseña</string>
-    <string name="managerial_login">Inicio de sesión del administrador</string>
-    <string name="save_username_and_password">Guardar nombre de usuario y contraseña</string>
     <string name="year">Año</string>
     <string name="publisher">Editor</string>
     <string name="link_to_license">Enlace a la licencia</string>
