@@ -61,26 +61,11 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
             }
             override fun afterTextChanged(editable: Editable) {}
         })
-        showHideRadioButton()
     }
 
-    private fun showHideRadioButton() {
-        if (type != "survey") {
-            fragmentMySubmissionBinding.rbExam.isChecked = true
-            fragmentMySubmissionBinding.rbExam.setOnCheckedChangeListener(this)
-            fragmentMySubmissionBinding.rbSurvey.setOnCheckedChangeListener(this)
-        } else {
-            fragmentMySubmissionBinding.rbSurvey.visibility = View.GONE
-            fragmentMySubmissionBinding.rbExam.visibility = View.GONE
-        }
-    }
 
     override fun onCheckedChanged(compoundButton: CompoundButton, b: Boolean) {
-        type = if (fragmentMySubmissionBinding.rbSurvey.isChecked) {
-            "survey_submission"
-        } else {
-            "exam"
-        }
+        type = "exam"
         setData("")
     }
 

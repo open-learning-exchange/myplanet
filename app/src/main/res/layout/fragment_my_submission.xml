@@ -54,43 +54,6 @@
             android:gravity="center_horizontal"
             android:orientation="vertical"
             android:padding="10dp">
-
-                <RadioGroup
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center"
-                    android:background="@drawable/submission_toggle"
-                    android:padding="10dp">
-
-                    <RadioButton
-                        android:id="@+id/rb_exam"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:button="@null"
-                        android:background="@drawable/bg_submission_toggle_button"
-                        android:gravity="center"
-                        android:text="@string/exams"
-                        android:textColor="@color/toggle_text_color"
-                        android:textSize="18sp"
-                        android:paddingVertical="3dp"
-                        android:paddingHorizontal="30dp"
-                        android:layout_marginEnd="5dp" />
-                    <RadioButton
-                        android:id="@+id/rb_survey"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:button="@null"
-                        android:background="@drawable/bg_submission_toggle_button"
-                        android:gravity="center"
-                        android:text="@string/survey"
-                        android:textColor="@color/toggle_text_color"
-                        android:textSize="18sp"
-                        android:paddingVertical="3dp"
-                        android:paddingHorizontal="30dp"
-                        android:layout_marginStart="5dp" />
-                </RadioGroup>
-
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/tl_search"
                     android:layout_width="match_parent"
