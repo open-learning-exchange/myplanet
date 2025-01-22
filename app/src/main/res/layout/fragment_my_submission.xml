@@ -76,7 +76,6 @@
                     android:text="@string/exams"
                     android:textColor="@color/toggle_text_color"
                     android:textSize="18sp" />
-
                 <RadioButton
                     android:id="@+id/rb_survey"
                     android:layout_width="wrap_content"
