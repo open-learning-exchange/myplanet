@@ -71,7 +71,6 @@ class MyHealthFragment : Fragment() {
             }, now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH))
             dpd.show()
         }
-
         fragmentVitalSignBinding.rvRecords.addItemDecoration(DividerItemDecoration(activity, DividerItemDecoration.VERTICAL))
         profileDbHandler = UserProfileDbHandler(alertMyPersonalBinding.root.context)
         userId = if (TextUtils.isEmpty(profileDbHandler?.userModel?._id)) profileDbHandler?.userModel?.id else profileDbHandler?.userModel?._id
@@ -218,7 +217,8 @@ class MyHealthFragment : Fragment() {
             fragmentVitalSignBinding.rvRecords.apply {
                 layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
                 isNestedScrollingEnabled = false
-                adapter = adap            }
+                adapter = adap
+            }
             fragmentVitalSignBinding.rvRecords.post {
                 val lastPosition = (list?.size ?: 0) - 1
                 if (lastPosition >= 0) {
