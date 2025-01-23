@@ -255,22 +255,18 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     }
     private fun sortTeams(list: List<RealmMyTeam>, searchQuery: String): List<RealmMyTeam> {
         val user = user?.id
-        return list.sortedWith(compareBy<RealmMyTeam> { team ->
-            when {
-                team.isMyTeam(user, mRealm) -> 0
-                else -> 1
+        return list.sortedWith(
+            compareBy<RealmMyTeam> { team ->
+                if (team.isMyTeam(user, mRealm)) 0 else 1
             }
-        }.thenBy { team ->
-            val teamName = team.name?.lowercase() ?: ""
-            val query = searchQuery.lowercase()
-            if (query.isNotEmpty() && teamName.firstOrNull() == query.firstOrNull()) {
-                0
-            } else {
-                1
-            }
-        }.thenBy { team ->
-            team.name?.lowercase() ?: ""
-        })
+                .thenBy { team ->
+                    val teamName = team.name?.lowercase() ?: ""
+                    if (teamName.startsWith(searchQuery.lowercase())) 0 else 1
+                }
+                .thenBy { team ->
+                    team.name ?: ""
+                }
+        )
     }
 
     override fun onEditTeam(team: RealmMyTeam?) {
