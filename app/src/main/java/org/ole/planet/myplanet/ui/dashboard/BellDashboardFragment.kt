@@ -130,6 +130,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
                 .setTitle(getString(R.string.surveys_to_complete, pendingSurveys.size, if (pendingSurveys.size > 1) "surveys" else "survey"))
                 .setView(dialogView)
                 .setPositiveButton(getString(R.string.ok)) { dialog, _ ->
+                    homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("survey"))
                     dialog.dismiss()
                 }
                 .create()
