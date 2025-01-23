@@ -217,7 +217,7 @@ class MyHealthFragment : Fragment() {
             fragmentVitalSignBinding.rvRecords.apply {
                 layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
                 isNestedScrollingEnabled = false
-                adapter = adap            
+                adapter = adap
             }
             fragmentVitalSignBinding.rvRecords.post {
                 val lastPosition = (list?.size ?: 0) - 1
