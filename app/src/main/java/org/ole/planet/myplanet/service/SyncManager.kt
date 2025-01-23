@@ -94,7 +94,7 @@ class SyncManager private constructor(private val context: Context) {
                 settings.edit().putString("LastWifiSSID", wifiInfo.ssid).apply()
             }
             isSyncing = true
-            create(context, R.mipmap.ic_launcher, " Syncing data", "Please wait...")
+            create(context, R.mipmap.ic_launcher, "Syncing data", "Please wait...")
             mRealm = dbService.realmInstance
             TransactionSyncManager.syncDb(mRealm, "tablet_users")
             myLibraryTransactionSync()
@@ -171,7 +171,7 @@ class SyncManager private constructor(private val context: Context) {
     private fun myLibraryTransactionSync() {
         val apiInterface = client?.create(ApiInterface::class.java)
         try {
-            val res = apiInterface?.getDocuments(Utilities.header, Utilities.getUrl() + "/shelf/_all_docs")?.execute()?.body()
+            val res = apiInterface?.getDocuments(Utilities.header, "${Utilities.getUrl()}/shelf/_all_docs")?.execute()?.body()
             for (i in res?.rows!!.indices) {
                 shelfDoc = res.rows!![i]
                 populateShelfItems(apiInterface)
@@ -183,7 +183,7 @@ class SyncManager private constructor(private val context: Context) {
 
     private fun populateShelfItems(apiInterface: ApiInterface) {
         try {
-            val jsonDoc = apiInterface.getJsonObject(Utilities.header, Utilities.getUrl() + "/shelf/" + shelfDoc?.id).execute().body()
+            val jsonDoc = apiInterface.getJsonObject(Utilities.header, "${Utilities.getUrl()}/shelf/${shelfDoc?.id}").execute().body()
             for (i in Constants.shelfDataList.indices) {
                 val shelfData = Constants.shelfDataList[i]
                 val array = getJsonArray(shelfData.key, jsonDoc)
@@ -219,7 +219,7 @@ class SyncManager private constructor(private val context: Context) {
     private fun validateDocument(arrayCategoryIds: JsonArray, x: Int) {
         val apiInterface = client!!.create(ApiInterface::class.java)
         try {
-            val resourceDoc = apiInterface.getJsonObject(Utilities.header, Utilities.getUrl() + "/" + stringArray[2] + "/" + arrayCategoryIds[x].asString).execute().body()
+            val resourceDoc = apiInterface.getJsonObject(Utilities.header, "${Utilities.getUrl()}/${stringArray[2]}/${arrayCategoryIds[x].asString}").execute().body()
             resourceDoc?.let { triggerInsert(stringArray, it) }
         } catch (e: IOException) {
             e.printStackTrace()
