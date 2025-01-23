@@ -796,12 +796,19 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-    fun openMyFragment(f: Fragment) {
+    override fun openMyFragment(f: Fragment) {
         val b = Bundle()
         b.putBoolean("isMyCourseLib", true)
         f.arguments = b
         val fragmentName = f::class.java.simpleName
         val tag = "My$fragmentName"
+        when (tag) {
+            "MyCoursesFragment" -> result?.setSelection(2, false)
+            "MyResourcesFragment" -> result?.setSelection(1, false)
+            else -> {
+                result?.setSelection(0, false)
+            }
+        }
         openCallFragment(f, tag)
     }
 
