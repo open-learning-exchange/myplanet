@@ -1086,7 +1086,6 @@
     <string name="add_note">Ku dar falanqeey (ixtiyaacsi ah)</string>
     <string name="no_teams">kooxaha aan la heli karin</string>
     <string name="planet_name">%s Meerah</string>
-    <string name="no_submissions">soo gudbin lama heli karo</string>
     <string name="no_chats">ma jiraan wada sheekaysi hore</string>
     <string name="no_feedback">wax jawaab celin ah lama hayo</string>
     <string name="empty_text" />
@@ -1226,5 +1225,7 @@
     <string name="community">bulsho</string>
     <string name="no_enterprise">ganacsiyo lama heli karo</string>
     <string name="local_resource">kheyraadka deegaanka</string>
+    <string name="no_survey_submissions">ma jiro soo gudbinta sahanka</string>
+    <string name="no_exam_submissions">ma jiro soo gudbinta imtixaan</string>
 
 </resources>

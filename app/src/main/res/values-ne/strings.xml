@@ -1086,7 +1086,6 @@
     <string name="add_note">नोट थप्नुहोस् (वैकल्पिक)</string>
     <string name="no_teams">टोलीहरू उपलब्ध छैनन्</string>
     <string name="planet_name">%s ग्रह</string>
-    <string name="no_submissions">पेशाहरू उपलब्ध छैनन्</string>
     <string name="no_chats">अघिल्ला कुराकानीहरू छैनन्</string>
     <string name="no_feedback">कुनै प्रतिक्रिया उपलब्ध छैन</string>
     <string name="empty_text" />
@@ -1226,5 +1225,7 @@
     <string name="community">समुदाय</string>
     <string name="no_enterprise">उद्यमहरू उपलब्ध छैनन्</string>
     <string name="local_resource">स्थानीय स्रोत</string>
+    <string name="no_survey_submissions">कुनै सर्वेक्षण प्रस्तुति छैन</string>
+    <string name="no_exam_submissions">कुनै परीक्षा प्रस्तुति छैन</string>
 
 </resources>

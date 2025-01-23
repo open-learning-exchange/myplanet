@@ -1085,7 +1085,6 @@
     <string name="add_note">Agregar una nota (opcional)</string>
     <string name="no_teams">equipos no disponibles</string>
     <string name="planet_name">%s Planeta</string>
-    <string name="no_submissions">envíos no disponibles</string>
     <string name="no_chats">no hay chats anteriores</string>
     <string name="no_feedback">No hay comentarios aquí</string>
     <string name="empty_text" />
@@ -1225,5 +1224,7 @@
     <string name="community">comunidad</string>
     <string name="no_enterprise">empresas no disponibles</string>
     <string name="local_resource">recurso local</string>
+    <string name="no_survey_submissions">no hay envíos de encuestas</string>
+    <string name="no_exam_submissions">no hay envíos de exámenes</string>
 
 </resources>
