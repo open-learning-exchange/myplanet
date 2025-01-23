@@ -4,6 +4,8 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.net.wifi.SupplicantState
 import android.net.wifi.WifiManager
+import android.os.Handler
+import android.os.Looper
 import android.text.TextUtils
 import android.util.Log
 import com.google.gson.Gson
@@ -97,49 +99,6 @@ class SyncManager private constructor(private val context: Context) {
         td?.start()
     }
 
-//    private fun startSync() {
-//        try {
-//            val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-//            val wifiInfo = wifiManager.connectionInfo
-//            if (wifiInfo.supplicantState == SupplicantState.COMPLETED) {
-//                settings.edit().putString("LastWifiSSID", wifiInfo.ssid).apply()
-//            }
-//            isSyncing = true
-//            create(context, R.mipmap.ic_launcher, " Syncing data", "Please wait...")
-//            mRealm = dbService.realmInstance
-//            TransactionSyncManager.syncDb(mRealm, "tablet_users")
-//            myLibraryTransactionSync()
-//            ManagerSync.instance?.syncAdmin()
-//            resourceTransactionSync()
-//            TransactionSyncManager.syncDb(mRealm, "courses")
-//
-//            TransactionSyncManager.syncDb(mRealm, "exams")
-//            TransactionSyncManager.syncDb(mRealm, "ratings")
-//            TransactionSyncManager.syncDb(mRealm, "courses_progress")
-//            TransactionSyncManager.syncDb(mRealm, "achievements")
-//            TransactionSyncManager.syncDb(mRealm, "tags")
-//            TransactionSyncManager.syncDb(mRealm, "submissions")
-//            TransactionSyncManager.syncDb(mRealm, "news")
-//            TransactionSyncManager.syncDb(mRealm, "feedback")
-//            TransactionSyncManager.syncDb(mRealm, "teams")
-//            TransactionSyncManager.syncDb(mRealm, "tasks")
-//            TransactionSyncManager.syncDb(mRealm, "login_activities")
-//            TransactionSyncManager.syncDb(mRealm, "meetups")
-//            TransactionSyncManager.syncDb(mRealm, "health")
-//            TransactionSyncManager.syncDb(mRealm, "certifications")
-//            TransactionSyncManager.syncDb(mRealm, "team_activities")
-//            TransactionSyncManager.syncDb(mRealm, "chat_history")
-//
-//            onSynced(mRealm, settings)
-//            mRealm.close()
-//        } catch (err: Exception) {
-//            err.printStackTrace()
-//            handleException(err.message)
-//        } finally {
-//            destroy()
-//        }
-//    }
-
     private fun startSync() {
         try {
             initializeSync()
@@ -201,8 +160,8 @@ class SyncManager private constructor(private val context: Context) {
         Log.d(TAG, "Syncing tablet_users")
         TransactionSyncManager.syncDb(mRealm, "tablet_users")
 
-        Log.d(TAG, "Syncing admin data")
-        ManagerSync.instance?.syncAdmin()
+//        Log.d(TAG, "Syncing admin data")
+//        ManagerSync.instance?.syncAdmin()
 
         Log.i(TAG, "=== Priority Sync Batch Completed ===")
     }
@@ -212,7 +171,44 @@ class SyncManager private constructor(private val context: Context) {
         backgroundSync = MainApplication.applicationScope.launch(Dispatchers.IO) {
             val backgroundRealm = Realm.getDefaultInstance()
             try {
+                // Regular database syncs
+                val remainingDatabases = listOf(
+                    "teams", "news", "team_activities", "courses", "courses_progress", "exams", "tasks",
+                    "chat_history", "ratings", "achievements", "tags", "submissions", "feedback",
+                     "meetups", "health", "certifications", "login_activities"
+                )
+
+                var completedCount = 0
+                val totalDatabases = remainingDatabases.size
+
+                remainingDatabases.forEach { database ->
+                    try {
+                        Log.d(TAG, "Background sync: Starting $database (${++completedCount}/$totalDatabases)")
+                        val startTime = System.currentTimeMillis()
+
+                        val databaseData = TransactionSyncManager.syncDb(backgroundRealm, database)
+                        logDataSizeInBytes(database, databaseData)
+
+                        val duration = System.currentTimeMillis() - startTime
+                        Log.d(TAG, "Background sync: Completed $database in ${duration}ms")
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Background sync: Failed to sync $database: ${e.message}")
+                        e.printStackTrace()
+                    }
+                }
+
                 // Special sync functions with background realm
+                try {
+                    Log.d(TAG, "Background sync: Syncing admin data")
+                    val startTime = System.currentTimeMillis()
+                    ManagerSync.instance?.syncAdmin()
+                    val duration = System.currentTimeMillis() - startTime
+                    Log.d(TAG, "Background sync: Completed admin data in ${duration}ms")
+                } catch (e: Exception) {
+                    Log.e(TAG, "Background sync: Failed to sync admin data: ${e.message}")
+                    e.printStackTrace()
+                }
+
                 try {
                     Log.d(TAG, "Background sync: Starting myLibrary sync")
                     val startTime = System.currentTimeMillis()
@@ -233,32 +229,6 @@ class SyncManager private constructor(private val context: Context) {
                 } catch (e: Exception) {
                     Log.e(TAG, "Background sync: Failed to sync resources: ${e.message}")
                     e.printStackTrace()
-                }
-
-                // Regular database syncs
-                val remainingDatabases = listOf(
-                    "courses", "exams", "ratings", "courses_progress",
-                    "achievements", "tags", "submissions", "news", "feedback",
-                    "teams", "tasks", "login_activities", "meetups", "health",
-                    "certifications", "team_activities", "chat_history"
-                )
-
-                var completedCount = 0
-                val totalDatabases = remainingDatabases.size
-
-                remainingDatabases.forEach { database ->
-                    try {
-                        Log.d(TAG, "Background sync: Starting $database (${++completedCount}/$totalDatabases)")
-                        val startTime = System.currentTimeMillis()
-
-                        TransactionSyncManager.syncDb(backgroundRealm, database)
-
-                        val duration = System.currentTimeMillis() - startTime
-                        Log.d(TAG, "Background sync: Completed $database in ${duration}ms")
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Background sync: Failed to sync $database: ${e.message}")
-                        e.printStackTrace()
-                    }
                 }
 
                 Log.i(TAG, "=== Background Sync Completed ===")
@@ -397,6 +367,16 @@ class SyncManager private constructor(private val context: Context) {
             "teams" -> insertMyTeams(resourceDoc, backgroundRealm)
         }
         saveConcatenatedLinksToPrefs()
+    }
+
+    private fun logDataSizeInBytes(tag: String, data: Any?) {
+        if (data != null) {
+            val jsonString = Gson().toJson(data) // Convert data to JSON string
+            val byteSize = jsonString.toByteArray().size // Calculate the size in bytes
+            Log.d(TAG, "$tag size: $byteSize bytes (${byteSize / 1024} KB)")
+        } else {
+            Log.d(TAG, "$tag size: 0 bytes")
+        }
     }
 
     companion object {
