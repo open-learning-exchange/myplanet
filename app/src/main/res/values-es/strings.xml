@@ -163,8 +163,6 @@
     <string name="search_user">Buscar usuario</string>
     <string name="get_started">EMPEZAR</string>
     <string name="enter_password">Ingresar contraseña</string>
-    <string name="managerial_login">Inicio de sesión del administrador</string>
-    <string name="save_username_and_password">Guardar nombre de usuario y contraseña</string>
     <string name="year">Año</string>
     <string name="publisher">Editor</string>
     <string name="link_to_license">Enlace a la licencia</string>
@@ -1138,7 +1136,6 @@
     <string name="sync_embakasi">🇰🇪 planet embakasi</string>
     <string name="sync_cambridge">🇺🇸 planet cambridge</string>
     <string name="sync_egdirbmac">🇺🇸 planet egdirbmac</string>
-    <string name="sync_palmbay">🇺🇸 planet palmbay</string>
     <string name="surveys_to_complete">Tienes %1$d %2$s para completar</string>
     <string name="show_less">mostrar menos</string>
     <string name="show_more">mostrar más</string>
