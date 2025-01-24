@@ -10,8 +10,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdkVersion 26
         targetSdkVersion 34
-        versionCode 2235
-        versionName "0.22.35"
+        versionCode 2236
+        versionName "0.22.36"
         ndkVersion '21.3.6528147'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -101,8 +101,6 @@ android {
     def planetCambridgePin = project.findProperty('PLANET_CAMBRIDGE_PIN') ?: ""
     //def planetEgdirbmacUrl = project.findProperty('PLANET_EGDIRBMAC_URL') ?: ""
     //def planetEgdirbmacPin = project.findProperty('PLANET_EGDIRBMAC_PIN') ?: ""
-    def planetPalmBayUrl = project.findProperty('PLANET_PALMBAY_URL') ?: ""
-    def planetPalmBayPin = project.findProperty('PLANET_PALMBAY_PIN') ?: ""
 
     buildTypes.each {
         it.buildConfigField 'String', 'PLANET_LEARNING_URL', "\"$planetLearningUrl\""
@@ -135,8 +133,6 @@ android {
         it.buildConfigField 'String', 'PLANET_CAMBRIDGE_PIN', "\"${planetCambridgePin}\""
         //it.buildConfigField 'String', 'PLANET_EGDIRBMAC_URL', "\"${planetEgdirbmacUrl}\""
         //it.buildConfigField 'String', 'PLANET_EGDIRBMAC_PIN', "\"${planetEgdirbmacPin}\""
-        it.buildConfigField 'String', 'PLANET_PALMBAY_URL', "\"${planetPalmBayUrl}\""
-        it.buildConfigField 'String', 'PLANET_PALMBAY_PIN', "\"${planetPalmBayPin}\""
     }
 }
 
