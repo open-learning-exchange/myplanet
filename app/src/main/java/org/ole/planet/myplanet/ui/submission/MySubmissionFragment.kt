@@ -72,6 +72,7 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
         } else {
             fragmentMySubmissionBinding.rbSurvey.visibility = View.GONE
             fragmentMySubmissionBinding.rbExam.visibility = View.GONE
+            fragmentMySubmissionBinding.rgSubmission.visibility = View.GONE
         }
     }
 
