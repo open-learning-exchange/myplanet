@@ -197,15 +197,17 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
     override fun onClick(view: View) {
         if (view.id == R.id.btn_submit) {
-            val type = questions?.get(currentIndex)?.type
-            showTextInput(type)
-            if (showErrorMessage(getString(R.string.please_select_write_your_answer_to_continue))) {
-                return
+            if (questions != null && currentIndex in 0 until (questions?.size ?: 0)) {
+                val type = questions?.get(currentIndex)?.type
+                showTextInput(type)
+                if (showErrorMessage(getString(R.string.please_select_write_your_answer_to_continue))) {
+                    return
+                }
+                val cont = updateAnsDb()
+                capturePhoto()
+                hideSoftKeyboard(requireActivity())
+                checkAnsAndContinue(cont)
             }
-            val cont = updateAnsDb()
-            capturePhoto()
-            hideSoftKeyboard(requireActivity())
-            checkAnsAndContinue(cont)
         }
     }
 

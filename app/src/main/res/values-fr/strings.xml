@@ -164,7 +164,6 @@
     <string name="get_started">COMMENCER</string>
     <string name="enter_password">Entrer le mot de passe</string>
     <string name="managerial_login">Connexion en tant que gestionnaire</string>
-    <string name="save_username_and_password">Enregistrer le nom d\'utilisateur et le mot de passe</string>
     <string name="year">Année</string>
     <string name="publisher">Éditeur</string>
     <string name="link_to_license">Lien vers la licence</string>
@@ -1087,7 +1086,6 @@
     <string name="add_note">Ajouter une note (optionnel)</string>
     <string name="no_teams">équipes non disponibles</string>
     <string name="planet_name">%s planète</string>
-    <string name="no_submissions">soumissions non disponibles</string>
     <string name="no_chats">aucune discussion précédente</string>
     <string name="no_feedback">aucun commentaire disponible</string>
     <string name="empty_text" />
@@ -1226,5 +1224,7 @@
     <string name="community">communauté</string>
     <string name="no_enterprise">entreprises non disponibles</string>
     <string name="local_resource">ressource locale</string>
+    <string name="no_survey_submissions">aucune soumission de sondage</string>
+    <string name="no_exam_submissions">aucune soumission d\'examen</string>
 
 </resources>

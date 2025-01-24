@@ -203,7 +203,8 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
                     .notEqualTo("status", "archived")
                     .contains("name", charSequence.toString(), Case.INSENSITIVE)
                 val (list, conditionApplied) = getList(query)
-                val sortedList = sortTeams(list)
+                val sortedList = list.sortedWith(compareByDescending<RealmMyTeam> { it.name?.startsWith(charSequence.toString(), ignoreCase = true) }
+                    .thenBy { it.name })
                 val adapterTeamList = AdapterTeamList(
                     activity as Context, sortedList, mRealm, childFragmentManager
                 )

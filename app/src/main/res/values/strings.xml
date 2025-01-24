@@ -164,7 +164,6 @@
     <string name="get_started">GET STARTED</string>
     <string name="enter_password">Enter Password</string>
     <string name="managerial_login">Manager Login</string>
-    <string name="save_username_and_password">save username and password</string>
     <string name="year">Year</string>
     <string name="publisher">Publisher</string>
     <string name="link_to_license">Link to license</string>
@@ -1087,7 +1086,6 @@
     <string name="add_note">add a note (optional)</string>
     <string name="no_teams">teams not available</string>
     <string name="planet_name">%s\'s Planet</string>
-    <string name="no_submissions">submissions not available</string>
     <string name="no_chats">no previous chats</string>
     <string name="no_feedback">no feedback available</string>
     <string name="empty_text" />
@@ -1226,5 +1224,7 @@
     <string name="community">community</string>
     <string name="no_enterprise">enteprises not available</string>
     <string name="local_resource">local resource</string>
+    <string name="no_survey_submissions">no survey submissions</string>
+    <string name="no_exam_submissions">no exam submissions</string>
 
 </resources>
