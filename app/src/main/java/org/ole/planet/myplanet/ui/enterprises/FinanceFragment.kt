@@ -268,6 +268,7 @@ class FinanceFragment : BaseTeamFragment() {
                 fragmentFinanceBinding.dataLayout.visibility= View.GONE
                 fragmentFinanceBinding.tvNodata.visibility= View.VISIBLE
             }else{
+                calculateTotal(results)
                 fragmentFinanceBinding.dataLayout.visibility= View.VISIBLE
                 fragmentFinanceBinding.tvNodata.visibility= View.VISIBLE
                 fragmentFinanceBinding.rvFinance.adapter = null
