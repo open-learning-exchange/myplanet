@@ -25,6 +25,7 @@ class ServerUrlMapper(private val context: Context, private val settings: Shared
             val uri = Uri.parse(url)
             "${uri.scheme}://${uri.host}${if (uri.port != -1) ":${uri.port}" else ""}"
         } catch (e: Exception) {
+            e.printStackTrace()
             null
         }
     }
