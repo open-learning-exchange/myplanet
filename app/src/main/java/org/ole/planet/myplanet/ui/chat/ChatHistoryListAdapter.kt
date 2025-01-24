@@ -196,7 +196,7 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
 
     private fun showEditTextAndShareButton(team: RealmMyTeam? = null, section: String, chatHistory: RealmChatHistory) {
         val addNoteDialogBinding = AddNoteDialogBinding.inflate(LayoutInflater.from(context))
-        val builder = AlertDialog.Builder(context)
+        val builder = AlertDialog.Builder(context,  R.style.AlertDialogTheme)
         builder.setView(addNoteDialogBinding.root)
         builder.setPositiveButton(context.getString(R.string.share_chat)) { dialog, _ ->
             val serializedConversations = chatHistory.conversations?.map { serializeConversation(it) }

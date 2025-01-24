@@ -10,6 +10,10 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:inputType="textMultiLine"
-        android:hint="@string/add_note" />
+        android:hint="@string/add_note"
+        android:textColor="@color/daynight_textColor"
+        android:textColorHint="@color/hint_color"
+        android:backgroundTint="@color/hint_color"
+        />
 
 </LinearLayout>
