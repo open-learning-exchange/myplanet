@@ -69,6 +69,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     override fun getAdapter(): RecyclerView.Adapter<*> {
         map = getRatings(mRealm, "resource", model?.id)
         val libraryList: List<RealmMyLibrary?> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary?>()
+        println("number of resources on initation: ${libraryList.size}")
         adapterLibrary = AdapterResource(requireActivity(), libraryList, map!!, mRealm)
         adapterLibrary.setRatingChangeListener(this)
         adapterLibrary.setListener(this)

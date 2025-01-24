@@ -54,6 +54,7 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
 
     fun setLibraryList(libraryList: List<RealmMyLibrary?>) {
         this.libraryList = libraryList
+        println("Number of resources: ${this.libraryList.size}")
         notifyDataSetChanged()
     }
 
