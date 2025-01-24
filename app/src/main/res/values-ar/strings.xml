@@ -164,7 +164,6 @@
     <string name="get_started">البدء</string>
     <string name="enter_password">أدخل كلمة المرور</string>
     <string name="managerial_login">تسجيل الدخول كمدير</string>
-    <string name="save_username_and_password">حفظ اسم المستخدم وكلمة المرور</string>
     <string name="year">السنة</string>
     <string name="publisher">الناشر</string>
     <string name="link_to_license">رابط الترخيص</string>
@@ -1087,7 +1086,6 @@
     <string name="add_note">إضافة ملاحظة (اختياري)</string>
     <string name="no_teams">الفرق غير متوفرة</string>
     <string name="planet_name">كوكب %s</string>
-    <string name="no_submissions">التقديمات غير متاحة</string>
     <string name="no_chats">لا توجد محادثات سابقة</string>
     <string name="no_feedback">لا توجد تعليقات متاحة</string>
     <string name="empty_text" />
@@ -1227,5 +1225,7 @@
     <string name="community">مجتمع</string>
     <string name="no_enterprise">المؤسسات غير متوفرة</string>
     <string name="local_resource">مورد محلي</string>
+    <string name="no_survey_submissions">لا توجد استجابات للاستبيان</string>
+    <string name="no_exam_submissions">لا توجد استجابات للامتحان</string>
 
 </resources>
