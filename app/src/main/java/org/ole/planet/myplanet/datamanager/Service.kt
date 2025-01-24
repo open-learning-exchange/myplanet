@@ -6,6 +6,7 @@ import android.content.DialogInterface
 import android.content.SharedPreferences
 import android.net.Uri
 import android.text.TextUtils
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.realm.Realm
@@ -103,19 +104,23 @@ class Service(private val context: Context) {
     }
 
     fun checkVersion(callback: CheckVersionCallback, settings: SharedPreferences) {
-        if (!settings.getBoolean("isAlternativeUrl", false)){
+        Log.d("okuro", "checkVersion: ${settings.getBoolean("isAlternativeUrl", false)}")
+        if (!settings.getBoolean("isAlternativeUrl", false)) {
+            Log.d("okuro", "checkVersion: called")
             if (settings.getString("couchdbURL", "")?.isEmpty() == true) {
                 callback.onError(context.getString(R.string.config_not_available), true)
                 return
             }
         }
 
+        Log.d("okuro", "UpdateUrl: ${Utilities.getUpdateUrl(settings)}")
         retrofitInterface?.checkVersion(Utilities.getUpdateUrl(settings))?.enqueue(object : Callback<MyPlanet?> {
             override fun onResponse(call: Call<MyPlanet?>, response: Response<MyPlanet?>) {
                 preferences.edit().putInt("LastWifiID", NetworkUtils.getCurrentNetworkId(context)).apply()
                 if (response.body() != null) {
                     val p = response.body()
                     preferences.edit().putString("versionDetail", Gson().toJson(response.body())).apply()
+                    Log.d("okuro", "ApkVersionUrl: ${Utilities.getApkVersionUrl(settings)}")
                     retrofitInterface.getApkVersion(Utilities.getApkVersionUrl(settings)).enqueue(object : Callback<ResponseBody> {
                         override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
                             val responses: String?
@@ -374,7 +379,9 @@ class Service(private val context: Context) {
                                         }
 
                                         withContext(Dispatchers.Main) {
-                                            customProgressDialog.setText(context.getString(R.string.checking_server))
+                                            urlsToTry.forEach { currentUrl ->
+                                                customProgressDialog.setText("${context.getString(R.string.checking_server)} $currentUrl")
+                                            }
                                         }
 
                                         val configResponse = retrofitInterface?.getConfiguration("${getUrl(couchdbURL)}/configurations/_all_docs?include_docs=true")?.execute()
@@ -407,6 +414,7 @@ class Service(private val context: Context) {
                 when (result) {
                     is UrlCheckResult.Success -> {
                         val isAlternativeUrl = result.url != url
+                        Log.d("Service", "Configuration ID received: ${result.id}, ${result.code}, ${result.url}")
                         listener?.onConfigurationIdReceived(result.id, result.code, result.url, isAlternativeUrl)
                         activity.setSyncFailed(false)
                     }

@@ -11,6 +11,7 @@ import android.graphics.PorterDuff
 import android.net.Uri
 import android.os.Build
 import android.text.TextUtils
+import android.util.Log
 import android.view.View
 import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
@@ -171,6 +172,7 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
     }
 
     fun startUpload(source: String) {
+        Log.d("okuro", "startUpload: $source")
         if (source == "becomeMember") {
             UploadToShelfService.instance?.uploadUserData {
                 UploadToShelfService.instance?.uploadHealth()
