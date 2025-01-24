@@ -164,8 +164,6 @@ object Utilities {
             settings.getString("couchdbURL", "")
         }
 
-        Log.d("URL", "$url")
-
         if (url != null) {
             if (url.endsWith("/db")) {
                 url = url.replace("/db", "")

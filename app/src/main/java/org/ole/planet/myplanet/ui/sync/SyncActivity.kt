@@ -7,7 +7,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.text.*
-import android.util.Log
 import android.view.*
 import android.webkit.URLUtil
 import android.widget.*
@@ -117,7 +116,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     override fun onConfigurationIdReceived(id: String, code: String, url: String, isAlternativeUrl: Boolean, callerActivity:String) {
         val savedId = settings.getString("configurationId", null)
-        Log.d("SyncActivity", "onConfigurationIdReceived: $id, $code, $url, $isAlternativeUrl, $serverConfigAction")
 
         when (callerActivity) {
             "LoginActivity", "DashboardActivity"-> {
@@ -134,12 +132,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                         editor.putString("configurationId", id).apply()
                         editor.putString("communityName", code).apply()
                         currentDialog?.let {
-                            Log.d("okuro", "savedId == null")
                             continueSync(it, url, isAlternativeUrl)
                         }
                     } else if (id == savedId) {
                         currentDialog?.let {
-                            Log.d("okuro", "id == savedId")
                             continueSync(it, url, isAlternativeUrl)
                         }
                     } else {
@@ -171,7 +167,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         } else {
             urlUser = "satellite"
             urlPwd = password
-            Log.d("okurologin", "continueSync: $urlPwd")
             couchdbURL = "${uri.scheme}://$urlUser:$urlPwd@${uri.host}:${if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port}"
         }
 
@@ -243,23 +238,16 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         return withContext(Dispatchers.IO) {
             val apiInterface = client?.create(ApiInterface::class.java)
             try {
-                Log.d("okuro", "isAlternativeUrl-> isServerReachable ${settings.getBoolean("isAlternativeUrl", false)}")
-
                 val response = if (settings.getBoolean("isAlternativeUrl", false)){
-                    Log.d("okuro", "db/all_dbs: $processedUrl/db/_all_dbs")
                      if (processedUrl?.contains("/db") == true) {
                          val processedUrlWithoutDb = processedUrl.replace("/db", "")
                          apiInterface?.isPlanetAvailable("$processedUrlWithoutDb/db/_all_dbs")?.execute()
                     } else {
-                        Log.d("called", "called")
                          apiInterface?.isPlanetAvailable("$processedUrl/db/_all_dbs")?.execute()
                     }
                 } else {
-                    Log.d("okuro", "db/all_dbs: $processedUrl/_all_dbs")
                     apiInterface?.isPlanetAvailable("$processedUrl/_all_dbs")?.execute()
                 }
-
-                Log.d("okuro", "isServerReachable response: $response")
 
                 when {
                     response?.isSuccessful == true -> {
@@ -282,7 +270,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     else -> {
                         syncFailed = true
                         val protocol = extractProtocol("$processedUrl")
-                        Log.d("okuro", "$protocol")
                         val errorMessage = when (protocol) {
                             context.getString(R.string.http_protocol) -> context.getString(R.string.device_couldn_t_reach_local_server)
                             context.getString(R.string.https_protocol) -> context.getString(R.string.device_couldn_t_reach_nation_server)
@@ -823,13 +810,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     fun continueSync(dialog: MaterialDialog, url: String, isAlternativeUrl: Boolean) {
-        Log.d("ollonde", "continueSync: called")
-        Log.d("ollonde", "$isAlternativeUrl")
         if (isAlternativeUrl) {
             val password = if (settings.getString("serverPin", "") != ""){
                 "${settings.getString("serverPin", "")}"
             } else {
-                Log.d("okuro", "continueSync: ${dialog.customView?.findViewById<View>(R.id.input_server_Password)}")
                 "${(dialog.customView?.findViewById<View>(R.id.input_server_Password) as EditText).text}"
             }
 
@@ -845,7 +829,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             } else {
                 urlUser = "satellite"
                 urlPwd = password
-                Log.d("okuro", "continueSync: $urlPwd")
                 couchdbURL = "${uri.scheme}://$urlUser:$urlPwd@${uri.host}:${if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port}"
             }
             editor.putString("serverPin", password)
@@ -899,12 +882,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         mRealm = Realm.getDefaultInstance()
         val builder = getUpdateDialog(this, info, customProgressDialog)
         if (cancelable || getCustomDeviceName(this).endsWith("###")) {
-            Log.d("okuro", "onUpdateAvailable2: $cancelable")
             builder.setNegativeButton(R.string.update_later) { _: DialogInterface?, _: Int ->
                 continueSyncProcess()
             }
         } else {
-            Log.d("okuro", "onUpdateAvailable2: $cancelable")
             mRealm.executeTransactionAsync { realm: Realm -> realm.deleteAll() }
         }
         builder.setCancelable(cancelable)
@@ -941,9 +922,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 if (isSync) {
                     isServerReachable(processedUrl)
                 } else if (forceSync) {
-                    Log.d("okuro", "processedUrl: $processedUrl")
                     isServerReachable(processedUrl)
-                    Log.d("okuro", "continueSyncProcess22: $forceSync")
                     startUpload("")
                 }
             }

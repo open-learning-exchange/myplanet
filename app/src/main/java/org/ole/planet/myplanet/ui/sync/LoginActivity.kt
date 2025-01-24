@@ -5,7 +5,6 @@ import android.graphics.drawable.AnimationDrawable
 import android.os.*
 import android.os.Build.VERSION_CODES.TIRAMISU
 import android.text.*
-import android.util.Log
 import android.view.*
 import android.view.inputmethod.EditorInfo
 import android.widget.*
@@ -119,11 +118,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         }
     }
 
-//    override fun onConfigurationIdReceived(id: String, code: String, url: String, isAlternativeUrl: Boolean) {
-//        Log.d("LoginActivity", "onConfigurationIdReceived: $id, $code, $url, $isAlternativeUrl")
-//
-//    }
-
     private fun declareElements() {
         if (!defaultPref.contains("beta_addImageToMessage")) {
             defaultPref.edit().putBoolean("beta_addImageToMessage", true).apply()
@@ -183,7 +177,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             syncIcon.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.login_file_upload_animation))
             syncIcon.scaleType
             syncIconDrawable = syncIcon.drawable as AnimationDrawable
-
             syncIcon.setOnClickListener {
                 val protocol = settings.getString("serverProtocol", "")
                 val serverUrl = "${settings.getString("serverURL", "")}"
@@ -194,19 +187,13 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                 } else {
                     "$protocol$serverUrl"
                 }
-
-                Log.d("LoginActivity", "serverUrl: $url, serverPin: $serverPin")
                 syncIconDrawable.start()
 
                 val dialogServerUrlBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this))
                 val contextWrapper = ContextThemeWrapper(this, R.style.AlertDialogTheme)
-
-                val builder = MaterialDialog.Builder(contextWrapper)
-                    .customView(dialogServerUrlBinding.root, true)
-
+                val builder = MaterialDialog.Builder(contextWrapper).customView(dialogServerUrlBinding.root, true)
                 val dialog = builder.build()
                 currentDialog = dialog
-                Log.d("LoginActivity", "url: $serverUrl")
                 service.getMinApk(this, url, serverPin, this, "LoginActivity")
             }
             declareHideKeyboardElements()
