@@ -11,6 +11,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.*
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
@@ -20,7 +21,7 @@ import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.MenuItemCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.lifecycleScope
+import com.afollestad.materialdialogs.MaterialDialog
 import com.google.android.material.navigation.NavigationBarView
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayout.OnTabSelectedListener
@@ -36,7 +37,6 @@ import io.realm.Case
 import io.realm.RealmChangeListener
 import io.realm.RealmObject
 import io.realm.RealmResults
-import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication
@@ -46,6 +46,7 @@ import org.ole.planet.myplanet.base.BaseResourceFragment
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.ActivityDashboardBinding
 import org.ole.planet.myplanet.databinding.CustomTabBinding
+import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
@@ -81,9 +82,7 @@ import org.ole.planet.myplanet.utilities.FileUtils.totalAvailableMemoryRatio
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.MarkdownDialog
-import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
-import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.Utilities.toast
 import java.text.SimpleDateFormat
 import java.time.LocalDate
@@ -177,33 +176,50 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
 
         activityDashboardBinding.appBarBell.ivSync.setOnClickListener {
-            val serverUrlMapper = ServerUrlMapper(this)
-            val url = Utilities.getUrl()
-            val mapping = serverUrlMapper.processUrl(url)
+            val protocol = settings.getString("serverProtocol", "")
+            val serverUrl = settings.getString("serverURL", "")
+            val serverPin = "${settings.getString("serverPin", "")}"
+            val url = "$protocol$serverUrl"
 
-            lifecycleScope.launch {
-                val isPrimaryReachable = isServerReachable(Utilities.getUrl())
+            Log.d("LoginActivity", "serverUrl: $url, serverPin: $serverPin")
+            syncIconDrawable.start()
 
-                if (isPrimaryReachable) {
-                    startUpload("dashboard")
-                    createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
-                } else if (mapping.alternativeUrl != null) {
-                    val uri = Uri.parse(mapping.alternativeUrl)
+            val dialogServerUrlBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this))
+            val contextWrapper = ContextThemeWrapper(this, R.style.AlertDialogTheme)
 
-                    serverUrlMapper.updateUrlPreferences(editor, uri, mapping.alternativeUrl, url, settings)
-                    val processedUrl = settings.getString("processedAlternativeUrl", "")
+            val builder = MaterialDialog.Builder(contextWrapper).customView(dialogServerUrlBinding.root, true)
 
-                    val isAlternativeReachable = isServerReachable(processedUrl ?: "")
+            val dialog = builder.build()
+            currentDialog = dialog
+            service.getMinApk(this, url, serverPin, this)
 
-                    if (isAlternativeReachable) {
-                        startUpload("dashboard")
-                        createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
-                    }
-                } else {
-                    startUpload("dashboard")
-                    createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
-                }
-            }
+//            val serverUrlMapper = ServerUrlMapper(this)
+//            val url = Utilities.getUrl()
+//            val mapping = serverUrlMapper.processUrl(url)
+//
+//            lifecycleScope.launch {
+//                val isPrimaryReachable = isServerReachable(Utilities.getUrl())
+//
+//                if (isPrimaryReachable) {
+//                    startUpload("dashboard")
+//                    createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
+//                } else if (mapping.alternativeUrl != null) {
+//                    val uri = Uri.parse(mapping.alternativeUrl)
+//
+//                    serverUrlMapper.updateUrlPreferences(editor, uri, mapping.alternativeUrl, url, settings)
+//                    val processedUrl = settings.getString("processedAlternativeUrl", "")
+//
+//                    val isAlternativeReachable = isServerReachable(processedUrl ?: "")
+//
+//                    if (isAlternativeReachable) {
+//                        startUpload("dashboard")
+//                        createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
+//                    }
+//                } else {
+//                    startUpload("dashboard")
+//                    createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
+//                }
+//            }
         }
 
         activityDashboardBinding.appBarBell.imgLogo.setOnClickListener { result?.openDrawer() }
@@ -426,6 +442,41 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount, allVoiceCount, hasUnfinishedSurvey)
                 .show(supportFragmentManager, "markdown_dialog")
         }
+    }
+
+    override fun onConfigurationIdReceived(id: String, code: String, url: String, isAlternativeUrl: Boolean) {
+        Log.d("DashBoardActivity", "onConfigurationIdReceived: $id, $code, $url, $isAlternativeUrl")
+        if (isAlternativeUrl) {
+            val password = "${settings.getString("serverPin", "")}"
+
+            val uri = Uri.parse(url)
+            var couchdbURL: String
+            val urlUser: String
+            val urlPwd: String
+            if (url.contains("@")) {
+                val userinfo = getUserInfo(uri)
+                urlUser = userinfo[0]
+                urlPwd = userinfo[1]
+                couchdbURL = url
+            } else {
+                urlUser = "satellite"
+                urlPwd = password
+                Log.d("okurologin", "continueSync: $urlPwd")
+                couchdbURL =
+                    "${uri.scheme}://$urlUser:$urlPwd@${uri.host}:${if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port}"
+            }
+            editor.putString("serverPin", password)
+            editor.putString("url_user", urlUser)
+            editor.putString("url_pwd", urlPwd)
+            editor.putString("url_Scheme", uri.scheme)
+            editor.putString("url_Host", uri.host)
+            editor.putString("alternativeUrl", url)
+            editor.putString("processedAlternativeUrl", couchdbURL)
+            editor.putBoolean("isAlternativeUrl", true)
+            editor.apply()
+        }
+        startUpload("dashboard")
+        createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
     }
 
     private fun calculateIndividualProgress(voiceCount: Int, hasUnfinishedSurvey: Boolean): Int {

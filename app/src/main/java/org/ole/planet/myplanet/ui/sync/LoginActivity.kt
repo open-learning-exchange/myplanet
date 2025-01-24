@@ -122,7 +122,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     }
 
     override fun onConfigurationIdReceived(id: String, code: String, url: String, isAlternativeUrl: Boolean) {
-        Log.d("SyncActivity", "onConfigurationIdReceived: $id, $code, $url, $isAlternativeUrl")
+        Log.d("LoginActivity", "onConfigurationIdReceived: $id, $code, $url, $isAlternativeUrl")
         if (isAlternativeUrl) {
             val password = "${settings.getString("serverPin", "")}"
 
