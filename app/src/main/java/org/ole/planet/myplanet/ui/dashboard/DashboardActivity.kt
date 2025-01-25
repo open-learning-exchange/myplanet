@@ -129,6 +129,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         disableShiftMode(navigationView)
         activityDashboardBinding.appBarBell.bellToolbar.inflateMenu(R.menu.menu_bell_dashboard)
         tl = findViewById(R.id.tab_layout)
+        updateNavigationViewVisibility()
+
+        activityDashboardBinding.root.viewTreeObserver.addOnGlobalLayoutListener {
+            updateNavigationViewVisibility()
+        }
         try {
             val userProfileModel = profileDbHandler.userModel
             if (userProfileModel != null) {
@@ -378,6 +383,15 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     }
                 }
             }
+        }
+    }
+
+    private fun updateNavigationViewVisibility() {
+        val isLandscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+        activityDashboardBinding.topBarNavigation.visibility = if (isLandscape) {
+            View.VISIBLE
+        } else {
+            View.GONE
         }
     }
 
