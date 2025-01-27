@@ -224,7 +224,7 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
     }
 
     fun alertDialogOkay(message: String?) {
-        val builder1 = AlertDialog.Builder(this)
+        val builder1 = AlertDialog.Builder(this, R.style.AlertDialogTheme)
         builder1.setMessage(message)
         builder1.setCancelable(true)
         builder1.setNegativeButton(R.string.okay) { dialog: DialogInterface, _: Int -> dialog.cancel() }
