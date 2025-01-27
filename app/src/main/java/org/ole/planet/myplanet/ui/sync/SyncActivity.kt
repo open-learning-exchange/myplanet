@@ -114,24 +114,67 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         processedUrl = Utilities.getUrl()
     }
 
-    override fun onConfigurationIdReceived(id: String, code: String, url: String, isAlternativeUrl: Boolean) {
+    override fun onConfigurationIdReceived(id: String, code: String, url: String, isAlternativeUrl: Boolean, callerActivity:String) {
         val savedId = settings.getString("configurationId", null)
-        Log.d("SyncActivity", "onConfigurationIdReceived: $id, $code, $url, $isAlternativeUrl")
-        if (serverConfigAction == "sync") {
-            if (savedId == null) {
-                editor.putString("configurationId", id).apply()
-                editor.putString("communityName", code).apply()
-                currentDialog?.let { continueSync(it, url, isAlternativeUrl) }
-            } else if (id == savedId) {
-                currentDialog?.let { continueSync(it, url, isAlternativeUrl) }
-            } else {
-                clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server), false)
+        Log.d("SyncActivity", "onConfigurationIdReceived: $id, $code, $url, $isAlternativeUrl, $serverConfigAction")
+
+        if (callerActivity == "LoginActivity") {
+            if (isAlternativeUrl) {
+                val password = "${settings.getString("serverPin", "")}"
+
+                val uri = Uri.parse(url)
+                var couchdbURL: String
+                val urlUser: String
+                val urlPwd: String
+                if (url.contains("@")) {
+                    val userinfo = getUserInfo(uri)
+                    urlUser = userinfo[0]
+                    urlPwd = userinfo[1]
+                    couchdbURL = url
+                } else {
+                    urlUser = "satellite"
+                    urlPwd = password
+                    Log.d("okurologin", "continueSync: $urlPwd")
+                    couchdbURL =
+                        "${uri.scheme}://$urlUser:$urlPwd@${uri.host}:${if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port}"
+                }
+                editor.putString("serverPin", password)
+                editor.putString("url_user", urlUser)
+                editor.putString("url_pwd", urlPwd)
+                editor.putString("url_Scheme", uri.scheme)
+                editor.putString("url_Host", uri.host)
+                editor.putString("alternativeUrl", url)
+                editor.putString("processedAlternativeUrl", couchdbURL)
+                editor.putBoolean("isAlternativeUrl", true)
+                editor.apply()
             }
-        } else if (serverConfigAction == "save") {
-            if (savedId == null || id == savedId) {
-                currentDialog?.let { saveConfigAndContinue(it) }
-            } else {
-                clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server), false)
+
+            isSync = false
+            forceSync = true
+            service.checkVersion(this, settings)
+        } else {
+            if (serverConfigAction == "sync") {
+                if (savedId == null) {
+                    editor.putString("configurationId", id).apply()
+                    editor.putString("communityName", code).apply()
+                    currentDialog?.let {
+                        Log.d("okuro", "savedId == null")
+                        continueSync(it, url, isAlternativeUrl)
+                    }
+                } else if (id == savedId) {
+                    currentDialog?.let {
+                        Log.d("okuro", "id == savedId")
+                        continueSync(it, url, isAlternativeUrl)
+                    }
+                } else {
+                    clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server), false)
+                }
+            } else if (serverConfigAction == "save") {
+                if (savedId == null || id == savedId) {
+                    currentDialog?.let { saveConfigAndContinue(it) }
+                } else {
+                    clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server), false)
+                }
             }
         }
     }
@@ -192,19 +235,19 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             val apiInterface = client?.create(ApiInterface::class.java)
             try {
                 Log.d("okuro", "isAlternativeUrl-> isServerReachable ${settings.getBoolean("isAlternativeUrl", false)}")
-                val processedUrlWithoutDb = if (processedUrl?.contains("/db") == true) {
-                    processedUrl.replace("/db", "")
-                } else {
-                    processedUrl
-                }
-
 
                 val response = if (settings.getBoolean("isAlternativeUrl", false)){
-                    Log.d("okuro", "db/all_dbs: $processedUrlWithoutDb/db/_all_dbs")
-                    apiInterface?.isPlanetAvailable("$processedUrlWithoutDb/db/_all_dbs")?.execute()
+                    Log.d("okuro", "db/all_dbs: $processedUrl/db/_all_dbs")
+                     if (processedUrl?.contains("/db") == true) {
+                         val processedUrlWithoutDb = processedUrl.replace("/db", "")
+                         apiInterface?.isPlanetAvailable("$processedUrlWithoutDb/db/_all_dbs")?.execute()
+                    } else {
+                        Log.d("called", "called")
+                         apiInterface?.isPlanetAvailable("$processedUrl/db/_all_dbs")?.execute()
+                    }
                 } else {
-                    Log.d("okuro", "db/all_dbs: $processedUrlWithoutDb/_all_dbs")
-                    apiInterface?.isPlanetAvailable("$processedUrlWithoutDb/_all_dbs")?.execute()
+                    Log.d("okuro", "db/all_dbs: $processedUrl/_all_dbs")
+                    apiInterface?.isPlanetAvailable("$processedUrl/_all_dbs")?.execute()
                 }
 
                 Log.d("okuro", "isServerReachable response: $response")
@@ -229,7 +272,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     }
                     else -> {
                         syncFailed = true
-                        val protocol = extractProtocol("$processedUrlWithoutDb")
+                        val protocol = extractProtocol("$processedUrl")
                         Log.d("okuro", "$protocol")
                         val errorMessage = when (protocol) {
                             context.getString(R.string.http_protocol) -> context.getString(R.string.device_couldn_t_reach_local_server)
@@ -579,7 +622,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 url = protocol + url
                 if (isUrlValid(url)) {
                     currentDialog = dialog
-                    service.getMinApk(this, url, pin, this)
+                    service.getMinApk(this, url, pin, this, "SyncActivity")
                 }
             }
         }
@@ -700,7 +743,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         url = protocol + url
         if (isUrlValid(url)) {
             currentDialog = dialog
-            service.getMinApk(this, url, pin, this)
+            service.getMinApk(this, url, pin, this, "SyncActivity")
         }
     }
 
@@ -771,10 +814,13 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     fun continueSync(dialog: MaterialDialog, url: String, isAlternativeUrl: Boolean) {
+        Log.d("ollonde", "continueSync: called")
+        Log.d("ollonde", "$isAlternativeUrl")
         if (isAlternativeUrl) {
             val password = if (settings.getString("serverPin", "") != ""){
                 "${settings.getString("serverPin", "")}"
             } else {
+                Log.d("okuro", "continueSync: ${dialog.customView?.findViewById<View>(R.id.input_server_Password)}")
                 "${(dialog.customView?.findViewById<View>(R.id.input_server_Password) as EditText).text}"
             }
 

@@ -108,7 +108,8 @@ class Service(private val context: Context) {
         if (!settings.getBoolean("isAlternativeUrl", false)) {
             Log.d("okuro", "checkVersion: called")
             if (settings.getString("couchdbURL", "")?.isEmpty() == true) {
-                callback.onError(context.getString(R.string.config_not_available), true)
+                Log.d("okuro", "checkVersion: config not available")
+//                callback.onError(context.getString(R.string.config_not_available), true)
                 return
             }
         }
@@ -328,7 +329,7 @@ class Service(private val context: Context) {
         })
     }
 
-    fun getMinApk(listener: ConfigurationIdListener?, url: String, pin: String, activity: SyncActivity) {
+    fun getMinApk(listener: ConfigurationIdListener?, url: String, pin: String, activity: SyncActivity, callerActivity: String) {
         val serverUrlMapper = ServerUrlMapper(context)
         val mapping = serverUrlMapper.processUrl(url)
 
@@ -415,7 +416,7 @@ class Service(private val context: Context) {
                     is UrlCheckResult.Success -> {
                         val isAlternativeUrl = result.url != url
                         Log.d("Service", "Configuration ID received: ${result.id}, ${result.code}, ${result.url}")
-                        listener?.onConfigurationIdReceived(result.id, result.code, result.url, isAlternativeUrl)
+                        listener?.onConfigurationIdReceived(result.id, result.code, result.url, isAlternativeUrl, callerActivity)
                         activity.setSyncFailed(false)
                     }
                     is UrlCheckResult.Failure -> {
@@ -432,6 +433,7 @@ class Service(private val context: Context) {
                 e.printStackTrace()
                 activity.setSyncFailed(true)
                 withContext(Dispatchers.Main) {
+                    Log.d("Service", "Error: ${e.message}")
                     showAlertDialog(context.getString(R.string.device_couldn_t_reach_local_server), false)
                 }
             } finally {
@@ -529,6 +531,6 @@ class Service(private val context: Context) {
     }
 
     interface ConfigurationIdListener {
-        fun onConfigurationIdReceived(id: String, code: String, url: String, isAlternativeUrl: Boolean)
+        fun onConfigurationIdReceived(id: String, code: String, url: String, isAlternativeUrl: Boolean, callerActivity: String)
     }
 }

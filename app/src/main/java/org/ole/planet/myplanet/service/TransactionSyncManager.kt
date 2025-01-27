@@ -116,6 +116,7 @@ object TransactionSyncManager {
         realm.executeTransactionAsync { mRealm: Realm ->
             val apiInterface = client?.create(ApiInterface::class.java)
             val allDocs = apiInterface?.getJsonObject(Utilities.header, Utilities.getUrl() + "/" + table + "/_all_docs?include_doc=false")
+            Log.d("okuro", "${Utilities.getUrl()}/$table/_all_docs?include_doc=false}")
             try {
                 val all = allDocs?.execute()
                 val rows = getJsonArray("rows", all?.body())

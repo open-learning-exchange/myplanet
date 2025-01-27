@@ -121,44 +121,10 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         }
     }
 
-    override fun onConfigurationIdReceived(id: String, code: String, url: String, isAlternativeUrl: Boolean) {
-        Log.d("LoginActivity", "onConfigurationIdReceived: $id, $code, $url, $isAlternativeUrl")
-        if (isAlternativeUrl) {
-            val password = "${settings.getString("serverPin", "")}"
-
-            val uri = Uri.parse(url)
-            var couchdbURL: String
-            val urlUser: String
-            val urlPwd: String
-            if (url.contains("@")) {
-                val userinfo = getUserInfo(uri)
-                urlUser = userinfo[0]
-                urlPwd = userinfo[1]
-                couchdbURL = url
-            } else {
-                urlUser = "satellite"
-                urlPwd = password
-                Log.d("okurologin", "continueSync: $urlPwd")
-                couchdbURL =
-                    "${uri.scheme}://$urlUser:$urlPwd@${uri.host}:${if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port}"
-            }
-            editor.putString("serverPin", password)
-            editor.putString("url_user", urlUser)
-            editor.putString("url_pwd", urlPwd)
-            editor.putString("url_Scheme", uri.scheme)
-            editor.putString("url_Host", uri.host)
-            editor.putString("alternativeUrl", url)
-            editor.putString("processedAlternativeUrl", couchdbURL)
-            editor.putBoolean("isAlternativeUrl", true)
-            editor.apply()
-        }
-
-//        currentDialog?.let { continueSync(it, url, isAlternativeUrl) }
-
-        isSync = false
-        forceSync = true
-        service.checkVersion(this, settings)
-    }
+//    override fun onConfigurationIdReceived(id: String, code: String, url: String, isAlternativeUrl: Boolean) {
+//        Log.d("LoginActivity", "onConfigurationIdReceived: $id, $code, $url, $isAlternativeUrl")
+//
+//    }
 
     private fun declareElements() {
         if (!defaultPref.contains("beta_addImageToMessage")) {
@@ -222,9 +188,14 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
 
             syncIcon.setOnClickListener {
                 val protocol = settings.getString("serverProtocol", "")
-                val serverUrl = settings.getString("serverURL", "")
+                val serverUrl = "${settings.getString("serverURL", "")}"
                 val serverPin = "${settings.getString("serverPin", "")}"
-                val url = "$protocol$serverUrl"
+
+                val url = if (serverUrl.startsWith("http://") || serverUrl.startsWith("https://")) {
+                    serverUrl
+                } else {
+                    "$protocol$serverUrl"
+                }
 
                 Log.d("LoginActivity", "serverUrl: $url, serverPin: $serverPin")
                 syncIconDrawable.start()
@@ -237,7 +208,8 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
 
                 val dialog = builder.build()
                 currentDialog = dialog
-                service.getMinApk(this, url, serverPin, this)
+                Log.d("LoginActivity", "url: $serverUrl")
+                service.getMinApk(this, url, serverPin, this, "LoginActivity")
             }
             declareHideKeyboardElements()
             activityLoginBinding.lblVersion.text = getString(R.string.version, resources.getText(R.string.app_version))
