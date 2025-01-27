@@ -109,8 +109,10 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
         if (s.isEmpty()) {
             fragmentMySubmissionBinding.llSearch.visibility = View.VISIBLE
             fragmentMySubmissionBinding.title.visibility = View.VISIBLE
-            if (fragmentMySubmissionBinding.rbSurvey.isChecked) {
+            if (fragmentMySubmissionBinding.rbSurvey.isChecked || type == "survey") {
+                fragmentMySubmissionBinding.tvFragmentInfo.text = "mySurveys"
                 showNoData(fragmentMySubmissionBinding.tvMessage, itemCount, "survey_submission")
+
             } else {
                 showNoData(fragmentMySubmissionBinding.tvMessage, itemCount, "exam_submission")
             }
