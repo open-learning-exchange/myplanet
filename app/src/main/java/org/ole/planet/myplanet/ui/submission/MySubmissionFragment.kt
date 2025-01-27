@@ -104,13 +104,26 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
 
         val adapter = AdapterMySubmission(requireActivity(), submissions, exams)
         val itemCount = adapter.itemCount
-        if(s.isNullOrEmpty()){
-            showNoData(fragmentMySubmissionBinding.tvMessage, itemCount, "submission")
-                if (itemCount == 0) {
-                fragmentMySubmissionBinding.llSearch.visibility = View.GONE
+
+        if (s.isEmpty()) {
+            fragmentMySubmissionBinding.llSearch.visibility = View.VISIBLE
+            fragmentMySubmissionBinding.title.visibility = View.VISIBLE
+            if (fragmentMySubmissionBinding.rbSurvey.isChecked) {
+                showNoData(fragmentMySubmissionBinding.tvMessage, itemCount, "survey_submission")
+            } else {
+                showNoData(fragmentMySubmissionBinding.tvMessage, itemCount, "exam_submission")
+            }
+
+            if (itemCount == 0) {
                 fragmentMySubmissionBinding.title.visibility = View.GONE
+                fragmentMySubmissionBinding.tlSearch.visibility = View.GONE
+            } else {
+                fragmentMySubmissionBinding.tvMessage.visibility = View.GONE
+                fragmentMySubmissionBinding.title.visibility = View.VISIBLE
+                fragmentMySubmissionBinding.tlSearch.visibility = View.VISIBLE
             }
         }
+
         adapter.setmRealm(mRealm)
         adapter.setType(type)
         fragmentMySubmissionBinding.rvMysurvey.adapter = adapter

@@ -194,10 +194,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                 false
             }
             setUpLanguageButton()
-            if (defaultPref.getBoolean("saveUsernameAndPassword", false)) {
-                activityLoginBinding.inputName.setText(settings.getString(getString(R.string.login_user), ""))
-                activityLoginBinding.inputPassword.setText(settings.getString(getString(R.string.login_password), ""))
-            }
             if (NetworkUtils.isNetworkConnected) {
                 service.syncPlanetServers(mRealm) { success: String? ->
                     toast(this, success)
