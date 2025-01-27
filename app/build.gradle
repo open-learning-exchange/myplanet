@@ -101,8 +101,6 @@ android {
     def planetCambridgePin = project.findProperty('PLANET_CAMBRIDGE_PIN') ?: ""
     //def planetEgdirbmacUrl = project.findProperty('PLANET_EGDIRBMAC_URL') ?: ""
     //def planetEgdirbmacPin = project.findProperty('PLANET_EGDIRBMAC_PIN') ?: ""
-    def planetPalmBayUrl = project.findProperty('PLANET_PALMBAY_URL') ?: ""
-    def planetPalmBayPin = project.findProperty('PLANET_PALMBAY_PIN') ?: ""
 
     buildTypes.each {
         it.buildConfigField 'String', 'PLANET_LEARNING_URL', "\"$planetLearningUrl\""
@@ -135,8 +133,6 @@ android {
         it.buildConfigField 'String', 'PLANET_CAMBRIDGE_PIN', "\"${planetCambridgePin}\""
         //it.buildConfigField 'String', 'PLANET_EGDIRBMAC_URL', "\"${planetEgdirbmacUrl}\""
         //it.buildConfigField 'String', 'PLANET_EGDIRBMAC_PIN', "\"${planetEgdirbmacPin}\""
-        it.buildConfigField 'String', 'PLANET_PALMBAY_URL', "\"${planetPalmBayUrl}\""
-        it.buildConfigField 'String', 'PLANET_PALMBAY_PIN', "\"${planetPalmBayPin}\""
     }
 }
 

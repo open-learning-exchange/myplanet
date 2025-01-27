@@ -218,14 +218,14 @@ class BellDashboardFragment : BaseDashboardFragment() {
             if (user?.id?.startsWith("guest") == true) {
                 guestDialog(requireContext())
             } else {
-                openHelperFragment(ResourcesFragment())
+                homeItemClickListener?.openMyFragment(ResourcesFragment())
             }
         }
         fragmentHomeBellBinding.homeCardCourses.myCoursesImageButton.setOnClickListener {
             if (user?.id?.startsWith("guest") == true) {
                 guestDialog(requireContext())
             } else {
-                openHelperFragment(CoursesFragment())
+                homeItemClickListener?.openMyFragment(CoursesFragment())
             }
         }
         fragmentHomeBellBinding.fabMyActivity.setOnClickListener { openHelperFragment(MyActivityFragment()) }

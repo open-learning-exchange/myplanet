@@ -101,7 +101,8 @@
                     android:entries="@array/language"
                     android:hint="@string/title_asterisk"
                     android:padding="@dimen/padding_large"
-                    android:theme="@style/ResourcePopupMenu" />
+                    android:theme="@style/ResourcePopupMenu"
+                    android:textDirection="locale" />
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"

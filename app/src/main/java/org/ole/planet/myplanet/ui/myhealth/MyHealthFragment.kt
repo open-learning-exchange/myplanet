@@ -220,7 +220,10 @@ class MyHealthFragment : Fragment() {
                 adapter = adap
             }
             fragmentVitalSignBinding.rvRecords.post {
-                fragmentVitalSignBinding.rvRecords.scrollToPosition(list?.size ?: (0 - 1))
+                val lastPosition = (list?.size ?: 0) - 1
+                if (lastPosition >= 0) {
+                    fragmentVitalSignBinding.rvRecords.scrollToPosition(lastPosition)
+                }
             }
         } else {
             fragmentVitalSignBinding.txtOtherNeed.text = getString(R.string.empty_text)
