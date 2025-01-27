@@ -7,6 +7,7 @@
     android:background="@color/secondary_bg"
     android:fitsSystemWindows="true"
     tools:context=".ui.chat.ChatDetailFragment">
+
     <View
         android:id="@+id/hView"
         android:layout_width="1dp"
@@ -122,6 +123,7 @@
         android:padding="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent">
+
         <EditText
             android:id="@+id/edit_gchat_message"
             android:layout_width="match_parent"
