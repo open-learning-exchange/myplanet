@@ -62,6 +62,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         setupNetworkStatusMonitoring()
         (activity as DashboardActivity?)?.supportActionBar?.hide()
         showBadges()
+        if((user?.id?.startsWith("guest") != true))
         checkPendingSurveys()
 
         if (model?.id?.startsWith("guest") == false && TextUtils.isEmpty(model?.key)) {
@@ -125,7 +126,6 @@ class BellDashboardFragment : BaseDashboardFragment() {
             val dialogView = LayoutInflater.from(requireActivity()).inflate(R.layout.dialog_survey_list, null)
             val recyclerView: RecyclerView = dialogView.findViewById(R.id.recyclerViewSurveys)
             recyclerView.layoutManager = LinearLayoutManager(requireActivity())
-
             val alertDialog = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
                 .setTitle(getString(R.string.surveys_to_complete, pendingSurveys.size, if (pendingSurveys.size > 1) "surveys" else "survey"))
                 .setView(dialogView)
