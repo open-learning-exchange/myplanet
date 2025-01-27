@@ -103,7 +103,7 @@ class Service(private val context: Context) {
     }
 
     fun checkVersion(callback: CheckVersionCallback, settings: SharedPreferences) {
-        if (!settings.getBoolean("isAlternativeUrl", false)) {
+        if (!settings.getBoolean("isAlternativeUrl", false)){
             if (settings.getString("couchdbURL", "")?.isEmpty() == true) {
                 callback.onError(context.getString(R.string.config_not_available), true)
                 return

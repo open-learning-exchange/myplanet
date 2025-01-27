@@ -398,41 +398,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-//    override fun onConfigurationIdReceived(id: String, code: String, url: String, isAlternativeUrl: Boolean) {
-//        Log.d("DashBoardActivity", "onConfigurationIdReceived: $id, $code, $url, $isAlternativeUrl")
-//        if (isAlternativeUrl) {
-//            val password = "${settings.getString("serverPin", "")}"
-//
-//            val uri = Uri.parse(url)
-//            var couchdbURL: String
-//            val urlUser: String
-//            val urlPwd: String
-//            if (url.contains("@")) {
-//                val userinfo = getUserInfo(uri)
-//                urlUser = userinfo[0]
-//                urlPwd = userinfo[1]
-//                couchdbURL = url
-//            } else {
-//                urlUser = "satellite"
-//                urlPwd = password
-//                Log.d("okurologin", "continueSync: $urlPwd")
-//                couchdbURL =
-//                    "${uri.scheme}://$urlUser:$urlPwd@${uri.host}:${if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port}"
-//            }
-//            editor.putString("serverPin", password)
-//            editor.putString("url_user", urlUser)
-//            editor.putString("url_pwd", urlPwd)
-//            editor.putString("url_Scheme", uri.scheme)
-//            editor.putString("url_Host", uri.host)
-//            editor.putString("alternativeUrl", url)
-//            editor.putString("processedAlternativeUrl", couchdbURL)
-//            editor.putBoolean("isAlternativeUrl", true)
-//            editor.apply()
-//        }
-//        startUpload("dashboard")
-//        createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
-//    }
-
     private fun calculateIndividualProgress(voiceCount: Int, hasUnfinishedSurvey: Boolean): Int {
         val earnedDollarsVoice = minOf(voiceCount, 5) * 2
         val earnedDollarsSurvey = if (!hasUnfinishedSurvey) 1 else 0
