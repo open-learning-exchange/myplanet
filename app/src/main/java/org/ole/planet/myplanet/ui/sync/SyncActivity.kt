@@ -40,6 +40,7 @@ import org.ole.planet.myplanet.datamanager.*
 import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.datamanager.Service.*
 import org.ole.planet.myplanet.model.*
+import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createAction
 import org.ole.planet.myplanet.service.*
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.team.AdapterTeam.OnUserSelectedListener
@@ -118,65 +119,73 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         val savedId = settings.getString("configurationId", null)
         Log.d("SyncActivity", "onConfigurationIdReceived: $id, $code, $url, $isAlternativeUrl, $serverConfigAction")
 
-        if (callerActivity == "LoginActivity") {
-            if (isAlternativeUrl) {
-                val password = "${settings.getString("serverPin", "")}"
-
-                val uri = Uri.parse(url)
-                var couchdbURL: String
-                val urlUser: String
-                val urlPwd: String
-                if (url.contains("@")) {
-                    val userinfo = getUserInfo(uri)
-                    urlUser = userinfo[0]
-                    urlPwd = userinfo[1]
-                    couchdbURL = url
-                } else {
-                    urlUser = "satellite"
-                    urlPwd = password
-                    Log.d("okurologin", "continueSync: $urlPwd")
-                    couchdbURL =
-                        "${uri.scheme}://$urlUser:$urlPwd@${uri.host}:${if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port}"
+        when (callerActivity) {
+            "LoginActivity", "DashboardActivity"-> {
+                if (isAlternativeUrl) {
+                    processAlternativeUrl(url, settings, editor)
                 }
-                editor.putString("serverPin", password)
-                editor.putString("url_user", urlUser)
-                editor.putString("url_pwd", urlPwd)
-                editor.putString("url_Scheme", uri.scheme)
-                editor.putString("url_Host", uri.host)
-                editor.putString("alternativeUrl", url)
-                editor.putString("processedAlternativeUrl", couchdbURL)
-                editor.putBoolean("isAlternativeUrl", true)
-                editor.apply()
+                isSync = false
+                forceSync = true
+                service.checkVersion(this, settings)
             }
-
-            isSync = false
-            forceSync = true
-            service.checkVersion(this, settings)
-        } else {
-            if (serverConfigAction == "sync") {
-                if (savedId == null) {
-                    editor.putString("configurationId", id).apply()
-                    editor.putString("communityName", code).apply()
-                    currentDialog?.let {
-                        Log.d("okuro", "savedId == null")
-                        continueSync(it, url, isAlternativeUrl)
+            else -> {
+                if (serverConfigAction == "sync") {
+                    if (savedId == null) {
+                        editor.putString("configurationId", id).apply()
+                        editor.putString("communityName", code).apply()
+                        currentDialog?.let {
+                            Log.d("okuro", "savedId == null")
+                            continueSync(it, url, isAlternativeUrl)
+                        }
+                    } else if (id == savedId) {
+                        currentDialog?.let {
+                            Log.d("okuro", "id == savedId")
+                            continueSync(it, url, isAlternativeUrl)
+                        }
+                    } else {
+                        clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server), false)
                     }
-                } else if (id == savedId) {
-                    currentDialog?.let {
-                        Log.d("okuro", "id == savedId")
-                        continueSync(it, url, isAlternativeUrl)
+                } else if (serverConfigAction == "save") {
+                    if (savedId == null || id == savedId) {
+                        currentDialog?.let { saveConfigAndContinue(it) }
+                    } else {
+                        clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server), false)
                     }
-                } else {
-                    clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server), false)
-                }
-            } else if (serverConfigAction == "save") {
-                if (savedId == null || id == savedId) {
-                    currentDialog?.let { saveConfigAndContinue(it) }
-                } else {
-                    clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server), false)
                 }
             }
         }
+    }
+
+    fun processAlternativeUrl(url: String, settings: SharedPreferences, editor: SharedPreferences.Editor): String {
+        val password = "${settings.getString("serverPin", "")}"
+        val uri = Uri.parse(url)
+        val couchdbURL: String
+        val urlUser: String
+        val urlPwd: String
+
+        if (url.contains("@")) {
+            val userinfo = getUserInfo(uri)
+            urlUser = userinfo[0]
+            urlPwd = userinfo[1]
+            couchdbURL = url
+        } else {
+            urlUser = "satellite"
+            urlPwd = password
+            Log.d("okurologin", "continueSync: $urlPwd")
+            couchdbURL = "${uri.scheme}://$urlUser:$urlPwd@${uri.host}:${if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port}"
+        }
+
+        editor.putString("serverPin", password)
+        editor.putString("url_user", urlUser)
+        editor.putString("url_pwd", urlPwd)
+        editor.putString("url_Scheme", uri.scheme)
+        editor.putString("url_Host", uri.host)
+        editor.putString("alternativeUrl", url)
+        editor.putString("processedAlternativeUrl", couchdbURL)
+        editor.putBoolean("isAlternativeUrl", true)
+        editor.apply()
+
+        return couchdbURL
     }
 
     private fun clearDataDialog(message: String, config: Boolean, onCancel: () -> Unit = {}) {

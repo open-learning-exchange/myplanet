@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.sync
 
 import android.content.*
 import android.graphics.drawable.AnimationDrawable
-import android.net.Uri
 import android.os.*
 import android.os.Build.VERSION_CODES.TIRAMISU
 import android.text.*
@@ -14,7 +13,6 @@ import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.*
-import com.afollestad.materialdialogs.DialogAction
 import com.afollestad.materialdialogs.MaterialDialog
 import com.bumptech.glide.Glide
 import io.realm.Realm

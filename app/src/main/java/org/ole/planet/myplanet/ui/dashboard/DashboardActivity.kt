@@ -49,6 +49,7 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.ActivityDashboardBinding
 import org.ole.planet.myplanet.databinding.CustomTabBinding
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
+import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
@@ -131,6 +132,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         navigationView = activityDashboardBinding.topBarNavigation
         disableShiftMode(navigationView)
         activityDashboardBinding.appBarBell.bellToolbar.inflateMenu(R.menu.menu_bell_dashboard)
+        service = Service(this)
         tl = findViewById(R.id.tab_layout)
         try {
             val userProfileModel = profileDbHandler.userModel
@@ -180,50 +182,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
 
         activityDashboardBinding.appBarBell.ivSync.setOnClickListener {
-//            val protocol = settings.getString("serverProtocol", "")
-//            val serverUrl = settings.getString("serverURL", "")
-//            val serverPin = "${settings.getString("serverPin", "")}"
-//            val url = "$protocol$serverUrl"
-//
-//            Log.d("LoginActivity", "serverUrl: $url, serverPin: $serverPin")
-//            syncIconDrawable.start()
-//
-//            val dialogServerUrlBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this))
-//            val contextWrapper = ContextThemeWrapper(this, R.style.AlertDialogTheme)
-//
-//            val builder = MaterialDialog.Builder(contextWrapper).customView(dialogServerUrlBinding.root, true)
-//
-//            val dialog = builder.build()
-//            currentDialog = dialog
-//            service.getMinApk(this, url, serverPin, this)
-
-            val serverUrlMapper = ServerUrlMapper(this)
-            val url = Utilities.getUrl()
-            val mapping = serverUrlMapper.processUrl(url)
-
-            lifecycleScope.launch {
-                val isPrimaryReachable = isServerReachable(Utilities.getUrl())
-
-                if (isPrimaryReachable) {
-                    startUpload("dashboard")
-                    createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
-                } else if (mapping.alternativeUrl != null) {
-                    val uri = Uri.parse(mapping.alternativeUrl)
-
-                    serverUrlMapper.updateUrlPreferences(editor, uri, mapping.alternativeUrl, url, settings)
-                    val processedUrl = settings.getString("processedAlternativeUrl", "")
-
-                    val isAlternativeReachable = isServerReachable(processedUrl ?: "")
-
-                    if (isAlternativeReachable) {
-                        startUpload("dashboard")
-                        createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
-                    }
-                } else {
-                    startUpload("dashboard")
-                    createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
-                }
-            }
+            logSyncInSharedPrefs()
         }
 
         activityDashboardBinding.appBarBell.imgLogo.setOnClickListener { result?.openDrawer() }

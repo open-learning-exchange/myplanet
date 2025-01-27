@@ -10,6 +10,9 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
+import android.util.Log
+import android.view.ContextThemeWrapper
+import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
@@ -19,12 +22,14 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import com.afollestad.materialdialogs.MaterialDialog
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
+import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createAction
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.SettingActivity
@@ -150,25 +155,27 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
     }
 
     fun logSyncInSharedPrefs() {
-        val serverUrlMapper = ServerUrlMapper(this, settings, editor)
-        val url = Utilities.getUrl()
+        val protocol = settings.getString("serverProtocol", "")
+        val serverUrl = "${settings.getString("serverURL", "")}"
+        val serverPin = "${settings.getString("serverPin", "")}"
 
-        lifecycleScope.launch {
-            when (val result = serverUrlMapper.performUrlSync(
-                url = url,
-                onStartSync = { startUpload("dashboard") },
-                onLogSync = {
-                    createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
-                }
-            )) {
-                is ServerUrlMapper.ConnectionResult.Success -> {
-                    // Connection successful, sync operations completed
-                }
-                is ServerUrlMapper.ConnectionResult.Failure -> {
-                    // Both primary and alternative URLs are unreachable
-                }
-            }
+        val url = if (serverUrl.startsWith("http://") || serverUrl.startsWith("https://")) {
+            serverUrl
+        } else {
+            "$protocol$serverUrl"
         }
+
+        val dialogServerUrlBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this))
+        val contextWrapper = ContextThemeWrapper(this, R.style.AlertDialogTheme)
+
+        val builder = MaterialDialog.Builder(contextWrapper)
+            .customView(dialogServerUrlBinding.root, true)
+
+        val dialog = builder.build()
+        currentDialog = dialog
+        Log.d("DashboardActivity", "url: $serverUrl")
+        service.getMinApk(this, url, serverPin, this, "DashboardActivity")
+        createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
     }
 
     @SuppressLint("RestrictedApi")
