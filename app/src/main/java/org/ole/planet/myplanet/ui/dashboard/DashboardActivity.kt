@@ -129,6 +129,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         disableShiftMode(navigationView)
         activityDashboardBinding.appBarBell.bellToolbar.inflateMenu(R.menu.menu_bell_dashboard)
         tl = findViewById(R.id.tab_layout)
+        activityDashboardBinding.root.viewTreeObserver.addOnGlobalLayoutListener {
+            topBarVisible()
+        }
         try {
             val userProfileModel = profileDbHandler.userModel
             if (userProfileModel != null) {
@@ -651,6 +654,17 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 dialog.dismiss()
                 logout()
             }
+        }
+    }
+
+    private fun topBarVisible(){
+        val isLandscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+        val tabLayout = findViewById<TabLayout>(R.id.tab_layout)
+
+        tabLayout.visibility = if (isLandscape) {
+            View.VISIBLE
+        } else {
+            View.GONE
         }
     }
 
