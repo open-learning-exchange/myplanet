@@ -8,6 +8,7 @@ import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -238,6 +239,16 @@ class ReportsFragment : BaseTeamFragment() {
             fragmentReportsBinding.rvReports.layoutManager = LinearLayoutManager(activity)
             fragmentReportsBinding.rvReports.adapter = adapterReports
             adapterReports.notifyDataSetChanged()
+
+            //check if the list is empty
+            if(results.isEmpty()) {
+                //if the list is empty, makes the EXPORT CSV invisible
+                fragmentReportsBinding.exportCSV.visibility = View.GONE
+                Toast.makeText(requireContext(),"The list is empty", Toast.LENGTH_SHORT).show()
+            }
+            else {
+                fragmentReportsBinding.exportCSV.visibility = View.VISIBLE
+            }
         }
     }
 }
