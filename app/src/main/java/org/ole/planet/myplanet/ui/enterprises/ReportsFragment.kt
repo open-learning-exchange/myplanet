@@ -239,14 +239,11 @@ class ReportsFragment : BaseTeamFragment() {
             fragmentReportsBinding.rvReports.layoutManager = LinearLayoutManager(activity)
             fragmentReportsBinding.rvReports.adapter = adapterReports
             adapterReports.notifyDataSetChanged()
-
             //check if the list is empty
-            if(results.isEmpty()) {
+            if (results.isEmpty()) {
                 //if the list is empty, makes the EXPORT CSV invisible
                 fragmentReportsBinding.exportCSV.visibility = View.GONE
-                Toast.makeText(requireContext(),"The list is empty", Toast.LENGTH_SHORT).show()
-            }
-            else {
+            } else {
                 fragmentReportsBinding.exportCSV.visibility = View.VISIBLE
             }
         }
