@@ -17,6 +17,7 @@ import com.google.gson.JsonObject
 import io.realm.RealmResults
 import io.realm.Sort
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.databinding.DialogAddReportBinding
 import org.ole.planet.myplanet.databinding.FragmentReportsBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -245,6 +246,7 @@ class ReportsFragment : BaseTeamFragment() {
                 //if the list is empty, makes the EXPORT CSV invisible
                 fragmentReportsBinding.exportCSV.visibility = View.GONE
                 Toast.makeText(requireContext(),"The list is empty", Toast.LENGTH_SHORT).show()
+                BaseRecyclerFragment.showNoData(fragmentReportsBinding.tvMessage, results.count(), "reports")
             }
             else {
                 fragmentReportsBinding.exportCSV.visibility = View.VISIBLE
