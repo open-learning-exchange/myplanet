@@ -136,11 +136,14 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                     fragmentTakeCourseBinding.btnRemove.visibility = View.GONE
                 }
             }
+            
+            val detachedUserModel = userModel?.let { mRealm.copyFromRealm(it) }
+            val detachedCurrentCourse = currentCourse?.let { mRealm.copyFromRealm(it) }
 
             withContext(Dispatchers.IO) {
                 try {
                     Realm.getDefaultInstance().use { backgroundRealm ->
-                        RealmCourseActivity.createActivity(backgroundRealm, userModel?.let { backgroundRealm.copyFromRealm(it) }, currentCourse?.let { backgroundRealm.copyFromRealm(it) })
+                        RealmCourseActivity.createActivity(backgroundRealm, detachedUserModel, detachedCurrentCourse)
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()

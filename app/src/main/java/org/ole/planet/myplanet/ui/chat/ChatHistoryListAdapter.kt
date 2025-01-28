@@ -2,8 +2,10 @@ package org.ole.planet.myplanet.ui.chat
 
 import android.app.AlertDialog
 import android.content.Context
+import android.graphics.drawable.ColorDrawable
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.Gson
@@ -157,6 +159,10 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
                     dialog?.dismiss()
                 }
                 dialog = builder.create()
+
+                val backgroundColor = ContextCompat.getColor(context, R.color.daynight_grey)
+                dialog.window?.setBackgroundDrawable(ColorDrawable(backgroundColor))
+
                 dialog.show()
             }
         }
@@ -189,7 +195,7 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
 
     private fun showEditTextAndShareButton(team: RealmMyTeam? = null, section: String, chatHistory: RealmChatHistory) {
         val addNoteDialogBinding = AddNoteDialogBinding.inflate(LayoutInflater.from(context))
-        val builder = AlertDialog.Builder(context)
+        val builder = AlertDialog.Builder(context, R.style.AlertDialogTheme)
         builder.setView(addNoteDialogBinding.root)
         builder.setPositiveButton(context.getString(R.string.share_chat)) { dialog, _ ->
             val serializedConversations = chatHistory.conversations?.map { serializeConversation(it) }

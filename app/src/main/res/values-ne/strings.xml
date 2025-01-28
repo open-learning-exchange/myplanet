@@ -164,7 +164,6 @@
     <string name="get_started">सुरु गर्नुहोस्</string>
     <string name="enter_password">पासवर्ड प्रविष्ट गर्नुहोस्</string>
     <string name="managerial_login">प्रबन्धक लगइन</string>
-    <string name="save_username_and_password">प्रयोगकर्तानाम र पासवर्ड सुरक्षित गर्नुहोस्</string>
     <string name="year">वर्ष</string>
     <string name="publisher">प्रकाशक</string>
     <string name="link_to_license">लाइसेन्समा लिङ्क</string>
@@ -1087,7 +1086,6 @@
     <string name="add_note">नोट थप्नुहोस् (वैकल्पिक)</string>
     <string name="no_teams">टोलीहरू उपलब्ध छैनन्</string>
     <string name="planet_name">%s ग्रह</string>
-    <string name="no_submissions">पेशाहरू उपलब्ध छैनन्</string>
     <string name="no_chats">अघिल्ला कुराकानीहरू छैनन्</string>
     <string name="no_feedback">कुनै प्रतिक्रिया उपलब्ध छैन</string>
     <string name="empty_text" />
@@ -1139,7 +1137,6 @@
     <string name="sync_embakasi">🇰🇪 planet embakasi</string>
     <string name="sync_cambridge">🇺🇸 planet cambridge</string>
     <string name="sync_egdirbmac">🇺🇸 planet egdirbmac</string>
-    <string name="sync_palmbay">🇺🇸 planet palmbay</string>
     <string name="surveys_to_complete">तपाईंको %1$d %2$s पूरा गर्न बाँकी छ</string>
     <string name="show_less">कम देखाउनुहोस्</string>
     <string name="show_more">थप देखाउनुहोस्</string>
@@ -1227,5 +1224,7 @@
     <string name="community">समुदाय</string>
     <string name="no_enterprise">उद्यमहरू उपलब्ध छैनन्</string>
     <string name="local_resource">स्थानीय स्रोत</string>
+    <string name="no_survey_submissions">कुनै सर्वेक्षण प्रस्तुति छैन</string>
+    <string name="no_exam_submissions">कुनै परीक्षा प्रस्तुति छैन</string>
 
 </resources>
