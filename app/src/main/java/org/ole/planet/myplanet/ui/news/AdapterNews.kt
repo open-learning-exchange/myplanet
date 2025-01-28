@@ -244,6 +244,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                 }
             }
         }
+        viewHolder.rowNewsBinding.btnAddLabel.isEnabled = (news.labels?.size ?: 0) < 3
     }
 
     private fun loadImage(holder: RecyclerView.ViewHolder, news: RealmNews?) {
