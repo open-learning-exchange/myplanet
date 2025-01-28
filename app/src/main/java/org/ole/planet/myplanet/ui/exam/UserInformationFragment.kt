@@ -156,10 +156,13 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
 
     override fun onDismiss(dialog: DialogInterface) {
         super.onDismiss(dialog)
-        Utilities.toast(activity, getString(R.string.thank_you_for_taking_this_survey))
         if (teamId == null) {
+            Utilities.toast(activity, getString(R.string.thank_you_for_taking_this_survey))
             BaseExamFragment.navigateToSurveyList(requireActivity())
+        } else if (teamId == "") {
+            return
         } else {
+            Utilities.toast(activity, getString(R.string.thank_you_for_taking_this_survey))
             if (context is OnHomeItemClickListener) {
                 val f = TeamDetailFragment()
                 val b = Bundle()

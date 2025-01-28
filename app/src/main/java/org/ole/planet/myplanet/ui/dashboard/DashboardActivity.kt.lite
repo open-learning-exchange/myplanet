@@ -125,6 +125,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         activityDashboardBinding.appBarBell.bellToolbar.inflateMenu(R.menu.menu_bell_dashboard)
         service = Service(this)
         tl = findViewById(R.id.tab_layout)
+        activityDashboardBinding.root.viewTreeObserver.addOnGlobalLayoutListener {
+            topBarVisible()
+        }
         try {
             val userProfileModel = profileDbHandler.userModel
             if (userProfileModel != null) {
@@ -624,6 +627,17 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
+    private fun topBarVisible(){
+        val isLandscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+        val tabLayout = findViewById<TabLayout>(R.id.tab_layout)
+
+        tabLayout.visibility = if (isLandscape) {
+            View.VISIBLE
+        } else {
+            View.GONE
+        }
+    }
+
     private fun topbarSetting() {
         UITheme()
         val tabLayout = findViewById<TabLayout>(R.id.tab_layout)
@@ -766,12 +780,19 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-    fun openMyFragment(f: Fragment) {
+    override fun openMyFragment(f: Fragment) {
         val b = Bundle()
         b.putBoolean("isMyCourseLib", true)
         f.arguments = b
         val fragmentName = f::class.java.simpleName
         val tag = "My$fragmentName"
+        when (tag) {
+            "MyCoursesFragment" -> result?.setSelection(2, false)
+            "MyResourcesFragment" -> result?.setSelection(1, false)
+            else -> {
+                result?.setSelection(0, false)
+            }
+        }
         openCallFragment(f, tag)
     }
 
