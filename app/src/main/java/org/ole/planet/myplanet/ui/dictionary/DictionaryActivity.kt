@@ -1,9 +1,11 @@
 package org.ole.planet.myplanet.ui.dictionary
 
 import android.os.Bundle
+import android.util.Log
 import androidx.core.text.HtmlCompat
 import com.google.gson.Gson
 import com.google.gson.JsonArray
+import com.google.gson.JsonSyntaxException
 import io.realm.Case
 import io.realm.RealmResults
 import org.ole.planet.myplanet.R
@@ -15,6 +17,7 @@ import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.Utilities
+import java.io.FileNotFoundException
 import java.util.UUID
 
 class DictionaryActivity : BaseActivity() {
@@ -30,7 +33,7 @@ class DictionaryActivity : BaseActivity() {
         list = mRealm.where(RealmDictionary::class.java)?.findAll()
         fragmentDictionaryBinding.tvResult.text = getString(R.string.list_size, list?.size)
         if (FileUtils.checkFileExist(Constants.DICTIONARY_URL)) {
-            insertDictionary()
+                insertDictionary()
         } else {
             val list = ArrayList<String>()
             list.add(Constants.DICTIONARY_URL)
@@ -40,28 +43,36 @@ class DictionaryActivity : BaseActivity() {
     }
 
     private fun insertDictionary() {
-        if (list?.size == 0) {
-            val data = FileUtils.getStringFromFile(FileUtils.getSDPathFromUrl(Constants.DICTIONARY_URL))
-            val json = Gson().fromJson(data, JsonArray::class.java)
-            mRealm.executeTransactionAsync {
-                json.forEach { js ->
-                    val doc = js.asJsonObject
-                    var dict = it.where(RealmDictionary::class.java)
-                        ?.equalTo("id", UUID.randomUUID().toString())?.findFirst()
-                    if (dict == null) {
-                        dict = it.createObject(
-                            RealmDictionary::class.java, UUID.randomUUID().toString()
-                        )
+        if (list.isNullOrEmpty()) {
+            try {
+                val data = FileUtils.getStringFromFile(FileUtils.getSDPathFromUrl(Constants.DICTIONARY_URL))
+                val json = Gson().fromJson(data, JsonArray::class.java)
+                mRealm.executeTransactionAsync {
+                    json?.forEach { js ->
+                        val doc = js.asJsonObject
+                        var dict = it.where(RealmDictionary::class.java)
+                            ?.equalTo("id", UUID.randomUUID().toString())?.findFirst()
+                        if (dict == null) {
+                            dict = it.createObject(
+                                RealmDictionary::class.java, UUID.randomUUID().toString()
+                            )
+                        }
+                        dict?.code = JsonUtils.getString("code", doc)
+                        dict?.language = JsonUtils.getString("language", doc)
+                        dict?.advanceCode = JsonUtils.getString("advance_code", doc)
+                        dict?.word = JsonUtils.getString("word", doc)
+                        dict?.meaning = JsonUtils.getString("meaning", doc)
+                        dict?.definition = JsonUtils.getString("definition", doc)
+                        dict?.synonym = JsonUtils.getString("synonym", doc)
+                        dict?.antonym = JsonUtils.getString("antonoym", doc)
                     }
-                    dict?.code = JsonUtils.getString("code", doc)
-                    dict?.language = JsonUtils.getString("language", doc)
-                    dict?.advanceCode = JsonUtils.getString("advance_code", doc)
-                    dict?.word = JsonUtils.getString("word", doc)
-                    dict?.meaning = JsonUtils.getString("meaning", doc)
-                    dict?.definition = JsonUtils.getString("definition", doc)
-                    dict?.synonym = JsonUtils.getString("synonym", doc)
-                    dict?.antonym = JsonUtils.getString("antonoym", doc)
                 }
+            } catch (e: FileNotFoundException) {
+                Log.e("Error", "File not found: ${e.message}")
+            } catch (e: JsonSyntaxException) {
+                Log.e("Error", "Invalid JSON format: ${e.message}")
+            } catch (e: Exception) {
+                Log.e("Error", "Unexpected error: ${e.message}")
             }
         } else {
             setClickListener()
