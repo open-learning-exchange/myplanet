@@ -323,7 +323,7 @@ class Service(private val context: Context) {
         })
     }
 
-    fun getMinApk(listener: ConfigurationIdListener?, url: String, pin: String, activity: SyncActivity) {
+    fun getMinApk(listener: ConfigurationIdListener?, url: String, pin: String, activity: SyncActivity, callerActivity: String) {
         val serverUrlMapper = ServerUrlMapper(context)
         val mapping = serverUrlMapper.processUrl(url)
 
@@ -407,7 +407,7 @@ class Service(private val context: Context) {
                 when (result) {
                     is UrlCheckResult.Success -> {
                         val isAlternativeUrl = result.url != url
-                        listener?.onConfigurationIdReceived(result.id, result.code, result.url, isAlternativeUrl)
+                        listener?.onConfigurationIdReceived(result.id, result.code, result.url, isAlternativeUrl, callerActivity)
                         activity.setSyncFailed(false)
                     }
                     is UrlCheckResult.Failure -> {
@@ -521,6 +521,6 @@ class Service(private val context: Context) {
     }
 
     interface ConfigurationIdListener {
-        fun onConfigurationIdReceived(id: String, code: String, url: String, isAlternativeUrl: Boolean)
+        fun onConfigurationIdReceived(id: String, code: String, url: String, isAlternativeUrl: Boolean, callerActivity: String)
     }
 }

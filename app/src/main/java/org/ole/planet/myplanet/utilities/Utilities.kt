@@ -5,6 +5,8 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.graphics.Color
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import android.text.TextUtils
 import android.text.format.DateUtils
 import android.util.Base64
@@ -66,7 +68,9 @@ object Utilities {
     @JvmStatic
     fun toast(context: Context?, s: String?) {
         context ?: return
-        Toast.makeText(context, s, Toast.LENGTH_LONG).show()
+        Handler(Looper.getMainLooper()).post {
+            Toast.makeText(context, s, Toast.LENGTH_LONG).show()
+        }
     }
 
     fun getCloudConfig(): ChipCloudConfig {
