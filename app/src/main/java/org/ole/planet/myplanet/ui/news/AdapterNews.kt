@@ -55,7 +55,6 @@ import java.util.Calendar
 class AdapterNews(var context: Context, private val list: MutableList<RealmNews?>, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?) : RecyclerView.Adapter<RecyclerView.ViewHolder?>() {
     private lateinit var rowNewsBinding: RowNewsBinding
     private var listener: OnNewsItemClickListener? = null
-    private val config: ChipCloudConfig = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.close)
     private var imageList: RealmList<String>? = null
     lateinit var mRealm: Realm
     private var fromLogin = false
@@ -220,20 +219,31 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
 
     private fun showChips(holder: RecyclerView.ViewHolder, news: RealmNews) {
         val viewHolder = holder as ViewHolderNews
+        val isOwner = (news.userId == currentUser?.id)
         viewHolder.rowNewsBinding.fbChips.removeAllViews()
-        val chipCloud = ChipCloud(context, viewHolder.rowNewsBinding.fbChips, config)
-        for (s in news.labels ?: emptyList()) {
-            chipCloud.addChip(getLabel(s))
-            chipCloud.setDeleteListener { _: Int, s1: String? ->
-                if (!mRealm.isInTransaction) {
-                    mRealm.beginTransaction()
+
+        for (label in news.labels ?: emptyList()) {
+            val chipConfig = Utilities.getCloudConfig().apply {
+                selectMode(if (isOwner) ChipCloud.SelectMode.close else ChipCloud.SelectMode.none)
+            }
+
+            val chipCloud = ChipCloud(context, viewHolder.rowNewsBinding.fbChips, chipConfig)
+            chipCloud.addChip(getLabel(label))
+
+            if (isOwner) {
+                chipCloud.setDeleteListener { _: Int, labelText: String? ->
+
+                    if (!mRealm.isInTransaction) {
+                        mRealm.beginTransaction()
+                    }
+
+                    news.labels?.remove(Constants.LABELS[labelText])
+                    mRealm.commitTransaction()
+
+                    viewHolder.rowNewsBinding.btnAddLabel.isEnabled = (news.labels?.size ?: 0) < 3
                 }
-                news.labels?.remove(Constants.LABELS[s1])
-                mRealm.commitTransaction()
-                viewHolder.rowNewsBinding.btnAddLabel.isEnabled = (news.labels?.size ?: 0) < 3
             }
         }
-        viewHolder.rowNewsBinding.btnAddLabel.isEnabled = (news.labels?.size ?: 0) < 3
     }
 
     private fun loadImage(holder: RecyclerView.ViewHolder, news: RealmNews?) {
