@@ -170,6 +170,12 @@ class ChatDetailFragment : Fragment() {
                                 fragmentChatDetailBinding.tvOpenai.visibility = View.VISIBLE
                                 fragmentChatDetailBinding.view1.visibility = View.VISIBLE
 
+                                fragmentChatDetailBinding.tvPerplexity.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.disable_color))
+                                fragmentChatDetailBinding.tvPerplexity.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
+
+                                fragmentChatDetailBinding.tvGemini.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.disable_color))
+                                fragmentChatDetailBinding.tvGemini.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
+
                                 if (isAdded) {
                                     aiName = getString(R.string.openai)
                                     aiModel = "gpt-3.5-turbo"
