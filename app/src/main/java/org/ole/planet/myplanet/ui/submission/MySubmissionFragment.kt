@@ -114,6 +114,7 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
                 showNoData(fragmentMySubmissionBinding.tvMessage, itemCount, "survey_submission")
 
             } else {
+                fragmentMySubmissionBinding.tvFragmentInfo.text = "mySubmissions"
                 showNoData(fragmentMySubmissionBinding.tvMessage, itemCount, "exam_submission")
             }
 
