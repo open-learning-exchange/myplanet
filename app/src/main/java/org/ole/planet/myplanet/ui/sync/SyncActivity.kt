@@ -39,6 +39,7 @@ import org.ole.planet.myplanet.datamanager.*
 import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.datamanager.Service.*
 import org.ole.planet.myplanet.model.*
+import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createAction
 import org.ole.planet.myplanet.service.*
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.team.AdapterTeam.OnUserSelectedListener
@@ -91,7 +92,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     lateinit var btnSignIn: Button
     lateinit var defaultPref: SharedPreferences
     lateinit var service: Service
-    private var currentDialog: MaterialDialog? = null
+    var currentDialog: MaterialDialog? = null
     private var serverConfigAction = ""
     private var serverCheck = true
     private var showAdditionalServers = false
@@ -113,25 +114,73 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         processedUrl = Utilities.getUrl()
     }
 
-    override fun onConfigurationIdReceived(id: String, code: String, url: String, isAlternativeUrl: Boolean) {
+    override fun onConfigurationIdReceived(id: String, code: String, url: String, isAlternativeUrl: Boolean, callerActivity:String) {
         val savedId = settings.getString("configurationId", null)
-        if (serverConfigAction == "sync") {
-            if (savedId == null) {
-                editor.putString("configurationId", id).apply()
-                editor.putString("communityName", code).apply()
-                currentDialog?.let { continueSync(it, url, isAlternativeUrl) }
-            } else if (id == savedId) {
-                currentDialog?.let { continueSync(it, url, isAlternativeUrl) }
-            } else {
-                clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server), false)
+
+        when (callerActivity) {
+            "LoginActivity", "DashboardActivity"-> {
+                if (isAlternativeUrl) {
+                    processAlternativeUrl(url, settings, editor)
+                }
+                isSync = false
+                forceSync = true
+                service.checkVersion(this, settings)
             }
-        } else if (serverConfigAction == "save") {
-            if (savedId == null || id == savedId) {
-                currentDialog?.let { saveConfigAndContinue(it) }
-            } else {
-                clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server), false)
+            else -> {
+                if (serverConfigAction == "sync") {
+                    if (savedId == null) {
+                        editor.putString("configurationId", id).apply()
+                        editor.putString("communityName", code).apply()
+                        currentDialog?.let {
+                            continueSync(it, url, isAlternativeUrl)
+                        }
+                    } else if (id == savedId) {
+                        currentDialog?.let {
+                            continueSync(it, url, isAlternativeUrl)
+                        }
+                    } else {
+                        clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server), false)
+                    }
+                } else if (serverConfigAction == "save") {
+                    if (savedId == null || id == savedId) {
+                        currentDialog?.let { saveConfigAndContinue(it) }
+                    } else {
+                        clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server), false)
+                    }
+                }
             }
         }
+    }
+
+    fun processAlternativeUrl(url: String, settings: SharedPreferences, editor: SharedPreferences.Editor): String {
+        val password = "${settings.getString("serverPin", "")}"
+        val uri = Uri.parse(url)
+        val couchdbURL: String
+        val urlUser: String
+        val urlPwd: String
+
+        if (url.contains("@")) {
+            val userinfo = getUserInfo(uri)
+            urlUser = userinfo[0]
+            urlPwd = userinfo[1]
+            couchdbURL = url
+        } else {
+            urlUser = "satellite"
+            urlPwd = password
+            couchdbURL = "${uri.scheme}://$urlUser:$urlPwd@${uri.host}:${if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port}"
+        }
+
+        editor.putString("serverPin", password)
+        editor.putString("url_user", urlUser)
+        editor.putString("url_pwd", urlPwd)
+        editor.putString("url_Scheme", uri.scheme)
+        editor.putString("url_Host", uri.host)
+        editor.putString("alternativeUrl", url)
+        editor.putString("processedAlternativeUrl", couchdbURL)
+        editor.putBoolean("isAlternativeUrl", true)
+        editor.apply()
+
+        return couchdbURL
     }
 
     private fun clearDataDialog(message: String, config: Boolean, onCancel: () -> Unit = {}) {
@@ -190,7 +239,12 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             val apiInterface = client?.create(ApiInterface::class.java)
             try {
                 val response = if (settings.getBoolean("isAlternativeUrl", false)){
-                    apiInterface?.isPlanetAvailable("$processedUrl/db/_all_dbs")?.execute()
+                     if (processedUrl?.contains("/db") == true) {
+                         val processedUrlWithoutDb = processedUrl.replace("/db", "")
+                         apiInterface?.isPlanetAvailable("$processedUrlWithoutDb/db/_all_dbs")?.execute()
+                    } else {
+                         apiInterface?.isPlanetAvailable("$processedUrl/db/_all_dbs")?.execute()
+                    }
                 } else {
                     apiInterface?.isPlanetAvailable("$processedUrl/_all_dbs")?.execute()
                 }
@@ -564,7 +618,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 url = protocol + url
                 if (isUrlValid(url)) {
                     currentDialog = dialog
-                    service.getMinApk(this, url, pin, this)
+                    service.getMinApk(this, url, pin, this, "SyncActivity")
                 }
             }
         }
@@ -685,7 +739,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         url = protocol + url
         if (isUrlValid(url)) {
             currentDialog = dialog
-            service.getMinApk(this, url, pin, this)
+            service.getMinApk(this, url, pin, this, "SyncActivity")
         }
     }
 
@@ -755,9 +809,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         return modifiedUrl
     }
 
-    private fun continueSync(dialog: MaterialDialog, url: String, isAlternativeUrl: Boolean) {
+    fun continueSync(dialog: MaterialDialog, url: String, isAlternativeUrl: Boolean) {
         if (isAlternativeUrl) {
-            val password = "${(dialog.customView?.findViewById<View>(R.id.input_server_Password) as EditText).text}"
+            val password = if (settings.getString("serverPin", "") != ""){
+                "${settings.getString("serverPin", "")}"
+            } else {
+                "${(dialog.customView?.findViewById<View>(R.id.input_server_Password) as EditText).text}"
+            }
+
             val uri = Uri.parse(url)
             var couchdbURL: String
             val urlUser: String

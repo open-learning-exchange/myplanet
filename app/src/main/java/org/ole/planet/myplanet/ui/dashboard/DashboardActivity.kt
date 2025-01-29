@@ -7,7 +7,6 @@ import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.drawable.Drawable
-import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -20,7 +19,6 @@ import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.MenuItemCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.lifecycleScope
 import com.google.android.material.navigation.NavigationBarView
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayout.OnTabSelectedListener
@@ -36,7 +34,6 @@ import io.realm.Case
 import io.realm.RealmChangeListener
 import io.realm.RealmObject
 import io.realm.RealmResults
-import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication
@@ -46,6 +43,7 @@ import org.ole.planet.myplanet.base.BaseResourceFragment
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.ActivityDashboardBinding
 import org.ole.planet.myplanet.databinding.CustomTabBinding
+import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
@@ -54,7 +52,6 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserChallengeActions
-import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createAction
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.SettingActivity
@@ -81,9 +78,7 @@ import org.ole.planet.myplanet.utilities.FileUtils.totalAvailableMemoryRatio
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.MarkdownDialog
-import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
-import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.Utilities.toast
 import java.text.SimpleDateFormat
 import java.time.LocalDate
@@ -128,7 +123,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         navigationView = activityDashboardBinding.topBarNavigation
         disableShiftMode(navigationView)
         activityDashboardBinding.appBarBell.bellToolbar.inflateMenu(R.menu.menu_bell_dashboard)
+        service = Service(this)
         tl = findViewById(R.id.tab_layout)
+        activityDashboardBinding.root.viewTreeObserver.addOnGlobalLayoutListener {
+            topBarVisible()
+        }
         try {
             val userProfileModel = profileDbHandler.userModel
             if (userProfileModel != null) {
@@ -177,33 +176,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
 
         activityDashboardBinding.appBarBell.ivSync.setOnClickListener {
-            val serverUrlMapper = ServerUrlMapper(this)
-            val url = Utilities.getUrl()
-            val mapping = serverUrlMapper.processUrl(url)
-
-            lifecycleScope.launch {
-                val isPrimaryReachable = isServerReachable(Utilities.getUrl())
-
-                if (isPrimaryReachable) {
-                    startUpload("dashboard")
-                    createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
-                } else if (mapping.alternativeUrl != null) {
-                    val uri = Uri.parse(mapping.alternativeUrl)
-
-                    serverUrlMapper.updateUrlPreferences(editor, uri, mapping.alternativeUrl, url, settings)
-                    val processedUrl = settings.getString("processedAlternativeUrl", "")
-
-                    val isAlternativeReachable = isServerReachable(processedUrl ?: "")
-
-                    if (isAlternativeReachable) {
-                        startUpload("dashboard")
-                        createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
-                    }
-                } else {
-                    startUpload("dashboard")
-                    createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
-                }
-            }
+            logSyncInSharedPrefs()
         }
 
         activityDashboardBinding.appBarBell.imgLogo.setOnClickListener { result?.openDrawer() }
@@ -651,6 +624,17 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 dialog.dismiss()
                 logout()
             }
+        }
+    }
+
+    private fun topBarVisible(){
+        val isLandscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+        val tabLayout = findViewById<TabLayout>(R.id.tab_layout)
+
+        tabLayout.visibility = if (isLandscape) {
+            View.VISIBLE
+        } else {
+            View.GONE
         }
     }
 
