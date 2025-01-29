@@ -1,7 +1,9 @@
 package org.ole.planet.myplanet.ui.community
 
 import android.content.Context
+import android.util.Log
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.FragmentActivity
 import androidx.recyclerview.widget.RecyclerView
@@ -39,23 +41,28 @@ class AdapterLeader(var context: Context, private var leaders: List<RealmUserMod
     }
 
     private fun showLeaderDetails(leader: RealmUserModel) {
-        val activity = context as FragmentActivity
-        val fragment = MemberDetailFragment.newInstance(
-            name = leader.name ?: "",
-            email = leader.email ?: "",
-            dob = leader.dob?: "",
-            language =  leader.language?:"",
-            phone = leader.phoneNumber?:"",
-            visits = "",
-            lastLogin = "",
-            username = leader.name ?: "",
-            memberLevel = leader.level?: "",
-            imageUrl = null
-        )
-        activity.supportFragmentManager.beginTransaction()
-            .replace(R.id.fragment_container, fragment)
-            .addToBackStack(null)
-            .commit()
+        val activity = context as? FragmentActivity
+        if (activity?.findViewById<View>(R.id.fragment_container) != null) {
+            val fragment = MemberDetailFragment.newInstance(
+                name = leader.name ?: "",
+                email = leader.email ?: "",
+                dob = leader.dob ?: "",
+                language = leader.language ?: "",
+                phone = leader.phoneNumber ?: "",
+                visits = "",
+                lastLogin = "",
+                username = leader.name ?: "",
+                memberLevel = leader.level ?: "",
+                imageUrl = null
+            )
+            activity.supportFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, fragment)
+                .addToBackStack(null)
+                .commit()
+        } else {
+            Log.d("AdapterLeader", "Error: Fragment container not found")
+            Log.d("AdapterLeader", "Leader: $leader")
+        }
     }
 
     internal inner class ViewHolderLeader(rowJoinedUserBinding: RowJoinedUserBinding) : RecyclerView.ViewHolder(rowJoinedUserBinding.root) {
