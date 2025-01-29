@@ -321,6 +321,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                 "enterprise" -> (v as TextView).setText(R.string.no_enterprise)
                 "chatHistory" -> (v as TextView).setText(R.string.no_chats)
                 "feedback" -> (v as TextView).setText(R.string.no_feedback)
+                "reports" -> (v as TextView).setText(R.string.no_reports)
                 else -> (v as TextView).setText(R.string.no_data_available_please_check_and_try_again)
             }
         }

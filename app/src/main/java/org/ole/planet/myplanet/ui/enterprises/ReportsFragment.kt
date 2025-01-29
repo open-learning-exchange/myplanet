@@ -220,7 +220,7 @@ class ReportsFragment : BaseTeamFragment() {
         list = mRealm.where(RealmMyTeam::class.java)
             .equalTo("teamId", teamId)
             .equalTo("docType", "report")
-            .notEqualTo("status", "archived")  // Add this line
+            .notEqualTo("status", "archived")
             .sort("date", Sort.DESCENDING)
             .findAll()
         updatedReportsList(list as RealmResults<RealmMyTeam>)
@@ -241,9 +241,7 @@ class ReportsFragment : BaseTeamFragment() {
             fragmentReportsBinding.rvReports.adapter = adapterReports
             adapterReports.notifyDataSetChanged()
 
-            //check if the list is empty
             if(results.isEmpty()) {
-                //if the list is empty, makes the EXPORT CSV invisible
                 fragmentReportsBinding.exportCSV.visibility = View.GONE
                 BaseRecyclerFragment.showNoData(fragmentReportsBinding.tvMessage, results.count(), "reports")
             }
