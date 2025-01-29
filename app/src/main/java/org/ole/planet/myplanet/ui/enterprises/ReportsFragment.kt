@@ -245,7 +245,6 @@ class ReportsFragment : BaseTeamFragment() {
             if(results.isEmpty()) {
                 //if the list is empty, makes the EXPORT CSV invisible
                 fragmentReportsBinding.exportCSV.visibility = View.GONE
-                Toast.makeText(requireContext(),"The list is empty", Toast.LENGTH_SHORT).show()
                 BaseRecyclerFragment.showNoData(fragmentReportsBinding.tvMessage, results.count(), "reports")
             }
             else {
