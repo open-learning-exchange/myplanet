@@ -98,6 +98,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private var showAdditionalServers = false
     private var serverAddressAdapter : ServerAddressAdapter? = null
     private lateinit var serverListAddresses: List<ServerAddressesModel>
+    private val maxDaysPopup= 365
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -464,12 +465,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         val msDiff = Calendar.getInstance().timeInMillis - cal_last_Sync.timeInMillis
         val daysDiff = TimeUnit.MILLISECONDS.toDays(msDiff)
         return if (daysDiff >= maxDays) {
-            val alertDialogBuilder = AlertDialog.Builder(this, R.style.AlertDialogTheme)
-            alertDialogBuilder.setMessage("${getString(R.string.it_has_been_more_than)}${(daysDiff - 1)}${getString(R.string.days_since_you_last_synced_this_device)}${getString(R.string.connect_it_to_the_server_over_wifi_and_sync_it_to_reactivate_this_tablet)}")
-            alertDialogBuilder.setPositiveButton(R.string.okay) { _: DialogInterface?, _: Int ->
-                Toast.makeText(applicationContext, getString(R.string.connect_to_the_server_over_wifi_and_sync_your_device_to_continue), Toast.LENGTH_LONG).show()
+            if(daysDiff <= maxDaysPopup){
+                val alertDialogBuilder = AlertDialog.Builder(this, R.style.AlertDialogTheme)
+                alertDialogBuilder.setMessage("${getString(R.string.it_has_been_more_than)}${(daysDiff - 1)}${getString(R.string.days_since_you_last_synced_this_device)}${getString(R.string.connect_it_to_the_server_over_wifi_and_sync_it_to_reactivate_this_tablet)}")
+                alertDialogBuilder.setPositiveButton(R.string.okay) { _: DialogInterface?, _: Int ->
+                    Toast.makeText(applicationContext, getString(R.string.connect_to_the_server_over_wifi_and_sync_your_device_to_continue), Toast.LENGTH_LONG).show()
+                }
+                alertDialogBuilder.show()
             }
-            alertDialogBuilder.show()
             true
         } else {
             false
