@@ -30,7 +30,7 @@ class DictionaryActivity : BaseActivity() {
         list = mRealm.where(RealmDictionary::class.java)?.findAll()
         fragmentDictionaryBinding.tvResult.text = getString(R.string.list_size, list?.size)
         if (FileUtils.checkFileExist(Constants.DICTIONARY_URL)) {
-                insertDictionary()
+            insertDictionary()
         } else {
             val list = ArrayList<String>()
             list.add(Constants.DICTIONARY_URL)
