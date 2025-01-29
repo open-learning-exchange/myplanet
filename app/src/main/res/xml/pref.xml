@@ -3,10 +3,6 @@
     <Preference
         android:key="app_language"
         android:title="@string/language" />
-    <SwitchPreference
-        android:defaultValue="false"
-        android:key="saveUsernameAndPassword"
-        android:title="@string/save_username_and_password" />
     <Preference
         android:key="dark_mode"
         android:title="@string/dark_mode" />

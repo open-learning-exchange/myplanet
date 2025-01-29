@@ -164,7 +164,6 @@
     <string name="get_started">البدء</string>
     <string name="enter_password">أدخل كلمة المرور</string>
     <string name="managerial_login">تسجيل الدخول كمدير</string>
-    <string name="save_username_and_password">حفظ اسم المستخدم وكلمة المرور</string>
     <string name="year">السنة</string>
     <string name="publisher">الناشر</string>
     <string name="link_to_license">رابط الترخيص</string>
@@ -1138,7 +1137,6 @@
     <string name="sync_embakasi">🇰🇪 planet embakasi</string>
     <string name="sync_cambridge">🇺🇸 planet cambridge</string>
     <string name="sync_egdirbmac">🇺🇸 planet egdirbmac</string>
-    <string name="sync_palmbay">🇺🇸 planet palmbay</string>
     <string name="surveys_to_complete">لديك %1$d %2$s لإكماله</string>
     <string name="show_less">عرض أقل</string>
     <string name="show_more">عرض المزيد</string>

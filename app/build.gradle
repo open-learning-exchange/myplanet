@@ -101,8 +101,6 @@ android {
     def planetCambridgePin = project.findProperty('PLANET_CAMBRIDGE_PIN') ?: ""
     //def planetEgdirbmacUrl = project.findProperty('PLANET_EGDIRBMAC_URL') ?: ""
     //def planetEgdirbmacPin = project.findProperty('PLANET_EGDIRBMAC_PIN') ?: ""
-    def planetPalmBayUrl = project.findProperty('PLANET_PALMBAY_URL') ?: ""
-    def planetPalmBayPin = project.findProperty('PLANET_PALMBAY_PIN') ?: ""
 
     buildTypes.each {
         it.buildConfigField 'String', 'PLANET_LEARNING_URL', "\"$planetLearningUrl\""
@@ -135,8 +133,6 @@ android {
         it.buildConfigField 'String', 'PLANET_CAMBRIDGE_PIN', "\"${planetCambridgePin}\""
         //it.buildConfigField 'String', 'PLANET_EGDIRBMAC_URL', "\"${planetEgdirbmacUrl}\""
         //it.buildConfigField 'String', 'PLANET_EGDIRBMAC_PIN', "\"${planetEgdirbmacPin}\""
-        it.buildConfigField 'String', 'PLANET_PALMBAY_URL', "\"${planetPalmBayUrl}\""
-        it.buildConfigField 'String', 'PLANET_PALMBAY_PIN', "\"${planetPalmBayPin}\""
     }
 }
 
@@ -200,7 +196,7 @@ dependencies {
     implementation 'de.hdodenhof:circleimageview:3.1.0'
     implementation 'de.rtner:PBKDF2:1.1.4'
     implementation 'org.osmdroid:osmdroid-android:6.1.20'
-    implementation 'org.jetbrains:annotations:26.0.1'
+    implementation 'org.jetbrains:annotations:26.0.2'
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0"
     implementation 'pl.droidsonroids.gif:android-gif-drawable:1.2.29'
@@ -241,7 +237,7 @@ dependencies {
     implementation "io.noties.markwon:image:$markwon_version"
     implementation "io.noties.markwon:html:$markwon_version"
     implementation "io.noties.markwon:ext-tables:$markwon_version"
-    implementation(platform("org.jetbrains.kotlin:kotlin-bom:2.1.0"))
+    implementation(platform("org.jetbrains.kotlin:kotlin-bom:2.1.10"))
 
     implementation 'com.github.chrisbanes:PhotoView:2.3.0'
 }

@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.BaseExpandableListAdapter
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import org.ole.planet.myplanet.R
 
 class ExpandableListAdapter(private val context: Context, private val expandableTitleList: List<String>, private val expandableDetailList: HashMap<String, List<String>>) : BaseExpandableListAdapter() {
@@ -27,6 +28,8 @@ class ExpandableListAdapter(private val context: Context, private val expandable
         }
         val expandedListTextView = reusedView?.findViewById<View>(R.id.expandedListItem) as TextView
         expandedListTextView.text = expandedListText
+        reusedView.setBackgroundColor(ContextCompat.getColor(parent?.context!!, R.color.multi_select_grey))
+        expandedListTextView.setTextColor(ContextCompat.getColor(parent.context, R.color.daynight_textColor))
         return reusedView
     }
 
@@ -56,6 +59,7 @@ class ExpandableListAdapter(private val context: Context, private val expandable
         val listTitleTextView = reusedView?.findViewById<View>(R.id.listTitle) as TextView
         listTitleTextView.setTypeface(null, Typeface.BOLD)
         listTitleTextView.text = listTitle
+        listTitleTextView.setTextColor(ContextCompat.getColor(parent.context, R.color.daynight_textColor))
         return reusedView
     }
 
