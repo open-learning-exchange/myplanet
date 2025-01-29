@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.courses
 
 import android.app.AlertDialog
+import android.content.Context
 import android.content.DialogInterface
 import android.os.Bundle
 import android.text.Editable
@@ -21,6 +22,7 @@ import com.google.gson.JsonObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.callback.OnCourseItemSelected
+import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.TagClickListener
 import org.ole.planet.myplanet.model.RealmCourseProgress.Companion.getCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
@@ -180,6 +182,13 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         }
     }
 
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        if (context is OnHomeItemClickListener) {
+            homeItemClickListener = context
+        }
+    }
+
     private fun additionalSetup() {
         val bottomSheet = requireView().findViewById<View>(R.id.card_filter)
         requireView().findViewById<View>(R.id.filter).setOnClickListener {
@@ -308,7 +317,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 if (userModel?.id?.startsWith("guest") == true) {
                     DialogUtils.guestDialog(requireContext())
                 } else {
-                    redirectToMyCourses()
+                    homeItemClickListener?.openMyFragment(CoursesFragment())
                 }
             }
             .setNegativeButton(R.string.ok) { dialog: DialogInterface, _: Int ->
@@ -319,16 +328,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
         return builder.create()
     }
-
-    fun redirectToMyCourses() {
-        val fragment = newInstance(isMyCourseLib = true)
-
-        parentFragmentManager.beginTransaction()
-            .replace(R.id.fragment_container, fragment)
-            .addToBackStack(null)
-            .commit()
-    }
-
+    
     override fun onSelectedListChange(list: MutableList<RealmMyCourse?>) {
         selectedItems = list
         changeButtonStatus()
