@@ -243,8 +243,7 @@ class ReportsFragment : BaseTeamFragment() {
             if(results.isEmpty()) {
                 fragmentReportsBinding.exportCSV.visibility = View.GONE
                 BaseRecyclerFragment.showNoData(fragmentReportsBinding.tvMessage, results.count(), "reports")
-            }
-            else {
+            }else {
                 fragmentReportsBinding.exportCSV.visibility = View.VISIBLE
             }
         }
