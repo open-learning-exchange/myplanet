@@ -8,6 +8,7 @@ import android.os.Handler
 import android.os.Looper
 import android.text.TextUtils
 import android.util.Log
+import androidx.lifecycle.MutableLiveData
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull
@@ -51,6 +52,7 @@ class SyncManager private constructor(private val context: Context) {
     private val dbService: DatabaseService = DatabaseService(context)
     private var backgroundSync: Job? = null
     private val TAG = "SyncManager"
+    val _syncState = MutableLiveData<Boolean>()
 
     fun start(listener: SyncListener?) {
         this.listener = listener
@@ -160,16 +162,18 @@ class SyncManager private constructor(private val context: Context) {
         Log.d(TAG, "Syncing tablet_users")
         TransactionSyncManager.syncDb(mRealm, "tablet_users")
 
-//        Log.d(TAG, "Syncing admin data")
-//        ManagerSync.instance?.syncAdmin()
+        Log.d(TAG, "Syncing admin data")
+        ManagerSync.instance?.syncAdmin()
 
         Log.i(TAG, "=== Priority Sync Batch Completed ===")
     }
 
     private fun startBackgroundSync() {
+        _syncState.postValue(true)
         Log.i(TAG, "=== Starting Background Sync ===")
         backgroundSync = MainApplication.applicationScope.launch(Dispatchers.IO) {
             val backgroundRealm = Realm.getDefaultInstance()
+
             try {
                 // Regular database syncs
                 val remainingDatabases = listOf(
@@ -197,17 +201,17 @@ class SyncManager private constructor(private val context: Context) {
                     }
                 }
 
-                // Special sync functions with background realm
-                try {
-                    Log.d(TAG, "Background sync: Syncing admin data")
-                    val startTime = System.currentTimeMillis()
-                    ManagerSync.instance?.syncAdmin()
-                    val duration = System.currentTimeMillis() - startTime
-                    Log.d(TAG, "Background sync: Completed admin data in ${duration}ms")
-                } catch (e: Exception) {
-                    Log.e(TAG, "Background sync: Failed to sync admin data: ${e.message}")
-                    e.printStackTrace()
-                }
+//                // Special sync functions with background realm
+//                try {
+//                    Log.d(TAG, "Background sync: Syncing admin data")
+//                    val startTime = System.currentTimeMillis()
+//                    ManagerSync.instance?.syncAdmin()
+//                    val duration = System.currentTimeMillis() - startTime
+//                    Log.d(TAG, "Background sync: Completed admin data in ${duration}ms")
+//                } catch (e: Exception) {
+//                    Log.e(TAG, "Background sync: Failed to sync admin data: ${e.message}")
+//                    e.printStackTrace()
+//                }
 
                 try {
                     Log.d(TAG, "Background sync: Starting myLibrary sync")
@@ -240,6 +244,7 @@ class SyncManager private constructor(private val context: Context) {
             } finally {
                 backgroundRealm.close()
                 Log.d(TAG, "Closed background Realm instance")
+                _syncState.postValue(false)
                 cleanupBackgroundSync()
             }
         }

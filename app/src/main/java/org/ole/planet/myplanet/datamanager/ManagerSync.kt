@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.datamanager
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Base64
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.realm.Realm
@@ -31,10 +32,12 @@ class ManagerSync private constructor(context: Context) {
                 override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
                     if (response.isSuccessful && response.body() != null) {
                         val jsonDoc = response.body()
+                        Log.d("okuro", "$jsonDoc")
                         if (jsonDoc?.has("derived_key") == true && jsonDoc.has("salt")) {
 //                          val decrypt = AndroidDecrypter()
                             val derivedKey = jsonDoc["derived_key"].asString
                             val salt = jsonDoc["salt"].asString
+                            Log.d("okuro","decrypter: ${androidDecrypter(userName, password, derivedKey, salt)}")
                             if (androidDecrypter(userName, password, derivedKey, salt)) {
                                 checkManagerAndInsert(jsonDoc, mRealm, listener)
                             } else {
@@ -79,6 +82,8 @@ class ManagerSync private constructor(context: Context) {
 
     private fun checkManagerAndInsert(jsonDoc: JsonObject?, realm: Realm, listener: SyncListener) {
         if (isManager(jsonDoc)) {
+            Log.d("okuro", "isManager?: $jsonDoc")
+            Log.d("okuro", "isManager?: ${isManager(jsonDoc)}")
             populateUsersTable(jsonDoc, realm, settings)
             listener.onSyncComplete()
         } else {
@@ -87,8 +92,14 @@ class ManagerSync private constructor(context: Context) {
     }
 
     private fun isManager(jsonDoc: JsonObject?): Boolean {
+        Log.d("okuro", "$jsonDoc")
         val roles = jsonDoc?.get("roles")?.asJsonArray
+        Log.d("okuro", "roles: ${roles.toString().lowercase()}")
         val isManager = roles.toString().lowercase(Locale.getDefault()).contains("manager")
+
+        Log.d("okuro", "$isManager")
+        Log.d("okuro", "isUserAdmin: ${jsonDoc?.get("isUserAdmin")?.asBoolean}")
+        Log.d("okuro", "json: ${jsonDoc?.get("isUserAdmin")?.asBoolean == true}")
         return jsonDoc?.get("isUserAdmin")?.asBoolean == true || isManager
     }
 

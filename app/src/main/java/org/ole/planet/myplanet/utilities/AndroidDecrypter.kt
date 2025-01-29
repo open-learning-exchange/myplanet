@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.utilities
 
+import android.util.Log
 import de.rtner.misc.BinTools
 import de.rtner.security.auth.spi.PBKDF2Engine
 import de.rtner.security.auth.spi.PBKDF2Parameters
@@ -74,6 +75,7 @@ class AndroidDecrypter {
 
         @JvmStatic
         fun androidDecrypter(usrId: String?, usrRawPwd: String?, dbPwdKeyValue: String?, dbSalt: String?): Boolean {
+            Log.d("okuro", "usrID: $usrId, usrRawPwd: $usrRawPwd, dbPwdKeyValue: $dbPwdKeyValue, dbSalt: $dbSalt")
             try {
                 val p = PBKDF2Parameters("HmacSHA1", "utf-8", dbSalt?.toByteArray(), 10)
                 val dk = PBKDF2Engine(p).deriveKey(usrRawPwd, 20)

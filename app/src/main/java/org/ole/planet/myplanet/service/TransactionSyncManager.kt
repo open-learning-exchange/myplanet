@@ -113,7 +113,7 @@ object TransactionSyncManager {
     fun syncDb(realm: Realm, table: String) {
         realm.executeTransactionAsync { mRealm: Realm ->
             val apiInterface = client?.create(ApiInterface::class.java)
-            val allDocs = apiInterface?.getJsonObject(Utilities.header, Utilities.getUrl() + "/" + table + "/_all_docs?include_doc=false")
+            val allDocs = apiInterface?.getJsonObject(Utilities.header,  "${Utilities.getUrl()}/$table/_all_docs?include_doc=false")
             try {
                 val all = allDocs?.execute()
                 val rows = getJsonArray("rows", all?.body())
@@ -124,7 +124,7 @@ object TransactionSyncManager {
                     if (i == rows.size() - 1 || keys.size == 1000) {
                         val obj = JsonObject()
                         obj.add("keys", Gson().fromJson(Gson().toJson(keys), JsonArray::class.java))
-                        val response = apiInterface?.findDocs(Utilities.header, "application/json", Utilities.getUrl() + "/" + table + "/_all_docs?include_docs=true", obj)?.execute()
+                        val response = apiInterface?.findDocs(Utilities.header, "application/json", "${Utilities.getUrl()}/$table/_all_docs?include_docs=true", obj)?.execute()
                         if (response?.body() != null) {
                             val arr = getJsonArray("rows", response.body())
                             if (table == "chat_history") {
