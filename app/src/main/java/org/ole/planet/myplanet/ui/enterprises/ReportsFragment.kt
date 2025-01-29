@@ -238,9 +238,8 @@ class ReportsFragment : BaseTeamFragment() {
             fragmentReportsBinding.rvReports.layoutManager = LinearLayoutManager(activity)
             fragmentReportsBinding.rvReports.adapter = adapterReports
             adapterReports.notifyDataSetChanged()
-            //check if the list is empty
+
             if (results.isEmpty()) {
-                //if the list is empty, makes the EXPORT CSV invisible
                 fragmentReportsBinding.exportCSV.visibility = View.GONE
             } else {
                 fragmentReportsBinding.exportCSV.visibility = View.VISIBLE
