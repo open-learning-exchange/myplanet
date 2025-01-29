@@ -1,11 +1,9 @@
 package org.ole.planet.myplanet.ui.dictionary
 
 import android.os.Bundle
-import android.util.Log
 import androidx.core.text.HtmlCompat
 import com.google.gson.Gson
 import com.google.gson.JsonArray
-import com.google.gson.JsonSyntaxException
 import io.realm.Case
 import io.realm.RealmResults
 import org.ole.planet.myplanet.R
@@ -17,7 +15,6 @@ import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.Utilities
-import java.io.FileNotFoundException
 import java.util.UUID
 
 class DictionaryActivity : BaseActivity() {
@@ -67,12 +64,8 @@ class DictionaryActivity : BaseActivity() {
                         dict?.antonym = JsonUtils.getString("antonoym", doc)
                     }
                 }
-            } catch (e: FileNotFoundException) {
-                Log.e("Error", "File not found: ${e.message}")
-            } catch (e: JsonSyntaxException) {
-                Log.e("Error", "Invalid JSON format: ${e.message}")
             } catch (e: Exception) {
-                Log.e("Error", "Unexpected error: ${e.message}")
+                e.printStackTrace()
             }
         } else {
             setClickListener()
