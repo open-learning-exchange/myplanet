@@ -16,7 +16,8 @@ class AdapterLeader(var context: Context, private var leaders: List<RealmUserMod
     RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private lateinit var rowJoinedUserBinding: RowJoinedUserBinding
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
-        rowJoinedUserBinding = RowJoinedUserBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        rowJoinedUserBinding =
+            RowJoinedUserBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ViewHolderLeader(rowJoinedUserBinding)
     }
 
@@ -60,12 +61,12 @@ class AdapterLeader(var context: Context, private var leaders: List<RealmUserMod
                 .addToBackStack(null)
                 .commit()
         } else {
-            Log.d("AdapterLeader", "Error: Fragment container not found")
-            Log.d("AdapterLeader", "Leader: $leader")
+            Log.d("AdapterLeader", "Login to see leader details")
         }
     }
 
-    internal inner class ViewHolderLeader(rowJoinedUserBinding: RowJoinedUserBinding) : RecyclerView.ViewHolder(rowJoinedUserBinding.root) {
+    internal inner class ViewHolderLeader(rowJoinedUserBinding: RowJoinedUserBinding) :
+        RecyclerView.ViewHolder(rowJoinedUserBinding.root) {
         var title = rowJoinedUserBinding.tvTitle
         var tvDescription = rowJoinedUserBinding.tvDescription
         var icon = rowJoinedUserBinding.icMore

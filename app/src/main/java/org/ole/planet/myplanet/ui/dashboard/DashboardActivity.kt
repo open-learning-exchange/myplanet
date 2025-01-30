@@ -116,7 +116,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_dashboard)
         checkUser()
         activityDashboardBinding = ActivityDashboardBinding.inflate(layoutInflater)
         setContentView(activityDashboardBinding.root)
