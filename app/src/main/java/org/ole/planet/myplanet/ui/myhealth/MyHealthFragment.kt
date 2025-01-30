@@ -43,12 +43,10 @@ import java.util.Locale
 class MyHealthFragment : Fragment() {
     private lateinit var fragmentVitalSignBinding: FragmentVitalSignBinding
     private lateinit var alertMyPersonalBinding: AlertMyPersonalBinding
-    private lateinit var alertHealthListBinding: AlertHealthListBinding
     var profileDbHandler: UserProfileDbHandler? = null
     var userId: String? = null
     lateinit var mRealm: Realm
     var userModel: RealmUserModel? = null
-    lateinit var userModelList: List<RealmUserModel>
     lateinit var adapter: UserListArrayAdapter
     var dialog: AlertDialog? = null
 
@@ -76,8 +74,6 @@ class MyHealthFragment : Fragment() {
         userId = if (TextUtils.isEmpty(profileDbHandler?.userModel?._id)) profileDbHandler?.userModel?.id else profileDbHandler?.userModel?._id
         getHealthRecords(userId)
 
-        fragmentVitalSignBinding.btnnewPatient.visibility = View.VISIBLE
-        fragmentVitalSignBinding.btnnewPatient.setOnClickListener { selectPatient() }
         fragmentVitalSignBinding.updateHealth.visibility = View.VISIBLE
 
         fragmentVitalSignBinding.updateHealth.setOnClickListener {
@@ -98,87 +94,6 @@ class MyHealthFragment : Fragment() {
             startActivity(Intent(activity, AddMyHealthActivity::class.java).putExtra("userId", userId))
         }
         showRecords()
-    }
-
-    private fun selectPatient() {
-        userModelList = mRealm.where(RealmUserModel::class.java).sort("joinDate", Sort.DESCENDING).findAll()
-        adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, userModelList)
-        alertHealthListBinding = AlertHealthListBinding.inflate(LayoutInflater.from(context))
-        alertHealthListBinding.btnAddMember.setOnClickListener {
-            startActivity(Intent(requireContext(), BecomeMemberActivity::class.java))
-        }
-
-        setTextWatcher(alertHealthListBinding.etSearch, alertHealthListBinding.btnAddMember, alertHealthListBinding.list)
-        alertHealthListBinding.list.adapter = adapter
-        alertHealthListBinding.list.onItemClickListener = OnItemClickListener { _: AdapterView<*>?, _: View, i: Int, _: Long ->
-            val selected = alertHealthListBinding.list.adapter.getItem(i) as RealmUserModel
-            userId = if (selected._id.isNullOrEmpty()) selected.id else selected._id
-            getHealthRecords(userId)
-            dialog?.dismiss()
-        }
-        sortList(alertHealthListBinding.spnSort, alertHealthListBinding.list)
-        dialog = AlertDialog.Builder(requireActivity(),R.style.AlertDialogTheme)
-            .setTitle(getString(R.string.select_health_member)).setView(alertHealthListBinding.root)
-            .setCancelable(false).setNegativeButton(R.string.dismiss, null).create()
-        dialog?.show()
-    }
-
-    private fun sortList(spnSort: AppCompatSpinner, lv: ListView) {
-        spnSort.onItemSelectedListener = object : OnItemSelectedListener {
-            override fun onNothingSelected(p0: AdapterView<*>?) {}
-
-            override fun onItemSelected(p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long) {
-                val sort: Sort
-                val sortBy: String
-                when (p2) {
-                    0 -> {
-                        sortBy = "joinDate"
-                        sort = Sort.DESCENDING
-                    }
-                    1 -> {
-                        sortBy = "joinDate"
-                        sort = Sort.ASCENDING
-                    }
-                    2 -> {
-                        sortBy = "name"
-                        sort = Sort.ASCENDING
-                    }
-                    else -> {
-                        sortBy = "name"
-                        sort = Sort.DESCENDING
-                    }
-                }
-                userModelList = mRealm.where(RealmUserModel::class.java).sort(sortBy, sort).findAll()
-                adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, userModelList)
-                lv.adapter = adapter
-            }
-        }
-    }
-
-    private fun setTextWatcher(etSearch: EditText, btnAddMember: Button, lv: ListView) {
-        var timer: CountDownTimer? = null
-        etSearch.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
-            override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
-
-            override fun afterTextChanged(editable: Editable) {
-                timer?.cancel()
-                timer = object : CountDownTimer(1000, 1500) {
-                    override fun onTick(millisUntilFinished: Long) {}
-                    override fun onFinish() {
-                        val userModelList = mRealm.where(RealmUserModel::class.java)
-                            .contains("firstName", editable.toString(), Case.INSENSITIVE).or()
-                            .contains("lastName", editable.toString(), Case.INSENSITIVE).or()
-                            .contains("name", editable.toString(), Case.INSENSITIVE)
-                            .sort("joinDate", Sort.DESCENDING).findAll()
-
-                        val adapter = UserListArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, userModelList)
-                        lv.adapter = adapter
-                        btnAddMember.visibility = if (adapter.count == 0) View.VISIBLE else View.GONE
-                    }
-                }.start()
-            }
-        })
     }
 
     override fun onResume() {

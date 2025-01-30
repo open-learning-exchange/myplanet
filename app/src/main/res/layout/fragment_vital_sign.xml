@@ -27,14 +27,6 @@
                 android:padding="@dimen/padding_small">
 
                 <Button
-                    android:id="@+id/btnnew_patient"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:text="@string/change_member"
-                    android:theme="@style/BlueButton"
-                    android:visibility="visible" />
-                <Button
                     android:id="@+id/add_new_record"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
