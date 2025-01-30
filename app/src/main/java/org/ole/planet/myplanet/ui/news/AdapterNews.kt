@@ -208,7 +208,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                     mRealm.beginTransaction()
                 }
                 news?.addLabel(Constants.LABELS["${menuItem.title}"])
-                Utilities.toast(context, R.string.label_added.toString())
+                Utilities.toast(context, context.getString(R.string.label_added))
                 mRealm.commitTransaction()
                 news?.let { it1 -> showChips(holder, it1) }
                 false
@@ -397,7 +397,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
 
     private fun editPost(s: String, news: RealmNews?) {
         if (s.isEmpty()) {
-            Utilities.toast(context, R.string.please_enter_message.toString())
+            Utilities.toast(context, context.getString(R.string.please_enter_message))
             return
         }
         if (!mRealm.isInTransaction) mRealm.beginTransaction()
