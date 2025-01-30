@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -39,6 +40,7 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Utilities.toast
+import java.text.Normalizer
 import java.util.Locale
 
 abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), OnRatingChangeListener {
@@ -198,14 +200,15 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         val title = when {
             c.isAssignableFrom(RealmMyLibrary::class.java) -> (item as RealmMyLibrary).title
             else -> (item as RealmMyCourse).courseTitle
-        }?.lowercase(Locale.getDefault()) ?: return false
+        }?.let { normalizeText(it) } ?: return false
 
         return queryParts.all { queryPart ->
-            title.contains(queryPart.lowercase(Locale.getDefault()))
+            normalizeText(queryPart) in title
         }
     }
 
     fun filterLibraryByTag(s: String, tags: List<RealmTag>): List<RealmMyLibrary> {
+        val normalizedS = normalizeText(s)
         var list = getData(s, RealmMyLibrary::class.java)
         list = if (isMyCourseLib) {
             getMyLibraryByUserId(model?.id, list)
@@ -224,10 +227,27 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
 
         return libraries.sortedWith(compareBy<RealmMyLibrary> { library ->
-            !library.title?.lowercase()?.startsWith(s.lowercase())!! ?: true
+            !normalizeText(library.title ?: "").startsWith(normalizedS, ignoreCase = true)
         }.thenBy { library ->
-            library.title?.lowercase() ?: ""
+            normalizeText(library.title ?: "")
         })
+    }
+
+    fun normalizeText(str: String): String {
+        val diacriticMap = mapOf(
+            'á' to 'a', 'à' to 'a', 'ã' to 'a', 'â' to 'a', 'ä' to 'a',
+            'é' to 'e', 'è' to 'e', 'ê' to 'e', 'ë' to 'e',
+            'í' to 'i', 'ì' to 'i', 'î' to 'i', 'ï' to 'i',
+            'ó' to 'o', 'ò' to 'o', 'õ' to 'o', 'ô' to 'o', 'ö' to 'o',
+            'ú' to 'u', 'ù' to 'u', 'û' to 'u', 'ü' to 'u',
+            'ý' to 'y', 'ÿ' to 'y',
+            'ñ' to 'n',
+            'ç' to 'c'
+        )
+
+        return str.lowercase().map { char ->
+            diacriticMap[char] ?: char
+        }.joinToString("")
     }
 
     fun filterCourseByTag(s: String, tags: List<RealmTag>): List<RealmMyCourse> {
