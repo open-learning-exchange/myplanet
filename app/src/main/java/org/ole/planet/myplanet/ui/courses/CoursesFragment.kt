@@ -98,6 +98,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         userModel = UserProfileDbHandler(requireContext()).userModel
         searchTags = ArrayList()
         initializeView()
+        updateCheckBoxState(false)
         if (isMyCourseLib) {
             btnRemove.visibility = View.VISIBLE
             btnArchive.visibility = View.VISIBLE
@@ -328,7 +329,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
         return builder.create()
     }
-    
+
     override fun onSelectedListChange(list: MutableList<RealmMyCourse?>) {
         selectedItems = list
         changeButtonStatus()
