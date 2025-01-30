@@ -190,9 +190,15 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                 searchAndMatch(item, c, queryParts)
             }
         } else {
-            mRealm.where(c)
-                .contains(fieldName, s, Case.INSENSITIVE)
-                .findAll()
+            mRealm.where(c).findAll().filter { item ->
+                val title = when {
+                    c.isAssignableFrom(RealmMyLibrary::class.java) -> (item as RealmMyLibrary).title
+                    else -> (item as RealmMyCourse).courseTitle
+                }
+                title?.let {
+                    normalizeText(it).contains(normalizeText(s))
+                } ?: false
+            }
         }
     }
 
@@ -203,12 +209,12 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }?.let { normalizeText(it) } ?: return false
 
         return queryParts.all { queryPart ->
-            normalizeText(queryPart) in title
+            title.contains(normalizeText(queryPart))
         }
     }
 
     fun filterLibraryByTag(s: String, tags: List<RealmTag>): List<RealmMyLibrary> {
-        val normalizedS = normalizeText(s)
+        val normalizedSearchTerm = normalizeText(s)
         var list = getData(s, RealmMyLibrary::class.java)
         list = if (isMyCourseLib) {
             getMyLibraryByUserId(model?.id, list)
@@ -227,27 +233,16 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
 
         return libraries.sortedWith(compareBy<RealmMyLibrary> { library ->
-            !normalizeText(library.title ?: "").startsWith(normalizedS, ignoreCase = true)
+            val normalizedTitle = normalizeText(library.title ?: "")
+            !normalizedTitle.contains(normalizedSearchTerm)
         }.thenBy { library ->
             normalizeText(library.title ?: "")
         })
     }
 
     fun normalizeText(str: String): String {
-        val diacriticMap = mapOf(
-            'á' to 'a', 'à' to 'a', 'ã' to 'a', 'â' to 'a', 'ä' to 'a',
-            'é' to 'e', 'è' to 'e', 'ê' to 'e', 'ë' to 'e',
-            'í' to 'i', 'ì' to 'i', 'î' to 'i', 'ï' to 'i',
-            'ó' to 'o', 'ò' to 'o', 'õ' to 'o', 'ô' to 'o', 'ö' to 'o',
-            'ú' to 'u', 'ù' to 'u', 'û' to 'u', 'ü' to 'u',
-            'ý' to 'y', 'ÿ' to 'y',
-            'ñ' to 'n',
-            'ç' to 'c'
-        )
-
-        return str.lowercase().map { char ->
-            diacriticMap[char] ?: char
-        }.joinToString("")
+        return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
+            .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
     }
 
     fun filterCourseByTag(s: String, tags: List<RealmTag>): List<RealmMyCourse> {
