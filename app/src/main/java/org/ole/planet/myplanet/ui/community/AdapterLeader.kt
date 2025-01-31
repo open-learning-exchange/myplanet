@@ -16,8 +16,7 @@ class AdapterLeader(var context: Context, private var leaders: List<RealmUserMod
     RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private lateinit var rowJoinedUserBinding: RowJoinedUserBinding
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
-        rowJoinedUserBinding =
-            RowJoinedUserBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        rowJoinedUserBinding = RowJoinedUserBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ViewHolderLeader(rowJoinedUserBinding)
     }
 
