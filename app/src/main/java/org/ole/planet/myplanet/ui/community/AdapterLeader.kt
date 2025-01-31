@@ -64,8 +64,7 @@ class AdapterLeader(var context: Context, private var leaders: List<RealmUserMod
         }
     }
 
-    internal inner class ViewHolderLeader(rowJoinedUserBinding: RowJoinedUserBinding) :
-        RecyclerView.ViewHolder(rowJoinedUserBinding.root) {
+    internal inner class ViewHolderLeader(rowJoinedUserBinding: RowJoinedUserBinding) : RecyclerView.ViewHolder(rowJoinedUserBinding.root) {
         var title = rowJoinedUserBinding.tvTitle
         var tvDescription = rowJoinedUserBinding.tvDescription
         var icon = rowJoinedUserBinding.icMore
