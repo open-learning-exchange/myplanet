@@ -59,8 +59,6 @@ class AdapterLeader(var context: Context, private var leaders: List<RealmUserMod
                 .replace(R.id.fragment_container, fragment)
                 .addToBackStack(null)
                 .commit()
-        } else {
-            Log.d("AdapterLeader", "Login to see leader details")
         }
     }
 
