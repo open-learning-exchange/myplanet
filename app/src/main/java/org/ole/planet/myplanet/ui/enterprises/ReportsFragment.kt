@@ -238,6 +238,12 @@ class ReportsFragment : BaseTeamFragment() {
             fragmentReportsBinding.rvReports.layoutManager = LinearLayoutManager(activity)
             fragmentReportsBinding.rvReports.adapter = adapterReports
             adapterReports.notifyDataSetChanged()
+
+            if (results.isEmpty()) {
+                fragmentReportsBinding.exportCSV.visibility = View.GONE
+            } else {
+                fragmentReportsBinding.exportCSV.visibility = View.VISIBLE
+            }
         }
     }
 }
