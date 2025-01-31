@@ -113,13 +113,13 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         processedUrl = Utilities.getUrl()
     }
 
-    override fun onConfigurationIdReceived(id: String, code: String, url: String, isAlternativeUrl: Boolean, callerActivity:String) {
+    override fun onConfigurationIdReceived(id: String, code: String, url: String, defaultUrl: String, isAlternativeUrl: Boolean, callerActivity: String) {
         val savedId = settings.getString("configurationId", null)
 
         when (callerActivity) {
             "LoginActivity", "DashboardActivity"-> {
                 if (isAlternativeUrl) {
-                    processAlternativeUrl(url, settings, editor)
+                    processAlternativeUrl(url, settings, editor, defaultUrl)
                 }
                 isSync = false
                 forceSync = true
@@ -131,18 +131,18 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                         editor.putString("configurationId", id).apply()
                         editor.putString("communityName", code).apply()
                         currentDialog?.let {
-                            continueSync(it, url, isAlternativeUrl)
+                            continueSync(it, url, isAlternativeUrl, defaultUrl)
                         }
                     } else if (id == savedId) {
                         currentDialog?.let {
-                            continueSync(it, url, isAlternativeUrl)
+                            continueSync(it, url, isAlternativeUrl, defaultUrl)
                         }
                     } else {
                         clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server), false)
                     }
                 } else if (serverConfigAction == "save") {
                     if (savedId == null || id == savedId) {
-                        currentDialog?.let { saveConfigAndContinue(it, "", false) }
+                        currentDialog?.let { saveConfigAndContinue(it, "", false, defaultUrl) }
                     } else {
                         clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server), false)
                     }
@@ -151,7 +151,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
     }
 
-    fun processAlternativeUrl(url: String, settings: SharedPreferences, editor: SharedPreferences.Editor): String {
+    fun processAlternativeUrl(url: String, settings: SharedPreferences, editor: SharedPreferences.Editor, defaultUrl: String): String {
         val password = "${settings.getString("serverPin", "")}"
         val uri = Uri.parse(url)
         val couchdbURL: String
@@ -366,7 +366,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         SyncManager.instance?.start(this@SyncActivity)
     }
 
-    private fun saveConfigAndContinue(dialog: MaterialDialog, url: String, isAlternativeUrl: Boolean): String {
+    private fun saveConfigAndContinue(dialog: MaterialDialog, url: String, isAlternativeUrl: Boolean, defaultUrl: String): String {
         dialog.dismiss()
         saveSyncInfoToPreference()
 
@@ -402,6 +402,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             editor.putString("processedAlternativeUrl", couchdbURL)
             editor.putBoolean("isAlternativeUrl", true)
             editor.apply()
+
+            if (isUrlValid(url)) setUrlParts(defaultUrl, urlPwd) else ""
 
             couchdbURL
         } else {
@@ -846,8 +848,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         return modifiedUrl
     }
 
-    fun continueSync(dialog: MaterialDialog, url: String, isAlternativeUrl: Boolean) {
-        processedUrl = saveConfigAndContinue(dialog, url, isAlternativeUrl)
+    fun continueSync(dialog: MaterialDialog, url: String, isAlternativeUrl: Boolean, defaultUrl: String) {
+        processedUrl = saveConfigAndContinue(dialog, url, isAlternativeUrl, defaultUrl)
         if (TextUtils.isEmpty(processedUrl)) return
         isSync = true
         if (checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) && settings.getBoolean("firstRun", true)) {
