@@ -245,23 +245,30 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     fun filterCourseByTag(s: String, tags: List<RealmTag>): List<RealmMyCourse> {
-        if (tags.isEmpty() && s.isEmpty()) {
-            return applyCourseFilter(filterRealmMyCourseList(getList(RealmMyCourse::class.java)))
-        }
+        val normalizedSearchTerm = normalizeText(s)
         var list = getData(s, RealmMyCourse::class.java)
         list = if (isMyCourseLib) {
             getMyCourseByUserId(model?.id, list)
         } else {
             getOurCourse(model?.id, list)
         }
-        if (tags.isEmpty()) {
-            return list
+
+        val courses = if (tags.isNotEmpty()) {
+            val filteredCourses = mutableListOf<RealmMyCourse>()
+            for (course in list) {
+                checkAndAddToList(course, filteredCourses, tags)
+            }
+            filteredCourses
+        } else {
+            list
         }
-        val courses = RealmList<RealmMyCourse>()
-        list.forEach { course ->
-            checkAndAddToList(course, courses, tags)
-        }
-        return applyCourseFilter(list)
+
+        return applyCourseFilter(courses).sortedWith(compareBy<RealmMyCourse> { course ->
+            val normalizedTitle = normalizeText(course.courseTitle ?: "")
+            !normalizedTitle.contains(normalizedSearchTerm)
+        }.thenBy { course ->
+            normalizeText(course.courseTitle ?: "")
+        })
     }
 
     private fun filterRealmMyCourseList(items: List<Any?>): List<RealmMyCourse> {
