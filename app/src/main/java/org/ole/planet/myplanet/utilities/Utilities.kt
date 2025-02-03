@@ -166,8 +166,8 @@ object Utilities {
                 }
             }
 
-            return if (hostIp?.endsWith(".org") == true) {
-                "$scheme://$hostIp/ml/"
+            return if (hostIp?.endsWith(".org") == true || hostIp?.endsWith(".gt") == true) {
+                "$scheme://$hostIp/ml"
             } else {
                 "$scheme://$hostIp:5000"
             }
