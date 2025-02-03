@@ -789,6 +789,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         when (tag) {
             "MyCoursesFragment" -> result?.setSelection(2, false)
             "MyResourcesFragment" -> result?.setSelection(1, false)
+            "MyTeamFragment" -> result?.setSelection(-5, false)
             else -> {
                 result?.setSelection(0, false)
             }

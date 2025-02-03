@@ -170,17 +170,12 @@ class Service(private val context: Context) {
 
     fun isPlanetAvailable(callback: PlanetAvailableListener?) {
         val updateUrl = "${preferences.getString("serverURL", "")}"
-        Log.d("ServerCheck", "Initial Update URL: $updateUrl")
-
         val serverUrlMapper = ServerUrlMapper(context)
         val mapping = serverUrlMapper.processUrl(updateUrl)
 
         CoroutineScope(Dispatchers.IO).launch {
             val primaryAvailable = isServerReachable(mapping.primaryUrl)
             val alternativeAvailable = mapping.alternativeUrl?.let { isServerReachable(it) } == true
-
-            Log.d("ServerCheck", "Primary URL: ${mapping.primaryUrl}, Reachable: $primaryAvailable")
-            Log.d("ServerCheck", "Alternative URL: ${mapping.alternativeUrl}, Reachable: $alternativeAvailable")
 
             if (!primaryAvailable && alternativeAvailable) {
                 mapping.alternativeUrl.let { alternativeUrl ->

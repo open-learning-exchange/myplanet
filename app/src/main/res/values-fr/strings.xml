@@ -1226,5 +1226,6 @@
     <string name="local_resource">ressource locale</string>
     <string name="no_survey_submissions">aucune soumission de sondage</string>
     <string name="no_exam_submissions">aucune soumission d\'examen</string>
+    <string name="no_reports">Aucun rapport disponible</string>
 
 </resources>
